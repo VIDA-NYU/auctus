@@ -1,17 +1,39 @@
+import asyncio
+from datetime import datetime
+import elasticsearch
 import json
+import logging
 import os
 
-class DiscovererHandler(object):
+from .rabbitmq import RabbitMQ
+
+
+logger = logging.getLogger(__name__)
+
+
+class DiscovererHandler(RabbitMQ):
     def __init__(self, obj, identifier):
+        super(DiscovererHandler, self).__init__()
+        self.elasticsearch = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
         self._obj = obj
         self._identifier = identifier
-        self._config = json.loads(os.environ['DATAMART_CONFIG'])
 
-    def do_health(self):
-        TODO recv
+    def on_channel_open(self):
+        pass  # TODO: Listen for on-demand queries
 
-    def dataset_found(self, dataset_meta):
-        TODO send
+    async def dataset_found(self, dataset_meta):
+        dataset_meta = dict(dataset_meta,
+                            kind='dataset',
+                            date=datetime.utcnow().isoformat() + 'Z')
+        dataset_id = self.elasticsearch.index(
+            'datamart',
+            '_doc',
+            dataset_meta,
+        )
+        body = json.dumps({'id': dataset_id, 'meta': dataset_meta})
+        self._amqp_channel.basic_publish('discovered', '', body)
 
     def create_dataset_storage(self):
         TODO send
@@ -21,6 +43,15 @@ class DiscovererHandler(object):
 
 
 class BaseDiscoverer(object):
+    """Base class for a discovery plugin.
+
+    A discovery plugin is in charge of the following:
+
+    * Crawl the web looking for datasets, inserting dataset records in
+      Elasticsearch, possibly materializing them on disk
+    * Materialize a previously recorded dataset
+    * React to a user query to perform on-demand crawling (optional)
+    """
     def __init__(self, identifier):
         self._handler = DiscovererHandler(self, identifier)
 
