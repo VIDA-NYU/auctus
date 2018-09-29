@@ -77,7 +77,7 @@ class IngesterHandler(BaseHandler):
             ingest_meta,
         )
         body = {'dataset_id': dataset_id, 'id': ingest_id, 'meta': ingest_meta}
-        url = self.coordinator + '/ingest'
+        url = self.coordinator + '/ingested'
         async with self.http_session.post(url, json=body):
             pass
 

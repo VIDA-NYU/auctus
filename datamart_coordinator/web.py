@@ -2,6 +2,7 @@ import logging
 import json
 import os
 import tornado.ioloop
+from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
 
@@ -25,6 +26,11 @@ class BaseHandler(RequestHandler):
             raise ValueError("Can't encode %r to JSON" % type(obj))
         self.set_header('Content-Type', 'text/json; charset=utf-8')
         return self.finish(json.dumps(obj))
+
+
+class Index(BaseHandler):
+    def get(self):
+        self.finish('Work in progress...')  # TODO
 
 
 class Application(tornado.web.Application):
@@ -68,6 +74,14 @@ def make_app(debug=False):
 
     return Application(
         [
+            URLSpec('/', Index, name='index'),
+
+            URLSpec('/poll/discovery', WIP),
+            URLSpec('/dataset_discovered', WIP),
+            URLSpec('/allocate_dataset', WIP),
+            URLSpec('/dataset_downloaded', WIP),
+
+            URLSpec('/ingested', WIP),
         ],
         debug=debug,
         cookie_secret=secret,
