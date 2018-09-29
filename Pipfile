@@ -6,7 +6,8 @@ name = "pypi"
 [packages]
 ipykernel = "*"
 elasticsearch = "*"
-pika = "*"
+aiohttp = "*"
+aiodns = "*"
 
 [dev-packages]
 

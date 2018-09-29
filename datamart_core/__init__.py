@@ -1,4 +1,4 @@
-from .discovery import BaseDiscoverer
+from .discovery import SimpleDiscoverer, AsyncDiscoverer
 #from .ingestion import BaseIndexer
 
 
