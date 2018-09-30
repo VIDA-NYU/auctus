@@ -33,7 +33,7 @@ class SimpleDiscoverer(object):
         """
         return self._handler.dataset_found_blocking(dataset_meta)
 
-    def handle_materialization(self, meta):
+    def handle_materialization(self, dataset_id, meta):
         """Materialization request.
 
         A dataset we previously found or downloaded is needed again. This
@@ -89,7 +89,7 @@ class AsyncDiscoverer(Async):
         """
         return self._handler.dataset_found(dataset_meta)
 
-    async def handle_materialization(self, meta):
+    async def handle_materialization(self, dataset_id, meta):
         """Materialization request.
 
         A dataset we previously found or downloaded is needed again. This
@@ -118,7 +118,8 @@ class DiscovererHandler(BaseHandler):
                               obj['query'])
         elif 'materialize' in obj:
             return self._call(self._obj.handle_materialization,
-                              obj['materialize'])
+                              obj['materialize']['id'],
+                              obj['materialize']['meta'])
 
     async def dataset_found(self, dataset_meta):
         dataset_meta = dict(dataset_meta,
