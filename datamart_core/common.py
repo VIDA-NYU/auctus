@@ -82,15 +82,21 @@ class BaseHandler(object):
     async def _request_work(self):
         while True:
             await self._work.acquire()
-            async with self.get(self.POLL_PATH) as resp:
-                obj = await resp.json()
-            future = self.work_received(obj)
-            if future is None:
-                logger.error("Got unknown request from coordinator")
-                self._work.release()
-                await asyncio.sleep(5)
-                continue
-            future.add_done_callback(self._work_done)
+            try:
+                async with self.get(self.POLL_PATH) as resp:
+                    obj = await resp.json()
+            except:
+                logger.exception("Got error polling coordinator")
+            else:
+                future = self.work_received(obj)
+                if future is None:
+                    logger.error("Got unknown request from coordinator")
+                else:
+                    future.add_done_callback(self._work_done)
+                    continue
+
+            self._work.release()
+            await asyncio.sleep(5)
 
     def work_received(self, obj):
         raise NotImplementedError
