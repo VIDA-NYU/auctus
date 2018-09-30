@@ -12,7 +12,30 @@
   <li style="font-style: oblique;">Loading...</li>
 </ul>
 
+<h1>Recently discovered datasets</h1>
+<ul id="recent_discoveries">
+  <li style="font-style: oblique;">Loading...</li>
+</ul>
+
+<h1>Datasets in local storage</h1>
+<ul id="storage">
+  <li style="font-style: oblique;">Loading...</li>
+</ul>
+
 <script type="text/javascript">
+if(!Object.entries) {
+  Object.entries = function(obj) {
+    var ownProps = Object.keys(obj),
+      i = ownProps.length,
+      resArray = new Array(i); // preallocate the Array
+    while(i--) {
+      resArray[i] = [ownProps[i], obj[ownProps[i]]];
+    }
+
+    return resArray;
+  };
+}
+
 function getCookie(name) {
   var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
   return r ? r[1] : undefined;
@@ -65,6 +88,37 @@ function loadStatus() {
       var elem = document.createElement('li');
       elem.innerHTML = "No ingester connected";
       ingesters.appendChild(elem);
+    }
+
+    var recent_discoveries = document.getElementById('recent_discoveries');
+    recent_discoveries.innerHTML = '';
+    for(var i = 0; i < result.recent_discoveries.length; ++i) {
+      var elem = document.createElement('li');
+      elem.innerHTML = '<span style="color:blue;">' + result.recent_discoveries[i] + '</span>';
+      recent_discoveries.appendChild(elem);
+    }
+    if(result.recent_discoveries.length == 0) {
+      var elem = document.createElement('li');
+      elem.innerHTML = "No recent discoveries";
+      recent_discoveries.appendChild(elem);
+    }
+
+    var storage = document.getElementById('storage');
+    storage.innerHTML = '';
+    var entries = Object.entries(result.storage);
+    for(var i = 0; i < entries.length; ++i) {
+      var elem = document.createElement('li');
+      if(entries[i][1] == null) {
+        elem.innerHTML = entries[i][0] + ' (allocated)';
+      } else {
+        elem.innerHTML = '<span style="font-family: monospace;">' + entries[i][0] + '</span> <span style="color:blue;">' + entries[i][1][0] + '</span> ' + entries[i][1][1].join(', ');
+      }
+      storage.appendChild(elem);
+    }
+    if(entries.length == 0) {
+      var elem = document.createElement('li');
+      elem.innerHTML = "No dataset in local storage";
+      storage.appendChild(elem);
     }
   });
 }

@@ -81,6 +81,8 @@ class Status(BaseHandler):
                             for k, v in self.coordinator.discoverers.items()],
             'ingesters': [[k, len(v)]
                           for k, v in self.coordinator.ingesters.items()],
+            'recent_discoveries': self.coordinator.recent_discoveries,
+            'storage': self.coordinator.storage,
         })
 
 
