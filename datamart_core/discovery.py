@@ -107,10 +107,25 @@ class AsyncDiscoverer(Async):
         """
         return self._handler.dataset_downloaded(dataset_id, storage)
 
+    async def run(self):
+        """Entrypoint for the discovery plugin.
+
+        Crawl, poll, search, and call `dataset_found()` and
+        `dataset_downloaded()` to record found datasets.
+
+        If this method is not implemented, the plugin will simply wait for
+        requests; `handle_ondemand_query()` and `handle_materialization()` will
+        be called when needed in a thread pool.
+        """
+
 
 class DiscovererHandler(BaseHandler):
     BASE_PLUGIN_CLASSES = (SimpleDiscoverer, AsyncDiscoverer)
     POLL_PATH = '/poll/discovery'
+
+    def __init__(self, obj, identifier, concurrent=1):
+        super(DiscovererHandler, self).__init__(obj, identifier, concurrent)
+        self._call(self._obj.run)
 
     def work_received(self, obj):
         if 'query' in obj:
