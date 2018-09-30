@@ -86,6 +86,11 @@ class Status(BaseHandler):
         })
 
 
+class Dataset(BaseHandler):
+    def get(self, dataset_id):
+        self.render('dataset.html')
+
+
 class PollDiscovery(BaseHandler):
     async def get(self):
         identifier = self.get_query_argument('id')
@@ -198,6 +203,7 @@ def make_app(debug=False):
         [
             URLSpec('/', Index, name='index'),
             URLSpec('/status', Status),
+            URLSpec('/dataset/([^/]+)', Dataset),
 
             # Used by discovery plugins
             URLSpec('/poll/discovery', PollDiscovery),
