@@ -77,8 +77,10 @@ class Index(BaseHandler):
 class Status(BaseHandler):
     def get(self):
         self.send_json({
-            'discoverers': list(self.coordinator.discoverers),
-            'ingesters': list(self.coordinator.ingesters),
+            'discoverers': [[k, len(v)]
+                            for k, v in self.coordinator.discoverers.items()],
+            'ingesters': [[k, len(v)]
+                          for k, v in self.coordinator.ingesters.items()],
         })
 
 
@@ -96,6 +98,7 @@ class PollDiscovery(BaseHandler):
             self.coordinator.remove_discoverer(identifier, self)
 
     def on_connection_close(self):
+        logger.info("Discoverer connection closed")
         self._close_event.set()
 
 
@@ -134,6 +137,7 @@ class PollIngestion(BaseHandler):
             self.coordinator.remove_ingester(identifier, self)
 
     def on_connection_close(self):
+        logger.info("Ingester connection closed")
         self._close_event.set()
 
 

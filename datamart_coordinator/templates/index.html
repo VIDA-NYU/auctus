@@ -45,7 +45,7 @@ function loadStatus() {
     discoverers.innerHTML = '';
     for(var i = 0; i < result.discoverers.length; ++i) {
       var elem = document.createElement('li');
-      elem.innerHTML = result.discoverers[i];
+      elem.innerHTML = result.discoverers[i][0] + " (" + result.discoverers[i][1] + ")";
       discoverers.appendChild(elem);
     }
     if(result.discoverers.length == 0) {
@@ -58,7 +58,7 @@ function loadStatus() {
     ingesters.innerHTML = '';
     for(var i = 0; i < result.ingesters.length; ++i) {
       var elem = document.createElement('li');
-      elem.innerHTML = result.ingesters[i];
+      elem.innerHTML = result.ingesters[i][0] + " (" + result.ingesters[i][1] + ")";
       ingesters.appendChild(elem);
     }
     if(result.ingesters.length == 0) {
