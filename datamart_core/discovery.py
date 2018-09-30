@@ -147,6 +147,7 @@ class DiscovererHandler(BaseHandler):
 
     async def dataset_found(self, dataset_meta):
         dataset_meta = dict(dataset_meta,
+                            discoverer=self._identifier,
                             kind='dataset',
                             date=datetime.utcnow().isoformat() + 'Z')
         dataset_id = self.elasticsearch.index(

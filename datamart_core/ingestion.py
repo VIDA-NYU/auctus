@@ -70,6 +70,7 @@ class IngesterHandler(BaseHandler):
 
     async def record_metadata(self, dataset_id, ingest_meta):
         ingest_meta = dict(ingest_meta,
+                           ingester=self._identifier,
                            kind=dict(name='metadata', parent=dataset_id),
                            date=datetime.utcnow().isoformat() + 'Z')
         ingest_id = self.elasticsearch.index(
