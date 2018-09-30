@@ -64,9 +64,9 @@ class IngesterHandler(BaseHandler):
     def work_received(self, obj):
         if 'ingest' in obj:
             logger.info("Got 'ingest' from coordinator")
-            storage = Storage(obj['ingest']['path'])
-            return self._call(self._obj.handle_ingest,
-                              storage, obj['ingest']['meta'])
+            storage = Storage(obj['ingest'])
+            return self._call(self._obj.handle_ingest, storage,
+                              obj['ingest']['id'], obj['ingest']['meta'])
 
     async def record_metadata(self, dataset_id, ingest_meta):
         ingest_meta = dict(ingest_meta,
@@ -77,8 +77,10 @@ class IngesterHandler(BaseHandler):
             'datamart',
             '_doc',
             ingest_meta,
+            routing=dataset_id,
         )['_id']
-        logging.info("Metadata recorded: %r (dataset: %r)", ingest_id, dataset_id)
+        logging.info("Metadata recorded: %r (dataset: %r)",
+                     ingest_id, dataset_id)
         body = {'dataset_id': dataset_id, 'id': ingest_id, 'meta': ingest_meta}
         async with self.post('/ingested', body):
             pass
