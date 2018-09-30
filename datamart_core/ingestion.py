@@ -81,4 +81,5 @@ class IngesterHandler(BaseHandler):
             pass
 
     def record_metadata_blocking(self, dataset_id, ingest_meta):
-        return block_run(self.record_metadata(dataset_id, ingest_meta))
+        return block_run(self.loop,
+                         self.record_metadata(dataset_id, ingest_meta))

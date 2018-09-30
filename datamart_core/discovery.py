@@ -151,7 +151,8 @@ class DiscovererHandler(BaseHandler):
         return obj['dataset_id']
 
     def dataset_found_blocking(self, dataset_meta):
-        return block_run(self.dataset_found(dataset_meta))
+        return block_run(self.loop,
+                         self.dataset_found(dataset_meta))
 
     async def create_shared_storage(self):
         async with self.get('/allocate_dataset') as resp:
@@ -159,7 +160,8 @@ class DiscovererHandler(BaseHandler):
         return WriteStorage(obj)
 
     def create_shared_storage_blocking(self):
-        return block_run(self.create_shared_storage())
+        return block_run(self.loop,
+                         self.create_shared_storage())
 
     async def dataset_downloaded(self, dataset_id, storage):
         async with self.post('/dataset_downloaded', {
@@ -168,4 +170,5 @@ class DiscovererHandler(BaseHandler):
             pass
 
     def dataset_downloaded_blocking(self, dataset_id, storage):
-        return block_run(self.dataset_downloaded(dataset_id, storage))
+        return block_run(self.loop,
+                         self.dataset_downloaded(dataset_id, storage))

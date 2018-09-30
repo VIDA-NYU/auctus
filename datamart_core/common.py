@@ -17,18 +17,18 @@ def block_wait_future(future):
     thread.
     """
     event = threading.Event()
-    future.add_done_callback(event.set)
+    future.add_done_callback(lambda *a, **kw: event.set())
     event.wait()
     return future.result()
 
 
-def block_run(coro):
+def block_run(loop, coro):
     """Block the current thread until the coroutine is done, return result.
 
     The coroutine should not have been submitted to asyncio yet. Do not call
     this on the event-loop thread.
     """
-    future = asyncio.get_event_loop().create_task(coro)
+    future = asyncio.run_coroutine_threadsafe(coro, loop)
     return block_wait_future(future)
 
 
@@ -55,7 +55,8 @@ class BaseHandler(object):
         self.coordinator = os.environ['COORDINATOR_URL'].rstrip('/')
         self._work = asyncio.Semaphore(concurrent)
         self.http_session = aiohttp.ClientSession()
-        asyncio.get_event_loop().create_task(self._request_work())
+        self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self._request_work())
 
     def get(self, path):
         url = (self.coordinator + path +
