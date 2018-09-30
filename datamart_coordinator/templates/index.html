@@ -61,7 +61,7 @@ function loadStatus() {
       elem.innerHTML = result.ingesters[i];
       ingesters.appendChild(elem);
     }
-    if(result.discoverers.length == 0) {
+    if(result.ingesters.length == 0) {
       var elem = document.createElement('li');
       elem.innerHTML = "No ingester connected";
       ingesters.appendChild(elem);
@@ -69,6 +69,7 @@ function loadStatus() {
   });
 }
 
+loadStatus();
 setInterval(loadStatus, 2000);
 </script>
 {% endblock %}
