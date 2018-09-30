@@ -149,19 +149,28 @@ class AllocateDataset(BaseHandler):
 
 class PollIngestion(BaseHandler):
     async def get(self):
-        identifier = self.get_query_argument('id')
-        logger.info("Ingester %r polling...", identifier)
-        self.coordinator.add_ingester(identifier, self)
-        try:
-            self._close_event = asyncio.Event()
-            await self._close_event.wait()
-            # TODO: Send 'ingest' event to ingester
-        finally:
-            self.coordinator.remove_ingester(identifier, self)
+        self._identifier = self.get_query_argument('id')
+        logger.info("Ingester %r polling...", self._identifier)
+        self._result = {}
+        self.coordinator.add_ingester(self._identifier, self)
+        self._done_event = asyncio.Event()
+        await self._done_event.wait()
+        self.send_json(self._result)
 
     def on_connection_close(self):
         logger.info("Ingester connection closed")
-        self._close_event.set()
+        self._done_event.set()
+        self.coordinator.remove_ingester(self._identifier, self)
+
+    def ingest_dataset(self, dataset_id, storage_path, dataset_meta):
+        self._result = {
+            'ingest': {
+                'id': dataset_id,
+                'path': storage_path,
+                'meta': dataset_meta,
+            }
+        }
+        self._done_event.set()
 
 
 class Ingested(BaseHandler):
@@ -178,7 +187,7 @@ class Application(tornado.web.Application):
         super(Application, self).__init__(*args, **kwargs)
 
         self.elasticsearch = elasticsearch.Elasticsearch(es_hosts)
-        self.coordinator = Coordinator()
+        self.coordinator = Coordinator(self.elasticsearch)
 
 
 def make_app(debug=False):
