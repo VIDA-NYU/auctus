@@ -1,3 +1,4 @@
+import asyncio
 import elasticsearch
 import logging
 import jinja2
@@ -81,9 +82,67 @@ class Status(BaseHandler):
         })
 
 
-class WIP(BaseHandler):
+class PollDiscovery(BaseHandler):
+    async def get(self):
+        identifier = self.get_query_argument('id')
+        logger.info("Discoverer %r polling...", identifier)
+        self.coordinator.add_discoverer(identifier, self)
+        try:
+            self._close_event = asyncio.Event()
+            await self._close_event.wait()
+            # TODO: Send 'query' event to discoverer
+            # TODO: Send 'materialize' event to discoverer
+        finally:
+            self.coordinator.remove_discoverer(identifier, self)
+
+    def on_connection_close(self):
+        self._close_event.set()
+
+
+class DatasetDiscovered(BaseHandler):
+    def post(self):
+        identifier = self.get_query_argument('id')
+        obj = self.get_json()
+        self.coordinator.discovered(identifier, obj['id'], obj['meta'])
+
+
+class DatasetDownloaded(BaseHandler):
+    def post(self):
+        identifier = self.get_query_argument('id')
+        obj = self.get_json()
+        self.coordinator.downloaded(identifier,
+                                    obj['dataset_id'], obj['storage_path'])
+
+
+class AllocateDataset(BaseHandler):
     def get(self):
-        self.finish('Work in progress...')  # TODO
+        identifier = self.get_query_argument('id')
+        path = self.coordinator.allocate_shared(identifier)
+        self.send_json({'path': path, 'max_size_bytes': 1 << 30})
+
+
+class PollIngestion(BaseHandler):
+    async def get(self):
+        identifier = self.get_query_argument('id')
+        logger.info("Ingester %r polling...", identifier)
+        self.coordinator.add_ingester(identifier, self)
+        try:
+            self._close_event = asyncio.Event()
+            await self._close_event.wait()
+            # TODO: Send 'ingest' event to ingester
+        finally:
+            self.coordinator.remove_ingester(identifier, self)
+
+    def on_connection_close(self):
+        self._close_event.set()
+
+
+class Ingested(BaseHandler):
+    def post(self):
+        identifier = self.get_query_argument('id')
+        obj = self.get_json()
+        self.coordinator.ingested(identifier,
+                                  obj['dataset_id'], obj['id'], obj['meta'])
 
 
 class Application(tornado.web.Application):
@@ -132,13 +191,14 @@ def make_app(debug=False):
             URLSpec('/status', Status),
 
             # Used by discovery plugins
-            URLSpec('/poll/discovery', WIP),
-            URLSpec('/dataset_discovered', WIP),
-            URLSpec('/allocate_dataset', WIP),
-            URLSpec('/dataset_downloaded', WIP),
+            URLSpec('/poll/discovery', PollDiscovery),
+            URLSpec('/dataset_discovered', DatasetDiscovered),
+            URLSpec('/dataset_downloaded', DatasetDownloaded),
+            URLSpec('/allocate_dataset', AllocateDataset),
 
             # Used by ingestion plugins
-            URLSpec('/ingested', WIP),
+            URLSpec('/poll/ingestion', PollIngestion),
+            URLSpec('/ingested', Ingested),
         ],
         static_path=pkg_resources.resource_filename('datamart_coordinator',
                                                     'static'),
