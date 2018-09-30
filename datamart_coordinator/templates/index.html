@@ -61,6 +61,11 @@ function getJSON(url='', args) {
   });
 }
 
+function linkDataset(dataset_id) {
+  dataset_id = escape(dataset_id);
+  return '<a class="dataset" href="/dataset/' + dataset_id + '">' + dataset_id + '</a>';
+}
+
 function loadStatus() {
   getJSON('/status')
   .then(function(result) {
@@ -94,7 +99,7 @@ function loadStatus() {
     recent_discoveries.innerHTML = '';
     for(var i = 0; i < result.recent_discoveries.length; ++i) {
       var elem = document.createElement('li');
-      elem.innerHTML = '<span style="color:blue;">' + result.recent_discoveries[i] + '</span>';
+      elem.innerHTML = linkDataset(result.recent_discoveries[i]);
       recent_discoveries.appendChild(elem);
     }
     if(result.recent_discoveries.length == 0) {
@@ -111,7 +116,7 @@ function loadStatus() {
       if(entries[i][1] == null) {
         elem.innerHTML = entries[i][0] + ' (allocated)';
       } else {
-        elem.innerHTML = '<span style="font-family: monospace;">' + entries[i][0] + '</span> <span style="color:blue;">' + entries[i][1][0] + '</span> ' + entries[i][1][1].join(', ');
+        elem.innerHTML = '<span style="font-family: monospace;">' + entries[i][0] + '</span> ' + linkDataset(entries[i][1][0]) + ' ' + entries[i][1][1].join(', ');
       }
       storage.appendChild(elem);
     }
