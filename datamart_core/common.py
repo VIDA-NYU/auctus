@@ -104,6 +104,10 @@ class BaseHandler(object):
 
     def _work_done(self, future):
         self._work.release()
+        try:
+            future.result()
+        except Exception:
+            logger.exception("Exception handling work from coordinator")
 
 
 class Storage(object):
