@@ -15,13 +15,19 @@ class Coordinator(object):
         self.discoverers.setdefault(identifier, set()).add(obj)
 
     def remove_discoverer(self, identifier, obj):
-        self.discoverers[identifier].discard(obj)
+        s = self.discoverers[identifier]
+        s.discard(obj)
+        if not s:
+            del self.discoverers[identifier]
 
     def add_ingester(self, identifier, obj):
         self.ingesters.setdefault(identifier, set()).add(obj)
 
     def remove_ingester(self, identifier, obj):
-        self.ingesters[identifier].discard(obj)
+        s = self.ingesters[identifier]
+        s.discard(obj)
+        if not s:
+            del self.ingesters[identifier]
 
     def discovered(self, identifier, dataset_id, dataset_meta):
         logger.info("Dataset discovered: %r (%r)", dataset_id, identifier)
