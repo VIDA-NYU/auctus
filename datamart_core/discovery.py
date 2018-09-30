@@ -144,11 +144,11 @@ class DiscovererHandler(BaseHandler):
             'datamart',
             '_doc',
             dataset_meta,
-        )
+        )['_id']
         body = {'id': dataset_id, 'meta': dataset_meta}
         async with self.post('/dataset_discovered', body) as resp:
-            obj = await resp.json()
-        return obj['dataset_id']
+            pass
+        return dataset_id
 
     def dataset_found_blocking(self, dataset_meta):
         return block_run(self.loop,

@@ -75,7 +75,7 @@ class IngesterHandler(BaseHandler):
             'datamart',
             '_doc',
             ingest_meta,
-        )
+        )['_id']
         body = {'dataset_id': dataset_id, 'id': ingest_id, 'meta': ingest_meta}
         async with self.post('/ingested', body):
             pass
