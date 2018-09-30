@@ -130,8 +130,7 @@ class DiscovererHandler(BaseHandler):
             dataset_meta,
         )
         body = {'id': dataset_id, 'meta': dataset_meta}
-        url = self.coordinator + '/dataset_discovered'
-        async with self.http_session.post(url, json=body) as resp:
+        async with self.post('/dataset_discovered', body) as resp:
             obj = await resp.json()
         return obj['dataset_id']
 
@@ -139,8 +138,7 @@ class DiscovererHandler(BaseHandler):
         return block_run(self.dataset_found(dataset_meta))
 
     async def create_shared_storage(self):
-        url = self.coordinator + '/allocate_dataset'
-        async with self.http_session.get(url) as resp:
+        async with self.get('/allocate_dataset') as resp:
             obj = await resp.json()
         return WriteStorage(obj)
 
@@ -148,8 +146,7 @@ class DiscovererHandler(BaseHandler):
         return block_run(self.create_shared_storage())
 
     async def dataset_downloaded(self, dataset_id, storage):
-        url = self.coordinator + '/dataset_downloaded'
-        async with self.http_session.post(url, json={
+        async with self.post('/dataset_downloaded', {
                 'dataset_id': dataset_id,
                 'storage_path': storage.path}):
             pass

@@ -4,6 +4,7 @@ import elasticsearch
 import logging
 import os
 import threading
+import urllib.parse
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,16 @@ class BaseHandler(object):
         self.http_session = aiohttp.ClientSession()
         asyncio.get_event_loop().create_task(self._request_work())
 
+    def get(self, path):
+        url = (self.coordinator + path +
+               '?id=' + urllib.parse.quote(self._identifier))
+        return self.http_session.get(url)
+
+    def post(self, path, json):
+        url = (self.coordinator + path +
+               '?id=' + urllib.parse.quote(self._identifier))
+        return self.http_session.post(url, json=json)
+
     def _call(self, method, *args):
         if self._async:
             return asyncio.get_event_loop().create_task(
@@ -69,10 +80,9 @@ class BaseHandler(object):
             )
 
     async def _request_work(self):
-        url = self.coordinator + self.POLL_PATH
         while True:
             await self._work.acquire()
-            async with self.http_session.get(url) as resp:
+            async with self.get(self.POLL_PATH) as resp:
                 obj = await resp.json()
             future = self.work_received(obj)
             if future is None:

@@ -77,8 +77,7 @@ class IngesterHandler(BaseHandler):
             ingest_meta,
         )
         body = {'dataset_id': dataset_id, 'id': ingest_id, 'meta': ingest_meta}
-        url = self.coordinator + '/ingested'
-        async with self.http_session.post(url, json=body):
+        async with self.post('/ingested', body):
             pass
 
     def record_metadata_blocking(self, dataset_id, ingest_meta):
