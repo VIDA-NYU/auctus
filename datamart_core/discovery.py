@@ -125,13 +125,22 @@ class DiscovererHandler(BaseHandler):
 
     def __init__(self, obj, identifier, concurrent=1):
         super(DiscovererHandler, self).__init__(obj, identifier, concurrent)
-        self._call(self._obj.run)
+        fut = self._call(self._obj.run)
+        fut.add_done_callback(self._run_done)
+
+    def _run_done(self, fut):
+        try:
+            fut.result()
+        except Exception:
+            logger.exception("run() method raised an exception")
 
     def work_received(self, obj):
         if 'query' in obj:
+            logger.info("Got 'query' from coordinator")
             return self._call(self._obj.handle_ondemand_query,
                               obj['query'])
         elif 'materialize' in obj:
+            logger.info("Got 'materialize' from coordinator")
             return self._call(self._obj.handle_materialization,
                               obj['materialize']['id'],
                               obj['materialize']['meta'])
@@ -145,6 +154,7 @@ class DiscovererHandler(BaseHandler):
             '_doc',
             dataset_meta,
         )['_id']
+        logger.info("Dataset found: %r", dataset_id)
         body = {'id': dataset_id, 'meta': dataset_meta}
         async with self.post('/dataset_discovered', body) as resp:
             pass
@@ -157,13 +167,16 @@ class DiscovererHandler(BaseHandler):
     async def create_shared_storage(self):
         async with self.get('/allocate_dataset') as resp:
             obj = await resp.json()
-        return WriteStorage(obj)
+        storage = WriteStorage(obj)
+        logger.info("Created storage %r", storage.path)
+        return storage
 
     def create_shared_storage_blocking(self):
         return block_run(self.loop,
                          self.create_shared_storage())
 
     async def dataset_downloaded(self, dataset_id, storage):
+        logger.info("Dataset downloaded: %r", dataset_id)
         async with self.post('/dataset_downloaded', {
                 'dataset_id': dataset_id,
                 'storage_path': storage.path}):

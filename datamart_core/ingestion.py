@@ -29,7 +29,7 @@ class SimpleIngester(object):
     def record_metadata(self, dataset_id, ingest_meta):
         """Record computed metadata for a dataset.
         """
-        self._handler.record_metadata_blocking(dataset_id, ingest_meta)
+        return self._handler.record_metadata_blocking(dataset_id, ingest_meta)
 
 
 class AsyncIngester(Async):
@@ -54,7 +54,7 @@ class AsyncIngester(Async):
     def record_metadata(self, dataset_id, ingest_meta):
         """Record computed metadata for a dataset.
         """
-        self._handler.record_metadata(dataset_id, ingest_meta)
+        return self._handler.record_metadata(dataset_id, ingest_meta)
 
 
 class IngesterHandler(BaseHandler):
@@ -63,6 +63,7 @@ class IngesterHandler(BaseHandler):
 
     def work_received(self, obj):
         if 'ingest' in obj:
+            logger.info("Got 'ingest' from coordinator")
             storage = Storage(obj['ingest']['path'])
             return self._call(self._obj.handle_ingest,
                               storage, obj['ingest']['meta'])
@@ -76,9 +77,11 @@ class IngesterHandler(BaseHandler):
             '_doc',
             ingest_meta,
         )['_id']
+        logging.info("Metadata recorded: %r (dataset: %r)", ingest_id, dataset_id)
         body = {'dataset_id': dataset_id, 'id': ingest_id, 'meta': ingest_meta}
         async with self.post('/ingested', body):
             pass
+        return ingest_id
 
     def record_metadata_blocking(self, dataset_id, ingest_meta):
         return block_run(self.loop,
