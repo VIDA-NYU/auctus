@@ -61,7 +61,7 @@ class BaseHandler(RequestHandler):
             obj = {'results': obj}
         elif not isinstance(obj, dict):
             raise ValueError("Can't encode %r to JSON" % type(obj))
-        self.set_header('Content-Type', 'text/json; charset=utf-8')
+        self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
 
     @property
@@ -107,6 +107,7 @@ class DatasetDiscovered(BaseHandler):
         identifier = self.get_query_argument('id')
         obj = self.get_json()
         self.coordinator.discovered(identifier, obj['id'], obj['meta'])
+        self.send_json({})
 
 
 class DatasetDownloaded(BaseHandler):
@@ -115,6 +116,7 @@ class DatasetDownloaded(BaseHandler):
         obj = self.get_json()
         self.coordinator.downloaded(identifier,
                                     obj['dataset_id'], obj['storage_path'])
+        self.send_json({})
 
 
 class AllocateDataset(BaseHandler):
@@ -147,6 +149,7 @@ class Ingested(BaseHandler):
         obj = self.get_json()
         self.coordinator.ingested(identifier,
                                   obj['dataset_id'], obj['id'], obj['meta'])
+        self.send_json({})
 
 
 class Application(tornado.web.Application):
