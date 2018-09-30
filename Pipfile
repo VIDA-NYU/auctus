@@ -9,6 +9,7 @@ elasticsearch = "*"
 aiohttp = "*"
 aiodns = "*"
 tornado = ">=5.0"
+"jinja2" = "*"
 
 [dev-packages]
 

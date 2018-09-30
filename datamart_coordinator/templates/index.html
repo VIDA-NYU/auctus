@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% set active_page = "index" %}
+
+{% block contents %}
+<h1>Discoverers</h1>
+<ul id="discoverers">
+  <li style="font-style: oblique;">Loading...</li>
+</ul>
+
+<h1>Ingesters</h1>
+<ul id="ingesters">
+  <li style="font-style: oblique;">Loading...</li>
+</ul>
+
+<script type="text/javascript">
+function getCookie(name) {
+  var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+  return r ? r[1] : undefined;
+}
+
+function getJSON(url='', args) {
+  if(args) {
+    args = '&' + encodeGetParams(args);
+  } else {
+    args = '';
+  }
+  return fetch(
+    url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,
+    {
+      credentials: 'same-origin',
+      mode: 'same-origin'
+    }
+  ).then(function(response) {
+    if(response.status != 200) {
+      throw "Status " + response.status;
+    }
+    return response.json();
+  });
+}
+
+function loadStatus() {
+  getJSON('/status')
+  .then(function(result) {
+    var discoverers = document.getElementById('discoverers');
+    discoverers.innerHTML = '';
+    for(var i = 0; i < result.discoverers.length; ++i) {
+      var elem = document.createElement('li');
+      elem.innerHTML = result.discoverers[i];
+      discoverers.appendChild(elem);
+    }
+    if(result.discoverers.length == 0) {
+      var elem = document.createElement('li');
+      elem.innerHTML = "No discoverer connected";
+      discoverers.appendChild(elem);
+    }
+
+    var ingesters = document.getElementById('ingesters');
+    ingesters.innerHTML = '';
+    for(var i = 0; i < result.ingesters.length; ++i) {
+      var elem = document.createElement('li');
+      elem.innerHTML = result.ingesters[i];
+      ingesters.appendChild(elem);
+    }
+    if(result.discoverers.length == 0) {
+      var elem = document.createElement('li');
+      elem.innerHTML = "No ingester connected";
+      ingesters.appendChild(elem);
+    }
+  });
+}
+
+setInterval(loadStatus, 2000);
+</script>
+{% endblock %}
