@@ -2,6 +2,33 @@
 {% set active_page = "index" %}
 
 {% block contents %}
-<h1>Work in progress: Dataset View</h1>
-<p>TODO: Show dataset metadata & ingested metadata, from Elasticsearch</p>
+<h1>Dataset: {{ dataset_id }}</h1>
+{% if storage_path %}
+<p>This dataset is currently in local storage: <span style="font-family: monospace;">{{ storage_path }}</span></p>
+{% endif %}
+
+<h2>Discovery metadata</h2>
+<p>This is the metadata that was recorded by the discovery plugin when it recorded this dataset.</p>
+<table class="table">
+  <tbody>
+    {% for k, v in dataset_meta.items() %}
+    <tr><th scope="row">{{ k }}</th><td>{{ v }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Ingestion metadata</h2>
+<p>This is the metadata that was recorded by the ingestion plugins when it recorded this dataset.</p>
+
+{% for meta in ingest_metas %}
+<table class="table">
+  <tbody>
+    {% for k, v in meta.items() %}
+    <tr><th scope="row">{{ k }}</th><td>{{ v }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="font-style: oblique;">No computed metadata for this dataset.</p>
+{% endfor %}
 {% endblock %}

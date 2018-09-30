@@ -88,7 +88,21 @@ class Status(BaseHandler):
 
 class Dataset(BaseHandler):
     def get(self, dataset_id):
-        self.render('dataset.html')
+        dataset_path = self.coordinator.storage_r.get(dataset_id)
+        es = self.application.elasticsearch
+        # Get dataset meta
+        dataset_meta = es.get('datamart', '_doc', id=dataset_id)['_source']
+        # Get ingested records for dataset
+        ingest_metas = es.search(
+            index='datamart',
+            body={
+                'query': {'parent_id': {'type': 'metadata', 'id': dataset_id}}
+            },
+        )['hits']['hits']
+        ingest_metas = [e['_source'] for e in ingest_metas]
+        self.render('dataset.html',
+                    dataset_id=dataset_id, dataset_path=dataset_path,
+                    dataset_meta=dataset_meta, ingest_metas=ingest_metas)
 
 
 class PollDiscovery(BaseHandler):
