@@ -10,6 +10,7 @@ aiohttp = "*"
 aiodns = "*"
 tornado = ">=5.0"
 "jinja2" = "*"
+requests = "*"
 
 [dev-packages]
 

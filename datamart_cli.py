@@ -1,14 +1,99 @@
 import argparse
+from datetime import datetime
+import elasticsearch
+import json
 import logging
+import os
+import requests
+import shutil
 import sys
 
 
+coordinator = None
+es = None
+
+
+def get_json(path):
+    r = requests.get(coordinator + path,
+                     headers={'Accept': 'application/json'})
+    r.raise_for_status()
+    return r.json()
+
+
+def post_json(path, body):
+    r = requests.post(coordinator + path,
+                      headers={'Accept': 'application/json'},
+                      json=body)
+    r.raise_for_status()
+    return r.json()
+
+
 def dataset_list(args):
-    TODO
+    # Get list of datasets currently in storage
+    stored = get_json('/status')['storage']
+
+    # Get all datasets from database
+    hits = es.search(
+        index='datamart',
+        body={
+            'query': {
+                'match': {'kind': 'dataset'}
+            }
+        }
+    )['hits']['hits']
+    hits = {h['_id']: h['_source'] for h in hits}
+
+    def print_dataset(id, path, doc):
+        print(id)
+        if path is not None:
+            print("in storage: %r" % path)
+        if doc is None:
+            print("\t(no dataset record)")
+        else:
+            for k, v in doc.items():
+                print("\t%s: %s" % (k, json.dumps(v)))
+
+    # First show the stored ones
+    for path, pair in stored.items():
+        if pair is None:
+            print_dataset('(unknown dataset)', path, {})
+            continue
+        id, _ = pair
+        try:
+            doc = hits.pop(id)
+        except KeyError:
+            print_dataset('(unknown dataset)', path, {})
+        else:
+            print_dataset(id, path, doc)
+    # Then the other ones
+    for id, doc in hits.items():
+        print_dataset(id, None, doc)
 
 
 def dataset_add(args):
-    TODO
+    dataset_meta = dict(json.loads(sys.stdin.read()),
+                        discoverer='cli',
+                        kind='dataset',
+                        date=datetime.utcnow().isoformat() + 'Z')
+    dataset_id = es.index(
+        'datamart',
+        '_doc',
+        dataset_meta,
+    )['_id']
+    post_json('/dataset_discovered?id=cli',
+              {'id': dataset_id, 'meta': dataset_meta})
+    if args.path:
+        storage_path = get_json('/allocate_dataset?id=cli')['path']
+        for fname in os.listdir(args.path):
+            if os.path.isdir(os.path.join(args.path, fname)):
+                copy = shutil.copytree
+            else:
+                copy = shutil.copy2
+            copy(os.path.join(args.path, fname),
+                 os.path.join(storage_path, fname))
+        post_json('/dataset_downloaded?id=cli',
+                  {'dataset_id': dataset_id, 'storage_path': storage_path})
+    print(dataset_id)
 
 
 def dataset_remove(args):
@@ -28,7 +113,27 @@ def index_remove(args):
 
 
 def status(args):
-    TODO
+    obj = get_json('/status')
+    print("Discoverers:")
+    for name, count in obj['discoverers']:
+        print("\t%s (%d)" % (name, count))
+    print("Ingesters:")
+    for name, count in obj['ingesters']:
+        print("\t%s (%d)" % (name, count))
+    print("Recently discovered datasets:")
+    for name, discoverer in obj['recent_discoveries']:
+        print("\t%s (%s)" % (name, discoverer))
+    print("Datasets in local storage:")
+    for path, what in obj['storage'].items():
+        if what is None:
+            print("\t%r (allocated)")
+        else:
+            dataset_id, ingesters = what
+            if ingesters:
+                ingesters = " | " + ", ".join(ingesters)
+            else:
+                ingesters = ''
+            print("\t%r %s%s" % (path, dataset_id, ingesters))
 
 
 def query(args):
@@ -46,6 +151,8 @@ def _dataset_cli(parser):
                                       help="Add a dataset, have it go through "
                                            "ingestion")
     parser_add.set_defaults(func=dataset_add)
+    parser_add.add_argument('path', nargs=argparse.OPTIONAL,
+                            help="Data to copy to local storage")
 
     parser_remove = subparser.add_parser('remove',
                                          help="Remove a known dataset")
@@ -104,6 +211,12 @@ def main():
     if getattr(args, 'func', None) is None:
         parser.print_help(sys.stderr)
         sys.exit(2)
+    global coordinator
+    coordinator = os.environ['COORDINATOR_URL']
+    global es
+    es = elasticsearch.Elasticsearch(
+        os.environ['ELASTICSEARCH_HOSTS'].split(',')
+    )
     args.func(args)
 
 
