@@ -4,13 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+datamart-core = {editable = true, path = "./datamart_core"}
+datamart-coordinator = {editable = true, path = "./datamart_coordinator"}
+datamart-cli = {editable = true, path = "./datamart_cli"}
 ipykernel = "*"
-elasticsearch = "*"
-aiohttp = "*"
-aiodns = "*"
-tornado = ">=5.0"
-"jinja2" = "*"
-requests = "*"
 
 [dev-packages]
 

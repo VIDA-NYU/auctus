@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cea8cb9ad6b8ec2046cfc451a99e35e731559fa19155c2b7a36def9dd727228d"
+            "sha256": "56bbc4eb6d07f35d5768bb57c2c8042a555ef8a1123b2ec51a0c79f18c38b6e2"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -21,7 +21,6 @@
                 "sha256:99d0652f2c02f73bfa646bf44af82705260a523014576647d7959e664830b26b",
                 "sha256:d8677adc679ce8d0ef706c14d9c3d2f27a0e0cc11d59730cdbaf218ad52dd9ea"
             ],
-            "index": "pypi",
             "version": "==1.1.1"
         },
         "aiohttp": {
@@ -49,7 +48,6 @@
                 "sha256:f1839db4c2b08a9c8f9788112644f8a8557e8e0ecc77b07091afabb941dc55d0",
                 "sha256:f3df52362be39908f9c028a65490fae0475e4898b43a03d8aa29d1e765b45e07"
             ],
-            "index": "pypi",
             "version": "==3.4.4"
         },
         "async-timeout": {
@@ -87,6 +85,18 @@
             ],
             "version": "==3.0.4"
         },
+        "datamart-cli": {
+            "editable": true,
+            "path": "./datamart_cli"
+        },
+        "datamart-coordinator": {
+            "editable": true,
+            "path": "./datamart_coordinator"
+        },
+        "datamart-core": {
+            "editable": true,
+            "path": "./datamart_core"
+        },
         "decorator": {
             "hashes": [
                 "sha256:2c51dff8ef3c447388fe5e4453d24a2bf128d3a4c32af3fabef1f01c6851ab82",
@@ -99,7 +109,6 @@
                 "sha256:7546cc08e3899716e12fe67d12d7cfe9a64647014d1134b014c3c392b63cad42",
                 "sha256:aada5cfdc4a543c47098eb3aca6663848ef5d04b4324935ced441debc11ec98b"
             ],
-            "index": "pypi",
             "version": "==6.3.1"
         },
         "idna": {
@@ -150,7 +159,6 @@
                 "sha256:74c935a1b8bb9a3947c50a54766a969d4846290e1e788ea44c1392163723c3bd",
                 "sha256:f84be1bb0040caca4cea721fcbbbbd61f9be9464ca236387158b0feea01914a4"
             ],
-            "index": "pypi",
             "version": "==2.10"
         },
         "jupyter-client": {
@@ -319,7 +327,6 @@
                 "sha256:63b52e3c866428a224f97cab011de738c36aec0185aa91cfacd418b5d58911d1",
                 "sha256:ec22d826a36ed72a7358ff3fe56cbd4ba69dd7a6718ffd450ff0e9df7a47ce6a"
             ],
-            "index": "pypi",
             "version": "==2.19.1"
         },
         "simplegeneric": {
@@ -345,7 +352,6 @@
                 "sha256:d4b3e5329f572f055b587efc57d29bd051589fb5a43ec8898c77a47ec2fa2bbb",
                 "sha256:e5f2585afccbff22390cddac29849df463b252b711aa2ce7c5f3f342a5b3b444"
             ],
-            "index": "pypi",
             "version": "==5.1.1"
         },
         "traitlets": {
