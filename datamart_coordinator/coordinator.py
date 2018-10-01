@@ -36,7 +36,7 @@ class Coordinator(object):
 
     def discovered(self, identifier, dataset_id, dataset_meta):
         logger.info("Dataset discovered: %r (%r)", dataset_id, identifier)
-        self.recent_discoveries.insert(0, dataset_id)
+        self.recent_discoveries.insert(0, (dataset_id, identifier))
         del self.recent_discoveries[15:]
 
     def downloaded(self, identifier, dataset_id, storage_path):

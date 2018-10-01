@@ -99,7 +99,9 @@ function loadStatus() {
     recent_discoveries.innerHTML = '';
     for(var i = 0; i < result.recent_discoveries.length; ++i) {
       var elem = document.createElement('li');
-      elem.innerHTML = linkDataset(result.recent_discoveries[i]);
+      elem.innerHTML =
+        linkDataset(result.recent_discoveries[i][0]) +
+        ' (' + result.recent_discoveries[i][1] + ')';
       recent_discoveries.appendChild(elem);
     }
     if(result.recent_discoveries.length == 0) {
