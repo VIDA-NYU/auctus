@@ -183,10 +183,10 @@ class Ingested(BaseHandler):
 
 
 class Application(tornado.web.Application):
-    def __init__(self, *args, es_hosts, **kwargs):
+    def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
-        self.elasticsearch = elasticsearch.Elasticsearch(es_hosts)
+        self.elasticsearch = es
         self.coordinator = Coordinator(self.elasticsearch)
 
 
@@ -222,6 +222,40 @@ def make_app(debug=False):
                          "persisted! Users will be logged out if you restart "
                          "the program.")
 
+    es = elasticsearch.Elasticsearch(
+        os.environ['ELASTICSEARCH_HOSTS'].split(',')
+    )
+    if not es.indices.exists('datamart'):
+        logger.info("Creating 'datamart' index in Elasticsearch")
+        es.indices.create(
+            'datamart',
+            {
+                'mappings': {
+                    '_doc': {
+                        'properties': {
+                            # dataset -> metadata is a parent -> child relationship
+                            'kind': {
+                                'type': 'join',
+                                'relations': {
+                                    'dataset': ['metadata', 'feedback'],
+                                },
+                            },
+                            # 'columns' is a nested field, we want to query individual columns
+                            'columns': {
+                                'type': 'nested',
+                                'properties': {
+                                    'semantic_types': {
+                                        'type': 'keyword',
+                                        'index': True,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        )
+
     return Application(
         [
             URLSpec('/', Index, name='index'),
@@ -242,7 +276,7 @@ def make_app(debug=False):
                                                     'static'),
         debug=debug,
         cookie_secret=secret,
-        es_hosts=os.environ['ELASTICSEARCH_HOSTS'].split(','),
+        es=es,
     )
 
 
