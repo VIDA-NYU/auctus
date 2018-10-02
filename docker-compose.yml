@@ -12,3 +12,35 @@ services:
         hard: -1
     ports:
       - 9200:9200
+  coordinator:
+    build:
+      context: .
+      dockerfile: datamart_coordinator/Dockerfile
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+    ports:
+     - 8001:8001
+    volumes:
+      - datasets:/datasets
+  example_discoverer:
+    build:
+      context: .
+      dockerfile: examples/Dockerfile
+    command: discovery
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - COORDINATOR_URL=http://coordinator:8001
+    volumes:
+      - datasets:/datasets
+  example_ingester:
+    build:
+      context: .
+      dockerfile: examples/Dockerfile
+    command: ingestion
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - COORDINATOR_URL=http://coordinator:8001
+    volumes:
+      - datasets:/datasets
+volumes:
+  datasets:
