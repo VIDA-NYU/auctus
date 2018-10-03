@@ -1,14 +1,5 @@
-import aiohttp
 import asyncio
-import elasticsearch
-import itertools
-import logging
-import os
 import threading
-import urllib.parse
-
-
-logger = logging.getLogger(__name__)
 
 
 def block_wait_future(future):
@@ -31,93 +22,6 @@ def block_run(loop, coro):
     """
     future = asyncio.run_coroutine_threadsafe(coro, loop)
     return block_wait_future(future)
-
-
-class Async(object):
-    pass
-
-
-class BaseHandler(object):
-    BASE_PLUGIN_CLASSES = ()
-    POLL_PATH = None
-
-    def __init__(self, obj, identifier, concurrent):
-        if not isinstance(obj, self.BASE_PLUGIN_CLASSES):
-            raise TypeError("Plugin object doesn't derive a base class")
-        elif isinstance(obj, Async):
-            self._async = True
-        else:
-            self._async = False
-        self._obj = obj
-        self._identifier = identifier
-        self.elasticsearch = elasticsearch.Elasticsearch(
-            os.environ['ELASTICSEARCH_HOSTS'].split(',')
-        )
-        for i in itertools.count():
-            try:
-                if self.elasticsearch.indices.exists('datamart'):
-                    break
-            except Exception:
-                if i == 5:
-                    raise
-            if i == 5:
-                raise ValueError("'datamart' index does not exist, exiting")
-        self.coordinator = os.environ['COORDINATOR_URL'].rstrip('/')
-        self._work = asyncio.Semaphore(concurrent)
-        self.http_session = aiohttp.ClientSession()
-        self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self._request_work())
-
-    def get(self, path):
-        url = (self.coordinator + path +
-               '?id=' + urllib.parse.quote(self._identifier))
-        return self.http_session.get(url)
-
-    def post(self, path, json):
-        url = (self.coordinator + path +
-               '?id=' + urllib.parse.quote(self._identifier))
-        return self.http_session.post(url, json=json)
-
-    def _call(self, method, *args):
-        if self._async:
-            return asyncio.get_event_loop().create_task(
-                method(*args),
-            )
-        else:
-            return asyncio.get_event_loop().run_in_executor(
-                None,
-                method,
-                *args,
-            )
-
-    async def _request_work(self):
-        while True:
-            await self._work.acquire()
-            try:
-                async with self.get(self.POLL_PATH) as resp:
-                    obj = await resp.json()
-            except:
-                logger.exception("Got error polling coordinator")
-            else:
-                future = self.work_received(obj)
-                if future is None:
-                    logger.error("Got unknown request from coordinator")
-                else:
-                    future.add_done_callback(self._work_done)
-                    continue
-
-            self._work.release()
-            await asyncio.sleep(5)
-
-    def work_received(self, obj):
-        raise NotImplementedError
-
-    def _work_done(self, future):
-        self._work.release()
-        try:
-            future.result()
-        except Exception:
-            logger.exception("Exception handling work from coordinator")
 
 
 class Storage(object):

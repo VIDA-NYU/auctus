@@ -6,9 +6,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'aiohttp',
-    'aiodns',
-    'elasticsearch',
+    'aio-pika',
 ]
 setup(name='datamart_core',
       version='0.0',

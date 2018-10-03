@@ -1,9 +1,7 @@
-from .discovery import SimpleDiscoverer, AsyncDiscoverer
-from .ingestion import SimpleIngester, AsyncIngester
+from .discovery import Discoverer, AsyncDiscoverer
 
 
-__all__ = ['SimpleDiscoverer', 'AsyncDiscoverer',
-           'SimpleIngester', 'AsyncIngester']
+__all__ = ['Discoverer', 'AsyncDiscoverer']
 
 
 __version__ = '0.0'

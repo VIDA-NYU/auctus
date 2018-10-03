@@ -1,188 +1,228 @@
+import aio_pika
+import asyncio
 from datetime import datetime
+import json
 import logging
+import os
 
-from .common import Async, BaseHandler, WriteStorage, block_run
+from .common import block_run
 
 
 logger = logging.getLogger(__name__)
 
 
-class SimpleDiscoverer(object):
-    """Base class for a discovery plugin.
+class _HandleQueryPublisher(object):
+    def __init__(self, discoverer, reply_to):
+        self.discoverer = discoverer
+        self.reply_to = reply_to
 
-    A discovery plugin is in charge of the following:
+    def __call__(self, dataset_id, storage, discovery_meta):
+        self.discoverer.record_dataset(dataset_id, storage, discovery_meta,
+                                       bind=self.reply_to)
 
-    * Crawl the web looking for datasets, inserting dataset records in
-      Elasticsearch, possibly materializing them on disk
-    * Materialize a previously recorded dataset
-    * React to a user query to perform on-demand crawling (optional)
-    """
+
+class Discoverer(object):
+    _async = False
+
     def __init__(self, identifier, concurrent=1):
-        self._handler = DiscovererHandler(self, identifier, concurrent)
+        self.work_tickets = asyncio.Semaphore(concurrent)
+        self.identifier = identifier
+        self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self._run())
 
-    def handle_ondemand_query(self, query):
-        """Query from a user, implement this to perform on-demand search.
+    async def _amqp_setup(self):
+        # Setup the queries exchange
+        exchange = await self.channel.declare_exchange(
+            'queries',
+            aio_pika.ExchangeType.FANOUT)
 
-        You can leave this alone if your discovery plugin doesn't do this.
+        # Declare our discoverer's query queue
+        self.query_queue = await self.channel.declare_queue(
+            'queries.%s' % self.identifier,
+            auto_delete=True)
+        await self.query_queue.bind(exchange)
 
-        Called in a thread pool.
-        """
+        # Declare our discoverer's materialization queue
+        self.materialize_queue = await self.channel.declare_queue(
+            'materializes.%s' % self.identifier,
+            auto_delete=True)
 
-    def dataset_found(self, dataset_meta):
-        """Record that a dataset has been found.
-        """
-        return self._handler.dataset_found_blocking(dataset_meta)
+        # Setup the datasets exchange
+        self.datasets_exchange = await self.channel.declare_exchange(
+            'datasets',
+            aio_pika.ExchangeType.TOPIC)
 
-    def handle_materialization(self, dataset_id, meta):
-        """Materialization request.
+    async def _run(self):
+        connection = await aio_pika.connect_robust(
+            host=os.environ['AMQP_HOST'],
+            login=os.environ['AMQP_USER'],
+            password=os.environ['AMQP_PASSWORD'],
+        )
+        self.channel = await connection.channel()
+        await self.channel.set_qos(prefetch_count=1)
 
-        A dataset we previously found or downloaded is needed again. This
-        method should fetch it from its original location, if possible.
+        await self._amqp_setup()
 
-        Called in a thread pool.
-        """
+        # Start ingestion process
+        self._call(self.main_loop)
+
+        # FIXME: The semaphore is only acquired when a message is received,
+        # which means we might block while holding it. But if I acquire it
+        # before, we can only be listening to one queue at a time.
+        if hasattr(self, 'handle_query'):
+            self.loop.create_task(self._consume_queries())
+        self.loop.create_task(self._consume_materializes())
+
+    async def _consume_queries(self):
+        async for message in self.query_queue:
+            await self.work_tickets.acquire()
+            obj = json.loads(message.body)
+
+            # Let the requester know that we are working on it
+            await self.channel.default_exchange.publish(
+                aio_pika.Message(json.dumps(dict(
+                    work_started=self.identifier,
+                ))),
+                message.reply_to,
+            )
+
+            # Call handle_query
+            logger.info("Handling query")
+            future = self._call(self.handle_query, obj,
+                                _HandleQueryPublisher(self.channel,
+                                                      message.reply_to))
+            future.add_done_callback(
+                self._handle_query_callback(message)
+            )
+
+            await self.work_tickets.acquire()
+
+    def _handle_query_callback(self, message):
+        async def coro(future):
+            try:
+                future.result()
+            except Exception:
+                logger.exception("Error handling query")
+                # Ack anyway, retrying would probably fail again
+                # The message only gets re-queued if this process gets killed
+                message.ack()
+            else:
+                # Let the requester know that we are done working on this
+                await self.channel.default_exchange.publish(
+                    aio_pika.Message(json.dumps(dict(
+                        work_done=self.identifier,
+                    ))),
+                    message.reply_to,
+                )
+
+                message.ack()
+                logger.info("Query handled successfully")
+
+        def callback(future):
+            self.work_tickets.release()
+            self.loop.create_task(coro(future))
+
+        return callback
+
+    async def _consume_materializes(self):
+        async for message in self.materialize_queue:
+            await self.work_tickets.acquire()
+            obj = json.loads(message.body)
+            dataset_id = obj['dataset_id']
+            discovery_meta = obj['discovery']
+
+            # Call handle_materialize
+            logger.info("Handling materialization")
+            future = self._call(self.handle_materialize,
+                                dataset_id, discovery_meta)
+            future.add_done_callback(
+                self._handle_materialize_callback(dataset_id, message)
+            )
+
+            await self.work_tickets.acquire()
+
+    def _handle_materialize_callback(self, dataset_id, message):
+        async def coro(future):
+            try:
+                storage = future.result()
+            except Exception:
+                logger.exception("Error materializing %r", dataset_id)
+                # Ack anyway, retrying would probably fail again
+                # The message only gets re-queued if this process gets killed
+                message.ack()
+
+                await self.channel.default_exchange.publish(
+                    aio_pika.Message(json.dumps(dict(
+                        success=False,
+                    ))),
+                    message.reply_to,
+                )
+            else:
+                await self.channel.default_exchange.publish(
+                    aio_pika.Message(json.dumps(dict(
+                        success=True,
+                        storage=storage.to_json(),
+                    )))
+                )
+
+        def callback(future):
+            self.work_tickets.release()
+            self.loop.create_task(coro(future))
+
+        return callback
+
+    def _call(self, method, *args):
+        if self._async:
+            return self.loop.create_task(
+                method(*args),
+            )
+        else:
+            return self.loop.run_in_executor(
+                None,
+                method,
+                *args,
+            )
+
+    async def main_loop(self):
+        pass
+
+    # def handle_query(self, query)
+
+    async def handle_materialize(self):
         raise NotImplementedError
 
-    def create_shared_storage(self):
-        """Call this to get a folder where to write a dataset.
-        """
-        return self._handler.create_shared_storage_blocking()
+    async def _record_dataset(self, dataset_id, storage, discovery_meta,
+                              bind=None):
+        # Bind the requester's reply queue to the datasets exchange, with the
+        # right routing_key, so that he receives the ingestion result for the
+        # dataset
+        if bind is not None:
+            reply_queue = await self.channel.declare_queue(bind, passive=True)
+            await reply_queue.bind(self.datasets_exchange, dataset_id)
 
-    def dataset_downloaded(self, dataset_id, storage):
-        """Record a dataset, after it's been acquired.
-        """
-        return self._handler.dataset_downloaded_blocking(dataset_id, storage)
+        # Publish this dataset to the ingestion queue
+        discovery_meta = dict(discovery_meta,
+                              date=datetime.utcnow().isoformat() + 'Z')
+        await self.channel.default_exchange.publish(
+            aio_pika.Message(json.dumps(dict(
+                id=dataset_id,
+                storage=storage.to_json(),
+                discovery_meta=discovery_meta,
+            ))),
+            'ingest',
+        )
 
-    def run(self):
-        """Entrypoint for the discovery plugin.
-
-        Crawl, poll, search, and call `dataset_found()` and
-        `dataset_downloaded()` to record found datasets.
-
-        If this method is not implemented, the plugin will simply wait for
-        requests; `handle_ondemand_query()` and `handle_materialization()` will
-        be called when needed in a thread pool.
-        """
-
-
-class AsyncDiscoverer(Async):
-    """Base class for an asynchronous discovery plugin.
-
-    A discovery plugin is in charge of the following:
-
-    * Crawl the web looking for datasets, inserting dataset records in
-      Elasticsearch, possibly materializing them on disk
-    * Materialize a previously recorded dataset
-    * React to a user query to perform on-demand crawling (optional)
-    """
-    def __init__(self, identifier, concurrent=1):
-        self._handler = DiscovererHandler(self, identifier, concurrent)
-
-    async def handle_ondemand_query(self, query):
-        """Query from a user, implement this to perform on-demand search.
-
-        You can leave this alone if your discovery plugin doesn't do this.
-        """
-
-    def dataset_found(self, dataset_meta):
-        """Record that a dataset has been found.
-        """
-        return self._handler.dataset_found(dataset_meta)
-
-    async def handle_materialization(self, dataset_id, meta):
-        """Materialization request.
-
-        A dataset we previously found or downloaded is needed again. This
-        method should fetch it from its original location, if possible.
-        """
-        raise NotImplementedError
-
-    def create_shared_storage(self):
-        """Call this to get a folder where to write a dataset.
-        """
-        return self._handler.create_shared_storage()
-
-    def dataset_downloaded(self, dataset_id, storage):
-        """Record a dataset, after it's been acquired.
-        """
-        return self._handler.dataset_downloaded(dataset_id, storage)
-
-    async def run(self):
-        """Entrypoint for the discovery plugin.
-
-        Crawl, poll, search, and call `dataset_found()` and
-        `dataset_downloaded()` to record found datasets.
-
-        If this method is not implemented, the plugin will simply wait for
-        requests; `handle_ondemand_query()` and `handle_materialization()` will
-        be called when needed in a thread pool.
-        """
+    def record_dataset(self, dataset_id, storage, discovery_meta, bind=None):
+        coro = self._record_dataset(dataset_id, storage, discovery_meta,
+                                    bind)
+        if self._async:
+            return self.loop.create_task(coro)
+        else:
+            block_run(self.loop, coro)
 
 
-class DiscovererHandler(BaseHandler):
-    BASE_PLUGIN_CLASSES = (SimpleDiscoverer, AsyncDiscoverer)
-    POLL_PATH = '/poll/discovery'
+class AsyncDiscoverer(Discoverer):
+    _async = True
 
-    def __init__(self, obj, identifier, concurrent=1):
-        super(DiscovererHandler, self).__init__(obj, identifier, concurrent)
-        fut = self._call(self._obj.run)
-        fut.add_done_callback(self._run_done)
-
-    def _run_done(self, fut):
-        try:
-            fut.result()
-        except Exception:
-            logger.exception("run() method raised an exception")
-
-    def work_received(self, obj):
-        if 'query' in obj:
-            logger.info("Got 'query' from coordinator")
-            return self._call(self._obj.handle_ondemand_query,
-                              obj['query'])
-        elif 'materialize' in obj:
-            logger.info("Got 'materialize' from coordinator")
-            return self._call(self._obj.handle_materialization,
-                              obj['materialize']['id'],
-                              obj['materialize']['meta'])
-
-    async def dataset_found(self, dataset_meta):
-        dataset_meta = dict(dataset_meta,
-                            discoverer=self._identifier,
-                            kind='dataset',
-                            date=datetime.utcnow().isoformat() + 'Z')
-        dataset_id = self.elasticsearch.index(
-            'datamart',
-            '_doc',
-            dataset_meta,
-        )['_id']
-        logger.info("Dataset found: %r", dataset_id)
-        body = {'id': dataset_id, 'meta': dataset_meta}
-        async with self.post('/dataset_discovered', body) as resp:
-            pass
-        return dataset_id
-
-    def dataset_found_blocking(self, dataset_meta):
-        return block_run(self.loop,
-                         self.dataset_found(dataset_meta))
-
-    async def create_shared_storage(self):
-        async with self.get('/allocate_dataset') as resp:
-            obj = await resp.json()
-        storage = WriteStorage(obj)
-        logger.info("Created storage %r", storage.path)
-        return storage
-
-    def create_shared_storage_blocking(self):
-        return block_run(self.loop,
-                         self.create_shared_storage())
-
-    async def dataset_downloaded(self, dataset_id, storage):
-        logger.info("Dataset downloaded: %r", dataset_id)
-        async with self.post('/dataset_downloaded', {
-                'dataset_id': dataset_id,
-                'storage_path': storage.path}):
-            pass
-
-    def dataset_downloaded_blocking(self, dataset_id, storage):
-        return block_run(self.loop,
-                         self.dataset_downloaded(dataset_id, storage))
+    def main_loop(self):
+        pass
