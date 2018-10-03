@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import elasticsearch
+import itertools
 import logging
 import os
 import threading
@@ -52,6 +53,15 @@ class BaseHandler(object):
         self.elasticsearch = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
         )
+        for i in itertools.count():
+            try:
+                if self.elasticsearch.indices.exists('datamart'):
+                    break
+            except Exception:
+                if i == 5:
+                    raise
+            if i == 5:
+                raise ValueError("'datamart' index does not exist, exiting")
         self.coordinator = os.environ['COORDINATOR_URL'].rstrip('/')
         self._work = asyncio.Semaphore(concurrent)
         self.http_session = aiohttp.ClientSession()

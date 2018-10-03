@@ -1,10 +1,12 @@
 import asyncio
 import elasticsearch
+import itertools
 import logging
 import jinja2
 import json
 import os
 import pkg_resources
+import time
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
@@ -225,36 +227,47 @@ def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
-    if not es.indices.exists('datamart'):
-        logger.info("Creating 'datamart' index in Elasticsearch")
-        es.indices.create(
-            'datamart',
-            {
-                'mappings': {
-                    '_doc': {
-                        'properties': {
-                            # dataset -> metadata is a parent -> child relationship
-                            'kind': {
-                                'type': 'join',
-                                'relations': {
-                                    'dataset': ['metadata', 'feedback'],
-                                },
-                            },
-                            # 'columns' is a nested field, we want to query individual columns
-                            'columns': {
-                                'type': 'nested',
+    # Retry a few times, in case the Elasticsearch container is not yet up
+    for i in itertools.count():
+        try:
+            if not es.indices.exists('datamart'):
+                logger.info("Creating 'datamart' index in Elasticsearch")
+                es.indices.create(
+                    'datamart',
+                    {
+                        'mappings': {
+                            '_doc': {
                                 'properties': {
-                                    'semantic_types': {
-                                        'type': 'keyword',
-                                        'index': True,
+                                    # dataset -> metadata is a parent -> child relationship
+                                    'kind': {
+                                        'type': 'join',
+                                        'relations': {
+                                            'dataset': ['metadata', 'feedback'],
+                                        },
+                                    },
+                                    # 'columns' is a nested field, we want to query individual columns
+                                    'columns': {
+                                        'type': 'nested',
+                                        'properties': {
+                                            'semantic_types': {
+                                                'type': 'keyword',
+                                                'index': True,
+                                            },
+                                        },
                                     },
                                 },
                             },
                         },
                     },
-                },
-            },
-        )
+                )
+        except Exception:
+            logger.warning("Can't connect to Elasticsearch, retrying...")
+            if i == 5:
+                raise
+            else:
+                time.sleep(5)
+        else:
+            break
 
     return Application(
         [
