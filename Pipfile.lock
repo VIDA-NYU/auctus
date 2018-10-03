@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "56bbc4eb6d07f35d5768bb57c2c8042a555ef8a1123b2ec51a0c79f18c38b6e2"
+            "sha256": "7c43d7df30bcfd80e310c472ad7fc857f031e36ab315bfc0b98c8aac0282d894"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,14 @@
         ]
     },
     "default": {
+        "aio-pika": {
+            "hashes": [
+                "sha256:1924ee5cc81145acc6a3c8c4793e12d1478063d61f9de707310990343bbfbe0f",
+                "sha256:cff17c2ba91c62b1985c11e023278e6ae90960413abdebc5849df41b4603a585"
+            ],
+            "index": "pypi",
+            "version": "==4.0.1"
+        },
         "aiodns": {
             "hashes": [
                 "sha256:99d0652f2c02f73bfa646bf44af82705260a523014576647d7959e664830b26b",
@@ -237,6 +245,13 @@
             ],
             "version": "==0.7.5"
         },
+        "pika": {
+            "hashes": [
+                "sha256:035e4e46069a81d1135eed27cf74ef0fedf9a0a32285966717233529e9f69bae",
+                "sha256:306145b8683e016d81aea996bcaefee648483fc5a9eb4694bb488f54df54a751"
+            ],
+            "version": "==0.12.0"
+        },
         "prompt-toolkit": {
             "hashes": [
                 "sha256:5eff0c9fd652384ecfe730bbcdf3658868725c6928fbf608d9338834d7a974b6",
@@ -328,6 +343,12 @@
                 "sha256:ec22d826a36ed72a7358ff3fe56cbd4ba69dd7a6718ffd450ff0e9df7a47ce6a"
             ],
             "version": "==2.19.1"
+        },
+        "shortuuid": {
+            "hashes": [
+                "sha256:d08fd398f40f8baf87e15eef8355e92fa541bca4eb8465fefab7ee22f92711b9"
+            ],
+            "version": "==0.5.0"
         },
         "simplegeneric": {
             "hashes": [

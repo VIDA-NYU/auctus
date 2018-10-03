@@ -12,6 +12,11 @@ services:
         hard: -1
     ports:
       - 9200:9200
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 8080:15672
+      - 5672:5672
   coordinator:
     build:
       context: .

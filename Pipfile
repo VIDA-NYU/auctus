@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+aio-pika = "*"
 datamart-core = {editable = true, path = "./datamart_core"}
 datamart-coordinator = {editable = true, path = "./datamart_coordinator"}
 datamart-cli = {editable = true, path = "./datamart_cli"}
