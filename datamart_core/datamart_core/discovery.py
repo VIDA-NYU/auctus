@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 import logging
 import os
+import uuid
 
 from .common import block_run
 
@@ -16,8 +17,8 @@ class _HandleQueryPublisher(object):
         self.discoverer = discoverer
         self.reply_to = reply_to
 
-    def __call__(self, dataset_id, storage, discovery_meta):
-        self.discoverer.record_dataset(dataset_id, storage, discovery_meta,
+    def __call__(self, storage, discovery_meta):
+        self.discoverer.record_dataset(storage, discovery_meta,
                                        bind=self.reply_to)
 
 
@@ -128,25 +129,24 @@ class Discoverer(object):
         async for message in self.materialize_queue:
             await self.work_tickets.acquire()
             obj = json.loads(message.body)
-            dataset_id = obj['dataset_id']
             discovery_meta = obj['discovery']
 
             # Call handle_materialize
             logger.info("Handling materialization")
             future = self._call(self.handle_materialize,
-                                dataset_id, discovery_meta)
+                                discovery_meta)
             future.add_done_callback(
-                self._handle_materialize_callback(dataset_id, message)
+                self._handle_materialize_callback(message)
             )
 
             await self.work_tickets.acquire()
 
-    def _handle_materialize_callback(self, dataset_id, message):
+    def _handle_materialize_callback(self, message):
         async def coro(future):
             try:
                 storage = future.result()
             except Exception:
-                logger.exception("Error materializing %r", dataset_id)
+                logger.exception("Error materializing")
                 # Ack anyway, retrying would probably fail again
                 # The message only gets re-queued if this process gets killed
                 message.ack()
@@ -191,8 +191,10 @@ class Discoverer(object):
     async def handle_materialize(self):
         raise NotImplementedError
 
-    async def _record_dataset(self, dataset_id, storage, discovery_meta,
+    async def _record_dataset(self, storage, discovery_meta,
                               bind=None):
+        dataset_id = uuid.uuid4().hex
+
         # Bind the requester's reply queue to the datasets exchange, with the
         # right routing_key, so that he receives the ingestion result for the
         # dataset
@@ -211,14 +213,14 @@ class Discoverer(object):
             ))),
             'ingest',
         )
+        return dataset_id
 
-    def record_dataset(self, dataset_id, storage, discovery_meta, bind=None):
-        coro = self._record_dataset(dataset_id, storage, discovery_meta,
-                                    bind)
+    def record_dataset(self, storage, discovery_meta, bind=None):
+        coro = self._record_dataset(storage, discovery_meta, bind)
         if self._async:
             return self.loop.create_task(coro)
         else:
-            block_run(self.loop, coro)
+            return block_run(self.loop, coro)
 
 
 class AsyncDiscoverer(Discoverer):
