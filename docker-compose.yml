@@ -17,14 +17,25 @@ services:
     ports:
       - 8080:15672
       - 5672:5672
-  coordinator:
+#  coordinator:
+#    build:
+#      context: .
+#      dockerfile: datamart_coordinator/Dockerfile
+#    environment:
+#      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+#    ports:
+#     - 8001:8001
+#    volumes:
+#      - datasets:/datasets
+  ingester:
     build:
       context: .
-      dockerfile: datamart_coordinator/Dockerfile
+      dockerfile: datamart_ingest/Dockerfile
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
-    ports:
-     - 8001:8001
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=guest
+      - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
   example_discoverer:
@@ -34,17 +45,9 @@ services:
     command: discovery
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
-      - COORDINATOR_URL=http://coordinator:8001
-    volumes:
-      - datasets:/datasets
-  example_ingester:
-    build:
-      context: .
-      dockerfile: examples/Dockerfile
-    command: ingestion
-    environment:
-      - ELASTICSEARCH_HOSTS=elasticsearch:9200
-      - COORDINATOR_URL=http://coordinator:8001
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=guest
+      - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
 volumes:
