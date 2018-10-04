@@ -3,6 +3,7 @@ import logging
 import time
 
 from datamart_core import Discoverer
+from datamart_core.common import Storage
 
 
 logger = logging.getLogger(__name__)
@@ -21,22 +22,26 @@ class ExampleDiscoverer(Discoverer):
         'is_example': True,
     }
 
-    def run(self):
+    def main_loop(self):
         # State-of-the-art search process
+        logger.info("Searching...")
         time.sleep(5)
 
         # We found a dataset
-        dataset_id = self.record_dataset('storage path here',
-                                         self.meta)
+        dataset_id = self.record_dataset(
+            Storage({'path': 'storage path here'}),
+            self.meta)
+        logger.info("Dataset recorded: %r", dataset_id)
 
         # TODO: Download it
 
-    def handle_materialization(self, dataset_id, meta):
-        if meta['filename'] == 'nyu.zip':
+    def handle_materialize(self, discovery_meta):
+        if discovery_meta['filename'] == 'nyu.zip':
             pass  # TODO
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s: %(message)s")
     ExampleDiscoverer('org.datadrivendiscovery.example.discoverer')
     asyncio.get_event_loop().run_forever()

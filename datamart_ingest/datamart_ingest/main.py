@@ -2,11 +2,10 @@ import aio_pika
 import asyncio
 from datetime import datetime
 import elasticsearch
-import json
 import logging
 import os
 
-from datamart_core.common import Storage
+from datamart_core.common import Storage, log_future, json2msg, msg2json
 from .profiler import handle_dataset
 
 
@@ -24,7 +23,8 @@ class Ingester(object):
         )
         self.channel = None
 
-        asyncio.get_event_loop().create_task(self._run())
+        self.loop = asyncio.get_event_loop()
+        log_future(self.loop.create_task(self._run()), logger)
 
     async def _amqp_setup(self):
         # Setup the exchange
@@ -49,15 +49,16 @@ class Ingester(object):
         # Consume ingestion queue
         await self.work_tickets.acquire()
         async for message in self.ingest_queue:
-            obj = json.loads(message.body)
+            obj = msg2json(message)
             dataset_id = obj['id']
             storage = Storage(obj['storage'])
             discovery_meta = obj['discovery']
 
             # Call handle_dataset
             logger.info("Handling dataset %r from %r",
-                        dataset_id, discovery_meta.get('discoverer'))
-            future = asyncio.get_event_loop().run_in_executor(
+                        dataset_id, discovery_meta.get('identifier'))
+            future = self.loop.run_in_executor(
+                None,
                 handle_dataset,
                 storage,
                 discovery_meta,
@@ -92,7 +93,7 @@ class Ingester(object):
                 )
                 # Publish to RabbitMQ
                 await self.datasets_exchange.publish(
-                    aio_pika.Message(json.dumps(dict(body, id=dataset_id))),
+                    json2msg(dict(body, id=dataset_id)),
                     dataset_id,
                 )
 
@@ -101,7 +102,7 @@ class Ingester(object):
 
         def callback(future):
             self.work_tickets.release()
-            asyncio.get_event_loop().create_task(coro(future))
+            log_future(self.loop.create_task(coro(future)), logger)
 
         return callback
 

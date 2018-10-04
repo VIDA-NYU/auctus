@@ -1,4 +1,6 @@
+import aio_pika
 import asyncio
+import json
 import threading
 
 
@@ -24,12 +26,23 @@ def block_run(loop, coro):
     return block_wait_future(future)
 
 
+def json2msg(obj):
+    return aio_pika.Message(json.dumps(obj).encode('utf-8'))
+
+
+def msg2json(msg):
+    return json.loads(msg.body.decode('utf-8'))
+
+
 class Storage(object):
     def __init__(self, obj):
         self.path = obj['path']
 
     def __repr__(self):
         return '<Storage %r>' % self.path
+
+    def to_json(self):
+        return {'path': self.path}
 
 
 class WriteStorage(Storage):
@@ -43,3 +56,12 @@ class WriteStorage(Storage):
             ' max_size_bytes=%r' % self.max_size_bytes
             if self.max_size_bytes else ''
         )
+
+
+def log_future(future, logger, message="Exception in background task"):
+    def log(future):
+        try:
+            future.result()
+        except Exception:
+            logger.exception(message)
+    future.add_done_callback(log)

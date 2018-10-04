@@ -1,12 +1,11 @@
 import aio_pika
 import asyncio
 from datetime import datetime
-import json
 import logging
 import os
 import uuid
 
-from .common import block_run
+from .common import block_run, log_future, json2msg, msg2json
 
 
 logger = logging.getLogger(__name__)
@@ -25,11 +24,11 @@ class _HandleQueryPublisher(object):
 class Discoverer(object):
     _async = False
 
-    def __init__(self, identifier, concurrent=1):
+    def __init__(self, identifier, concurrent=4):
         self.work_tickets = asyncio.Semaphore(concurrent)
         self.identifier = identifier
         self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self._run())
+        log_future(self.loop.create_task(self._run()), logger)
 
     async def _amqp_setup(self):
         # Setup the queries exchange
@@ -65,25 +64,27 @@ class Discoverer(object):
         await self._amqp_setup()
 
         # Start ingestion process
-        self._call(self.main_loop)
+        log_future(self._call(self.main_loop), logger)
 
         # FIXME: The semaphore is only acquired when a message is received,
         # which means we might block while holding it. But if I acquire it
         # before, we can only be listening to one queue at a time.
         if hasattr(self, 'handle_query'):
-            self.loop.create_task(self._consume_queries())
-        self.loop.create_task(self._consume_materializes())
+            log_future(self.loop.create_task(self._consume_queries()),
+                       logger)
+        log_future(self.loop.create_task(self._consume_materializes()),
+                   logger)
 
     async def _consume_queries(self):
         async for message in self.query_queue:
             await self.work_tickets.acquire()
-            obj = json.loads(message.body)
+            obj = msg2json(message)
 
             # Let the requester know that we are working on it
             await self.channel.default_exchange.publish(
-                aio_pika.Message(json.dumps(dict(
+                json2msg(dict(
                     work_started=self.identifier,
-                ))),
+                )),
                 message.reply_to,
             )
 
@@ -110,9 +111,9 @@ class Discoverer(object):
             else:
                 # Let the requester know that we are done working on this
                 await self.channel.default_exchange.publish(
-                    aio_pika.Message(json.dumps(dict(
+                    json2msg(dict(
                         work_done=self.identifier,
-                    ))),
+                    )),
                     message.reply_to,
                 )
 
@@ -121,14 +122,14 @@ class Discoverer(object):
 
         def callback(future):
             self.work_tickets.release()
-            self.loop.create_task(coro(future))
+            log_future(self.loop.create_task(coro(future)), logger)
 
         return callback
 
     async def _consume_materializes(self):
         async for message in self.materialize_queue:
             await self.work_tickets.acquire()
-            obj = json.loads(message.body)
+            obj = msg2json(message)
             discovery_meta = obj['discovery']
 
             # Call handle_materialize
@@ -152,22 +153,22 @@ class Discoverer(object):
                 message.ack()
 
                 await self.channel.default_exchange.publish(
-                    aio_pika.Message(json.dumps(dict(
+                    json2msg(dict(
                         success=False,
-                    ))),
+                    )),
                     message.reply_to,
                 )
             else:
                 await self.channel.default_exchange.publish(
-                    aio_pika.Message(json.dumps(dict(
+                    json2msg(dict(
                         success=True,
                         storage=storage.to_json(),
-                    )))
+                    )),
                 )
 
         def callback(future):
             self.work_tickets.release()
-            self.loop.create_task(coro(future))
+            log_future(self.loop.create_task(coro(future)), logger)
 
         return callback
 
@@ -183,12 +184,12 @@ class Discoverer(object):
                 *args,
             )
 
-    async def main_loop(self):
+    def main_loop(self):
         pass
 
     # def handle_query(self, query)
 
-    async def handle_materialize(self):
+    async def handle_materialize(self, discovery_meta):
         raise NotImplementedError
 
     async def _record_dataset(self, storage, discovery_meta,
@@ -204,13 +205,14 @@ class Discoverer(object):
 
         # Publish this dataset to the ingestion queue
         discovery_meta = dict(discovery_meta,
+                              identifier=self.identifier,
                               date=datetime.utcnow().isoformat() + 'Z')
         await self.channel.default_exchange.publish(
-            aio_pika.Message(json.dumps(dict(
+            json2msg(dict(
                 id=dataset_id,
                 storage=storage.to_json(),
-                discovery_meta=discovery_meta,
-            ))),
+                discovery=discovery_meta,
+            )),
             'ingest',
         )
         return dataset_id
@@ -226,5 +228,5 @@ class Discoverer(object):
 class AsyncDiscoverer(Discoverer):
     _async = True
 
-    def main_loop(self):
+    async def main_loop(self):
         pass
