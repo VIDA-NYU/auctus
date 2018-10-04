@@ -64,7 +64,7 @@ class Coordinator(object):
 
     async def _consume_ingest(self):
         # Consume ingest messages
-        async for message in self.ingest_queue:
+        async for message in self.ingest_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
             storage = obj['storage']['path']
@@ -77,7 +77,7 @@ class Coordinator(object):
 
     async def _consume_datasets(self):
         # Consume dataset messages
-        async for message in self.datasets_queue:
+        async for message in self.datasets_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
             for i in range(len(self.recent_discoveries)):
@@ -91,6 +91,6 @@ class Coordinator(object):
 
     async def _consume_queries(self):
         # Consume queries messages
-        async for message in self.queries_queue:
+        async for message in self.queries_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             # TODO: Store recent queries
