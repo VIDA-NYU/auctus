@@ -4,6 +4,7 @@ from datetime import datetime
 import elasticsearch
 import logging
 import os
+import shutil
 
 from datamart_core.common import Storage, log_future, json2msg, msg2json
 from .profiler import handle_dataset
@@ -73,12 +74,13 @@ class Ingester(object):
 
             future.add_done_callback(
                 self.handle_dataset_callback(
-                    message, dataset_id, discovery_meta,
+                    message, dataset_id, discovery_meta, storage,
                 )
             )
             await self.work_tickets.acquire()
 
-    def handle_dataset_callback(self, message, dataset_id, discovery_meta):
+    def handle_dataset_callback(self, message, dataset_id, discovery_meta,
+                                storage):
         async def coro(future):
             try:
                 ingest_meta = future.result()
@@ -109,6 +111,10 @@ class Ingester(object):
 
         def callback(future):
             self.work_tickets.release()
+            if os.path.isdir(storage.path):
+                shutil.rmtree(storage.path)
+            else:
+                os.remove(storage.path)
             log_future(self.loop.create_task(coro(future)), logger)
 
         return callback

@@ -82,6 +82,7 @@ class Coordinator(object):
             dataset_id = obj['id']
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i][0] == dataset_id:
+                    self.recent_discoveries[i][1] = None
                     self.recent_discoveries[i][2] = True
                     break
             else:
