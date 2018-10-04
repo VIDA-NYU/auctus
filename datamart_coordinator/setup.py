@@ -6,6 +6,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
+    'aio-pika',
     'elasticsearch',
     'jinja2',
     'tornado>=5.0',

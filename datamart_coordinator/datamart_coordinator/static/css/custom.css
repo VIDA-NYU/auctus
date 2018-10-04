@@ -2,3 +2,11 @@
 .container-body {
   padding-top: 1em;
 }
+
+.json th, .json td {
+  border: 1px solid #dee2e6;
+}
+
+table.json {
+ margin-bottom: 0 !important;
+}

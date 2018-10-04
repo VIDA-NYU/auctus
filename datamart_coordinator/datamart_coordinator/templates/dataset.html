@@ -3,32 +3,49 @@
 
 {% block contents %}
 <h1>Dataset: {{ dataset_id }}</h1>
-{% if storage_path %}
-<p>This dataset is currently in local storage: <span style="font-family: monospace;">{{ storage_path }}</span></p>
-{% endif %}
 
-<h2>Discovery metadata</h2>
-<p>This is the metadata that was recorded by the discovery plugin when it recorded this dataset.</p>
-<table class="table">
-  <tbody>
-    {% for k, v in dataset_meta.items() %}
-    <tr><th scope="row">{{ k }}</th><td>{{ v }}</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+{% macro meta_table(m) -%}
+  {% if isdict(m) %}
+    <table class="table json">
+      <tbody>
+        {% for k, v in m.items() %}
+        <tr>
+          <th scope="row">{{ k }}</th>
+          <td>
+            {{ meta_table(v) }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% elif islist(m) %}
 
-<h2>Ingestion metadata</h2>
-<p>This is the metadata that was recorded by the ingestion plugins when it recorded this dataset.</p>
+    {% if m %}
+      <table class="table json">
+        <tbody>
+          {% for e in m %}
+          <tr>
+            <th scope="row">{{ loop.index0 }}</th>
+            <td>
+              {{ meta_table(e) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      []
+    {% endif %}
+  {% else %}
+    {{ m }}
+  {% endif %}
+{%- endmacro %}
 
-{% for meta in ingest_metas %}
-<table class="table">
-  <tbody>
-    {% for k, v in meta.items() %}
-    <tr><th scope="row">{{ k }}</th><td>{{ v }}</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p style="font-style: oblique;">No computed metadata for this dataset.</p>
-{% endfor %}
+<h2>Metadata</h2>
+<p>This is the metadata that was recorded during ingestion.</p>
+{{ meta_table(ingest_meta) }}
+
+<h2>Discovery info</h2>
+<p>This was recorded by the discovery plugin <span style="font-family: monospace;">{{ discoverer }}</span></p>
+{{ meta_table(discovery_meta) }}
 {% endblock %}

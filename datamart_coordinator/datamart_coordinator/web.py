@@ -45,6 +45,9 @@ class BaseHandler(RequestHandler):
         return jinja2.Markup(context['handler'].xsrf_form_html())
     template_env.globals['xsrf_form_html'] = _tpl_xsrf_form_html
 
+    template_env.globals['islist'] = lambda v: isinstance(v, (list, tuple))
+    template_env.globals['isdict'] = lambda v: isinstance(v, dict)
+
     def render_string(self, template_name, **kwargs):
         template = self.template_env.get_template(template_name)
         return template.render(
@@ -79,67 +82,20 @@ class Index(BaseHandler):
 class Status(BaseHandler):
     def get(self):
         self.send_json({
-            'discoverers': [[k, len(v)]
-                            for k, v in self.coordinator.discoverers.items()],
-            'ingesters': [[k, len(v)]
-                          for k, v in self.coordinator.ingesters.items()],
             'recent_discoveries': self.coordinator.recent_discoveries,
-            'storage': self.coordinator.storage,
         })
 
 
 class Dataset(BaseHandler):
     def get(self, dataset_id):
-        dataset_path = self.coordinator.storage_r.get(dataset_id)
+        # Get metadata from Elasticsearch
         es = self.application.elasticsearch
-        # Get dataset meta
-        dataset_meta = es.get('datamart', '_doc', id=dataset_id)['_source']
-        # Get ingested records for dataset
-        ingest_metas = es.search(
-            index='datamart',
-            body={
-                'query': {'parent_id': {'type': 'metadata', 'id': dataset_id}}
-            },
-        )['hits']['hits']
-        ingest_metas = [e['_source'] for e in ingest_metas]
+        ingest_meta = es.get('datamart', '_doc', id=dataset_id)['_source']
+        discovery_meta = ingest_meta.pop('discovery', {})
+        discoverer = discovery_meta.pop('identifier', '(unknown)')
         self.render('dataset.html',
-                    dataset_id=dataset_id, dataset_path=dataset_path,
-                    dataset_meta=dataset_meta, ingest_metas=ingest_metas)
-
-
-class PollDiscovery(BaseHandler):
-    async def get(self):
-        identifier = self.get_query_argument('id')
-        logger.info("Discoverer %r polling...", identifier)
-        self.coordinator.add_discoverer(identifier, self)
-        try:
-            self._close_event = asyncio.Event()
-            await self._close_event.wait()
-            # TODO: Send 'query' event to discoverer
-            # TODO: Send 'materialize' event to discoverer
-        finally:
-            self.coordinator.remove_discoverer(identifier, self)
-
-    def on_connection_close(self):
-        logger.info("Discoverer connection closed")
-        self._close_event.set()
-
-
-class DatasetDiscovered(BaseHandler):
-    def post(self):
-        identifier = self.get_query_argument('id')
-        obj = self.get_json()
-        self.coordinator.discovered(identifier, obj['id'], obj['meta'])
-        self.send_json({})
-
-
-class DatasetDownloaded(BaseHandler):
-    def post(self):
-        identifier = self.get_query_argument('id')
-        obj = self.get_json()
-        self.coordinator.downloaded(identifier,
-                                    obj['dataset_id'], obj['storage_path'])
-        self.send_json({})
+                    dataset_id=dataset_id, discoverer=discoverer,
+                    ingest_meta=ingest_meta, discovery_meta=discovery_meta)
 
 
 class AllocateDataset(BaseHandler):
@@ -147,41 +103,6 @@ class AllocateDataset(BaseHandler):
         identifier = self.get_query_argument('id')
         path = self.coordinator.allocate_shared(identifier)
         self.send_json({'path': path, 'max_size_bytes': 1 << 30})
-
-
-class PollIngestion(BaseHandler):
-    async def get(self):
-        self._identifier = self.get_query_argument('id')
-        logger.info("Ingester %r polling...", self._identifier)
-        self._result = {}
-        self.coordinator.add_ingester(self._identifier, self)
-        self._done_event = asyncio.Event()
-        await self._done_event.wait()
-        self.send_json(self._result)
-
-    def on_connection_close(self):
-        logger.info("Ingester connection closed")
-        self._done_event.set()
-        self.coordinator.remove_ingester(self._identifier, self)
-
-    def ingest_dataset(self, dataset_id, storage_path, dataset_meta):
-        self._result = {
-            'ingest': {
-                'id': dataset_id,
-                'path': storage_path,
-                'meta': dataset_meta,
-            }
-        }
-        self._done_event.set()
-
-
-class Ingested(BaseHandler):
-    def post(self):
-        identifier = self.get_query_argument('id')
-        obj = self.get_json()
-        self.coordinator.ingested(identifier,
-                                  obj['dataset_id'], obj['id'], obj['meta'])
-        self.send_json({})
 
 
 class Application(tornado.web.Application):
@@ -227,47 +148,6 @@ def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
-    # Retry a few times, in case the Elasticsearch container is not yet up
-    for i in itertools.count():
-        try:
-            if not es.indices.exists('datamart'):
-                logger.info("Creating 'datamart' index in Elasticsearch")
-                es.indices.create(
-                    'datamart',
-                    {
-                        'mappings': {
-                            '_doc': {
-                                'properties': {
-                                    # dataset -> metadata is a parent -> child relationship
-                                    'kind': {
-                                        'type': 'join',
-                                        'relations': {
-                                            'dataset': ['metadata', 'feedback'],
-                                        },
-                                    },
-                                    # 'columns' is a nested field, we want to query individual columns
-                                    'columns': {
-                                        'type': 'nested',
-                                        'properties': {
-                                            'semantic_types': {
-                                                'type': 'keyword',
-                                                'index': True,
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                )
-        except Exception:
-            logger.warning("Can't connect to Elasticsearch, retrying...")
-            if i == 5:
-                raise
-            else:
-                time.sleep(5)
-        else:
-            break
 
     return Application(
         [
@@ -275,15 +155,7 @@ def make_app(debug=False):
             URLSpec('/status', Status),
             URLSpec('/dataset/([^/]+)', Dataset),
 
-            # Used by discovery plugins
-            URLSpec('/poll/discovery', PollDiscovery),
-            URLSpec('/dataset_discovered', DatasetDiscovered),
-            URLSpec('/dataset_downloaded', DatasetDownloaded),
             URLSpec('/allocate_dataset', AllocateDataset),
-
-            # Used by ingestion plugins
-            URLSpec('/poll/ingestion', PollIngestion),
-            URLSpec('/ingested', Ingested),
         ],
         static_path=pkg_resources.resource_filename('datamart_coordinator',
                                                     'static'),

@@ -17,16 +17,19 @@ services:
     ports:
       - 8080:15672
       - 5672:5672
-#  coordinator:
-#    build:
-#      context: .
-#      dockerfile: datamart_coordinator/Dockerfile
-#    environment:
-#      - ELASTICSEARCH_HOSTS=elasticsearch:9200
-#    ports:
-#     - 8001:8001
-#    volumes:
-#      - datasets:/datasets
+  coordinator:
+    build:
+      context: .
+      dockerfile: datamart_coordinator/Dockerfile
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=guest
+      - AMQP_PASSWORD=guest
+    ports:
+     - 8001:8001
+    volumes:
+      - datasets:/datasets
   ingester:
     build:
       context: .

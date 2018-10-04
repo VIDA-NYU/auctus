@@ -1,71 +1,95 @@
+import aio_pika
+import asyncio
+import json
 import logging
 import os
-import random
-import uuid
 
 
 logger = logging.getLogger(__name__)
 
 
+def log_future(future, message="Exception in background task"):
+    def log(future):
+        try:
+            future.result()
+        except Exception:
+            logger.exception(message)
+    future.add_done_callback(log)
+
+
 class Coordinator(object):
     def __init__(self, es):
         self.elasticsearch = es
-        self.discoverers = {}
-        self.ingesters = {}
-        self.storage = {}
-        self.storage_r = {}
-        self.recent_discoveries = []
+        self.recent_discoveries = []  # (dataset_id, storage, ingested: bool)
 
-    def add_discoverer(self, identifier, obj):
-        self.discoverers.setdefault(identifier, set()).add(obj)
+        log_future(asyncio.get_event_loop().create_task(self._amqp()))
 
-    def remove_discoverer(self, identifier, obj):
-        s = self.discoverers[identifier]
-        s.discard(obj)
-        if not s:
-            del self.discoverers[identifier]
+    async def _amqp(self):
+        connection = await aio_pika.connect_robust(
+            host=os.environ['AMQP_HOST'],
+            login=os.environ['AMQP_USER'],
+            password=os.environ['AMQP_PASSWORD'],
+        )
+        self.channel = await connection.channel()
+        await self.channel.set_qos(prefetch_count=1)
 
-    def add_ingester(self, identifier, obj):
-        self.ingesters.setdefault(identifier, set()).add(obj)
+        # Register to ingest exchange
+        self.ingest_exchange = await self.channel.declare_exchange(
+            'ingest',
+            aio_pika.ExchangeType.FANOUT,
+        )
+        self.ingest_queue = await self.channel.declare_queue(exclusive=True)
+        await self.ingest_queue.bind(self.ingest_exchange)
 
-    def remove_ingester(self, identifier, obj):
-        s = self.ingesters[identifier]
-        s.discard(obj)
-        if not s:
-            del self.ingesters[identifier]
+        # Register to datasets exchange
+        datasets_exchange = await self.channel.declare_exchange(
+            'datasets',
+            aio_pika.ExchangeType.TOPIC)
+        self.datasets_queue = await self.channel.declare_queue(exclusive=True)
+        await self.datasets_queue.bind(datasets_exchange)
 
-    def discovered(self, identifier, dataset_id, dataset_meta):
-        logger.info("Dataset discovered: %r (%r)", dataset_id, identifier)
-        self.recent_discoveries.insert(0, (dataset_id, identifier))
-        del self.recent_discoveries[15:]
+        # Register to queries exchange
+        queries_exchange = await self.channel.declare_exchange(
+            'queries',
+            aio_pika.ExchangeType.FANOUT)
+        self.queries_queue = await self.channel.declare_queue(exclusive=True)
+        await self.queries_queue.bind(queries_exchange)
 
-    def downloaded(self, identifier, dataset_id, storage_path):
-        logger.info("Dataset downloaded: %r %r (%r)", dataset_id, storage_path,
-                    identifier)
-        self.storage[storage_path] = dataset_id, []
-        self.storage_r[dataset_id] = storage_path
+        log_future(
+            asyncio.get_event_loop().create_task(self._consume_ingest()))
+        log_future(
+            asyncio.get_event_loop().create_task(self._consume_datasets()))
+        log_future(
+            asyncio.get_event_loop().create_task(self._consume_queries()))
 
-        # Get dataset meta from Elasticsearch
-        es = self.elasticsearch
-        dataset_meta = es.get('datamart', '_doc', id=dataset_id)['_source']
+    async def _consume_ingest(self):
+        # Consume ingest messages
+        async for message in self.ingest_queue:
+            obj = json.loads(message.body.decode('utf-8'))
+            dataset_id = obj['id']
+            storage = obj['storage']['path']
+            for i in range(len(self.recent_discoveries)):
+                if self.recent_discoveries[i][0] == dataset_id:
+                    break
+            else:
+                self.recent_discoveries.insert(0, (dataset_id, storage, False))
+                del self.recent_discoveries[15:]
 
-        # Notify ingesters
-        for ingest_identifier, ingest_set in list(self.ingesters.items()):
-            logger.info("Notifying %r", ingest_identifier)
-            poller, = random.sample(ingest_set, 1)
-            poller.ingest_dataset(dataset_id, storage_path, dataset_meta)
-            self.remove_ingester(ingest_identifier, poller)
+    async def _consume_datasets(self):
+        # Consume dataset messages
+        async for message in self.datasets_queue:
+            obj = json.loads(message.body.decode('utf-8'))
+            dataset_id = obj['id']
+            for i in range(len(self.recent_discoveries)):
+                if self.recent_discoveries[i][0] == dataset_id:
+                    self.recent_discoveries[i][2] = True
+                    break
+            else:
+                self.recent_discoveries.insert(0, (dataset_id, None, True))
+                del self.recent_discoveries[15:]
 
-    def ingested(self, identifier, dataset_id, ingest_id, ingest_meta):
-        logger.info("Dataset ingested: %r %r (%r)", dataset_id, ingest_id,
-                    identifier)
-        if dataset_id in self.storage_r:
-            self.storage[self.storage_r[dataset_id]][1].append(identifier)
-
-    def allocate_shared(self, identifier):
-        name = str(uuid.uuid4())
-        path = '/datasets/%s' % name
-        self.storage[path] = None
-        os.mkdir(path)
-        logger.info("Dataset storage requested (%r): %r", identifier, path)
-        return path
+    async def _consume_queries(self):
+        # Consume queries messages
+        async for message in self.queries_queue:
+            obj = json.loads(message.body.decode('utf-8'))
+            # TODO: Store recent queries
