@@ -52,6 +52,12 @@ class Discoverer(object):
             'datasets',
             aio_pika.ExchangeType.TOPIC)
 
+        # Setup the ingest exchange
+        self.ingest_exchange = await self.channel.declare_exchange(
+            'ingest',
+            aio_pika.ExchangeType.FANOUT,
+        )
+
     async def _run(self):
         connection = await aio_pika.connect_robust(
             host=os.environ['AMQP_HOST'],
@@ -207,13 +213,13 @@ class Discoverer(object):
         discovery_meta = dict(discovery_meta,
                               identifier=self.identifier,
                               date=datetime.utcnow().isoformat() + 'Z')
-        await self.channel.default_exchange.publish(
+        await self.ingest_exchange.publish(
             json2msg(dict(
                 id=dataset_id,
                 storage=storage.to_json(),
                 discovery=discovery_meta,
             )),
-            'ingest',
+            '',
         )
         return dataset_id
 

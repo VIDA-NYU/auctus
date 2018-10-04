@@ -27,13 +27,20 @@ class Ingester(object):
         log_future(self.loop.create_task(self._run()), logger)
 
     async def _amqp_setup(self):
-        # Setup the exchange
+        # Setup the datasets exchange
         self.datasets_exchange = await self.channel.declare_exchange(
             'datasets',
             aio_pika.ExchangeType.TOPIC)
 
+        # Setup the ingest exchange
+        self.ingest_exchange = await self.channel.declare_exchange(
+            'ingest',
+            aio_pika.ExchangeType.FANOUT,
+        )
+
         # Declare ingestion queue
         self.ingest_queue = await self.channel.declare_queue('ingest')
+        await self.ingest_queue.bind(self.ingest_exchange)
 
     async def _run(self):
         connection = await aio_pika.connect_robust(
