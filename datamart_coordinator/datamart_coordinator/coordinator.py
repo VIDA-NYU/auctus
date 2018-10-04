@@ -67,6 +67,7 @@ class Coordinator(object):
         async for message in self.ingest_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
+            logger.info("Got ingest message: %r", dataset_id)
             storage = obj['storage']['path']
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i][0] == dataset_id:
@@ -80,6 +81,7 @@ class Coordinator(object):
         async for message in self.datasets_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
+            logger.info("Got dataset message: %r", dataset_id)
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i][0] == dataset_id:
                     self.recent_discoveries[i][1] = None
@@ -93,4 +95,5 @@ class Coordinator(object):
         # Consume queries messages
         async for message in self.queries_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
+            logger.info("Got query message")
             # TODO: Store recent queries

@@ -15,6 +15,7 @@ class ExampleD3MDiscoverer(Discoverer):
     """
     def main_loop(self):
         datasets = os.listdir('/d3m_seed_datasets')
+        logger.info("Got %d folders to go through...", len(datasets))
 
         for name in datasets:
             csv_name = os.path.join(
@@ -25,7 +26,9 @@ class ExampleD3MDiscoverer(Discoverer):
                 'learningData.csv',
             )
             if not os.path.exists(csv_name):
+                logger.info("Doesn't exist: %r", csv_name)
                 continue
+            logger.info("Discovering: %r", csv_name)
 
             storage = self.create_storage()
             destination = os.path.join(storage.path, 'main.csv')
