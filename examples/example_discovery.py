@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import time
 
 from datamart_core import Discoverer
@@ -27,13 +28,16 @@ class ExampleDiscoverer(Discoverer):
         logger.info("Searching...")
         time.sleep(5)
 
+        # Download dataset to storage
+        storage = self.create_storage()
+        with open(os.path.join(storage.path, 'main.csv'), 'w') as fp:
+            fp.write(self.data)
+
         # We found a dataset
         dataset_id = self.record_dataset(
-            Storage({'path': 'storage path here'}),
+            storage,
             self.meta)
         logger.info("Dataset recorded: %r", dataset_id)
-
-        # TODO: Download it
 
     def handle_materialize(self, discovery_meta):
         if discovery_meta['filename'] == 'nyu.zip':

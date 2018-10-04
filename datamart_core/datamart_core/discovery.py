@@ -5,7 +5,7 @@ import logging
 import os
 import uuid
 
-from .common import block_run, log_future, json2msg, msg2json
+from .common import WriteStorage, block_run, log_future, json2msg, msg2json
 
 
 logger = logging.getLogger(__name__)
@@ -223,6 +223,11 @@ class Discoverer(object):
             return self.loop.create_task(coro)
         else:
             return block_run(self.loop, coro)
+
+    def create_storage(self):
+        path = os.path.join('/datasets', uuid.uuid4().hex)
+        os.mkdir(path)
+        return WriteStorage(dict(path=path))
 
 
 class AsyncDiscoverer(Discoverer):
