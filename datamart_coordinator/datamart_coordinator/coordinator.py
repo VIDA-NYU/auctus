@@ -46,7 +46,7 @@ class Coordinator(object):
             'datasets',
             aio_pika.ExchangeType.TOPIC)
         self.datasets_queue = await self.channel.declare_queue(exclusive=True)
-        await self.datasets_queue.bind(datasets_exchange)
+        await self.datasets_queue.bind(datasets_exchange, '#')
 
         # Register to queries exchange
         queries_exchange = await self.channel.declare_exchange(
@@ -73,7 +73,7 @@ class Coordinator(object):
                 if self.recent_discoveries[i][0] == dataset_id:
                     break
             else:
-                self.recent_discoveries.insert(0, (dataset_id, storage, False))
+                self.recent_discoveries.insert(0, [dataset_id, storage, False])
                 del self.recent_discoveries[15:]
 
     async def _consume_datasets(self):
@@ -88,7 +88,7 @@ class Coordinator(object):
                     self.recent_discoveries[i][2] = True
                     break
             else:
-                self.recent_discoveries.insert(0, (dataset_id, None, True))
+                self.recent_discoveries.insert(0, [dataset_id, None, True])
                 del self.recent_discoveries[15:]
 
     async def _consume_queries(self):

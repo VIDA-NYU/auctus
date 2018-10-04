@@ -52,9 +52,9 @@ function loadStatus() {
         elem.innerHTML = linkDataset(result.recent_discoveries[i][0]);
       } else {
         elem.innerHTML =
-          linkDataset(result.recent_discoveries[i][0]) +
-          ' <span style="font-family: monospace;">' +
-          result.recent_discoveries[i][1] + '</span>';
+          result.recent_discoveries[i][0] +
+          ' (processing <span style="font-family: monospace;">' +
+          result.recent_discoveries[i][1] + '</span>)';
       }
       recent_discoveries.appendChild(elem);
     }
