@@ -1,0 +1,55 @@
+import asyncio
+import logging
+import os
+import shutil
+import time
+
+from datamart_core import Discoverer
+
+
+logger = logging.getLogger(__name__)
+
+
+class ExampleD3MDiscoverer(Discoverer):
+    """Discoverer that just "finds" the D3M datasets, *slowly*.
+    """
+    def main_loop(self):
+        datasets = os.listdir('/d3m_seed_datasets')
+
+        for name in datasets:
+            csv_name = os.path.join(
+                '/d3m_seed_datasets',
+                name,
+                name + '_dataset',
+                'tables',
+                'learningData.csv',
+            )
+            if not os.path.exists(csv_name):
+                continue
+
+            storage = self.create_storage()
+            destination = os.path.join(storage.path, 'main.csv')
+            shutil.copyfile(csv_name, destination, follow_symlinks=False)
+            self.record_dataset(storage, dict(d3m_name=name))
+
+            time.sleep(5)
+
+    def handle_materialize(self, discovery_meta):
+        name = discovery_meta['d3m_name']
+        csv_name = os.path.join(
+            name,
+            name + '_dataset',
+            'tables',
+            'learningData.csv',
+        )
+        storage = self.create_storage()
+        destination = os.path.join(storage.path, 'main.csv')
+        shutil.copyfile(csv_name, destination, follow_symlinks=False)
+        return storage
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s: %(message)s")
+    ExampleD3MDiscoverer('org.datadrivendiscovery.example.d3mdiscoverer')
+    asyncio.get_event_loop().run_forever()

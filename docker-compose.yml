@@ -53,5 +53,18 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
+  example_d3m_discoverer:
+    build:
+      context: .
+      dockerfile: examples/Dockerfile
+    command: d3m
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=guest
+      - AMQP_PASSWORD=guest
+    volumes:
+      - datasets:/datasets
+      - ../data/seed_datasets_current:/d3m_seed_datasets
 volumes:
   datasets:
