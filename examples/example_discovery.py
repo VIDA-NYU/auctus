@@ -4,7 +4,6 @@ import os
 import time
 
 from datamart_core import Discoverer
-from datamart_core.common import Storage
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,10 @@ class ExampleDiscoverer(Discoverer):
 
     def handle_materialize(self, discovery_meta):
         if discovery_meta['filename'] == 'nyu.zip':
-            pass  # TODO
+            storage = self.create_storage()
+            with open(os.path.join(storage.path, 'main.csv'), 'w') as fp:
+                fp.write(self.data)
+            return storage
 
 
 if __name__ == '__main__':

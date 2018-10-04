@@ -5,7 +5,8 @@ import logging
 import os
 import uuid
 
-from .common import WriteStorage, block_run, log_future, json2msg, msg2json
+from .common import Storage, WriteStorage, block_run, log_future, \
+    json2msg, msg2json
 
 
 logger = logging.getLogger(__name__)
@@ -152,6 +153,9 @@ class Discoverer(object):
         async def coro(future):
             try:
                 storage = future.result()
+                if not isinstance(storage, Storage):
+                    raise TypeError("handle_materialize didn't return a "
+                                    "Storage object")
             except Exception:
                 logger.exception("Error materializing")
                 # Ack anyway, retrying would probably fail again
