@@ -48,7 +48,7 @@ class ExampleD3MDiscoverer(Discoverer):
                                 dict(d3m_name=name),
                                 metadata)
 
-            time.sleep(5)
+            time.sleep(3)
 
     def handle_materialize(self, materialize):
         name = materialize['d3m_name']

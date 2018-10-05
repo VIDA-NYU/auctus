@@ -32,11 +32,11 @@ class ExampleDiscoverer(Discoverer):
             fp.write(self.data)
 
         # We found a dataset
-        dataset_id = self.record_dataset(
-            storage,
-            dict(filename='nyu.zip'),
-            self.metadata)
-        logger.info("Dataset recorded: %r", dataset_id)
+        self.record_dataset(
+            storage,  # Path in shared cache
+            dict(filename='nyu.zip'),  # Materialization information
+            self.metadata,  # Metadata (profiler will update it)
+        )
 
     def handle_materialize(self, materialize):
         if materialize['filename'] == 'nyu.zip':
