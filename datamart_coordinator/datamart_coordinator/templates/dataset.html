@@ -43,9 +43,9 @@
 
 <h2>Metadata</h2>
 <p>This is the metadata that was recorded during ingestion.</p>
-{{ meta_table(ingest_meta) }}
+{{ meta_table(metadata) }}
 
-<h2>Discovery info</h2>
+<h2>Materialization info</h2>
 <p>This was recorded by the discovery plugin <span style="font-family: monospace;">{{ discoverer }}</span></p>
-{{ meta_table(discovery_meta) }}
+{{ meta_table(materialize) }}
 {% endblock %}

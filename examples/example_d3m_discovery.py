@@ -33,12 +33,12 @@ class ExampleD3MDiscoverer(Discoverer):
             storage = self.create_storage()
             destination = os.path.join(storage.path, 'main.csv')
             shutil.copyfile(csv_name, destination, follow_symlinks=False)
-            self.record_dataset(storage, dict(d3m_name=name))
+            self.record_dataset(storage, dict(d3m_name=name), {})
 
             time.sleep(5)
 
-    def handle_materialize(self, discovery_meta):
-        name = discovery_meta['d3m_name']
+    def handle_materialize(self, materialize):
+        name = materialize['d3m_name']
         csv_name = os.path.join(
             name,
             name + '_dataset',

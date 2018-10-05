@@ -61,30 +61,31 @@ class Ingester(object):
             obj = msg2json(message)
             dataset_id = obj['id']
             storage = Storage(obj['storage'])
-            discovery_meta = obj['discovery']
+            metadata = obj['metadata']
+            materialize = metadata.pop('materialize', {})
 
             # Call handle_dataset
             logger.info("Handling dataset %r from %r",
-                        dataset_id, discovery_meta.get('identifier'))
+                        dataset_id, materialize.get('identifier', '(unknown)'))
             future = self.loop.run_in_executor(
                 None,
                 handle_dataset,
                 storage,
-                discovery_meta,
+                metadata,
             )
 
             future.add_done_callback(
                 self.handle_dataset_callback(
-                    message, dataset_id, discovery_meta, storage,
+                    message, dataset_id, materialize, storage,
                 )
             )
             await self.work_tickets.acquire()
 
-    def handle_dataset_callback(self, message, dataset_id, discovery_meta,
+    def handle_dataset_callback(self, message, dataset_id, materialize,
                                 storage):
         async def coro(future):
             try:
-                ingest_meta = future.result()
+                metadata = future.result()
             except Exception:
                 logger.exception("Error handling dataset %r", dataset_id)
                 # Ack anyway, retrying would probably fail again
@@ -92,8 +93,8 @@ class Ingester(object):
                 message.ack()
             else:
                 # Insert results in Elasticsearch
-                body = dict(ingest_meta,
-                            discovery=discovery_meta,
+                body = dict(metadata,
+                            materialize=materialize,
                             date=datetime.utcnow().isoformat() + 'Z')
                 self.es.index(
                     'datamart',

@@ -17,8 +17,8 @@ class _HandleQueryPublisher(object):
         self.discoverer = discoverer
         self.reply_to = reply_to
 
-    def __call__(self, storage, discovery_meta):
-        self.discoverer.record_dataset(storage, discovery_meta,
+    def __call__(self, storage, materialize, metadata):
+        self.discoverer.record_dataset(storage, materialize, metadata,
                                        bind=self.reply_to)
 
 
@@ -139,12 +139,12 @@ class Discoverer(object):
         async for message in self.materialize_queue:
             await self.work_tickets.acquire()
             obj = msg2json(message)
-            discovery_meta = obj['discovery']
+            materialize = obj['materialize']
 
             # Call handle_materialize
             logger.info("Handling materialization")
             future = self._call(self.handle_materialize,
-                                discovery_meta)
+                                materialize)
             future.add_done_callback(
                 self._handle_materialize_callback(message)
             )
@@ -201,10 +201,10 @@ class Discoverer(object):
 
     # def handle_query(self, query)
 
-    async def handle_materialize(self, discovery_meta):
+    async def handle_materialize(self, materialize):
         raise NotImplementedError
 
-    async def _record_dataset(self, storage, discovery_meta,
+    async def _record_dataset(self, storage, materialize, metadata,
                               bind=None):
         dataset_id = uuid.uuid4().hex
 
@@ -216,21 +216,22 @@ class Discoverer(object):
             await reply_queue.bind(self.datasets_exchange, dataset_id)
 
         # Publish this dataset to the ingestion queue
-        discovery_meta = dict(discovery_meta,
-                              identifier=self.identifier,
-                              date=datetime.utcnow().isoformat() + 'Z')
+        metadata = dict(metadata,
+                        materialize=dict(materialize,
+                                         identifier=self.identifier),
+                        date=datetime.utcnow().isoformat() + 'Z')
         await self.ingest_exchange.publish(
             json2msg(dict(
                 id=dataset_id,
                 storage=storage.to_json(),
-                discovery=discovery_meta,
+                metadata=metadata,
             )),
             '',
         )
         return dataset_id
 
-    def record_dataset(self, storage, discovery_meta, bind=None):
-        coro = self._record_dataset(storage, discovery_meta, bind)
+    def record_dataset(self, storage, materialize, metadata, bind=None):
+        coro = self._record_dataset(storage, materialize, metadata, bind)
         if self._async:
             return self.loop.create_task(coro)
         else:

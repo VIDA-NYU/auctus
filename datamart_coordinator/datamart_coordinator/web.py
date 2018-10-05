@@ -90,12 +90,12 @@ class Dataset(BaseHandler):
     def get(self, dataset_id):
         # Get metadata from Elasticsearch
         es = self.application.elasticsearch
-        ingest_meta = es.get('datamart', '_doc', id=dataset_id)['_source']
-        discovery_meta = ingest_meta.pop('discovery', {})
-        discoverer = discovery_meta.pop('identifier', '(unknown)')
+        metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+        materialize = metadata.pop('materialize', {})
+        discoverer = materialize.pop('identifier', '(unknown)')
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
-                    ingest_meta=ingest_meta, discovery_meta=discovery_meta)
+                    metadata=metadata, materialize=materialize)
 
 
 class AllocateDataset(BaseHandler):

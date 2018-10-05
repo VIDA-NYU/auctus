@@ -17,8 +17,7 @@ class ExampleDiscoverer(Discoverer):
             'Heiko,Australia\n'
             'Fernando,Brazil\n'
             'Juliana,USA\n')
-    meta = {
-        'filename': 'nyu.zip',
+    metadata = {
         'is_example': True,
     }
 
@@ -35,11 +34,12 @@ class ExampleDiscoverer(Discoverer):
         # We found a dataset
         dataset_id = self.record_dataset(
             storage,
-            self.meta)
+            dict(filename='nyu.zip'),
+            self.metadata)
         logger.info("Dataset recorded: %r", dataset_id)
 
-    def handle_materialize(self, discovery_meta):
-        if discovery_meta['filename'] == 'nyu.zip':
+    def handle_materialize(self, materialize):
+        if materialize['filename'] == 'nyu.zip':
             storage = self.create_storage()
             with open(os.path.join(storage.path, 'main.csv'), 'w') as fp:
                 fp.write(self.data)
