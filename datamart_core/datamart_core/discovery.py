@@ -29,7 +29,8 @@ class Discoverer(object):
         self.work_tickets = asyncio.Semaphore(concurrent)
         self.identifier = identifier
         self.loop = asyncio.get_event_loop()
-        log_future(self.loop.create_task(self._run()), logger)
+        log_future(self.loop.create_task(self._run()), logger,
+                   should_never_exit=True)
 
     async def _amqp_setup(self):
         # Setup the queries exchange
@@ -37,11 +38,12 @@ class Discoverer(object):
             'queries',
             aio_pika.ExchangeType.FANOUT)
 
-        # Declare our discoverer's query queue
-        self.query_queue = await self.channel.declare_queue(
-            'queries.%s' % self.identifier,
-            auto_delete=True)
-        await self.query_queue.bind(exchange)
+        if hasattr(self, 'handle_query'):
+            # Declare our discoverer's query queue
+            self.query_queue = await self.channel.declare_queue(
+                'queries.%s' % self.identifier,
+                auto_delete=True)
+            await self.query_queue.bind(exchange)
 
         # Declare our discoverer's materialization queue
         self.materialize_queue = await self.channel.declare_queue(
@@ -76,11 +78,11 @@ class Discoverer(object):
         # FIXME: The semaphore is only acquired when a message is received,
         # which means we might block while holding it. But if I acquire it
         # before, we can only be listening to one queue at a time.
+        fu = []
         if hasattr(self, 'handle_query'):
-            log_future(self.loop.create_task(self._consume_queries()),
-                       logger)
-        log_future(self.loop.create_task(self._consume_materializes()),
-                   logger)
+            fu.append(self.loop.create_task(self._consume_queries()))
+        fu.append(self.loop.create_task(self._consume_materializes()))
+        await asyncio.gather(*fu)
 
     async def _consume_queries(self):
         async for message in self.query_queue:

@@ -3,17 +3,23 @@ import asyncio
 import json
 import logging
 import os
+import sys
 
 
 logger = logging.getLogger(__name__)
 
 
-def log_future(future, message="Exception in background task"):
+def log_future(future, message="Exception in background task",
+               should_never_exit=False):
     def log(future):
         try:
             future.result()
         except Exception:
             logger.exception(message)
+        if should_never_exit:
+            logger.critical("Critical task died, exiting")
+            sys.exit(1)
+            asyncio.get_event_loop().stop()
     future.add_done_callback(log)
 
 
@@ -22,7 +28,8 @@ class Coordinator(object):
         self.elasticsearch = es
         self.recent_discoveries = []  # (dataset_id, storage, ingested: bool)
 
-        log_future(asyncio.get_event_loop().create_task(self._amqp()))
+        log_future(asyncio.get_event_loop().create_task(self._amqp()),
+                   should_never_exit=True)
 
     async def _amqp(self):
         connection = await aio_pika.connect_robust(
@@ -55,12 +62,11 @@ class Coordinator(object):
         self.queries_queue = await self.channel.declare_queue(exclusive=True)
         await self.queries_queue.bind(queries_exchange)
 
-        log_future(
-            asyncio.get_event_loop().create_task(self._consume_ingest()))
-        log_future(
-            asyncio.get_event_loop().create_task(self._consume_datasets()))
-        log_future(
-            asyncio.get_event_loop().create_task(self._consume_queries()))
+        await asyncio.gather(
+            asyncio.get_event_loop().create_task(self._consume_ingest()),
+            asyncio.get_event_loop().create_task(self._consume_datasets()),
+            asyncio.get_event_loop().create_task(self._consume_queries()),
+        )
 
     async def _consume_ingest(self):
         # Consume ingest messages

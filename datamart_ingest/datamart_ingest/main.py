@@ -25,7 +25,8 @@ class Ingester(object):
         self.channel = None
 
         self.loop = asyncio.get_event_loop()
-        log_future(self.loop.create_task(self._run()), logger)
+        log_future(self.loop.create_task(self._run()), logger,
+                   should_never_exit=True)
 
     async def _amqp_setup(self):
         # Setup the datasets exchange

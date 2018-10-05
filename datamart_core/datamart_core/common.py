@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 import json
+import sys
 import threading
 
 
@@ -58,10 +59,15 @@ class WriteStorage(Storage):
         )
 
 
-def log_future(future, logger, message="Exception in background task"):
+def log_future(future, logger, message="Exception in background task",
+               should_never_exit=False):
     def log(future):
         try:
             future.result()
         except Exception:
             logger.exception(message)
+        if should_never_exit:
+            logger.critical("Critical task died, exiting")
+            sys.exit(1)
+            asyncio.get_event_loop().stop()
     future.add_done_callback(log)
