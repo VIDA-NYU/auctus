@@ -67,5 +67,5 @@ class ExampleD3MDiscoverer(Discoverer):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
-    ExampleD3MDiscoverer('org.datadrivendiscovery.example.d3mdiscoverer')
+    ExampleD3MDiscoverer('datamart.example.d3m')
     asyncio.get_event_loop().run_forever()
