@@ -26,7 +26,7 @@ def log_future(future, message="Exception in background task",
 class Coordinator(object):
     def __init__(self, es):
         self.elasticsearch = es
-        self.recent_discoveries = []  # (dataset_id, storage, ingested: bool)
+        self.recent_discoveries = []
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()),
                    should_never_exit=True)
@@ -73,13 +73,20 @@ class Coordinator(object):
         async for message in self.ingest_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
+            metadata = obj.get('metadata', {})
+            materialize = metadata.get('materialize', {})
             logger.info("Got ingest message: %r", dataset_id)
             storage = obj['storage']['path']
             for i in range(len(self.recent_discoveries)):
-                if self.recent_discoveries[i][0] == dataset_id:
+                if self.recent_discoveries[i]['id'] == dataset_id:
                     break
             else:
-                self.recent_discoveries.insert(0, [dataset_id, storage, False])
+                self.recent_discoveries.insert(
+                    0,
+                    dict(id=dataset_id, storage=storage,
+                         discoverer=materialize.get('identifier', '(unknown)'),
+                         discovered=materialize.get('date', '???')),
+                )
                 del self.recent_discoveries[15:]
 
     async def _consume_datasets(self):
@@ -87,14 +94,22 @@ class Coordinator(object):
         async for message in self.datasets_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
+            materialize = obj.get('materialize', {})
             logger.info("Got dataset message: %r", dataset_id)
             for i in range(len(self.recent_discoveries)):
-                if self.recent_discoveries[i][0] == dataset_id:
-                    self.recent_discoveries[i][1] = None
-                    self.recent_discoveries[i][2] = True
+                if self.recent_discoveries[i]['id'] == dataset_id:
+                    self.recent_discoveries[i].pop('storage', None)
+                    self.recent_discoveries[i]['ingested'] = obj.get('date',
+                                                                     '???')
                     break
             else:
-                self.recent_discoveries.insert(0, [dataset_id, None, True])
+                self.recent_discoveries.insert(
+                    0,
+                    dict(id=dataset_id,
+                         discoverer=materialize.get('identifier', '(unknown)'),
+                         discovered=materialize.get('date', '???'),
+                         ingested=obj.get('date', '???')),
+                )
                 del self.recent_discoveries[15:]
 
     async def _consume_queries(self):

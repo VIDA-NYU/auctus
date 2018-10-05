@@ -47,23 +47,40 @@ function loadStatus() {
     var recent_discoveries = document.getElementById('recent_discoveries');
     recent_discoveries.innerHTML = '';
     for(var i = 0; i < result.recent_discoveries.length; ++i) {
-      var elem = document.createElement('li');
-      if(result.recent_discoveries[i][2]) {
-        elem.innerHTML = linkDataset(result.recent_discoveries[i][0]);
-      } else {
+      var elem;
+      var record = result.recent_discoveries[i];
+      if(record.ingested) {
+        elem = document.createElement('a');
+        elem.setAttribute('href', '/dataset/' + escape(record.id));
+        elem.className = 'list-group-item list-group-item-action flex-column align-items-start';
         elem.innerHTML =
-          result.recent_discoveries[i][0] +
-          ' (processing <span style="font-family: monospace;">' +
-          result.recent_discoveries[i][1] + '</span>)';
+          '<div class="d-flex w-100 justify-content-between">' +
+          '  <h5 class="mb-1">' + record.id + '</h5>' +
+          '  <small>' + record.ingested + '</small>' +
+          '</div>' +
+          //'<p class="mb-1">More info?</p>' +
+          '<small>' + record.discoverer + '</small>';
+      } else {
+        elem = document.createElement('div');
+        elem.className = 'list-group-item flex-column align-items-start list-group-item-secondary';
+        elem.innerHTML =
+          '<div class="d-flex w-100 justify-content-between">' +
+          '  <h5 class="mb-1">' + record.id + '</h5>' +
+          '  <small class="text-muted">' + record.discovered + '</small>' +
+          '</div>' +
+          '<p class="mb-1">Processing <span style="font-family: monospace;">' + record.storage + '</span></p>' +
+          '<small>' + record.discoverer + '</small>';
       }
       recent_discoveries.appendChild(elem);
     }
     if(result.recent_discoveries.length == 0) {
-      var elem = document.createElement('li');
-      elem.innerHTML = "No recent discoveries";
+      var elem = document.createElement('div');
+      elem.className = 'list-group-item flex-column align-items-start list-group-item-secondary';
+      elem.innerHTML = "<h5>No recent discoveries</h5>";
       recent_discoveries.appendChild(elem);
     }
-  });
+  })
+  .catch(console.error);
 }
 
 loadStatus();
