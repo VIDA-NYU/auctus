@@ -15,6 +15,7 @@ def handle_dataset(storage, metadata):
 
         nb_rows = 1 + sum(1 for _ in fp)
     return dict(
+        metadata,
         nb_rows=nb_rows,
         columns=[dict(name=h) for h in header],
     )
