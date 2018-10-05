@@ -221,9 +221,10 @@ class Discoverer(object):
 
         # Publish this dataset to the ingestion queue
         metadata = dict(metadata,
-                        materialize=dict(materialize,
-                                         identifier=self.identifier),
-                        date=datetime.utcnow().isoformat() + 'Z')
+                        materialize=dict(
+                            materialize,
+                            identifier=self.identifier,
+                            date=datetime.utcnow().isoformat() + 'Z'))
         await self.ingest_exchange.publish(
             json2msg(dict(
                 id=dataset_id,
