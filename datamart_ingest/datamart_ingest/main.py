@@ -40,7 +40,7 @@ class Ingester(object):
             aio_pika.ExchangeType.FANOUT,
         )
 
-        # Declare ingestion queue
+        # Declare the ingestion queue
         self.ingest_queue = await self.channel.declare_queue('ingest')
         await self.ingest_queue.bind(self.ingest_exchange)
 

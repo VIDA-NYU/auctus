@@ -61,6 +61,10 @@ class Discoverer(object):
             aio_pika.ExchangeType.FANOUT,
         )
 
+        # Declare the ingestion queue
+        ingest_queue = await self.channel.declare_queue('ingest')
+        await ingest_queue.bind(self.ingest_exchange)
+
     async def _run(self):
         connection = await aio_pika.connect_robust(
             host=os.environ['AMQP_HOST'],
