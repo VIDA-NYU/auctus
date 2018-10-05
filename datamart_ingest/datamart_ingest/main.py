@@ -2,9 +2,11 @@ import aio_pika
 import asyncio
 from datetime import datetime
 import elasticsearch
+import itertools
 import logging
 import os
 import shutil
+import time
 
 from datamart_core.common import Storage, log_future, json2msg, msg2json
 from .profiler import handle_dataset
@@ -27,6 +29,42 @@ class Ingester(object):
         self.loop = asyncio.get_event_loop()
         log_future(self.loop.create_task(self._run()), logger,
                    should_never_exit=True)
+
+        # Retry a few times, in case the Elasticsearch container is not yet up
+        for i in itertools.count():
+            try:
+                if not self.es.indices.exists('datamart'):
+                    logger.info("Creating 'datamart' index in Elasticsearch")
+                    self.es.indices.create(
+                        'datamart',
+                        {
+                            'mappings': {
+                                '_doc': {
+                                    'properties': {
+                                        # 'columns' is a nested field, we want
+                                        # to query individual columns
+                                        'columns': {
+                                            'type': 'nested',
+                                            'properties': {
+                                                'semantic_types': {
+                                                    'type': 'keyword',
+                                                    'index': True,
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    )
+            except Exception:
+                logger.warning("Can't connect to Elasticsearch, retrying...")
+                if i == 5:
+                    raise
+                else:
+                    time.sleep(5)
+            else:
+                break
 
     async def _amqp_setup(self):
         # Setup the datasets exchange
