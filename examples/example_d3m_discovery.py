@@ -37,7 +37,7 @@ class ExampleD3MDiscoverer(Discoverer):
             if 'name' in doc:
                 metadata['name'] = doc['name']
             if 'description' in doc:
-                metadata['description'] = doc['description'],
+                metadata['description'] = doc['description']
             if 'license' in doc:
                 metadata['license'] = doc['license']
 
