@@ -1,9 +1,11 @@
 import aio_pika
 import asyncio
+import itertools
 import json
 import logging
 import os
 import sys
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,46 @@ class Coordinator(object):
     def __init__(self, es):
         self.elasticsearch = es
         self.recent_discoveries = []
+
+        # Retry a few times, in case the Elasticsearch container is not yet up
+        for i in itertools.count():
+            try:
+                if not es.indices.exists('datamart'):
+                    logger.info("Creating 'datamart' index in Elasticsearch")
+                    es.indices.create(
+                        'datamart',
+                        {
+                            'mappings': {
+                                '_doc': {
+                                    'properties': {
+                                        # 'columns' is a nested field, we want
+                                        # to query individual columns
+                                        'columns': {
+                                            'type': 'nested',
+                                            'properties': {
+                                                'semantic_types': {
+                                                    'type': 'keyword',
+                                                    'index': True,
+                                                },
+                                            },
+                                        },
+                                        'license': {
+                                            'type': 'keyword',
+                                            'index': True,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    )
+            except Exception:
+                logger.warning("Can't connect to Elasticsearch, retrying...")
+                if i == 5:
+                    raise
+                else:
+                    time.sleep(5)
+            else:
+                break
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()),
                    should_never_exit=True)

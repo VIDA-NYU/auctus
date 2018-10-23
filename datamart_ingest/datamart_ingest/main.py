@@ -34,33 +34,7 @@ class Ingester(object):
         for i in itertools.count():
             try:
                 if not self.es.indices.exists('datamart'):
-                    logger.info("Creating 'datamart' index in Elasticsearch")
-                    self.es.indices.create(
-                        'datamart',
-                        {
-                            'mappings': {
-                                '_doc': {
-                                    'properties': {
-                                        # 'columns' is a nested field, we want
-                                        # to query individual columns
-                                        'columns': {
-                                            'type': 'nested',
-                                            'properties': {
-                                                'semantic_types': {
-                                                    'type': 'keyword',
-                                                    'index': True,
-                                                },
-                                            },
-                                        },
-                                        'license': {
-                                            'type': 'keyword',
-                                            'index': True,
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    )
+                    raise RuntimeError("'datamart' index does not exist")
             except Exception:
                 logger.warning("Can't connect to Elasticsearch, retrying...")
                 if i == 5:

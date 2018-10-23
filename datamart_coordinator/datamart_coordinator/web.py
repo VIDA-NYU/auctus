@@ -1,12 +1,9 @@
-import asyncio
 import elasticsearch
-import itertools
 import logging
 import jinja2
 import json
 import os
 import pkg_resources
-import time
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
