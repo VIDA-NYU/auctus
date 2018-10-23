@@ -52,6 +52,10 @@ class Ingester(object):
                                                 },
                                             },
                                         },
+                                        'license': {
+                                            'type': 'keyword',
+                                            'index': True,
+                                        },
                                     },
                                 },
                             },
