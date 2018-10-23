@@ -28,10 +28,22 @@ services:
       - AMQP_USER=guest
       - AMQP_PASSWORD=guest
     ports:
-     - 8001:8001
+      - 8001:8001
     volumes:
       - datasets:/datasets
       - ./datamart_coordinator/datamart_coordinator:/usr/src/app/datamart_coordinator/datamart_coordinator
+  query:
+    build:
+      context: .
+      dockerfile: datamart_query/Dockerfile
+    command: python -m datamart_query.web
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+    ports:
+      - 8000:8000
+    volumes:
+      - datasets:/datasets
+      - ./datamart_query/datamart_query:/usr/src/app/datamart_query/datamart_query
   ingester:
     build:
       context: .
