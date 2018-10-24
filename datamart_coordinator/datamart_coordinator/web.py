@@ -167,7 +167,7 @@ def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
 
-    app = make_app()
+    app = make_app(debug=True)
     app.listen(8001)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()

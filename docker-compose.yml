@@ -21,6 +21,7 @@ services:
     build:
       context: .
       dockerfile: datamart_coordinator/Dockerfile
+    command: python -m datamart_coordinator.web
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -30,6 +31,7 @@ services:
      - 8001:8001
     volumes:
       - datasets:/datasets
+      - ./datamart_coordinator/datamart_coordinator:/usr/src/app/datamart_coordinator/datamart_coordinator
   ingester:
     build:
       context: .
