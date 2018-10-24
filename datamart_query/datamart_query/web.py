@@ -40,6 +40,9 @@ class BaseHandler(RequestHandler):
         return jinja2.Markup(context['handler'].xsrf_form_html())
     template_env.globals['xsrf_form_html'] = _tpl_xsrf_form_html
 
+    template_env.globals['islist'] = lambda v: isinstance(v, (list, tuple))
+    template_env.globals['isdict'] = lambda v: isinstance(v, dict)
+
     def render_string(self, template_name, **kwargs):
         template = self.template_env.get_template(template_name)
         return template.render(
@@ -104,6 +107,18 @@ class Query(BaseHandler):
         self.send_json(result)
 
 
+class Dataset(BaseHandler):
+    def get(self, dataset_id):
+        # Get metadata from Elasticsearch
+        es = self.application.elasticsearch
+        metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+        materialize = metadata.pop('materialize', {})
+        discoverer = materialize.pop('identifier', '(unknown)')
+        self.render('dataset.html',
+                    dataset_id=dataset_id, discoverer=discoverer,
+                    metadata=metadata, materialize=materialize)
+
+
 class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
@@ -152,6 +167,7 @@ def make_app(debug=False):
             URLSpec('/', Index, name='index'),
             URLSpec('/search', Search, name='search'),
             URLSpec('/query', Query, name='query'),
+            URLSpec('/dataset/([^/]+)', Dataset),
         ],
         static_path=pkg_resources.resource_filename('datamart_query',
                                                     'static'),
