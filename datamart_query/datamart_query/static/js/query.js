@@ -71,7 +71,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
         '        <button type="button" class="btn btn-sm btn-outline-secondary">Download</button>' +
         '      </div>' +
-        '      <small class="text-muted">' + (data.size?formatSize(data.size):'unknown size') + '</small>' +
+        '      <small class="text-muted">' + (data.meta.size?formatSize(data.meta.size):'unknown size') + '</small>' +
         '    </div>' +
         '  </div>' +
         '</div>'
