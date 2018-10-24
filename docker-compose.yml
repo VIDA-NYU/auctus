@@ -5,6 +5,12 @@ services:
     environment:
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
+      # Enabling CORS
+      - http.cors.enabled=true
+      - http.cors.allow-origin=http://localhost:3000
+      - http.cors.allow-headers=Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With
+      - http.cors.allow-credentials=true
+      # JVM options
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
@@ -12,6 +18,13 @@ services:
         hard: -1
     ports:
       - 9200:9200
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.4.2
+    environment:
+      # SERVER_NAME: kibana.example.org
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - 5601:5601
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -65,6 +78,6 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
-      - ../data/seed_datasets_current:/d3m_seed_datasets
+      - ../datasets/seed_datasets_current:/d3m_seed_datasets
 volumes:
   datasets:

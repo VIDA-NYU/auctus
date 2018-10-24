@@ -1,0 +1,79 @@
+.body {
+  color: #222;
+}
+
+.App-header {
+  background-color: #222;
+  padding: 20px;
+  color: white;
+}
+
+.App-title {
+  font-size: 1.25rem;
+}
+
+.sk-panel {
+  width: 100%;
+  padding: 1rem 0.5rem;
+}
+
+.sk-item-list__item {
+  overflow: hidden;
+}
+
+.sk-search-box {
+  border: 1px solid #aaa;
+  border-radius: 5px;
+}
+
+.sk-item-list-option__text {
+}
+
+.sk-item-list-option__text {
+  -ms-flex: auto;
+  flex: auto;
+  font-size: 14px;
+  color: #333;
+  margin-right: 10px;
+}
+
+/*****/
+
+.sk-search-box{
+  background:hsla(0,0%,100%,.15);
+  border-radius:3px;
+  position:relative;
+  display:flex;
+  flex:1
+}
+.sk-search-box.is-focused{
+  background:#fff
+}
+.sk-search-box.is-focused .sk-search-box__text{
+  color:#444
+}
+.sk-search-box.is-focused .sk-search-box__text::-webkit-input-placeholder{
+  color:#999;
+  font-weight:300
+}
+.sk-search-box form{
+  width:100%
+}
+.sk-search-box input.sk-search-box__text{
+  -webkit-box-shadow:none;
+  box-shadow:none;
+  background:transparent;
+  color:#fff;
+  font-size:16px;
+  padding-left:10px
+}
+.sk-search-box input.sk-search-box__text::-webkit-input-placeholder{
+  color:#999;
+  font-weight:100
+}
+.sk-search-box__icon{
+  margin:10px 0 0 15px
+}
+.sk-search-box__action{
+  display:none
+}
