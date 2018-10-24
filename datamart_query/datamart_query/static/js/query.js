@@ -49,6 +49,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   .then(function(result) {
     var results_div = document.getElementById('results');
     results_div.innerHTML = '';
+    document.getElementById('search-error').style.display = 'none';
     for(var i = 0; i < result.results.length; ++i) {
       var elem = document.createElement('div');
       var data = result.results[i];
@@ -77,7 +78,14 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       );
       results_div.appendChild(elem);
     }
+    if(result.results.length == 0) {
+      document.getElementById('search-error').style.display = '';
+      document.getElementById('search-error').innerText = "No results";
+    }
   }, function(error) {
     console.error("Query failed:", error);
+    alert("Query failed: " + error);
+    document.getElementById('search-error').style.display = '';
+    document.getElementById('search-error').innerText = '' + error;
   });
 });
