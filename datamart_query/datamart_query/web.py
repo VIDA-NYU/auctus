@@ -47,6 +47,20 @@ class BaseHandler(RequestHandler):
             current_user=self.current_user,
             **kwargs)
 
+    def get_json(self):
+        type_ = self.request.headers.get('Content-Type', '')
+        if not type_.startswith('application/json'):
+            raise HTTPError(400, "Expected JSON")
+        return json.loads(self.request.body.decode('utf-8'))
+
+    def send_json(self, obj):
+        if isinstance(obj, list):
+            obj = {'results': obj}
+        elif not isinstance(obj, dict):
+            raise ValueError("Can't encode %r to JSON" % type(obj))
+        self.set_header('Content-Type', 'application/json; charset=utf-8')
+        return self.finish(json.dumps(obj))
+
 
 class Index(BaseHandler):
     def get(self):
@@ -56,6 +70,38 @@ class Index(BaseHandler):
 class Search(BaseHandler):
     def get(self):
         self.render('search.html')
+
+
+class Query(BaseHandler):
+    def post(self):
+        obj = self.get_json()
+
+        # Search by keyword
+        keywords = obj.get('keywords', [])
+        hits = self.application.elasticsearch.search(
+            index='datamart',
+            body={
+                'query': {
+                    'terms': {
+                        'description': keywords,
+                    },
+                },
+            },
+        )['hits']['hits']
+
+        result = []
+        for h in hits:
+            meta = h.pop('_source')
+            materialize = meta.pop('materialize', {})
+            if 'description' in meta and len(meta['description']) > 100:
+                meta['description'] = meta['description'][:100] + "..."
+            result.append(dict(
+                id=h['_id'],
+                score=h['_score'],
+                discoverer=materialize['identifier'],
+                meta=meta,
+            ))
+        self.send_json(result)
 
 
 class Application(tornado.web.Application):
@@ -105,6 +151,7 @@ def make_app(debug=False):
         [
             URLSpec('/', Index, name='index'),
             URLSpec('/search', Search, name='search'),
+            URLSpec('/query', Query, name='query'),
         ],
         static_path=pkg_resources.resource_filename('datamart_query',
                                                     'static'),
