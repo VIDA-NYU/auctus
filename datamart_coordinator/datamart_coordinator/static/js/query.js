@@ -12,8 +12,7 @@ function postJSON(url='', data={}, args) {
   return fetch(
     url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,
     {
-      credentials: 'same-origin',
-      mode: 'same-origin',
+      mode: 'cors',
       cache: 'no-cache',
       method: 'POST',
       headers: {
@@ -45,7 +44,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   query = document.getElementById('search-bar').value;
   query = query.split(/[ ,+]+/);
   console.log("Searching:", query);
-  postJSON('/query', {keywords: query})
+  postJSON(QUERY_HOST + '/query', {keywords: query})
   .then(function(result) {
     var results_div = document.getElementById('results');
     results_div.innerHTML = '';

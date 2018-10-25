@@ -40,7 +40,7 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
     ports:
-      - 8000:8000
+      - 8002:8002
     volumes:
       - datasets:/datasets
       - ./datamart_query/datamart_query:/usr/src/app/datamart_query/datamart_query

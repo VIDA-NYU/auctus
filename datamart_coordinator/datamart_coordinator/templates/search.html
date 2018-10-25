@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% set active_page = "index" %}
+{% set active_page = "search" %}
 
 {% block contents %}
 <section class="jumbotron text-center">
@@ -29,5 +29,8 @@
   </div>
 </div>
 
+<script type="text/javascript">
+var QUERY_HOST = 'http://localhost:8002';
+</script>
 <script type="text/javascript" src="{{ static_url('js/query.js') }}"></script>
 {% endblock %}
