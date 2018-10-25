@@ -27,6 +27,7 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=guest
       - AMQP_PASSWORD=guest
+      - QUERY_HOST=http://localhost:8002
     ports:
       - 8001:8001
     volumes:

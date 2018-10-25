@@ -85,7 +85,7 @@ class Status(BaseHandler):
 
 class Search(BaseHandler):
     def get(self):
-        self.render('search.html')
+        self.render('search.html', query_host=os.environ.get('QUERY_HOST', ''))
 
 
 class Dataset(BaseHandler):

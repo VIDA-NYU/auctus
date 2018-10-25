@@ -30,7 +30,7 @@
 </div>
 
 <script type="text/javascript">
-var QUERY_HOST = 'http://localhost:8002';
+var QUERY_HOST = '{{ query_host | safe }}';
 </script>
 <script type="text/javascript" src="{{ static_url('js/query.js') }}"></script>
 {% endblock %}
