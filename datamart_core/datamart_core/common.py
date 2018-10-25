@@ -27,8 +27,8 @@ def block_run(loop, coro):
     return block_wait_future(future)
 
 
-def json2msg(obj):
-    return aio_pika.Message(json.dumps(obj).encode('utf-8'))
+def json2msg(obj, **kwargs):
+    return aio_pika.Message(json.dumps(obj).encode('utf-8'), **kwargs)
 
 
 def msg2json(msg):

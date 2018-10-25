@@ -68,7 +68,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '    <div class="d-flex justify-content-between align-items-center">' +
         '      <div class="btn-group">' +
         '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
-        '        <button type="button" class="btn btn-sm btn-outline-secondary">Download</button>' +
+        '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
         '      </div>' +
         '      <small class="text-muted">' + (data.meta.size?formatSize(data.meta.size):'unknown size') + '</small>' +
         '    </div>' +

@@ -40,6 +40,9 @@ services:
     command: python -m datamart_query.web
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=guest
+      - AMQP_PASSWORD=guest
     ports:
       - 8002:8002
     volumes:
