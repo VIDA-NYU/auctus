@@ -83,6 +83,11 @@ class Status(BaseHandler):
         })
 
 
+class Search(BaseHandler):
+    def get(self):
+        self.render('search.html')
+
+
 class Dataset(BaseHandler):
     def get(self, dataset_id):
         # Get metadata from Elasticsearch
@@ -150,6 +155,7 @@ def make_app(debug=False):
         [
             URLSpec('/', Index, name='index'),
             URLSpec('/status', Status),
+            URLSpec('/search', Search, name='search'),
             URLSpec('/dataset/([^/]+)', Dataset),
 
             URLSpec('/allocate_dataset', AllocateDataset),

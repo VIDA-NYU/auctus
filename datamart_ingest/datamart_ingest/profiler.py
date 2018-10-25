@@ -19,6 +19,7 @@ def handle_dataset(storage, metadata):
         nb_rows = 1 + sum(1 for _ in fp)
 
     # Update metadata
+    metadata['size'] = os.path.getsize(os.path.join(storage.path, 'main.csv'))
     metadata['nb_rows'] = nb_rows
     columns = metadata.setdefault('columns', [])
     if len(columns) != len(header):
