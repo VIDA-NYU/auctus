@@ -31,5 +31,6 @@ setup(name='datamart_client',
           'Intended Audience :: Science/Research',
           'Natural Language :: English',
           'Operating System :: OS Independent',
-          'Programming Language :: Python :: 3 :: Only',
+          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3',
           'Topic :: Scientific/Engineering :: Information Analysis'])
