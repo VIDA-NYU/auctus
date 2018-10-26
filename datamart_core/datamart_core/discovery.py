@@ -55,15 +55,15 @@ class Discoverer(object):
             'datasets',
             aio_pika.ExchangeType.TOPIC)
 
-        # Setup the ingest exchange
-        self.ingest_exchange = await self.channel.declare_exchange(
-            'ingest',
+        # Setup the profiling exchange
+        self.profile_exchange = await self.channel.declare_exchange(
+            'profile',
             aio_pika.ExchangeType.FANOUT,
         )
 
-        # Declare the ingestion queue
-        ingest_queue = await self.channel.declare_queue('ingest')
-        await ingest_queue.bind(self.ingest_exchange)
+        # Declare the profiling queue
+        profile_queue = await self.channel.declare_queue('profile')
+        await profile_queue.bind(self.profile_exchange)
 
     async def _run(self):
         connection = await aio_pika.connect_robust(
@@ -76,7 +76,7 @@ class Discoverer(object):
 
         await self._amqp_setup()
 
-        # Start ingestion process
+        # Start profiling process
         log_future(self._call(self.main_loop), logger)
 
         # FIXME: The semaphore is only acquired when a message is received,
@@ -211,19 +211,19 @@ class Discoverer(object):
         dataset_id = uuid.uuid4().hex
 
         # Bind the requester's reply queue to the datasets exchange, with the
-        # right routing_key, so that he receives the ingestion result for the
+        # right routing_key, so that he receives the profiling result for the
         # dataset
         if bind is not None:
             reply_queue = await self.channel.declare_queue(bind, passive=True)
             await reply_queue.bind(self.datasets_exchange, dataset_id)
 
-        # Publish this dataset to the ingestion queue
+        # Publish this dataset to the profiling queue
         metadata = dict(metadata,
                         materialize=dict(
                             materialize,
                             identifier=self.identifier,
                             date=datetime.utcnow().isoformat() + 'Z'))
-        await self.ingest_exchange.publish(
+        await self.profile_exchange.publish(
             json2msg(dict(
                 id=dataset_id,
                 storage=storage.to_json(),

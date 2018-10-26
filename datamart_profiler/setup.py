@@ -9,14 +9,14 @@ req = [
     'aio-pika',
     'elasticsearch',
 ]
-setup(name='datamart_ingest',
+setup(name='datamart_profiler',
       version='0.0',
-      packages=['datamart_ingest'],
+      packages=['datamart_profiler'],
       entry_points={
           'console_scripts': [
-              'datamart_ingest = datamart_ingest.main:main']},
+              'datamart_profiler = datamart_profiler.main:main']},
       install_requires=req,
-      description="Ingestion and data profiling component of DataMart",
+      description="Data profiling component of DataMart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -27,7 +27,7 @@ setup(name='datamart_ingest',
           'Source': 'https://gitlab.com/remram44/datamart',
           'Tracker': 'https://gitlab.com/remram44/datamart/issues',
       },
-      long_description="Ingestion and data profiling component of DataMart",
+      long_description="Data profiling component of DataMart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[

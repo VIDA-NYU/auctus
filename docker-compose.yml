@@ -48,10 +48,10 @@ services:
     volumes:
       - datasets:/datasets
       - ./datamart_query/datamart_query:/usr/src/app/datamart_query/datamart_query
-  ingester:
+  profiler:
     build:
       context: .
-      dockerfile: datamart_ingest/Dockerfile
+      dockerfile: datamart_profiler/Dockerfile
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq

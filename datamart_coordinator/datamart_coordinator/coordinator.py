@@ -82,13 +82,13 @@ class Coordinator(object):
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
 
-        # Register to ingest exchange
-        self.ingest_exchange = await self.channel.declare_exchange(
-            'ingest',
+        # Register to profiling exchange
+        self.profile_exchange = await self.channel.declare_exchange(
+            'profile',
             aio_pika.ExchangeType.FANOUT,
         )
-        self.ingest_queue = await self.channel.declare_queue(exclusive=True)
-        await self.ingest_queue.bind(self.ingest_exchange)
+        self.profile_queue = await self.channel.declare_queue(exclusive=True)
+        await self.profile_queue.bind(self.profile_exchange)
 
         # Register to datasets exchange
         datasets_exchange = await self.channel.declare_exchange(
@@ -105,19 +105,19 @@ class Coordinator(object):
         await self.queries_queue.bind(queries_exchange)
 
         await asyncio.gather(
-            asyncio.get_event_loop().create_task(self._consume_ingest()),
+            asyncio.get_event_loop().create_task(self._consume_profile()),
             asyncio.get_event_loop().create_task(self._consume_datasets()),
             asyncio.get_event_loop().create_task(self._consume_queries()),
         )
 
-    async def _consume_ingest(self):
-        # Consume ingest messages
-        async for message in self.ingest_queue.iterator(no_ack=True):
+    async def _consume_profile(self):
+        # Consume profiling messages
+        async for message in self.profile_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
             metadata = obj.get('metadata', {})
             materialize = metadata.get('materialize', {})
-            logger.info("Got ingest message: %r", dataset_id)
+            logger.info("Got profile message: %r", dataset_id)
             storage = obj['storage']['path']
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i]['id'] == dataset_id:
@@ -141,7 +141,7 @@ class Coordinator(object):
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i]['id'] == dataset_id:
                     self.recent_discoveries[i].pop('storage', None)
-                    self.recent_discoveries[i]['ingested'] = obj.get('date',
+                    self.recent_discoveries[i]['profiled'] = obj.get('date',
                                                                      '???')
                     break
             else:
@@ -150,7 +150,7 @@ class Coordinator(object):
                     dict(id=dataset_id,
                          discoverer=materialize.get('identifier', '(unknown)'),
                          discovered=materialize.get('date', '???'),
-                         ingested=obj.get('date', '???')),
+                         profiled=obj.get('date', '???')),
                 )
                 del self.recent_discoveries[15:]
 

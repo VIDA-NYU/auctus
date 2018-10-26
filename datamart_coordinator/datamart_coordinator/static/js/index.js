@@ -49,14 +49,14 @@ function loadStatus() {
     for(var i = 0; i < result.recent_discoveries.length; ++i) {
       var elem;
       var record = result.recent_discoveries[i];
-      if(record.ingested) {
+      if(record.profiled) {
         elem = document.createElement('a');
         elem.setAttribute('href', '/dataset/' + escape(record.id));
         elem.className = 'list-group-item list-group-item-action flex-column align-items-start';
         elem.innerHTML =
           '<div class="d-flex w-100 justify-content-between">' +
           '  <h5 class="mb-1">' + record.id + '</h5>' +
-          '  <small>' + record.ingested + '</small>' +
+          '  <small>' + record.profiled + '</small>' +
           '</div>' +
           //'<p class="mb-1">More info?</p>' +
           '<small>' + record.discoverer + '</small>';
