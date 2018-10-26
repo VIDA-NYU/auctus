@@ -116,6 +116,11 @@ class Download(CorsHandler):
                     self.set_status(500)
                     self.send_json(dict(error="Materializer reports failure"))
                 else:
+                    self.set_header('Content-Type', 'application/octet-stream')
+                    self.set_header('X-Content-Type-Options', 'nosniff')
+                    self.set_header(
+                        'Content-Disposition',
+                        'attachment; filename="%s.csv"' % dataset_id)
                     with open(os.path.join(reply['storage']['path'], 'main.csv'),
                               'rb') as fp:
                         buf = fp.read(4096)
