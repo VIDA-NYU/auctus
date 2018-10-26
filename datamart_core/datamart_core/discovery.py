@@ -231,6 +231,7 @@ class Discoverer(object):
             )),
             '',
         )
+        logger.info("Discovered %s", dataset_id)
         return dataset_id
 
     def record_dataset(self, storage, materialize, metadata, bind=None):
