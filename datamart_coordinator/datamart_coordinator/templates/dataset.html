@@ -4,6 +4,8 @@
 {% block contents %}
 <h1>Dataset: {{ dataset_id }}</h1>
 
+<p><a href="{{ query_host }}/download/{{ dataset_id }}">Download</a> ({{ size }})</p>
+
 {% macro meta_table(m) -%}
   {% if isdict(m) %}
     <table class="table json">

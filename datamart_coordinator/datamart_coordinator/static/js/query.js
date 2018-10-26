@@ -31,13 +31,13 @@ function postJSON(url='', data={}, args) {
 function formatSize(bytes) {
     var i = 0;
     var units = [' B', ' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB'];
-    while(bytes > 1000) {
+    while(bytes > 1000 && i + 1 < units.length) {
         bytes = bytes / 1000;
         i++;
     }
 
     return bytes.toFixed(1) + units[i];
-};
+}
 
 document.getElementById('search-form').addEventListener('submit', function(e) {
   e.preventDefault();

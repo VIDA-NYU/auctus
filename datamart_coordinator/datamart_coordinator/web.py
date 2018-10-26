@@ -50,6 +50,7 @@ class BaseHandler(RequestHandler):
         return template.render(
             handler=self,
             current_user=self.current_user,
+            query_host=os.environ.get('QUERY_HOST', ''),
             **kwargs)
 
     def get_json(self):
@@ -85,7 +86,18 @@ class Status(BaseHandler):
 
 class Search(BaseHandler):
     def get(self):
-        self.render('search.html', query_host=os.environ.get('QUERY_HOST', ''))
+        self.render('search.html')
+
+
+def format_size(bytes):
+    units = [' B', ' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB']
+
+    i = 0
+    while bytes > 1000 and i + 1 < len(units):
+        bytes = bytes / 1000.0
+        i += 1
+
+    return '%.1f%s' % (bytes, units[i])
 
 
 class Dataset(BaseHandler):
@@ -97,7 +109,8 @@ class Dataset(BaseHandler):
         discoverer = materialize.pop('identifier', '(unknown)')
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
-                    metadata=metadata, materialize=materialize)
+                    metadata=metadata, materialize=materialize,
+                    size=format_size(metadata['size']))
 
 
 class AllocateDataset(BaseHandler):
