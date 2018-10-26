@@ -65,19 +65,19 @@ class Query(CorsHandler):
             },
         )['hits']['hits']
 
-        result = []
+        results = []
         for h in hits:
             meta = h.pop('_source')
             materialize = meta.pop('materialize', {})
             if 'description' in meta and len(meta['description']) > 100:
                 meta['description'] = meta['description'][:100] + "..."
-            result.append(dict(
+            results.append(dict(
                 id=h['_id'],
                 score=h['_score'],
                 discoverer=materialize['identifier'],
-                meta=meta,
+                metadata=meta,
             ))
-        self.send_json(result)
+        self.send_json({'results': results})
 
 
 class Download(CorsHandler):

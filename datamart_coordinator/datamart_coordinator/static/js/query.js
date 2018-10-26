@@ -53,7 +53,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       var elem = document.createElement('div');
       var data = result.results[i];
       elem.className = 'col-md-4';
-      description = data.meta.description
+      description = data.metadata.description
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -70,7 +70,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
         '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
         '      </div>' +
-        '      <small class="text-muted">' + (data.meta.size?formatSize(data.meta.size):'unknown size') + '</small>' +
+        '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
         '    </div>' +
         '  </div>' +
         '</div>'
