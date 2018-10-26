@@ -110,8 +110,6 @@ class Discoverer(object):
                 self._handle_query_callback(message)
             )
 
-            await self.work_tickets.acquire()
-
     def _handle_query_callback(self, message):
         async def coro(future):
             try:
@@ -153,8 +151,6 @@ class Discoverer(object):
                 self._handle_materialize_callback(message)
             )
 
-            await self.work_tickets.acquire()
-
     def _handle_materialize_callback(self, message):
         async def coro(future):
             try:
@@ -175,11 +171,13 @@ class Discoverer(object):
                     message.reply_to,
                 )
             else:
+                message.ack()
                 await self.channel.default_exchange.publish(
                     json2msg(dict(
                         success=True,
                         storage=storage.to_json(),
                     )),
+                    message.reply_to,
                 )
 
         def callback(future):
