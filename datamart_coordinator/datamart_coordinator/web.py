@@ -1,12 +1,9 @@
-import asyncio
 import elasticsearch
-import itertools
 import logging
 import jinja2
 import json
 import os
 import pkg_resources
-import time
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
@@ -53,6 +50,7 @@ class BaseHandler(RequestHandler):
         return template.render(
             handler=self,
             current_user=self.current_user,
+            query_host=os.environ.get('QUERY_HOST', ''),
             **kwargs)
 
     def get_json(self):
@@ -86,6 +84,22 @@ class Status(BaseHandler):
         })
 
 
+class Search(BaseHandler):
+    def get(self):
+        self.render('search.html')
+
+
+def format_size(bytes):
+    units = [' B', ' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB']
+
+    i = 0
+    while bytes > 1000 and i + 1 < len(units):
+        bytes = bytes / 1000.0
+        i += 1
+
+    return '%.1f%s' % (bytes, units[i])
+
+
 class Dataset(BaseHandler):
     def get(self, dataset_id):
         # Get metadata from Elasticsearch
@@ -95,7 +109,8 @@ class Dataset(BaseHandler):
         discoverer = materialize.pop('identifier', '(unknown)')
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
-                    metadata=metadata, materialize=materialize)
+                    metadata=metadata, materialize=materialize,
+                    size=format_size(metadata['size']))
 
 
 class AllocateDataset(BaseHandler):
@@ -153,6 +168,7 @@ def make_app(debug=False):
         [
             URLSpec('/', Index, name='index'),
             URLSpec('/status', Status),
+            URLSpec('/search', Search, name='search'),
             URLSpec('/dataset/([^/]+)', Dataset),
 
             URLSpec('/allocate_dataset', AllocateDataset),
@@ -170,7 +186,7 @@ def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
 
-    app = make_app()
+    app = make_app(debug=True)
     app.listen(8001)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()

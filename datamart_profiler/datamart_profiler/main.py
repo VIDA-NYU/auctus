@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 MAX_CONCURRENT = 2
 
 
-class Ingester(object):
+class Profiler(object):
     def __init__(self):
         self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
         self.es = elasticsearch.Elasticsearch(
@@ -34,29 +34,7 @@ class Ingester(object):
         for i in itertools.count():
             try:
                 if not self.es.indices.exists('datamart'):
-                    logger.info("Creating 'datamart' index in Elasticsearch")
-                    self.es.indices.create(
-                        'datamart',
-                        {
-                            'mappings': {
-                                '_doc': {
-                                    'properties': {
-                                        # 'columns' is a nested field, we want
-                                        # to query individual columns
-                                        'columns': {
-                                            'type': 'nested',
-                                            'properties': {
-                                                'semantic_types': {
-                                                    'type': 'keyword',
-                                                    'index': True,
-                                                },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    )
+                    raise RuntimeError("'datamart' index does not exist")
             except Exception:
                 logger.warning("Can't connect to Elasticsearch, retrying...")
                 if i == 5:
@@ -72,15 +50,15 @@ class Ingester(object):
             'datasets',
             aio_pika.ExchangeType.TOPIC)
 
-        # Setup the ingest exchange
-        self.ingest_exchange = await self.channel.declare_exchange(
-            'ingest',
+        # Setup the profiling exchange
+        self.profile_exchange = await self.channel.declare_exchange(
+            'profile',
             aio_pika.ExchangeType.FANOUT,
         )
 
-        # Declare the ingestion queue
-        self.ingest_queue = await self.channel.declare_queue('ingest')
-        await self.ingest_queue.bind(self.ingest_exchange)
+        # Declare the profiling queue
+        self.profile_queue = await self.channel.declare_queue('profile')
+        await self.profile_queue.bind(self.profile_exchange)
 
     async def _run(self):
         connection = await aio_pika.connect_robust(
@@ -93,9 +71,9 @@ class Ingester(object):
 
         await self._amqp_setup()
 
-        # Consume ingestion queue
+        # Consume profiling queue
         await self.work_tickets.acquire()
-        async for message in self.ingest_queue:
+        async for message in self.profile_queue:
             obj = msg2json(message)
             dataset_id = obj['id']
             storage = Storage(obj['storage'])
@@ -163,7 +141,7 @@ class Ingester(object):
 def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
-    Ingester()
+    Profiler()
     asyncio.get_event_loop().run_forever()
 
 

@@ -53,6 +53,7 @@ class ExampleD3MDiscoverer(Discoverer):
     def handle_materialize(self, materialize):
         name = materialize['d3m_name']
         csv_name = os.path.join(
+            '/d3m_seed_datasets',
             name,
             name + '_dataset',
             'tables',

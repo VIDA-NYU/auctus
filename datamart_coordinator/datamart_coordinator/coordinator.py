@@ -1,9 +1,11 @@
 import aio_pika
 import asyncio
+import itertools
 import json
 import logging
 import os
 import sys
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -18,8 +20,8 @@ def log_future(future, message="Exception in background task",
             logger.exception(message)
         if should_never_exit:
             logger.critical("Critical task died, exiting")
-            sys.exit(1)
             asyncio.get_event_loop().stop()
+            sys.exit(1)
     future.add_done_callback(log)
 
 
@@ -27,6 +29,46 @@ class Coordinator(object):
     def __init__(self, es):
         self.elasticsearch = es
         self.recent_discoveries = []
+
+        # Retry a few times, in case the Elasticsearch container is not yet up
+        for i in itertools.count():
+            try:
+                if not es.indices.exists('datamart'):
+                    logger.info("Creating 'datamart' index in Elasticsearch")
+                    es.indices.create(
+                        'datamart',
+                        {
+                            'mappings': {
+                                '_doc': {
+                                    'properties': {
+                                        # 'columns' is a nested field, we want
+                                        # to query individual columns
+                                        'columns': {
+                                            'type': 'nested',
+                                            'properties': {
+                                                'semantic_types': {
+                                                    'type': 'keyword',
+                                                    'index': True,
+                                                },
+                                            },
+                                        },
+                                        'license': {
+                                            'type': 'keyword',
+                                            'index': True,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    )
+            except Exception:
+                logger.warning("Can't connect to Elasticsearch, retrying...")
+                if i == 5:
+                    raise
+                else:
+                    time.sleep(5)
+            else:
+                break
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()),
                    should_never_exit=True)
@@ -40,13 +82,13 @@ class Coordinator(object):
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
 
-        # Register to ingest exchange
-        self.ingest_exchange = await self.channel.declare_exchange(
-            'ingest',
+        # Register to profiling exchange
+        self.profile_exchange = await self.channel.declare_exchange(
+            'profile',
             aio_pika.ExchangeType.FANOUT,
         )
-        self.ingest_queue = await self.channel.declare_queue(exclusive=True)
-        await self.ingest_queue.bind(self.ingest_exchange)
+        self.profile_queue = await self.channel.declare_queue(exclusive=True)
+        await self.profile_queue.bind(self.profile_exchange)
 
         # Register to datasets exchange
         datasets_exchange = await self.channel.declare_exchange(
@@ -63,19 +105,19 @@ class Coordinator(object):
         await self.queries_queue.bind(queries_exchange)
 
         await asyncio.gather(
-            asyncio.get_event_loop().create_task(self._consume_ingest()),
+            asyncio.get_event_loop().create_task(self._consume_profile()),
             asyncio.get_event_loop().create_task(self._consume_datasets()),
             asyncio.get_event_loop().create_task(self._consume_queries()),
         )
 
-    async def _consume_ingest(self):
-        # Consume ingest messages
-        async for message in self.ingest_queue.iterator(no_ack=True):
+    async def _consume_profile(self):
+        # Consume profiling messages
+        async for message in self.profile_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
             metadata = obj.get('metadata', {})
             materialize = metadata.get('materialize', {})
-            logger.info("Got ingest message: %r", dataset_id)
+            logger.info("Got profile message: %r", dataset_id)
             storage = obj['storage']['path']
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i]['id'] == dataset_id:
@@ -99,7 +141,7 @@ class Coordinator(object):
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i]['id'] == dataset_id:
                     self.recent_discoveries[i].pop('storage', None)
-                    self.recent_discoveries[i]['ingested'] = obj.get('date',
+                    self.recent_discoveries[i]['profiled'] = obj.get('date',
                                                                      '???')
                     break
             else:
@@ -108,7 +150,7 @@ class Coordinator(object):
                     dict(id=dataset_id,
                          discoverer=materialize.get('identifier', '(unknown)'),
                          discovered=materialize.get('date', '???'),
-                         ingested=obj.get('date', '???')),
+                         profiled=obj.get('date', '???')),
                 )
                 del self.recent_discoveries[15:]
 

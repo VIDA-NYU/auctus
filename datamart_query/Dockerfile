@@ -7,9 +7,9 @@ COPY datamart_core/setup.py \
 COPY datamart_core/datamart_core \
      datamart_core/datamart_core
 RUN pip install -e /usr/src/app/datamart_core
-COPY datamart_ingest/setup.py \
-     datamart_ingest/
-COPY datamart_ingest/datamart_ingest \
-     datamart_ingest/datamart_ingest
-RUN pip install -e /usr/src/app/datamart_ingest
-CMD ["datamart_ingest"]
+COPY datamart_query/setup.py \
+     datamart_query/
+COPY datamart_query/datamart_query \
+     datamart_query/datamart_query
+RUN pip install -e /usr/src/app/datamart_query
+CMD ["datamart_query"]

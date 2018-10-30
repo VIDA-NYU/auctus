@@ -10,10 +10,25 @@
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary" id="special-nav">
       <div class="container">
-        <a class="navbar-brand special-brand" href="{{ reverse_url('index') }}">DataMart</a>
-        <!--<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+        <a class="navbar-brand special-brand" href="#">DataMart</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
-        </button>-->
+        </button>
+        <div class="collapse navbar-collapse" id="navbarColor01">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item {{ 'active' if active_page == 'index' else '' }}">
+              <a class="nav-link" href="{{ reverse_url('index') }}">Dashboard</a>
+            </li>
+            <li class="nav-item {{ 'active' if active_page == 'search' else '' }}">
+              <a class="nav-link" href="{{ reverse_url('search') }}">Search</a>
+            </li>
+            {% if active_page == 'dataset' %}
+            <li class="nav-item active">
+              <a class="nav-link" href="#">{{ dataset_id }}</a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
       </div>
     </nav>
 

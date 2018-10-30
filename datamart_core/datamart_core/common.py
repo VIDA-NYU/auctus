@@ -27,8 +27,8 @@ def block_run(loop, coro):
     return block_wait_future(future)
 
 
-def json2msg(obj):
-    return aio_pika.Message(json.dumps(obj).encode('utf-8'))
+def json2msg(obj, **kwargs):
+    return aio_pika.Message(json.dumps(obj).encode('utf-8'), **kwargs)
 
 
 def msg2json(msg):
@@ -68,6 +68,6 @@ def log_future(future, logger, message="Exception in background task",
             logger.exception(message)
         if should_never_exit:
             logger.critical("Critical task died, exiting")
-            sys.exit(1)
             asyncio.get_event_loop().stop()
+            sys.exit(1)
     future.add_done_callback(log)
