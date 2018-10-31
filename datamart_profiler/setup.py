@@ -8,6 +8,8 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'aio-pika',
     'elasticsearch',
+    'pandas',
+    'python-dateutil',
 ]
 setup(name='datamart_profiler',
       version='0.0',
