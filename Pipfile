@@ -5,12 +5,15 @@ name = "pypi"
 
 [packages]
 aio-pika = "*"
-datamart-core = {editable = true, path = "./datamart_core"}
+datamart-client = {editable = true, path = "./datamart_client"}
 datamart-coordinator = {editable = true, path = "./datamart_coordinator"}
-datamart-cli = {editable = true, path = "./datamart_cli"}
-ipykernel = "*"
+datamart-core = {editable = true, path = "./datamart_core"}
+datamart-profiler = {editable = true, path = "./datamart_profiler"}
+datamart-query = {editable = true, path = "./datamart_query"}
 
 [dev-packages]
+ipykernel = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.6"
