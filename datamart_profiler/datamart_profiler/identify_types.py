@@ -50,15 +50,16 @@ def identify_types(array):
         semantic_types_dict['http://schema.org/Boolean'] = None
 
     # Identify dates
-    parsed_dates = []
-    for elem in array:
-        try:
-            parsed_dates.append(parse(elem))
-        except ValueError:
-            pass
+    if structural_type == 'http://schema.org/Text':
+        parsed_dates = []
+        for elem in array:
+            try:
+                parsed_dates.append(parse(elem))
+            except ValueError:
+                pass
 
-    if len(parsed_dates) >= ratio * num_total:
-        semantic_types_dict['http://schema.org/DateTime'] = parsed_dates
+        if len(parsed_dates) >= ratio * num_total:
+            semantic_types_dict['http://schema.org/DateTime'] = parsed_dates
 
     # Identify phone numbers
     num_phones = 0

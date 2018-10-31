@@ -16,7 +16,7 @@ def handle_dataset(storage, metadata):
     # File size
     metadata['size'] = os.path.getsize(os.path.join(storage.path, 'main.csv'))
 
-    df = pandas.read_csv(os.path.join(storage.path, 'main.csv'))
+    df = pandas.read_csv(os.path.join(storage.path, 'main.csv'), dtype=str)
 
     # Number of rows
     metadata['nb_rows'] = df.shape[0]
