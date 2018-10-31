@@ -10,6 +10,7 @@ datamart-coordinator = {editable = true, path = "./datamart_coordinator"}
 datamart-core = {editable = true, path = "./datamart_core"}
 datamart-profiler = {editable = true, path = "./datamart_profiler"}
 datamart-query = {editable = true, path = "./datamart_query"}
+python-dateutil = "*"
 
 [dev-packages]
 ipykernel = "*"

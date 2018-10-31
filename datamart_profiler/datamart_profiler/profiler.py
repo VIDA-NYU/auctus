@@ -1,6 +1,8 @@
-import csv
 import os
+import pandas
 import time
+
+from .identify_types import identify_types
 
 
 def handle_dataset(storage, metadata):
@@ -11,21 +13,37 @@ def handle_dataset(storage, metadata):
     """
     time.sleep(3.03)
 
-    with open(os.path.join(storage.path, 'main.csv'), newline='') as fp:
-        # Read header from first line
-        header = next(iter(csv.reader(fp)))
-
-        # Count rows
-        nb_rows = 1 + sum(1 for _ in fp)
-
-    # Update metadata
+    # File size
     metadata['size'] = os.path.getsize(os.path.join(storage.path, 'main.csv'))
-    metadata['nb_rows'] = nb_rows
+
+    df = pandas.read_csv(os.path.join(storage.path, 'main.csv'))
+
+    # Number of rows
+    metadata['nb_rows'] = df.shape[0]
+
+    # Get column dictionary
     columns = metadata.setdefault('columns', [])
-    if len(columns) != len(header):
-        columns[:] = [{} for _ in range(len(header))]
-    for dst, src in zip(columns, header):
-        dst['name'] = src
+    # Fix size if wrong
+    if len(columns) != len(df.columns):
+        columns[:] = [{} for _ in range(len(df.columns))]
+
+    # Set column names
+    for column_meta, name in zip(columns, df.columns):
+        column_meta['name'] = name
+
+    # Identify types
+    for i, column_meta in enumerate(columns):
+        array = df.iloc[:, i]
+        structural_types, semantic_types_dict = identify_types(array)
+        # Set structural type
+        column_meta['structural_type'] = structural_types
+        # Add semantic types to the ones already present
+        sem_types = column_meta.setdefault('semantic_types', [])
+        for sem_type in semantic_types_dict:
+            if sem_type not in sem_types:
+                sem_types.append(sem_type)
+
+    # TODO: Compute histogram
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
