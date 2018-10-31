@@ -66,10 +66,10 @@ class Dataset(object):
         return cls(result['id'], result['metadata'], url=url,
                    score=result['score'], discoverer=result['discoverer'])
 
-    def download(self, destination):
+    def _request(self, stream=True):
         response = requests.get(self._url + '/download/%s' % self.id,
                                 allow_redirects=True,
-                                stream=True)
+                                stream=stream)
         if response.status_code != 200:
             if response.headers.get('Content-Type') == 'application/json':
                 try:
@@ -79,7 +79,20 @@ class Dataset(object):
                     pass
             raise DatamartError("Error from DataMart: %s %s" % (
                 response.status_code, response.reason))
-        with open(destination, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=4096):
-                if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
+        return response
+
+    def download(self, destination):
+        if not hasattr(destination, 'write'):
+            with open(destination, 'wb') as f:
+                return self.download(destination)
+
+        response = self._request(stream=True)
+        for chunk in response.iter_content(chunk_size=4096):
+            if chunk:  # filter out keep-alive new chunks
+                destination.write(chunk)
+
+    def to_dataframe(self):
+        import pandas
+
+        response = self._request(stream=True)
+        return pandas.read_csv(response.raw)
