@@ -2,7 +2,6 @@ import math
 import numpy
 import os
 import pandas
-import time
 
 from .identify_types import identify_types
 
@@ -33,8 +32,6 @@ def handle_dataset(storage, metadata):
     :param metadata: The metadata provided by the discovery plugin (might be
         very limited).
     """
-    time.sleep(3.03)
-
     # File size
     metadata['size'] = os.path.getsize(os.path.join(storage.path, 'main.csv'))
 
