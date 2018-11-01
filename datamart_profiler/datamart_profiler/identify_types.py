@@ -1,5 +1,6 @@
 from dateutil.parser import parse
 import re
+import unittest
 
 
 _re_int = re.compile(r'^[+-]?[0-9]+$')
@@ -77,3 +78,88 @@ def identify_types(array):
                             'PhoneNumber'] = None
 
     return structural_type, semantic_types_dict
+
+
+class TestTypes(unittest.TestCase):
+    def do_test(self, match, positive, negative):
+        for elem in positive.splitlines():
+            elem = elem.strip()
+            if elem:
+                self.assertTrue(match(elem),
+                                "Didn't match: %s" % elem)
+        for elem in negative.splitlines():
+            elem = elem.strip()
+            if elem:
+                self.assertFalse(match(elem),
+                                "Shouldn't have matched: %s" % elem)
+
+    def test_phone(self):
+        positive = '''\
+        +1 347 123 4567
+        1 347 123 4567
+        13471234567
+        +13471234567
+        +1 (347) 123 4567
+        (347)123-4567
+        +1.347-123-4567
+        347-123-4567
+        +33 6 12 34 56 78
+        06 12 34 56 78
+        +1.347123456
+        347.123.4567
+        '''
+        negative = '''\
+        -3471234567
+        12.3
+        +145
+        -
+        '''
+        self.do_test(_re_phone.match, positive, negative)
+        self.assertFalse(_re_phone.match(''))
+
+    def test_ints(self):
+        positive = '''\
+        12
+        0
+        +478
+        -17
+        '''
+        negative = '''\
+        1.7
+        7A
+        ++2
+        --34
+        +-7
+        -+18
+        '''
+        self.do_test(_re_int.match, positive, negative)
+        self.assertFalse(_re_int.match(''))
+
+    def test_floats(self):
+        positive = '''\
+        12.
+        0.
+        .7
+        123.456
+        +123.456
+        +.456
+        -.4
+        .4e17
+        -.4e17
+        +8.4e17
+        +8.e17
+        '''
+        negative = '''\
+        1.7.3
+        .7.3
+        7.3.
+        .
+        -.
+        +.
+        7.A
+        .e8
+        8e17
+        1.3e
+        '''
+        self.do_test(_re_float.match, positive, negative)
+        self.assertFalse(_re_float.match(''))
