@@ -29,6 +29,7 @@ def identify_types(array):
 
     # Identify structural type
     num_float = num_int = num_bool = num_empty = 0
+    # TODO: ENUM
     for elem in array:
         if not elem:
             num_empty += 1
