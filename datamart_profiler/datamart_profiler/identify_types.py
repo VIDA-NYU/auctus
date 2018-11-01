@@ -2,8 +2,13 @@ from dateutil.parser import parse
 import re
 
 
-_re_int = re.compile(r'^-?[0-9]+$')
-_re_float = re.compile(r'^-?(?:[0-9]+\.[0-9]*)|(\.[0-9]+)[Ee][0-9]+$')
+_re_int = re.compile(r'^[+-]?[0-9]+$')
+_re_float = re.compile(r'^[+-]?'
+                       r'(?:'
+                       r'(?:[0-9]+\.[0-9]*)|'
+                       r'(?:\.[0-9]+)'
+                       r')'
+                       r'(?:[Ee][0-9]+)?$')
 _re_phone = re.compile(r'^'
                        r'(?:\+[0-9]{1,3})?'  # Optional country prefix
                        r'(?=(?:[() .-]*[0-9]){4,15}$)'  # 4-15 digits
