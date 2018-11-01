@@ -1,7 +1,9 @@
+import json
 import math
 import numpy
 import os
 import pandas
+import subprocess
 
 from .identify_types import identify_types
 
@@ -32,8 +34,21 @@ def handle_dataset(storage, metadata):
     :param metadata: The metadata provided by the discovery plugin (might be
         very limited).
     """
+    csv_file = os.path.join(storage.path, 'main.csv')
+
+    # Run SCDP
+    cmd = ['java', '-jar', 'scdp.jar', csv_file]
+    proc = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stdin=subprocess.PIPE)
+    proc.stdin.close()
+    scdp_out = json.load(proc.stdout)
+    if proc.wait() != 0:
+        raise subprocess.CalledProcessError(proc.returncode, cmd)
+    print(scdp_out)
+
     # File size
-    metadata['size'] = os.path.getsize(os.path.join(storage.path, 'main.csv'))
+    metadata['size'] = os.path.getsize(csv_file)
 
     df = pandas.read_csv(os.path.join(storage.path, 'main.csv'),
                          dtype=str, na_filter=False)
