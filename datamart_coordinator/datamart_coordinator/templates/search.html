@@ -2,16 +2,19 @@
 {% set active_page = "search" %}
 
 {% block contents %}
-<section class="jumbotron text-center">
+<section class="jumbotron">
   <div class="container">
     <form id="search-form">
       {{ xsrf_form_html() }}
       <h1>Query DataMart</h1>
-      <div class="form-group row justify-content-center">
-        <input class="col-md-8" id="search-bar" required autofocus />
+      <div class="form-row">
+        <div class="form-group col-md-8 offset-md-2">
+          <label for="keywords">Keywords:</label>
+          <input class="form-control" id="keywords" autofocus />
+        </div>
       </div>
 
-      <div class="form-group row justify-content-center">
+      <div class="form-group row justify-content-center mt-2">
         <button class="btn btn-lg btn-primary btn-block col-md-8" type="submit">Go</button>
       </div>
     </form>
