@@ -51,15 +51,47 @@ class Query(CorsHandler):
         self._cors()
 
         obj = self.get_json()
+        query = []
 
         # Search by keyword
-        keywords = obj.get('keywords', [])
+        if 'keywords' in obj:
+            query.append({
+                'terms': {
+                    'description': obj['keywords'],
+                },
+            })
+
+        # Search for columns with structural types
+        if 'structural_types' in obj:
+            for type_ in obj['structural_types']:
+                query.append({
+                    'nested': {
+                        'path': 'columns',
+                        'query': {
+                            'match': {'columns.structural_type': type_},
+                        },
+                    },
+                })
+
+        # Search for columns with semantic types
+        if 'semantic_types' in obj:
+            for type_ in obj['semantic_types']:
+                query.append({
+                    'nested': {
+                        'path': 'columns',
+                        'query': {
+                            'term': {'columns.semantic_types': type_},
+                        },
+                    },
+                })
+
+        logger.info("Query: %r", query)
         hits = self.application.elasticsearch.search(
             index='datamart',
             body={
                 'query': {
-                    'terms': {
-                        'description': keywords,
+                    'bool': {
+                        'must': query,
                     },
                 },
             },

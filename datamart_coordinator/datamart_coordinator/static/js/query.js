@@ -41,10 +41,48 @@ function formatSize(bytes) {
 
 document.getElementById('search-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  query = document.getElementById('search-bar').value;
-  query = query.split(/[ ,+]+/);
-  console.log("Searching:", query);
-  postJSON(QUERY_HOST + '/query', {keywords: query})
+
+  var search = {};
+
+  // Keywords
+  var keywords = document.getElementById('keywords').value;
+  keywords = keywords.split(/[ ,+]+/);
+  if(keywords.length == 1 && keywords[0] === '') {
+    keywords = [];
+  } else {
+    search.keywords = keywords;
+  }
+
+  // Types
+  var str_types = [];
+  var sem_types = [];
+  if(document.getElementById('type-integer').checked) {
+    str_types.push('http://schema.org/Integer');
+  }
+  if(document.getElementById('type-float').checked) {
+    str_types.push('http://schema.org/Float');
+  }
+  if(document.getElementById('type-bool').checked) {
+    sem_types.push('http://schema.org/Boolean');
+  }
+  if(document.getElementById('type-text').checked) {
+    str_types.push('http://schema.org/Text');
+  }
+  if(document.getElementById('type-datetime').checked) {
+    sem_types.push('http://schema.org/DateTime');
+  }
+  if(document.getElementById('type-phone').checked) {
+    sem_types.push('https://metadata.datadrivendiscovery.org/types/PhoneNumber');
+  }
+  if(str_types.length > 0) {
+    search.structural_types = str_types;
+  }
+  if(sem_types.length > 0) {
+    search.semantic_types = sem_types;
+  }
+
+  console.log("Searching:", search);
+  postJSON(QUERY_HOST + '/query', search)
   .then(function(result) {
     var results_div = document.getElementById('results');
     results_div.innerHTML = '';
