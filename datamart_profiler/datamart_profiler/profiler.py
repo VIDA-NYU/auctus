@@ -90,7 +90,8 @@ def handle_dataset(storage, metadata):
                 (dt.timestamp()
                 for dt in semantic_types_dict['http://schema.org/DateTime']),
                 dtype='float32')
-            mean, stddev = mean_stddev(timestamps)
+            column_meta['mean'], column_meta['stddev'] = \
+                mean_stddev(timestamps)
 
     # TODO: Compute histogram
 

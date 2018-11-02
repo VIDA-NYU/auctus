@@ -92,7 +92,7 @@ class TestTypes(unittest.TestCase):
             elem = elem.strip()
             if elem:
                 self.assertFalse(match(elem),
-                                "Shouldn't have matched: %s" % elem)
+                                 "Shouldn't have matched: %s" % elem)
 
     def test_phone(self):
         positive = '''\
