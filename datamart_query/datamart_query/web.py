@@ -56,8 +56,11 @@ class Query(CorsHandler):
         # Search by keyword
         if 'keywords' in obj:
             query.append({
-                'terms': {
-                    'description': obj['keywords'],
+                'match': {
+                    'description': {
+                        'query': obj['keywords'],
+                        'operator': 'and',
+                    },
                 },
             })
 
@@ -84,6 +87,9 @@ class Query(CorsHandler):
                         },
                     },
                 })
+
+        if not query:
+            self.send_json({'results': []})
 
         logger.info("Query: %r", query)
         hits = self.application.elasticsearch.search(

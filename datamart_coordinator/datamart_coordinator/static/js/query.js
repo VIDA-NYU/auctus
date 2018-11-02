@@ -46,10 +46,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
 
   // Keywords
   var keywords = document.getElementById('keywords').value;
-  keywords = keywords.split(/[ ,+]+/);
-  if(keywords.length == 1 && keywords[0] === '') {
-    keywords = [];
-  } else {
+  if(keywords) {
     search.keywords = keywords;
   }
 
@@ -84,6 +81,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   console.log("Searching:", search);
   postJSON(QUERY_HOST + '/query', search)
   .then(function(result) {
+    console.log("Got " + result.results.length + " results");
     var results_div = document.getElementById('results');
     results_div.innerHTML = '';
     document.getElementById('search-error').style.display = 'none';
@@ -91,13 +89,18 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       var elem = document.createElement('div');
       var data = result.results[i];
       elem.className = 'col-md-4';
-      description = data.metadata.description
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;')
-        .replace(/\n/g, '<br/>');
+      description = data.metadata.description;
+      if(description) {
+        description = description
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;')
+          .replace(/\n/g, '<br/>');
+      } else {
+        description = "(no description)";
+      }
       elem.innerHTML = (
         '<div class="card mb-4 shadow-sm">' +
         '  <div class="card-body">' +
@@ -124,5 +127,5 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     alert("Query failed: " + error);
     document.getElementById('search-error').style.display = '';
     document.getElementById('search-error').innerText = '' + error;
-  });
+  }).catch(console.error);
 });
