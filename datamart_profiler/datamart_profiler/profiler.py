@@ -45,7 +45,6 @@ def handle_dataset(storage, metadata):
     scdp_out = json.load(proc.stdout)
     if proc.wait() != 0:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
-    print(scdp_out)
 
     # File size
     metadata['size'] = os.path.getsize(csv_file)
@@ -65,6 +64,10 @@ def handle_dataset(storage, metadata):
     # Set column names
     for column_meta, name in zip(columns, df.columns):
         column_meta['name'] = name
+
+    # Copy info from SCDP
+    for column_meta, name in zip(columns, df.columns):
+        column_meta.update(scdp_out.get(name, {}))
 
     # Identify types
     for i, column_meta in enumerate(columns):
