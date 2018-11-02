@@ -36,6 +36,7 @@ class ExampleDiscoverer(Discoverer):
             storage,  # Path in shared cache
             dict(filename='nyu.zip'),  # Materialization information
             self.metadata,  # Metadata (profiler will update it)
+            dataset_id='example_nyu',
         )
 
     def handle_materialize(self, materialize):

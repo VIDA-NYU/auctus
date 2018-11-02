@@ -46,7 +46,8 @@ class ExampleD3MDiscoverer(Discoverer):
             shutil.copyfile(csv_name, destination, follow_symlinks=False)
             self.record_dataset(storage,
                                 dict(d3m_name=name),
-                                metadata)
+                                metadata,
+                                dataset_id=name)
 
             time.sleep(3)
 
