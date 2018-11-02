@@ -50,6 +50,15 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     search.keywords = keywords;
   }
 
+  // Column names
+  var column_names = document.getElementById('columns').value;
+  column_names = column_names.split(/[ ,+]+/);
+  if(column_names.length == 1 && column_names[0] === '') {
+    column_names = [];
+  } else {
+    search.column_names = column_names
+  }
+
   // Types
   var str_types = [];
   var sem_types = [];

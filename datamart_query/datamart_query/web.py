@@ -64,6 +64,18 @@ class Query(CorsHandler):
                 },
             })
 
+        # Search for columns with names
+        if 'column_names' in obj:
+            for name in obj['column_names']:
+                query.append({
+                    'nested': {
+                        'path': 'columns',
+                        'query': {
+                            'match': {'columns.name': name},
+                        },
+                    },
+                })
+
         # Search for columns with structural types
         if 'structural_types' in obj:
             for type_ in obj['structural_types']:
