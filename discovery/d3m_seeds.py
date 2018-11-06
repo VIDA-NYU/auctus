@@ -49,8 +49,6 @@ class D3MSeedsDiscoverer(Discoverer):
                                 metadata,
                                 dataset_id=name)
 
-            time.sleep(3)
-
     def handle_materialize(self, materialize):
         name = materialize['d3m_name']
         csv_name = os.path.join(
