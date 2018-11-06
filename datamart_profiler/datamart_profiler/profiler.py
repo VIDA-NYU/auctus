@@ -86,10 +86,13 @@ def handle_dataset(storage, metadata):
             column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
 
         if 'http://schema.org/DateTime' in semantic_types_dict:
-            timestamps = numpy.array(
-                (dt.timestamp()
-                for dt in semantic_types_dict['http://schema.org/DateTime']),
-                dtype='float32')
+            timestamps = numpy.empty(
+                len(semantic_types_dict['http://schema.org/DateTime']),
+                dtype='float32',
+            )
+            for j, dt in enumerate(
+                    semantic_types_dict['http://schema.org/DateTime']):
+                timestamps[j] = dt.timestamp()
             column_meta['mean'], column_meta['stddev'] = \
                 mean_stddev(timestamps)
 
