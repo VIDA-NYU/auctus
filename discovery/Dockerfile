@@ -8,6 +8,6 @@ COPY datamart_core/setup.py \
 COPY datamart_core/datamart_core \
      datamart_core/datamart_core
 RUN pip install -e /usr/src/app/datamart_core
-COPY examples /usr/src/app/examples
-ENTRYPOINT ["/bin/bash", "-c", "if [ \"$1\" = d3m ]; then python examples/example_d3m_discovery.py; elif [ \"$1\" = discovery ]; then python examples/example_discovery.py; else \"$@\"; fi", "--"]
-CMD ["discovery"]
+COPY discovery /usr/src/app/discovery
+ENTRYPOINT ["/bin/bash", "-c", "if [ \"$1\" = d3m ]; then python discovery/d3m_seeds.py; elif [ \"$1\" = example ]; then python discovery/example_discovery.py; else \"$@\"; fi", "--"]
+CMD ["example"]

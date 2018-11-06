@@ -62,8 +62,8 @@ services:
   example_discoverer:
     build:
       context: .
-      dockerfile: examples/Dockerfile
-    command: discovery
+      dockerfile: discovery/Dockerfile
+    command: example
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -71,10 +71,10 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
-  example_d3m_discoverer:
+  d3m_seeds_discoverer:
     build:
       context: .
-      dockerfile: examples/Dockerfile
+      dockerfile: discovery/Dockerfile
     command: d3m
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
