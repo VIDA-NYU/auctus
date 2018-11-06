@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "48307fc2eb1dde29704c0f926110842e746bd3c07a27d74714dc6ef074b87541"
+            "sha256": "57fef4867e006d1b6ceec50d21857a2189016a65234e3a54b1f764ec148bd2c5"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -58,12 +58,23 @@
             "editable": true,
             "path": "./datamart_query"
         },
+        "datamart-socrata-discovery": {
+            "editable": true,
+            "path": "./discovery/socrata"
+        },
         "elasticsearch": {
             "hashes": [
                 "sha256:7546cc08e3899716e12fe67d12d7cfe9a64647014d1134b014c3c392b63cad42",
                 "sha256:aada5cfdc4a543c47098eb3aca6663848ef5d04b4324935ced441debc11ec98b"
             ],
             "version": "==6.3.1"
+        },
+        "future": {
+            "hashes": [
+                "sha256:67045236dcfd6816dc439556d009594abf643e5eb48992e36beac09c2ca659b8"
+            ],
+            "markers": "python_version != '3.0.*' and python_version != '3.1.*' and python_version >= '2.6' and python_version != '3.2.*'",
+            "version": "==0.17.1"
         },
         "idna": {
             "hashes": [
@@ -240,6 +251,14 @@
                 "sha256:832dc0e10feb1aa2c68dcc57dbb658f1c7e65b9b61af69048abc87a2db00a0eb"
             ],
             "version": "==1.11.0"
+        },
+        "sodapy": {
+            "hashes": [
+                "sha256:f56df0a19a8be214f3be44818b8f31a0e3929c0c1bbbbfbce0a4b5a777a98f7f",
+                "sha256:f7634710d8b78350fee2ab6a56a54e0b971d122e709ad0af89c381f177c19d48"
+            ],
+            "markers": "python_version < '4' and python_version != '3.0.*' and python_version != '3.3.*' and python_version != '3.1.*' and python_version >= '2.7' and python_version != '3.2.*'",
+            "version": "==1.5.0"
         },
         "tornado": {
             "hashes": [
