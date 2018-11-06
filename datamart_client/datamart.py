@@ -88,7 +88,7 @@ class Dataset(object):
 
         response = self._request(stream=True)
         for chunk in response.iter_content(chunk_size=4096):
-            if chunk:  # filter out keep-alive new chunks
+            if chunk:  # filter out keep-alive chunks
                 destination.write(chunk)
 
     def to_dataframe(self):

@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 from datetime import datetime
+import elasticsearch
 import logging
 import os
 import uuid
@@ -67,6 +68,10 @@ class Discoverer(object):
         await profile_queue.bind(self.profile_exchange)
 
     async def _run(self):
+        self.elasticsearch = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+
         connection = await aio_pika.connect_robust(
             host=os.environ['AMQP_HOST'],
             login=os.environ['AMQP_USER'],
