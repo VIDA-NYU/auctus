@@ -8,9 +8,9 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'requests',
 ]
-setup(name='datamart_client',
+setup(name='datamart',
       version='0.0',
-      py_modules=['datamart_client'],
+      py_modules=['datamart'],
       install_requires=req,
       description="Client library for DataMart",
       author="Remi Rampin",
