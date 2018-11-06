@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "283700b77a862bcd06f8fa8f21602f05ff7738a4e4f1b888d24a4592cd70b6b6"
+            "sha256": "de2124c6e899ead10ef60c14acbbc1b144e845aecdd42e841c3d97215b556b23"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -38,7 +38,7 @@
             ],
             "version": "==3.0.4"
         },
-        "datamart-client": {
+        "datamart": {
             "editable": true,
             "path": "./datamart_client"
         },

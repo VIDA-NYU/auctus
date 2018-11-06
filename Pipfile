@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 aio-pika = "*"
-datamart-client = {editable = true, path = "./datamart_client"}
+datamart = {editable = true, path = "./datamart_client"}
 datamart-coordinator = {editable = true, path = "./datamart_coordinator"}
 datamart-core = {editable = true, path = "./datamart_core"}
 datamart-profiler = {editable = true, path = "./datamart_profiler"}
