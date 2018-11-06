@@ -12,6 +12,7 @@ datamart-profiler = {editable = true, path = "./datamart_profiler"}
 datamart-query = {editable = true, path = "./datamart_query"}
 
 [dev-packages]
+flake8 = "*"
 ipykernel = "*"
 
 [requires]
