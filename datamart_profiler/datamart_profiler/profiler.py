@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import numpy
 import os
@@ -6,6 +7,9 @@ import pandas
 import subprocess
 
 from .identify_types import identify_types
+
+
+logger = logging.getLogger(__name__)
 
 
 def mean_stddev(array):
@@ -36,7 +40,12 @@ def handle_dataset(storage, metadata):
     """
     csv_file = os.path.join(storage.path, 'main.csv')
 
+    # File size
+    metadata['size'] = os.path.getsize(csv_file)
+    logger.info("File size: %r bytes", metadata['size'])
+
     # Run SCDP
+    logger.info("Running SCDP...")
     cmd = ['java', '-jar', 'scdp.jar', csv_file]
     proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
@@ -46,20 +55,20 @@ def handle_dataset(storage, metadata):
     if proc.wait() != 0:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
-    # File size
-    metadata['size'] = os.path.getsize(csv_file)
-
-    df = pandas.read_csv(os.path.join(storage.path, 'main.csv'),
+    logger.info("Loading dataframe...")
+    df = pandas.read_csv(csv_file,
                          dtype=str, na_filter=False)
 
-    # Number of rows
     metadata['nb_rows'] = df.shape[0]
 
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
     # Fix size if wrong
     if len(columns) != len(df.columns):
+        logger.info("Setting column names from header")
         columns[:] = [{} for _ in range(len(df.columns))]
+    else:
+        logger.info("Keeping columns from discoverer")
 
     # Set column names
     for column_meta, name in zip(columns, df.columns):
@@ -70,6 +79,7 @@ def handle_dataset(storage, metadata):
         column_meta.update(scdp_out.get(name, {}))
 
     # Identify types
+    logger.info("Identifying types...")
     for i, column_meta in enumerate(columns):
         array = df.iloc[:, i]
         structural_type, semantic_types_dict = identify_types(array)
