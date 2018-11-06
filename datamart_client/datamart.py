@@ -18,7 +18,7 @@ class DatamartError(RuntimeError):
     """Error from DataMart."""
 
 
-def search(*, url=DEFAULT_URL, fail=False, **kwargs):
+def search(url=DEFAULT_URL, fail=False, **kwargs):
     # Read arguments, build request
     request = {}
     unsupported = None
@@ -96,7 +96,6 @@ class Dataset(object):
 
         response = self._request(stream=True)
         return pandas.read_csv(response.raw)
-
 
     def __repr__(self):
         return '<Dataset %r score=%r discoverer=%r>' % (self.id, self.score,
