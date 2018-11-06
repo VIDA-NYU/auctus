@@ -12,6 +12,9 @@ from .identify_types import identify_types
 logger = logging.getLogger(__name__)
 
 
+MAX_SIZE = 50_000_000
+
+
 def mean_stddev(array):
     total = 0
     for elem in array:
@@ -55,11 +58,23 @@ def handle_dataset(storage, metadata):
     if proc.wait() != 0:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
 
-    logger.info("Loading dataframe...")
-    df = pandas.read_csv(csv_file,
-                         dtype=str, na_filter=False)
+    # Sub-sample
+    if metadata['size'] > MAX_SIZE:
+        logger.info("Counting rows...")
+        with open(csv_file, 'rb') as fp:
+            metadata['nb_rows'] = sum(1 for _ in fp)
 
-    metadata['nb_rows'] = df.shape[0]
+        ratio = metadata['size'] / MAX_SIZE
+        logger.info("Loading dataframe, sample ratio=%r...", ratio)
+        df = pandas.read_csv(csv_file,
+                             dtype=str, na_filter=False,
+                             skiprows=lambda i: i != 0 and i > ratio)
+    else:
+        logger.info("Loading dataframe...")
+        df = pandas.read_csv(csv_file,
+                             dtype=str, na_filter=False)
+
+        metadata['nb_rows'] = df.shape[0]
 
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
