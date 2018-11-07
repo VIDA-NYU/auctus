@@ -76,6 +76,9 @@ def handle_dataset(storage, metadata):
 
         metadata['nb_rows'] = df.shape[0]
 
+    logger.info("Dataframe loaded, %d rows, %d columns",
+                df.shape[0], df.shape[1])
+
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
     # Fix size if wrong

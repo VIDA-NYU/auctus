@@ -60,55 +60,62 @@ class SocrataDiscoverer(Discoverer):
         datasets = socrata.datasets()
         logger.info("Found %d datasets", len(datasets))
         for dataset in datasets:
-            # Get metadata
-            resource = dataset['resource']
-            id = resource['id']
-
-            # Get record from Elasticsearch
             try:
-                hit = self.elasticsearch.get(
-                    'datamart', '_doc',
-                    '%s.%s' % (self.identifier, id),
-                    _source=['materialize.socrata_updated'])
-            except elasticsearch.NotFoundError:
-                pass
-            else:
-                updated = hit['_source']['materialize']['socrata_updated']
-                if resource['updatedAt'] <= updated:
-                    logger.info("Dataset has not changed: %s", id)
-                    continue
+                self.process_dataset(domain, dataset)
+            except Exception:
+                logger.exception("Error processing dataset %s",
+                                 dataset['resource']['id'])
 
-            # Read metadata
-            metadata = dict(
-                name=resource.get('name', id),
-            )
-            if resource.get('description'):
-                metadata['description'] = resource['description']
-            direct_url = (
-                'https://data.cityofnewyork.us/api/views/'
-                '{dataset_id}/rows.csv?accessType=DOWNLOAD'.format(
-                    dataset_id=id)
-            )
+    def process_dataset(self, domain, dataset):
+        # Get metadata
+        resource = dataset['resource']
+        id = resource['id']
 
-            # Download dataset
-            logging.info("Downloading dataset %s", id)
-            storage = self.create_storage()
-            with open(os.path.join(storage.path, 'main.csv'), 'wb') as dest:
-                response = requests.get(direct_url, stream=True)
-                response.raise_for_status()
-                for chunk in response.iter_content(chunk_size=4096):
-                    if chunk:  # filter out keep-alive chunks
-                        dest.write(chunk)
+        # Get record from Elasticsearch
+        try:
+            hit = self.elasticsearch.get(
+                'datamart', '_doc',
+                '%s.%s' % (self.identifier, id),
+                _source=['materialize.socrata_updated'])
+        except elasticsearch.NotFoundError:
+            pass
+        else:
+            updated = hit['_source']['materialize']['socrata_updated']
+            if resource['updatedAt'] <= updated:
+                logger.info("Dataset has not changed: %s", id)
+                return
 
-            self.record_dataset(storage,
-                                dict(
-                                    socrata_id=id,
-                                    socrata_domain=domain['url'],
-                                    socrata_updated=resource['updatedAt'],
-                                    direct_url=direct_url,
-                                ),
-                                metadata,
-                                dataset_id=id)
+        # Read metadata
+        metadata = dict(
+            name=resource.get('name', id),
+        )
+        if resource.get('description'):
+            metadata['description'] = resource['description']
+        direct_url = (
+            'https://data.cityofnewyork.us/api/views/'
+            '{dataset_id}/rows.csv?accessType=DOWNLOAD'.format(
+                dataset_id=id)
+        )
+
+        # Download dataset
+        logging.info("Downloading dataset %s", id)
+        storage = self.create_storage()
+        with open(os.path.join(storage.path, 'main.csv'), 'wb') as dest:
+            response = requests.get(direct_url, stream=True)
+            response.raise_for_status()
+            for chunk in response.iter_content(chunk_size=4096):
+                if chunk:  # filter out keep-alive chunks
+                    dest.write(chunk)
+
+        self.record_dataset(storage,
+                            dict(
+                                socrata_id=id,
+                                socrata_domain=domain['url'],
+                                socrata_updated=resource['updatedAt'],
+                                direct_url=direct_url,
+                            ),
+                            metadata,
+                            dataset_id=id)
 
 
 if __name__ == '__main__':
