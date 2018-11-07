@@ -73,7 +73,8 @@ class SocrataDiscoverer(Discoverer):
             except elasticsearch.NotFoundError:
                 pass
             else:
-                if resource['updatedAt'] <= hit['_source']['socrata_updated']:
+                updated = hit['_source']['materialize']['socrata_updated']
+                if resource['updatedAt'] <= updated:
                     logger.info("Dataset has not changed: %s", id)
                     continue
 
