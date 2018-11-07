@@ -3,10 +3,6 @@
   padding-top: 1em;
 }
 
-.json th, .json td {
+table.json th, table.json td {
   border: 1px solid #dee2e6;
-}
-
-table.json {
- margin-bottom: 0 !important;
 }
