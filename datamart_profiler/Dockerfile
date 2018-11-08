@@ -15,15 +15,9 @@ RUN apt-get update && apt-get install -y default-jre && \
     rm -rf /var/lib/apt/lists/*
 RUN pip install aio-pika elasticsearch
 RUN pip install numpy pandas
-COPY datamart_core/setup.py \
-     datamart_core/
-COPY datamart_core/datamart_core \
-     datamart_core/datamart_core
+COPY datamart_core datamart_core
 RUN pip install -e /usr/src/app/datamart_core
-COPY datamart_profiler/setup.py \
-     datamart_profiler/
-COPY datamart_profiler/datamart_profiler \
-     datamart_profiler/datamart_profiler
+COPY datamart_profiler datamart_profiler
 COPY --from=java /usr/src/scdp/target/SCDP-0.1-jar-with-dependencies.jar \
     scdp.jar
 RUN pip install -e /usr/src/app/datamart_profiler
