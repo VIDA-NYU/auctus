@@ -14,6 +14,14 @@ from datamart_core import Discoverer
 logger = logging.getLogger(__name__)
 
 
+def YearIterator(start, end, years):
+    start = datetime.strptime(start, '%Y-%m-%d').year
+    end = datetime.strptime(end, '%Y-%m-%d').year
+    start = start - (start % years)
+    for i in range(start, end + 1):
+        yield '%d-01-01' % i, '%d-12-31' % i
+
+
 class NoaaDiscoverer(Discoverer):
     DATASETS = [
         ('GSOM', "Monthly summaries"),
@@ -105,38 +113,40 @@ class NoaaDiscoverer(Discoverer):
         with open(os.path.join(storage.path, 'main.csv'), 'w') as dest:
             writer = csv.writer(dest)
             writer.writerow(['date', datatype])
-            offset = 0
-            start = '2018-01-01'
-            end = '2018-02-15'
-            while True:
-                time.sleep(self.DELAY)
-                r = requests.get(
-                    'https://www.ncdc.noaa.gov/cdo-web/api/v2/data',
-                    headers=self.headers,
-                    params=dict(datasetid=dataset,
-                                datatypeid=datatype,
-                                stationid=station_dict['station_id'],
-                                startdate=start,
-                                enddate=end,
-                                limit=1000,
-                                offset=offset),
-                )
-                r.raise_for_status()
-                obj = r.json()
-                if 'results' not in obj:
-                    # Not sure what this means. No data?
-                    logger.error("Empty JSON response!")
-                    break
-                data = obj['results']
 
-                for row in data:
-                    writer.writerow([row['date'], row['value']])
+            for r_start, r_end in YearIterator(start, end,
+                                               10 if dataset == 'GSOM' else 1):
+                logger.info("%s - %s...", r_start, r_end)
+                offset = 0
+                while True:
+                    time.sleep(self.DELAY)
+                    r = requests.get(
+                        'https://www.ncdc.noaa.gov/cdo-web/api/v2/data',
+                        headers=self.headers,
+                        params=dict(datasetid=dataset,
+                                    datatypeid=datatype,
+                                    stationid=station_dict['station_id'],
+                                    startdate=r_start,
+                                    enddate=r_end,
+                                    limit=1000,
+                                    offset=offset),
+                    )
+                    r.raise_for_status()
+                    obj = r.json()
+                    if 'results' not in obj:
+                        # Not sure what this means. No data?
+                        logger.error("Empty JSON response!")
+                        break
+                    data = obj['results']
 
-                # Check for next page
-                count = int(obj['metadata']['resultset']['count'])
-                offset += len(data)
-                if offset >= count:
-                    break
+                    for row in data:
+                        writer.writerow([row['date'], row['value']])
+
+                    # Check for next page
+                    count = int(obj['metadata']['resultset']['count'])
+                    offset += len(data)
+                    if offset >= count:
+                        break
 
         description = "NOAA {} of {} for {}".format(
             dataset_name, datatype_name, station_dict['station_name']),
