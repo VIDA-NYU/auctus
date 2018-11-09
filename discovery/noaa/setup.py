@@ -12,6 +12,9 @@ req = [
 setup(name='datamart_noaa_discovery',
       version='0.0',
       packages=['datamart_noaa_discovery'],
+      package_data={'datamart_noaa_discovery': [
+          'noaa_city_stations.csv',
+      ]},
       install_requires=req,
       description="NOAA discovery plugin for DataMart",
       author="Remi Rampin",
