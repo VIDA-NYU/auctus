@@ -36,6 +36,7 @@ class ExampleDiscoverer(Discoverer):
             storage,  # Path in shared cache
             dict(filename='nyu.zip'),  # Materialization information
             self.metadata,  # Metadata (profiler will update it)
+            dataset_id='example_nyu',
         )
 
     def handle_materialize(self, materialize):
@@ -49,5 +50,5 @@ class ExampleDiscoverer(Discoverer):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
-    ExampleDiscoverer('datamart.example.disc')
+    ExampleDiscoverer('datamart.example.example_discoverer')
     asyncio.get_event_loop().run_forever()

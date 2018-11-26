@@ -6,18 +6,15 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'aio-pika',
     'elasticsearch',
-    'tornado>=5.0',
+    'requests',
+    'sodapy',
 ]
-setup(name='datamart_query',
+setup(name='datamart_socrata_discovery',
       version='0.0',
-      packages=['datamart_query'],
-      entry_points={
-          'console_scripts': [
-              'datamart_query = datamart_query.web:main']},
+      py_modules=['datamart_socrata_discovery'],
       install_requires=req,
-      description="Query component of DataMart",
+      description="Socrata discovery plugin for DataMart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -28,7 +25,7 @@ setup(name='datamart_query',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Query component of DataMart",
+      long_description="Socrata discovery plugin for DataMart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[

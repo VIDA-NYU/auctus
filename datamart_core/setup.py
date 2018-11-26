@@ -7,6 +7,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'aio-pika',
+    'elasticsearch',
 ]
 setup(name='datamart_core',
       version='0.0',
@@ -17,11 +18,11 @@ setup(name='datamart_core',
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
       maintainer_email='remi.rampin@nyu.edu',
-      url='https://gitlab.com/remram44/datamart',
+      url='https://gitlab.com/ViDA-NYU/datamart/datamart',
       project_urls={
-          'Homepage': 'https://gitlab.com/remram44/datamart',
-          'Source': 'https://gitlab.com/remram44/datamart',
-          'Tracker': 'https://gitlab.com/remram44/datamart/issues',
+          'Homepage': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
+          'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
+          'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
       long_description="Core library for DataMart plugins",
       license='BSD-3-Clause',

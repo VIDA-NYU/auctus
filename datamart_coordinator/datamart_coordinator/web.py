@@ -45,6 +45,40 @@ class BaseHandler(RequestHandler):
     template_env.globals['islist'] = lambda v: isinstance(v, (list, tuple))
     template_env.globals['isdict'] = lambda v: isinstance(v, dict)
 
+    def _tpl_json_table(table):
+        lines = [[]]
+
+        def to_lines(item):
+            if isinstance(item, dict):
+                if item:
+                    items = item.items()
+                else:
+                    lines[-1].append([1, '{}'])
+                    lines.append([])
+                    return 1
+            elif isinstance(item, (list, tuple)):
+                if item:
+                    items = enumerate(item)
+                else:
+                    lines[-1].append([1, '[]'])
+                    lines.append([])
+                    return 1
+            else:
+                lines[-1].append([1, item])
+                lines.append([])
+                return 1
+            l = 0
+            for k, v in items:
+                key = [1, k]
+                lines[-1].append(key)
+                key[0] = to_lines(v)
+                l += key[0]
+            return l
+
+        to_lines(table)
+        return lines[:-1]
+    template_env.globals['json_table'] = _tpl_json_table
+
     def render_string(self, template_name, **kwargs):
         template = self.template_env.get_template(template_name)
         return template.render(

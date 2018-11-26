@@ -75,8 +75,8 @@ services:
   example_discoverer:
     build:
       context: .
-      dockerfile: examples/Dockerfile
-    command: discovery
+      dockerfile: discovery/Dockerfile
+    command: example
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -84,10 +84,10 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
-  example_d3m_discoverer:
+  d3m_seeds_discoverer:
     build:
       context: .
-      dockerfile: examples/Dockerfile
+      dockerfile: discovery/Dockerfile
     command: d3m
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
@@ -96,6 +96,17 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
-      - ../datasets/seed_datasets_current:/d3m_seed_datasets
+      - ../data/seed_datasets_current:/d3m_seed_datasets
+  socrata_discoverer:
+    build:
+      context: .
+      dockerfile: discovery/socrata/Dockerfile
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=guest
+      - AMQP_PASSWORD=guest
+    volumes:
+      - datasets:/datasets
 volumes:
   datasets:

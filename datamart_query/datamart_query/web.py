@@ -51,15 +51,65 @@ class Query(CorsHandler):
         self._cors()
 
         obj = self.get_json()
+        query = []
 
         # Search by keyword
-        keywords = obj.get('keywords', [])
+        if 'keywords' in obj:
+            query.append({
+                'match': {
+                    'description': {
+                        'query': obj['keywords'],
+                        'operator': 'and',
+                    },
+                },
+            })
+
+        # Search for columns with names
+        if 'column_names' in obj:
+            for name in obj['column_names']:
+                query.append({
+                    'nested': {
+                        'path': 'columns',
+                        'query': {
+                            'match': {'columns.name': name},
+                        },
+                    },
+                })
+
+        # Search for columns with structural types
+        if 'structural_types' in obj:
+            for type_ in obj['structural_types']:
+                query.append({
+                    'nested': {
+                        'path': 'columns',
+                        'query': {
+                            'match': {'columns.structural_type': type_},
+                        },
+                    },
+                })
+
+        # Search for columns with semantic types
+        if 'semantic_types' in obj:
+            for type_ in obj['semantic_types']:
+                query.append({
+                    'nested': {
+                        'path': 'columns',
+                        'query': {
+                            'term': {'columns.semantic_types': type_},
+                        },
+                    },
+                })
+
+        if not query:
+            self.send_json({'results': []})
+
+        logger.info("Query: %r", query)
         hits = self.application.elasticsearch.search(
             index='datamart',
             body={
                 'query': {
-                    'terms': {
-                        'description': keywords,
+                    'bool': {
+                        'must': query,
                     },
                 },
             },

@@ -41,11 +41,56 @@ function formatSize(bytes) {
 
 document.getElementById('search-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  query = document.getElementById('search-bar').value;
-  query = query.split(/[ ,+]+/);
-  console.log("Searching:", query);
-  postJSON(QUERY_HOST + '/query', {keywords: query})
+
+  var search = {};
+
+  // Keywords
+  var keywords = document.getElementById('keywords').value;
+  if(keywords) {
+    search.keywords = keywords;
+  }
+
+  // Column names
+  var column_names = document.getElementById('columns').value;
+  column_names = column_names.split(/[ ,+]+/);
+  if(column_names.length == 1 && column_names[0] === '') {
+    column_names = [];
+  } else {
+    search.column_names = column_names
+  }
+
+  // Types
+  var str_types = [];
+  var sem_types = [];
+  if(document.getElementById('type-integer').checked) {
+    str_types.push('http://schema.org/Integer');
+  }
+  if(document.getElementById('type-float').checked) {
+    str_types.push('http://schema.org/Float');
+  }
+  if(document.getElementById('type-bool').checked) {
+    sem_types.push('http://schema.org/Boolean');
+  }
+  if(document.getElementById('type-text').checked) {
+    str_types.push('http://schema.org/Text');
+  }
+  if(document.getElementById('type-datetime').checked) {
+    sem_types.push('http://schema.org/DateTime');
+  }
+  if(document.getElementById('type-phone').checked) {
+    sem_types.push('https://metadata.datadrivendiscovery.org/types/PhoneNumber');
+  }
+  if(str_types.length > 0) {
+    search.structural_types = str_types;
+  }
+  if(sem_types.length > 0) {
+    search.semantic_types = sem_types;
+  }
+
+  console.log("Searching:", search);
+  postJSON(QUERY_HOST + '/query', search)
   .then(function(result) {
+    console.log("Got " + result.results.length + " results");
     var results_div = document.getElementById('results');
     results_div.innerHTML = '';
     document.getElementById('search-error').style.display = 'none';
@@ -53,13 +98,18 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       var elem = document.createElement('div');
       var data = result.results[i];
       elem.className = 'col-md-4';
-      description = data.metadata.description
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;')
-        .replace(/\n/g, '<br/>');
+      description = data.metadata.description;
+      if(description) {
+        description = description
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;')
+          .replace(/\n/g, '<br/>');
+      } else {
+        description = "(no description)";
+      }
       elem.innerHTML = (
         '<div class="card mb-4 shadow-sm">' +
         '  <div class="card-body">' +
@@ -86,5 +136,5 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     alert("Query failed: " + error);
     document.getElementById('search-error').style.display = '';
     document.getElementById('search-error').innerText = '' + error;
-  });
+  }).catch(console.error);
 });

@@ -11,7 +11,7 @@ from datamart_core import Discoverer
 logger = logging.getLogger(__name__)
 
 
-class ExampleD3MDiscoverer(Discoverer):
+class D3MSeedsDiscoverer(Discoverer):
     """Discoverer that just "finds" the D3M datasets, *slowly*.
     """
     def main_loop(self):
@@ -46,9 +46,8 @@ class ExampleD3MDiscoverer(Discoverer):
             shutil.copyfile(csv_name, destination, follow_symlinks=False)
             self.record_dataset(storage,
                                 dict(d3m_name=name),
-                                metadata)
-
-            time.sleep(3)
+                                metadata,
+                                dataset_id=name)
 
     def handle_materialize(self, materialize):
         name = materialize['d3m_name']
@@ -68,5 +67,5 @@ class ExampleD3MDiscoverer(Discoverer):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
-    ExampleD3MDiscoverer('datamart.example.d3m')
+    D3MSeedsDiscoverer('datamart.d3m_seeds_discoverer')
     asyncio.get_event_loop().run_forever()

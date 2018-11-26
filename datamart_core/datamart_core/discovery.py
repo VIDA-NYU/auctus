@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 from datetime import datetime
+import elasticsearch
 import logging
 import os
 import uuid
@@ -17,8 +18,9 @@ class _HandleQueryPublisher(object):
         self.discoverer = discoverer
         self.reply_to = reply_to
 
-    def __call__(self, storage, materialize, metadata):
+    def __call__(self, storage, materialize, metadata, dataset_id=None):
         self.discoverer.record_dataset(storage, materialize, metadata,
+                                       dataset_id=dataset_id,
                                        bind=self.reply_to)
 
 
@@ -66,6 +68,10 @@ class Discoverer(object):
         await profile_queue.bind(self.profile_exchange)
 
     async def _run(self):
+        self.elasticsearch = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+
         connection = await aio_pika.connect_robust(
             host=os.environ['AMQP_HOST'],
             login=os.environ['AMQP_USER'],
@@ -207,8 +213,10 @@ class Discoverer(object):
         raise NotImplementedError
 
     async def _record_dataset(self, storage, materialize, metadata,
-                              bind=None):
-        dataset_id = uuid.uuid4().hex
+                              dataset_id=None, bind=None):
+        if dataset_id is None:
+            dataset_id = uuid.uuid4().hex
+        dataset_id = self.identifier + '.' + dataset_id
 
         # Bind the requester's reply queue to the datasets exchange, with the
         # right routing_key, so that he receives the profiling result for the
@@ -234,8 +242,10 @@ class Discoverer(object):
         logger.info("Discovered %s", dataset_id)
         return dataset_id
 
-    def record_dataset(self, storage, materialize, metadata, bind=None):
-        coro = self._record_dataset(storage, materialize, metadata, bind)
+    def record_dataset(self, storage, materialize, metadata,
+                       dataset_id=None, bind=None):
+        coro = self._record_dataset(storage, materialize, metadata,
+                                    dataset_id=dataset_id, bind=bind)
         if self._async:
             return self.loop.create_task(coro)
         else:

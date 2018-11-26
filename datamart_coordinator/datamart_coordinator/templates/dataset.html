@@ -7,40 +7,21 @@
 <p><a href="{{ query_host }}/download/{{ dataset_id }}">Download</a> ({{ size }})</p>
 
 {% macro meta_table(m) -%}
-  {% if isdict(m) %}
-    <table class="table json">
-      <tbody>
-        {% for k, v in m.items() %}
-        <tr>
-          <th scope="row">{{ k }}</th>
-          <td>
-            {{ meta_table(v) }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% elif islist(m) %}
-
-    {% if m %}
-      <table class="table json">
-        <tbody>
-          {% for e in m %}
-          <tr>
-            <th scope="row">{{ loop.index0 }}</th>
-            <td>
-              {{ meta_table(e) }}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      []
-    {% endif %}
-  {% else %}
-    {{ m }}
-  {% endif %}
+  <table class="table json">
+    <tbody>
+      {%- for row in json_table(m) %}
+      <tr>
+        {%- for rowspan, cell in row %}
+          {%- if loop.last %}
+          <td colspan="{{ 100 - row|length }}">{{ cell }}</td>
+          {%- else %}
+          <th rowspan="{{ rowspan}}">{{ cell }}</th>
+          {%- endif %}
+        {%- endfor %}
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
 {%- endmacro %}
 
 <h2>Metadata</h2>
