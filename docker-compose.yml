@@ -7,7 +7,7 @@ services:
       - bootstrap.memory_lock=true
       # Enabling CORS
       - http.cors.enabled=true
-      - http.cors.allow-origin=http://localhost:3000
+      - http.cors.allow-origin=http://localhost:5000
       - http.cors.allow-headers=Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With
       - http.cors.allow-credentials=true
       # JVM options
@@ -97,6 +97,12 @@ services:
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
+  web:
+    build:
+      context: .
+      dockerfile: datamart_web/Dockerfile
+    ports:
+      - 5000:5000
   socrata_discoverer:
     build:
       context: .
