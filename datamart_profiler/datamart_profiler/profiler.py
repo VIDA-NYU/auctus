@@ -57,11 +57,13 @@ def get_datetime_ranges(values):
     for i in range(1, len(values)):
         if (values[i] - values[i-1]) >= avg_duration_diff:
             ranges.append([current_min, current_max])
+            # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
             current_min = values[i]
             current_max = values[i]
             continue
         current_max = values[i]
     ranges.append([current_min, current_max])
+    # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
 
     return ranges
 
@@ -160,7 +162,9 @@ def handle_dataset(storage, metadata):
 
             # Get temporal ranges
             temporal_index[column_meta['name']] = \
-                get_datetime_ranges(sorted([int(t) for t in timestamps]))
+                get_datetime_ranges(sorted([dt.timestamp() for j, dt in enumerate(
+                    semantic_types_dict['http://schema.org/DateTime'])
+                                            ]))
 
 
     # TODO: Compute histogram
