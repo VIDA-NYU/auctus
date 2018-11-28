@@ -2,6 +2,7 @@ import aio_pika
 import asyncio
 from datetime import datetime
 import elasticsearch
+from elasticsearch import helpers
 import itertools
 import logging
 import os
@@ -43,6 +44,53 @@ class Profiler(object):
                     time.sleep(5)
             else:
                 break
+
+        # Put mapping for datetime index
+        logger.info("Creating datetime index...")
+        if not self.es.indices.exists('datamart_datetime_index'):
+            self.es.indices.create(index='datamart_datetime_index')
+
+            mapping = '''
+            {
+              "properties": {
+                "name": {
+                  "type": "text"
+                },
+                "id" : {
+                  "type": "text"
+                },
+                "time_frame": {
+                  "type": "long_range"
+                }
+              }
+            }'''
+
+            try:
+                self.es.indices.put_mapping(
+                    index='datamart_datetime_index',
+                    body=mapping,
+                    doc_type='_doc'
+                )
+            except Exception as e:
+                logger.warning("Not able to create datetime index: " + e)
+
+    def generator_es_datetime_doc(self, column_name, data_id, ranges):
+        """
+        Generator for adding datetime ranges in bulk to elasticsearch.
+        """
+
+        for range_ in ranges:
+            yield {
+                "_op_type": "index",
+                "_index": "datamart_datetime_index",
+                "_type": "_doc",
+                "name": column_name,
+                "id": data_id,
+                "time_frame": {
+                    "gte": int(range_[0]),
+                    "lte": int(range_[1])
+                }
+            }
 
     async def _amqp_setup(self):
         # Setup the datasets exchange
@@ -101,7 +149,7 @@ class Profiler(object):
                                 storage):
         async def coro(future):
             try:
-                metadata = future.result()
+                metadata, temporal_index = future.result()
             except Exception:
                 logger.exception("Error handling dataset %r", dataset_id)
                 # Ack anyway, retrying would probably fail again
@@ -118,6 +166,22 @@ class Profiler(object):
                     body,
                     id=dataset_id,
                 )
+
+                # Add temporal indices, if any
+                for column_name in dict(temporal_index):
+
+                    try:
+                        helpers.bulk(
+                            self.es,
+                            self.generator_es_datetime_doc(
+                                column_name,
+                                dataset_id,
+                                temporal_index[column_name]
+                            )
+                        )
+                    except Exception as e:
+                        logger.warning("Not able to add ranges to datetime index: {0}".format(e))
+
                 # Publish to RabbitMQ
                 await self.datasets_exchange.publish(
                     json2msg(dict(body, id=dataset_id)),

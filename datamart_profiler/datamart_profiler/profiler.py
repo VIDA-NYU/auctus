@@ -35,6 +35,37 @@ def mean_stddev(array):
     return mean, stddev
 
 
+def get_datetime_ranges(values):
+    """
+    Retrieve the datetime ranges given the timestamps.
+    This function assumes the input is sorted in ascending order.
+    """
+
+    duration_diffs = []
+    for i in range(1, len(values)):
+        diff = values[i] - values[i-1]
+        diff != 0 and duration_diffs.append(diff)
+
+    avg_duration_diff = sum(duration_diffs) / float(len(duration_diffs))
+    if len(set(duration_diffs)) == 1:
+        avg_duration_diff *= 2
+
+    ranges = []
+    current_min = values[0]
+    current_max = values[0]
+
+    for i in range(1, len(values)):
+        if (values[i] - values[i-1]) >= avg_duration_diff:
+            ranges.append([current_min, current_max])
+            current_min = values[i]
+            current_max = values[i]
+            continue
+        current_max = values[i]
+    ranges.append([current_min, current_max])
+
+    return ranges
+
+
 def handle_dataset(storage, metadata):
     """Compute all metafeatures from a dataset.
 
@@ -96,6 +127,9 @@ def handle_dataset(storage, metadata):
     for column_meta, name in zip(columns, df.columns):
         column_meta.update(scdp_out.get(name, {}))
 
+    # Info about temporal index
+    temporal_index = dict()
+
     # Identify types
     logger.info("Identifying types...")
     for i, column_meta in enumerate(columns):
@@ -124,8 +158,13 @@ def handle_dataset(storage, metadata):
             column_meta['mean'], column_meta['stddev'] = \
                 mean_stddev(timestamps)
 
+            # Get temporal ranges
+            temporal_index[column_meta['name']] = \
+                get_datetime_ranges(sorted([int(t) for t in timestamps]))
+
+
     # TODO: Compute histogram
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
-    return metadata
+    return metadata, temporal_index
