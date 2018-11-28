@@ -154,17 +154,17 @@ def handle_dataset(storage, metadata):
                 len(semantic_types_dict['http://schema.org/DateTime']),
                 dtype='float32',
             )
+            timestamps_for_range = []
             for j, dt in enumerate(
                     semantic_types_dict['http://schema.org/DateTime']):
                 timestamps[j] = dt.timestamp()
+                timestamps_for_range.append(dt.timestamp())
             column_meta['mean'], column_meta['stddev'] = \
                 mean_stddev(timestamps)
 
             # Get temporal ranges
             temporal_index[column_meta['name']] = \
-                get_datetime_ranges(sorted([dt.timestamp() for j, dt in enumerate(
-                    semantic_types_dict['http://schema.org/DateTime'])
-                                            ]))
+                get_datetime_ranges(sorted(timestamps_for_range))
 
 
     # TODO: Compute histogram
