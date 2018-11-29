@@ -147,6 +147,120 @@ class Dataset(BaseHandler):
                     size=format_size(metadata['size']))
 
 
+# TODO: move to a better place?
+def get_column_ranges(es, dataset_id):
+    column_ranges = dict()
+
+    index_query = \
+        '''
+            {
+                "query" : {
+                    "match" : {
+                        "id" : "%s"
+                    }
+                }
+            }
+        ''' % dataset_id
+
+    result = es.search(index='datamart_numerical_index', body=index_query)
+
+    if result['hits']['total'] > 0:
+        for hit in result['hits']['hits']:
+            column_name = hit['_source']['name']
+            if column_name not in column_ranges:
+                column_ranges[column_name] = {
+                    'type':   hit['_source']['type'],
+                    'ranges': []
+                }
+            column_ranges[column_name]['ranges'].\
+                append([float(hit['_source']['numerical_range']['gte']),
+                        float(hit['_source']['numerical_range']['lte'])])
+
+    return column_ranges
+
+
+# TODO: move to a better place?
+def get_numerical_range_intersections(es, dataset_id):
+
+    intersections = dict()
+    column_ranges = get_column_ranges(es, dataset_id)
+
+    if not column_ranges:
+        return intersections
+
+    for column in column_ranges:
+        type_ = column_ranges[column]['type']
+        intersections_column = dict()
+        total_size = 0
+        for range_ in column_ranges[column]['ranges']:
+            total_size += (range_[1] - range_[0])
+            query = '''
+                {
+                  "query" : {
+                    "bool": {
+                      "must_not": {
+                        "match": { "id": "%s" }
+                      },
+                      "must": [
+                        {
+                          "match": { "type": "%s" }
+                        },
+                        {
+                          "range" : {
+                            "numerical_range" : {
+                              "gte" : %.8f,
+                              "lte" : %.8f,
+                              "relation" : "intersects"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }''' % (dataset_id, type_, range_[0], range_[1])
+            result = es.search(index='datamart_numerical_index', body=query)
+            if result['hits']['total'] == 0:
+                continue
+            for hit in result['hits']['hits']:
+
+                name = '%s$$%s' % (hit['_source']['id'], hit['_source']['name'])
+                if name not in intersections_column:
+                    intersections_column[name] = 0
+
+                # Compute intersection
+                start_result = float(hit['_source']['numerical_range']['gte'])
+                end_result = float(hit['_source']['numerical_range']['lte'])
+
+                start = max(start_result, range_[0])
+                end = min(end_result, range_[1])
+
+                intersections_column[name] += (end - start)
+
+        intersections[column] = [
+            (name, size/total_size) for name, size in sorted(
+                intersections_column.items(),
+                key=lambda item: item[1],
+                reverse=True
+            )
+        ]
+
+    return intersections
+
+
+class JoinQuery(BaseHandler):
+    def get(self, dataset_id):
+        join_intersections = get_numerical_range_intersections(
+            self.application.elasticsearch,
+            dataset_id
+        )
+        for column in join_intersections:
+            logger.warning("[JOIN] Column: " + column)
+            for intersection in join_intersections[column][:5]:
+                dataset_j, column_j = intersection[0].split('$$')
+                logger.warning("[JOIN]   Intersects %s, %s" % (dataset_j, column_j))
+                logger.warning("[JOIN]   > Size: %.2f" % intersection[1])
+
+
 class AllocateDataset(BaseHandler):
     def get(self):
         identifier = self.get_query_argument('id')
@@ -204,6 +318,7 @@ def make_app(debug=False):
             URLSpec('/status', Status),
             URLSpec('/search', Search, name='search'),
             URLSpec('/dataset/([^/]+)', Dataset),
+            URLSpec('/join_query/([^/]+)', JoinQuery),
 
             URLSpec('/allocate_dataset', AllocateDataset),
         ],

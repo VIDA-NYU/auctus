@@ -62,7 +62,7 @@ class Profiler(object):
                 "id" : {
                   "type": "text"
                 },
-                "time_frame": {
+                "numerical_range": {
                   "type": "double_range"
                 }
               }
@@ -90,7 +90,7 @@ class Profiler(object):
                 "name": column_name,
                 "id": data_id,
                 "type": type_,
-                "time_frame": {
+                "numerical_range": {
                     "gte": range_[0],
                     "lte": range_[1]
                 }
