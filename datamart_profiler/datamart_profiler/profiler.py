@@ -22,7 +22,7 @@ def mean_stddev(array):
             total += float(elem)
         except ValueError:
             pass
-    mean = total / len(array)
+    mean = total / len(array) if len(array) > 0 else 0
     total = 0
     for elem in array:
         try:
@@ -30,7 +30,7 @@ def mean_stddev(array):
         except ValueError:
             continue
         total += elem * elem
-    stddev = math.sqrt(total / len(array))
+    stddev = math.sqrt(total / len(array)) if len(array) > 0 else 0
 
     return mean, stddev
 
