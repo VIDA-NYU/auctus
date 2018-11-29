@@ -56,13 +56,13 @@ def get_numerical_ranges(values):
     for i in range(1, len(values)):
         if (values[i] - values[i-1]) > avg_range_diff + std_dev_range_diff:
             ranges.append([current_min, current_max])
-            logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
+            # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
             current_min = values[i]
             current_max = values[i]
             continue
         current_max = values[i]
     ranges.append([current_min, current_max])
-    logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
+    # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
 
     return ranges
 
@@ -153,7 +153,7 @@ def handle_dataset(storage, metadata):
             column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
 
             # Get numerical ranges
-            logger.warning(" Column Name: " + column_meta['name'])
+            # logger.warning(" Column Name: " + column_meta['name'])
             numerical_values = []
             for e in array:
                 try:
@@ -181,7 +181,7 @@ def handle_dataset(storage, metadata):
                 mean_stddev(timestamps)
 
             # Get temporal ranges
-            logger.warning(" Column Name: " + column_meta['name'])
+            # logger.warning(" Column Name: " + column_meta['name'])
             numerical_index['datetime'][column_meta['name']] = \
                 get_numerical_ranges(sorted(timestamps_for_range))
 
