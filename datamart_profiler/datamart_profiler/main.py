@@ -56,6 +56,9 @@ class Profiler(object):
                 "name": {
                   "type": "text"
                 },
+                "type" : {
+                  "type": "text"
+                },
                 "id" : {
                   "type": "text"
                 },
@@ -74,7 +77,7 @@ class Profiler(object):
             except Exception as e:
                 logger.warning("Not able to create numerical index: " + e)
 
-    def generator_es_numerical_doc(self, column_name, data_id, ranges):
+    def generator_es_numerical_doc(self, column_name, data_id, type_, ranges):
         """
         Generator for adding numerical ranges in bulk to elasticsearch.
         """
@@ -86,6 +89,7 @@ class Profiler(object):
                 "_type": "_doc",
                 "name": column_name,
                 "id": data_id,
+                "type": type_,
                 "time_frame": {
                     "gte": range_[0],
                     "lte": range_[1]
@@ -167,20 +171,21 @@ class Profiler(object):
                     id=dataset_id,
                 )
 
-                # Add temporal indices, if any
-                for column_name in dict(numerical_index):
-
-                    try:
-                        helpers.bulk(
-                            self.es,
-                            self.generator_es_numerical_doc(
-                                column_name,
-                                dataset_id,
-                                numerical_index[column_name]
+                # Add numerical indices, if any
+                for type_ in numerical_index:
+                    for column_name in numerical_index[type_]:
+                        try:
+                            helpers.bulk(
+                                self.es,
+                                self.generator_es_numerical_doc(
+                                    column_name,
+                                    dataset_id,
+                                    type_,
+                                    numerical_index[type_][column_name]
+                                )
                             )
-                        )
-                    except Exception as e:
-                        logger.warning("Not able to add ranges to numerical index: {0}".format(e))
+                        except Exception as e:
+                            logger.warning("Not able to add ranges to numerical index: {0}".format(e))
 
                 # Publish to RabbitMQ
                 await self.datasets_exchange.publish(

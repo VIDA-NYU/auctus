@@ -129,7 +129,11 @@ def handle_dataset(storage, metadata):
         column_meta.update(scdp_out.get(name, {}))
 
     # Index for numerical ranges
-    numerical_index = dict()
+    numerical_index = {
+        'integer':  dict(),
+        'float':    dict(),
+        'datetime': dict()
+    }
 
     # Identify types
     logger.info("Identifying types...")
@@ -156,8 +160,12 @@ def handle_dataset(storage, metadata):
                     numerical_values.append(float(e))
                 except ValueError:
                     continue
-            numerical_index[column_meta['name']] = \
-                get_numerical_ranges(sorted(numerical_values))
+            if structural_type == 'http://schema.org/Integer':
+                numerical_index['integer'][column_meta['name']] = \
+                    get_numerical_ranges(sorted(numerical_values))
+            else:
+                numerical_index['float'][column_meta['name']] = \
+                    get_numerical_ranges(sorted(numerical_values))
 
         if 'http://schema.org/DateTime' in semantic_types_dict:
             timestamps = numpy.empty(
@@ -174,7 +182,7 @@ def handle_dataset(storage, metadata):
 
             # Get temporal ranges
             logger.warning(" Column Name: " + column_meta['name'])
-            numerical_index[column_meta['name']] = \
+            numerical_index['datetime'][column_meta['name']] = \
                 get_numerical_ranges(sorted(timestamps_for_range))
 
 
