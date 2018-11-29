@@ -35,35 +35,34 @@ def mean_stddev(array):
     return mean, stddev
 
 
-def get_datetime_ranges(values):
+def get_numerical_ranges(values):
     """
-    Retrieve the datetime ranges given the timestamps.
+    Retrieve the numeral ranges given the input (timestamp, integer, or float).
     This function assumes the input is sorted in ascending order.
     """
 
-    duration_diffs = []
+    range_diffs = []
     for i in range(1, len(values)):
         diff = values[i] - values[i-1]
-        diff != 0 and duration_diffs.append(diff)
+        diff != 0 and range_diffs.append(diff)
 
-    avg_duration_diff = sum(duration_diffs) / float(len(duration_diffs))
-    if len(set(duration_diffs)) == 1:
-        avg_duration_diff *= 2
+    avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
+    # logger.warning("  Avg. Diff: " + str(avg_range_diff))
 
     ranges = []
     current_min = values[0]
     current_max = values[0]
 
     for i in range(1, len(values)):
-        if (values[i] - values[i-1]) >= avg_duration_diff:
+        if (values[i] - values[i-1]) > avg_range_diff + std_dev_range_diff:
             ranges.append([current_min, current_max])
-            # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
+            logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
             current_min = values[i]
             current_max = values[i]
             continue
         current_max = values[i]
     ranges.append([current_min, current_max])
-    # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
+    logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
 
     return ranges
 
@@ -129,8 +128,8 @@ def handle_dataset(storage, metadata):
     for column_meta, name in zip(columns, df.columns):
         column_meta.update(scdp_out.get(name, {}))
 
-    # Info about temporal index
-    temporal_index = dict()
+    # Index for numerical ranges
+    numerical_index = dict()
 
     # Identify types
     logger.info("Identifying types...")
@@ -149,6 +148,17 @@ def handle_dataset(storage, metadata):
                                'http://schema.org/Float'):
             column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
 
+            # Get numerical ranges
+            logger.warning(" Column Name: " + column_meta['name'])
+            numerical_values = []
+            for e in array:
+                try:
+                    numerical_values.append(float(e))
+                except ValueError:
+                    continue
+            numerical_index[column_meta['name']] = \
+                get_numerical_ranges(sorted(numerical_values))
+
         if 'http://schema.org/DateTime' in semantic_types_dict:
             timestamps = numpy.empty(
                 len(semantic_types_dict['http://schema.org/DateTime']),
@@ -163,12 +173,13 @@ def handle_dataset(storage, metadata):
                 mean_stddev(timestamps)
 
             # Get temporal ranges
-            temporal_index[column_meta['name']] = \
-                get_datetime_ranges(sorted(timestamps_for_range))
+            logger.warning(" Column Name: " + column_meta['name'])
+            numerical_index[column_meta['name']] = \
+                get_numerical_ranges(sorted(timestamps_for_range))
 
 
     # TODO: Compute histogram
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
-    return metadata, temporal_index
+    return metadata, numerical_index
