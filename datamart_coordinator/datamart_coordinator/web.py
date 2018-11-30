@@ -166,7 +166,7 @@ def get_column_ranges(es, dataset_id):
         index='datamart_numerical_index',
         body=index_query,
         scroll='2m',
-        size=1000
+        size=10000
     )
 
     sid = result['_scroll_id']
@@ -210,7 +210,7 @@ def get_numerical_range_intersections(es, dataset_id):
         intersections_column = dict()
         total_size = 0
         for range_ in column_ranges[column]['ranges']:
-            total_size += (range_[1] - range_[0])
+            total_size += (range_[1] - range_[0] + 1)
 
             query = '''
                 {
@@ -241,7 +241,7 @@ def get_numerical_range_intersections(es, dataset_id):
                 index='datamart_numerical_index',
                 body=query,
                 scroll='2m',
-                size=1000
+                size=10000
             )
 
             sid = result['_scroll_id']
@@ -261,7 +261,7 @@ def get_numerical_range_intersections(es, dataset_id):
                     start = max(start_result, range_[0])
                     end = min(end_result, range_[1])
 
-                    intersections_column[name] += (end - start)
+                    intersections_column[name] += (end - start + 1)
 
                 # scrolling
                 result = es.scroll(
