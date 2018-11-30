@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set active_page = "join_query" %}
+
+{% block contents %}
+<div class="list-group" id="recent_discoveries">
+    {%- for column in intersections %}
+        <div class="list-group-item list-group-item-action flex-column align-items-start">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ column }}</h5>
+                <small>{{ types[column] }}</small>
+            </div>
+            {%- for intersection in intersections[column][:5] %}
+                {%- set dataset_join, column_join = intersection[0].split('$$') %}
+                <p class="mb-1">{{ dataset_join }} | {{ column_join }}</p>
+                <small>{{ intersection[1] }}</small>
+            {%- endfor %}
+        </div>
+    {%- endfor %}
+</div>
+
+{% endblock %}

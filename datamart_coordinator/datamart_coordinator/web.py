@@ -183,6 +183,7 @@ def get_column_ranges(es, dataset_id):
 def get_numerical_range_intersections(es, dataset_id):
 
     intersections = dict()
+    types = dict()
     column_ranges = get_column_ranges(es, dataset_id)
 
     if not column_ranges:
@@ -236,6 +237,12 @@ def get_numerical_range_intersections(es, dataset_id):
 
                 intersections_column[name] += (end - start)
 
+        if type_ == 'integer':
+            types[column] = 'http://schema.org/Integer'
+        elif type_ == 'float':
+            types[column] = 'http://schema.org/Float'
+        else:
+            types[column] = 'http://schema.org/DateTime'
         intersections[column] = [
             (name, size/total_size) for name, size in sorted(
                 intersections_column.items(),
@@ -244,21 +251,24 @@ def get_numerical_range_intersections(es, dataset_id):
             )
         ]
 
-    return intersections
+    return intersections, types
 
 
 class JoinQuery(BaseHandler):
     def get(self, dataset_id):
-        join_intersections = get_numerical_range_intersections(
+        join_intersections, column_types = get_numerical_range_intersections(
             self.application.elasticsearch,
             dataset_id
         )
-        for column in join_intersections:
-            logger.warning("[JOIN] Column: " + column)
-            for intersection in join_intersections[column][:5]:
-                dataset_j, column_j = intersection[0].split('$$')
-                logger.warning("[JOIN]   Intersects %s, %s" % (dataset_j, column_j))
-                logger.warning("[JOIN]   > Size: %.2f" % intersection[1])
+        # for column in join_intersections:
+        #     logger.warning("[JOIN] Column: " + column)
+        #     for intersection in join_intersections[column][:5]:
+        #         dataset_j, column_j = intersection[0].split('$$')
+        #         logger.warning("[JOIN]   Intersects %s, %s" % (dataset_j, column_j))
+        #         logger.warning("[JOIN]   > Size: %.2f" % intersection[1])
+        self.render('join_query.html',
+                    intersections=join_intersections,
+                    types=column_types)
 
 
 class AllocateDataset(BaseHandler):
