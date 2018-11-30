@@ -294,9 +294,11 @@ class JoinQuery(BaseHandler):
             self.application.elasticsearch,
             dataset_id
         )
-        self.render('join_query.html',
-                    intersections=join_intersections,
-                    types=column_types)
+        self.render(
+            'join_query.html',
+            join_intersections=sorted(join_intersections.items()),
+            types=column_types
+        )
 
 
 class AllocateDataset(BaseHandler):

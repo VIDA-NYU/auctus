@@ -3,16 +3,16 @@
 
 {% block contents %}
 <div class="list-group" id="recent_discoveries">
-    {%- if not intersections %}
+    {%- if not join_intersections %}
         <h5>No results.</h5>
     {%- endif %}
-    {%- for column in intersections %}
+    {%- for column, intersections in join_intersections %}
         <div class="list-group-item list-group-item-action flex-column align-items-start">
             <div class="d-flex w-100 justify-content-between">
                 <h5 class="mb-1">Column: {{ column }}</h5>
                 <small>{{ types[column] }}</small>
             </div>
-            {%- for intersection in intersections[column][:5] %}
+            {%- for intersection in intersections[:5] %}
                 {%- if intersection[1] > 0 %}
                     {%- set dataset_join, column_join = intersection[0].split('$$') %}
                     <hr width="60%" align="left">
