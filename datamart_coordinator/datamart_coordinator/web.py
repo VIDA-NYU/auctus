@@ -162,9 +162,17 @@ def get_column_ranges(es, dataset_id):
             }
         ''' % dataset_id
 
-    result = es.search(index='datamart_numerical_index', body=index_query)
+    result = es.search(
+        index='datamart_numerical_index',
+        body=index_query,
+        scroll='2m',
+        size=1000
+    )
 
-    if result['hits']['total'] > 0:
+    sid = result['_scroll_id']
+    scroll_size = result['hits']['total']
+
+    while scroll_size > 0:
         for hit in result['hits']['hits']:
             column_name = hit['_source']['name']
             if column_name not in column_ranges:
@@ -175,6 +183,14 @@ def get_column_ranges(es, dataset_id):
             column_ranges[column_name]['ranges'].\
                 append([float(hit['_source']['numerical_range']['gte']),
                         float(hit['_source']['numerical_range']['lte'])])
+
+        # scrolling
+        result = es.scroll(
+            scroll_id=sid,
+            scroll='2m'
+        )
+        sid = result['_scroll_id']
+        scroll_size = len(result['hits']['hits'])
 
     return column_ranges
 
@@ -195,6 +211,7 @@ def get_numerical_range_intersections(es, dataset_id):
         total_size = 0
         for range_ in column_ranges[column]['ranges']:
             total_size += (range_[1] - range_[0])
+
             query = '''
                 {
                   "query" : {
@@ -219,23 +236,40 @@ def get_numerical_range_intersections(es, dataset_id):
                     }
                   }
                 }''' % (dataset_id, type_, range_[0], range_[1])
-            result = es.search(index='datamart_numerical_index', body=query)
-            if result['hits']['total'] == 0:
-                continue
-            for hit in result['hits']['hits']:
 
-                name = '%s$$%s' % (hit['_source']['id'], hit['_source']['name'])
-                if name not in intersections_column:
-                    intersections_column[name] = 0
+            result = es.search(
+                index='datamart_numerical_index',
+                body=query,
+                scroll='2m',
+                size=1000
+            )
 
-                # Compute intersection
-                start_result = float(hit['_source']['numerical_range']['gte'])
-                end_result = float(hit['_source']['numerical_range']['lte'])
+            sid = result['_scroll_id']
+            scroll_size = result['hits']['total']
 
-                start = max(start_result, range_[0])
-                end = min(end_result, range_[1])
+            while scroll_size > 0:
+                for hit in result['hits']['hits']:
 
-                intersections_column[name] += (end - start)
+                    name = '%s$$%s' % (hit['_source']['id'], hit['_source']['name'])
+                    if name not in intersections_column:
+                        intersections_column[name] = 0
+
+                    # Compute intersection
+                    start_result = float(hit['_source']['numerical_range']['gte'])
+                    end_result = float(hit['_source']['numerical_range']['lte'])
+
+                    start = max(start_result, range_[0])
+                    end = min(end_result, range_[1])
+
+                    intersections_column[name] += (end - start)
+
+                # scrolling
+                result = es.scroll(
+                    scroll_id=sid,
+                    scroll='2m'
+                )
+                sid = result['_scroll_id']
+                scroll_size = len(result['hits']['hits'])
 
         if type_ == 'integer':
             types[column] = 'http://schema.org/Integer'
@@ -260,12 +294,6 @@ class JoinQuery(BaseHandler):
             self.application.elasticsearch,
             dataset_id
         )
-        # for column in join_intersections:
-        #     logger.warning("[JOIN] Column: " + column)
-        #     for intersection in join_intersections[column][:5]:
-        #         dataset_j, column_j = intersection[0].split('$$')
-        #         logger.warning("[JOIN]   Intersects %s, %s" % (dataset_j, column_j))
-        #         logger.warning("[JOIN]   > Size: %.2f" % intersection[1])
         self.render('join_query.html',
                     intersections=join_intersections,
                     types=column_types)
