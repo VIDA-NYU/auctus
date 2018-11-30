@@ -187,7 +187,7 @@ def get_numerical_range_intersections(es, dataset_id):
     column_ranges = get_column_ranges(es, dataset_id)
 
     if not column_ranges:
-        return intersections
+        return intersections, types
 
     for column in column_ranges:
         type_ = column_ranges[column]['type']
