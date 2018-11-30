@@ -54,7 +54,7 @@ def get_numerical_ranges(values):
     current_max = values[0]
 
     for i in range(1, len(values)):
-        if (values[i] - values[i-1]) > avg_range_diff + std_dev_range_diff:
+        if (values[i] - values[i-1]) > avg_range_diff + 2.5*std_dev_range_diff:
             ranges.append([current_min, current_max])
             # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
             current_min = values[i]
