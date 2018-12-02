@@ -8,10 +8,14 @@
     {%- endif %}
     {%- for column, intersections in join_intersections %}
         <div class="list-group-item list-group-item-action flex-column align-items-start">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">Column: {{ column }}</h5>
-                <small>{{ types[column] }}</small>
-            </div>
+            <a class="list-group-item-action flex-column align-items-start"
+               href="javascript:void(0)" onclick="toggle_visibility('intersections-{{ column }}');">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">Column: {{ column }}</h5>
+                    <small>{{ types[column] }}</small>
+                </div>
+            </a>
+            <div id="intersections-{{ column }}" style="display:none;">
             {%- for intersection in intersections[:5] %}
                 {%- if intersection[1] > 0 %}
                     {%- set dataset_join, column_join = intersection[0].split('$$') %}
@@ -21,8 +25,10 @@
                     <small>Score: {{ intersection[1] }}</small>
                 {%- endif %}
             {%- endfor %}
+            </div>
         </div>
     {%- endfor %}
 </div>
 
+<script type="text/javascript" src="{{ static_url('js/join_query.js') }}"></script>
 {% endblock %}

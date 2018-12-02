@@ -1,3 +1,4 @@
+import distance
 import elasticsearch
 import logging
 import jinja2
@@ -271,19 +272,32 @@ def get_numerical_range_intersections(es, dataset_id):
                 sid = result['_scroll_id']
                 scroll_size = len(result['hits']['hits'])
 
+        if not intersections_column:
+            continue
+
         if type_ == 'integer':
             types[column] = 'http://schema.org/Integer'
         elif type_ == 'float':
             types[column] = 'http://schema.org/Float'
         else:
             types[column] = 'http://schema.org/DateTime'
-        intersections[column] = [
-            (name, size/total_size) for name, size in sorted(
-                intersections_column.items(),
-                key=lambda item: item[1],
-                reverse=True
+
+        intersections[column] = []
+        for name, size in intersections_column.items():
+            sim = distance.jaccard(
+                column.lower(),
+                name.split("$$")[1].lower()
             )
-        ]
+            score = size/total_size
+            if type_ != 'datetime':
+                score *= (1-sim)
+            intersections[column].append((name, score))
+
+        intersections[column] = sorted(
+            intersections[column],
+            key=lambda item: item[1],
+            reverse=True
+        )
 
     return intersections, types
 
