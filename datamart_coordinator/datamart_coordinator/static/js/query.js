@@ -28,6 +28,14 @@ function postJSON(url='', data={}, args) {
   });
 }
 
+function toggle_visibility(id) {
+  var e = document.getElementById(id);
+  if(e.style.display == 'block')
+    e.style.display = 'none';
+  else
+    e.style.display = 'block';
+}
+
 function formatSize(bytes) {
     var i = 0;
     var units = [' B', ' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB'];
@@ -120,6 +128,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
         '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
         '        <a href="/join_query/' + data.id + '" class="btn btn-sm btn-outline-secondary">Join</a>' +
+        '        <a href="/union_query/' + data.id + '" class="btn btn-sm btn-outline-secondary">Union</a>' +
         '      </div>' +
         '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
         '    </div>' +

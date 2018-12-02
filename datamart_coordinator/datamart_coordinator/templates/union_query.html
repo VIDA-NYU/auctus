@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% set active_page = "union_query" %}
+
+{% block contents %}
+<div class="list-group" id="recent_discoveries">
+    {%- if not scores %}
+        <h5>No results.</h5>
+    {%- endif %}
+    {%- for dataset, score in scores %}
+        <div class="list-group-item list-group-item-action flex-column align-items-start">
+            <a class="list-group-item-action flex-column align-items-start"
+               href="javascript:void(0)" onclick="toggle_visibility('info-{{ dataset }}');">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ dataset }}</h5>
+                    <small>{{ score }}</small>
+                </div>
+            </a>
+            <div id="info-{{ dataset }}" style="display:none;">
+            {%- for att1, att2, sim, intersection in pairs[dataset] %}
+                <hr width="60%" align="left">
+                <p class="mb-1">{{ att1 }}
+                <br>{{ att2 }}</p>
+                <small>Score: {{ sim }}</small>
+            {%- endfor %}
+            </div>
+        </div>
+    {%- endfor %}
+</div>
+
+<script type="text/javascript" src="{{ static_url('js/query.js') }}"></script>
+{% endblock %}

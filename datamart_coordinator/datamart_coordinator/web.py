@@ -315,6 +315,213 @@ class JoinQuery(BaseHandler):
         )
 
 
+# TODO: move to a better place?
+def get_all_datasets_columns(es):
+    dataset_columns = dict()
+    query = \
+        '''
+            {
+                "query" : {
+                    "match_all" : { }
+                }
+            }
+        '''
+
+    result = es.search(
+        index='datamart',
+        body=query,
+        scroll='2m',
+        size=10000
+    )
+
+    sid = result['_scroll_id']
+    scroll_size = result['hits']['total']
+
+    while scroll_size > 0:
+        for hit in result['hits']['hits']:
+            dataset = hit['_id']
+            dataset_columns[dataset] = dict()
+
+            for column in hit['_source']['columns']:
+                name = column['name']
+                for semantic_type in column['semantic_types']:
+                    if semantic_type not in dataset_columns[dataset]:
+                        dataset_columns[dataset][semantic_type] = []
+                    dataset_columns[dataset][semantic_type].append(name)
+                if not column['semantic_types']:
+                    if column['structural_type'] not in dataset_columns[dataset]:
+                        dataset_columns[dataset][column['structural_type']] = []
+                    dataset_columns[dataset][column['structural_type']].append(name)
+
+        # scrolling
+        result = es.scroll(
+            scroll_id=sid,
+            scroll='2m'
+        )
+        sid = result['_scroll_id']
+        scroll_size = len(result['hits']['hits'])
+
+    return dataset_columns
+
+
+def get_intersection_size(es, dt_ranges_1, dt_1, att_1, dt_2, att_2):
+
+    total_size_att_1 = 0
+    intersection_size = 0
+    if att_1 not in dt_ranges_1:
+        return 0
+    for range_ in dt_ranges_1[att_1]['ranges']:
+        total_size_att_1 += (range_[1] - range_[0] + 1)
+
+        query = '''
+                    {
+                      "query" : {
+                        "bool": {
+                          "must_not": {
+                            "match": { "id": "%s" }
+                          },
+                          "must": [
+                            {
+                              "match": { "id": "%s" }
+                            },
+                            {
+                              "match": { "name": "%s" }
+                            },
+                            {
+                              "range" : {
+                                "numerical_range" : {
+                                  "gte" : %.8f,
+                                  "lte" : %.8f,
+                                  "relation" : "intersects"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }''' % (dt_1, dt_2, att_2, range_[0], range_[1])
+
+        result = es.search(
+            index='datamart_numerical_index',
+            body=query,
+            scroll='2m',
+            size=10000
+        )
+
+        sid = result['_scroll_id']
+        scroll_size = result['hits']['total']
+
+        while scroll_size > 0:
+            for hit in result['hits']['hits']:
+
+                # Compute intersection
+                start_result = float(hit['_source']['numerical_range']['gte'])
+                end_result = float(hit['_source']['numerical_range']['lte'])
+
+                start = max(start_result, range_[0])
+                end = min(end_result, range_[1])
+
+                intersection_size += (end - start + 1)
+
+            # scrolling
+            result = es.scroll(
+                scroll_id=sid,
+                scroll='2m'
+            )
+            sid = result['_scroll_id']
+            scroll_size = len(result['hits']['hits'])
+
+    return intersection_size / total_size_att_1
+
+
+# TODO: move to a better place?
+def get_unionable_datasets(es, dataset_id):
+    dataset_columns = get_all_datasets_columns(es)
+    main_dataset_columns = dataset_columns[dataset_id]
+    del dataset_columns[dataset_id]
+
+    main_dataset_numerical_ranges = get_column_ranges(es, dataset_id)
+
+    n_columns = 0
+    for type_ in main_dataset_columns:
+        n_columns += len(main_dataset_columns[type_])
+
+    column_pairs = dict()
+    scores = dict()
+    for dataset in dataset_columns:
+
+        # check all pairs of attributes
+        pairs = []
+        for type_ in main_dataset_columns:
+            if type_ not in dataset_columns[dataset]:
+                continue
+            for att_1 in main_dataset_columns[type_]:
+                for att_2 in dataset_columns[dataset][type_]:
+                    sim = 1 - distance.jaccard(att_1.lower(), att_2.lower())
+                    pairs.append((att_1, att_2, sim))
+
+        # choose pairs with higher Jaccard distance
+        seen_1 = set()
+        seen_2 = set()
+        column_pairs[dataset] = []
+        for att_1, att_2, sim in sorted(pairs,
+                                        key=lambda item: item[2],
+                                        reverse=True):
+            if att_1 in seen_1 or att_2 in seen_2:
+                continue
+            seen_1.add(att_1)
+            seen_2.add(att_2)
+            column_pairs[dataset].append([att_1, att_2, sim])
+
+        if len(column_pairs[dataset]) <= 1:
+            column_pairs[dataset] = []
+            continue
+
+        scores[dataset] = 1
+
+        # evaluate intersection for numerical attributes
+        # intuition: the lower the intersection, the more the union is useful
+        # TODO: how to use this?
+        for i in range(len(column_pairs[dataset])):
+            att_1 = column_pairs[dataset][i][0]
+            att_2 = column_pairs[dataset][i][1]
+            sim = column_pairs[dataset][i][2]
+
+            intersection_size = get_intersection_size(
+                es,
+                main_dataset_numerical_ranges,
+                dataset_id,
+                att_1,
+                dataset,
+                att_2
+            )
+
+            column_pairs[dataset][i].append(intersection_size)
+
+            scores[dataset] += sim
+
+        scores[dataset] = scores[dataset] / n_columns
+
+    return column_pairs, sorted(
+        scores.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )
+
+
+class UnionQuery(BaseHandler):
+    def get(self, dataset_id):
+        column_pairs, scores = get_unionable_datasets(
+            self.application.elasticsearch,
+            dataset_id
+        )
+        self.render(
+            'union_query.html',
+            pairs=column_pairs,
+            scores=scores
+        )
+
+
 class AllocateDataset(BaseHandler):
     def get(self):
         identifier = self.get_query_argument('id')
@@ -373,6 +580,7 @@ def make_app(debug=False):
             URLSpec('/search', Search, name='search'),
             URLSpec('/dataset/([^/]+)', Dataset),
             URLSpec('/join_query/([^/]+)', JoinQuery),
+            URLSpec('/union_query/([^/]+)', UnionQuery),
 
             URLSpec('/allocate_dataset', AllocateDataset),
         ],
