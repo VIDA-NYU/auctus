@@ -1,7 +1,7 @@
-DataMart Query Component
-========================
+DataMart Query Service
+======================
 
-This container handles queries from clients. It is responsible for parsing them and searching ElasticSearch as well as on-demand discoverers and return results to clients.
+This service handles queries from clients. It is responsible for parsing them and searching ElasticSearch as well as on-demand discoverers and return results to clients.
 
 It can also materialize datasets at a client's request, though it is possible for clients to do the materialization themselves.
 
@@ -13,23 +13,42 @@ The API is based on JSON. A JSON object describing the query is POSTed to the ``
 The query object has the following format::
 
     {
-        "keywords": ["weather", "nyc"],
-        "search_for": ["union", "join"],
-        "columns_all": [
-            {
-                "structural_type": "http://schema.org/Text",
-                "semantic_types": [
-                    "http://schema.org/DateTime"
-                ]
-            },
-            {
-                "structural_type": "http://schema.org/Float",
-                "semantic_types": [
-                    "https://metadata.datadrivendiscovery.org/types/Temperature"
-                ],
-                "keywords": ["ground", "average", "month"]
-            }
-        ]
+        "i_have": {
+            "keywords": ["taxi", "demand"],
+            "columns": [
+                {
+                    "structural_type": "http://schema.org/Float",
+                    "semantic_types": [
+                        "http://schema.org/Latitude"
+                    ],
+                    "name": "lat"
+                },
+                {
+                    "structural_type": "http://schema.org/Float",
+                    "semantic_types": [
+                        "http://schema.org/Longitude"
+                    ],
+                    "name": "long"
+                },
+                {
+                    "structural_type": "http://schema.org/Float",
+                    "name": "taxi demand"
+                }
+            ],
+        },
+        "i_want": {
+            "keywords": ["weather", "nyc"],
+            "columns": [
+                {
+                    "structural_type": "http://schema.org/Float",
+                    "keywords": ["temperature"]
+                },
+                {
+                    "structural_type": "http://schema.org/Float",
+                    "keywords": ["wind speed"]
+                }
+            ]
+        }
     }
 
 And the response::
@@ -87,3 +106,30 @@ And the response::
 
 Download API
 ------------
+
+The client can use the ``materialize`` dictionary to download the dataset directly. This will allow the client to avoid latency, queueing in the server, use their own API key, ...
+
+Otherwise, the query service also supports materializing the dataset and returning it to the client through HTTP download. Use the ``/download/<dataset_id>`` endpoint.
+
+D3M Set-Up
+----------
+
+We envision the search to be done outside the pipeline, through a TA1 primitive or not::
+
+    search_datamart(keywords=..., column1=..., column2=...)
+
+The user can select dataset IDs in that list from the TA3 interface, or if running in TA2-only-mode, TA2 can make multiple pipelines with each of the top N results.
+
+Then the download/materialization and join would appear in the pipeline as primitives::
+
+      input dataset
+           |
+    DenormalizeDataset
+           |
+           |    MaterializeDatamart(dataset_id=...)
+           |    /
+         DataJoin
+           |
+          ...
+           |
+    ConstructPredictions
