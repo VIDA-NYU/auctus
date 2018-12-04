@@ -41,6 +41,9 @@ def get_numerical_ranges(values):
     This function assumes the input is sorted in ascending order.
     """
 
+    if not values:
+        return []
+
     range_diffs = []
     for i in range(1, len(values)):
         diff = values[i] - values[i-1]
