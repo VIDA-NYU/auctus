@@ -23,8 +23,8 @@ First is the search endpoint::
             # path=".../data/datasetDoc.json",  # can also use path
             columns=None,  # use all columns
             # columns=[("0", "Player"), ("0", "Fielding_ave")],  # subset
-            # TODO: Should we be able to provide D3M problem JSON?
         ),
+        # TODO: Should we be able to provide D3M problem JSON?
         filter=dict(
             keywords=["baseball", "players"],
             license=["CC-0"],  # filter on license type
@@ -74,17 +74,18 @@ Over HTTP, the API is similar (POST a JSON object)::
     {
         "data": {
             ... unspecified datamart-specific data description ...
+            # otherwise you can send the data using multipart upload
         },
         "filter": {
             "keywords": ["baseball", "players"],
             "license": ["CC-0"],
             "columns": [
                 {
-                    "structural_type": "http://schema.org/Integer",
+                    "colType": "http://schema.org/Integer",
                     "keywords": ["age"],
                 },
                 {
-                    "structural_type": "http://schema.org/Text",
+                    "colType": "http://schema.org/Text",
                 }
             ]
         }
@@ -119,32 +120,42 @@ The results are provided back as a list of objects in JSON::
             "augmentType": "join" / "union",
             "id": "datamart.noaa_discoverer.GHCND.AEM00041194.201705",
             "score": 0.758,
+            "metadata": {
+                "about": {
+                    # Matches datasetDoc's `about`
+                    ...
+                },
+                "columns": [
+                    # Matches datasetDoc's `dataResources[].columns`
+                    {
+                        "colIndex": 0,
+                        "colName": "lat",
+                        "role": "attribute",
+                        "colType": "http://schema.org/Float",
+                        "semantic_types": [
+                            "http://schema.org/Latitude"
+                        ],
+                        "unionWith": "latitude" / "refersTo": "latitude"
+                    },
+                    {
+                        "colIndex": 1,
+                        "colName": "temperature",
+                        "role": "attribute",
+                        "colType": "http://schema.org/Float",
+                        "semantic_types": [
+                            "https://metadata.datadrivendiscovery.org/types/Temperature"
+                        ]
+                    },
+                ]
+            },
             "materialize": {
+                # This is private information for the DataMart to materialize
+                # the dataset (so it can be done client-side)
                 "identifier": "datamart.noaa_discoverer",
                 "noaa_dataset_id": "GHCND",
                 "noaa_station_id": "AEM00041194",
                 "noaa_start": "2017-05-01",
                 "noaa_end": "2017-05-31"
-            },
-            "metadata": {
-                ...
-                "columns": [
-                    {
-                        "structural_type": "http://schema.org/Float",
-                        "semantic_types": [
-                            "http://schema.org/Latitude"
-                        ],
-                        "name": "lat",
-                        "unionWith": "latitude" / "refersTo": "latitude"
-                    },
-                    {
-                        "structural_type": "http://schema.org/Float",
-                        "semantic_types": [
-                            "https://metadata.datadrivendiscovery.org/types/Temperature"
-                        ],
-                        "name": "temperature"
-                    },
-                ]
             }
         },
         {
@@ -168,9 +179,9 @@ Download API
 
 You can provide the dataset ID or the full object returned by search to the download function to materialize a dataset::
 
-    datamart.download(results[0])
+    datamart.download(results[0])  # Full dict, can use 'materialize' info to materialize client-side
 
-    datamart.download("9hyh-zkx9", destination="augmentation_data/selected_dataset")
+    datamart.download("9hyh-zkx9", destination="augmentation_data/selected_dataset")  # Dataset ID
 
 The client can use the ``materialize`` dictionary to download the dataset directly. This will allow the client to avoid latency, queueing in the server, use their own API key, ...
 
@@ -183,15 +194,15 @@ An additional endpoint allows to evaluate joins::
 
     datamart.evaluate_join(
         data=...,
-        result="9hyh-zkx9",
+        result=result[0],
     )
-    # {"score": 0.275}
+    # -> {"score": 0.894}
 
     datamart.evaluate_join(
         data=...,
-        result=result[0],
+        result="9hyh-zkx9",
     )
-    # {"score": 0.894}
+    # -> {"score": 0.275}
 
 Join API
 --------
@@ -202,11 +213,12 @@ This is tentatively part of the DataMart API as well::
         data=...,
         result="9hyh-zkx9",
     )
-    # D3M Dataset object
+    # -> D3M Dataset object
 
 Questions
 =========
 
-  * How to provide data?
-  * Is multipart upload too insane?
+  * How to provide data? D3M Dataset, D3M DataFrame, ...?
   * Should we specify this "materialize" bit?
+  * D3M doesn't use schema.org types and roles, just "integer", "attribute", ...
+  * Is multipart upload too insane? (HTTP API can be specified later)
