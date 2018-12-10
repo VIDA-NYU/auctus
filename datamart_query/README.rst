@@ -218,7 +218,8 @@ This is tentatively part of the DataMart API as well::
 Questions
 =========
 
-  * How to provide data? D3M Dataset, D3M DataFrame, ...?
-  * Should we specify this "materialize" bit?
-  * D3M doesn't use schema.org types and roles, just "integer", "attribute", ...
-  * Is multipart upload too insane? (HTTP API can be specified later)
+* How to provide data? D3M Dataset, D3M DataFrame, ...?
+* Should we also send the D3M Problem definition? Has very useful bits
+* Should we specify this "materialize" bit?
+* D3M doesn't use schema.org types and roles, just "integer", "attribute", ...
+* Is multipart upload too insane? (HTTP API can be specified later)
