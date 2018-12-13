@@ -48,6 +48,9 @@ def get_all(endpoint, delay=0.5, **params):
         time.sleep(delay)
         failed = 0
         obj = r.json()
+        if not obj:
+            # FIXME: Does this mean no data?
+            return results
         pages += 1
         results.extend(obj['results'])
         resultset = obj['metadata']['resultset']
