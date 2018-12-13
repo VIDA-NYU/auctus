@@ -8,6 +8,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'aio-pika',
     'elasticsearch',
+    'hdbscan',
     'numpy',
     'pandas',
     'python-dateutil',

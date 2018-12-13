@@ -17,18 +17,24 @@ _re_phone = re.compile(r'^'
                        r'(?:[ .]?[0-9]{1,12})'  # First group of digits
                        r'(?:[ .-][0-9]{1,10}){0,5}'  # More groups of digits
                        r'$')
+_re_latitude = re.compile(r'^[+-]?'
+                          r'([1-8]?\d\.(\d+)?|'
+                          r'90\.(0+)?)$')
+_re_longitude = re.compile(r'^[+-]?'
+                           r'(180\.(0+)?|((1[0-7]\d)|'
+                           r'([1-9]?\d))\.(\d+)?)$')
 
 
 # Tolerable ratio of unclean data
 MAX_UNCLEAN = 0.02  # 2%
 
 
-def identify_types(array):
+def identify_types(array, name):
     num_total = len(array)
     ratio = 1.0 - MAX_UNCLEAN
 
     # Identify structural type
-    num_float = num_int = num_bool = num_empty = 0
+    num_float = num_int = num_bool = num_empty = num_lat = num_lon = 0
     # TODO: ENUM
     for elem in array:
         if not elem:
@@ -39,6 +45,10 @@ def identify_types(array):
             num_float += 1
         if elem.lower() in ('0', '1', 'true', 'false'):
             num_bool += 1
+        if _re_latitude.match(elem):
+            num_lat += 1
+        if _re_longitude.match(elem):
+            num_lon += 1
 
     if num_empty == num_total:
         structural_type = ('https://metadata.datadrivendiscovery.org/types/' +
@@ -51,6 +61,12 @@ def identify_types(array):
         structural_type = 'http://schema.org/Text'
 
     semantic_types_dict = {}
+
+    # Identify lat/lon
+    if num_lat >= ratio * num_total and 'lat' in name.lower():
+        semantic_types_dict['https://schema.org/latitude'] = None
+    if num_lon >= ratio * num_total and 'lon' in name.lower():
+        semantic_types_dict['https://schema.org/longitude'] = None
 
     # Identify booleans
     if num_bool >= ratio * num_total:

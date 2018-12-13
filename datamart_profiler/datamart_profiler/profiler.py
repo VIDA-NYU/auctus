@@ -1,3 +1,4 @@
+import hdbscan
 import json
 import logging
 import math
@@ -38,11 +39,12 @@ def mean_stddev(array):
 def get_numerical_ranges(values):
     """
     Retrieve the numeral ranges given the input (timestamp, integer, or float).
-    This function assumes the input is sorted in ascending order.
     """
 
     if not values:
         return []
+
+    values = sorted(values)
 
     range_diffs = []
     for i in range(1, len(values)):
@@ -50,22 +52,52 @@ def get_numerical_ranges(values):
         diff != 0 and range_diffs.append(diff)
 
     avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
-    # logger.warning("  Avg. Diff: " + str(avg_range_diff))
 
     ranges = []
     current_min = values[0]
     current_max = values[0]
 
     for i in range(1, len(values)):
-        if (values[i] - values[i-1]) > avg_range_diff + 2.5*std_dev_range_diff:
-            ranges.append([current_min, current_max])
-            # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
+        if (values[i] - values[i-1]) > avg_range_diff + 3*std_dev_range_diff:
+            ranges.append({"range": {"gte": current_min, "lte": current_max}})
             current_min = values[i]
             current_max = values[i]
             continue
         current_max = values[i]
-    ranges.append([current_min, current_max])
-    # logger.warning("  Range: " + str(ranges[-1][0]) + " -- " + str(ranges[-1][1]))
+    ranges.append({"range": {"gte": current_min, "lte": current_max}})
+
+    return ranges
+
+
+def get_spatial_ranges(values):
+    """
+    Retrieve the spatial ranges (i.e. bounding boxes) given the input gps points.
+    It uses HDBSCAN for finding finer spatial ranges.
+    """
+
+    clustering = hdbscan.HDBSCAN(min_cluster_size=10).fit(values)
+
+    clusters = {}
+    for i in range(len(values)):
+        label = clustering.labels_[i]
+        if label < 0:
+            continue
+        if label not in clusters:
+            clusters[label] = [[float("inf"), -float("inf")], [float("inf"), -float("inf")]]
+        clusters[label][0][0] = min(clusters[label][0][0], values[i][0])  # min lat
+        clusters[label][0][1] = max(clusters[label][0][1], values[i][0])  # max lat
+
+        clusters[label][1][0] = min(clusters[label][1][0], values[i][1])  # min lon
+        clusters[label][1][1] = max(clusters[label][1][1], values[i][1])  # max lon
+
+    ranges = []
+    for v in clusters.values():
+        if (v[0][0] != v[0][1]) and (v[1][0] != v[1][1]):
+            ranges.append({"range": {"type": "envelope",
+                                     "coordinates": [
+                                         [v[1][0], v[0][1]],
+                                         [v[1][1], v[0][0]]
+                                     ]}})
 
     return ranges
 
@@ -131,18 +163,16 @@ def handle_dataset(storage, metadata):
     for column_meta, name in zip(columns, df.columns):
         column_meta.update(scdp_out.get(name, {}))
 
-    # Index for numerical ranges
-    numerical_index = {
-        'integer':  dict(),
-        'float':    dict(),
-        'datetime': dict()
-    }
+    # Lat / Lon
+    column_lat = []
+    column_lon = []
 
     # Identify types
     logger.info("Identifying types...")
     for i, column_meta in enumerate(columns):
         array = df.iloc[:, i]
-        structural_type, semantic_types_dict = identify_types(array)
+        structural_type, semantic_types_dict = \
+            identify_types(array, column_meta['name'])
         # Set structural type
         column_meta['structural_type'] = structural_type
         # Add semantic types to the ones already present
@@ -162,13 +192,21 @@ def handle_dataset(storage, metadata):
                 try:
                     numerical_values.append(float(e))
                 except ValueError:
-                    continue
-            if structural_type == 'http://schema.org/Integer':
-                numerical_index['integer'][column_meta['name']] = \
-                    get_numerical_ranges(sorted(numerical_values))
-            else:
-                numerical_index['float'][column_meta['name']] = \
-                    get_numerical_ranges(sorted(numerical_values))
+                    numerical_values.append(None)
+
+            column_meta['numerical_coverage'] = get_numerical_ranges(
+                [x for x in numerical_values if x is not None]
+            )
+
+            # Get lat/lon columns
+            if 'https://schema.org/latitude' in semantic_types_dict:
+                column_lat.append(
+                    (column_meta['name'], numerical_values)
+                )
+            if 'https://schema.org/longitude' in semantic_types_dict:
+                column_lon.append(
+                    (column_meta['name'], numerical_values)
+                )
 
         if 'http://schema.org/DateTime' in semantic_types_dict:
             timestamps = numpy.empty(
@@ -179,18 +217,42 @@ def handle_dataset(storage, metadata):
             for j, dt in enumerate(
                     semantic_types_dict['http://schema.org/DateTime']):
                 timestamps[j] = dt.timestamp()
-                timestamps_for_range.append(dt.timestamp())
+                timestamps_for_range.append(
+                    dt.replace(minute=0, second=0).timestamp()
+                )
             column_meta['mean'], column_meta['stddev'] = \
                 mean_stddev(timestamps)
 
             # Get temporal ranges
-            # logger.warning(" Column Name: " + column_meta['name'])
-            numerical_index['datetime'][column_meta['name']] = \
-                get_numerical_ranges(sorted(timestamps_for_range))
+            column_meta['temporal_coverage'] = \
+                get_numerical_ranges(timestamps_for_range)
 
+    # Lat / Lon
+    spatial_coverage = []
+    i_lat = i_lon = 0
+    while i_lat < len(column_lat) and i_lon < len(column_lon):
+        name_lat = column_lat[i_lat][0]
+        name_lon = column_lon[i_lon][0]
+
+        values_lat = column_lat[i_lat][1]
+        values_lon = column_lon[i_lon][1]
+        values = []
+        for i in range(len(values_lat)):
+            if values_lat[i] is not None and values_lon[i] is not None:
+                values.append([values_lat[i], values_lon[i]])
+
+        spatial_coverage.append({"lat": name_lat,
+                                 "lon": name_lon,
+                                 "ranges": get_spatial_ranges(values)})
+
+        i_lat += 1
+        i_lon += 1
+
+    if spatial_coverage:
+        metadata['spatial_coverage'] = spatial_coverage
 
     # TODO: Compute histogram
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
-    return metadata, numerical_index
+    return metadata
