@@ -133,6 +133,7 @@ class Profiler(object):
                 shutil.rmtree(storage.path)
             else:
                 os.remove(storage.path)
+            logger.info("Removed %s", storage.path)
             log_future(self.loop.create_task(coro(future)), logger)
 
         return callback

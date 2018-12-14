@@ -254,6 +254,7 @@ class Discoverer(object):
     def create_storage(self):
         path = os.path.join('/datasets', uuid.uuid4().hex)
         os.mkdir(path)
+        logger.info("Created storage %s", path)
         return WriteStorage(dict(path=path))
 
 
