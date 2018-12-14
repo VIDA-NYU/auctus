@@ -62,7 +62,7 @@ def identify_types(array):
         for elem in array:
             try:
                 parsed_dates.append(parse(elem))
-            except ValueError:
+            except Exception:  # ValueError, OverflowError
                 pass
 
         if len(parsed_dates) >= ratio * num_total:
