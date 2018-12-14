@@ -138,7 +138,10 @@ class Dataset(BaseHandler):
     def get(self, dataset_id):
         # Get metadata from Elasticsearch
         es = self.application.elasticsearch
-        metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+        try:
+            metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+        except elasticsearch.NotFoundError:
+            raise HTTPError(404)
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
         self.render('dataset.html',
