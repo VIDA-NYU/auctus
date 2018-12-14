@@ -53,14 +53,16 @@ def process_dataset(storage, metadata):
     proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
                             stdin=subprocess.PIPE)
-    proc.stdin.close()
-    try:
-        scdp_out = json.load(proc.stdout)
-        if proc.wait() != 0:
-            raise subprocess.CalledProcessError(proc.returncode, cmd)
-    except Exception:
-        logger.exception("Error running SCDP")
+    stdout, _ = proc.communicate()
+    if proc.wait() != 0:
+        logger.error("Error running SCDP: returned %d", proc.returncode)
         scdp_out = {}
+    else:
+        try:
+            scdp_out = json.load(proc.stdout)
+        except json.JSONDecodeError:
+            logger.exception("Invalid output from SCDP")
+            scdp_out = {}
 
     # Sub-sample
     if metadata['size'] > MAX_SIZE:
