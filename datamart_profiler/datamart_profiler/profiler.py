@@ -59,7 +59,7 @@ def process_dataset(storage, metadata):
         scdp_out = {}
     else:
         try:
-            scdp_out = json.load(proc.stdout)
+            scdp_out = json.loads(stdout)
         except json.JSONDecodeError:
             logger.exception("Invalid output from SCDP")
             scdp_out = {}
