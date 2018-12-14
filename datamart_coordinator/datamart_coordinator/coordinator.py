@@ -127,7 +127,8 @@ class Coordinator(object):
                     0,
                     dict(id=dataset_id, storage=storage,
                          discoverer=materialize.get('identifier', '(unknown)'),
-                         discovered=materialize.get('date', '???')),
+                         discovered=materialize.get('date', '???'),
+                         name=metadata.get('name')),
                 )
                 del self.recent_discoveries[15:]
 
@@ -143,6 +144,7 @@ class Coordinator(object):
                     self.recent_discoveries[i].pop('storage', None)
                     self.recent_discoveries[i]['profiled'] = obj.get('date',
                                                                      '???')
+                    self.recent_discoveries[i]['name'] = obj.get('name')
                     break
             else:
                 self.recent_discoveries.insert(
@@ -150,7 +152,8 @@ class Coordinator(object):
                     dict(id=dataset_id,
                          discoverer=materialize.get('identifier', '(unknown)'),
                          discovered=materialize.get('date', '???'),
-                         profiled=obj.get('date', '???')),
+                         profiled=obj.get('date', '???'),
+                         name=obj.get('name')),
                 )
                 del self.recent_discoveries[15:]
 

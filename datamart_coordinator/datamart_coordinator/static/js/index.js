@@ -55,7 +55,7 @@ function loadStatus() {
         elem.className = 'list-group-item list-group-item-action flex-column align-items-start';
         elem.innerHTML =
           '<div class="d-flex w-100 justify-content-between">' +
-          '  <h5 class="mb-1">' + record.id + '</h5>' +
+          '  <h5 class="mb-1">' + (record.name || record.id) + '</h5>' +
           '  <small>' + record.profiled + '</small>' +
           '</div>' +
           //'<p class="mb-1">More info?</p>' +
@@ -65,7 +65,7 @@ function loadStatus() {
         elem.className = 'list-group-item flex-column align-items-start list-group-item-secondary';
         elem.innerHTML =
           '<div class="d-flex w-100 justify-content-between">' +
-          '  <h5 class="mb-1">' + record.id + '</h5>' +
+          '  <h5 class="mb-1">' + (record.name || record.id) + '</h5>' +
           '  <small class="text-muted">' + record.discovered + '</small>' +
           '</div>' +
           '<p class="mb-1">Processing <span style="font-family: monospace;">' + record.storage + '</span></p>' +

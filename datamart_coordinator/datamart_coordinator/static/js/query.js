@@ -30,7 +30,7 @@ function postJSON(url='', data={}, args) {
 
 function formatSize(bytes) {
     var i = 0;
-    var units = [' B', ' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB'];
+    var units = [' B', ' kB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB'];
     while(bytes > 1000 && i + 1 < units.length) {
         bytes = bytes / 1000;
         i++;
@@ -113,7 +113,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       elem.innerHTML = (
         '<div class="card mb-4 shadow-sm">' +
         '  <div class="card-body">' +
-        '    <p class="card-text">' + data.id + '</p>' +
+        '    <p class="card-text">' + (data.metadata.name || data.id) + '</p>' +
         '    <p class="card-text">' + description + '</p>' +
         '    <div class="d-flex justify-content-between align-items-center">' +
         '      <div class="btn-group">' +
