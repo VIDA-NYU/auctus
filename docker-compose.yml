@@ -95,5 +95,17 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
+  noaa_discoverer:
+    build:
+      context: .
+      dockerfile: discovery/noaa/Dockerfile
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=guest
+      - AMQP_PASSWORD=guest
+      - NOAA_TOKEN=${NOAA_TOKEN}
+    volumes:
+      - datasets:/datasets
 volumes:
   datasets:
