@@ -194,18 +194,18 @@ def handle_dataset(storage, metadata):
                 except ValueError:
                     numerical_values.append(None)
 
-            column_meta['numerical_coverage'] = get_numerical_ranges(
-                [x for x in numerical_values if x is not None]
-            )
-
             # Get lat/lon columns
             if 'https://schema.org/latitude' in semantic_types_dict:
                 column_lat.append(
                     (column_meta['name'], numerical_values)
                 )
-            if 'https://schema.org/longitude' in semantic_types_dict:
+            elif 'https://schema.org/longitude' in semantic_types_dict:
                 column_lon.append(
                     (column_meta['name'], numerical_values)
+                )
+            else:
+                column_meta['coverage'] = get_numerical_ranges(
+                    [x for x in numerical_values if x is not None]
                 )
 
         if 'http://schema.org/DateTime' in semantic_types_dict:
@@ -224,7 +224,7 @@ def handle_dataset(storage, metadata):
                 mean_stddev(timestamps)
 
             # Get temporal ranges
-            column_meta['temporal_coverage'] = \
+            column_meta['coverage'] = \
                 get_numerical_ranges(timestamps_for_range)
 
     # Lat / Lon

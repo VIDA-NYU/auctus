@@ -51,16 +51,7 @@ class Coordinator(object):
                                                     'index': True,
                                                 },
                                                 # we want to query individual numerical ranges
-                                                'numerical_coverage': {
-                                                    'type': 'nested',
-                                                    'properties': {
-                                                        'range': {
-                                                            'type': 'double_range'
-                                                        }
-                                                    }
-                                                },
-                                                # we want to query individual temporal ranges
-                                                'temporal_coverage': {
+                                                'coverage': {
                                                     'type': 'nested',
                                                     'properties': {
                                                         'range': {

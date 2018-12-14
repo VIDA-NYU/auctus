@@ -1,3 +1,4 @@
+import datetime
 import distance
 import elasticsearch
 import logging
@@ -140,6 +141,16 @@ class Dataset(BaseHandler):
         # Get metadata from Elasticsearch
         es = self.application.elasticsearch
         metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+        # readable format for temporal coverage
+        for column in metadata['columns']:
+            if 'http://schema.org/DateTime' in column['semantic_types']:
+                for range_ in column['coverage']:
+                    range_['range']['gte'] = \
+                        datetime.datetime.utcfromtimestamp(int(range_['range']['gte'])).\
+                        strftime('%Y-%m-%d %H')
+                    range_['range']['lte'] = \
+                        datetime.datetime.utcfromtimestamp(int(range_['range']['lte'])). \
+                            strftime('%Y-%m-%d %H')
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
         self.render('dataset.html',
@@ -149,97 +160,122 @@ class Dataset(BaseHandler):
 
 
 # TODO: move to a better place?
-def get_column_ranges(es, dataset_id):
-    column_ranges = dict()
+def get_column_coverage(es, dataset_id):
+    column_coverage = dict()
 
     index_query = \
         '''
             {
                 "query" : {
-                    "match" : {
-                        "id" : "%s"
+                    "match":{
+                        "_id": "%s"
                     }
                 }
             }
         ''' % dataset_id
 
-    result = es.search(
-        index='datamart_numerical_index',
-        body=index_query,
-        scroll='2m',
-        size=10000
-    )
+    result = es.search(index='datamart', body=index_query)
 
-    sid = result['_scroll_id']
-    scroll_size = result['hits']['total']
+    hit = result['hits']['hits'][0]
+    for column in hit['_source']['columns']:
+        column_name = column['name']
+        if column['structural_type'] in ('http://schema.org/Integer',
+                                         'http://schema.org/Float'):
+            type_ = 'structural_type'
+            type_value = column['structural_type']
+        elif 'http://schema.org/DateTime' in column['semantic_types']:
+            type_ = 'semantic_types'
+            type_value = 'http://schema.org/DateTime'
+        else:
+            continue
+        column_coverage[column_name] = {
+            'type':       type_,
+            'type_value': type_value,
+            'ranges':     []
+        }
+        for range_ in column['coverage']:
+            column_coverage[column_name]['ranges'].\
+                append([float(range_['range']['gte']),
+                        float(range_['range']['lte'])])
 
-    while scroll_size > 0:
-        for hit in result['hits']['hits']:
-            column_name = hit['_source']['name']
-            if column_name not in column_ranges:
-                column_ranges[column_name] = {
-                    'type':   hit['_source']['type'],
-                    'ranges': []
-                }
-            column_ranges[column_name]['ranges'].\
-                append([float(hit['_source']['numerical_range']['gte']),
-                        float(hit['_source']['numerical_range']['lte'])])
+    if 'spatial_coverage' in hit['_source']:
+        for spatial in hit['_source']['spatial_coverage']:
+            names = '(' + spatial['lat'] + ', ' + spatial['lon'] + ')'
+            column_coverage[names] = {
+                'type_':      'spatial',
+                'type_value': 'https://schema.org/latitude, https://schema.org/longitude',
+                'ranges':     []
+            }
+            for range_ in spatial['ranges']:
+                column_coverage[column_name]['ranges'].\
+                    append(range_['range']['coordinates'])
 
-        # scrolling
-        result = es.scroll(
-            scroll_id=sid,
-            scroll='2m'
-        )
-        sid = result['_scroll_id']
-        scroll_size = len(result['hits']['hits'])
-
-    return column_ranges
+    return column_coverage
 
 
 # TODO: move to a better place?
-def get_numerical_range_intersections(es, dataset_id):
+def get_coverage_intersections(es, dataset_id):
 
     intersections = dict()
     types = dict()
-    column_ranges = get_column_ranges(es, dataset_id)
+    column_coverage = get_column_coverage(es, dataset_id)
 
-    if not column_ranges:
+    if not column_coverage:
         return intersections, types
 
-    for column in column_ranges:
-        type_ = column_ranges[column]['type']
+    for column in column_coverage:
+        type_ = column_coverage[column]['type']
+        if type_ == 'spatial':
+            continue
+        type_value = column_coverage[column]['type_value']
         intersections_column = dict()
         total_size = 0
-        for range_ in column_ranges[column]['ranges']:
+        for range_ in column_coverage[column]['ranges']:
             total_size += (range_[1] - range_[0] + 1)
 
             query = '''
                 {
-                  "query" : {
-                    "bool": {
-                      "must_not": {
-                        "match": { "id": "%s" }
-                      },
-                      "must": [
-                        {
-                          "match": { "type": "%s" }
-                        },
-                        {
-                          "range" : {
-                            "numerical_range" : {
-                              "gte" : %.8f,
-                              "lte" : %.8f,
-                              "relation" : "intersects"
+                    "query" : {
+                        "nested" : {
+                            "path" : "columns",
+                            "query" : {
+                                "bool" : {
+                                    "must_not": {
+                                        "match": { "_id": "%s" }
+                                    },
+                                    "must" : [
+                                        {
+                                            "match" : { "columns.%s" : "%s" }
+                                        },
+                                        {
+                                            "nested" : {
+                                                "path" : "columns.coverage",
+                                                "query" : {
+                                                    "range" : {
+                                                        "columns.coverage.range" : {
+                                                            "gte" : %.6f,
+                                                            "lte" : %.6f,
+                                                            "relation" : "intersects"
+                                                        }
+                                                    }
+                                                },
+                                                "inner_hits": {
+                                                  "_source" : false
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            "inner_hits": {
+                                "_source" : false
                             }
-                          }
                         }
-                      ]
                     }
-                  }
-                }''' % (dataset_id, type_, range_[0], range_[1])
+                }''' % (dataset_id, type_, type_value, range_[0], range_[1])
 
             result = es.search(
-                index='datamart_numerical_index',
+                index='datamart',
                 body=query,
                 scroll='2m',
                 size=10000
@@ -251,18 +287,28 @@ def get_numerical_range_intersections(es, dataset_id):
             while scroll_size > 0:
                 for hit in result['hits']['hits']:
 
-                    name = '%s$$%s' % (hit['_source']['id'], hit['_source']['name'])
-                    if name not in intersections_column:
+                    dataset_name = hit['_id']
+                    columns = hit['_source']['columns']
+                    inner_hits = hit['inner_hits']
+
+                    for column_hit in inner_hits['columns']['hits']['hits']:
+                        column_offset = int(column_hit['_nested']['offset'])
+                        column_name = columns[column_offset]['name']
+                        name = '%s$$%s' % (dataset_name, column_name)
                         intersections_column[name] = 0
 
-                    # Compute intersection
-                    start_result = float(hit['_source']['numerical_range']['gte'])
-                    end_result = float(hit['_source']['numerical_range']['lte'])
+                        # ranges from column
+                        for range_hit in column_hit['inner_hits']['columns.coverage']['hits']['hits']:
 
-                    start = max(start_result, range_[0])
-                    end = min(end_result, range_[1])
+                            # compute intersection
+                            range_offset = int(range_hit['_nested']['_nested']['offset'])
+                            start_result = columns[column_offset]['coverage'][range_offset]['range']['gte']
+                            end_result = columns[column_offset]['coverage'][range_offset]['range']['lte']
 
-                    intersections_column[name] += (end - start + 1)
+                            start = max(start_result, range_[0])
+                            end = min(end_result, range_[1])
+
+                            intersections_column[name] += (end - start + 1)
 
                 # scrolling
                 result = es.scroll(
@@ -275,12 +321,7 @@ def get_numerical_range_intersections(es, dataset_id):
         if not intersections_column:
             continue
 
-        if type_ == 'integer':
-            types[column] = 'http://schema.org/Integer'
-        elif type_ == 'float':
-            types[column] = 'http://schema.org/Float'
-        else:
-            types[column] = 'http://schema.org/DateTime'
+        types[column] = type_value
 
         intersections[column] = []
         for name, size in intersections_column.items():
@@ -304,7 +345,7 @@ def get_numerical_range_intersections(es, dataset_id):
 
 class JoinQuery(BaseHandler):
     def get(self, dataset_id):
-        join_intersections, column_types = get_numerical_range_intersections(
+        join_intersections, column_types = get_coverage_intersections(
             self.application.elasticsearch,
             dataset_id
         )
