@@ -1,51 +1,61 @@
-*.py[co]
+datamart_profiler/scdp.jar
+**/.env
+
+# Git
+**/.git
+**/.gitignore
+
+# Python
+**/__pycache__
+**/*.pyc
+**/.ipynb_checkpoints
 
 # Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
+**/*.egg
+**/*.egg-info
+**/dist
+**/build
+**/eggs
+**/parts
+**/bin
+**/var
+**/sdist
+**/develop-eggs
+**/.installed.cfg
+**/lib
+**/lib64
 
 # Installer logs
-pip-log.txt
+**/pip-log.txt
 
 # Unit test / coverage reports
-.coverage
-.tox
-nosetests.xml
+**/.coverage
+**/.tox
+**/nosetests.xml
 
 # Eclipse PyDev
-.project
-.pydevproject
+**/.project
+**/.pydevproject
 
 # PyCharm
-.idea
+**/.idea
 
 # ViM
-.*.swp
+**/.*.swp
 
 # Emacs
-\#*#
+**/#*#
 
 # OS files
-.DS_Store
-desktop.ini
+**/.DS_Store
+**/desktop.ini
 
 # Archives
-*.tar
-*.tar.gz
-*.tar.bz2
-*.zip
-*.whl
+**/*.tar
+**/*.tar.gz
+**/*.tar.bz2
+**/*.zip
+**/*.whl
 
 # Vagrant
-.vagrant
+**/.vagrant
