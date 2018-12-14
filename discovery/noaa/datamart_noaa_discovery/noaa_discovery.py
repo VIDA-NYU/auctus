@@ -14,12 +14,13 @@ from datamart_core import Discoverer
 logger = logging.getLogger(__name__)
 
 
-def YearIterator(start, end, years):
+def iterate_years(start, end, years):
     start = datetime.strptime(start, '%Y-%m-%d').year
     end = datetime.strptime(end, '%Y-%m-%d').year
     start = start - (start % years)
-    for i in range(start, end + 1):
-        yield '%d-01-01' % i, '%d-12-31' % i
+    end = end + years - 1 - (end % years)
+    for i in range(start, end + 1, years):
+        yield '%d-01-01' % i, '%d-12-31' % (i + years - 1)
 
 
 def get_all(endpoint, delay=0.5, **params):
@@ -145,18 +146,18 @@ class NoaaDiscoverer(Discoverer):
         logger.info("Downloading data %s (%s) for %s",
                     datatype, datatype_name, city_dict['name'])
 
-        storage = self.create_storage()
-        with open(os.path.join(storage.path, 'main.csv'), 'w') as dest:
-            writer = csv.writer(dest)
-            writer.writerow(['date', datatype])
+        nb_years = 10 if dataset == 'GSOM' else 1
+        for start, end in iterate_years(start, end, nb_years):
+            logger.info("%s - %s...", start, end)
+            data = get_all('/data', self.DELAY,
+                           datasetid=dataset, datatypeid=datatype,
+                           locationid=city_dict['id'],
+                           startdate=start, enddate=end)
 
-            for r_start, r_end in YearIterator(start, end,
-                                               10 if dataset == 'GSOM' else 1):
-                logger.info("%s - %s...", r_start, r_end)
-                data = get_all('/data', self.DELAY,
-                               datasetid=dataset, datatypeid=datatype,
-                               locationid=city_dict['id'],
-                               startdate=r_start, enddate=r_end)
+            storage = self.create_storage()
+            with open(os.path.join(storage.path, 'main.csv'), 'w') as dest:
+                writer = csv.writer(dest)
+                writer.writerow(['date', datatype])
                 # Sort by date
                 data = sorted(data, key=lambda v: v['date'])
                 # Write the data, one row per date, averaged across stations
@@ -172,26 +173,26 @@ class NoaaDiscoverer(Discoverer):
                 if time is not None:
                     writer.writerow([time, sum(values) / len(values)])
 
-        description = "NOAA {} of {} for {}".format(
-            dataset_name, datatype_name, city_dict['name']),
+            description = "NOAA {} of {} for {}, {}-{}".format(
+                dataset_name, datatype_name, city_dict['name'], start, end)
 
-        self.record_dataset(
-            storage,
-            dict(
-                noaa_dataset_id=dataset,
-                noaa_datatype_id=datatype,
-                noaa_station_id=city_dict['id'],
-                noaa_start=start,
-                noaa_end=end,
-            ),
-            dict(
-                name=description,
-                description=description,
-                latitude=city_dict['latitude'],
-                longitude=city_dict['longitude'],
-            ),
-            dataset_id='{}.{}.{}'.format(dataset, datatype,
-                                         city_dict['id']))
+            self.record_dataset(
+                storage,
+                dict(
+                    noaa_dataset_id=dataset,
+                    noaa_datatype_id=datatype,
+                    noaa_station_id=city_dict['id'],
+                    noaa_start=start,
+                    noaa_end=end,
+                ),
+                dict(
+                    name=description,
+                    description=description,
+                    latitude=city_dict['latitude'],
+                    longitude=city_dict['longitude'],
+                ),
+                dataset_id='{}.{}.{}.{}'.format(dataset, datatype,
+                                                city_dict['id'], start))
 
 
 if __name__ == '__main__':
