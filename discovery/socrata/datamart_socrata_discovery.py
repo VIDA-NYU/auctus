@@ -98,7 +98,8 @@ class SocrataDiscoverer(Discoverer):
         )
 
         # Download dataset
-        logging.info("Downloading dataset %s", id)
+        logging.info("Downloading dataset %s (%s)",
+                     id, resource.get('name', '<no name>'))
         storage = self.create_storage()
         with open(os.path.join(storage.path, 'main.csv'), 'wb') as dest:
             response = requests.get(direct_url, stream=True)
