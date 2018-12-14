@@ -34,8 +34,8 @@ class D3MSeedsDiscoverer(Discoverer):
             with open(json_name) as fp:
                 doc = json.load(fp)['about']
             metadata = {}
-            if 'name' in doc:
-                metadata['name'] = doc['name']
+            if 'datasetName' in doc:
+                metadata['name'] = doc['datasetName']
             if 'description' in doc:
                 metadata['description'] = doc['description']
             if 'license' in doc:
