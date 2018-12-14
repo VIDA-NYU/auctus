@@ -64,15 +64,17 @@ def get_all(endpoint, delay=0.5, **params):
 
 
 class NoaaDiscoverer(Discoverer):
-    DATASETS = [
-        ('GSOM', "Monthly summaries"),
-        ('GHCND', "Daily summaries"),
-    ]
-    DATATYPES = [
-        ('TAVG', "average temperature"),
-        ('AWND', "average wind speed"),
-        # ('PRCP', "precipitation"),
-    ]
+    DATASET_NAMES = {
+        'GSOM': "Monthly summaries",
+        'GHCND': "Daily summaries",
+    }
+    DATASETS = list(DATASET_NAMES)
+    DATATYPE_NAMES = {
+        'TAVG': "average temperature",
+        'AWND': "average wind speed",
+        # 'PRCP': "precipitation",
+    }
+    DATATYPES = list(DATATYPE_NAMES)
     CITIES = [
         {'id': 'CITY:US360019',
          'name': "New York, NY US",
@@ -101,19 +103,17 @@ class NoaaDiscoverer(Discoverer):
 
     def main_loop(self):
         while True:
-            for dataset, dataset_name in self.DATASETS:
-                for datatype, datatype_name in self.DATATYPES:
+            for dataset in self.DATASETS:
+                for datatype in self.DATATYPES:
                     logger.info("Processing dataset %s (%s), datatype %s "
                                 "(%s)...",
-                                dataset, dataset_name,
-                                datatype, datatype_name)
+                                dataset, self.DATASET_NAMES[dataset],
+                                datatype, self.DATATYPE_NAMES[datatype])
                     for city_dict in self.CITIES:
                         logger.info("Getting city %s (%s)...",
                                     city_dict['name'], city_dict['id'])
                         try:
-                            self.discover_data(dataset, dataset_name,
-                                               datatype, datatype_name,
-                                               city_dict)
+                            self.discover_data(dataset, datatype, city_dict)
                         except Exception:
                             logger.exception("Error handling dataset=%r "
                                              "datatype=%r city_id=%r",
@@ -124,8 +124,7 @@ class NoaaDiscoverer(Discoverer):
             while datetime.utcnow() < sleep_until:
                 time.sleep((sleep_until - datetime.utcnow()).total_seconds())
 
-    def discover_data(self, dataset, dataset_name, datatype, datatype_name,
-                      city_dict):
+    def discover_data(self, dataset, datatype, city_dict):
         # Find available range
         time.sleep(self.DELAY)
         stations = get_all('/stations', self.DELAY,
@@ -136,52 +135,32 @@ class NoaaDiscoverer(Discoverer):
 
         # Download dataset
         # TODO: Record dataset without materializing it?
-        self.download_data(dataset, dataset_name,
-                           datatype, datatype_name,
-                           city_dict,
-                           mindate, maxdate)
+        self.download_data_range(dataset, datatype, city_dict,
+                                 mindate, maxdate)
 
-    def download_data(self, dataset, dataset_name, datatype, datatype_name,
-                      city_dict, start, end):
-        logger.info("Downloading data %s (%s) for %s",
-                    datatype, datatype_name, city_dict['name'])
+    def download_data_range(self, dataset, datatype, city_dict, start, end):
+        logger.info("Downloading data %s from %s for %s",
+                    datatype, dataset, city_dict['name'])
 
         nb_years = 10 if dataset == 'GSOM' else 1
         for start, end in iterate_years(start, end, nb_years):
             logger.info("%s - %s...", start, end)
-            data = get_all('/data', self.DELAY,
-                           datasetid=dataset, datatypeid=datatype,
-                           locationid=city_dict['id'],
-                           startdate=start, enddate=end)
-
-            storage = self.create_storage()
-            with open(os.path.join(storage.path, 'main.csv'), 'w') as dest:
-                writer = csv.writer(dest)
-                writer.writerow(['date', datatype])
-                # Sort by date
-                data = sorted(data, key=lambda v: v['date'])
-                # Write the data, one row per date, averaged across stations
-                time = None
-                values = []
-                for row in data:
-                    if row['date'] != time:
-                        if time is not None:
-                            writer.writerow([time, sum(values) / len(values)])
-                        time = row['date']
-                        values = []
-                    values.append(row['value'])
-                if time is not None:
-                    writer.writerow([time, sum(values) / len(values)])
+            storage = self.download_data(
+                dataset, datatype,
+                city_dict['id'],
+                start, end,
+            )
 
             description = "NOAA {} of {} for {}, {}-{}".format(
-                dataset_name, datatype_name, city_dict['name'], start, end)
+                self.DATASET_NAMES[dataset], self.DATATYPE_NAMES[datatype],
+                city_dict['name'], start, end)
 
             self.record_dataset(
                 storage,
                 dict(
                     noaa_dataset_id=dataset,
                     noaa_datatype_id=datatype,
-                    noaa_station_id=city_dict['id'],
+                    noaa_city_id=city_dict['id'],
                     noaa_start=start,
                     noaa_end=end,
                 ),
@@ -193,6 +172,42 @@ class NoaaDiscoverer(Discoverer):
                 ),
                 dataset_id='{}.{}.{}.{}'.format(dataset, datatype,
                                                 city_dict['id'], start))
+
+    def download_data(self, dataset, datatype, city_id, start, end):
+        data = get_all('/data', self.DELAY,
+                       datasetid=dataset, datatypeid=datatype,
+                       locationid=city_id,
+                       startdate=start, enddate=end)
+
+        storage = self.create_storage()
+        with open(os.path.join(storage.path, 'main.csv'), 'w') as dest:
+            writer = csv.writer(dest)
+            writer.writerow(['date', datatype])
+            # Sort by date
+            data = sorted(data, key=lambda v: v['date'])
+            # Write the data, one row per date, averaged across stations
+            time = None
+            values = []
+            for row in data:
+                if row['date'] != time:
+                    if time is not None:
+                        writer.writerow([time, sum(values) / len(values)])
+                    time = row['date']
+                    values = []
+                values.append(row['value'])
+            if time is not None:
+                writer.writerow([time, sum(values) / len(values)])
+
+        return storage
+
+    def handle_materialize(self, materialize):
+        return self.download_data(
+            materialize['noaa_dataset_id'],
+            materialize['noaa_datatype_id'],
+            materialize['noaa_city_id'],
+            materialize['noaa_start'],
+            materialize['noaa_end'],
+        )
 
 
 if __name__ == '__main__':
