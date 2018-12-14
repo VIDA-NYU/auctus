@@ -60,6 +60,9 @@ class Profiler(object):
         self.profile_queue = await self.channel.declare_queue('profile')
         await self.profile_queue.bind(self.profile_exchange)
 
+        # Declare the failed queue
+        self.failed_queue = await self.channel.declare_queue('failed_profile')
+
     async def _run(self):
         connection = await aio_pika.connect_robust(
             host=os.environ['AMQP_HOST'],
@@ -104,8 +107,9 @@ class Profiler(object):
                 metadata = future.result()
             except Exception:
                 logger.exception("Error processing dataset %r", dataset_id)
+                # Move message to failed queue
+                await self.channel.default_exchange.publish(message.body)
                 # Ack anyway, retrying would probably fail again
-                # The message only gets re-queued if this process gets killed
                 message.ack()
             else:
                 # Insert results in Elasticsearch
