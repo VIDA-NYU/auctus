@@ -71,6 +71,13 @@ class SocrataDiscoverer(Discoverer):
         resource = dataset['resource']
         id = resource['id']
 
+        # Check type
+        # api, calendar, chart, datalens, dataset, federated_href, file,
+        # filter, form, href, link, map, measure, story, visualization
+        if resource['type'] != 'dataset':
+            logger.info("Skipping %s, type %s", id, resource['type'])
+            return
+
         # Get record from Elasticsearch
         try:
             hit = self.elasticsearch.get(
