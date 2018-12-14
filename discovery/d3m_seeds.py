@@ -66,5 +66,5 @@ class D3MSeedsDiscoverer(Discoverer):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
-    D3MSeedsDiscoverer('datamart.d3m_seeds_discoverer')
+    D3MSeedsDiscoverer('datamart.d3m')
     asyncio.get_event_loop().run_forever()

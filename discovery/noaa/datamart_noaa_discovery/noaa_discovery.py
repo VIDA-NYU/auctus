@@ -213,5 +213,5 @@ class NoaaDiscoverer(Discoverer):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
-    NoaaDiscoverer('datamart.noaa_discoverer')
+    NoaaDiscoverer('datamart.noaa')
     asyncio.get_event_loop().run_forever()

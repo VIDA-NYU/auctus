@@ -71,7 +71,7 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
-  d3m_seeds_discoverer:
+  d3m_seeds:
     build:
       context: .
       dockerfile: discovery/Dockerfile
@@ -84,7 +84,7 @@ services:
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
-  socrata_discoverer:
+  socrata:
     build:
       context: .
       dockerfile: discovery/socrata/Dockerfile
@@ -95,7 +95,7 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
-  noaa_discoverer:
+  noaa:
     build:
       context: .
       dockerfile: discovery/noaa/Dockerfile

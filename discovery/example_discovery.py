@@ -51,5 +51,5 @@ class ExampleDiscoverer(Discoverer):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
-    ExampleDiscoverer('datamart.example.example_discoverer')
+    ExampleDiscoverer('datamart.example')
     asyncio.get_event_loop().run_forever()
