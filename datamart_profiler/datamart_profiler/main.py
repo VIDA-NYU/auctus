@@ -9,7 +9,7 @@ import shutil
 import time
 
 from datamart_core.common import Storage, log_future, json2msg, msg2json
-from .profiler import handle_dataset
+from .profiler import process_dataset
 
 
 logger = logging.getLogger(__name__)
@@ -80,30 +80,30 @@ class Profiler(object):
             metadata = obj['metadata']
             materialize = metadata.pop('materialize', {})
 
-            # Call handle_dataset
-            logger.info("Handling dataset %r from %r",
+            # Call process_dataset
+            logger.info("Processing dataset %r from %r",
                         dataset_id, materialize.get('identifier', '(unknown)'))
             future = self.loop.run_in_executor(
                 None,
-                handle_dataset,
+                process_dataset,
                 storage,
                 metadata,
             )
 
             future.add_done_callback(
-                self.handle_dataset_callback(
+                self.process_dataset_callback(
                     message, dataset_id, materialize, storage,
                 )
             )
             await self.work_tickets.acquire()
 
-    def handle_dataset_callback(self, message, dataset_id, materialize,
+    def process_dataset_callback(self, message, dataset_id, materialize,
                                 storage):
         async def coro(future):
             try:
                 metadata = future.result()
             except Exception:
-                logger.exception("Error handling dataset %r", dataset_id)
+                logger.exception("Error processing dataset %r", dataset_id)
                 # Ack anyway, retrying would probably fail again
                 # The message only gets re-queued if this process gets killed
                 message.ack()

@@ -35,7 +35,7 @@ def mean_stddev(array):
     return mean, stddev
 
 
-def handle_dataset(storage, metadata):
+def process_dataset(storage, metadata):
     """Compute all metafeatures from a dataset.
 
     :param metadata: The metadata provided by the discovery plugin (might be
