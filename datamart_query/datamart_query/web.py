@@ -171,7 +171,8 @@ class Download(CorsHandler):
                     self.set_header(
                         'Content-Disposition',
                         'attachment; filename="%s.csv"' % dataset_id)
-                    with open(os.path.join(reply['storage']['path'], 'main.csv'),
+                    with open(os.path.join(reply['storage']['path'],
+                                           'main.csv'),
                               'rb') as fp:
                         buf = fp.read(4096)
                         while buf:

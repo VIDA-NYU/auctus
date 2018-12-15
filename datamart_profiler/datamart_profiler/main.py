@@ -98,7 +98,7 @@ class Profiler(object):
             await self.work_tickets.acquire()
 
     def process_dataset_callback(self, message, dataset_id, materialize,
-                                storage):
+                                 storage):
         async def coro(future):
             try:
                 metadata = future.result()
