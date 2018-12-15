@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-import shutil
 
 from datamart_core import Discoverer
 
@@ -40,27 +39,13 @@ class D3MSeedsDiscoverer(Discoverer):
             if 'license' in doc:
                 metadata['license'] = doc['license']
 
-            storage = self.create_storage()
-            destination = os.path.join(storage.path, 'main.csv')
-            shutil.copyfile(csv_name, destination, follow_symlinks=False)
-            self.record_dataset(storage,
-                                dict(d3m_name=name),
+            # Write symlink to shared storage
+            with self.write_to_shared_storage(name) as dirname:
+                os.symlink(csv_name, os.path.join(dirname, 'main.csv'))
+
+            self.record_dataset(dict(d3m_name=name),
                                 metadata,
                                 dataset_id=name)
-
-    def handle_materialize(self, materialize):
-        name = materialize['d3m_name']
-        csv_name = os.path.join(
-            '/d3m_seed_datasets',
-            name,
-            name + '_dataset',
-            'tables',
-            'learningData.csv',
-        )
-        storage = self.create_storage()
-        destination = os.path.join(storage.path, 'main.csv')
-        shutil.copyfile(csv_name, destination, follow_symlinks=False)
-        return storage
 
 
 if __name__ == '__main__':

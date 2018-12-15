@@ -14,9 +14,11 @@ WORKDIR /usr/src/app
 RUN pip install aio-pika elasticsearch
 RUN apt-get update && apt-get install -y default-jre && \
     rm -rf /var/lib/apt/lists/*
+RUN pip install numpy pandas
 COPY lib_core lib_core
 RUN pip install -e /usr/src/app/lib_core
-RUN pip install numpy pandas
+COPY lib_materialize lib_materialize
+RUN pip install -e /usr/src/app/lib_materialize
 COPY lib_profiler lib_profiler
 RUN pip install -e /usr/src/app/lib_profiler
 COPY profiler profiler

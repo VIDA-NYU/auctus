@@ -36,13 +36,13 @@ def mean_stddev(array):
     return mean, stddev
 
 
-def process_dataset(storage, metadata):
+def process_dataset(path, metadata):
     """Compute all metafeatures from a dataset.
 
     :param metadata: The metadata provided by the discovery plugin (might be
         very limited).
     """
-    csv_file = os.path.join(storage.path, 'main.csv')
+    csv_file = os.path.join(path, 'main.csv')
 
     # File size
     metadata['size'] = os.path.getsize(csv_file)

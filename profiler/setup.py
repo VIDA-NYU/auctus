@@ -12,6 +12,7 @@ req = [
     'pandas',
     'python-dateutil',
     'datamart_core',
+    'datamart_materialize',
     'datamart_profiler',
 ]
 setup(name='profiler',

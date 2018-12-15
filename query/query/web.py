@@ -4,12 +4,15 @@ import elasticsearch
 import logging
 import json
 import os
+import shutil
+import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
 
-from datamart_core.common import json2msg, msg2json, log_future
+from datamart_core.common import log_future
+import datamart_materialize
 
 
 logger = logging.getLogger(__name__)
@@ -136,44 +139,34 @@ class Download(CorsHandler):
     async def get(self, dataset_id):
         self._cors()
 
-        # Get materialization data from Elasticsearch
-        es = self.application.elasticsearch
-        metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
-        materialize = metadata.pop('materialize', {})
+        if dataset_id:
+            # Get materialization data from Elasticsearch
+            es = self.application.elasticsearch
+            metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+            materialize = metadata.pop('materialize', {})
+        else:
+            materialize = json.loads(self.get_query_argument('materialize'))
 
         # If there's a direct download URL
         if 'direct_url' in materialize:
             # Redirect the client to it
             self.redirect(materialize['direct_url'])
-        elif 'identifier' in materialize:
-            # Create queue for the reply
-            reply_queue = await self.application.channel.declare_queue(
-                exclusive=True)
-
-            # Send materialization request
-            await self.application.channel.default_exchange.publish(
-                json2msg(dict(materialize=materialize),
-                         reply_to=reply_queue.name),
-                'materializes.%s' % materialize['identifier'],
-            )
-
-            # Get reply
-            # reply = msg2json(await reply_queue.get(timeout=self.TIMEOUT))
-            async for reply in reply_queue.iterator():
-                reply = msg2json(reply)
-                logger.info("Got reply %r", reply)
-                if not reply.get('success'):
+        else:
+            temp_dir = tempfile.mkdtemp()
+            try:
+                temp_file = os.path.join(temp_dir, 'main.csv')
+                try:
+                    datamart_materialize.download(materialize, temp_file)
+                except Exception:
                     self.set_status(500)
                     self.send_json(dict(error="Materializer reports failure"))
+                    raise
                 else:
                     self.set_header('Content-Type', 'application/octet-stream')
                     self.set_header('X-Content-Type-Options', 'nosniff')
-                    self.set_header(
-                        'Content-Disposition',
-                        'attachment; filename="%s.csv"' % dataset_id)
-                    with open(os.path.join(reply['storage']['path'],
-                                           'main.csv'),
-                              'rb') as fp:
+                    self.set_header('Content-Disposition',
+                                    'attachment; filename="main.csv"')
+                    with open(temp_file, 'rb') as fp:
                         buf = fp.read(4096)
                         while buf:
                             self.write(buf)
@@ -181,10 +174,8 @@ class Download(CorsHandler):
                                 break
                             buf = fp.read(4096)
                     self.finish()
-                break
-        else:
-            self.set_status(500)
-            self.send_json(dict(error="No materializer recorded for dataset"))
+            finally:
+                shutil.rmtree(temp_dir)
 
 
 class Application(tornado.web.Application):
@@ -213,7 +204,7 @@ def make_app(debug=False):
     return Application(
         [
             URLSpec('/query', Query, name='query'),
-            URLSpec('/download/([^/]+)', Download, name='download'),
+            URLSpec('/download/([^/]*)', Download, name='download'),
         ],
         debug=debug,
         es=es,

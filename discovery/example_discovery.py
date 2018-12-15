@@ -21,31 +21,24 @@ class ExampleDiscoverer(Discoverer):
         'is_example': True,
         'name': "Example CSV",
     }
+    dataset_id = 'example_nyu'
 
     def main_loop(self):
         # State-of-the-art search process
         logger.info("Searching...")
         time.sleep(5)
 
-        # Download dataset to storage
-        storage = self.create_storage()
-        with open(os.path.join(storage.path, 'main.csv'), 'w') as fp:
-            fp.write(self.data)
+        # Write file to shared storage
+        with self.write_to_shared_storage(self.dataset_id) as dirname:
+            with open(os.path.join(dirname, 'main.csv'), 'w') as fp:
+                fp.write(self.data)
 
         # We found a dataset
         self.record_dataset(
-            storage,  # Path in shared cache
             dict(filename='nyu.zip'),  # Materialization information
             self.metadata,  # Metadata (profiler will update it)
-            dataset_id='example_nyu',
+            dataset_id=self.dataset_id,
         )
-
-    def handle_materialize(self, materialize):
-        if materialize['filename'] == 'nyu.zip':
-            storage = self.create_storage()
-            with open(os.path.join(storage.path, 'main.csv'), 'w') as fp:
-                fp.write(self.data)
-            return storage
 
 
 if __name__ == '__main__':

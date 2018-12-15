@@ -68,7 +68,7 @@ function loadStatus() {
           '  <h5 class="mb-1">' + (record.name || record.id) + '</h5>' +
           '  <small class="text-muted">' + record.discovered + '</small>' +
           '</div>' +
-          '<p class="mb-1">Processing <span style="font-family: monospace;">' + record.storage + '</span></p>' +
+          '<p class="mb-1">Processing...</p>' +
           '<small>' + record.discoverer + '</small>';
       }
       recent_discoveries.appendChild(elem);

@@ -118,14 +118,13 @@ class Coordinator(object):
             metadata = obj.get('metadata', {})
             materialize = metadata.get('materialize', {})
             logger.info("Got profile message: %r", dataset_id)
-            storage = obj['storage']['path']
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i]['id'] == dataset_id:
                     break
             else:
                 self.recent_discoveries.insert(
                     0,
-                    dict(id=dataset_id, storage=storage,
+                    dict(id=dataset_id,
                          discoverer=materialize.get('identifier', '(unknown)'),
                          discovered=materialize.get('date', '???'),
                          name=metadata.get('name')),
@@ -141,7 +140,6 @@ class Coordinator(object):
             logger.info("Got dataset message: %r", dataset_id)
             for i in range(len(self.recent_discoveries)):
                 if self.recent_discoveries[i]['id'] == dataset_id:
-                    self.recent_discoveries[i].pop('storage', None)
                     self.recent_discoveries[i]['profiled'] = obj.get('date',
                                                                      '???')
                     self.recent_discoveries[i]['name'] = obj.get('name')

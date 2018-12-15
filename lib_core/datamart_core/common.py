@@ -35,30 +35,6 @@ def msg2json(msg):
     return json.loads(msg.body.decode('utf-8'))
 
 
-class Storage(object):
-    def __init__(self, obj):
-        self.path = obj['path']
-
-    def __repr__(self):
-        return '<Storage %r>' % self.path
-
-    def to_json(self):
-        return {'path': self.path}
-
-
-class WriteStorage(Storage):
-    def __init__(self, obj):
-        super(WriteStorage, self).__init__(obj)
-        self.max_size_bytes = obj.get('max_size_bytes')
-
-    def __repr__(self):
-        return '<WriteStorage %r%s>' % (
-            self.path,
-            ' max_size_bytes=%r' % self.max_size_bytes
-            if self.max_size_bytes else ''
-        )
-
-
 def log_future(future, logger, message="Exception in background task",
                should_never_exit=False):
     def log(future):

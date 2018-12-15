@@ -6,9 +6,11 @@ import itertools
 import logging
 import os
 import shutil
+import tempfile
 import time
 
-from datamart_core.common import Storage, log_future, json2msg, msg2json
+from datamart_core.common import log_future, json2msg, msg2json
+import datamart_materialize
 from datamart_profiler import process_dataset
 
 
@@ -79,29 +81,36 @@ class Profiler(object):
         async for message in self.profile_queue:
             obj = msg2json(message)
             dataset_id = obj['id']
-            storage = Storage(obj['storage'])
             metadata = obj['metadata']
             materialize = metadata.pop('materialize', {})
 
-            # Call process_dataset
-            logger.info("Processing dataset %r from %r",
-                        dataset_id, materialize.get('identifier', '(unknown)'))
-            future = self.loop.run_in_executor(
-                None,
-                process_dataset,
-                storage,
-                metadata,
-            )
+            temp_dir = tempfile.mkdtemp()
+            try:
+                temp_file = os.path.join(temp_dir, 'main.csv')
+                datamart_materialize.download(materialize, temp_file)
 
-            future.add_done_callback(
-                self.process_dataset_callback(
-                    message, dataset_id, materialize, storage,
+                # Call process_dataset
+                logger.info("Processing dataset %r from %r",
+                            dataset_id, materialize.get('identifier'))
+                future = self.loop.run_in_executor(
+                    None,
+                    process_dataset,
+                    temp_file,
+                    metadata,
                 )
-            )
+
+                future.add_done_callback(
+                    self.process_dataset_callback(
+                        message, dataset_id, materialize, temp_file,
+                    )
+                )
+            finally:
+                shutil.rmtree(temp_dir)
+
             await self.work_tickets.acquire()
 
     def process_dataset_callback(self, message, dataset_id, materialize,
-                                 storage):
+                                 path):
         async def coro(future):
             try:
                 metadata = future.result()
@@ -133,11 +142,11 @@ class Profiler(object):
 
         def callback(future):
             self.work_tickets.release()
-            if os.path.isdir(storage.path):
-                shutil.rmtree(storage.path)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
             else:
-                os.remove(storage.path)
-            logger.info("Removed %s", storage.path)
+                os.remove(path)
+            logger.info("Removed %s", path)
             log_future(self.loop.create_task(coro(future)), logger)
 
         return callback

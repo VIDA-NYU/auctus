@@ -1,16 +1,22 @@
 import aio_pika
 import asyncio
+import contextlib
 from datetime import datetime
 import elasticsearch
 import logging
 import os
+import re
+import shutil
+import tempfile
 import uuid
 
-from .common import Storage, WriteStorage, block_run, log_future, \
-    json2msg, msg2json
+from .common import block_run, log_future, json2msg, msg2json
 
 
 logger = logging.getLogger(__name__)
+
+
+re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')
 
 
 class _HandleQueryPublisher(object):
@@ -18,8 +24,8 @@ class _HandleQueryPublisher(object):
         self.discoverer = discoverer
         self.reply_to = reply_to
 
-    def __call__(self, storage, materialize, metadata, dataset_id=None):
-        self.discoverer.record_dataset(storage, materialize, metadata,
+    def __call__(self, materialize, metadata, dataset_id=None):
+        self.discoverer.record_dataset(materialize, metadata,
                                        dataset_id=dataset_id,
                                        bind=self.reply_to)
 
@@ -31,8 +37,7 @@ class Discoverer(object):
         self.work_tickets = asyncio.Semaphore(concurrent)
         self.identifier = identifier
         self.loop = asyncio.get_event_loop()
-        log_future(self.loop.create_task(self._run()), logger,
-                   should_never_exit=True)
+        log_future(self.loop.create_task(self._run()), logger)
 
     async def _amqp_setup(self):
         # Setup the queries exchange
@@ -46,11 +51,6 @@ class Discoverer(object):
                 'queries.%s' % self.identifier,
                 auto_delete=True)
             await self.query_queue.bind(exchange)
-
-        # Declare our discoverer's materialization queue
-        self.materialize_queue = await self.channel.declare_queue(
-            'materializes.%s' % self.identifier,
-            auto_delete=True)
 
         # Setup the datasets exchange
         self.datasets_exchange = await self.channel.declare_exchange(
@@ -85,14 +85,8 @@ class Discoverer(object):
         # Start profiling process
         log_future(self._call(self.main_loop), logger)
 
-        # FIXME: The semaphore is only acquired when a message is received,
-        # which means we might block while holding it. But if I acquire it
-        # before, we can only be listening to one queue at a time.
-        fu = []
         if hasattr(self, 'handle_query'):
-            fu.append(self.loop.create_task(self._consume_queries()))
-        fu.append(self.loop.create_task(self._consume_materializes()))
-        await asyncio.gather(*fu)
+            await self.loop.create_task(self._consume_queries())
 
     async def _consume_queries(self):
         async for message in self.query_queue:
@@ -143,55 +137,6 @@ class Discoverer(object):
 
         return callback
 
-    async def _consume_materializes(self):
-        async for message in self.materialize_queue:
-            await self.work_tickets.acquire()
-            obj = msg2json(message)
-            materialize = obj['materialize']
-
-            # Call handle_materialize
-            logger.info("Handling materialization")
-            future = self._call(self.handle_materialize,
-                                materialize)
-            future.add_done_callback(
-                self._handle_materialize_callback(message)
-            )
-
-    def _handle_materialize_callback(self, message):
-        async def coro(future):
-            try:
-                storage = future.result()
-                if not isinstance(storage, Storage):
-                    raise TypeError("handle_materialize didn't return a "
-                                    "Storage object")
-            except Exception:
-                logger.exception("Error materializing")
-                # Ack anyway, retrying would probably fail again
-                # The message only gets re-queued if this process gets killed
-                message.ack()
-
-                await self.channel.default_exchange.publish(
-                    json2msg(dict(
-                        success=False,
-                    )),
-                    message.reply_to,
-                )
-            else:
-                message.ack()
-                await self.channel.default_exchange.publish(
-                    json2msg(dict(
-                        success=True,
-                        storage=storage.to_json(),
-                    )),
-                    message.reply_to,
-                )
-
-        def callback(future):
-            self.work_tickets.release()
-            log_future(self.loop.create_task(coro(future)), logger)
-
-        return callback
-
     def _call(self, method, *args):
         if self._async:
             return self.loop.create_task(
@@ -207,12 +152,9 @@ class Discoverer(object):
     def main_loop(self):
         pass
 
-    # def handle_query(self, query)
+    # def handle_query(self, query, publisher)
 
-    async def handle_materialize(self, materialize):
-        raise NotImplementedError
-
-    async def _record_dataset(self, storage, materialize, metadata,
+    async def _record_dataset(self, materialize, metadata,
                               dataset_id=None, bind=None):
         if dataset_id is None:
             dataset_id = uuid.uuid4().hex
@@ -234,7 +176,6 @@ class Discoverer(object):
         await self.profile_exchange.publish(
             json2msg(dict(
                 id=dataset_id,
-                storage=storage.to_json(),
                 metadata=metadata,
             )),
             '',
@@ -242,20 +183,27 @@ class Discoverer(object):
         logger.info("Discovered %s", dataset_id)
         return dataset_id
 
-    def record_dataset(self, storage, materialize, metadata,
+    def record_dataset(self, materialize, metadata,
                        dataset_id=None, bind=None):
-        coro = self._record_dataset(storage, materialize, metadata,
+        coro = self._record_dataset(materialize, metadata,
                                     dataset_id=dataset_id, bind=bind)
         if self._async:
             return self.loop.create_task(coro)
         else:
             return block_run(self.loop, coro)
 
-    def create_storage(self):
-        path = os.path.join('/datasets', uuid.uuid4().hex)
-        os.mkdir(path)
-        logger.info("Created storage %s", path)
-        return WriteStorage(dict(path=path))
+    @contextlib.contextmanager
+    def write_to_shared_storage(self, dataset_id):
+        dataset_dir = dataset_id.replace('_', '__')
+        dataset_dir = re_non_path_safe.sub(lambda m: '_%X' % ord(m.group(0)),
+                                           dataset_dir)
+        temp_dir = tempfile.mkdtemp(prefix=dataset_dir, dir='/datasets')
+        try:
+            yield os.path.join('/datasets', temp_dir)
+        except Exception:
+            shutil.rmtree(temp_dir)
+        else:
+            os.rename(temp_dir, dataset_dir)
 
 
 class AsyncDiscoverer(Discoverer):
