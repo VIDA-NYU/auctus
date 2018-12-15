@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import requests
+import shutil
 import sodapy
 import time
 
@@ -108,12 +109,16 @@ class SocrataDiscoverer(Discoverer):
         logging.info("Downloading dataset %s (%s)",
                      id, resource.get('name', '<no name>'))
         storage = self.create_storage()
-        with open(os.path.join(storage.path, 'main.csv'), 'wb') as dest:
-            response = requests.get(direct_url, stream=True)
-            response.raise_for_status()
-            for chunk in response.iter_content(chunk_size=4096):
-                if chunk:  # filter out keep-alive chunks
-                    dest.write(chunk)
+        try:
+            with open(os.path.join(storage.path, 'main.csv'), 'wb') as dest:
+                response = requests.get(direct_url, stream=True)
+                response.raise_for_status()
+                for chunk in response.iter_content(chunk_size=4096):
+                    if chunk:  # filter out keep-alive chunks
+                        dest.write(chunk)
+        except Exception:
+            shutil.rmtree(storage.path)
+            raise
 
         self.record_dataset(storage,
                             dict(
