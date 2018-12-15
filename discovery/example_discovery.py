@@ -19,6 +19,7 @@ class ExampleDiscoverer(Discoverer):
             'Juliana,USA\n')
     metadata = {
         'is_example': True,
+        'name': "Example CSV",
     }
 
     def main_loop(self):
