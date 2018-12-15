@@ -84,7 +84,7 @@ class Dataset(object):
     def download(self, destination):
         if not hasattr(destination, 'write'):
             with open(destination, 'wb') as f:
-                return self.download(destination)
+                return self.download(f)
 
         response = self._request(stream=True)
         for chunk in response.iter_content(chunk_size=4096):

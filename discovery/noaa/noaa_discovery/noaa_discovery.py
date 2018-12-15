@@ -33,15 +33,16 @@ def get_all(endpoint, delay=0.5, **params):
     pages = 0
     while True:
         try:
-            r = requests.get('https://www.ncdc.noaa_discovery.gov/cdo-web/api/v2' + endpoint,
-                             headers=headers,
-                             params=dict(params,
-                                         limit='1000',
-                                         offset=len(results)))
+            r = requests.get(
+                'https://www.ncdc.noaa_discovery.gov/cdo-web/api/v2' +
+                endpoint,
+                headers=headers,
+                params=dict(params, limit='1000', offset=len(results)),
+            )
             r.raise_for_status()
         except requests.HTTPError as e:
-            logger.warning("Request failed: %r", e)
             failed += 1
+            logger.warning("Request failed (%d): %r", failed, e)
             if failed == 10:
                 raise
             time.sleep(2)
@@ -59,7 +60,6 @@ def get_all(endpoint, delay=0.5, **params):
         if len(results) >= count:
             break
 
-    logger.info("Downloaded %d pages of data (%d rows)", pages, len(results))
     return results
 
 
