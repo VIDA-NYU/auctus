@@ -20,7 +20,7 @@ class BaseHandler(RequestHandler):
     """
     template_env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(
-            [pkg_resources.resource_filename('datamart_coordinator',
+            [pkg_resources.resource_filename('coordinator',
                                              'templates')]
         ),
         autoescape=jinja2.select_autoescape(['html'])
@@ -210,7 +210,7 @@ def make_app(debug=False):
 
             URLSpec('/allocate_dataset', AllocateDataset),
         ],
-        static_path=pkg_resources.resource_filename('datamart_coordinator',
+        static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
         debug=debug,
         cookie_secret=secret,

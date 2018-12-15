@@ -20,8 +20,8 @@ services:
   coordinator:
     build:
       context: .
-      dockerfile: datamart_coordinator/Dockerfile
-    command: python -m datamart_coordinator.web
+      dockerfile: coordinator/Dockerfile
+    command: python -m coordinator.web
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -32,12 +32,12 @@ services:
       - 8001:8001
     volumes:
       - datasets:/datasets
-      - ./datamart_coordinator/datamart_coordinator:/usr/src/app/datamart_coordinator/datamart_coordinator
+      - ./coordinator/coordinator:/usr/src/app/coordinator/coordinator
   query:
     build:
       context: .
-      dockerfile: datamart_query/Dockerfile
-    command: python -m datamart_query.web
+      dockerfile: query/Dockerfile
+    command: python -m query.web
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -47,11 +47,11 @@ services:
       - 8002:8002
     volumes:
       - datasets:/datasets
-      - ./datamart_query/datamart_query:/usr/src/app/datamart_query/datamart_query
+      - ./query/query:/usr/src/app/query/query
   profiler:
     build:
       context: .
-      dockerfile: datamart_profiler/Dockerfile
+      dockerfile: profiler/Dockerfile
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq

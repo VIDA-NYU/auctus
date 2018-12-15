@@ -33,7 +33,7 @@ def get_all(endpoint, delay=0.5, **params):
     pages = 0
     while True:
         try:
-            r = requests.get('https://www.ncdc.noaa.gov/cdo-web/api/v2' + endpoint,
+            r = requests.get('https://www.ncdc.noaa_discovery.gov/cdo-web/api/v2' + endpoint,
                              headers=headers,
                              params=dict(params,
                                          limit='1000',
@@ -89,7 +89,7 @@ class NoaaDiscoverer(Discoverer):
     def __init__(self, *args, **kwargs):
         super(NoaaDiscoverer, self).__init__(*args, **kwargs)
 
-        with pkg_resources.resource_stream('datamart_noaa_discovery',
+        with pkg_resources.resource_stream('noaa_discovery',
                                            'noaa_cities.csv') as bio:
             tio = TextIOWrapper(bio, encoding='utf-8', newline='')
             csvfile = csv.DictReader(tio)

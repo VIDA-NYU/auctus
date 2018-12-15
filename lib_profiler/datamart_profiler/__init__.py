@@ -4,6 +4,7 @@ import math
 import numpy
 import os
 import pandas
+import pkg_resources
 import subprocess
 
 from .identify_types import identify_types
@@ -49,7 +50,8 @@ def process_dataset(storage, metadata):
 
     # Run SCDP
     logger.info("Running SCDP...")
-    cmd = ['java', '-jar', 'scdp.jar', csv_file]
+    scdp = pkg_resources.resource_filename('datamart_profiler', 'scdp.jar')
+    cmd = ['java', '-jar', scdp, csv_file]
     proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
                             stdin=subprocess.PIPE)

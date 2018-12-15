@@ -8,18 +8,12 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'aio-pika',
     'elasticsearch',
-    'numpy',
-    'pandas',
-    'python-dateutil',
 ]
-setup(name='datamart_profiler',
+setup(name='datamart_core',
       version='0.0',
-      packages=['datamart_profiler'],
-      entry_points={
-          'console_scripts': [
-              'datamart_profiler = datamart_profiler.main:main']},
+      packages=['datamart_core'],
       install_requires=req,
-      description="Data profiling component of DataMart",
+      description="Core library for DataMart services",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -30,7 +24,7 @@ setup(name='datamart_profiler',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Data profiling component of DataMart",
+      long_description="Core library for DataMart services",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[

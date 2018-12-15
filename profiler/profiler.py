@@ -9,7 +9,7 @@ import shutil
 import time
 
 from datamart_core.common import Storage, log_future, json2msg, msg2json
-from .profiler import process_dataset
+from datamart_profiler import process_dataset
 
 
 logger = logging.getLogger(__name__)

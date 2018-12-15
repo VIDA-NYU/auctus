@@ -6,24 +6,14 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'aio-pika',
-    'elasticsearch',
-    'jinja2',
-    'tornado>=5.0',
+    'requests',
 ]
-setup(name='datamart_coordinator',
+setup(name='datamart_profiler',
       version='0.0',
-      packages=['datamart_coordinator'],
-      package_data={'datamart_coordinator': [
-          'static/css/*.css', 'static/css/*.css.map',
-          'static/js/*.js', 'static/js/*.js.map',
-          'templates/*.html',
-      ]},
-      entry_points={
-          'console_scripts': [
-              'datamart_coordinator = datamart_coordinator.web:main']},
+      packages=['datamart_profiler'],
+      package_data={'datamart_profiler': ['scdp.jar']},
       install_requires=req,
-      description="Coordinator service for DataMart",
+      description="Data profiling library for DataMart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -34,15 +24,13 @@ setup(name='datamart_coordinator',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Coordinator service for DataMart",
+      long_description="Data profiling library for DataMart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
           'Development Status :: 2 - Pre-Alpha',
-          'Environment :: Web Environment',
           'Intended Audience :: Science/Research',
           'Natural Language :: English',
           'Operating System :: OS Independent',
-          'Programming Language :: JavaScript',
           'Programming Language :: Python :: 3 :: Only',
           'Topic :: Scientific/Engineering :: Information Analysis'])

@@ -6,18 +6,24 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
+    'aio-pika',
     'elasticsearch',
-    'requests',
-    'datamart_core',
+    'jinja2',
+    'tornado>=5.0',
 ]
-setup(name='noaa_discovery',
+setup(name='datamart-coordinator-service',
       version='0.0',
-      packages=['noaa_discovery'],
-      package_data={'noaa_discovery': [
-          'noaa_city_stations.csv',
+      packages=['coordinator'],
+      package_data={'coordinator': [
+          'static/css/*.css', 'static/css/*.css.map',
+          'static/js/*.js', 'static/js/*.js.map',
+          'templates/*.html',
       ]},
+      entry_points={
+          'console_scripts': [
+              'coordinator = coordinator.web:main']},
       install_requires=req,
-      description="NOAA discovery service for DataMart",
+      description="Coordinator service for DataMart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -28,13 +34,15 @@ setup(name='noaa_discovery',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="NOAA discovery service for DataMart",
+      long_description="Coordinator service for DataMart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
           'Development Status :: 2 - Pre-Alpha',
+          'Environment :: Web Environment',
           'Intended Audience :: Science/Research',
           'Natural Language :: English',
           'Operating System :: OS Independent',
+          'Programming Language :: JavaScript',
           'Programming Language :: Python :: 3 :: Only',
           'Topic :: Scientific/Engineering :: Information Analysis'])
