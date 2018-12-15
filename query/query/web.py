@@ -4,16 +4,13 @@ import elasticsearch
 import logging
 import json
 import os
-import shutil
-import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
 
 from datamart_core.common import log_future
-import datamart_materialize
-
+from datamart_core.materialize import get_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -139,43 +136,41 @@ class Download(CorsHandler):
     async def get(self, dataset_id):
         self._cors()
 
-        if dataset_id:
-            # Get materialization data from Elasticsearch
-            es = self.application.elasticsearch
+        # Get materialization data from Elasticsearch
+        es = self.application.elasticsearch
+        try:
             metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
-            materialize = metadata.pop('materialize', {})
-        else:
-            materialize = json.loads(self.get_query_argument('materialize'))
+        except elasticsearch.NotFoundError:
+            raise HTTPError(404)
+        materialize = metadata.pop('materialize', {})
 
         # If there's a direct download URL
         if 'direct_url' in materialize:
             # Redirect the client to it
             self.redirect(materialize['direct_url'])
         else:
-            temp_dir = tempfile.mkdtemp()
+            getter = get_dataset(materialize, dataset_id)
             try:
-                temp_file = os.path.join(temp_dir, 'main.csv')
-                try:
-                    datamart_materialize.download(materialize, temp_file)
-                except Exception:
-                    self.set_status(500)
-                    self.send_json(dict(error="Materializer reports failure"))
-                    raise
-                else:
-                    self.set_header('Content-Type', 'application/octet-stream')
-                    self.set_header('X-Content-Type-Options', 'nosniff')
-                    self.set_header('Content-Disposition',
-                                    'attachment; filename="main.csv"')
-                    with open(temp_file, 'rb') as fp:
+                dataset_dir = getter.__enter__()
+            except Exception:
+                self.set_status(500)
+                self.send_json(dict(error="Materializer reports failure"))
+                raise
+            try:
+                self.set_header('Content-Type', 'application/octet-stream')
+                self.set_header('X-Content-Type-Options', 'nosniff')
+                self.set_header('Content-Disposition',
+                                'attachment; filename="%s.csv"' % dataset_id)
+                with open(os.path.join(dataset_dir, 'main.csv'), 'rb') as fp:
+                    buf = fp.read(4096)
+                    while buf:
+                        self.write(buf)
+                        if len(buf) != 4096:
+                            break
                         buf = fp.read(4096)
-                        while buf:
-                            self.write(buf)
-                            if len(buf) != 4096:
-                                break
-                            buf = fp.read(4096)
-                    self.finish()
+                self.finish()
             finally:
-                shutil.rmtree(temp_dir)
+                getter.__exit__()
 
 
 class Application(tornado.web.Application):
@@ -204,7 +199,7 @@ def make_app(debug=False):
     return Application(
         [
             URLSpec('/query', Query, name='query'),
-            URLSpec('/download/([^/]*)', Download, name='download'),
+            URLSpec('/download/([^/]+)', Download, name='download'),
         ],
         debug=debug,
         es=es,

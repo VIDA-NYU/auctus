@@ -19,6 +19,13 @@ logger = logging.getLogger(__name__)
 re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')
 
 
+def encode_dataset_id(dataset_id):
+    dataset_id = dataset_id.replace('_', '__')
+    dataset_id = re_non_path_safe.sub(lambda m: '_%X' % ord(m.group(0)),
+                                      dataset_id)
+    return dataset_id
+
+
 class _HandleQueryPublisher(object):
     def __init__(self, discoverer, reply_to):
         self.discoverer = discoverer
@@ -194,16 +201,17 @@ class Discoverer(object):
 
     @contextlib.contextmanager
     def write_to_shared_storage(self, dataset_id):
-        dataset_dir = dataset_id.replace('_', '__')
-        dataset_dir = re_non_path_safe.sub(lambda m: '_%X' % ord(m.group(0)),
-                                           dataset_dir)
+        dataset_dir = self.identifier + '.' + encode_dataset_id(dataset_id)
         temp_dir = tempfile.mkdtemp(prefix=dataset_dir, dir='/datasets')
         try:
             yield os.path.join('/datasets', temp_dir)
         except Exception:
             shutil.rmtree(temp_dir)
         else:
-            os.rename(temp_dir, dataset_dir)
+            try:
+                os.rename(temp_dir, os.path.join('/datasets', dataset_dir))
+            except OSError:
+                pass  # Dataset was written concurrently
 
 
 class AsyncDiscoverer(Discoverer):

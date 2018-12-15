@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% set active_page = "upload" %}
+
+{% block contents %}
+<form method="post" enctype="multipart/form-data" action="{{ reverse_url('upload') }}">
+  <div class="form-group row">
+    <label for="file" class="col-sm-2 col-form-label">CSV file:</label>
+    <div class="col-sm-10">
+      <input type="file" class="form-control-file" name="file" id="file" />
+    </div>
+  </div>
+  <div class="form-group row">
+    <label for="name" class="col-sm-2 col-form-label">Name:</label>
+    <div class="col-sm-10">
+      <input class="form-control" name="name" id="name" value="Unnamed uploaded file" />
+    </div>
+  </div>
+  <div class="form-group row">
+    <label for="description" class="col-sm-2 col-form-label">Description:</label>
+    <div class="col-sm-10">
+      <textarea class="form-control" name="description" id="description"></textarea>
+    </div>
+  </div>
+  <div class="form-group row">
+      <button type="submit" class="btn btn-primary">Upload</button>
+  </div>
+</form>
+{% endblock %}

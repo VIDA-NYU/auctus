@@ -47,6 +47,7 @@ services:
       - 8002:8002
     volumes:
       - datasets:/datasets
+      - ../data/seed_datasets_current:/d3m_seed_datasets
       - ./query/query:/usr/src/app/query/query
   profiler:
     build:
@@ -59,6 +60,7 @@ services:
       - AMQP_PASSWORD=guest
     volumes:
       - datasets:/datasets
+      - ../data/seed_datasets_current:/d3m_seed_datasets
   example_discoverer:
     build:
       context: .

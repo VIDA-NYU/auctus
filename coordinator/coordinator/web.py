@@ -1,13 +1,16 @@
+import aio_pika
 import elasticsearch
 import logging
 import jinja2
 import json
 import os
 import pkg_resources
+import shutil
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+import uuid
 
 from .coordinator import Coordinator
 
@@ -123,6 +126,44 @@ class Search(BaseHandler):
         self.render('search.html')
 
 
+class Upload(BaseHandler):
+    def get(self):
+        self.render('upload.html')
+
+    async def post(self):
+        file = self.request.files['file'][0]
+        metadata = dict(
+            filename=file.filename,
+            name=self.get_body_argument('name', None),
+            description=self.get_body_argument('description', None),
+            materialize=dict(identifier='datamart.upload'),
+        )
+        dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
+
+        # Write file to shared storage
+        dataset_dir = os.path.join('/datasets', dataset_id)
+        os.mkdir(dataset_dir)
+        try:
+            with open(os.path.join(dataset_dir, 'main.csv'), 'wb') as fp:
+                fp.write(file.body)
+        except Exception:
+            shutil.rmtree(dataset_dir)
+            raise
+
+        # Publish to the profiling queue
+        await self.coordinator.profile_exchange.publish(
+            aio_pika.Message(
+                json.dumps(dict(
+                    id=dataset_id,
+                    metadata=metadata,
+                )).encode('utf-8'),
+            ),
+            '',
+        )
+
+        self.redirect(self.reverse_url('dataset', dataset_id))
+
+
 def format_size(bytes):
     units = [' B', ' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB']
 
@@ -206,7 +247,8 @@ def make_app(debug=False):
             URLSpec('/', Index, name='index'),
             URLSpec('/status', Status),
             URLSpec('/search', Search, name='search'),
-            URLSpec('/dataset/([^/]+)', Dataset),
+            URLSpec('/upload', Upload, name='upload'),
+            URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
 
             URLSpec('/allocate_dataset', AllocateDataset),
         ],
