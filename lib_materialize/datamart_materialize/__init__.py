@@ -1,13 +1,9 @@
-import json
 import logging
 from pkg_resources import iter_entry_points
 import requests
 
 
 logger = logging.getLogger(__name__)
-
-
-DEFAULT_URL = 'http://datamart_query:8002'
 
 
 class UnconfiguredMaterializer(Exception):
@@ -43,18 +39,17 @@ def _direct_download(url, destination):
     _write(response, destination)
 
 
-def _proxy_download(materialization_dict, destination, proxy):
+def _proxy_download(dataset_id, destination, proxy):
     """Use a DataMart query service to materialize for us.
 
     This is used when the materializer is not available locally. We request
     that the DataMart handle materialization, and then we download from there.
 
-    :param materialization_dict: Materialization information from search index.
+    :param dataset_id: Dataset ID from search index.
     :param destination: Path where the dataset will be written.
     :param proxy: URL of a DataMart server to use as a proxy.
     """
-    params = {'materialize': json.dumps(materialization_dict)}
-    response = requests.get(proxy + '/download', params=params,
+    response = requests.get(proxy + '/download/' + dataset_id,
                             allow_redirects=True, stream=True)
     response.raise_for_status()
     _write(response, destination)
@@ -88,23 +83,39 @@ def load_materializers():
             logger.info("Materializer loaded: %s", entry_point.name)
 
 
-def download(materialization_dict, destination, proxy=DEFAULT_URL):
+def download(dataset, destination, proxy):
     """Materialize a dataset on disk.
 
-    :param materialization_dict: Materialization information from search index.
+    :param dataset: Dataset description from search index.
     :param destination: Path where the dataset will be written.
     :param proxy: URL of a DataMart server to use as a proxy if we can't
-        materialize locally. If False, ``KeyError`` will be raised if this
+        materialize locally. If ``None``, ``KeyError`` will be raised if this
         materializer is unavailable.
     """
-    if 'materialize' in materialization_dict:
-        materialization_dict = materialization_dict['materialize']
+    if isinstance(dataset, str):
+        if proxy:
+            _proxy_download(dataset, destination, proxy)
+            return
+        else:
+            raise ValueError("A proxy must be specified to download a dataset "
+                             "from its ID")
+    elif not isinstance(dataset, dict):
+        raise TypeError("'dataset' must be either a str or a dict")
+    elif 'materialize' in dataset:
+        dataset_id = dataset.get('id')
+        materialize = dataset['materialize']
+    elif 'identifier' in dataset:
+        dataset_id = None
+        materialize = dataset
+    else:
+        raise ValueError("Provided dataset dict doesn't contain "
+                         "materialization information")
 
-    if 'direct_url' in materialization_dict:
-        logger.info("Direct download: %s", materialization_dict['direct_url'])
-        _direct_download(materialization_dict['direct_url'], destination)
-    elif 'identifier' in materialization_dict:
-        identifier = materialization_dict['identifier']
+    if 'direct_url' in materialize:
+        logger.info("Direct download: %s", materialize['direct_url'])
+        _direct_download(materialize['direct_url'], destination)
+    elif 'identifier' in materialize:
+        identifier = materialize['identifier']
         if not _materializers_loaded:
             load_materializers()
         try:
@@ -114,15 +125,15 @@ def download(materialization_dict, destination, proxy=DEFAULT_URL):
         else:
             try:
                 logger.info("Calling materializer...")
-                materializer.download(materialization_dict, destination)
+                materializer.download(materialize, destination)
                 logger.info("Materializer successful")
                 return
             except UnconfiguredMaterializer as e:
                 logger.warning("Materializer is not configured properly: %s",
                                ", ".join(e.args))
-        if proxy:
+        if proxy and dataset_id:
             logger.info("Calling materialization proxy...")
-            _proxy_download(materialization_dict, destination, proxy)
+            _proxy_download(dataset_id, destination, proxy)
             logger.info("Materialization through proxy successful")
         else:
             raise KeyError("Materializer unavailable: '%s'" % identifier)

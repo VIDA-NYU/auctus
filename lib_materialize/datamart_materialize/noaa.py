@@ -53,21 +53,21 @@ def get_all(endpoint, token, delay=0.5, **params):
 class NoaaMaterializer(object):
     DELAY = 0.5
 
-    def download(self, materialization_dict, destination):
+    def download(self, materialize, destination):
         try:
             token = os.environ['NOAA_TOKEN']
         except KeyError:
             raise UnconfiguredMaterializer("$NOAA_TOKEN is not set")
 
         data = get_all('/data', token, self.DELAY,
-                       datasetid=materialization_dict['noaa_dataset_id'],
-                       datatypeid=materialization_dict['noaa_datatype_id'],
-                       locationid=materialization_dict['noaa_city_id'],
-                       startdate=materialization_dict['noaa_start'],
-                       enddate=materialization_dict['noaa_end'])
+                       datasetid=materialize['noaa_dataset_id'],
+                       datatypeid=materialize['noaa_datatype_id'],
+                       locationid=materialize['noaa_city_id'],
+                       startdate=materialize['noaa_start'],
+                       enddate=materialize['noaa_end'])
 
         writer = csv.writer(destination)
-        writer.writerow(['date', materialization_dict['noaa_datatype_id']])
+        writer.writerow(['date', materialize['noaa_datatype_id']])
         # Sort by date
         data = sorted(data, key=lambda v: v['date'])
         # Write the data, one row per date, averaged across stations
