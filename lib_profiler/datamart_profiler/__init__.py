@@ -1,3 +1,4 @@
+import codecs
 import json
 import logging
 import math
@@ -36,78 +37,99 @@ def mean_stddev(array):
     return mean, stddev
 
 
-def process_dataset(path, metadata):
+def run_scdp(data):
+    # Run SCDP
+    logger.info("Running SCDP...")
+    scdp = pkg_resources.resource_filename('datamart_profiler', 'scdp.jar')
+    if isinstance(data, (str, bytes)):
+        proc = subprocess.Popen(['java', '-jar', scdp, data],
+                                stdout=subprocess.PIPE,
+                                stdin=subprocess.PIPE)
+        stdout, _ = proc.communicate()
+    else:
+        proc = subprocess.Popen(['java', '-jar', scdp, '/dev/stdin'],
+                                stdout=subprocess.PIPE,
+                                stdin=subprocess.PIPE)
+        data.to_csv(codecs.getwriter('utf-8')(proc.stdin))
+        stdout, _ = proc.communicate()
+    if proc.wait() != 0:
+        logger.error("Error running SCDP: returned %d", proc.returncode)
+        return {}
+    else:
+        try:
+            return json.loads(stdout)
+        except json.JSONDecodeError:
+            logger.exception("Invalid output from SCDP")
+            return {}
+
+
+def process_dataset(data, metadata=None):
     """Compute all metafeatures from a dataset.
 
     :param metadata: The metadata provided by the discovery plugin (might be
         very limited).
     """
-    csv_file = os.path.join(path, 'main.csv')
+    if metadata is None:
+        metadata = {}
 
-    # File size
-    metadata['size'] = os.path.getsize(csv_file)
-    logger.info("File size: %r bytes", metadata['size'])
+    scdp_out = run_scdp(data)
 
-    # Run SCDP
-    logger.info("Running SCDP...")
-    scdp = pkg_resources.resource_filename('datamart_profiler', 'scdp.jar')
-    cmd = ['java', '-jar', scdp, csv_file]
-    proc = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stdin=subprocess.PIPE)
-    stdout, _ = proc.communicate()
-    if proc.wait() != 0:
-        logger.error("Error running SCDP: returned %d", proc.returncode)
-        scdp_out = {}
+    if isinstance(data, (str, bytes)):
+        if os.path.isdir(data):
+            data = os.path.join(data, 'main.csv')
+        if not os.path.exists(data):
+            raise ValueError("data file does not exist")
+
+        # File size
+        metadata['size'] = os.path.getsize(data)
+        logger.info("File size: %r bytes", metadata['size'])
+
+        # Sub-sample
+        if metadata['size'] > MAX_SIZE:
+            logger.info("Counting rows...")
+            with open(data, 'rb') as fp:
+                metadata['nb_rows'] = sum(1 for _ in fp)
+
+            ratio = metadata['size'] / MAX_SIZE
+            logger.info("Loading dataframe, sample ratio=%r...", ratio)
+            data = pandas.read_csv(data,
+                                   dtype=str, na_filter=False,
+                                   skiprows=lambda i: i != 0 and i > ratio)
+        else:
+            logger.info("Loading dataframe...")
+            data = pandas.read_csv(data,
+                                   dtype=str, na_filter=False)
+
+            metadata['nb_rows'] = data.shape[0]
+
+        logger.info("Dataframe loaded, %d rows, %d columns",
+                    data.shape[0], data.shape[1])
     else:
-        try:
-            scdp_out = json.loads(stdout)
-        except json.JSONDecodeError:
-            logger.exception("Invalid output from SCDP")
-            scdp_out = {}
-
-    # Sub-sample
-    if metadata['size'] > MAX_SIZE:
-        logger.info("Counting rows...")
-        with open(csv_file, 'rb') as fp:
-            metadata['nb_rows'] = sum(1 for _ in fp)
-
-        ratio = metadata['size'] / MAX_SIZE
-        logger.info("Loading dataframe, sample ratio=%r...", ratio)
-        df = pandas.read_csv(csv_file,
-                             dtype=str, na_filter=False,
-                             skiprows=lambda i: i != 0 and i > ratio)
-    else:
-        logger.info("Loading dataframe...")
-        df = pandas.read_csv(csv_file,
-                             dtype=str, na_filter=False)
-
-        metadata['nb_rows'] = df.shape[0]
-
-    logger.info("Dataframe loaded, %d rows, %d columns",
-                df.shape[0], df.shape[1])
+        if not isinstance(data, pandas.DataFrame):
+            raise TypeError("data should be a filename or a pandas.DataFrame")
+        metadata['nb_rows'] = len(data)
 
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
     # Fix size if wrong
-    if len(columns) != len(df.columns):
+    if len(columns) != len(data.columns):
         logger.info("Setting column names from header")
-        columns[:] = [{} for _ in range(len(df.columns))]
+        columns[:] = [{} for _ in range(len(data.columns))]
     else:
         logger.info("Keeping columns from discoverer")
 
     # Set column names
-    for column_meta, name in zip(columns, df.columns):
+    for column_meta, name in zip(columns, data.columns):
         column_meta['name'] = name
 
     # Copy info from SCDP
-    for column_meta, name in zip(columns, df.columns):
+    for column_meta, name in zip(columns, data.columns):
         column_meta.update(scdp_out.get(name, {}))
 
     # Identify types
     logger.info("Identifying types...")
     for i, column_meta in enumerate(columns):
-        array = df.iloc[:, i]
+        array = data.iloc[:, i]
         structural_type, semantic_types_dict = identify_types(array)
         # Set structural type
         column_meta['structural_type'] = structural_type
