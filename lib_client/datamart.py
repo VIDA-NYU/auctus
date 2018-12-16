@@ -19,7 +19,7 @@ class DatamartError(RuntimeError):
     """Error from DataMart."""
 
 
-def search(url=DEFAULT_URL, fail=False, **kwargs):
+def search(url=DEFAULT_URL, fail=False, profile=True, data=None, **kwargs):
     """Search for datasets.
 
     :param url: URL of the DataMart system. Defaults to
@@ -39,6 +39,16 @@ def search(url=DEFAULT_URL, fail=False, **kwargs):
         unsupported = "Unsupported arguments: %s" % unsupported
 
     # TODO: Profile data if possible, upload otherwise
+    data_profile = None
+    if data is not None and profile:
+        try:
+            import datamart_profiler
+        except ImportError:
+            warnings.warn("datamart_profiler is not installed, we will upload "
+                          "the data to the DataMart server")
+            data_profile = None
+        else:
+            data_profile = datamart_profiler.process_dataset(data)
 
     # Report errors
     if unsupported and not fail:
