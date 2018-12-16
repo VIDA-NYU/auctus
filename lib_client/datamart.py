@@ -11,7 +11,7 @@ __all__ = ['Dataset', 'search']
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_URL = 'http://datamart_query:8002'
+DEFAULT_URL = 'https://datamart.d3m.vida-nyu.org'
 
 
 class DatamartError(RuntimeError):
