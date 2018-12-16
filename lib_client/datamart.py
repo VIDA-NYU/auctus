@@ -1,5 +1,6 @@
 import logging
 import requests
+import warnings
 
 
 __version__ = '0.0'
@@ -19,6 +20,15 @@ class DatamartError(RuntimeError):
 
 
 def search(url=DEFAULT_URL, fail=False, **kwargs):
+    """Search for datasets.
+
+    :param url: URL of the DataMart system. Defaults to
+        ``datamart.d3m.vida-nyu.org``
+    :param fail: Whether to raise an exception if some keywords are not
+        understood.
+    :param kwargs: Search parameters.
+    :return: A list of ``Dataset`` objects.
+    """
     # Read arguments, build request
     request = {}
     unsupported = None
@@ -27,6 +37,8 @@ def search(url=DEFAULT_URL, fail=False, **kwargs):
     if kwargs:
         unsupported = ', '.join(sorted(kwargs.keys()))
         unsupported = "Unsupported arguments: %s" % unsupported
+
+    # TODO: Profile data if possible, upload otherwise
 
     # Report errors
     if unsupported and not fail:
@@ -66,10 +78,40 @@ class Dataset(object):
         return cls(result['id'], result['metadata'], url=url,
                    score=result['score'], discoverer=result['discoverer'])
 
-    def _request(self, stream=True):
+    def download(self, destination, proxy=None):
+        """Download this dataset to the disk.
+
+        :param destination: Path or opened file where to write the data.
+        :param proxy: Whether we should have the DataMart server do the
+            materialization for us. If ``False``, raise an error unless we can
+            do it locally; if ``True``, do not attempt to materialize locally,
+            only use the server. If ``None`` (default), use the server if we
+            can't materialize locally.
+        """
+        if not proxy:
+            try:
+                import datamart_materialize
+            except ImportError:
+                if proxy is False:
+                    raise RuntimeError("proxy=False but datamart_materialize "
+                                       "is not installed locally")
+                warnings.warn("datamart_materialize is not installed, "
+                              "DataMart server will do materialization for us")
+            else:
+                datamart_materialize.download(
+                    dataset={'id': self.id, 'metadata': self.metadata},
+                    destination=destination,
+                    proxy=self._url if proxy is None else None,
+                )
+                return
+
+        if not hasattr(destination, 'write'):
+            with open(destination, 'wb') as f:
+                return self.download(f)
+
         response = requests.get(self._url + '/download/%s' % self.id,
                                 allow_redirects=True,
-                                stream=stream)
+                                stream=True)
         if response.status_code != 200:
             if response.headers.get('Content-Type') == 'application/json':
                 try:
@@ -79,23 +121,10 @@ class Dataset(object):
                     pass
             raise DatamartError("Error from DataMart: %s %s" % (
                 response.status_code, response.reason))
-        return response
 
-    def download(self, destination):
-        if not hasattr(destination, 'write'):
-            with open(destination, 'wb') as f:
-                return self.download(f)
-
-        response = self._request(stream=True)
         for chunk in response.iter_content(chunk_size=4096):
             if chunk:  # filter out keep-alive chunks
                 destination.write(chunk)
-
-    def to_dataframe(self):
-        import pandas
-
-        response = self._request(stream=True)
-        return pandas.read_csv(response.raw)
 
     def __repr__(self):
         return '<Dataset %r score=%r discoverer=%r>' % (self.id, self.score,
