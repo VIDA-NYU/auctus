@@ -4,22 +4,29 @@ import os
 import sys
 
 
+SIZE = 10000
+
+
 def clear(identifier):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
-    hits = es.search(
-        index='datamart',
-        body={
-            'query': {
-                'term': {
-                    'materialize.identifier': identifier,
-                }
-            }
-        },
-    )['hits']['hits']
-    for h in hits:
-        es.delete('datamart', '_doc', h['_id'])
+    while True:
+        hits = es.search(
+            index='datamart',
+            body={
+                'query': {
+                    'term': {
+                        'materialize.identifier': identifier,
+                    },
+                },
+            },
+            size=SIZE,
+        )['hits']['hits']
+        for h in hits:
+            es.delete('datamart', '_doc', h['_id'])
+        if len(hits) != SIZE:
+            break
 
 
 if __name__ == '__main__':
