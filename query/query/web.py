@@ -118,7 +118,7 @@ class Query(CorsHandler):
         results = []
         for h in hits:
             meta = h.pop('_source')
-            materialize = meta.pop('materialize', {})
+            materialize = meta.get('materialize', {})
             if 'description' in meta and len(meta['description']) > 100:
                 meta['description'] = meta['description'][:100] + "..."
             results.append(dict(

@@ -101,15 +101,15 @@ def download(dataset, destination, proxy):
                              "from its ID")
     elif not isinstance(dataset, dict):
         raise TypeError("'dataset' must be either a str or a dict")
-    elif 'materialize' in dataset:
-        dataset_id = dataset.get('id')
-        materialize = dataset['materialize']
-    elif 'identifier' in dataset:
+    else:
         dataset_id = None
         materialize = dataset
-    else:
-        raise ValueError("Provided dataset dict doesn't contain "
-                         "materialization information")
+        if 'metadata' in materialize:
+            materialize = materialize['metadata']
+            dataset_id = dataset.get('id')
+        if 'materialize' in materialize:
+            materialize = materialize['materialize']
+            dataset_id = dataset.get('id')
 
     if 'direct_url' in materialize:
         logger.info("Direct download: %s", materialize['direct_url'])
