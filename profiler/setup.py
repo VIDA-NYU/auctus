@@ -8,9 +8,6 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'aio-pika',
     'elasticsearch',
-    'numpy',
-    'pandas',
-    'python-dateutil',
     'datamart_core',
     'datamart_materialize',
     'datamart_profiler',
