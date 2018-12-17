@@ -6,18 +6,20 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
+    'aio-pika',
     'elasticsearch',
-    'requests',
+    'tornado>=5.0',
     'datamart_core',
+    'datamart_materialize',
 ]
-setup(name='noaa_discovery',
+setup(name='query',
       version='0.0',
-      packages=['noaa_discovery'],
-      package_data={'noaa_discovery': [
-          'noaa_city_stations.csv',
-      ]},
+      packages=['query'],
+      entry_points={
+          'console_scripts': [
+              'query = query.web:main']},
       install_requires=req,
-      description="NOAA discovery service for DataMart",
+      description="Query service of DataMart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -28,7 +30,7 @@ setup(name='noaa_discovery',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="NOAA discovery service for DataMart",
+      long_description="Query service of DataMart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[

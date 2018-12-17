@@ -6,18 +6,23 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
+    'aio-pika',
     'elasticsearch',
-    'requests',
+    'numpy',
+    'pandas',
+    'python-dateutil',
     'datamart_core',
+    'datamart_materialize',
+    'datamart_profiler',
 ]
-setup(name='noaa_discovery',
+setup(name='profiler',
       version='0.0',
-      packages=['noaa_discovery'],
-      package_data={'noaa_discovery': [
-          'noaa_city_stations.csv',
-      ]},
+      py_modules=['profiler'],
+      entry_points={
+          'console_scripts': [
+              'profiler = profiler:main']},
       install_requires=req,
-      description="NOAA discovery service for DataMart",
+      description="Data profiling service of DataMart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -28,7 +33,7 @@ setup(name='noaa_discovery',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="NOAA discovery service for DataMart",
+      long_description="Data profiling service of DataMart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[

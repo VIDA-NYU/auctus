@@ -3,9 +3,10 @@ FROM python:3.6
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 RUN pip install aio-pika elasticsearch
-RUN pip install requests sodapy
 COPY lib_core lib_core
 RUN pip install -e /usr/src/app/lib_core
-COPY discovery/socrata /usr/src/app/socrata
-RUN pip install -e socrata
-CMD ["python", "-m", "socrata_discovery"]
+COPY lib_materialize lib_materialize
+RUN pip install -e /usr/src/app/lib_materialize
+COPY query query
+RUN pip install -e /usr/src/app/query
+CMD ["query"]
