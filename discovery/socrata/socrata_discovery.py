@@ -99,9 +99,8 @@ class SocrataDiscoverer(Discoverer):
         if resource.get('description'):
             metadata['description'] = resource['description']
         direct_url = (
-            'https://data.cityofnewyork.us/api/views/'
-            '{dataset_id}/rows.csv?accessType=DOWNLOAD'.format(
-                dataset_id=id)
+            'https://{domain}/api/views/{dataset_id}/rows.csv'
+            '?accessType=DOWNLOAD'.format(domain=domain['url'], dataset_id=id)
         )
 
         # Discover this dataset
