@@ -147,16 +147,31 @@ class Dataset(BaseHandler):
                 for range_ in column['coverage']:
                     range_['range']['gte'] = \
                         datetime.datetime.utcfromtimestamp(int(range_['range']['gte'])).\
-                        strftime('%Y-%m-%d %H')
+                        strftime('%Y-%m-%d %H:%M')
                     range_['range']['lte'] = \
                         datetime.datetime.utcfromtimestamp(int(range_['range']['lte'])). \
-                            strftime('%Y-%m-%d %H')
+                            strftime('%Y-%m-%d %H:%M')
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
                     metadata=metadata, materialize=materialize,
                     size=format_size(metadata['size']))
+
+
+# TODO: move to a better place?
+def compute_levenshtein_sim(str1, str2):
+    if len(str1) < 3:
+        str1_set = [str1]
+    else:
+        str1_set = [str1[i:i + 3] for i in range(len(str1) - 2)]
+
+    if len(str2) < 3:
+        str2_set = [str2]
+    else:
+        str2_set = [str2[i:i + 3] for i in range(len(str2) - 2)]
+
+    return 1 - distance.nlevenshtein(str1_set, str2_set, method=2)
 
 
 # TODO: move to a better place?
@@ -178,6 +193,8 @@ def get_column_coverage(es, dataset_id):
 
     hit = result['hits']['hits'][0]
     for column in hit['_source']['columns']:
+        if 'coverage' not in column:
+            continue
         column_name = column['name']
         if column['structural_type'] in ('http://schema.org/Integer',
                                          'http://schema.org/Float'):
@@ -202,15 +219,207 @@ def get_column_coverage(es, dataset_id):
         for spatial in hit['_source']['spatial_coverage']:
             names = '(' + spatial['lat'] + ', ' + spatial['lon'] + ')'
             column_coverage[names] = {
-                'type_':      'spatial',
+                'type':      'spatial',
                 'type_value': 'https://schema.org/latitude, https://schema.org/longitude',
                 'ranges':     []
             }
             for range_ in spatial['ranges']:
-                column_coverage[column_name]['ranges'].\
+                column_coverage[names]['ranges'].\
                     append(range_['range']['coordinates'])
 
     return column_coverage
+
+
+# TODO: move to a better place?
+def get_numerical_coverage_intersections(es, dataset_id, type_, type_value, ranges):
+
+    intersections = dict()
+    column_total_coverage = 0
+
+    for range_ in ranges:
+        logging.warning("Range: " + str(range_))
+        column_total_coverage += (range_[1] - range_[0] + 1)
+
+        query = '''
+            {
+                "query" : {
+                    "nested" : {
+                        "path" : "columns",
+                        "query" : {
+                            "bool" : {
+                                "must_not": {
+                                    "match": { "_id": "%s" }
+                                },
+                                "must" : [
+                                    {
+                                        "match" : { "columns.%s" : "%s" }
+                                    },
+                                    {
+                                        "nested" : {
+                                            "path" : "columns.coverage",
+                                            "query" : {
+                                                "range" : {
+                                                    "columns.coverage.range" : {
+                                                        "gte" : %.6f,
+                                                        "lte" : %.6f,
+                                                        "relation" : "intersects"
+                                                    }
+                                                }
+                                            },
+                                            "inner_hits": {
+                                              "_source" : false
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        "inner_hits": {
+                            "_source" : false
+                        }
+                    }
+                }
+            }''' % (dataset_id, type_, type_value, range_[0], range_[1])
+
+        result = es.search(
+            index='datamart',
+            body=query,
+            scroll='2m',
+            size=10000
+        )
+
+        sid = result['_scroll_id']
+        scroll_size = result['hits']['total']
+
+        while scroll_size > 0:
+            for hit in result['hits']['hits']:
+
+                dataset_name = hit['_id']
+                columns = hit['_source']['columns']
+                inner_hits = hit['inner_hits']
+
+                for column_hit in inner_hits['columns']['hits']['hits']:
+                    column_offset = int(column_hit['_nested']['offset'])
+                    column_name = columns[column_offset]['name']
+                    name = '%s$$%s' % (dataset_name, column_name)
+                    if name not in intersections:
+                        intersections[name] = 0
+
+                    # ranges from column
+                    for range_hit in column_hit['inner_hits']['columns.coverage']['hits']['hits']:
+                        # compute intersection
+                        range_offset = int(range_hit['_nested']['_nested']['offset'])
+                        start_result = columns[column_offset]['coverage'][range_offset]['range']['gte']
+                        end_result = columns[column_offset]['coverage'][range_offset]['range']['lte']
+
+                        start = max(start_result, range_[0])
+                        end = min(end_result, range_[1])
+
+                        intersections[name] += (end - start + 1)
+
+            # scrolling
+            result = es.scroll(
+                scroll_id=sid,
+                scroll='2m'
+            )
+            sid = result['_scroll_id']
+            scroll_size = len(result['hits']['hits'])
+
+    return intersections, column_total_coverage
+
+
+# TODO: move to a better place?
+def get_spatial_coverage_intersections(es, dataset_id, ranges):
+
+    intersections = dict()
+    column_total_coverage = 0
+
+    for range_ in ranges:
+        column_total_coverage += (range_[1][0] - range_[0][0])*(range_[0][1] - range_[1][1])
+
+        query = '''
+            {
+                "query" : {
+                    "nested" : {
+                        "path" : "spatial_coverage.ranges",
+                        "query" : {
+                            "bool" : {
+                                "must_not": {
+                                    "match": { "_id": "%s" }
+                                },
+                                "filter": {
+                                    "geo_shape": {
+                                        "spatial_coverage.ranges.range": {
+                                            "shape": {
+                                                "type": "envelope",
+                                                "coordinates" : [[%.6f, %.6f], [%.6f, %.6f]]
+                                            },
+                                            "relation": "intersects"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "inner_hits": {
+                            "_source" : false
+                        }
+                    }
+                }
+            }''' % (dataset_id, range_[0][0], range_[0][1], range_[1][0], range_[1][1])
+
+        result = es.search(
+            index='datamart',
+            body=query,
+            scroll='2m',
+            size=10000
+        )
+
+        sid = result['_scroll_id']
+        scroll_size = result['hits']['total']
+
+        while scroll_size > 0:
+            for hit in result['hits']['hits']:
+
+                dataset_name = hit['_id']
+                spatial_coverages = hit['_source']['spatial_coverage']
+                inner_hits = hit['inner_hits']
+
+                for coverage_hit in inner_hits['spatial_coverage.ranges']['hits']['hits']:
+                    spatial_coverage_offset = int(coverage_hit['_nested']['offset'])
+                    spatial_coverage_name = \
+                        '(' + spatial_coverages[spatial_coverage_offset]['lat'] + ', ' \
+                        + spatial_coverages[spatial_coverage_offset]['lon'] + ')'
+                    name = '%s$$%s' % (dataset_name, spatial_coverage_name)
+                    if name not in intersections:
+                        intersections[name] = 0
+
+                    # compute intersection
+                    range_offset = int(coverage_hit['_nested']['_nested']['offset'])
+                    min_lon = \
+                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][0][0]
+                    max_lat = \
+                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][0][1]
+                    max_lon = \
+                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][1][0]
+                    min_lat = \
+                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][1][1]
+
+                    n_min_lon = max(min_lon, range_[0][0])
+                    n_max_lat = min(max_lat, range_[0][1])
+                    n_max_lon = max(max_lon, range_[1][0])
+                    n_min_lat = min(min_lat, range_[1][1])
+
+                    intersections[name] += (n_max_lon - n_min_lon)*(n_max_lat - n_min_lat)
+
+            # scrolling
+            result = es.scroll(
+                scroll_id=sid,
+                scroll='2m'
+            )
+            sid = result['_scroll_id']
+            scroll_size = len(result['hits']['hits'])
+
+    return intersections, column_total_coverage
 
 
 # TODO: move to a better place?
@@ -225,99 +434,23 @@ def get_coverage_intersections(es, dataset_id):
 
     for column in column_coverage:
         type_ = column_coverage[column]['type']
-        if type_ == 'spatial':
-            continue
         type_value = column_coverage[column]['type_value']
-        intersections_column = dict()
-        total_size = 0
-        for range_ in column_coverage[column]['ranges']:
-            total_size += (range_[1] - range_[0] + 1)
-
-            query = '''
-                {
-                    "query" : {
-                        "nested" : {
-                            "path" : "columns",
-                            "query" : {
-                                "bool" : {
-                                    "must_not": {
-                                        "match": { "_id": "%s" }
-                                    },
-                                    "must" : [
-                                        {
-                                            "match" : { "columns.%s" : "%s" }
-                                        },
-                                        {
-                                            "nested" : {
-                                                "path" : "columns.coverage",
-                                                "query" : {
-                                                    "range" : {
-                                                        "columns.coverage.range" : {
-                                                            "gte" : %.6f,
-                                                            "lte" : %.6f,
-                                                            "relation" : "intersects"
-                                                        }
-                                                    }
-                                                },
-                                                "inner_hits": {
-                                                  "_source" : false
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            },
-                            "inner_hits": {
-                                "_source" : false
-                            }
-                        }
-                    }
-                }''' % (dataset_id, type_, type_value, range_[0], range_[1])
-
-            result = es.search(
-                index='datamart',
-                body=query,
-                scroll='2m',
-                size=10000
-            )
-
-            sid = result['_scroll_id']
-            scroll_size = result['hits']['total']
-
-            while scroll_size > 0:
-                for hit in result['hits']['hits']:
-
-                    dataset_name = hit['_id']
-                    columns = hit['_source']['columns']
-                    inner_hits = hit['inner_hits']
-
-                    for column_hit in inner_hits['columns']['hits']['hits']:
-                        column_offset = int(column_hit['_nested']['offset'])
-                        column_name = columns[column_offset]['name']
-                        name = '%s$$%s' % (dataset_name, column_name)
-                        if name not in intersections_column:
-                            intersections_column[name] = 0
-
-                        # ranges from column
-                        for range_hit in column_hit['inner_hits']['columns.coverage']['hits']['hits']:
-
-                            # compute intersection
-                            range_offset = int(range_hit['_nested']['_nested']['offset'])
-                            start_result = columns[column_offset]['coverage'][range_offset]['range']['gte']
-                            end_result = columns[column_offset]['coverage'][range_offset]['range']['lte']
-
-                            start = max(start_result, range_[0])
-                            end = min(end_result, range_[1])
-
-                            intersections_column[name] += (end - start + 1)
-
-                # scrolling
-                result = es.scroll(
-                    scroll_id=sid,
-                    scroll='2m'
+        if type_ == 'spatial':
+            intersections_column, column_total_coverage = \
+                get_spatial_coverage_intersections(
+                    es,
+                    dataset_id,
+                    column_coverage[column]['ranges']
                 )
-                sid = result['_scroll_id']
-                scroll_size = len(result['hits']['hits'])
+        else:
+            intersections_column, column_total_coverage = \
+                get_numerical_coverage_intersections(
+                    es,
+                    dataset_id,
+                    type_,
+                    type_value,
+                    column_coverage[column]['ranges']
+                )
 
         if not intersections_column:
             continue
@@ -326,13 +459,14 @@ def get_coverage_intersections(es, dataset_id):
 
         intersections[column] = []
         for name, size in intersections_column.items():
-            sim = distance.jaccard(
+            sim = compute_levenshtein_sim(
                 column.lower(),
                 name.split("$$")[1].lower()
             )
-            score = size/total_size
-            if type_value != 'http://schema.org/DateTime':
-                score *= (1-sim)
+            score = size/column_total_coverage
+            if type_value not in ('http://schema.org/DateTime',
+                                  'https://schema.org/latitude, https://schema.org/longitude'):
+                score *= sim
             intersections[column].append((name, score))
 
         intersections[column] = sorted(
@@ -406,83 +540,11 @@ def get_all_datasets_columns(es):
     return dataset_columns
 
 
-def get_intersection_size(es, dt_ranges_1, dt_1, att_1, dt_2, att_2):
-
-    total_size_att_1 = 0
-    intersection_size = 0
-    if att_1 not in dt_ranges_1:
-        return 0
-    for range_ in dt_ranges_1[att_1]['ranges']:
-        total_size_att_1 += (range_[1] - range_[0] + 1)
-
-        query = '''
-                    {
-                      "query" : {
-                        "bool": {
-                          "must_not": {
-                            "match": { "id": "%s" }
-                          },
-                          "must": [
-                            {
-                              "match": { "id": "%s" }
-                            },
-                            {
-                              "match": { "name": "%s" }
-                            },
-                            {
-                              "range" : {
-                                "numerical_range" : {
-                                  "gte" : %.8f,
-                                  "lte" : %.8f,
-                                  "relation" : "intersects"
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      }
-                    }''' % (dt_1, dt_2, att_2, range_[0], range_[1])
-
-        result = es.search(
-            index='datamart_numerical_index',
-            body=query,
-            scroll='2m',
-            size=10000
-        )
-
-        sid = result['_scroll_id']
-        scroll_size = result['hits']['total']
-
-        while scroll_size > 0:
-            for hit in result['hits']['hits']:
-
-                # Compute intersection
-                start_result = float(hit['_source']['numerical_range']['gte'])
-                end_result = float(hit['_source']['numerical_range']['lte'])
-
-                start = max(start_result, range_[0])
-                end = min(end_result, range_[1])
-
-                intersection_size += (end - start + 1)
-
-            # scrolling
-            result = es.scroll(
-                scroll_id=sid,
-                scroll='2m'
-            )
-            sid = result['_scroll_id']
-            scroll_size = len(result['hits']['hits'])
-
-    return intersection_size / total_size_att_1
-
-
 # TODO: move to a better place?
 def get_unionable_datasets(es, dataset_id):
     dataset_columns = get_all_datasets_columns(es)
     main_dataset_columns = dataset_columns[dataset_id]
     del dataset_columns[dataset_id]
-
-    main_dataset_numerical_ranges = get_column_ranges(es, dataset_id)
 
     n_columns = 0
     for type_ in main_dataset_columns:
@@ -499,7 +561,7 @@ def get_unionable_datasets(es, dataset_id):
                 continue
             for att_1 in main_dataset_columns[type_]:
                 for att_2 in dataset_columns[dataset][type_]:
-                    sim = 1 - distance.jaccard(att_1.lower(), att_2.lower())
+                    sim = compute_levenshtein_sim(att_1.lower(), att_2.lower())
                     pairs.append((att_1, att_2, sim))
 
         # choose pairs with higher Jaccard distance
@@ -521,25 +583,8 @@ def get_unionable_datasets(es, dataset_id):
 
         scores[dataset] = 1
 
-        # evaluate intersection for numerical attributes
-        # intuition: the lower the intersection, the more the union is useful
-        # TODO: how to use this?
         for i in range(len(column_pairs[dataset])):
-            att_1 = column_pairs[dataset][i][0]
-            att_2 = column_pairs[dataset][i][1]
             sim = column_pairs[dataset][i][2]
-
-            intersection_size = get_intersection_size(
-                es,
-                main_dataset_numerical_ranges,
-                dataset_id,
-                att_1,
-                dataset,
-                att_2
-            )
-
-            column_pairs[dataset][i].append(intersection_size)
-
             scores[dataset] += sim
 
         scores[dataset] = scores[dataset] / n_columns
