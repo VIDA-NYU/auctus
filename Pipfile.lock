@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "57fef4867e006d1b6ceec50d21857a2189016a65234e3a54b1f764ec148bd2c5"
+            "sha256": "ed856550eeabd74f999a234f77c8586362e5084d6ff2c0834d7521c60099eeaa"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -38,29 +38,25 @@
             ],
             "version": "==3.0.4"
         },
+        "coordinator": {
+            "editable": true,
+            "path": "./coordinator"
+        },
         "datamart": {
             "editable": true,
-            "path": "./datamart_client"
-        },
-        "datamart-coordinator": {
-            "editable": true,
-            "path": "./datamart_coordinator"
+            "path": "./lib_client"
         },
         "datamart-core": {
             "editable": true,
-            "path": "./datamart_core"
+            "path": "./lib_core"
+        },
+        "datamart-materialize": {
+            "editable": true,
+            "path": "./lib_materialize"
         },
         "datamart-profiler": {
             "editable": true,
-            "path": "./datamart_profiler"
-        },
-        "datamart-query": {
-            "editable": true,
-            "path": "./datamart_query"
-        },
-        "datamart-socrata-discovery": {
-            "editable": true,
-            "path": "./discovery/socrata"
+            "path": "./lib_profiler"
         },
         "elasticsearch": {
             "hashes": [
@@ -73,7 +69,6 @@
             "hashes": [
                 "sha256:67045236dcfd6816dc439556d009594abf643e5eb48992e36beac09c2ca659b8"
             ],
-            "markers": "python_version != '3.0.*' and python_version != '3.1.*' and python_version >= '2.6' and python_version != '3.2.*'",
             "version": "==0.17.1"
         },
         "idna": {
@@ -121,7 +116,6 @@
                 "sha256:f82e347a72f955b7017a39708a3667f106e6ad4d10b25f237396a7115d8ed5fd",
                 "sha256:fb7c206e01ad85ce57feeaaa0bf784b97fa3cad0d4a5737bc5295785f5c613a1"
             ],
-            "markers": "python_version != '3.1.*' and python_version != '3.2.*' and python_version != '3.3.*' and python_version >= '2.7' and python_version != '3.0.*'",
             "version": "==1.1.0"
         },
         "multidict": {
@@ -158,6 +152,10 @@
             ],
             "version": "==4.4.2"
         },
+        "noaa": {
+            "editable": true,
+            "path": "./discovery/noaa"
+        },
         "numpy": {
             "hashes": [
                 "sha256:0df89ca13c25eaa1621a3f09af4c8ba20da849692dcae184cb55e80952c453fb",
@@ -189,7 +187,6 @@
                 "sha256:ecf81720934a0e18526177e645cbd6a8a21bb0ddc887ff9738de07a1df5c6b61",
                 "sha256:edfa6fba9157e0e3be0f40168eb142511012683ac3dc82420bee4a3f3981b30e"
             ],
-            "markers": "python_version != '3.1.*' and python_version != '3.2.*' and python_version != '3.3.*' and python_version >= '2.7' and python_version != '3.0.*'",
             "version": "==1.15.4"
         },
         "pandas": {
@@ -217,6 +214,10 @@
             ],
             "version": "==0.23.4"
         },
+        "profiler": {
+            "editable": true,
+            "path": "./profiler"
+        },
         "python-dateutil": {
             "hashes": [
                 "sha256:063df5763652e21de43de7d9e00ccf239f953a832941e37be541614732cdfc93",
@@ -231,12 +232,15 @@
             ],
             "version": "==2018.7"
         },
+        "query": {
+            "editable": true,
+            "path": "./query"
+        },
         "requests": {
             "hashes": [
                 "sha256:99dcfdaaeb17caf6e526f32b6a7b780461512ab3f1d992187801694cba42770c",
                 "sha256:a84b8c9ab6239b578f22d1c21d51b696dcfe004032bb80ea832398d6909d7279"
             ],
-            "markers": "python_version != '3.0.*' and python_version < '4' and python_version != '3.1.*' and python_version >= '2.7' and python_version != '3.2.*' and python_version != '3.3.*'",
             "version": "==2.20.0"
         },
         "shortuuid": {
@@ -247,17 +251,20 @@
         },
         "six": {
             "hashes": [
-                "sha256:70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9",
-                "sha256:832dc0e10feb1aa2c68dcc57dbb658f1c7e65b9b61af69048abc87a2db00a0eb"
+                "sha256:3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c",
+                "sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"
             ],
-            "version": "==1.11.0"
+            "version": "==1.12.0"
+        },
+        "socrata": {
+            "editable": true,
+            "path": "./discovery/socrata"
         },
         "sodapy": {
             "hashes": [
                 "sha256:f56df0a19a8be214f3be44818b8f31a0e3929c0c1bbbbfbce0a4b5a777a98f7f",
                 "sha256:f7634710d8b78350fee2ab6a56a54e0b971d122e709ad0af89c381f177c19d48"
             ],
-            "markers": "python_version < '4' and python_version != '3.0.*' and python_version != '3.3.*' and python_version != '3.1.*' and python_version >= '2.7' and python_version != '3.2.*'",
             "version": "==1.5.0"
         },
         "tornado": {
@@ -277,7 +284,6 @@
                 "sha256:61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39",
                 "sha256:de9529817c93f27c8ccbfead6985011db27bd0ddfcdb2d86f3f663385c6a9c22"
             ],
-            "markers": "python_version != '3.1.*' and python_version != '3.2.*' and python_version != '3.3.*' and python_version < '4' and python_version >= '2.7' and python_version != '3.0.*'",
             "version": "==1.24.1"
         },
         "yarl": {
@@ -417,7 +423,6 @@
                 "sha256:9a7662ec724d0120012f6e29d6248ae3727d821bba522a0e6b356eff19126a49",
                 "sha256:f661252913bc1dbe7fcfcbf0af0db3f42ab65aabd1a6ca68fe5d466bace94dae"
             ],
-            "markers": "python_version != '3.1.*' and python_version != '3.0.*' and python_version != '3.2.*' and python_version != '3.3.*' and python_version >= '2.7'",
             "version": "==2.0.0"
         },
         "pygments": {

@@ -5,12 +5,15 @@ name = "pypi"
 
 [packages]
 aio-pika = "*"
-datamart = {editable = true, path = "./datamart_client"}
-datamart-coordinator = {editable = true, path = "./datamart_coordinator"}
-datamart-core = {editable = true, path = "./datamart_core"}
-datamart-profiler = {editable = true, path = "./datamart_profiler"}
-datamart-query = {editable = true, path = "./datamart_query"}
-datamart_socrata_discovery = {editable = true, path="./discovery/socrata"}
+datamart = {editable = true, path = "./lib_client"}
+datamart_profiler = {editable = true, path = "./lib_profiler"}
+datamart_materialize = {editable = true, path = "./lib_materialize"}
+datamart_core = {editable = true, path = "./lib_core"}
+coordinator = {editable = true, path = "./coordinator"}
+profiler = {editable = true, path = "./profiler"}
+query = {editable = true, path = "./query"}
+noaa = {editable = true, path="./discovery/noaa"}
+socrata = {editable = true, path="./discovery/socrata"}
 
 [dev-packages]
 flake8 = "*"
