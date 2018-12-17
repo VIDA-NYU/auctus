@@ -4,6 +4,7 @@ import elasticsearch
 import json
 import logging
 import os
+import re
 import sodapy
 import time
 
@@ -11,6 +12,14 @@ from datamart_core import Discoverer
 
 
 logger = logging.getLogger(__name__)
+
+
+re_non_id_safe = re.compile(r'[^a-z0-9-]+')
+
+
+def encode_domain(url):
+    domain = re_non_id_safe.sub('-', url.lower())
+    return domain
 
 
 class SocrataDiscoverer(Discoverer):
@@ -104,12 +113,13 @@ class SocrataDiscoverer(Discoverer):
         )
 
         # Discover this dataset
+        encoded_domain = encode_domain(domain['url'])
         self.record_dataset(dict(socrata_id=id,
                                  socrata_domain=domain['url'],
                                  socrata_updated=resource['updatedAt'],
                                  direct_url=direct_url),
                             metadata,
-                            dataset_id=id)
+                            dataset_id='{}.{}'.format(encoded_domain, id))
 
 
 if __name__ == '__main__':
