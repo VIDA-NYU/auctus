@@ -42,6 +42,10 @@ def run_scdp(data):
     logger.info("Running SCDP...")
     scdp = pkg_resources.resource_filename('datamart_profiler', 'scdp.jar')
     if isinstance(data, (str, bytes)):
+        if os.path.isdir(data):
+            data = os.path.join(data, 'main.csv')
+        if not os.path.exists(data):
+            raise ValueError("data file does not exist")
         proc = subprocess.Popen(['java', '-jar', scdp, data],
                                 stdout=subprocess.PIPE,
                                 stdin=subprocess.PIPE)
