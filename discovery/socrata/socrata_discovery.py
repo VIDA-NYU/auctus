@@ -23,9 +23,9 @@ class SocrataDiscoverer(Discoverer):
         super(SocrataDiscoverer, self).__init__(*args, **kwargs)
 
         if os.path.exists('socrata.json'):
-            with open('socrata.conf') as fp:
+            with open('socrata.json') as fp:
                 self.domains = json.load(fp)
-            logger.info("Loaded %d domains from socrata.conf",
+            logger.info("Loaded %d domains from socrata.json",
                         len(self.domains))
         else:
             self.domains = self.DEFAULT_DOMAINS
