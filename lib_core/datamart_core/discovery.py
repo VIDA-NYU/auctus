@@ -71,7 +71,10 @@ class Discoverer(object):
         )
 
         # Declare the profiling queue
-        profile_queue = await self.channel.declare_queue('profile')
+        profile_queue = await self.channel.declare_queue(
+            'profile',
+            arguments={'x-max-priority': 3},
+        )
         await profile_queue.bind(self.profile_exchange)
 
     async def _run(self):
@@ -181,10 +184,14 @@ class Discoverer(object):
                             identifier=self.identifier,
                             date=datetime.utcnow().isoformat() + 'Z'))
         await self.profile_exchange.publish(
-            json2msg(dict(
-                id=dataset_id,
-                metadata=metadata,
-            )),
+            json2msg(
+                dict(
+                    id=dataset_id,
+                    metadata=metadata,
+                ),
+                # Dataset discovered on-demand have higher priority
+                priority=2 if bind is not None else 0,
+            ),
             '',
         )
         logger.info("Discovered %s", dataset_id)

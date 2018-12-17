@@ -62,7 +62,10 @@ class Profiler(object):
         )
 
         # Declare the profiling queue
-        self.profile_queue = await self.channel.declare_queue('profile')
+        self.profile_queue = await self.channel.declare_queue(
+            'profile',
+            arguments={'x-max-priority': 3},
+        )
         await self.profile_queue.bind(self.profile_exchange)
 
         # Declare the failed queue

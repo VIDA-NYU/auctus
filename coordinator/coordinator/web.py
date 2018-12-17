@@ -157,6 +157,8 @@ class Upload(BaseHandler):
                     id=dataset_id,
                     metadata=metadata,
                 )).encode('utf-8'),
+                # Lower priority than on-demand datasets, but higher than base
+                priority=1,
             ),
             '',
         )
