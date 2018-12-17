@@ -201,15 +201,18 @@ class Discoverer(object):
 
     @contextlib.contextmanager
     def write_to_shared_storage(self, dataset_id):
-        dataset_dir = self.identifier + '.' + encode_dataset_id(dataset_id)
-        temp_dir = tempfile.mkdtemp(prefix=dataset_dir, dir='/datasets')
+        dir_name = encode_dataset_id(self.identifier + '.' + dataset_id)
+        dataset_dir = os.path.join('/datasets', dir_name)
+        if os.path.exists(dataset_dir):
+            shutil.rmtree(dataset_dir)
+        temp_dir = tempfile.mkdtemp(prefix=dir_name, dir='/datasets')
         try:
-            yield os.path.join('/datasets', temp_dir)
+            yield temp_dir
         except Exception:
             shutil.rmtree(temp_dir)
         else:
             try:
-                os.rename(temp_dir, os.path.join('/datasets', dataset_dir))
+                os.rename(temp_dir, dataset_dir)
             except OSError:
                 pass  # Dataset was written concurrently
 
