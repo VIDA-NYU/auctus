@@ -6,16 +6,17 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'elasticsearch',
-    'requests',
-    'sodapy',
-    'datamart_core',
+    'numpy',
+    'pandas',
+    'python-dateutil',
+    'hdbscan',
 ]
-setup(name='socrata_discovery',
+setup(name='datamart_profiler',
       version='0.0',
-      py_modules=['socrata_discovery'],
+      packages=['datamart_profiler'],
+      package_data={'datamart_profiler': ['scdp.jar']},
       install_requires=req,
-      description="Socrata discovery service for DataMart",
+      description="Data profiling library for DataMart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -26,7 +27,7 @@ setup(name='socrata_discovery',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Socrata discovery service for DataMart",
+      long_description="Data profiling library for DataMart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[

@@ -1,4 +1,9 @@
+datamart_profiler/scdp.jar
+.env
+
+# Python
 *.py[co]
+.ipynb_checkpoints
 
 # Packages
 *.egg

@@ -6,16 +6,25 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
+    'aio-pika',
+    'Distance',
     'elasticsearch',
-    'requests',
-    'sodapy',
-    'datamart_core',
+    'jinja2',
+    'tornado>=5.0',
 ]
-setup(name='socrata_discovery',
+setup(name='datamart-coordinator-service',
       version='0.0',
-      py_modules=['socrata_discovery'],
+      packages=['coordinator'],
+      package_data={'coordinator': [
+          'static/css/*.css', 'static/css/*.css.map',
+          'static/js/*.js', 'static/js/*.js.map',
+          'templates/*.html',
+      ]},
+      entry_points={
+          'console_scripts': [
+              'coordinator = coordinator.web:main']},
       install_requires=req,
-      description="Socrata discovery service for DataMart",
+      description="Coordinator service for DataMart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -26,13 +35,15 @@ setup(name='socrata_discovery',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Socrata discovery service for DataMart",
+      long_description="Coordinator service for DataMart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
           'Development Status :: 2 - Pre-Alpha',
+          'Environment :: Web Environment',
           'Intended Audience :: Science/Research',
           'Natural Language :: English',
           'Operating System :: OS Independent',
+          'Programming Language :: JavaScript',
           'Programming Language :: Python :: 3 :: Only',
           'Topic :: Scientific/Engineering :: Information Analysis'])
