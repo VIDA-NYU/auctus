@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class SocrataDiscoverer(Discoverer):
     DEFAULT_DOMAINS = [
         {'url': 'data.cityofnewyork.us'},
+        {'url': 'finances.worldbank.org'},
     ]
     CHECK_INTERVAL = timedelta(days=1)
 
