@@ -295,7 +295,8 @@ def get_coverage_intersections(es, dataset_id):
                         column_offset = int(column_hit['_nested']['offset'])
                         column_name = columns[column_offset]['name']
                         name = '%s$$%s' % (dataset_name, column_name)
-                        intersections_column[name] = 0
+                        if name not in intersections_column:
+                            intersections_column[name] = 0
 
                         # ranges from column
                         for range_hit in column_hit['inner_hits']['columns.coverage']['hits']['hits']:
@@ -330,7 +331,7 @@ def get_coverage_intersections(es, dataset_id):
                 name.split("$$")[1].lower()
             )
             score = size/total_size
-            if type_ != 'datetime':
+            if type_value != 'http://schema.org/DateTime':
                 score *= (1-sim)
             intersections[column].append((name, score))
 
