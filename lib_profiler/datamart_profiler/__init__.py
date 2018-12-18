@@ -257,6 +257,10 @@ def process_dataset(data, metadata=None):
             column_meta['mean'], column_meta['stddev'] = \
                 mean_stddev(timestamps)
 
+            # Get temporal ranges
+            column_meta['coverage'] = \
+                get_numerical_ranges(timestamps_for_range)
+
     # Lat / Lon
     spatial_coverage = []
     i_lat = i_lon = 0
