@@ -15,6 +15,7 @@ from tornado.web import HTTPError, RequestHandler
 import uuid
 
 from .coordinator import Coordinator
+from datamart_core.common import Type
 
 
 logger = logging.getLogger(__name__)
@@ -187,7 +188,7 @@ class Dataset(BaseHandler):
             raise HTTPError(404)
         # readable format for temporal coverage
         for column in metadata['columns']:
-            if 'http://schema.org/DateTime' in column['semantic_types']:
+            if Type.DATE_TIME in column['semantic_types']:
                 for range_ in column['coverage']:
                     range_['range']['gte'] = \
                         datetime.datetime.utcfromtimestamp(int(range_['range']['gte'])).\
@@ -240,13 +241,12 @@ def get_column_coverage(es, dataset_id):
         if 'coverage' not in column:
             continue
         column_name = column['name']
-        if column['structural_type'] in ('http://schema.org/Integer',
-                                         'http://schema.org/Float'):
+        if column['structural_type'] in (Type.INTEGER, Type.FLOAT):
             type_ = 'structural_type'
             type_value = column['structural_type']
-        elif 'http://schema.org/DateTime' in column['semantic_types']:
+        elif Type.DATE_TIME in column['semantic_types']:
             type_ = 'semantic_types'
-            type_value = 'http://schema.org/DateTime'
+            type_value = Type.DATE_TIME
         else:
             continue
         column_coverage[column_name] = {
@@ -264,7 +264,7 @@ def get_column_coverage(es, dataset_id):
             names = '(' + spatial['lat'] + ', ' + spatial['lon'] + ')'
             column_coverage[names] = {
                 'type':      'spatial',
-                'type_value': 'https://schema.org/latitude, https://schema.org/longitude',
+                'type_value': Type.LATITUDE + ', ' + Type.LONGITUDE,
                 'ranges':     []
             }
             for range_ in spatial['ranges']:
@@ -508,8 +508,8 @@ def get_coverage_intersections(es, dataset_id):
                 name.split("$$")[1].lower()
             )
             score = size/column_total_coverage
-            if type_value not in ('http://schema.org/DateTime',
-                                  'https://schema.org/latitude, https://schema.org/longitude'):
+            if type_value not in (Type.DATE_TIME,
+                                  Type.LATITUDE + ', ' + Type.LONGITUDE):
                 score *= sim
             intersections[column].append((name, score))
 

@@ -2,6 +2,8 @@ from dateutil.parser import parse
 import re
 import unittest
 
+from datamart_core.common import Type
+
 
 _re_int = re.compile(r'^[+-]?[0-9]+$')
 _re_float = re.compile(r'^[+-]?'
@@ -41,23 +43,22 @@ def identify_types(array, name):
             num_bool += 1
 
     if num_empty == num_total:
-        structural_type = ('https://metadata.datadrivendiscovery.org/types/' +
-                           'MissingData')
+        structural_type = Type.MISSING_DATA
     elif (num_empty + num_int) >= ratio * num_total:
-        structural_type = 'http://schema.org/Integer'
+        structural_type = Type.INTEGER
     elif (num_empty + num_int + num_float) >= ratio * num_total:
-        structural_type = 'http://schema.org/Float'
+        structural_type = Type.FLOAT
     else:
-        structural_type = 'http://schema.org/Text'
+        structural_type = Type.TEXT
 
     semantic_types_dict = {}
 
     # Identify booleans
     if num_bool >= ratio * num_total:
-        semantic_types_dict['http://schema.org/Boolean'] = None
+        semantic_types_dict[Type.BOOLEAN] = None
 
     # Identify lat/lon
-    if structural_type in 'http://schema.org/Float':
+    if structural_type == Type.FLOAT:
         num_lat = num_long = 0
         for elem in array:
             try:
@@ -71,12 +72,12 @@ def identify_types(array, name):
                         num_lat += 1
 
         if num_lat >= ratio * num_total and 'lat' in name.lower():
-            semantic_types_dict['https://schema.org/latitude'] = None
+            semantic_types_dict[Type.LATITUDE] = None
         if num_lon >= ratio * num_total and 'lon' in name.lower():
-            semantic_types_dict['https://schema.org/longitude'] = None
+            semantic_types_dict[Type.LONGITUDE] = None
 
     # Identify dates
-    if structural_type == 'http://schema.org/Text':
+    if structural_type == Type.TEXT:
         parsed_dates = []
         for elem in array:
             try:
@@ -85,7 +86,7 @@ def identify_types(array, name):
                 pass
 
         if len(parsed_dates) >= ratio * num_total:
-            semantic_types_dict['http://schema.org/DateTime'] = parsed_dates
+            semantic_types_dict[Type.DATE_TIME] = parsed_dates
 
     # Identify phone numbers
     num_phones = 0
@@ -94,8 +95,7 @@ def identify_types(array, name):
             num_phones += 1
 
     if num_phones >= ratio * num_total:
-        semantic_types_dict['https://metadata.datadrivendiscovery.org/types/' +
-                            'PhoneNumber'] = None
+        semantic_types_dict[Type.PHONE_NUMBER] = None
 
     return structural_type, semantic_types_dict
 

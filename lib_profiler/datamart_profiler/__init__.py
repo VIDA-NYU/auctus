@@ -10,7 +10,7 @@ import pkg_resources
 import subprocess
 
 from .identify_types import identify_types
-
+from datamart_core.common import Type
 
 logger = logging.getLogger(__name__)
 
@@ -215,8 +215,7 @@ def process_dataset(data, metadata=None):
             if sem_type not in sem_types:
                 sem_types.append(sem_type)
 
-        if structural_type in ('http://schema.org/Integer',
-                               'http://schema.org/Float'):
+        if structural_type in (Type.INTEGER, Type.FLOAT):
             column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
 
             # Get numerical ranges
@@ -229,11 +228,11 @@ def process_dataset(data, metadata=None):
                     numerical_values.append(None)
 
             # Get lat/lon columns
-            if 'https://schema.org/latitude' in semantic_types_dict:
+            if Type.LATITUDE in semantic_types_dict:
                 column_lat.append(
                     (column_meta['name'], numerical_values)
                 )
-            elif 'https://schema.org/longitude' in semantic_types_dict:
+            elif Type.LONGITUDE in semantic_types_dict:
                 column_lon.append(
                     (column_meta['name'], numerical_values)
                 )
@@ -242,14 +241,14 @@ def process_dataset(data, metadata=None):
                     [x for x in numerical_values if x is not None]
                 )
 
-        if 'http://schema.org/DateTime' in semantic_types_dict:
+        if Type.DATE_TIME in semantic_types_dict:
             timestamps = numpy.empty(
-                len(semantic_types_dict['http://schema.org/DateTime']),
+                len(semantic_types_dict[Type.DATE_TIME]),
                 dtype='float32',
             )
             timestamps_for_range = []
             for j, dt in enumerate(
-                    semantic_types_dict['http://schema.org/DateTime']):
+                    semantic_types_dict[Type.DATE_TIME]):
                 timestamps[j] = dt.timestamp()
                 timestamps_for_range.append(
                     dt.replace(minute=0, second=0).timestamp()
