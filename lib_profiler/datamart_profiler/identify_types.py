@@ -57,6 +57,18 @@ def identify_types(array, name):
     if num_bool >= ratio * num_total:
         semantic_types_dict[Type.BOOLEAN] = None
 
+    # Identify ids
+    # TODO: is this enough?
+    # TODO: what about false positives?
+    if structural_type == Type.INTEGER:
+        if (name.lower().startswith('id') or
+                name.lower().endswith('id') or
+                name.lower().startswith('identifier') or
+                name.lower().endswith('identifier') or
+                name.lower().startswith('index') or
+                name.lower().endswith('index')):
+            semantic_types_dict[Type.ID] = None
+
     # Identify lat/lon
     if structural_type == Type.FLOAT:
         num_lat = num_long = 0

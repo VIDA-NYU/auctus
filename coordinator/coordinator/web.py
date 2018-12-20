@@ -241,7 +241,10 @@ def get_column_coverage(es, dataset_id):
         if 'coverage' not in column:
             continue
         column_name = column['name']
-        if column['structural_type'] in (Type.INTEGER, Type.FLOAT):
+        if Type.ID in column['semantic_types']:
+            type_ = 'semantic_types'
+            type_value = Type.ID
+        elif column['structural_type'] in (Type.INTEGER, Type.FLOAT):
             type_ = 'structural_type'
             type_value = column['structural_type']
         elif Type.DATE_TIME in column['semantic_types']:
@@ -281,7 +284,6 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value, rang
     column_total_coverage = 0
 
     for range_ in ranges:
-        logging.warning("Range: " + str(range_))
         column_total_coverage += (range_[1] - range_[0] + 1)
 
         query = '''
@@ -511,7 +513,12 @@ def get_coverage_intersections(es, dataset_id):
             if type_value not in (Type.DATE_TIME,
                                   Type.LATITUDE + ', ' + Type.LONGITUDE):
                 score *= sim
-            intersections[column].append((name, score))
+            if score > 0:
+                intersections[column].append((name, score))
+
+        if not intersections[column]:
+            del intersections[column]
+            continue
 
         intersections[column] = sorted(
             intersections[column],
