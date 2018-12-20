@@ -241,6 +241,9 @@ def get_column_coverage(es, dataset_id):
         if 'coverage' not in column:
             continue
         column_name = column['name']
+        # ignoring 'd3mIndex' for now -- seems useless
+        if 'd3mIndex' in column_name:
+            continue
         if Type.ID in column['semantic_types']:
             type_ = 'semantic_types'
             type_value = Type.ID
@@ -472,11 +475,10 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges):
 def get_coverage_intersections(es, dataset_id):
 
     intersections = dict()
-    types = dict()
     column_coverage = get_column_coverage(es, dataset_id)
 
     if not column_coverage:
-        return intersections, types
+        return intersections
 
     for column in column_coverage:
         type_ = column_coverage[column]['type']
@@ -501,9 +503,6 @@ def get_coverage_intersections(es, dataset_id):
         if not intersections_column:
             continue
 
-        types[column] = type_value
-
-        intersections[column] = []
         for name, size in intersections_column.items():
             sim = compute_levenshtein_sim(
                 column.lower(),
@@ -514,31 +513,59 @@ def get_coverage_intersections(es, dataset_id):
                                   Type.LATITUDE + ', ' + Type.LONGITUDE):
                 score *= sim
             if score > 0:
-                intersections[column].append((name, score))
+                external_dataset, external_column = name.split('$$')
+                if external_dataset not in intersections:
+                    intersections[external_dataset] = []
+                intersections[external_dataset].append(
+                    (column, external_column, score)
+                )
 
-        if not intersections[column]:
-            del intersections[column]
-            continue
-
-        intersections[column] = sorted(
-            intersections[column],
-            key=lambda item: item[1],
+    for dt in intersections:
+        intersections[dt] = sorted(
+            intersections[dt],
+            key=lambda item: item[2],
             reverse=True
         )
 
-    return intersections, types
+        # get pairs with higher score
+        seen_1 = set()
+        seen_2 = set()
+        pairs = []
+        for column, external_column, score in intersections[dt]:
+            if column in seen_1 or external_column in seen_2:
+                continue
+            seen_1.add(column)
+            seen_2.add(external_column)
+            pairs.append((column, external_column, score))
+        intersections[dt] = pairs
+
+    return intersections
+
+
+# TODO: move to a better place?
+def score_intersections(intersections):
+
+    scores = []
+
+    # for now, scoring datasets based on the column with highest score
+    for dataset in intersections:
+        items = intersections[dataset]
+        scores.append((dataset, items[0][0], items[0][1], items[0][2]))
+
+    return sorted(scores, key=lambda item: item[3], reverse=True)
 
 
 class JoinQuery(BaseHandler):
     def get(self, dataset_id):
-        join_intersections, column_types = get_coverage_intersections(
+        join_intersections = get_coverage_intersections(
             self.application.elasticsearch,
             dataset_id
         )
+        scores = score_intersections(join_intersections)
         self.render(
             'join_query.html',
-            join_intersections=sorted(join_intersections.items()),
-            types=column_types
+            dataset_id=dataset_id,
+            scores=scores
         )
 
 

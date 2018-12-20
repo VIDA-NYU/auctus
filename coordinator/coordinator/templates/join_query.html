@@ -3,28 +3,24 @@
 
 {% block contents %}
 <div class="list-group" id="recent_discoveries">
-    {%- if not join_intersections %}
+    {%- if not scores %}
         <h5>No results.</h5>
     {%- endif %}
-    {%- for column, intersections in join_intersections %}
+    {%- for external_dataset, column, external_column, score in scores %}
         <div class="list-group-item list-group-item-action flex-column align-items-start">
             <a class="list-group-item-action flex-column align-items-start"
-               href="javascript:void(0)" onclick="toggle_visibility('intersections-{{ column }}');">
+               href="javascript:void(0)" onclick="toggle_visibility('info-{{ external_dataset }}');">
                 <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">Column: {{ column }}</h5>
-                    <small>{{ types[column] }}</small>
+                    <h5 class="mb-1">{{ external_dataset }}</h5>
+                    <small>{{ score }}</small>
                 </div>
             </a>
-            <div id="intersections-{{ column }}" style="display:none;">
-            {%- for intersection in intersections[:5] %}
-                {%- if intersection[1] > 0 %}
-                    {%- set dataset_join, column_join = intersection[0].split('$$') %}
-                    <hr width="60%" align="left">
-                    <p class="mb-1">Dataset: {{ dataset_join }}
-                    <br>Column: {{ column_join }}</p>
-                    <small>Score: {{ intersection[1] }}</small>
-                {%- endif %}
-            {%- endfor %}
+            <div id="info-{{ external_dataset }}" style="display:none;">
+            <hr width="60%" align="left">
+            <p class="mb-1">{{ column }}</p>
+            <small>{{ dataset_id }}</small><p></p>
+            <p class="mb-1">{{ external_column }}</p>
+            <small>{{ external_dataset }}</small>
             </div>
         </div>
     {%- endfor %}
