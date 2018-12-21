@@ -7,6 +7,8 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'aio-pika',
+    'datamart_core',
+    'Distance',
     'elasticsearch',
 ]
 setup(name='datamart_core',

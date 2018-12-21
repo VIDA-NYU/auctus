@@ -1,0 +1,454 @@
+import distance
+
+from datamart_core.common import Type
+
+
+def compute_levenshtein_sim(str1, str2):
+    if len(str1) < 3:
+        str1_set = [str1]
+    else:
+        str1_set = [str1[i:i + 3] for i in range(len(str1) - 2)]
+
+    if len(str2) < 3:
+        str2_set = [str2]
+    else:
+        str2_set = [str2[i:i + 3] for i in range(len(str2) - 2)]
+
+    return 1 - distance.nlevenshtein(str1_set, str2_set, method=2)
+
+
+def get_column_coverage(es, dataset_id):
+    column_coverage = dict()
+
+    index_query = \
+        '''
+            {
+                "query" : {
+                    "match":{
+                        "_id": "%s"
+                    }
+                }
+            }
+        ''' % dataset_id
+
+    result = es.search(index='datamart', body=index_query)
+
+    hit = result['hits']['hits'][0]
+    for column in hit['_source']['columns']:
+        if 'coverage' not in column:
+            continue
+        column_name = column['name']
+        # ignoring 'd3mIndex' for now -- seems useless
+        if 'd3mIndex' in column_name:
+            continue
+        if Type.ID in column['semantic_types']:
+            type_ = 'semantic_types'
+            type_value = Type.ID
+        elif column['structural_type'] in (Type.INTEGER, Type.FLOAT):
+            type_ = 'structural_type'
+            type_value = column['structural_type']
+        elif Type.DATE_TIME in column['semantic_types']:
+            type_ = 'semantic_types'
+            type_value = Type.DATE_TIME
+        else:
+            continue
+        column_coverage[column_name] = {
+            'type':       type_,
+            'type_value': type_value,
+            'ranges':     []
+        }
+        for range_ in column['coverage']:
+            column_coverage[column_name]['ranges'].\
+                append([float(range_['range']['gte']),
+                        float(range_['range']['lte'])])
+
+    if 'spatial_coverage' in hit['_source']:
+        for spatial in hit['_source']['spatial_coverage']:
+            names = '(' + spatial['lat'] + ', ' + spatial['lon'] + ')'
+            column_coverage[names] = {
+                'type':      'spatial',
+                'type_value': Type.LATITUDE + ', ' + Type.LONGITUDE,
+                'ranges':     []
+            }
+            for range_ in spatial['ranges']:
+                column_coverage[names]['ranges'].\
+                    append(range_['range']['coordinates'])
+
+    return column_coverage
+
+
+def get_numerical_coverage_intersections(es, dataset_id, type_, type_value, ranges):
+
+    intersections = dict()
+    column_total_coverage = 0
+
+    for range_ in ranges:
+        column_total_coverage += (range_[1] - range_[0] + 1)
+
+        query = '''
+            {
+                "query" : {
+                    "nested" : {
+                        "path" : "columns",
+                        "query" : {
+                            "bool" : {
+                                "must_not": {
+                                    "match": { "_id": "%s" }
+                                },
+                                "must" : [
+                                    {
+                                        "match" : { "columns.%s" : "%s" }
+                                    },
+                                    {
+                                        "nested" : {
+                                            "path" : "columns.coverage",
+                                            "query" : {
+                                                "range" : {
+                                                    "columns.coverage.range" : {
+                                                        "gte" : %.6f,
+                                                        "lte" : %.6f,
+                                                        "relation" : "intersects"
+                                                    }
+                                                }
+                                            },
+                                            "inner_hits": {
+                                              "_source" : false
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        "inner_hits": {
+                            "_source" : false
+                        }
+                    }
+                }
+            }''' % (dataset_id, type_, type_value, range_[0], range_[1])
+
+        result = es.search(
+            index='datamart',
+            body=query,
+            scroll='2m',
+            size=10000
+        )
+
+        sid = result['_scroll_id']
+        scroll_size = result['hits']['total']
+
+        while scroll_size > 0:
+            for hit in result['hits']['hits']:
+
+                dataset_name = hit['_id']
+                columns = hit['_source']['columns']
+                inner_hits = hit['inner_hits']
+
+                for column_hit in inner_hits['columns']['hits']['hits']:
+                    column_offset = int(column_hit['_nested']['offset'])
+                    column_name = columns[column_offset]['name']
+                    name = '%s$$%s' % (dataset_name, column_name)
+                    if name not in intersections:
+                        intersections[name] = 0
+
+                    # ranges from column
+                    for range_hit in column_hit['inner_hits']['columns.coverage']['hits']['hits']:
+                        # compute intersection
+                        range_offset = int(range_hit['_nested']['_nested']['offset'])
+                        start_result = columns[column_offset]['coverage'][range_offset]['range']['gte']
+                        end_result = columns[column_offset]['coverage'][range_offset]['range']['lte']
+
+                        start = max(start_result, range_[0])
+                        end = min(end_result, range_[1])
+
+                        intersections[name] += (end - start + 1)
+
+            # scrolling
+            result = es.scroll(
+                scroll_id=sid,
+                scroll='2m'
+            )
+            sid = result['_scroll_id']
+            scroll_size = len(result['hits']['hits'])
+
+    return intersections, column_total_coverage
+
+
+def get_spatial_coverage_intersections(es, dataset_id, ranges):
+
+    intersections = dict()
+    column_total_coverage = 0
+
+    for range_ in ranges:
+        column_total_coverage += (range_[1][0] - range_[0][0])*(range_[0][1] - range_[1][1])
+
+        query = '''
+            {
+                "query" : {
+                    "nested" : {
+                        "path" : "spatial_coverage.ranges",
+                        "query" : {
+                            "bool" : {
+                                "must_not": {
+                                    "match": { "_id": "%s" }
+                                },
+                                "filter": {
+                                    "geo_shape": {
+                                        "spatial_coverage.ranges.range": {
+                                            "shape": {
+                                                "type": "envelope",
+                                                "coordinates" : [[%.6f, %.6f], [%.6f, %.6f]]
+                                            },
+                                            "relation": "intersects"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "inner_hits": {
+                            "_source" : false
+                        }
+                    }
+                }
+            }''' % (dataset_id, range_[0][0], range_[0][1], range_[1][0], range_[1][1])
+
+        result = es.search(
+            index='datamart',
+            body=query,
+            scroll='2m',
+            size=10000
+        )
+
+        sid = result['_scroll_id']
+        scroll_size = result['hits']['total']
+
+        while scroll_size > 0:
+            for hit in result['hits']['hits']:
+
+                dataset_name = hit['_id']
+                spatial_coverages = hit['_source']['spatial_coverage']
+                inner_hits = hit['inner_hits']
+
+                for coverage_hit in inner_hits['spatial_coverage.ranges']['hits']['hits']:
+                    spatial_coverage_offset = int(coverage_hit['_nested']['offset'])
+                    spatial_coverage_name = \
+                        '(' + spatial_coverages[spatial_coverage_offset]['lat'] + ', ' \
+                        + spatial_coverages[spatial_coverage_offset]['lon'] + ')'
+                    name = '%s$$%s' % (dataset_name, spatial_coverage_name)
+                    if name not in intersections:
+                        intersections[name] = 0
+
+                    # compute intersection
+                    range_offset = int(coverage_hit['_nested']['_nested']['offset'])
+                    min_lon = \
+                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][0][0]
+                    max_lat = \
+                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][0][1]
+                    max_lon = \
+                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][1][0]
+                    min_lat = \
+                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][1][1]
+
+                    n_min_lon = max(min_lon, range_[0][0])
+                    n_max_lat = min(max_lat, range_[0][1])
+                    n_max_lon = max(max_lon, range_[1][0])
+                    n_min_lat = min(min_lat, range_[1][1])
+
+                    intersections[name] += (n_max_lon - n_min_lon)*(n_max_lat - n_min_lat)
+
+            # scrolling
+            result = es.scroll(
+                scroll_id=sid,
+                scroll='2m'
+            )
+            sid = result['_scroll_id']
+            scroll_size = len(result['hits']['hits'])
+
+    return intersections, column_total_coverage
+
+
+def get_coverage_intersections(es, dataset_id):
+
+    intersections = dict()
+    column_coverage = get_column_coverage(es, dataset_id)
+
+    if not column_coverage:
+        return intersections
+
+    for column in column_coverage:
+        type_ = column_coverage[column]['type']
+        type_value = column_coverage[column]['type_value']
+        if type_ == 'spatial':
+            intersections_column, column_total_coverage = \
+                get_spatial_coverage_intersections(
+                    es,
+                    dataset_id,
+                    column_coverage[column]['ranges']
+                )
+        else:
+            intersections_column, column_total_coverage = \
+                get_numerical_coverage_intersections(
+                    es,
+                    dataset_id,
+                    type_,
+                    type_value,
+                    column_coverage[column]['ranges']
+                )
+
+        if not intersections_column:
+            continue
+
+        for name, size in intersections_column.items():
+            sim = compute_levenshtein_sim(
+                column.lower(),
+                name.split("$$")[1].lower()
+            )
+            score = size/column_total_coverage
+            if type_value not in (Type.DATE_TIME,
+                                  Type.LATITUDE + ', ' + Type.LONGITUDE):
+                score *= sim
+            if score > 0:
+                external_dataset, external_column = name.split('$$')
+                if external_dataset not in intersections:
+                    intersections[external_dataset] = []
+                intersections[external_dataset].append(
+                    (column, external_column, score)
+                )
+
+    for dt in intersections:
+        intersections[dt] = sorted(
+            intersections[dt],
+            key=lambda item: item[2],
+            reverse=True
+        )
+
+        # get pairs with higher score
+        seen_1 = set()
+        seen_2 = set()
+        pairs = []
+        for column, external_column, score in intersections[dt]:
+            if column in seen_1 or external_column in seen_2:
+                continue
+            seen_1.add(column)
+            seen_2.add(external_column)
+            pairs.append((column, external_column, score))
+        intersections[dt] = pairs
+
+    return intersections
+
+
+def score_intersections(intersections):
+
+    scores = []
+
+    # for now, scoring datasets based on the column with highest score
+    for dataset in intersections:
+        items = intersections[dataset]
+        scores.append((dataset, items[0][0], items[0][1], items[0][2]))
+
+    return sorted(scores, key=lambda item: item[3], reverse=True)
+
+
+def get_all_datasets_columns(es):
+    dataset_columns = dict()
+    query = \
+        '''
+            {
+                "query" : {
+                    "match_all" : { }
+                }
+            }
+        '''
+
+    result = es.search(
+        index='datamart',
+        body=query,
+        scroll='2m',
+        size=10000
+    )
+
+    sid = result['_scroll_id']
+    scroll_size = result['hits']['total']
+
+    while scroll_size > 0:
+        for hit in result['hits']['hits']:
+            dataset = hit['_id']
+            dataset_columns[dataset] = dict()
+
+            for column in hit['_source']['columns']:
+                name = column['name']
+                # ignoring 'd3mIndex' for now -- seems useless
+                if 'd3mIndex' in name:
+                    continue
+                for semantic_type in column['semantic_types']:
+                    if semantic_type not in dataset_columns[dataset]:
+                        dataset_columns[dataset][semantic_type] = []
+                    dataset_columns[dataset][semantic_type].append(name)
+                if not column['semantic_types']:
+                    if column['structural_type'] not in dataset_columns[dataset]:
+                        dataset_columns[dataset][column['structural_type']] = []
+                    dataset_columns[dataset][column['structural_type']].append(name)
+
+        # scrolling
+        result = es.scroll(
+            scroll_id=sid,
+            scroll='2m'
+        )
+        sid = result['_scroll_id']
+        scroll_size = len(result['hits']['hits'])
+
+    return dataset_columns
+
+
+def get_unionable_datasets(es, dataset_id):
+    dataset_columns = get_all_datasets_columns(es)
+    main_dataset_columns = dataset_columns[dataset_id]
+    del dataset_columns[dataset_id]
+
+    n_columns = 0
+    for type_ in main_dataset_columns:
+        n_columns += len(main_dataset_columns[type_])
+
+    column_pairs = dict()
+    scores = dict()
+    for dataset in dataset_columns:
+
+        # check all pairs of attributes
+        pairs = []
+        for type_ in main_dataset_columns:
+            if type_ not in dataset_columns[dataset]:
+                continue
+            for att_1 in main_dataset_columns[type_]:
+                for att_2 in dataset_columns[dataset][type_]:
+                    sim = compute_levenshtein_sim(att_1.lower(), att_2.lower())
+                    pairs.append((att_1, att_2, sim))
+
+        # choose pairs with higher Jaccard distance
+        seen_1 = set()
+        seen_2 = set()
+        column_pairs[dataset] = []
+        for att_1, att_2, sim in sorted(pairs,
+                                        key=lambda item: item[2],
+                                        reverse=True):
+            if att_1 in seen_1 or att_2 in seen_2:
+                continue
+            seen_1.add(att_1)
+            seen_2.add(att_2)
+            column_pairs[dataset].append([att_1, att_2, sim])
+
+        if len(column_pairs[dataset]) <= 1:
+            column_pairs[dataset] = []
+            continue
+
+        scores[dataset] = 1
+
+        for i in range(len(column_pairs[dataset])):
+            sim = column_pairs[dataset][i][2]
+            scores[dataset] += sim
+
+        scores[dataset] = scores[dataset] / n_columns
+
+    return column_pairs, sorted(
+        scores.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )
