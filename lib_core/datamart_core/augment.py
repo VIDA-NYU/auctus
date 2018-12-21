@@ -1,6 +1,6 @@
 import distance
 
-from datamart_core.common import Type
+from .common import Type
 
 
 def compute_levenshtein_sim(str1, str2):
@@ -439,7 +439,7 @@ def get_unionable_datasets(es, dataset_id):
             column_pairs[dataset] = []
             continue
 
-        scores[dataset] = 1
+        scores[dataset] = 0
 
         for i in range(len(column_pairs[dataset])):
             sim = column_pairs[dataset][i][2]
