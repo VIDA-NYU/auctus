@@ -16,6 +16,7 @@ import uuid
 from .coordinator import Coordinator
 from datamart_core.augment import \
     get_coverage_intersections, score_intersections, get_unionable_datasets
+from datamart_core.common import Type
 
 
 logger = logging.getLogger(__name__)
