@@ -78,7 +78,7 @@ def identify_types(array, name):
             except ValueError:
                 pass
             else:
-                if -180.0 <= float(elem) <= -180.0:
+                if -180.0 <= float(elem) <= 180.0:
                     num_long += 1
                     if -90.0 <= float(elem) <= 90.0:
                         num_lat += 1
