@@ -1,18 +1,25 @@
 import aio_pika
 import asyncio
+from datetime import datetime
 import elasticsearch
 import logging
 import json
 import os
+import shutil
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+import uuid
 
-from datamart_core.common import log_future
+from datamart_core.common import log_future, json2msg
 from datamart_core.materialize import get_dataset
+from datamart_profiler import process_dataset
 
 logger = logging.getLogger(__name__)
+
+
+MAX_CONCURRENT = 2
 
 
 class BaseHandler(RequestHandler):
@@ -47,69 +54,159 @@ class CorsHandler(BaseHandler):
 
 
 class Query(CorsHandler):
-    def post(self):
+
+    def search_d3m_dataset_id(self, metadata):
+        dataset_id = ''
+        if isinstance(metadata, dict):
+            id_ = 'datamart.d3m.' + \
+                  metadata['about']['datasetID'].replace('_dataset', '')
+            hits = self.application.elasticsearch.search(
+                index='datamart',
+                body={
+                    'query': {
+                        'match': {
+                            '_id': id_,
+                        },
+                    },
+                }
+            )['hits']['hits']
+            if not hits:
+                logger.warning("Data not in DataMart!")
+            else:
+                dataset_id = id_
+        return dataset_id
+
+    async def post(self):
         self._cors()
 
         obj = self.get_json()
-        query = []
 
-        # Search by keyword
-        if 'keywords' in obj:
-            query.append({
-                'match': {
-                    'description': {
-                        'query': obj['keywords'],
-                        'operator': 'and',
-                    },
-                },
-            })
+        # Params are 'query' and 'data'
+        query = data = None
+        if 'query' in obj:
+            query = obj['query']
+        if 'data' in obj:
+            data = obj['data']
 
-        # Search for columns with names
-        if 'column_names' in obj:
-            for name in obj['column_names']:
-                query.append({
-                    'nested': {
-                        'path': 'columns',
-                        'query': {
-                            'match': {'columns.name': name},
+        # parameter: data
+        dataset_id = ''
+        if data:
+            if isinstance(data, dict):
+                # data is a D3M dataset
+                dataset_id = self.search_d3m_dataset_id(data)
+
+            elif isinstance(data, str):
+                # data represents a file path
+                if not os.path.exists(data):
+                    logger.warning("Data does not exist!")
+                else:
+                    if 'datasetDoc.json' in data:
+                        # path to a datasetDoc.json file
+                        # extract id and check if data is in DataMart index
+                        with open(data) as f:
+                            dataset_doc = json.load(f)
+                        dataset_id = self.search_d3m_dataset_id(dataset_doc)
+                    else:
+                        # assume path to a CSV file
+                        # profile data first
+                        metadata = dict(
+                            filename=data,
+                            name=os.path.splitext(os.path.basename(data))[0],
+                            materialize=dict(identifier='datamart.upload')
+                        )
+                        dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
+
+                        # profile data
+                        dataset_dir = os.path.join('/datasets', dataset_id)
+                        os.mkdir(dataset_dir)
+                        try:
+                            shutil.copy(data, os.path.join(dataset_dir, 'main.csv'))
+                        except Exception:
+                            shutil.rmtree(dataset_dir)
+                            raise
+                        data_profile = process_dataset(data, metadata=metadata)
+
+                        # insert results in Elasticsearch
+                        body = dict(data_profile,
+                                    date=datetime.utcnow().isoformat() + 'Z')
+                        self.application.elasticsearch.index(
+                            'datamart',
+                            '_doc',
+                            body,
+                            id=dataset_id,
+                        )
+
+                        # publish to RabbitMQ
+                        await self.application.work_tickets.acquire()
+                        await self.application.datasets_exchange.publish(
+                            json2msg(dict(body, id=dataset_id)),
+                            dataset_id,
+                        )
+                        self.application.work_tickets.release()
+
+        # parameter: query
+        query_args = []
+        if query:
+
+            # Search by keyword
+            if 'keywords' in query:
+                query_args.append({
+                    'match': {
+                        'description': {
+                            'query': query['keywords'],
+                            'operator': 'and',
                         },
                     },
                 })
 
-        # Search for columns with structural types
-        if 'structural_types' in obj:
-            for type_ in obj['structural_types']:
-                query.append({
-                    'nested': {
-                        'path': 'columns',
-                        'query': {
-                            'match': {'columns.structural_type': type_},
+            # Search for columns with names
+            if 'column_names' in query:
+                for name in query['column_names']:
+                    query_args.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'match': {'columns.name': name},
+                            },
                         },
-                    },
-                })
+                    })
 
-        # Search for columns with semantic types
-        if 'semantic_types' in obj:
-            for type_ in obj['semantic_types']:
-                query.append({
-                    'nested': {
-                        'path': 'columns',
-                        'query': {
-                            'term': {'columns.semantic_types': type_},
+            # Search for columns with structural types
+            if 'structural_types' in query:
+                for type_ in query['structural_types']:
+                    query_args.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'match': {'columns.structural_type': type_},
+                            },
                         },
-                    },
-                })
+                    })
 
-        if not query:
-            self.send_json({'results': []})
+            # Search for columns with semantic types
+            if 'semantic_types' in query:
+                for type_ in query['semantic_types']:
+                    query_args.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'term': {'columns.semantic_types': type_},
+                            },
+                        },
+                    })
 
-        logger.info("Query: %r", query)
+        # At least one of them must be provided
+        if not query_args and not dataset_id:
+            self.send_error(status_code=400)
+            return
+
+        logger.info("Query: %r", query_args)
         hits = self.application.elasticsearch.search(
             index='datamart',
             body={
                 'query': {
                     'bool': {
-                        'must': query,
+                        'must': query_args,
                     },
                 },
             },
@@ -177,7 +274,10 @@ class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
+        self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
+
         self.elasticsearch = es
+        self.channel = None
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()), logger)
 
@@ -190,6 +290,11 @@ class Application(tornado.web.Application):
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
 
+        # Setup the datasets exchange
+        self.datasets_exchange = await self.channel.declare_exchange(
+            'datasets',
+            aio_pika.ExchangeType.TOPIC)
+
 
 def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
@@ -198,7 +303,7 @@ def make_app(debug=False):
 
     return Application(
         [
-            URLSpec('/query', Query, name='query'),
+            URLSpec('/search', Query, name='search'),
             URLSpec('/download/([^/]+)', Download, name='download'),
         ],
         debug=debug,

@@ -51,11 +51,12 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   e.preventDefault();
 
   var search = {};
+  search.query = {};
 
   // Keywords
   var keywords = document.getElementById('keywords').value;
   if(keywords) {
-    search.keywords = keywords;
+    search.query.keywords = keywords;
   }
 
   // Column names
@@ -64,7 +65,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   if(column_names.length == 1 && column_names[0] === '') {
     column_names = [];
   } else {
-    search.column_names = column_names
+    search.query.column_names = column_names
   }
 
   // Types
@@ -89,14 +90,14 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     sem_types.push('https://metadata.datadrivendiscovery.org/types/PhoneNumber');
   }
   if(str_types.length > 0) {
-    search.structural_types = str_types;
+    search.query.structural_types = str_types;
   }
   if(sem_types.length > 0) {
-    search.semantic_types = sem_types;
+    search.query.semantic_types = sem_types;
   }
 
   console.log("Searching:", search);
-  postJSON(QUERY_HOST + '/query', search)
+  postJSON(QUERY_HOST + '/search', search)
   .then(function(result) {
     console.log("Got " + result.results.length + " results");
     var results_div = document.getElementById('results');
