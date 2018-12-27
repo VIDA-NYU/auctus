@@ -108,23 +108,29 @@ class Query(CorsHandler):
                         dataset_id = self.search_d3m_dataset_id(dataset_doc)
                     else:
                         # assume path to a CSV file
-                        # profile data first
-                        metadata = dict(
-                            filename=data,
-                            name=os.path.splitext(os.path.basename(data))[0],
-                            materialize=dict(identifier='datamart.upload')
-                        )
+                        # upload data first
                         dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
-                        # profile data
                         dataset_dir = os.path.join('/datasets', dataset_id)
                         os.mkdir(dataset_dir)
+                        new_data_path = os.path.join(dataset_dir, 'main.csv')
                         try:
-                            shutil.copy(data, os.path.join(dataset_dir, 'main.csv'))
+                            shutil.copy(data, new_data_path)
                         except Exception:
                             shutil.rmtree(dataset_dir)
                             raise
-                        data_profile = process_dataset(data, metadata=metadata)
+
+                        # profile data
+                        metadata = dict(
+                            name=os.path.splitext(os.path.basename(data))[0],
+                            materialize=dict(identifier='datamart.upload',
+                                             original_path=data,
+                                             new_path=new_data_path)
+                        )
+                        data_profile = process_dataset(
+                            new_data_path,
+                            metadata=metadata
+                        )
 
                         # insert results in Elasticsearch
                         body = dict(data_profile,
@@ -151,12 +157,26 @@ class Query(CorsHandler):
             # Search by keyword
             if 'keywords' in query:
                 query_args.append({
-                    'match': {
-                        'description': {
-                            'query': query['keywords'],
-                            'operator': 'and',
-                        },
-                    },
+                    'bool': {
+                        'should': [
+                            {
+                                'match': {
+                                    'description': {
+                                        'query': query['keywords'],
+                                        'operator': 'and',
+                                    },
+                                },
+                            },
+                            {
+                                'match': {
+                                    'name': {
+                                        'query': query['keywords'],
+                                        'operator': 'and',
+                                    },
+                                },
+                            }
+                        ]
+                    }
                 })
 
             # Search for columns with names

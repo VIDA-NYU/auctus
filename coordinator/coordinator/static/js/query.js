@@ -86,6 +86,10 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   if(document.getElementById('type-datetime').checked) {
     sem_types.push('http://schema.org/DateTime');
   }
+  if(document.getElementById('type-spatial').checked) {
+    sem_types.push('http://schema.org/latitude');
+    sem_types.push('http://schema.org/longitude');
+  }
   if(document.getElementById('type-phone').checked) {
     sem_types.push('https://metadata.datadrivendiscovery.org/types/PhoneNumber');
   }
