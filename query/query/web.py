@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 from datetime import datetime
+from dateutil.parser import parse
 import elasticsearch
 import logging
 import json
@@ -12,7 +13,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import uuid
 
-from datamart_core.common import log_future, json2msg
+from datamart_core.common import log_future, json2msg, Type
 from datamart_core.materialize import get_dataset
 from datamart_profiler import process_dataset
 
@@ -58,6 +59,8 @@ class Query(CorsHandler):
     def search_d3m_dataset_id(self, metadata):
         dataset_id = ''
         if isinstance(metadata, dict):
+            if 'about' not in metadata:
+                return dataset_id
             id_ = 'datamart.d3m.' + \
                   metadata['about']['datasetID'].replace('_dataset', '')
             hits = self.application.elasticsearch.search(
@@ -75,6 +78,282 @@ class Query(CorsHandler):
             else:
                 dataset_id = id_
         return dataset_id
+
+    def parse_query_variables(self, data, required=False):
+        output = list()
+
+        if not data:
+            return output
+
+        for variable in data:
+            if 'type' not in variable:
+                continue
+            variable_query = list()
+
+            # temporal
+            # TODO: ignoring 'granularity' for now
+            if 'temporal_entity' in variable['type']:
+                variable_query.append({
+                    'match':
+                        {'columns.semantic_types': Type.DATE_TIME}
+                })
+                if 'start' in variable:
+                    try:
+                        value = parse(variable['start']).timestamp()
+                    except Exception:
+                        pass
+                    else:
+                        variable_query.append({
+                            'nested': {
+                                'path': 'columns.coverage',
+                                'query': {
+                                    'term': {
+                                        'columns.coverage.range': {
+                                            'value': value
+                                        }
+                                    }
+                                }
+                            }
+                        })
+                if 'end' in variable:
+                    try:
+                        value = parse(variable['end']).timestamp()
+                    except Exception:
+                        pass
+                    else:
+                        variable_query.append({
+                            'nested': {
+                                'path': 'columns.coverage',
+                                'query': {
+                                    'term': {
+                                        'columns.coverage.range': {
+                                            'value': value
+                                        }
+                                    }
+                                }
+                            }
+                        })
+
+            # spatial
+            # TODO: ignoring 'circle' and 'named_entities' for now
+            elif 'geospatial_entity' in variable['type']:
+                if 'bounding_box' in variable:
+                    if ('latitude1' not in variable['bounding_box'] or
+                            'latitude2' not in variable['bounding_box'] or
+                            'longitude1' not in variable['bounding_box'] or
+                            'longitude2' not in variable['bounding_box']):
+                        continue
+                    longitude1 = min(float(variable['bounding_box']['longitude1']),
+                                     float(variable['bounding_box']['longitude2']))
+                    longitude2 = max(float(variable['bounding_box']['longitude1']),
+                                     float(variable['bounding_box']['longitude2']))
+                    latitude1 = max(float(variable['bounding_box']['latitude1']),
+                                    float(variable['bounding_box']['latitude2']))
+                    latitude2 = min(float(variable['bounding_box']['latitude1']),
+                                    float(variable['bounding_box']['latitude2']))
+                    variable_query.append({
+                        'nested': {
+                            'path': 'spatial_coverage.ranges',
+                            'query': {
+                                'bool': {
+                                    'filter': {
+                                        'geo_shape': {
+                                            'spatial_coverage.ranges.range': {
+                                                'shape': {
+                                                    'type': 'envelope',
+                                                    'coordinates':
+                                                        [[longitude1, latitude1],
+                                                         [longitude2, latitude2]]
+                                                },
+                                                'relation': 'intersects'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    })
+
+            # dataframe columns
+            # TODO: ignoring this for now -- does not make much sense
+            elif 'dataframe_columns' in variable['type']:
+                pass
+
+            # generic entity
+            # TODO: ignoring 'about', 'variable_metadata',
+            #  'variable_description', 'named_entities', and
+            #  'column_values' for now
+            elif 'generic_entity' in variable['type']:
+                if 'variable_name' in variable:
+                    name_query = list()
+                    for name in variable['variable_name']:
+                        name_query.append({
+                            'nested': {
+                                'path': 'columns',
+                                'query': {
+                                    'match': {'columns.name': name},
+                                },
+                            },
+                        })
+                    variable_query.append({
+                        'bool': {
+                            'should': name_query
+                        }
+                    })
+                if 'variable_syntactic_type' in variable:
+                    structural_query = list()
+                    for type_ in variable['variable_syntactic_type']:
+                        structural_query.append({
+                            'nested': {
+                                'path': 'columns',
+                                'query': {
+                                    'match': {'columns.structural_type': type_},
+                                },
+                            },
+                        })
+                    variable_query.append({
+                        'bool': {
+                            'should': structural_query
+                        }
+                    })
+                if 'variable_semantic_type' in variable:
+                    semantic_query = list()
+                    for type_ in variable['variable_semantic_type']:
+                        semantic_query.append({
+                            'nested': {
+                                'path': 'columns',
+                                'query': {
+                                    'match': {'columns.semantic_types': type_},
+                                },
+                            },
+                        })
+                    variable_query.append({
+                        'bool': {
+                            'should': semantic_query
+                        }
+                    })
+
+            output.append({
+                'bool': {
+                    'must': variable_query,
+                }
+            })
+
+        if required:
+            return {
+                'bool': {
+                    'must': output,
+                }
+            }
+        return {
+            'bool': {
+                'must': {
+                    'match_all': {}
+                },
+                'should': output,
+            }
+        }
+
+    def parse_query(self, query_json):
+        query_args = list()
+
+        # dataset
+        # TODO: ignoring the following properties for now:
+        #   keywords, creator, date_published, date_created, publisher, url
+        dataset_query = list()
+        if 'dataset' in query_json:
+            if 'about' in query_json['dataset']:
+                about_query = list()
+                about_query.append({
+                    'match': {
+                        'description': {
+                            'query': query_json['dataset']['about'],
+                            'operator': 'or'
+                        }
+                    }
+                })
+                about_query.append({
+                    'match': {
+                        'name': {
+                            'query': query_json['dataset']['about'],
+                            'operator': 'or'
+                        }
+                    }
+                })
+                about_query.append({
+                    'nested': {
+                        'path': 'columns',
+                        'query': {
+                            'match': {
+                                'columns.name': {
+                                    'query': query_json['dataset']['about'],
+                                    'operator': 'or'
+                                }
+                            }
+                        }
+                    }
+                })
+                dataset_query.append({
+                    'bool': {
+                        'should': about_query,
+                        'minimum_should_match': 1
+                    }
+                })
+
+            # name
+            if 'name' in query_json['dataset']:
+                name_query = list()
+                for name in query_json['dataset']['name']:
+                    name_query.append({
+                        'match': {'name': name}
+                    })
+                dataset_query.append({
+                    'bool': {
+                        'should': name_query,
+                        'minimum_should_match': 1
+                    }
+                })
+
+            # description
+            if 'description' in query_json['dataset']:
+                desc_query = list()
+                for name in query_json['dataset']['description']:
+                    desc_query.append({
+                        'match': {'description': name}
+                    })
+                dataset_query.append({
+                    'bool': {
+                        'should': desc_query,
+                        'minimum_should_match': 1
+                    }
+                })
+
+        if dataset_query:
+            query_args.append(dataset_query)
+
+        # required variables
+        required_query = dict()
+        if 'required_variables' in query_json:
+            required_query = self.parse_query_variables(
+                query_json['required_variables'],
+                required=True
+            )
+
+        if required_query:
+            query_args.append(required_query)
+
+        # desired variables
+        desired_query = dict()
+        if 'desired_variables' in query_json:
+            desired_query = self.parse_query_variables(
+                query_json['desired_variables'],
+                required=False
+            )
+
+        if desired_query:
+            query_args.append(desired_query)
+
+        return query_args
 
     async def post(self):
         self._cors()
@@ -151,69 +430,10 @@ class Query(CorsHandler):
                         self.application.work_tickets.release()
 
         # parameter: query
-        query_args = []
+        # TODO: figure out scoring
+        query_args = list()
         if query:
-
-            # Search by keyword
-            if 'keywords' in query:
-                query_args.append({
-                    'bool': {
-                        'should': [
-                            {
-                                'match': {
-                                    'description': {
-                                        'query': query['keywords'],
-                                        'operator': 'and',
-                                    },
-                                },
-                            },
-                            {
-                                'match': {
-                                    'name': {
-                                        'query': query['keywords'],
-                                        'operator': 'and',
-                                    },
-                                },
-                            }
-                        ]
-                    }
-                })
-
-            # Search for columns with names
-            if 'column_names' in query:
-                for name in query['column_names']:
-                    query_args.append({
-                        'nested': {
-                            'path': 'columns',
-                            'query': {
-                                'match': {'columns.name': name},
-                            },
-                        },
-                    })
-
-            # Search for columns with structural types
-            if 'structural_types' in query:
-                for type_ in query['structural_types']:
-                    query_args.append({
-                        'nested': {
-                            'path': 'columns',
-                            'query': {
-                                'match': {'columns.structural_type': type_},
-                            },
-                        },
-                    })
-
-            # Search for columns with semantic types
-            if 'semantic_types' in query:
-                for type_ in query['semantic_types']:
-                    query_args.append({
-                        'nested': {
-                            'path': 'columns',
-                            'query': {
-                                'term': {'columns.semantic_types': type_},
-                            },
-                        },
-                    })
+            query_args = self.parse_query(query)
 
         # At least one of them must be provided
         if not query_args and not dataset_id:

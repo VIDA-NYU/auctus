@@ -71,7 +71,6 @@ def identify_types(array, name):
 
     # Identify lat/lon
     if structural_type == Type.FLOAT:
-        num_lat = num_lon = 0
         for elem in array:
             try:
                 elem = float(elem)
