@@ -15,7 +15,7 @@ import uuid
 
 from .coordinator import Coordinator
 from datamart_core.augment import \
-    get_coverage_intersections, score_intersections, get_unionable_datasets
+    get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import Type
 
 
@@ -207,15 +207,14 @@ class Dataset(BaseHandler):
 
 class JoinQuery(BaseHandler):
     def get(self, dataset_id):
-        join_intersections = get_coverage_intersections(
+        results = get_joinable_datasets(
             self.application.elasticsearch,
             dataset_id
         )
-        scores = score_intersections(join_intersections)
         self.render(
             'join_query.html',
             dataset_id=dataset_id,
-            scores=scores
+            results=results
         )
 
 

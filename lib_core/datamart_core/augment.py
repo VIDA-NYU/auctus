@@ -18,18 +18,27 @@ def compute_levenshtein_sim(str1, str2):
 
 
 def get_column_coverage(es, dataset_id):
+    """
+    Get coverage for each column of the input dataset.
+
+    :param es:  Elasticsearch client.
+    :param dataset_id: The identifier of the input dataset.
+    :return: dict, where key is the column name, and value is a dict as follows:
+
+        {
+            'type': column meta-type ('structural_type', 'semantic_types', 'spatial'),
+            'type_value': column type,
+            'ranges': list of ranges
+        }
+    """
+
     column_coverage = dict()
 
-    index_query = \
-        '''
-            {
-                "query" : {
-                    "match":{
-                        "_id": "%s"
-                    }
-                }
-            }
-        ''' % dataset_id
+    index_query = {
+        'query': {
+            'match': {'_id': dataset_id}
+        }
+    }
 
     result = es.search(index='datamart', body=index_query)
 
@@ -77,7 +86,12 @@ def get_column_coverage(es, dataset_id):
     return column_coverage
 
 
-def get_numerical_coverage_intersections(es, dataset_id, type_, type_value, ranges):
+def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
+                                         ranges, query_args=None):
+    """
+    Retrieve numerical columns that intersect with the input numerical ranges.
+
+    """
 
     intersections = dict()
     column_total_coverage = 0
@@ -85,50 +99,57 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value, rang
     for range_ in ranges:
         column_total_coverage += (range_[1] - range_[0] + 1)
 
-        query = '''
-            {
-                "query" : {
-                    "nested" : {
-                        "path" : "columns",
-                        "query" : {
-                            "bool" : {
-                                "must_not": {
-                                    "match": { "_id": "%s" }
-                                },
-                                "must" : [
-                                    {
-                                        "match" : { "columns.%s" : "%s" }
-                                    },
-                                    {
-                                        "nested" : {
-                                            "path" : "columns.coverage",
-                                            "query" : {
-                                                "range" : {
-                                                    "columns.coverage.range" : {
-                                                        "gte" : %.6f,
-                                                        "lte" : %.6f,
-                                                        "relation" : "intersects"
-                                                    }
-                                                }
-                                            },
-                                            "inner_hits": {
-                                              "_source" : false
+        intersection = {
+            'nested': {
+                'path': 'columns',
+                'query': {
+                    'bool': {
+                        'must_not': {
+                            'match': {'_id': dataset_id}
+                        },
+                        'must': [
+                            {
+                                'match': {'columns.%s'%type_: type_value}
+                            },
+                            {
+                                'nested': {
+                                    'path': 'columns.coverage',
+                                    'query': {
+                                        'range': {
+                                            'columns.coverage.range': {
+                                                'gte': range_[0],
+                                                'lte': range_[1],
+                                                'relation': 'intersects'
                                             }
                                         }
-                                    }
-                                ]
+                                    },
+                                    'inner_hits': {'_source': 'false'}
+                                }
                             }
-                        },
-                        "inner_hits": {
-                            "_source" : false
-                        }
+                        ]
                     }
-                }
-            }''' % (dataset_id, type_, type_value, range_[0], range_[1])
+                },
+                'inner_hits': {'_source': False}
+            }
+        }
+
+        if not query_args:
+            query_obj = {
+                'query': intersection,
+            }
+        else:
+            args = [intersection] + query_args
+            query_obj = {
+                'query': {
+                    'bool': {
+                        'must': args,
+                    },
+                },
+            }
 
         result = es.search(
             index='datamart',
-            body=query,
+            body=query_obj,
             scroll='2m',
             size=10000
         )
@@ -173,47 +194,65 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value, rang
     return intersections, column_total_coverage
 
 
-def get_spatial_coverage_intersections(es, dataset_id, ranges):
+def get_spatial_coverage_intersections(es, dataset_id, ranges,
+                                       query_args=None):
+    """
+    Retrieve spatial columns that intersect with the input spatial ranges.
+
+    """
 
     intersections = dict()
     column_total_coverage = 0
 
     for range_ in ranges:
-        column_total_coverage += (range_[1][0] - range_[0][0])*(range_[0][1] - range_[1][1])
+        column_total_coverage += \
+            (range_[1][0] - range_[0][0])*(range_[0][1] - range_[1][1])
 
-        query = '''
-            {
-                "query" : {
-                    "nested" : {
-                        "path" : "spatial_coverage.ranges",
-                        "query" : {
-                            "bool" : {
-                                "must_not": {
-                                    "match": { "_id": "%s" }
-                                },
-                                "filter": {
-                                    "geo_shape": {
-                                        "spatial_coverage.ranges.range": {
-                                            "shape": {
-                                                "type": "envelope",
-                                                "coordinates" : [[%.6f, %.6f], [%.6f, %.6f]]
-                                            },
-                                            "relation": "intersects"
-                                        }
-                                    }
+        intersection = {
+            'nested': {
+                'path': 'spatial_coverage.ranges',
+                'query': {
+                    'bool': {
+                        'must_not': {
+                            'match': {'_id': dataset_id}
+                        },
+                        'filter': {
+                            'geo_shape': {
+                                'spatial_coverage.ranges.range': {
+                                    'shape': {
+                                        'type': 'envelope',
+                                        'coordinates': [
+                                            [range_[0][0], range_[0][1]],
+                                            [range_[1][0], range_[1][1]]
+                                        ]
+                                    },
+                                    'relation': 'intersects'
                                 }
                             }
-                        },
-                        "inner_hits": {
-                            "_source" : false
                         }
                     }
-                }
-            }''' % (dataset_id, range_[0][0], range_[0][1], range_[1][0], range_[1][1])
+                },
+                'inner_hits': {'_source': False}
+            }
+        }
+
+        if not query_args:
+            query_obj = {
+                'query': intersection,
+            }
+        else:
+            args = [intersection] + query_args
+            query_obj = {
+                'query': {
+                    'bool': {
+                        'must': args,
+                    },
+                },
+            }
 
         result = es.search(
             index='datamart',
-            body=query,
+            body=query_obj,
             scroll='2m',
             size=10000
         )
@@ -266,13 +305,41 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges):
     return intersections, column_total_coverage
 
 
-def get_coverage_intersections(es, dataset_id):
+def get_dataset_metadata(es, dataset_id):
+    """
+    Retrieve metadata about input dataset.
+
+    """
+
+    hit = es.search(
+        index='datamart',
+        body={
+            'query': {
+                'match': {
+                    '_id': dataset_id,
+                }
+            }
+        }
+    )['hits']['hits'][0]
+
+    return hit
+
+
+def get_joinable_datasets(es, dataset_id, query_args=None):
+    """
+    Retrieve datasets that can be joined with an input dataset.
+
+    :param es: Elasticsearch client.
+    :param dataset_id: The identifier of the input dataset.
+    :param query_args: list of query arguments (optional).
+    """
+
+    # get the coverage for each column of the input dataset
 
     intersections = dict()
     column_coverage = get_column_coverage(es, dataset_id)
 
-    if not column_coverage:
-        return intersections
+    # get coverage intersections
 
     for column in column_coverage:
         type_ = column_coverage[column]['type']
@@ -282,7 +349,8 @@ def get_coverage_intersections(es, dataset_id):
                 get_spatial_coverage_intersections(
                     es,
                     dataset_id,
-                    column_coverage[column]['ranges']
+                    column_coverage[column]['ranges'],
+                    query_args
                 )
         else:
             intersections_column, column_total_coverage = \
@@ -291,7 +359,8 @@ def get_coverage_intersections(es, dataset_id):
                     dataset_id,
                     type_,
                     type_value,
-                    column_coverage[column]['ranges']
+                    column_coverage[column]['ranges'],
+                    query_args
                 )
 
         if not intersections_column:
@@ -302,7 +371,7 @@ def get_coverage_intersections(es, dataset_id):
                 column.lower(),
                 name.split("$$")[1].lower()
             )
-            score = size/column_total_coverage
+            score = size / column_total_coverage
             if type_value not in (Type.DATE_TIME,
                                   Type.LATITUDE + ', ' + Type.LONGITUDE):
                 score *= sim
@@ -314,6 +383,8 @@ def get_coverage_intersections(es, dataset_id):
                     (column, external_column, score)
                 )
 
+    # get pairs of columns with higher score
+
     for dt in intersections:
         intersections[dt] = sorted(
             intersections[dt],
@@ -321,7 +392,6 @@ def get_coverage_intersections(es, dataset_id):
             reverse=True
         )
 
-        # get pairs with higher score
         seen_1 = set()
         seen_2 = set()
         pairs = []
@@ -333,19 +403,34 @@ def get_coverage_intersections(es, dataset_id):
             pairs.append((column, external_column, score))
         intersections[dt] = pairs
 
-    return intersections
+    # sorting datasets based on the column with highest score
 
+    sorted_datasets = []
+    for dt in intersections:
+        items = intersections[dt]
+        sorted_datasets.append((dt, items[0][2]))
+    sorted_datasets = sorted(
+        sorted_datasets,
+        key=lambda item: item[1],
+        reverse=True
+    )
 
-def score_intersections(intersections):
+    results = []
+    for dt, score in sorted_datasets:
+        info = get_dataset_metadata(es, dt)
+        meta = info.pop('_source')
+        materialize = meta.get('materialize', {})
+        if 'description' in meta and len(meta['description']) > 100:
+            meta['description'] = meta['description'][:100] + "..."
+        results.append(dict(
+            id=dt,
+            score=score,
+            discoverer=materialize['identifier'],
+            metadata=meta,
+            columns=intersections[dt]
+        ))
 
-    scores = []
-
-    # for now, scoring datasets based on the column with highest score
-    for dataset in intersections:
-        items = intersections[dataset]
-        scores.append((dataset, items[0][0], items[0][1], items[0][2]))
-
-    return sorted(scores, key=lambda item: item[3], reverse=True)
+    return {'results': results}
 
 
 def get_all_datasets_columns(es):

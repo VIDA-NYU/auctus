@@ -13,6 +13,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import uuid
 
+from datamart_core.augment import get_joinable_datasets
 from datamart_core.common import log_future, json2msg, Type
 from datamart_core.materialize import get_dataset
 from datamart_profiler import process_dataset
@@ -363,6 +364,7 @@ class Query(CorsHandler):
         self._cors()
 
         obj = self.get_json()
+        logger.info("Query: %r", obj)
 
         # Params are 'query' and 'data'
         query = data = None
@@ -444,31 +446,44 @@ class Query(CorsHandler):
             self.send_error(status_code=400)
             return
 
-        logger.info("Query: %r", query_args)
-        hits = self.application.elasticsearch.search(
-            index='datamart',
-            body={
-                'query': {
-                    'bool': {
-                        'must': query_args,
+        if not dataset_id:
+            logger.info("Query: %r", query_args)
+            hits = self.application.elasticsearch.search(
+                index='datamart',
+                body={
+                    'query': {
+                        'bool': {
+                            'must': query_args,
+                        },
                     },
                 },
-            },
-        )['hits']['hits']
+            )['hits']['hits']
 
-        results = []
-        for h in hits:
-            meta = h.pop('_source')
-            materialize = meta.get('materialize', {})
-            if 'description' in meta and len(meta['description']) > 100:
-                meta['description'] = meta['description'][:100] + "..."
-            results.append(dict(
-                id=h['_id'],
-                score=h['_score'],
-                discoverer=materialize['identifier'],
-                metadata=meta,
-            ))
-        self.send_json({'results': results})
+            results = []
+            for h in hits:
+                meta = h.pop('_source')
+                materialize = meta.get('materialize', {})
+                if 'description' in meta and len(meta['description']) > 100:
+                    meta['description'] = meta['description'][:100] + "..."
+                results.append(dict(
+                    id=h['_id'],
+                    score=h['_score'],
+                    discoverer=materialize['identifier'],
+                    metadata=meta,
+                ))
+            self.send_json({'results': results})
+        else:
+            query_param = None
+            if query_args:
+                logger.info("Query: %r", query_args)
+                query_param = query_args
+            self.send_json(
+                get_joinable_datasets(
+                    self.application.elasticsearch,
+                    dataset_id,
+                    query_param
+                )
+            )
 
 
 class Download(CorsHandler):

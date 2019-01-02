@@ -9,6 +9,7 @@ function postJSON(url='', data={}, args) {
   } else {
     args = '';
   }
+  console.log("Data:", JSON.stringify(data));
   return fetch(
     url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,
     {
@@ -323,17 +324,17 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   var search = {};
 
   // Data
+  search.data = {};
+
   var file = document.getElementById('file');
   if(file.files.length) {
     if(file.files[0].name.includes('datasetDoc.json')) {
         var reader = new FileReader();
-        reader.onload = function(e)
+        reader.onload = function(l)
         {
-            search.data = JSON.parse(e.target.result);
+            search.data = JSON.parse(l.target.result);
         };
         reader.readAsText(file.files[0]);
-    } else {
-        search.data = '';
     }
   }
 
