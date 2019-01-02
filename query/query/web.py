@@ -94,45 +94,49 @@ class Query(CorsHandler):
             # TODO: ignoring 'granularity' for now
             if 'temporal_entity' in variable['type']:
                 variable_query.append({
-                    'match':
-                        {'columns.semantic_types': Type.DATE_TIME}
+                    'nested': {
+                        'path': 'columns',
+                        'query': {
+                            'match': {'columns.semantic_types': Type.DATE_TIME},
+                        },
+                    },
                 })
-                if 'start' in variable:
+                start = end = None
+                if 'start' in variable and 'end' in variable:
                     try:
-                        value = parse(variable['start']).timestamp()
+                        start = parse(variable['start']).timestamp()
+                        end = parse(variable['end']).timestamp()
                     except Exception:
                         pass
-                    else:
-                        variable_query.append({
-                            'nested': {
-                                'path': 'columns.coverage',
-                                'query': {
-                                    'term': {
-                                        'columns.coverage.range': {
-                                            'value': value
-                                        }
+                elif 'start' in variable:
+                    try:
+                        start = parse(variable['start']).timestamp()
+                        end = datetime.now().timestamp()
+                    except Exception:
+                        pass
+                elif 'end' in variable:
+                    try:
+                        start = 0
+                        end = parse(variable['end']).timestamp()
+                    except Exception:
+                        pass
+                else:
+                    pass
+                if start and end:
+                    variable_query.append({
+                        'nested': {
+                            'path': 'columns.coverage',
+                            'query': {
+                                'range': {
+                                    'columns.coverage.range': {
+                                        'gte': start,
+                                        'lte': end,
+                                        'relation': 'intersects'
                                     }
                                 }
                             }
-                        })
-                if 'end' in variable:
-                    try:
-                        value = parse(variable['end']).timestamp()
-                    except Exception:
-                        pass
-                    else:
-                        variable_query.append({
-                            'nested': {
-                                'path': 'columns.coverage',
-                                'query': {
-                                    'term': {
-                                        'columns.coverage.range': {
-                                            'value': value
-                                        }
-                                    }
-                                }
-                            }
-                        })
+                        }
+                    })
 
             # spatial
             # TODO: ignoring 'circle' and 'named_entities' for now
