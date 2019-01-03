@@ -14,8 +14,7 @@ from tornado.web import HTTPError, RequestHandler
 import uuid
 
 from .coordinator import Coordinator
-from datamart_core.augment import \
-    get_joinable_datasets, get_unionable_datasets
+from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import Type
 
 
@@ -220,14 +219,14 @@ class JoinQuery(BaseHandler):
 
 class UnionQuery(BaseHandler):
     def get(self, dataset_id):
-        column_pairs, scores = get_unionable_datasets(
+        results = get_unionable_datasets(
             self.application.elasticsearch,
             dataset_id
         )
         self.render(
             'union_query.html',
-            pairs=column_pairs,
-            scores=scores
+            dataset_id=dataset_id,
+            result=results
         )
 
 
@@ -289,8 +288,8 @@ def make_app(debug=False):
             URLSpec('/search_', Search, name='search_'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
-            URLSpec('/join_query/([^/]+)', JoinQuery),
-            URLSpec('/union_query/([^/]+)', UnionQuery),
+            URLSpec('/join_query/([^/]+)', JoinQuery, name='join_query'),
+            URLSpec('/union_query/([^/]+)', UnionQuery, name='union_query'),
 
             URLSpec('/allocate_dataset', AllocateDataset),
         ],

@@ -29,14 +29,6 @@ function postJSON(url='', data={}, args) {
   });
 }
 
-function toggle_visibility(id) {
-  var e = document.getElementById(id);
-  if(e.style.display == 'block')
-    e.style.display = 'none';
-  else
-    e.style.display = 'block';
-}
-
 var indices = {'required': {
                  'temporal': 0,
                  'geospatial': 0,
@@ -491,16 +483,33 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       }
 
       var join_info = '';
-      if(data.columns.length > 0) {
+      if(data.join_columns.length > 0) {
         var columns_info = '';
-        for(var j = 0; j < data.columns.length; j++) {
-            var column = data.columns[j];
+        for(var j = 0; j < data.join_columns.length; j++) {
+            var column = data.join_columns[j];
             columns_info += '      <li class="list-group-item"><small><em>' + column[0] + '</em> and <em>' + column[1] + '</em></small></li>';
         }
 
         join_info = (
             '    <hr>' +
             '    <p class="card-text"><em>Join Information</em></p>' +
+            '    <ul class="list-group text-muted">' +
+            '      <li class="list-group-item"><small>Score: ' + data.score + '</small></li>' + columns_info +
+            '    </ul>'
+        );
+      }
+
+      var union_info = '';
+      if(data.union_columns.length > 0) {
+        var columns_info = '';
+        for(var j = 0; j < data.union_columns.length; j++) {
+            var column = data.union_columns[j];
+            columns_info += '      <li class="list-group-item"><small><em>' + column[0] + '</em> and <em>' + column[1] + '</em></small></li>';
+        }
+
+        union_info = (
+            '    <hr>' +
+            '    <p class="card-text"><em>Union Information</em></p>' +
             '    <ul class="list-group text-muted">' +
             '      <li class="list-group-item"><small>Score: ' + data.score + '</small></li>' + columns_info +
             '    </ul>'
@@ -520,7 +529,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '        <a href="/union_query/' + data.id + '" class="btn btn-sm btn-outline-secondary">Union</a>' +
         '      </div>' +
         '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
-        '    </div>' + join_info +
+        '    </div>' + join_info + union_info +
         '  </div>' +
         '</div>'
       );

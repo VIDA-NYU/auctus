@@ -3,20 +3,23 @@
 
 {% block contents %}
 <div class="list-group" id="recent_discoveries">
-    {%- if not scores %}
+    {%- if result['results']|length == 0 %}
         <h5>No results.</h5>
     {%- endif %}
-    {%- for dataset, score in scores %}
+    {%- for r in result['results'] %}
+        {%- set external_dataset = r['id'] %}
+        {%- set score = r['score'] %}
+        {%- set columns = r['columns'] %}
         <div class="list-group-item list-group-item-action flex-column align-items-start">
             <a class="list-group-item-action flex-column align-items-start"
-               href="javascript:void(0)" onclick="toggle_visibility('info-{{ dataset }}');">
+               href="javascript:void(0)" onclick="toggle_visibility('info-{{ external_dataset }}');">
                 <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">{{ dataset }}</h5>
+                    <h5 class="mb-1">{{ external_dataset }}</h5>
                     <small>{{ score }}</small>
                 </div>
             </a>
-            <div id="info-{{ dataset }}" style="display:none;">
-            {%- for att1, att2, sim in pairs[dataset] %}
+            <div id="info-{{ external_dataset }}" style="display:none;">
+            {%- for att1, att2, sim in columns %}
                 <hr width="60%" align="left">
                 <p class="mb-1">{{ att1 }}
                 <br>{{ att2 }}</p>
@@ -27,5 +30,5 @@
     {%- endfor %}
 </div>
 
-<script type="text/javascript" src="{{ static_url('js/query.js') }}"></script>
+<script type="text/javascript" src="{{ static_url('js/util.js') }}"></script>
 {% endblock %}

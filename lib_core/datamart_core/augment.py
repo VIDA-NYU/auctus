@@ -440,20 +440,45 @@ def get_joinable_datasets(es, dataset_id, query_args=None):
     return {'results': results}
 
 
-def get_all_datasets_columns(es):
+def get_column_information(es, dataset_id=None, query_args=None):
+    """
+    Retrieve information about the columns (name and type) of either
+    all of the datasets, or the input dataset.
+
+    """
+
     dataset_columns = dict()
-    query = \
-        '''
-            {
-                "query" : {
-                    "match_all" : { }
-                }
+
+    if dataset_id:
+        query = {
+            'match': {
+                '_id': dataset_id,
             }
-        '''
+        }
+    else:
+        query = {
+            'match_all': {}
+        }
+
+    if not query_args:
+        query_obj = {
+            'query': query,
+        }
+    else:
+        args = [query] + query_args
+        query_obj = {
+            'query': {
+                'bool': {
+                    'must': args,
+                },
+            },
+        }
+
+    logger.info("Query: %r", query_obj)
 
     result = es.search(
         index='datamart',
-        body=query,
+        body=query_obj,
         scroll='2m',
         size=10000
     )
@@ -491,10 +516,19 @@ def get_all_datasets_columns(es):
     return dataset_columns
 
 
-def get_unionable_datasets(es, dataset_id):
-    dataset_columns = get_all_datasets_columns(es)
-    main_dataset_columns = dataset_columns[dataset_id]
-    del dataset_columns[dataset_id]
+def get_unionable_datasets(es, dataset_id, query_args=None):
+    """
+    Retrieve datasets that can be unioned to an input dataset.
+
+    :param es: Elasticsearch client.
+    :param dataset_id: The identifier of the input dataset.
+    :param query_args: list of query arguments (optional).
+   """
+
+    dataset_columns = get_column_information(es, query_args=query_args)
+    if dataset_id in dataset_columns:
+        del dataset_columns[dataset_id]
+    main_dataset_columns = get_column_information(es, dataset_id=dataset_id)[dataset_id]
 
     n_columns = 0
     for type_ in main_dataset_columns:
@@ -525,7 +559,7 @@ def get_unionable_datasets(es, dataset_id):
                 continue
             seen_1.add(att_1)
             seen_2.add(att_2)
-            column_pairs[dataset].append([att_1, att_2, sim])
+            column_pairs[dataset].append((att_1, att_2, sim))
 
         if len(column_pairs[dataset]) <= 1:
             column_pairs[dataset] = []
@@ -539,8 +573,25 @@ def get_unionable_datasets(es, dataset_id):
 
         scores[dataset] = scores[dataset] / n_columns
 
-    return column_pairs, sorted(
+    sorted_datasets = sorted(
         scores.items(),
         key=lambda item: item[1],
         reverse=True
     )
+
+    results = []
+    for dt, score in sorted_datasets:
+        info = get_dataset_metadata(es, dt)
+        meta = info.pop('_source')
+        materialize = meta.get('materialize', {})
+        if 'description' in meta and len(meta['description']) > 100:
+            meta['description'] = meta['description'][:100] + "..."
+        results.append(dict(
+            id=dt,
+            score=score,
+            discoverer=materialize['identifier'],
+            metadata=meta,
+            columns=column_pairs[dt],
+        ))
+
+    return {'results': results}

@@ -13,7 +13,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import uuid
 
-from datamart_core.augment import get_joinable_datasets
+from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import log_future, json2msg, Type
 from datamart_core.materialize import get_dataset
 from datamart_profiler import process_dataset
@@ -470,7 +470,8 @@ class Query(CorsHandler):
                     score=h['_score'],
                     discoverer=materialize['identifier'],
                     metadata=meta,
-                    columns=[],
+                    join_columns=[],
+                    union_columns=[],
                 ))
             self.send_json({'results': results})
         else:
@@ -478,12 +479,53 @@ class Query(CorsHandler):
             if query_args:
                 logger.info("Query: %r", query_args)
                 query_param = query_args
-            self.send_json(
-                get_joinable_datasets(
-                    self.application.elasticsearch,
-                    dataset_id,
-                    query_param
+
+            join_results = get_joinable_datasets(
+                self.application.elasticsearch,
+                dataset_id,
+                query_param
+            )['results']
+            union_results = get_unionable_datasets(
+                self.application.elasticsearch,
+                dataset_id,
+                query_param
+            )['results']
+
+            results = {}
+            for r in join_results:
+                results[r['id']] = dict(
+                    id=r['id'],
+                    score=r['score'],
+                    discoverer=r['discoverer'],
+                    metadata=r['metadata'],
+                    join_columns=[],
+                    union_columns=[],
                 )
+                for pair in r['columns']:
+                    results[r['id']]['join_columns'].append(pair)
+            for r in union_results:
+                if r['id'] not in results:
+                    results[r['id']] = dict(
+                        id=r['id'],
+                        score=r['score'],
+                        discoverer=r['discoverer'],
+                        metadata=r['metadata'],
+                        join_columns=[],
+                        union_columns=[],
+                    )
+                else:
+                    results[r['id']]['score'] = max(results[r['id']]['score'], r['score'])
+                for pair in r['columns']:
+                    results[r['id']]['union_columns'].append(pair)
+
+            self.send_json({
+                'results':
+                    sorted(
+                        results.values(),
+                        key=lambda item: item['score'],
+                        reverse=True
+                    )
+                }
             )
 
 
