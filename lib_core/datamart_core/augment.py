@@ -1,6 +1,9 @@
 import distance
+import logging
 
 from .common import Type
+
+logger = logging.getLogger(__name__)
 
 
 def compute_levenshtein_sim(str1, str2):
@@ -123,7 +126,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                                             }
                                         }
                                     },
-                                    'inner_hits': {'_source': 'false'}
+                                    'inner_hits': {'_source': False}
                                 }
                             }
                         ]
@@ -146,6 +149,8 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                     },
                 },
             }
+
+        logger.info("Query (numerical): %r", query_obj)
 
         result = es.search(
             index='datamart',
@@ -249,6 +254,8 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
                     },
                 },
             }
+
+        logger.info("Query (spatial): %r", query_obj)
 
         result = es.search(
             index='datamart',
@@ -427,7 +434,7 @@ def get_joinable_datasets(es, dataset_id, query_args=None):
             score=score,
             discoverer=materialize['identifier'],
             metadata=meta,
-            columns=intersections[dt]
+            columns=intersections[dt],
         ))
 
     return {'results': results}

@@ -318,50 +318,58 @@ function formatSize(bytes) {
     return bytes.toFixed(1) + units[i];
 }
 
-document.getElementById('search-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-
-  var search = {};
-
-  // Data
-  search.data = {};
-
-  var file = document.getElementById('file');
+function readFile(file, callback) {
   if(file.files.length) {
     if(file.files[0].name.includes('datasetDoc.json')) {
         var reader = new FileReader();
-        reader.onload = function(l)
+        reader.onloadend = function(event)
         {
-            search.data = JSON.parse(l.target.result);
+            callback(JSON.parse(event.target.result));
         };
         reader.readAsText(file.files[0]);
+    } else {
+        callback({});
     }
+  } else {
+    callback({});
   }
+}
 
-  // Query
-  search.query = {};
+document.getElementById('search-form').addEventListener('submit', function(e) {
+  e.preventDefault();
 
-  search.query.dataset = {};
-  var keywords = document.getElementById('keywords').value;
-  if(keywords) {
+  var file = document.getElementById('file');
+  readFile(file, function(result) {
+
+    var search = {};
+
+    // Data
+    search.data = result;
+
+    // Query
+    search.query = {};
+
+    search.query.dataset = {};
+    var keywords = document.getElementById('keywords').value;
+    if(keywords) {
     search.query.dataset.about = keywords;
-  }
-  var names = document.getElementById('names').value;
-  names = names.split(/[ ,+]+/);
-  if(names.length == 1 && names[0] === '') {
+    }
+    var names = document.getElementById('names').value;
+    names = names.split(/[ ,+]+/);
+    if(names.length == 1 && names[0] === '') {
     names = [];
-  } else {
+    } else {
     search.query.dataset.name = names;
-  }
-  var description = document.getElementById('description').value;
-  description = description.split(/[ ,+]+/);
-  if(description.length == 1 && description[0] === '') {
+    }
+    var description = document.getElementById('description').value;
+    description = description.split(/[ ,+]+/);
+    if(description.length == 1 && description[0] === '') {
     description = [];
-  } else {
+    } else {
     search.query.dataset.description = description;
-  }
+    }
 
-  for(key in indices) {
+    for(key in indices) {
       search.query[key + '_variables'] = []
       if(indices[key]['temporal'] > 0) {
         for (i = 1; i <= indices[key]['temporal']; i++) {
@@ -441,16 +449,30 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
             }
         }
       }
-  }
+    }
 
-  console.log("Searching:", search);
-  postJSON(QUERY_HOST + '/search', search)
-  .then(function(result) {
+    console.log("Searching:", search);
+    postJSON(QUERY_HOST + '/search', search)
+    .then(function(result) {
     console.log("Got " + result.results.length + " results");
     console.log("Results:", result.results);
     var results_div = document.getElementById('results');
     results_div.innerHTML = '';
     document.getElementById('search-error').style.display = 'none';
+    if((result.results.length > 0) && (Object.getOwnPropertyNames(search.data).length != 0)) {
+        var div_title = document.createElement('div');
+        div_title.setAttribute('class', 'container mb-5')
+        var title = document.createElement('h6');
+        title.innerHTML = 'Results for ';
+        if (search.data.about.datasetName != search.data.about.datasetID) {
+            title.innerHTML += '"' + search.data.about.datasetName + '" ';
+            title.innerHTML += '(' + search.data.about.datasetID + '):';
+        } else {
+            title.innerHTML += search.data.about.datasetID + ':';
+        }
+        div_title.appendChild(title);
+        results_div.appendChild(div_title);
+    }
     for(var i = 0; i < result.results.length; ++i) {
       var elem = document.createElement('div');
       var data = result.results[i];
@@ -467,12 +489,30 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       } else {
         description = "(no description)";
       }
+
+      var join_info = '';
+      if(data.columns.length > 0) {
+        var columns_info = '';
+        for(var j = 0; j < data.columns.length; j++) {
+            var column = data.columns[j];
+            columns_info += '      <li class="list-group-item"><small><em>' + column[0] + '</em> and <em>' + column[1] + '</em></small></li>';
+        }
+
+        join_info = (
+            '    <hr>' +
+            '    <p class="card-text"><em>Join Information</em></p>' +
+            '    <ul class="list-group text-muted">' +
+            '      <li class="list-group-item"><small>Score: ' + data.score + '</small></li>' + columns_info +
+            '    </ul>'
+        );
+      }
+
       elem.innerHTML = (
         '<div class="card mb-4 shadow-sm">' +
         '  <div class="card-body">' +
         '    <p class="card-text">' + (data.metadata.name || data.id) + '</p>' +
         '    <p class="card-text">' + description + '</p>' +
-        '    <div class="d-flex justify-content-between align-items-center">' +
+        '    <div class="d-flex justify-content-between align-items-center mb-3">' +
         '      <div class="btn-group">' +
         '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
         '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
@@ -480,7 +520,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '        <a href="/union_query/' + data.id + '" class="btn btn-sm btn-outline-secondary">Union</a>' +
         '      </div>' +
         '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
-        '    </div>' +
+        '    </div>' + join_info +
         '  </div>' +
         '</div>'
       );
@@ -490,10 +530,13 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       document.getElementById('search-error').style.display = '';
       document.getElementById('search-error').innerText = "No results";
     }
-  }, function(error) {
+    }, function(error) {
     console.error("Query failed:", error);
     alert("Query failed: " + error);
     document.getElementById('search-error').style.display = '';
     document.getElementById('search-error').innerText = '' + error;
-  }).catch(console.error);
+    }).catch(console.error);
+
+    });
+
 });

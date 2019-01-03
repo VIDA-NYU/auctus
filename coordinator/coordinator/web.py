@@ -214,7 +214,7 @@ class JoinQuery(BaseHandler):
         self.render(
             'join_query.html',
             dataset_id=dataset_id,
-            results=results
+            result=results
         )
 
 

@@ -470,6 +470,7 @@ class Query(CorsHandler):
                     score=h['_score'],
                     discoverer=materialize['identifier'],
                     metadata=meta,
+                    columns=[],
                 ))
             self.send_json({'results': results})
         else:
