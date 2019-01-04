@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 MAX_CONCURRENT = 2
+SCORE_THRESHOLD = 0.4
 
 
 class BaseHandler(RequestHandler):
@@ -492,6 +493,8 @@ class Query(CorsHandler):
 
             results = {}
             for r in join_results:
+                if r['score'] < SCORE_THRESHOLD:
+                    continue
                 results[r['id']] = dict(
                     id=r['id'],
                     score=r['score'],
@@ -503,6 +506,8 @@ class Query(CorsHandler):
                 for pair in r['columns']:
                     results[r['id']]['join_columns'].append(pair)
             for r in union_results:
+                if r['score'] < SCORE_THRESHOLD:
+                    continue
                 if r['id'] not in results:
                     results[r['id']] = dict(
                         id=r['id'],
