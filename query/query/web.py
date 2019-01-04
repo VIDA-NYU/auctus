@@ -360,7 +360,7 @@ class Query(CorsHandler):
 
         return query_args
 
-    async def post(self):
+    def post(self):
         self._cors()
 
         obj = self.get_json()
@@ -375,78 +375,75 @@ class Query(CorsHandler):
 
         # parameter: data
         dataset_id = ''
+        data_profile = dict()
         if data:
             if isinstance(data, dict):
-                # data is a D3M dataset
+                # data is a D3M datasetDoc
+                # assumes data is in DataMart index
                 dataset_id = self.search_d3m_dataset_id(data)
 
-            elif isinstance(data, str):
-                # data represents a file path
+            elif isinstance(data, (str, bytes)):
                 if not os.path.exists(data):
-                    logger.warning("Data does not exist!")
-                else:
-                    if 'datasetDoc.json' in data:
-                        # path to a datasetDoc.json file
-                        # extract id and check if data is in DataMart index
-                        with open(data) as f:
-                            dataset_doc = json.load(f)
-                        dataset_id = self.search_d3m_dataset_id(dataset_doc)
-                    else:
-                        # assume path to a CSV file
-                        # upload data first
-                        dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
+                    # data represents the entire file
+                    logger.warning("Data is not a path!")
 
-                        dataset_dir = os.path.join('/datasets', dataset_id)
-                        os.mkdir(dataset_dir)
-                        new_data_path = os.path.join(dataset_dir, 'main.csv')
-                        try:
-                            shutil.copy(data, new_data_path)
-                        except Exception:
-                            shutil.rmtree(dataset_dir)
-                            raise
+                    # save it to disk first
+                    _id = 'datamart.%s' % uuid.uuid4().hex
 
-                        # profile data
+                    dataset_dir = os.path.join('/datasets', _id)
+                    os.mkdir(dataset_dir)
+                    new_data_path = os.path.join(dataset_dir, 'main.csv')
+
+                    try:
+                        file_obj = open(new_data_path, 'w')
+                        file_obj.write(data)
+                        file_obj.close()
+
                         metadata = dict(
-                            name=os.path.splitext(os.path.basename(data))[0],
-                            materialize=dict(identifier='datamart.upload',
-                                             original_path=data,
-                                             new_path=new_data_path)
+                            name=os.path.splitext(os.path.basename(new_data_path))[0],
+                            materialize=dict(identifier='datamart.search',
+                                             path=new_data_path)
                         )
                         data_profile = process_dataset(
                             new_data_path,
                             metadata=metadata
                         )
+                    except Exception:
+                        pass
+                    shutil.rmtree(dataset_dir)
 
-                        # insert results in Elasticsearch
-                        body = dict(data_profile,
-                                    date=datetime.utcnow().isoformat() + 'Z')
-                        self.application.elasticsearch.index(
-                            'datamart',
-                            '_doc',
-                            body,
-                            id=dataset_id,
+                else:
+                    # data represents a file path
+                    if 'datasetDoc.json' in data:
+                        # path to a datasetDoc.json file
+                        # assumes data is in DataMart index
+                        with open(data) as f:
+                            dataset_doc = json.load(f)
+                        dataset_id = self.search_d3m_dataset_id(dataset_doc)
+                    else:
+                        # assume path to a CSV file
+                        metadata = dict(
+                            name=os.path.splitext(os.path.basename(data))[0],
+                            materialize=dict(identifier='datamart.search',
+                                             path=data)
                         )
-
-                        # publish to RabbitMQ
-                        await self.application.work_tickets.acquire()
-                        await self.application.datasets_exchange.publish(
-                            json2msg(dict(body, id=dataset_id)),
-                            dataset_id,
+                        data_profile = process_dataset(
+                            data,
+                            metadata=metadata
                         )
-                        self.application.work_tickets.release()
+        has_data = dataset_id or data_profile
 
         # parameter: query
-        # TODO: figure out scoring
         query_args = list()
         if query:
             query_args = self.parse_query(query)
 
         # At least one of them must be provided
-        if not query_args and not dataset_id:
+        if not query_args and not has_data:
             self.send_error(status_code=400)
             return
 
-        if not dataset_id:
+        if not has_data:
             logger.info("Query: %r", query_args)
             hits = self.application.elasticsearch.search(
                 index='datamart',
@@ -483,11 +480,13 @@ class Query(CorsHandler):
             join_results = get_joinable_datasets(
                 self.application.elasticsearch,
                 dataset_id,
+                data_profile,
                 query_param
             )['results']
             union_results = get_unionable_datasets(
                 self.application.elasticsearch,
                 dataset_id,
+                data_profile,
                 query_param
             )['results']
 

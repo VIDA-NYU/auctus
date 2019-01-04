@@ -9,7 +9,6 @@ function postJSON(url='', data={}, args) {
   } else {
     args = '';
   }
-  console.log("Data:", JSON.stringify(data));
   return fetch(
     url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,
     {
@@ -312,16 +311,19 @@ function formatSize(bytes) {
 
 function readFile(file, callback) {
   if(file.files.length) {
-    if(file.files[0].name.includes('datasetDoc.json')) {
-        var reader = new FileReader();
-        reader.onloadend = function(event)
-        {
-            callback(JSON.parse(event.target.result));
-        };
-        reader.readAsText(file.files[0]);
-    } else {
-        callback({});
-    }
+    var reader = new FileReader();
+    reader.onload = function(event)
+    {
+        if(file.files[0].name.includes('.json')) {
+            callback(file.files[0].name,
+                     JSON.parse(event.target.result));
+        } else {
+            // assuming data is a CSV file
+            callback(file.files[0].name,
+                     event.target.result);
+        }
+    };
+    reader.readAsText(file.files[0]);
   } else {
     callback({});
   }
@@ -331,7 +333,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   e.preventDefault();
 
   var file = document.getElementById('file');
-  readFile(file, function(result) {
+  readFile(file, function(name, result) {
 
     var search = {};
 
@@ -456,11 +458,15 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         div_title.setAttribute('class', 'container mb-5')
         var title = document.createElement('h6');
         title.innerHTML = 'Results for ';
-        if (search.data.about.datasetName != search.data.about.datasetID) {
-            title.innerHTML += '"' + search.data.about.datasetName + '" ';
-            title.innerHTML += '(' + search.data.about.datasetID + '):';
+        if(name.includes('.json')) {
+            if (search.data.about.datasetName != search.data.about.datasetID) {
+                title.innerHTML += '"' + search.data.about.datasetName + '" ';
+                title.innerHTML += '(' + search.data.about.datasetID + '):';
+            } else {
+                title.innerHTML += search.data.about.datasetID + ':';
+            }
         } else {
-            title.innerHTML += search.data.about.datasetID + ':';
+            title.innerHTML += name
         }
         div_title.appendChild(title);
         results_div.appendChild(div_title);

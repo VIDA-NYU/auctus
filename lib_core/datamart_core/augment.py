@@ -20,12 +20,13 @@ def compute_levenshtein_sim(str1, str2):
     return 1 - distance.nlevenshtein(str1_set, str2_set, method=2)
 
 
-def get_column_coverage(es, dataset_id):
+def get_column_coverage(es, dataset_id, data_profile={}):
     """
     Get coverage for each column of the input dataset.
 
     :param es:  Elasticsearch client.
-    :param dataset_id: The identifier of the input dataset.
+    :param dataset_id: The identifier of the input dataset, if dataset is in DataMart index.
+    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
     :return: dict, where key is the column name, and value is a dict as follows:
 
         {
@@ -37,16 +38,21 @@ def get_column_coverage(es, dataset_id):
 
     column_coverage = dict()
 
-    index_query = {
-        'query': {
-            'match': {'_id': dataset_id}
+    if dataset_id:
+        index_query = {
+            'query': {
+                'match': {'_id': dataset_id}
+            }
         }
-    }
 
-    result = es.search(index='datamart', body=index_query)
+        result = es.search(
+            index='datamart',
+            body=index_query
+        )['hits']['hits'][0]['_source']
+    else:
+        result = data_profile
 
-    hit = result['hits']['hits'][0]
-    for column in hit['_source']['columns']:
+    for column in result['columns']:
         if 'coverage' not in column:
             continue
         column_name = column['name']
@@ -74,8 +80,8 @@ def get_column_coverage(es, dataset_id):
                 append([float(range_['range']['gte']),
                         float(range_['range']['lte'])])
 
-    if 'spatial_coverage' in hit['_source']:
-        for spatial in hit['_source']['spatial_coverage']:
+    if 'spatial_coverage' in result:
+        for spatial in result['spatial_coverage']:
             names = '(' + spatial['lat'] + ', ' + spatial['lon'] + ')'
             column_coverage[names] = {
                 'type':      'spatial',
@@ -102,35 +108,39 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
     for range_ in ranges:
         column_total_coverage += (range_[1] - range_[0] + 1)
 
+        bool_query = {
+            'must': [
+                {
+                    'match': {'columns.%s'%type_: type_value}
+                },
+                {
+                    'nested': {
+                        'path': 'columns.coverage',
+                        'query': {
+                            'range': {
+                                'columns.coverage.range': {
+                                    'gte': range_[0],
+                                    'lte': range_[1],
+                                    'relation': 'intersects'
+                                }
+                            }
+                        },
+                        'inner_hits': {'_source': False}
+                    }
+                }
+            ]
+        }
+
+        if dataset_id:
+            bool_query['must_not'] = {
+                'match': {'_id': dataset_id}
+            }
+
         intersection = {
             'nested': {
                 'path': 'columns',
                 'query': {
-                    'bool': {
-                        'must_not': {
-                            'match': {'_id': dataset_id}
-                        },
-                        'must': [
-                            {
-                                'match': {'columns.%s'%type_: type_value}
-                            },
-                            {
-                                'nested': {
-                                    'path': 'columns.coverage',
-                                    'query': {
-                                        'range': {
-                                            'columns.coverage.range': {
-                                                'gte': range_[0],
-                                                'lte': range_[1],
-                                                'relation': 'intersects'
-                                            }
-                                        }
-                                    },
-                                    'inner_hits': {'_source': False}
-                                }
-                            }
-                        ]
-                    }
+                    'bool': bool_query
                 },
                 'inner_hits': {'_source': False}
             }
@@ -213,29 +223,33 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
         column_total_coverage += \
             (range_[1][0] - range_[0][0])*(range_[0][1] - range_[1][1])
 
+        bool_query = {
+            'filter': {
+                'geo_shape': {
+                    'spatial_coverage.ranges.range': {
+                        'shape': {
+                            'type': 'envelope',
+                            'coordinates': [
+                                [range_[0][0], range_[0][1]],
+                                [range_[1][0], range_[1][1]]
+                            ]
+                        },
+                        'relation': 'intersects'
+                    }
+                }
+            }
+        }
+
+        if dataset_id:
+            bool_query['must_not'] = {
+                'match': {'_id': dataset_id}
+            }
+
         intersection = {
             'nested': {
                 'path': 'spatial_coverage.ranges',
                 'query': {
-                    'bool': {
-                        'must_not': {
-                            'match': {'_id': dataset_id}
-                        },
-                        'filter': {
-                            'geo_shape': {
-                                'spatial_coverage.ranges.range': {
-                                    'shape': {
-                                        'type': 'envelope',
-                                        'coordinates': [
-                                            [range_[0][0], range_[0][1]],
-                                            [range_[1][0], range_[1][1]]
-                                        ]
-                                    },
-                                    'relation': 'intersects'
-                                }
-                            }
-                        }
-                    }
+                    'bool': bool_query
                 },
                 'inner_hits': {'_source': False}
             }
@@ -332,19 +346,20 @@ def get_dataset_metadata(es, dataset_id):
     return hit
 
 
-def get_joinable_datasets(es, dataset_id, query_args=None):
+def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
     """
     Retrieve datasets that can be joined with an input dataset.
 
     :param es: Elasticsearch client.
-    :param dataset_id: The identifier of the input dataset.
+    :param dataset_id: The identifier of the input dataset, if dataset is in DataMart index.
+    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
     :param query_args: list of query arguments (optional).
     """
 
     # get the coverage for each column of the input dataset
 
     intersections = dict()
-    column_coverage = get_column_coverage(es, dataset_id)
+    column_coverage = get_column_coverage(es, dataset_id, data_profile)
 
     # get coverage intersections
 
@@ -440,12 +455,32 @@ def get_joinable_datasets(es, dataset_id, query_args=None):
     return {'results': results}
 
 
-def get_column_information(es, dataset_id=None, query_args=None):
+def get_column_information(es=None, dataset_id=None, data_profile={}, query_args=None):
     """
     Retrieve information about the columns (name and type) of either
     all of the datasets, or the input dataset.
 
     """
+
+    def store_column_information(metadata):
+        output = dict()
+        for column in metadata['columns']:
+            name = column['name']
+            # ignoring 'd3mIndex' for now -- seems useless
+            if 'd3mIndex' in name:
+                continue
+            for semantic_type in column['semantic_types']:
+                if semantic_type not in output:
+                    output[semantic_type] = []
+                output[semantic_type].append(name)
+            if not column['semantic_types']:
+                if column['structural_type'] not in output:
+                    output[column['structural_type']] = []
+                output[column['structural_type']].append(name)
+        return output
+
+    if data_profile:
+        return store_column_information(data_profile)
 
     dataset_columns = dict()
 
@@ -489,21 +524,7 @@ def get_column_information(es, dataset_id=None, query_args=None):
     while scroll_size > 0:
         for hit in result['hits']['hits']:
             dataset = hit['_id']
-            dataset_columns[dataset] = dict()
-
-            for column in hit['_source']['columns']:
-                name = column['name']
-                # ignoring 'd3mIndex' for now -- seems useless
-                if 'd3mIndex' in name:
-                    continue
-                for semantic_type in column['semantic_types']:
-                    if semantic_type not in dataset_columns[dataset]:
-                        dataset_columns[dataset][semantic_type] = []
-                    dataset_columns[dataset][semantic_type].append(name)
-                if not column['semantic_types']:
-                    if column['structural_type'] not in dataset_columns[dataset]:
-                        dataset_columns[dataset][column['structural_type']] = []
-                    dataset_columns[dataset][column['structural_type']].append(name)
+            dataset_columns[dataset] = store_column_information(hit['_source'])
 
         # scrolling
         result = es.scroll(
@@ -516,19 +537,28 @@ def get_column_information(es, dataset_id=None, query_args=None):
     return dataset_columns
 
 
-def get_unionable_datasets(es, dataset_id, query_args=None):
+def get_unionable_datasets(es, dataset_id, data_profile={}, query_args=None):
     """
     Retrieve datasets that can be unioned to an input dataset.
 
     :param es: Elasticsearch client.
     :param dataset_id: The identifier of the input dataset.
+    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
     :param query_args: list of query arguments (optional).
    """
 
-    dataset_columns = get_column_information(es, query_args=query_args)
-    if dataset_id in dataset_columns:
-        del dataset_columns[dataset_id]
-    main_dataset_columns = get_column_information(es, dataset_id=dataset_id)[dataset_id]
+    dataset_columns = get_column_information(es=es, query_args=query_args)
+    if dataset_id:
+        if dataset_id in dataset_columns:
+            del dataset_columns[dataset_id]
+        main_dataset_columns = get_column_information(
+            es=es,
+            dataset_id=dataset_id
+        )[dataset_id]
+    else:
+        main_dataset_columns = get_column_information(
+            data_profile=data_profile
+        )
 
     n_columns = 0
     for type_ in main_dataset_columns:
