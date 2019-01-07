@@ -193,13 +193,6 @@ class Dataset(BaseHandler):
                     size=format_size(metadata['size']))
 
 
-class AllocateDataset(BaseHandler):
-    def get(self):
-        identifier = self.get_query_argument('id')
-        path = self.coordinator.allocate_shared(identifier)
-        self.send_json({'path': path, 'max_size_bytes': 1 << 30})
-
-
 class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
@@ -251,8 +244,6 @@ def make_app(debug=False):
             URLSpec('/search', Search, name='search'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
-
-            URLSpec('/allocate_dataset', AllocateDataset),
         ],
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
