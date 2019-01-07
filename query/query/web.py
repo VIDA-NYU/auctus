@@ -389,7 +389,7 @@ class Query(CorsHandler):
                     logger.warning("Data is not a path!")
 
                     # save it to disk first
-                    _id = 'datamart.%s' % uuid.uuid4().hex
+                    _id = 'datamart.search.%s' % uuid.uuid4().hex
 
                     dataset_dir = os.path.join('/datasets', _id)
                     os.mkdir(dataset_dir)
@@ -403,7 +403,8 @@ class Query(CorsHandler):
                         metadata = dict(
                             name=os.path.splitext(os.path.basename(new_data_path))[0],
                             materialize=dict(identifier='datamart.search',
-                                             path=new_data_path)
+                                             path=new_data_path,
+                                             id=_id)
                         )
                         data_profile = process_dataset(
                             new_data_path,

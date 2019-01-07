@@ -19,71 +19,21 @@ class DatamartError(RuntimeError):
     """Error from DataMart."""
 
 
-# def search(url=DEFAULT_URL, fail=False, profile=True, data=None, **kwargs):
-#     """Search for datasets.
-#
-#     :param url: URL of the DataMart system. Defaults to
-#         ``datamart.d3m.vida-nyu.org``
-#     :param fail: Whether to raise an exception if some keywords are not
-#         understood.
-#     :param kwargs: Search parameters.
-#     :return: A list of ``Dataset`` objects.
-#     """
-#     # Read arguments, build request
-#     request = {}
-#     unsupported = None
-#     if 'keywords' in kwargs:
-#         request['keywords'] = kwargs.pop('keywords')
-#     if kwargs:
-#         unsupported = ', '.join(sorted(kwargs.keys()))
-#         unsupported = "Unsupported arguments: %s" % unsupported
-#
-#     # TODO: Profile data if possible, upload otherwise
-#     data_profile = None
-#     if data is not None and profile:
-#         try:
-#             import datamart_profiler
-#         except ImportError:
-#             warnings.warn("datamart_profiler is not installed, we will upload "
-#                           "the data to the DataMart server")
-#             data_profile = None
-#         else:
-#             data_profile = datamart_profiler.process_dataset(data)
-#
-#     # Report errors
-#     if unsupported and not fail:
-#         logger.warning(unsupported)
-#     if not request:
-#         raise ValueError("Empty query")
-#     if unsupported and fail:
-#         raise ValueError(unsupported)
-#
-#     # Send request
-#     response = requests.post(url + '/query',
-#                              headers={'Accept': 'application/json',
-#                                       'Content-Type': 'application/json'},
-#                              json=request)
-#     if response.status_code != 200:
-#         raise DatamartError("Error from DataMart: %s %s" % (
-#             response.status_code, response.reason))
-#
-#     # Parse response
-#     return [Dataset.from_json(result, url)
-#             for result in response.json()['results']]
-
-
-def search(url='', query=None, data=None):
+def search(url=DEFAULT_URL, query=None, data=None):
     """Search for datasets.
 
     :param query: JSON object describing the query.
     :param data: the data you are trying to augment.
-        For now, it can be a path to either a datasetDoc or a CSV file.
+        For now, it can be a path to a datasetDoc or a CSV file (str),
+        a datasetDoc JSON object (dict), or a dataset in CSV format (str).
     :return: None.
     """
 
     request = dict()
-    request['data'] = data
-    request['query'] = query
+    if data:
+        request['data'] = data
+    if query:
+        request['query'] = query
 
     # Send request
     response = requests.post(url + '/search',
@@ -95,7 +45,8 @@ def search(url='', query=None, data=None):
             response.status_code, response.reason))
 
     # Parse response
-    return None
+    return [Dataset.from_json(result, url)
+            for result in response.json()['results']]
 
 
 class Dataset(object):
@@ -111,7 +62,7 @@ class Dataset(object):
 
     @classmethod
     def from_json(cls, result, url=DEFAULT_URL):
-        return cls(result['id'], result['metadata'], url=url,
+        return cls(id=result['id'], metadata=result['metadata'], url=url,
                    score=result['score'], discoverer=result['discoverer'])
 
     def download(self, destination, proxy=None):
