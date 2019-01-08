@@ -160,7 +160,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                 },
             }
 
-        logger.info("Query (numerical): %r", query_obj)
+        # logger.info("Query (numerical): %r", query_obj)
 
         result = es.search(
             index='datamart',
@@ -269,7 +269,7 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
                 },
             }
 
-        logger.info("Query (spatial): %r", query_obj)
+        # logger.info("Query (spatial): %r", query_obj)
 
         result = es.search(
             index='datamart',
@@ -509,7 +509,7 @@ def get_column_information(es=None, dataset_id=None, data_profile={}, query_args
             },
         }
 
-    logger.info("Query: %r", query_obj)
+    # logger.info("Query: %r", query_obj)
 
     result = es.search(
         index='datamart',

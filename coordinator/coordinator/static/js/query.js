@@ -489,7 +489,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       }
 
       var join_info = '';
-      if(data.join_columns.length > 0) {
+      if((data.join_columns) && (data.join_columns.length > 0)) {
         var columns_info = '';
         for(var j = 0; j < data.join_columns.length; j++) {
             var column = data.join_columns[j];
@@ -506,7 +506,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       }
 
       var union_info = '';
-      if(data.union_columns.length > 0) {
+      if((data.union_columns) && (data.union_columns.length > 0)) {
         var columns_info = '';
         for(var j = 0; j < data.union_columns.length; j++) {
             var column = data.union_columns[j];

@@ -6,12 +6,11 @@ import elasticsearch
 import logging
 import json
 import os
-import shutil
+import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
-import uuid
 
 from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import log_future, json2msg, Type
@@ -388,51 +387,27 @@ class Query(CorsHandler):
                     # data represents the entire file
                     logger.warning("Data is not a path!")
 
-                    # save it to disk first
-                    _id = 'datamart.search.%s' % uuid.uuid4().hex
+                    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+                    temp_file.write(data)
+                    temp_file.close()
 
-                    dataset_dir = os.path.join('/datasets', _id)
-                    os.mkdir(dataset_dir)
-                    new_data_path = os.path.join(dataset_dir, 'main.csv')
+                    data_profile = process_dataset(temp_file.name)
 
-                    try:
-                        file_obj = open(new_data_path, 'w')
-                        file_obj.write(data)
-                        file_obj.close()
-
-                        metadata = dict(
-                            name=os.path.splitext(os.path.basename(new_data_path))[0],
-                            materialize=dict(identifier='datamart.search',
-                                             path=new_data_path,
-                                             id=_id)
-                        )
-                        data_profile = process_dataset(
-                            new_data_path,
-                            metadata=metadata
-                        )
-                    except Exception:
-                        pass
-                    shutil.rmtree(dataset_dir)
+                    os.remove(temp_file.name)
 
                 else:
                     # data represents a file path
-                    if 'datasetDoc.json' in data:
-                        # path to a datasetDoc.json file
-                        # assumes data is in DataMart index
-                        with open(data) as f:
-                            dataset_doc = json.load(f)
-                        dataset_id = self.search_d3m_dataset_id(dataset_doc)
+                    if os.path.isdir(data):
+                        # path to a D3M dataset
+                        data_file = os.path.join(data, 'tables', 'learningData.csv')
+                        if not os.path.exists(data_file):
+                            logger.warning("Data does not exist: %s", data_file)
+                        else:
+                            data_profile = process_dataset(data_file)
                     else:
-                        # assume path to a CSV file
-                        metadata = dict(
-                            name=os.path.splitext(os.path.basename(data))[0],
-                            materialize=dict(identifier='datamart.search',
-                                             path=data)
-                        )
-                        data_profile = process_dataset(
-                            data,
-                            metadata=metadata
-                        )
+                        # path to a CSV file
+                        data_profile = process_dataset(data)
+
         has_data = dataset_id or data_profile
 
         # parameter: query
@@ -492,41 +467,30 @@ class Query(CorsHandler):
                 query_param
             )['results']
 
-            results = {}
+            results = []
             for r in join_results:
                 if r['score'] < SCORE_THRESHOLD:
                     continue
-                results[r['id']] = dict(
+                results.append(dict(
                     id=r['id'],
                     score=r['score'],
-                    discoverer=r['discoverer'],
                     metadata=r['metadata'],
-                    join_columns=[],
-                    union_columns=[],
-                )
-                for pair in r['columns']:
-                    results[r['id']]['join_columns'].append(pair)
+                    join_columns=r['columns'],
+                ))
             for r in union_results:
                 if r['score'] < SCORE_THRESHOLD:
                     continue
-                if r['id'] not in results:
-                    results[r['id']] = dict(
-                        id=r['id'],
-                        score=r['score'],
-                        discoverer=r['discoverer'],
-                        metadata=r['metadata'],
-                        join_columns=[],
-                        union_columns=[],
-                    )
-                else:
-                    results[r['id']]['score'] = max(results[r['id']]['score'], r['score'])
-                for pair in r['columns']:
-                    results[r['id']]['union_columns'].append(pair)
+                results.append(dict(
+                    id=r['id'],
+                    score=r['score'],
+                    metadata=r['metadata'],
+                    union_columns=r['columns'],
+                ))
 
             self.send_json({
                 'results':
                     sorted(
-                        results.values(),
+                        results,
                         key=lambda item: item['score'],
                         reverse=True
                     )
