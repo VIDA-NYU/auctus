@@ -325,7 +325,7 @@ function readFile(file, callback) {
     };
     reader.readAsText(file.files[0]);
   } else {
-    callback({});
+    callback('', {});
   }
 }
 
