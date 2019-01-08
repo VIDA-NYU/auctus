@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import elasticsearch
 import os
-import sys
 
 
 SIZE = 10000

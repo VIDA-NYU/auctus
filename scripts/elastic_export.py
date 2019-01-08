@@ -3,7 +3,6 @@ import elasticsearch
 import json
 import os
 import re
-import sys
 
 
 SIZE = 10000
