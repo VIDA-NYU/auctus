@@ -2,27 +2,82 @@
 {% set active_page = "upload" %}
 
 {% block contents %}
-<form method="post" enctype="multipart/form-data" action="{{ reverse_url('upload') }}">
-  <div class="form-group row">
-    <label for="file" class="col-sm-2 col-form-label">CSV file:</label>
-    <div class="col-sm-10">
-      <input type="file" class="form-control-file" name="file" id="file" />
-    </div>
+<h1>Manually add a file</h1>
+<p>This forms allows you to manually add a file to the system.</p>
+
+{% if error %}
+<div class="alert alert-danger" role="alert">
+  {{ error }}
+</div>
+{% endif %}
+
+<!-- Tab selector -->
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link show active" id="upload-tab" data-toggle="tab" href="#upload" role="tab" aria-controls="upload" aria-selected="true">Upload</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="url-tab" data-toggle="tab" href="#url" role="tab" aria-controls="url" aria-selected="false">Direct URL</a>
+  </li>
+</ul>
+
+
+<div class="tab-content" id="myTabContent">
+  <div class="tab-pane fade show active" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+    <form method="post" enctype="multipart/form-data" action="{{ reverse_url('upload') }}">
+      <div class="form-group row">
+        <label for="upload-file" class="col-sm-2 col-form-label">CSV file:</label>
+        <div class="col-sm-10">
+          <input type="file" class="form-control-file" name="file" id="upload-file" />
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="upload-name" class="col-sm-2 col-form-label">Name:</label>
+        <div class="col-sm-10">
+          <input class="form-control" name="name" id="upload-name" placeholder="Unnamed manually uploaded file" />
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="upload-description" class="col-sm-2 col-form-label">Description:</label>
+        <div class="col-sm-10">
+          <textarea class="form-control" name="description" id="upload-description"></textarea>
+        </div>
+      </div>
+      <div class="form-group row">
+        <div class="col-sm-10 offset-sm-2">
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </div>
+    </form>
   </div>
-  <div class="form-group row">
-    <label for="name" class="col-sm-2 col-form-label">Name:</label>
-    <div class="col-sm-10">
-      <input class="form-control" name="name" id="name" value="Unnamed uploaded file" />
-    </div>
+
+  <div class="tab-pane fade" id="url" role="tabpanel" aria-labelledby="url-tab">
+    <form method="post" enctype="multipart/form-data" action="{{ reverse_url('upload') }}">
+      <div class="form-group row">
+        <label for="url-address" class="col-sm-2 col-form-label">CSV file:</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" name="address" id="url-address" />
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="url-name" class="col-sm-2 col-form-label">Name:</label>
+        <div class="col-sm-10">
+          <input class="form-control" name="name" id="url-name" placeholder="Unnamed manually added file" />
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="url-description" class="col-sm-2 col-form-label">Description:</label>
+        <div class="col-sm-10">
+          <textarea class="form-control" name="description" id="url-description"></textarea>
+        </div>
+      </div>
+      <div class="form-group row">
+        <div class="col-sm-10 offset-sm-2">
+          <button type="submit" class="btn btn-primary">Add</button>
+        </div>
+      </div>
+    </form>
   </div>
-  <div class="form-group row">
-    <label for="description" class="col-sm-2 col-form-label">Description:</label>
-    <div class="col-sm-10">
-      <textarea class="form-control" name="description" id="description"></textarea>
-    </div>
-  </div>
-  <div class="form-group row">
-      <button type="submit" class="btn btn-primary">Upload</button>
-  </div>
-</form>
+
+</div>
 {% endblock %}
