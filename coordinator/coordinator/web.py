@@ -6,6 +6,7 @@ import json
 import os
 import pkg_resources
 import shutil
+from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
@@ -104,6 +105,8 @@ class BaseHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
 
+    http_client = AsyncHTTPClient(defaults=dict(user_agent="DataMart"))
+
     @property
     def coordinator(self):
         return self.application.coordinator
@@ -131,24 +134,45 @@ class Upload(BaseHandler):
         self.render('upload.html')
 
     async def post(self):
-        file = self.request.files['file'][0]
-        metadata = dict(
-            filename=file.filename,
-            name=self.get_body_argument('name', None),
-            description=self.get_body_argument('description', None),
-            materialize=dict(identifier='datamart.upload'),
-        )
-        dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
+        if 'file' in self.request.files:
+            file = self.request.files['file'][0]
+            metadata = dict(
+                filename=file.filename,
+                name=self.get_body_argument('name', None),
+                description=self.get_body_argument('description', None),
+                materialize=dict(identifier='datamart.upload'),
+            )
+            dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
-        # Write file to shared storage
-        dataset_dir = os.path.join('/datasets', dataset_id)
-        os.mkdir(dataset_dir)
-        try:
-            with open(os.path.join(dataset_dir, 'main.csv'), 'wb') as fp:
-                fp.write(file.body)
-        except Exception:
-            shutil.rmtree(dataset_dir)
-            raise
+            # Write file to shared storage
+            dataset_dir = os.path.join('/datasets', dataset_id)
+            os.mkdir(dataset_dir)
+            try:
+                with open(os.path.join(dataset_dir, 'main.csv'), 'wb') as fp:
+                    fp.write(file.body)
+            except Exception:
+                shutil.rmtree(dataset_dir)
+                raise
+        elif self.get_body_argument('address', None):
+            # Check the URL
+            address = self.get_body_argument('address')
+            response = await self.http_client.fetch(address)
+            if response.code != 200:
+                return self.render('upload.html',
+                                   error="Error {}".format(response.code))
+
+            # Metadata with 'direct_url' in materialization info
+            metadata = dict(
+                name=self.get_body_argument('name', None),
+                description=self.get_body_argument('description', None),
+                materialize=dict(identifier='datamart.url',
+                                 direct_url=address),
+            )
+            dataset_id = 'datamart.url.%s' % (
+                uuid.uuid5(uuid.NAMESPACE_URL, address).hex
+            )
+        else:
+            return self.render('upload.html', error="No file entered")
 
         # Publish to the profiling queue
         await self.coordinator.profile_exchange.publish(
