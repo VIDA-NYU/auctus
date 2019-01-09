@@ -541,6 +541,12 @@ class Download(CorsHandler):
                 getter.__exit__()
 
 
+class Augment(CorsHandler):
+    def post(self):
+        self.set_header('Content-Type', 'text/plain')
+        return self.finish("Not yet implemented")
+
+
 class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
@@ -576,6 +582,7 @@ def make_app(debug=False):
         [
             URLSpec('/search', Query, name='search'),
             URLSpec('/download/([^/]+)', Download, name='download'),
+            URLSpec('/augment', Augment, name='augment'),
         ],
         debug=debug,
         es=es,
