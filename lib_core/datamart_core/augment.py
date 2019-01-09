@@ -111,7 +111,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
         bool_query = {
             'must': [
                 {
-                    'match': {'columns.%s'%type_: type_value}
+                    'match': {'columns.%s' % type_: type_value}
                 },
                 {
                     'nested': {
@@ -221,7 +221,7 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
 
     for range_ in ranges:
         column_total_coverage += \
-            (range_[1][0] - range_[0][0])*(range_[0][1] - range_[1][1])
+            (range_[1][0] - range_[0][0]) * (range_[0][1] - range_[1][1])
 
         bool_query = {
             'filter': {
@@ -313,7 +313,7 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
                     n_max_lon = max(max_lon, range_[1][0])
                     n_min_lat = min(min_lat, range_[1][1])
 
-                    intersections[name] += (n_max_lon - n_min_lon)*(n_max_lat - n_min_lat)
+                    intersections[name] += (n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)
 
             # scrolling
             result = es.scroll(

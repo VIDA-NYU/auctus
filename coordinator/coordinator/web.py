@@ -220,8 +220,8 @@ class Dataset(BaseHandler):
                         datetime.datetime.utcfromtimestamp(int(range_['range']['gte'])).\
                         strftime('%Y-%m-%d %H:%M')
                     range_['range']['lte'] = \
-                        datetime.datetime.utcfromtimestamp(int(range_['range']['lte'])). \
-                            strftime('%Y-%m-%d %H:%M')
+                        datetime.datetime.utcfromtimestamp(int(range_['range']['lte'])).\
+                        strftime('%Y-%m-%d %H:%M')
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
         self.render('dataset.html',

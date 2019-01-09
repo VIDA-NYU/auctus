@@ -50,7 +50,7 @@ def get_numerical_ranges(values):
 
     range_diffs = []
     for i in range(1, len(values)):
-        diff = values[i] - values[i-1]
+        diff = values[i] - values[i - 1]
         diff != 0 and range_diffs.append(diff)
 
     avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
@@ -60,7 +60,7 @@ def get_numerical_ranges(values):
     current_max = values[0]
 
     for i in range(1, len(values)):
-        if (values[i] - values[i-1]) > avg_range_diff + 3*std_dev_range_diff:
+        if (values[i] - values[i - 1]) > avg_range_diff + 3 * std_dev_range_diff:
             ranges.append({"range": {"gte": current_min, "lte": current_max}})
             current_min = values[i]
             current_max = values[i]

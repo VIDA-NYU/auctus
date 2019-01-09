@@ -13,7 +13,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 
 from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
-from datamart_core.common import log_future, json2msg, Type
+from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
 from datamart_profiler import process_dataset
 
@@ -494,8 +494,7 @@ class Query(CorsHandler):
                         key=lambda item: item['score'],
                         reverse=True
                     )
-                }
-            )
+            })
 
 
 class Download(CorsHandler):
