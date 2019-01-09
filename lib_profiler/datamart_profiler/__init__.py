@@ -143,7 +143,9 @@ def process_dataset(data, metadata=None):
     if metadata is None:
         metadata = {}
 
-    scdp_out = run_scdp(data)
+    # FIXME: SCDP currently disabled
+    # scdp_out = run_scdp(data)
+    scdp_out = {}
 
     if isinstance(data, (str, bytes)):
         if os.path.isdir(data):
