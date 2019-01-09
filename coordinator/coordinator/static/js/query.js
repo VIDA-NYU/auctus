@@ -309,17 +309,17 @@ function formatSize(bytes) {
     return bytes.toFixed(1) + units[i];
 }
 
-function readFile(file, callback) {
-  if(file.files.length) {
+function readFile(files, callback) {
+  if(files.length) {
     var reader = new FileReader();
     reader.onload = function(event)
     {
-        if(file.files[0].name.includes('.json')) {
+        if(files[0].name.includes('.json')) {
             callback(file.files[0].name,
                      JSON.parse(event.target.result));
         } else {
             // assuming data is a CSV file
-            callback(file.files[0].name,
+            callback(files[0].name,
                      event.target.result);
         }
     };
@@ -332,8 +332,8 @@ function readFile(file, callback) {
 document.getElementById('search-form').addEventListener('submit', function(e) {
   e.preventDefault();
 
-  var file = document.getElementById('file');
-  readFile(file, function(name, result) {
+  var file_input = document.getElementById('file');
+  readFile(file_input.files, function(name, result) {
 
     var search = {};
 
