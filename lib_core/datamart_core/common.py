@@ -5,6 +5,21 @@ import sys
 import threading
 
 
+class Type:
+    MISSING_DATA = 'https://metadata.datadrivendiscovery.org/types/' +\
+                   'MissingData'
+    INTEGER = 'http://schema.org/Integer'
+    FLOAT = 'http://schema.org/Float'
+    TEXT = 'http://schema.org/Text'
+    BOOLEAN = 'http://schema.org/Boolean'
+    LATITUDE = 'http://schema.org/latitude'
+    LONGITUDE = 'http://schema.org/longitude'
+    DATE_TIME = 'http://schema.org/DateTime'
+    PHONE_NUMBER = 'https://metadata.datadrivendiscovery.org/types/' +\
+                   'PhoneNumber'
+    ID = 'http://schema.org/identifier'
+
+
 def block_wait_future(future):
     """Block the current thread until the future is done, return result.
 

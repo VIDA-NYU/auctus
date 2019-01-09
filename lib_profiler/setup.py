@@ -9,6 +9,7 @@ req = [
     'numpy',
     'pandas',
     'python-dateutil',
+    'hdbscan',
 ]
 setup(name='datamart_profiler',
       version='0.0',

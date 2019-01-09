@@ -1,4 +1,5 @@
 import codecs
+import hdbscan
 import json
 import logging
 import math
@@ -9,7 +10,7 @@ import pkg_resources
 import subprocess
 
 from .identify_types import identify_types
-
+from datamart_core.common import Type
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ def mean_stddev(array):
             total += float(elem)
         except ValueError:
             pass
-    mean = total / len(array)
+    mean = total / len(array)if len(array) > 0 else 0
     total = 0
     for elem in array:
         try:
@@ -32,9 +33,75 @@ def mean_stddev(array):
         except ValueError:
             continue
         total += elem * elem
-    stddev = math.sqrt(total / len(array))
+    stddev = math.sqrt(total / len(array)) if len(array) > 0 else 0
 
     return mean, stddev
+
+
+def get_numerical_ranges(values):
+    """
+    Retrieve the numeral ranges given the input (timestamp, integer, or float).
+    """
+
+    if not values:
+        return []
+
+    values = sorted(values)
+
+    range_diffs = []
+    for i in range(1, len(values)):
+        diff = values[i] - values[i-1]
+        diff != 0 and range_diffs.append(diff)
+
+    avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
+
+    ranges = []
+    current_min = values[0]
+    current_max = values[0]
+
+    for i in range(1, len(values)):
+        if (values[i] - values[i-1]) > avg_range_diff + 3*std_dev_range_diff:
+            ranges.append({"range": {"gte": current_min, "lte": current_max}})
+            current_min = values[i]
+            current_max = values[i]
+            continue
+        current_max = values[i]
+    ranges.append({"range": {"gte": current_min, "lte": current_max}})
+
+    return ranges
+
+
+def get_spatial_ranges(values):
+    """
+    Retrieve the spatial ranges (i.e. bounding boxes) given the input gps points.
+    It uses HDBSCAN for finding finer spatial ranges.
+    """
+
+    clustering = hdbscan.HDBSCAN(min_cluster_size=10).fit(values)
+
+    clusters = {}
+    for i in range(len(values)):
+        label = clustering.labels_[i]
+        if label < 0:
+            continue
+        if label not in clusters:
+            clusters[label] = [[float("inf"), -float("inf")], [float("inf"), -float("inf")]]
+        clusters[label][0][0] = min(clusters[label][0][0], values[i][0])  # min lat
+        clusters[label][0][1] = max(clusters[label][0][1], values[i][0])  # max lat
+
+        clusters[label][1][0] = min(clusters[label][1][0], values[i][1])  # min lon
+        clusters[label][1][1] = max(clusters[label][1][1], values[i][1])  # max lon
+
+    ranges = []
+    for v in clusters.values():
+        if (v[0][0] != v[0][1]) and (v[1][0] != v[1][1]):
+            ranges.append({"range": {"type": "envelope",
+                                     "coordinates": [
+                                         [v[1][0], v[0][1]],
+                                         [v[1][1], v[0][0]]
+                                     ]}})
+
+    return ranges
 
 
 def run_scdp(data):
@@ -130,11 +197,16 @@ def process_dataset(data, metadata=None):
     for column_meta, name in zip(columns, data.columns):
         column_meta.update(scdp_out.get(name, {}))
 
+    # Lat / Lon
+    column_lat = []
+    column_lon = []
+
     # Identify types
     logger.info("Identifying types...")
     for i, column_meta in enumerate(columns):
         array = data.iloc[:, i]
-        structural_type, semantic_types_dict = identify_types(array)
+        structural_type, semantic_types_dict = \
+            identify_types(array, column_meta['name'])
         # Set structural type
         column_meta['structural_type'] = structural_type
         # Add semantic types to the ones already present
@@ -143,20 +215,74 @@ def process_dataset(data, metadata=None):
             if sem_type not in sem_types:
                 sem_types.append(sem_type)
 
-        if structural_type in ('http://schema.org/Integer',
-                               'http://schema.org/Float'):
+        if structural_type in (Type.INTEGER, Type.FLOAT):
             column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
 
-        if 'http://schema.org/DateTime' in semantic_types_dict:
+            # Get numerical ranges
+            # logger.warning(" Column Name: " + column_meta['name'])
+            numerical_values = []
+            for e in array:
+                try:
+                    numerical_values.append(float(e))
+                except ValueError:
+                    numerical_values.append(None)
+
+            # Get lat/lon columns
+            if Type.LATITUDE in semantic_types_dict:
+                column_lat.append(
+                    (column_meta['name'], numerical_values)
+                )
+            elif Type.LONGITUDE in semantic_types_dict:
+                column_lon.append(
+                    (column_meta['name'], numerical_values)
+                )
+            else:
+                column_meta['coverage'] = get_numerical_ranges(
+                    [x for x in numerical_values if x is not None]
+                )
+
+        if Type.DATE_TIME in semantic_types_dict:
             timestamps = numpy.empty(
-                len(semantic_types_dict['http://schema.org/DateTime']),
+                len(semantic_types_dict[Type.DATE_TIME]),
                 dtype='float32',
             )
+            timestamps_for_range = []
             for j, dt in enumerate(
-                    semantic_types_dict['http://schema.org/DateTime']):
+                    semantic_types_dict[Type.DATE_TIME]):
                 timestamps[j] = dt.timestamp()
+                timestamps_for_range.append(
+                    dt.replace(minute=0, second=0).timestamp()
+                )
             column_meta['mean'], column_meta['stddev'] = \
                 mean_stddev(timestamps)
+
+            # Get temporal ranges
+            column_meta['coverage'] = \
+                get_numerical_ranges(timestamps_for_range)
+
+    # Lat / Lon
+    spatial_coverage = []
+    i_lat = i_lon = 0
+    while i_lat < len(column_lat) and i_lon < len(column_lon):
+        name_lat = column_lat[i_lat][0]
+        name_lon = column_lon[i_lon][0]
+
+        values_lat = column_lat[i_lat][1]
+        values_lon = column_lon[i_lon][1]
+        values = []
+        for i in range(len(values_lat)):
+            if values_lat[i] is not None and values_lon[i] is not None:
+                values.append([values_lat[i], values_lon[i]])
+
+        spatial_coverage.append({"lat": name_lat,
+                                 "lon": name_lon,
+                                 "ranges": get_spatial_ranges(values)})
+
+        i_lat += 1
+        i_lon += 1
+
+    if spatial_coverage:
+        metadata['spatial_coverage'] = spatial_coverage
 
     # TODO: Compute histogram
 

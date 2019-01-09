@@ -50,7 +50,36 @@ class Coordinator(object):
                                                     'type': 'keyword',
                                                     'index': True,
                                                 },
-                                            },
+                                                # we want to query individual numerical ranges
+                                                'coverage': {
+                                                    'type': 'nested',
+                                                    'properties': {
+                                                        'range': {
+                                                            'type': 'double_range'
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        'spatial_coverage': {
+                                            'type': 'nested',
+                                            'properties': {
+                                                'lat': {
+                                                    'type': 'text'
+                                                },
+                                                'lon': {
+                                                    'type': 'text'
+                                                },
+                                                # we want to query individual spatial ranges
+                                                'ranges': {
+                                                    'type': 'nested',
+                                                    'properties': {
+                                                        'range': {
+                                                            'type': 'geo_shape'
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         },
                                         'license': {
                                             'type': 'keyword',

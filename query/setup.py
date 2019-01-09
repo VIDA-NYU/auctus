@@ -11,6 +11,7 @@ req = [
     'tornado>=5.0',
     'datamart_core',
     'datamart_materialize',
+    'datamart_profiler',
 ]
 setup(name='query',
       version='0.0',

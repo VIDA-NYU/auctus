@@ -7,6 +7,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'aio-pika',
+    'datamart_core',
     'elasticsearch',
     'jinja2',
     'tornado>=5.0',

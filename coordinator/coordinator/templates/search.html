@@ -6,48 +6,69 @@
   <div class="container">
     <form id="search-form">
       {{ xsrf_form_html() }}
-      <h1>Query DataMart</h1>
+
+      <h1>Search DataMart</h1>
+
+      <hr align="left">
+      <h3>Data (CSV or D3M datasetDoc file)</h3>
+
       <div class="form-row">
-        <div class="form-group col-md-8 offset-md-2">
-          <label for="keywords">Keywords:</label>
+        <div class="form-group col-md-8">
+         <input type="file" class="form-control-file" name="file" id="file" />
+        </div>
+      </div>
+
+      <hr align="left">
+      <h3>Query</h3>
+
+      <div class="form-row">
+        <div class="form-group col-md-8">
+          <label for="keywords">Dataset Keywords:</label>
           <input class="form-control" id="keywords" autofocus />
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group col-md-8 offset-md-2">
-          <label for="columns">Column names:</label>
-          <input class="form-control" id="columns" autofocus />
+        <div class="form-group col-md-8">
+          <label for="names">Dataset Name:</label>
+          <input class="form-control" id="names" autofocus />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-8">
+          <label for="description">Dataset Description:</label>
+          <input class="form-control" id="description" autofocus />
         </div>
       </div>
 
-      <div class="col-md-8 offset-md-2">
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="type-integer">
-          <label class="form-check-label" for="type-integer">Integer</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="type-float">
-          <label class="form-check-label" for="type-float">Float</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="type-bool">
-          <label class="form-check-label" for="type-bool">Boolean</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="type-text">
-          <label class="form-check-label" for="type-text">Text</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="type-datetime">
-          <label class="form-check-label" for="type-datetime">Date/time</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="type-phone">
-          <label class="form-check-label" for="type-phone">Phone number</label>
-        </div>
+      <h4>Required Variables</h4>
+
+      <div id="required"></div>
+      <div class="form-row">
+        <select id="select-required">
+          <option value="temporal">Temporal Entity</option>
+          <option value="geospatial">Geospatial Entity</option>
+          <option value="generic">Generic Entity</option>
+        </select>
+        <button class="btn btn-secondary btn-sm ml-3" type="button"
+                onclick="variableChange('select-required', 'required');">Add</button>
       </div>
 
-      <div class="form-group row justify-content-center mt-2">
+      <p></p>
+
+      <h4>Desired Variables</h4>
+
+      <div id="desired"></div>
+      <div class="form-row">
+        <select id="select-desired">
+          <option value="temporal">Temporal Entity</option>
+          <option value="geospatial">Geospatial Entity</option>
+          <option value="generic">Generic Entity</option>
+        </select>
+        <button class="btn btn-secondary btn-sm ml-3" type="button"
+                onclick="variableChange('select-desired', 'desired');">Add</button>
+      </div>
+
+      <div class="form-group row justify-content-center mt-4">
         <button class="btn btn-lg btn-primary btn-block col-md-8" type="submit">Go</button>
       </div>
     </form>

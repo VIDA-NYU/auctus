@@ -1,4 +1,5 @@
 import aio_pika
+import datetime
 import elasticsearch
 import logging
 import jinja2
@@ -14,6 +15,8 @@ from tornado.web import HTTPError, RequestHandler
 import uuid
 
 from .coordinator import Coordinator
+from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
+from datamart_core.common import Type
 
 
 logger = logging.getLogger(__name__)
@@ -209,12 +212,48 @@ class Dataset(BaseHandler):
             metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
+        # readable format for temporal coverage
+        for column in metadata['columns']:
+            if Type.DATE_TIME in column['semantic_types']:
+                for range_ in column['coverage']:
+                    range_['range']['gte'] = \
+                        datetime.datetime.utcfromtimestamp(int(range_['range']['gte'])).\
+                        strftime('%Y-%m-%d %H:%M')
+                    range_['range']['lte'] = \
+                        datetime.datetime.utcfromtimestamp(int(range_['range']['lte'])). \
+                            strftime('%Y-%m-%d %H:%M')
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
                     metadata=metadata, materialize=materialize,
                     size=format_size(metadata['size']))
+
+
+class JoinQuery(BaseHandler):
+    def get(self, dataset_id):
+        results = get_joinable_datasets(
+            self.application.elasticsearch,
+            dataset_id
+        )
+        self.render(
+            'join_query.html',
+            dataset_id=dataset_id,
+            result=results
+        )
+
+
+class UnionQuery(BaseHandler):
+    def get(self, dataset_id):
+        results = get_unionable_datasets(
+            self.application.elasticsearch,
+            dataset_id
+        )
+        self.render(
+            'union_query.html',
+            dataset_id=dataset_id,
+            result=results
+        )
 
 
 class Application(tornado.web.Application):
@@ -265,9 +304,11 @@ def make_app(debug=False):
         [
             URLSpec('/', Index, name='index'),
             URLSpec('/status', Status),
-            URLSpec('/search', Search, name='search'),
+            URLSpec('/search_', Search, name='search_'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
+            URLSpec('/join_query/([^/]+)', JoinQuery, name='join_query'),
+            URLSpec('/union_query/([^/]+)', UnionQuery, name='union_query'),
         ],
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),

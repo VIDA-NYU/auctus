@@ -133,6 +133,7 @@ class Profiler(object):
                     body,
                     id=dataset_id,
                 )
+
                 # Publish to RabbitMQ
                 await self.datasets_exchange.publish(
                     json2msg(dict(body, id=dataset_id)),

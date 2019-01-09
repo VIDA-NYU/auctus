@@ -2,6 +2,8 @@ from dateutil.parser import parse
 import re
 import unittest
 
+from datamart_core.common import Type
+
 
 _re_int = re.compile(r'^[+-]?[0-9]+$')
 _re_float = re.compile(r'^[+-]?'
@@ -23,12 +25,12 @@ _re_phone = re.compile(r'^'
 MAX_UNCLEAN = 0.02  # 2%
 
 
-def identify_types(array):
+def identify_types(array, name):
     num_total = len(array)
     ratio = 1.0 - MAX_UNCLEAN
 
     # Identify structural type
-    num_float = num_int = num_bool = num_empty = 0
+    num_float = num_int = num_bool = num_empty = num_lat = num_lon = 0
     # TODO: ENUM
     for elem in array:
         if not elem:
@@ -41,23 +43,52 @@ def identify_types(array):
             num_bool += 1
 
     if num_empty == num_total:
-        structural_type = ('https://metadata.datadrivendiscovery.org/types/' +
-                           'MissingData')
+        structural_type = Type.MISSING_DATA
     elif (num_empty + num_int) >= ratio * num_total:
-        structural_type = 'http://schema.org/Integer'
+        structural_type = Type.INTEGER
     elif (num_empty + num_int + num_float) >= ratio * num_total:
-        structural_type = 'http://schema.org/Float'
+        structural_type = Type.FLOAT
     else:
-        structural_type = 'http://schema.org/Text'
+        structural_type = Type.TEXT
 
     semantic_types_dict = {}
 
     # Identify booleans
     if num_bool >= ratio * num_total:
-        semantic_types_dict['http://schema.org/Boolean'] = None
+        semantic_types_dict[Type.BOOLEAN] = None
+
+    # Identify ids
+    # TODO: is this enough?
+    # TODO: what about false positives?
+    if structural_type == Type.INTEGER:
+        if (name.lower().startswith('id') or
+                name.lower().endswith('id') or
+                name.lower().startswith('identifier') or
+                name.lower().endswith('identifier') or
+                name.lower().startswith('index') or
+                name.lower().endswith('index')):
+            semantic_types_dict[Type.ID] = None
+
+    # Identify lat/lon
+    if structural_type == Type.FLOAT:
+        for elem in array:
+            try:
+                elem = float(elem)
+            except ValueError:
+                pass
+            else:
+                if -180.0 <= float(elem) <= 180.0:
+                    num_lon += 1
+                    if -90.0 <= float(elem) <= 90.0:
+                        num_lat += 1
+
+        if num_lat >= ratio * num_total and 'lat' in name.lower():
+            semantic_types_dict[Type.LATITUDE] = None
+        if num_lon >= ratio * num_total and 'lon' in name.lower():
+            semantic_types_dict[Type.LONGITUDE] = None
 
     # Identify dates
-    if structural_type == 'http://schema.org/Text':
+    if structural_type == Type.TEXT:
         parsed_dates = []
         for elem in array:
             try:
@@ -66,7 +97,7 @@ def identify_types(array):
                 pass
 
         if len(parsed_dates) >= ratio * num_total:
-            semantic_types_dict['http://schema.org/DateTime'] = parsed_dates
+            semantic_types_dict[Type.DATE_TIME] = parsed_dates
 
     # Identify phone numbers
     num_phones = 0
@@ -75,8 +106,7 @@ def identify_types(array):
             num_phones += 1
 
     if num_phones >= ratio * num_total:
-        semantic_types_dict['https://metadata.datadrivendiscovery.org/types/' +
-                            'PhoneNumber'] = None
+        semantic_types_dict[Type.PHONE_NUMBER] = None
 
     return structural_type, semantic_types_dict
 
