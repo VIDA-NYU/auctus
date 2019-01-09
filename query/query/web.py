@@ -567,11 +567,6 @@ class Application(tornado.web.Application):
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
 
-        # Setup the datasets exchange
-        self.datasets_exchange = await self.channel.declare_exchange(
-            'datasets',
-            aio_pika.ExchangeType.TOPIC)
-
 
 def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
