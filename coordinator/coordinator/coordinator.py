@@ -101,6 +101,7 @@ class Coordinator(object):
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()),
                    should_never_exit=True)
+        self.update_sources_counts()
 
     async def _amqp(self):
         connection = await aio_pika.connect_robust(
@@ -190,3 +191,33 @@ class Coordinator(object):
             obj = json.loads(message.body.decode('utf-8'))
             logger.info("Got query message")
             # TODO: Store recent queries
+
+    def update_sources_counts(self):
+        SIZE = 10000
+        sources = {}
+        while True:
+            hits = self.elasticsearch.search(
+                index='datamart',
+                body={
+                    'query': {
+                        'match_all': {},
+                    },
+                },
+                size=SIZE,
+            )['hits']['hits']
+            for h in hits:
+                identifier = h['_source']['materialize']['identifier']
+                try:
+                    sources[identifier] += 1
+                except KeyError:
+                    sources[identifier] = 1
+            if len(hits) != SIZE:
+                break
+        total = sum(sources.values())
+        self.sources_counts = sources
+        logger.info("Now %d datasets", total)
+
+        asyncio.get_event_loop().call_later(
+            30,
+            self.update_sources_counts,
+        )

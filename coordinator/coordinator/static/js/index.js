@@ -79,6 +79,26 @@ function loadStatus() {
       elem.innerHTML = "<h5>No recent discoveries</h5>";
       recent_discoveries.appendChild(elem);
     }
+    var sources = document.getElementById('sources');
+    sources.innerHTML = '';
+    sources_counts = Object.entries(result.sources_counts);
+    sources_counts.sort(function(a, b) {
+      if(a[1] < b[1]) {
+        return 1;
+      } else if(a[1] > b[1]) {
+        return -1;
+      } else {
+        return 0;
+      }
+    });
+    for(var i = 0; i < sources_counts.length; ++i) {
+      var elem = document.createElement('li');
+      elem.innerHTML =
+        sources_counts[i][1] +
+        ' datasets from ' +
+        sources_counts[i][0];
+        sources.appendChild(elem);
+    }
   })
   .catch(console.error);
 }
