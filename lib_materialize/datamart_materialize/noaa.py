@@ -66,19 +66,20 @@ class NoaaMaterializer(object):
                        startdate=materialize['noaa_start'],
                        enddate=materialize['noaa_end'])
 
-        writer = csv.writer(destination)
-        writer.writerow(['date', materialize['noaa_datatype_id']])
-        # Sort by date
-        data = sorted(data, key=lambda v: v['date'])
-        # Write the data, one row per date, averaged across stations
-        time = None
-        values = []
-        for row in data:
-            if row['date'] != time:
-                if time is not None:
-                    writer.writerow([time, sum(values) / len(values)])
-                time = row['date']
-                values = []
-            values.append(row['value'])
-        if time is not None:
-            writer.writerow([time, sum(values) / len(values)])
+        with open(destination, newline='') as fp:
+            writer = csv.writer(fp)
+            writer.writerow(['date', materialize['noaa_datatype_id']])
+            # Sort by date
+            data = sorted(data, key=lambda v: v['date'])
+            # Write the data, one row per date, averaged across stations
+            time = None
+            values = []
+            for row in data:
+                if row['date'] != time:
+                    if time is not None:
+                        writer.writerow([time, sum(values) / len(values)])
+                    time = row['date']
+                    values = []
+                values.append(row['value'])
+            if time is not None:
+                writer.writerow([time, sum(values) / len(values)])
