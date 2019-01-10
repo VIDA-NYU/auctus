@@ -77,7 +77,11 @@ def get_spatial_ranges(values):
     It uses HDBSCAN for finding finer spatial ranges.
     """
 
-    clustering = hdbscan.HDBSCAN(min_cluster_size=10).fit(values)
+    min_cluster_size = 10
+    if len(values) <= min_cluster_size:
+        min_cluster_size = 2
+
+    clustering = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size).fit(values)
 
     clusters = {}
     for i in range(len(values)):
@@ -276,9 +280,10 @@ def process_dataset(data, metadata=None):
             if values_lat[i] is not None and values_lon[i] is not None:
                 values.append([values_lat[i], values_lon[i]])
 
-        spatial_coverage.append({"lat": name_lat,
-                                 "lon": name_lon,
-                                 "ranges": get_spatial_ranges(values)})
+        if len(values) > 1:
+            spatial_coverage.append({"lat": name_lat,
+                                     "lon": name_lon,
+                                     "ranges": get_spatial_ranges(values)})
 
         i_lat += 1
         i_lon += 1
