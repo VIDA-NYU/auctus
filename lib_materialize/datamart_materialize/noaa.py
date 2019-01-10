@@ -53,7 +53,7 @@ def get_all(endpoint, token, delay=0.5, **params):
 class NoaaMaterializer(object):
     DELAY = 0.5
 
-    def download(self, materialize, destination):
+    def download(self, materialize, writer):
         try:
             token = os.environ['NOAA_TOKEN']
         except KeyError:
@@ -66,7 +66,7 @@ class NoaaMaterializer(object):
                        startdate=materialize['noaa_start'],
                        enddate=materialize['noaa_end'])
 
-        with open(destination, newline='') as fp:
+        with writer.open_file('w', newline='') as fp:
             writer = csv.writer(fp)
             writer.writerow(['date', materialize['noaa_datatype_id']])
             # Sort by date

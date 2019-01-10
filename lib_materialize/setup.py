@@ -16,6 +16,10 @@ setup(name='datamart_materialize',
           'datamart_materialize': [
               'datamart.noaa = datamart_materialize.noaa:NoaaMaterializer',
           ],
+          'datamart_materialize.writer': [
+              'csv = datamart_materialize:CsvWriter',
+              'd3m = datamart_materialize.d3m:D3mWriter',
+          ],
       },
       install_requires=req,
       description="Materialization library for DataMart",
