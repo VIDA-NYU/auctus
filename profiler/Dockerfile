@@ -14,7 +14,7 @@ WORKDIR /usr/src/app
 RUN pip install aio-pika elasticsearch
 RUN apt-get update && apt-get install -y default-jre && \
     rm -rf /var/lib/apt/lists/*
-RUN pip install numpy pandas
+RUN pip install numpy pandas hdbscan
 COPY lib_core lib_core
 RUN pip install -e /usr/src/app/lib_core
 COPY lib_materialize lib_materialize
