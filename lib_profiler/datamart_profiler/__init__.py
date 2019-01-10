@@ -7,6 +7,7 @@ import numpy
 import os
 import pandas
 import pkg_resources
+import random
 import subprocess
 
 from .identify_types import identify_types
@@ -167,11 +168,12 @@ def process_dataset(data, metadata=None):
             with open(data, 'rb') as fp:
                 metadata['nb_rows'] = sum(1 for _ in fp)
 
-            ratio = metadata['size'] / MAX_SIZE
+            ratio = MAX_SIZE / metadata['size']
             logger.info("Loading dataframe, sample ratio=%r...", ratio)
-            data = pandas.read_csv(data,
-                                   dtype=str, na_filter=False,
-                                   skiprows=lambda i: i != 0 and i > ratio)
+            data = pandas.read_csv(
+                data,
+                dtype=str, na_filter=False,
+                skiprows=lambda i: i != 0 and random.random() > ratio)
         else:
             logger.info("Loading dataframe...")
             data = pandas.read_csv(data,
