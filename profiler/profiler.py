@@ -112,36 +112,41 @@ class Profiler(object):
     def process_dataset_callback(self, message, dataset_id, materialize):
         async def coro(future):
             try:
-                metadata = future.result()
+                try:
+                    metadata = future.result()
+                except Exception:
+                    logger.exception("Error processing dataset %r", dataset_id)
+                    # Move message to failed queue
+                    await self.channel.default_exchange.publish(
+                        aio_pika.Message(message.body),
+                        self.failed_queue.name,
+                    )
+                    # Ack anyway, retrying would probably fail again
+                    message.ack()
+                else:
+                    # Insert results in Elasticsearch
+                    body = dict(metadata,
+                                materialize=materialize,
+                                date=datetime.utcnow().isoformat() + 'Z')
+                    self.es.index(
+                        'datamart',
+                        '_doc',
+                        body,
+                        id=dataset_id,
+                    )  # failed
+
+                    # Publish to RabbitMQ
+                    await self.datasets_exchange.publish(
+                        json2msg(dict(body, id=dataset_id)),
+                        dataset_id,
+                    )
+
+                    message.ack()
+                    logger.info("Dataset %r processed successfully",
+                                dataset_id)
             except Exception:
-                logger.exception("Error processing dataset %r", dataset_id)
-                # Move message to failed queue
-                await self.channel.default_exchange.publish(
-                    aio_pika.Message(message.body),
-                    self.failed_queue.name,
-                )
-                # Ack anyway, retrying would probably fail again
-                message.ack()
-            else:
-                # Insert results in Elasticsearch
-                body = dict(metadata,
-                            materialize=materialize,
-                            date=datetime.utcnow().isoformat() + 'Z')
-                self.es.index(
-                    'datamart',
-                    '_doc',
-                    body,
-                    id=dataset_id,
-                )
-
-                # Publish to RabbitMQ
-                await self.datasets_exchange.publish(
-                    json2msg(dict(body, id=dataset_id)),
-                    dataset_id,
-                )
-
-                message.ack()
-                logger.info("Dataset %r processed successfully", dataset_id)
+                message.nack()
+                raise
 
         def callback(future):
             self.work_tickets.release()
