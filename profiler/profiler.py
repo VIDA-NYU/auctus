@@ -18,9 +18,10 @@ logger = logging.getLogger(__name__)
 MAX_CONCURRENT = 2
 
 
-def materialize_and_process_dataset(dataset_id, materialize, metadata):
-    with get_dataset(materialize, dataset_id) as dataset_dir:
-        return process_dataset(dataset_dir, metadata)
+def materialize_and_process_dataset(dataset_id, metadata):
+    with get_dataset(metadata, dataset_id) as dataset_path:
+        metadata.pop('materialize')
+        return process_dataset(dataset_path, metadata)
 
 
 class Profiler(object):
@@ -88,7 +89,7 @@ class Profiler(object):
             obj = msg2json(message)
             dataset_id = obj['id']
             metadata = obj['metadata']
-            materialize = metadata.pop('materialize', {})
+            materialize = metadata.get('materialize', {})
 
             logger.info("Processing dataset %r from %r",
                         dataset_id, materialize.get('identifier'))
@@ -97,7 +98,6 @@ class Profiler(object):
                 None,
                 materialize_and_process_dataset,
                 dataset_id,
-                materialize,
                 metadata,
             )
 

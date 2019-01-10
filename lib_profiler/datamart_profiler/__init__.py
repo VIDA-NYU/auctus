@@ -153,8 +153,6 @@ def process_dataset(data, metadata=None):
     scdp_out = {}
 
     if isinstance(data, (str, bytes)):
-        if os.path.isdir(data):
-            data = os.path.join(data, 'main.csv')
         if not os.path.exists(data):
             raise ValueError("data file does not exist")
 

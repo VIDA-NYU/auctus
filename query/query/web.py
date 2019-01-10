@@ -1,3 +1,5 @@
+import zipfile
+
 import aio_pika
 import asyncio
 from datetime import datetime
@@ -497,11 +499,37 @@ class Query(CorsHandler):
             })
 
 
+class RecursiveZipWriter(object):
+    def __init__(self, write):
+        self._write = write
+        self._zip = zipfile.ZipFile(self, 'w')
+
+    def write_recursive(self, src, dst):
+        if os.path.isdir(src):
+            for name in os.listdir(src):
+                self.write_recursive(os.path.join(src, name),
+                                     dst + '/' + name)
+        else:
+            self._zip.write(src, dst)
+
+    def write(self, data):
+        self._write(data)
+        return len(data)
+
+    def flush(self):
+        return
+
+    def close(self):
+        self._zip.close()
+
+
 class Download(CorsHandler):
     TIMEOUT = 300
 
     async def get(self, dataset_id):
         self._cors()
+
+        output_format = self.get_query_argument('format', 'csv')
 
         # Get materialization data from Elasticsearch
         es = self.application.elasticsearch
@@ -509,32 +537,41 @@ class Download(CorsHandler):
             metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
-        materialize = metadata.pop('materialize', {})
+        materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
-        if 'direct_url' in materialize:
+        if 'direct_url' in materialize and output_format == 'csv':
             # Redirect the client to it
             self.redirect(materialize['direct_url'])
         else:
-            getter = get_dataset(materialize, dataset_id)
+            getter = get_dataset(metadata, dataset_id, format=output_format)
             try:
-                dataset_dir = getter.__enter__()
+                dataset_path = getter.__enter__()
             except Exception:
                 self.set_status(500)
                 self.send_json(dict(error="Materializer reports failure"))
                 raise
             try:
-                self.set_header('Content-Type', 'application/octet-stream')
-                self.set_header('X-Content-Type-Options', 'nosniff')
-                self.set_header('Content-Disposition',
-                                'attachment; filename="%s.csv"' % dataset_id)
-                with open(os.path.join(dataset_dir, 'main.csv'), 'rb') as fp:
-                    buf = fp.read(4096)
-                    while buf:
-                        self.write(buf)
-                        if len(buf) != 4096:
-                            break
+                if os.path.isfile(dataset_path):
+                    self.set_header('Content-Type', 'application/octet-stream')
+                    self.set_header('X-Content-Type-Options', 'nosniff')
+                    self.set_header('Content-Disposition',
+                                    'attachment; filename="%s"' % dataset_id)
+                    with open(dataset_path, 'rb') as fp:
                         buf = fp.read(4096)
+                        while buf:
+                            self.write(buf)
+                            if len(buf) != 4096:
+                                break
+                            buf = fp.read(4096)
+                else:  # Directory
+                    self.set_header('Content-Type', 'application/zip')
+                    self.set_header(
+                        'Content-Disposition',
+                        'attachment; filename="%s.zip"' % dataset_id)
+                    writer = RecursiveZipWriter(self.write)
+                    writer.write_recursive(dataset_path, '')
+                    writer.close()
                 self.finish()
             finally:
                 getter.__exit__()
