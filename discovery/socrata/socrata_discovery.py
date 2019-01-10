@@ -80,6 +80,9 @@ class SocrataDiscoverer(Discoverer):
         resource = dataset['resource']
         id = resource['id']
 
+        encoded_domain = encode_domain(domain['url'])
+        dataset_id = '{}.{}'.format(encoded_domain, id)
+
         # Check type
         # api, calendar, chart, datalens, dataset, federated_href, file,
         # filter, form, href, link, map, measure, story, visualization
@@ -91,7 +94,7 @@ class SocrataDiscoverer(Discoverer):
         try:
             hit = self.elasticsearch.get(
                 'datamart', '_doc',
-                '%s.%s' % (self.identifier, id),
+                '%s.%s' % (self.identifier, dataset_id),
                 _source=['materialize.socrata_updated'])
         except elasticsearch.NotFoundError:
             pass
@@ -113,13 +116,12 @@ class SocrataDiscoverer(Discoverer):
         )
 
         # Discover this dataset
-        encoded_domain = encode_domain(domain['url'])
         self.record_dataset(dict(socrata_id=id,
                                  socrata_domain=domain['url'],
                                  socrata_updated=resource['updatedAt'],
                                  direct_url=direct_url),
                             metadata,
-                            dataset_id='{}.{}'.format(encoded_domain, id))
+                            dataset_id=dataset_id)
 
 
 if __name__ == '__main__':
