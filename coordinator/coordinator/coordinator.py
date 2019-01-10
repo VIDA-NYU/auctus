@@ -196,6 +196,7 @@ class Coordinator(object):
         SIZE = 10000
         sources = {}
         while True:
+            # TODO: Aggregation query?
             hits = self.elasticsearch.search(
                 index='datamart',
                 body={
@@ -207,6 +208,12 @@ class Coordinator(object):
             )['hits']['hits']
             for h in hits:
                 identifier = h['_source']['materialize']['identifier']
+
+                # Special case for Socrata
+                if identifier == 'datamart.socrata':
+                    end = h['_id'].find('.', 17)
+                    identifier = h['_id'][:end]
+
                 try:
                     sources[identifier] += 1
                 except KeyError:
