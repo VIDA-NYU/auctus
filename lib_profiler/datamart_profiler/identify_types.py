@@ -54,7 +54,7 @@ def identify_types(array, name):
     semantic_types_dict = {}
 
     # Identify booleans
-    if num_bool >= ratio * num_total:
+    if (num_empty + num_bool) >= ratio * num_total:
         semantic_types_dict[Type.BOOLEAN] = None
 
     # Identify ids
@@ -82,9 +82,9 @@ def identify_types(array, name):
                     if -90.0 <= float(elem) <= 90.0:
                         num_lat += 1
 
-        if num_lat >= ratio * num_total and 'lat' in name.lower():
+        if (num_empty + num_lat) >= ratio * num_total and 'lat' in name.lower():
             semantic_types_dict[Type.LATITUDE] = None
-        if num_lon >= ratio * num_total and 'lon' in name.lower():
+        if (num_empty + num_lon) >= ratio * num_total and 'lon' in name.lower():
             semantic_types_dict[Type.LONGITUDE] = None
 
     # Identify dates
@@ -96,7 +96,7 @@ def identify_types(array, name):
             except Exception:  # ValueError, OverflowError
                 pass
 
-        if len(parsed_dates) >= ratio * num_total:
+        if (num_empty + len(parsed_dates)) >= ratio * num_total:
             semantic_types_dict[Type.DATE_TIME] = parsed_dates
 
     # Identify phone numbers
@@ -105,7 +105,7 @@ def identify_types(array, name):
         if _re_phone.match(elem) is not None:
             num_phones += 1
 
-    if num_phones >= ratio * num_total:
+    if (num_empty + num_phones) >= ratio * num_total:
         semantic_types_dict[Type.PHONE_NUMBER] = None
 
     return structural_type, semantic_types_dict
