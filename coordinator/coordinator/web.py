@@ -325,7 +325,7 @@ def main():
                         format="%(asctime)s %(levelname)s: %(message)s")
 
     app = make_app(debug=True)
-    app.listen(8001, xheaders=True)
+    app.listen(8001, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()
 
