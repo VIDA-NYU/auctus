@@ -305,7 +305,7 @@ def make_app(debug=False):
         [
             URLSpec('/', Index, name='index'),
             URLSpec('/status', Status),
-            URLSpec('/search', Search, name='search'),
+            URLSpec('/search_form', Search, name='search'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
             URLSpec('/join_query/([^/]+)', JoinQuery, name='join_query'),
