@@ -540,6 +540,19 @@ class Download(CorsHandler):
                 getter.__exit__()
 
 
+class Metadata(CorsHandler):
+    def get(self, dataset_id):
+        self._cors()
+
+        es = self.application.elasticsearch
+        try:
+            metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+        except elasticsearch.NotFoundError:
+            raise HTTPError(404)
+
+        self.send_json(metadata)
+
+
 class Augment(CorsHandler):
     def post(self):
         self.set_header('Content-Type', 'text/plain')
@@ -576,6 +589,7 @@ def make_app(debug=False):
         [
             URLSpec('/search', Query, name='search'),
             URLSpec('/download/([^/]+)', Download, name='download'),
+            URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
         ],
         debug=debug,
