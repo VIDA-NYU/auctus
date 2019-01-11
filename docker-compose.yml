@@ -71,6 +71,12 @@ services:
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
   example_discoverer:
     build:
       context: .
