@@ -527,8 +527,6 @@ class Download(CorsHandler):
     TIMEOUT = 300
 
     async def get(self, dataset_id):
-        self._cors()
-
         output_format = self.get_query_argument('format', 'csv')
 
         # Get materialization data from Elasticsearch
@@ -579,8 +577,6 @@ class Download(CorsHandler):
 
 class Metadata(CorsHandler):
     def get(self, dataset_id):
-        self._cors()
-
         es = self.application.elasticsearch
         try:
             metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
@@ -592,6 +588,7 @@ class Metadata(CorsHandler):
 
 class Augment(CorsHandler):
     def post(self):
+        self._cors()
         self.set_header('Content-Type', 'text/plain')
         return self.finish("Not yet implemented")
 
