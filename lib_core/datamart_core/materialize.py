@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def get_dataset(metadata, dataset_id, format='csv'):
     shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
     if os.path.exists(shared):
-        yield shared
+        yield os.path.join(shared, 'main.csv')
     else:
         temp_dir = tempfile.mkdtemp()
         try:
