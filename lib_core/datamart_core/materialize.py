@@ -20,8 +20,9 @@ def get_dataset(metadata, dataset_id, format='csv'):
         temp_dir = tempfile.mkdtemp()
         try:
             temp_file = os.path.join(temp_dir, 'data')
-            datamart_materialize.download(metadata, temp_file, None,
-                                          format=format)
+            datamart_materialize.download(
+                {'id': dataset_id, 'metadata': metadata},
+                temp_file, None, format=format)
             yield temp_file
         finally:
             shutil.rmtree(temp_dir)
