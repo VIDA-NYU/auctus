@@ -8,6 +8,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'requests',
     'sodapy',
+    'xlrd',
 ]
 setup(name='datamart_materialize',
       version='0.1',
