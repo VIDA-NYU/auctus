@@ -574,7 +574,7 @@ class Download(CorsHandler):
                     writer.close()
                 self.finish()
             finally:
-                getter.__exit__()
+                getter.__exit__(None, None, None)
 
 
 class Metadata(CorsHandler):
