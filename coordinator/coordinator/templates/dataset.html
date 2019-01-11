@@ -4,7 +4,7 @@
 {% block contents %}
 <h1>Dataset: {{ dataset_id }}</h1>
 
-<p><a href="{{ query_host }}/download/{{ dataset_id }}">Download</a> ({{ size }})</p>
+<p><a href="{{ query_host }}/download/{{ dataset_id }}">Download: CSV</a>, <a href="{{ query_host }}/download/{{ dataset_id }}?format=d3m">D3M</a> ({{ size }})</p>
 
 {% macro meta_table(m) -%}
   <table class="table json">
