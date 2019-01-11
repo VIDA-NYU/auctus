@@ -45,11 +45,20 @@ services:
       - AMQP_USER=guest
       - AMQP_PASSWORD=guest
     ports:
-      - 8002:8002
+      - 8002
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
       - ./query/query:/usr/src/app/query/query
+  query_lb:
+    image: dockercloud/haproxy
+    ports:
+      - 8002:80
+      - 8081:1936
+    links:
+      - query
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
   profiler:
     build:
       context: .
