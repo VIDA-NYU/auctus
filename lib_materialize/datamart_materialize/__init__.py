@@ -97,7 +97,7 @@ def load_materializers():
 class CsvWriter(object):
     needs_metadata = False
 
-    def __init__(self, destination, metadata):
+    def __init__(self, dataset_id, destination, metadata):
         self.destination = destination
 
     def open_file(self, mode='wb', name=None, **kwargs):
@@ -136,7 +136,7 @@ def download(dataset, destination, proxy, format='csv'):
                 response = requests.get(proxy + '/metadata/' + dataset)
                 response.raise_for_status()
                 metadata = response.json()
-            writer = writer_cls(destination, metadata)
+            writer = writer_cls(dataset, destination, metadata)
             _proxy_download(dataset, writer, proxy)
             return writer.finish()
         else:
@@ -156,7 +156,7 @@ def download(dataset, destination, proxy, format='csv'):
             materialize = materialize['materialize']
             dataset_id = dataset.get('id')
 
-    writer = writer_cls(destination, metadata)
+    writer = writer_cls(dataset_id, destination, metadata)
 
     if 'direct_url' in materialize:
         logger.info("Direct download: %s", materialize['direct_url'])
