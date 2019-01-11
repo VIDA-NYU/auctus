@@ -193,38 +193,39 @@ class Coordinator(object):
             # TODO: Store recent queries
 
     def update_sources_counts(self):
-        SIZE = 10000
-        sources = {}
-        while True:
-            # TODO: Aggregation query?
-            hits = self.elasticsearch.search(
-                index='datamart',
-                body={
-                    'query': {
-                        'match_all': {},
+        try:
+            SIZE = 10000
+            sources = {}
+            while True:
+                # TODO: Aggregation query?
+                hits = self.elasticsearch.search(
+                    index='datamart',
+                    body={
+                        'query': {
+                            'match_all': {},
+                        },
                     },
-                },
-                size=SIZE,
-            )['hits']['hits']
-            for h in hits:
-                identifier = h['_source']['materialize']['identifier']
+                    size=SIZE,
+                )['hits']['hits']
+                for h in hits:
+                    identifier = h['_source']['materialize']['identifier']
 
-                # Special case for Socrata
-                if identifier == 'datamart.socrata':
-                    end = h['_id'].find('.', 17)
-                    identifier = h['_id'][:end]
+                    # Special case for Socrata
+                    if identifier == 'datamart.socrata':
+                        end = h['_id'].find('.', 17)
+                        identifier = h['_id'][:end]
 
-                try:
-                    sources[identifier] += 1
-                except KeyError:
-                    sources[identifier] = 1
-            if len(hits) != SIZE:
-                break
-        total = sum(sources.values())
-        self.sources_counts = sources
-        logger.info("Now %d datasets", total)
-
-        asyncio.get_event_loop().call_later(
-            30,
-            self.update_sources_counts,
-        )
+                    try:
+                        sources[identifier] += 1
+                    except KeyError:
+                        sources[identifier] = 1
+                if len(hits) != SIZE:
+                    break
+            total = sum(sources.values())
+            self.sources_counts = sources
+            logger.info("Now %d datasets", total)
+        finally:
+            asyncio.get_event_loop().call_later(
+                30,
+                self.update_sources_counts,
+            )
