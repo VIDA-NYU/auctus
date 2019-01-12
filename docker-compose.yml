@@ -33,7 +33,7 @@ services:
       - 8001:8001
     volumes:
       - datasets:/datasets
-      - ./coordinator/coordinator:/usr/src/app/coordinator/coordinator
+#      - ./coordinator/coordinator:/usr/src/app/coordinator/coordinator
   query:
     build:
       context: .
@@ -49,7 +49,7 @@ services:
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
-      - ./query/query:/usr/src/app/query/query
+#      - ./query/query:/usr/src/app/query/query
   query_lb:
     image: dockercloud/haproxy
     ports:

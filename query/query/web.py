@@ -627,6 +627,7 @@ def make_app(debug=False):
             URLSpec('/augment', Augment, name='augment'),
         ],
         debug=debug,
+        serve_traceback=True,
         es=es,
     )
 
@@ -636,7 +637,7 @@ def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
 
-    app = make_app(debug=True)
+    app = make_app()
     app.listen(8002, xheaders=True)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()

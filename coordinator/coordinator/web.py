@@ -314,6 +314,7 @@ def make_app(debug=False):
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
         debug=debug,
+        serve_traceback=True,
         cookie_secret=secret,
         es=es,
     )
@@ -324,7 +325,7 @@ def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
 
-    app = make_app(debug=True)
+    app = make_app()
     app.listen(8001, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()
