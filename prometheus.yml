@@ -11,21 +11,19 @@ scrape_configs:
     static_configs:
       - targets: ["rabbitmq:15672"]
   - job_name: query
-    static_configs:
-      - targets: ["datamart_query_1:8000"]
-      - targets: ["datamart_query_2:8000"]
-      - targets: ["datamart_query_3:8000"]
-      - targets: ["datamart_query_4:8000"]
+    dns_sd_configs:
+      - names:
+          - query
+        type: "A"
+        port: 8000
+        refresh_interval: 60s
   - job_name: coordinator
     static_configs:
       - targets: ["coordinator:8000"]
   - job_name: profiler
-    static_configs:
-      - targets: ["datamart_profiler_1:8000"]
-      - targets: ["datamart_profiler_2:8000"]
-      - targets: ["datamart_profiler_3:8000"]
-      - targets: ["datamart_profiler_4:8000"]
-      - targets: ["datamart_profiler_5:8000"]
-      - targets: ["datamart_profiler_6:8000"]
-      - targets: ["datamart_profiler_7:8000"]
-      - targets: ["datamart_profiler_8:8000"]
+    dns_sd_configs:
+      - names:
+          - profiler
+        type: "A"
+        port: 8000
+        refresh_interval: 60s
