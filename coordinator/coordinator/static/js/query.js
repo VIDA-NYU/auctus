@@ -438,14 +438,23 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       }
     }
 
+    var results_div = document.getElementById('results');
+    // cleaning previous results
+    while (results_div.firstChild) {
+        results_div.removeChild(results_div.firstChild);
+    }
+    document.getElementById('search-error').style.display = 'none';
+
+    // showing progress icon
+    document.getElementById('processing').style.display = 'block';
+
     console.log("Searching:", search);
     postJSON(QUERY_HOST + '/search', search)
     .then(function(result) {
     console.log("Got " + result.results.length + " results");
     console.log("Results:", result.results);
-    var results_div = document.getElementById('results');
     results_div.innerHTML = '';
-    document.getElementById('search-error').style.display = 'none';
+    document.getElementById('processing').style.display = 'none';
     if((result.results.length > 0) && (search.data.length != 0)) {
         var div_title = document.createElement('div');
         div_title.setAttribute('class', 'container mb-5')
