@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 
-PROM_DOWNLOAD = prometheus_client.Summary('download_seconds',
-                                          "Materialization time")
+PROM_DOWNLOAD = prometheus_client.Histogram('download_seconds',
+                                            "Materialization time")
 
 
 @contextlib.contextmanager

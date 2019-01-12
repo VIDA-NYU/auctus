@@ -26,14 +26,22 @@ MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.4
 
 
-PROM_SEARCH_TIME = prometheus_client.Summary('req_search_seconds',
-                                             "Search request time")
-PROM_DOWNLOAD_TIME = prometheus_client.Summary('req_download_seconds',
-                                               "Download request time")
-PROM_METADATA_TIME = prometheus_client.Summary('req_metadata_seconds',
-                                               "Metadata request time")
-PROM_AUGMENT_TIME = prometheus_client.Summary('req_augment_seconds',
-                                              "Augment request time")
+PROM_SEARCH_TIME = prometheus_client.Histogram('req_search_seconds',
+                                               "Search request time")
+PROM_SEARCH = prometheus_client.Counter('req_search_count',
+                                        "Search requests")
+PROM_DOWNLOAD_TIME = prometheus_client.Histogram('req_download_seconds',
+                                                 "Download request time")
+PROM_DOWNLOAD = prometheus_client.Counter('req_download_count',
+                                          "Download requests")
+PROM_METADATA_TIME = prometheus_client.Histogram('req_metadata_seconds',
+                                                 "Metadata request time")
+PROM_METADATA = prometheus_client.Counter('req_metadata_count',
+                                          "Metadata requests")
+PROM_AUGMENT_TIME = prometheus_client.Histogram('req_augment_seconds',
+                                                "Augment request time")
+PROM_AUGMENT = prometheus_client.Counter('req_augment_count',
+                                         "Augment requests")
 
 
 class BaseHandler(RequestHandler):
@@ -374,6 +382,7 @@ class Query(CorsHandler):
 
     @PROM_SEARCH_TIME.time()
     def post(self):
+        PROM_SEARCH.inc()
         self._cors()
 
         obj = self.get_json()
@@ -539,6 +548,8 @@ class Download(CorsHandler):
 
     @PROM_DOWNLOAD_TIME.time()
     async def get(self, dataset_id):
+        PROM_DOWNLOAD.inc()
+
         output_format = self.get_query_argument('format', 'csv')
 
         # Get materialization data from Elasticsearch
@@ -590,6 +601,8 @@ class Download(CorsHandler):
 class Metadata(CorsHandler):
     @PROM_METADATA_TIME.time()
     def get(self, dataset_id):
+        PROM_METADATA.inc()
+
         es = self.application.elasticsearch
         try:
             metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
@@ -602,7 +615,9 @@ class Metadata(CorsHandler):
 class Augment(CorsHandler):
     @PROM_AUGMENT_TIME.time()
     def post(self):
+        PROM_AUGMENT.inc()
         self._cors()
+
         self.set_header('Content-Type', 'text/plain')
         return self.finish("Not yet implemented")
 
