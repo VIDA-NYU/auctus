@@ -358,7 +358,7 @@ def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
 
     # get the coverage for each column of the input dataset
 
-    intersections = []
+    intersections = dict()
     column_coverage = get_column_coverage(es, dataset_id, data_profile)
 
     # get coverage intersections
@@ -399,18 +399,46 @@ def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
                 score *= sim
             if score > 0:
                 external_dataset, external_column = name.split('$$')
-                intersections.append(
-                    (external_dataset, column, external_column, score)
+                if external_dataset not in intersections:
+                    intersections[external_dataset] = []
+                intersections[external_dataset].append(
+                    (column, external_column, score)
                 )
 
-    intersections = sorted(
-        intersections,
-        key=lambda item: item[3],
+    # get pairs of columns with higher score
+
+    for dt in intersections:
+        intersections[dt] = sorted(
+            intersections[dt],
+            key=lambda item: item[2],
+            reverse=True
+        )
+
+        seen_1 = set()
+        seen_2 = set()
+        pairs = []
+        for column, external_column, score in intersections[dt]:
+            if column in seen_1 or external_column in seen_2:
+                continue
+            seen_1.add(column)
+            seen_2.add(external_column)
+            pairs.append((column, external_column, score))
+        intersections[dt] = pairs
+
+    # sorting datasets based on the column with highest score
+
+    sorted_datasets = []
+    for dt in intersections:
+        items = intersections[dt]
+        sorted_datasets.append((dt, items[0][2]))
+    sorted_datasets = sorted(
+        sorted_datasets,
+        key=lambda item: item[1],
         reverse=True
     )
 
     results = []
-    for dt, column, external_column, score in intersections:
+    for dt, score in sorted_datasets:
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
         materialize = meta.get('materialize', {})
@@ -421,7 +449,7 @@ def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
             score=score,
             discoverer=materialize['identifier'],
             metadata=meta,
-            columns=[(column, external_column)],
+            columns=intersections[dt],
         ))
 
     return {'results': results}
