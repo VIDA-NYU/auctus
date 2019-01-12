@@ -16,11 +16,12 @@ services:
   rabbitmq:
     build:
       context: ./docker
-      dockerfile: rabbitmq
-    entrypoint: sh -c "rabbitmq-plugins enable rabbitmq_shovel rabbitmq_shovel_management prometheus_rabbitmq_exporter && /docker-entrypoint.sh rabbitmq-server"
+      dockerfile: rabbitmq.dockerfile
     ports:
       - 8080:15672
       - 5672:5672
+    volumes:
+      - ./docker/etc_rabbitmq:/etc/rabbitmq
   coordinator:
     build:
       context: .
@@ -79,7 +80,7 @@ services:
     ports:
       - 9090:9090
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
   example_discoverer:
     build:
       context: .
