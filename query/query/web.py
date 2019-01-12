@@ -376,7 +376,6 @@ class Query(CorsHandler):
             data = obj['data']
 
         # parameter: data
-        dataset_id = ''
         data_profile = dict()
         if data:
             if not isinstance(data, (str, bytes)):
@@ -409,19 +408,17 @@ class Query(CorsHandler):
                     # path to a CSV file
                     data_profile = process_dataset(data)
 
-        has_data = dataset_id or data_profile
-
         # parameter: query
         query_args = list()
         if query:
             query_args = self.parse_query(query)
 
         # At least one of them must be provided
-        if not query_args and not has_data:
+        if not query_args and not data_profile:
             self.send_error(status_code=400)
             return
 
-        if not has_data:
+        if not data_profile:
             logger.info("Query: %r", query_args)
             hits = self.application.elasticsearch.search(
                 index='datamart',
@@ -456,16 +453,15 @@ class Query(CorsHandler):
                 query_param = query_args
 
             join_results = get_joinable_datasets(
-                self.application.elasticsearch,
-                dataset_id,
-                data_profile,
-                query_param
+                es=self.application.elasticsearch,
+                data_profile=data_profile,
+                query_args=query_param
             )['results']
             union_results = get_unionable_datasets(
-                self.application.elasticsearch,
-                dataset_id,
-                data_profile,
-                query_param
+                es=self.application.elasticsearch,
+                data_profile=data_profile,
+                query_args=query_param,
+                fuzzy=True
             )['results']
 
             results = []

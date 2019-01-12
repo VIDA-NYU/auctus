@@ -346,7 +346,8 @@ def get_dataset_metadata(es, dataset_id):
     return hit
 
 
-def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
+def get_joinable_datasets(es, dataset_id=None, data_profile={},
+                          query_args=None):
     """
     Retrieve datasets that can be joined with an input dataset.
 
@@ -355,6 +356,10 @@ def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
     :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
     :param query_args: list of query arguments (optional).
     """
+
+    if not dataset_id and not data_profile:
+        raise RuntimeError('Either a dataset id or a data profile '
+                           'must be provided for the join.')
 
     # get the coverage for each column of the input dataset
 
@@ -537,15 +542,16 @@ def get_column_information(es=None, dataset_id=None, data_profile={}, query_args
     return dataset_columns
 
 
-def get_unionable_datasets(es, dataset_id, data_profile={}, query_args=None):
+def get_unionable_datasets_brute_force(es, dataset_id=None, data_profile={},
+                                       query_args=None):
     """
-    Retrieve datasets that can be unioned to an input dataset.
+    Retrieve datasets that can be unioned to an input dataset using a brute force approach.
 
     :param es: Elasticsearch client.
     :param dataset_id: The identifier of the input dataset.
     :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
     :param query_args: list of query arguments (optional).
-   """
+    """
 
     dataset_columns = get_column_information(es=es, query_args=query_args)
     if dataset_id:
@@ -625,3 +631,186 @@ def get_unionable_datasets(es, dataset_id, data_profile={}, query_args=None):
         ))
 
     return {'results': results}
+
+
+def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
+                                 query_args=None):
+    """
+    Retrieve datasets that can be unioned to an input dataset using fuzzy search
+    (max edit distance = 2).
+
+    :param es: Elasticsearch client.
+    :param dataset_id: The identifier of the input dataset.
+    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
+    :param query_args: list of query arguments (optional).
+    """
+
+    if dataset_id:
+        main_dataset_columns = get_column_information(
+            es=es,
+            dataset_id=dataset_id
+        )[dataset_id]
+    else:
+        main_dataset_columns = get_column_information(
+            data_profile=data_profile
+        )
+
+    n_columns = 0
+    for type_ in main_dataset_columns:
+        n_columns += len(main_dataset_columns[type_])
+
+    column_pairs = dict()
+    for type_ in main_dataset_columns:
+        for att in main_dataset_columns[type_]:
+            partial_query = {
+                'should': [
+                    {
+                        'match': {'columns.structural_type': type_}
+                    },
+                    {
+                        'match': {'columns.semantic_types': type_}
+                    },
+                ],
+                'must': {
+                    "fuzzy": {"columns.name": att}
+                },
+                "minimum_should_match": 1
+            }
+
+            if dataset_id:
+                partial_query['must_not'] = {
+                    'match': {'_id': dataset_id}
+                }
+
+            query = {
+                'nested': {
+                    'path': 'columns',
+                    'query': {
+                        'bool': partial_query
+                    },
+                    'inner_hits': {'_source': False}
+                }
+            }
+
+            if not query_args:
+                query_obj = {
+                    'query': query,
+                }
+            else:
+                args = [query] + query_args
+                query_obj = {
+                    'query': {
+                        'bool': {
+                            'must': args,
+                        },
+                    },
+                }
+
+            logger.info("Query (union-fuzzy): %r", query_obj)
+
+            result = es.search(
+                index='datamart',
+                body=query_obj,
+                scroll='2m',
+                size=10000
+            )
+
+            sid = result['_scroll_id']
+            scroll_size = result['hits']['total']
+
+            while scroll_size > 0:
+                for hit in result['hits']['hits']:
+
+                    dataset_name = hit['_id']
+                    columns = hit['_source']['columns']
+                    inner_hits = hit['inner_hits']
+
+                    if dataset_name not in column_pairs:
+                        column_pairs[dataset_name] = []
+
+                    for column_hit in inner_hits['columns']['hits']['hits']:
+                        column_offset = int(column_hit['_nested']['offset'])
+                        column_name = columns[column_offset]['name']
+                        sim = compute_levenshtein_sim(att.lower(), column_name.lower())
+                        column_pairs[dataset_name].append((att, column_name, sim))
+
+                # scrolling
+                result = es.scroll(
+                    scroll_id=sid,
+                    scroll='2m'
+                )
+                sid = result['_scroll_id']
+                scroll_size = len(result['hits']['hits'])
+
+    scores = dict()
+    for dataset in column_pairs:
+
+        # choose pairs with higher similarity
+        seen_1 = set()
+        seen_2 = set()
+        pairs = []
+        for att_1, att_2, sim in sorted(column_pairs[dataset],
+                                        key=lambda item: item[2],
+                                        reverse=True):
+            if att_1 in seen_1 or att_2 in seen_2:
+                continue
+            seen_1.add(att_1)
+            seen_2.add(att_2)
+            pairs.append((att_1, att_2, sim))
+
+        if len(pairs) <= 1:
+            column_pairs[dataset] = []
+            continue
+
+        column_pairs[dataset] = pairs
+        scores[dataset] = 0
+
+        for i in range(len(column_pairs[dataset])):
+            sim = column_pairs[dataset][i][2]
+            scores[dataset] += sim
+
+        scores[dataset] = scores[dataset] / n_columns
+
+    sorted_datasets = sorted(
+        scores.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )
+
+    results = []
+    for dt, score in sorted_datasets:
+        info = get_dataset_metadata(es, dt)
+        meta = info.pop('_source')
+        materialize = meta.get('materialize', {})
+        if 'description' in meta and len(meta['description']) > 100:
+            meta['description'] = meta['description'][:100] + "..."
+        results.append(dict(
+            id=dt,
+            score=score,
+            discoverer=materialize['identifier'],
+            metadata=meta,
+            columns=column_pairs[dt],
+        ))
+
+    return {'results': results}
+
+
+def get_unionable_datasets(es, dataset_id=None, data_profile={},
+                           query_args=None, fuzzy=False):
+    """
+    Retrieve datasets that can be unioned to an input dataset.
+
+    :param es: Elasticsearch client.
+    :param dataset_id: The identifier of the input dataset.
+    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
+    :param query_args: list of query arguments (optional).
+    :param fuzzy: if True, applies fuzzy search instead of looking for all of the datasets.
+    """
+
+    if not dataset_id and not data_profile:
+        raise RuntimeError('Either a dataset id or a data profile '
+                           'must be provided for the union.')
+
+    if fuzzy:
+        return get_unionable_datasets_fuzzy(es, dataset_id, data_profile, query_args)
+    return get_unionable_datasets_brute_force(es, dataset_id, data_profile, query_args)
