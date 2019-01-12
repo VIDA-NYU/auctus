@@ -10,7 +10,9 @@ function postJSON(url='', data={}, args) {
     args = '';
   }
   var formData = new FormData();
-  formData.append('data', data.data);
+  if(data.data) {
+    formData.append('data', data.data);
+  }
   formData.append('query', JSON.stringify(data.query));
   return fetch(
     url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,

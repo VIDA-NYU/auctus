@@ -381,6 +381,8 @@ class Query(CorsHandler):
         self._cors()
 
         args, files = self.get_form_data()
+        logger.warning("Args: %r", args)
+        logger.warning("Files: %r", files)
 
         # Params are 'query' and 'data'
         query = data = None
