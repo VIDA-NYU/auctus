@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import requests
@@ -32,10 +33,10 @@ def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
     :return: None.
     """
 
-    request = dict()
+    files = dict()
     if data:
         if not send_data:
-            request['data'] = data
+            files['data'] = data
         else:
             if os.path.isdir(data):
                 # path to a D3M dataset
@@ -43,21 +44,19 @@ def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
                 if not os.path.exists(data_file):
                     raise DatamartError(
                         "Error from DataMart: '%s' does not exist." % data_file)
-                request['data'] = open(data_file).read()
+                files['data'] = open(data_file)
             else:
                 # path to a CSV file
                 if not os.path.exists(data):
                     raise DatamartError(
                         "Error from DataMart: '%s' does not exist." % data)
-                request['data'] = open(data).read()
+                files['data'] = open(data)
     if query:
-        request['query'] = query
+        files['query'] = query
 
     # Send request
     response = requests.post(url + '/search',
-                             headers={'Accept': 'application/json',
-                                      'Content-Type': 'application/json'},
-                             json=request)
+                             files=files)
     if response.status_code != 200:
         raise DatamartError("Error from DataMart: %s %s" % (
             response.status_code, response.reason))
@@ -81,8 +80,12 @@ class Dataset(object):
 
     @classmethod
     def from_json(cls, result, url=DEFAULT_URL):
+        join_columns = [] if 'join_columns' not in result else result['join_columns']
+        union_columns = [] if 'union_columns' not in result else result['union_columns']
         return cls(id=result['id'], metadata=result['metadata'],
-                   url=url, score=result['score'])
+                   url=url, score=result['score'],
+                   join_columns=join_columns,
+                   union_columns=union_columns)
 
     def get_augmentation_information(self):
         """Returns the pairs of columns for union and join, if applicable.
@@ -139,4 +142,10 @@ class Dataset(object):
                 destination.write(chunk)
 
     def __repr__(self):
+        if self.join_columns or self.union_columns:
+            if self.join_columns:
+                augmentation = 'join'
+            else:
+                augmentation = 'union'
+            return '<Dataset %r score=%r augmentation=%s>' % (self.id, self.score, augmentation)
         return '<Dataset %r score=%r>' % (self.id, self.score)

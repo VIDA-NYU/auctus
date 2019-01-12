@@ -9,16 +9,16 @@ function postJSON(url='', data={}, args) {
   } else {
     args = '';
   }
+  var formData = new FormData();
+  formData.append('data', data.data);
+  formData.append('query', JSON.stringify(data.query));
   return fetch(
     url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,
     {
       mode: 'cors',
       cache: 'no-cache',
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8'
-      },
-      body: JSON.stringify(data)
+      body: formData
     }
   ).then(function(response) {
     if(response.status != 200) {
@@ -311,14 +311,9 @@ function formatSize(bytes) {
 
 function readFile(files, callback) {
   if(files.length) {
-    var reader = new FileReader();
-    reader.onload = function(event)
-    {
-        callback(files[0].name, event.target.result);
-    };
-    reader.readAsText(file.files[0]);
+    callback(files[0].name, files[0]);
   } else {
-    callback('', '');
+    callback('', null);
   }
 }
 
@@ -455,7 +450,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     console.log("Results:", result.results);
     results_div.innerHTML = '';
     document.getElementById('processing').style.display = 'none';
-    if((result.results.length > 0) && (search.data.length != 0)) {
+    if((result.results.length > 0) && (search.data)) {
         var div_title = document.createElement('div');
         div_title.setAttribute('class', 'container mb-5')
         var title = document.createElement('h6');
@@ -539,6 +534,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       document.getElementById('search-error').innerText = "No results";
     }
     }, function(error) {
+    document.getElementById('processing').style.display = 'none';
     console.error("Query failed:", error);
     alert("Query failed: " + error);
     document.getElementById('search-error').style.display = '';

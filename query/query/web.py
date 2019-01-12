@@ -44,6 +44,20 @@ class BaseHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
 
+    def get_form_data(self):
+        type_ = self.request.headers.get('Content-Type', '')
+        if not type_.startswith('multipart/form-data'):
+            raise HTTPError(400, "Expected multipart/form-data")
+        args = dict()
+        files = dict()
+        tornado.httputil.parse_body_arguments(
+            self.request.headers.get('Content-Type', ''),
+            self.request.body,
+            args,
+            files
+        )
+        return args, files
+
 
 class CorsHandler(BaseHandler):
     def _cors(self):
@@ -366,14 +380,18 @@ class Query(CorsHandler):
     def post(self):
         self._cors()
 
-        obj = self.get_json()
+        args, files = self.get_form_data()
 
         # Params are 'query' and 'data'
         query = data = None
-        if 'query' in obj:
-            query = obj['query']
-        if 'data' in obj:
-            data = obj['data']
+        if 'query' in args:
+            query = json.loads(args['query'][0].decode('utf-8'))
+        elif 'query' in files:
+            query = json.loads(files['query'][0]['body'].decode('utf-8'))
+        if 'data' in args:
+            data = args['data'][0].decode('utf-8')
+        elif 'data' in files:
+            data = files['data'][0]['body'].decode('utf-8')
 
         # parameter: data
         data_profile = dict()
@@ -397,6 +415,7 @@ class Query(CorsHandler):
 
             else:
                 # data represents a file path
+                logger.warning("Data is a path!")
                 if os.path.isdir(data):
                     # path to a D3M dataset
                     data_file = os.path.join(data, 'tables', 'learningData.csv')
