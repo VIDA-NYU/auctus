@@ -26,20 +26,26 @@ MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.4
 
 
+BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
+
 PROM_SEARCH_TIME = prometheus_client.Histogram('req_search_seconds',
-                                               "Search request time")
+                                               "Search request time",
+                                               buckets=BUCKETS)
 PROM_SEARCH = prometheus_client.Counter('req_search_count',
                                         "Search requests")
 PROM_DOWNLOAD_TIME = prometheus_client.Histogram('req_download_seconds',
-                                                 "Download request time")
+                                                 "Download request time",
+                                                 buckets=BUCKETS)
 PROM_DOWNLOAD = prometheus_client.Counter('req_download_count',
                                           "Download requests")
 PROM_METADATA_TIME = prometheus_client.Histogram('req_metadata_seconds',
-                                                 "Metadata request time")
+                                                 "Metadata request time",
+                                                 buckets=BUCKETS)
 PROM_METADATA = prometheus_client.Counter('req_metadata_count',
                                           "Metadata requests")
 PROM_AUGMENT_TIME = prometheus_client.Histogram('req_augment_seconds',
-                                                "Augment request time")
+                                                "Augment request time",
+                                                buckets=BUCKETS)
 PROM_AUGMENT = prometheus_client.Counter('req_augment_count',
                                          "Augment requests")
 

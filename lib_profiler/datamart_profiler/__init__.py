@@ -20,10 +20,14 @@ logger = logging.getLogger(__name__)
 MAX_SIZE = 50_000_000
 
 
+BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
+
 PROM_PROFILE = prometheus_client.Histogram('profile_seconds',
-                                           "Profile time")
+                                           "Profile time",
+                                           buckets=BUCKETS)
 PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
-                                           "Profile spatial coverage time")
+                                           "Profile spatial coverage time",
+                                           buckets=BUCKETS)
 
 
 def mean_stddev(array):

@@ -13,8 +13,12 @@ logger = logging.getLogger(__name__)
 
 
 
-PROM_DOWNLOAD = prometheus_client.Histogram('download_seconds',
-                                            "Materialization time")
+PROM_DOWNLOAD = prometheus_client.Histogram(
+    'download_seconds',
+    "Materialization time",
+    buckets=[1.0, 10.0, 60.0, 120.0, 300.0, 600.0, 1800.0, 3600.0, 7200.0,
+             float('inf')],
+)
 
 
 @contextlib.contextmanager
