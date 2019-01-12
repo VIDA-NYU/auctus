@@ -11,6 +11,7 @@ import os
 import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
+import tornado.httputil
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
 
@@ -366,7 +367,6 @@ class Query(CorsHandler):
         self._cors()
 
         obj = self.get_json()
-        logger.info("Query: %r", obj)
 
         # Params are 'query' and 'data'
         query = data = None
@@ -379,36 +379,35 @@ class Query(CorsHandler):
         dataset_id = ''
         data_profile = dict()
         if data:
-            if isinstance(data, dict):
-                # data is a D3M datasetDoc
-                # assumes data is in DataMart index
-                dataset_id = self.search_d3m_dataset_id(data)
+            if not isinstance(data, (str, bytes)):
+                logger.warning("Data is in the wrong format!")
+                self.send_error(status_code=400)
+                return
 
-            elif isinstance(data, (str, bytes)):
-                if not os.path.exists(data):
-                    # data represents the entire file
-                    logger.warning("Data is not a path!")
+            if not os.path.exists(data):
+                # data represents the entire file
+                logger.warning("Data is not a path!")
 
-                    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-                    temp_file.write(data)
-                    temp_file.close()
+                temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+                temp_file.write(data)
+                temp_file.close()
 
-                    data_profile = process_dataset(temp_file.name)
+                data_profile = process_dataset(temp_file.name)
 
-                    os.remove(temp_file.name)
+                os.remove(temp_file.name)
 
-                else:
-                    # data represents a file path
-                    if os.path.isdir(data):
-                        # path to a D3M dataset
-                        data_file = os.path.join(data, 'tables', 'learningData.csv')
-                        if not os.path.exists(data_file):
-                            logger.warning("Data does not exist: %s", data_file)
-                        else:
-                            data_profile = process_dataset(data_file)
+            else:
+                # data represents a file path
+                if os.path.isdir(data):
+                    # path to a D3M dataset
+                    data_file = os.path.join(data, 'tables', 'learningData.csv')
+                    if not os.path.exists(data_file):
+                        logger.warning("Data does not exist: %s", data_file)
                     else:
-                        # path to a CSV file
-                        data_profile = process_dataset(data)
+                        data_profile = process_dataset(data_file)
+                else:
+                    # path to a CSV file
+                    data_profile = process_dataset(data)
 
         has_data = dataset_id or data_profile
 

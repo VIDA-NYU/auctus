@@ -1,4 +1,5 @@
 import logging
+import os
 import requests
 import warnings
 
@@ -19,19 +20,36 @@ class DatamartError(RuntimeError):
     """Error from DataMart."""
 
 
-def search(url=DEFAULT_URL, query=None, data=None):
+def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
     """Search for datasets.
 
     :param query: JSON object describing the query.
     :param data: the data you are trying to augment.
-        For now, it can be a path to a datasetDoc or a CSV file (str),
-        a datasetDoc JSON object (dict), or a dataset in CSV format (str).
+        For now, it can be a path to a CSV file (str),
+        a path to a D3M dataset directory (str).
+    :param send_data: if False, send the data path; if True, send
+        the data.
     :return: None.
     """
 
     request = dict()
     if data:
-        request['data'] = data
+        if not send_data:
+            request['data'] = data
+        else:
+            if os.path.isdir(data):
+                # path to a D3M dataset
+                data_file = os.path.join(data, 'tables', 'learningData.csv')
+                if not os.path.exists(data_file):
+                    raise DatamartError(
+                        "Error from DataMart: '%s' does not exist." % data_file)
+                request['data'] = open(data_file).read()
+            else:
+                # path to a CSV file
+                if not os.path.exists(data):
+                    raise DatamartError(
+                        "Error from DataMart: '%s' does not exist." % data)
+                request['data'] = open(data).read()
     if query:
         request['query'] = query
 
@@ -53,17 +71,24 @@ class Dataset(object):
     """Pointer to a dataset on DataMart.
     """
     def __init__(self, id, metadata, url=DEFAULT_URL,
-                 score=None, discoverer=None):
+                 score=None, join_columns=[], union_columns=[]):
         self.id = id
         self._url = url
         self.score = score
-        self.discoverer = discoverer
         self.metadata = metadata
+        self.join_columns = join_columns
+        self.union_columns = union_columns
 
     @classmethod
     def from_json(cls, result, url=DEFAULT_URL):
-        return cls(id=result['id'], metadata=result['metadata'], url=url,
-                   score=result['score'], discoverer=result['discoverer'])
+        return cls(id=result['id'], metadata=result['metadata'],
+                   url=url, score=result['score'])
+
+    def get_augmentation_information(self):
+        """Returns the pairs of columns for union and join, if applicable.
+        """
+
+        return dict(union=self.union_columns, join=self.join_columns)
 
     def download(self, destination, proxy=None):
         """Download this dataset to the disk.
@@ -114,5 +139,4 @@ class Dataset(object):
                 destination.write(chunk)
 
     def __repr__(self):
-        return '<Dataset %r score=%r discoverer=%r>' % (self.id, self.score,
-                                                        self.discoverer)
+        return '<Dataset %r score=%r>' % (self.id, self.score)

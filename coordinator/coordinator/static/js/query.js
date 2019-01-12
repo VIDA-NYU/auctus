@@ -314,18 +314,11 @@ function readFile(files, callback) {
     var reader = new FileReader();
     reader.onload = function(event)
     {
-        if(files[0].name.includes('.json')) {
-            callback(file.files[0].name,
-                     JSON.parse(event.target.result));
-        } else {
-            // assuming data is a CSV file
-            callback(files[0].name,
-                     event.target.result);
-        }
+        callback(files[0].name, event.target.result);
     };
     reader.readAsText(file.files[0]);
   } else {
-    callback('', {});
+    callback('', '');
   }
 }
 
@@ -453,21 +446,12 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     var results_div = document.getElementById('results');
     results_div.innerHTML = '';
     document.getElementById('search-error').style.display = 'none';
-    if((result.results.length > 0) && (Object.getOwnPropertyNames(search.data).length != 0)) {
+    if((result.results.length > 0) && (search.data.length != 0)) {
         var div_title = document.createElement('div');
         div_title.setAttribute('class', 'container mb-5')
         var title = document.createElement('h6');
         title.innerHTML = 'Results for ';
-        if(name.includes('.json')) {
-            if (search.data.about.datasetName != search.data.about.datasetID) {
-                title.innerHTML += '"' + search.data.about.datasetName + '" ';
-                title.innerHTML += '(' + search.data.about.datasetID + '):';
-            } else {
-                title.innerHTML += search.data.about.datasetID + ':';
-            }
-        } else {
-            title.innerHTML += name
-        }
+        title.innerHTML += name;
         div_title.appendChild(title);
         results_div.appendChild(div_title);
     }
