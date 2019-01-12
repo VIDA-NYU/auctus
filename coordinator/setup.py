@@ -9,6 +9,7 @@ req = [
     'aio-pika',
     'datamart_core',
     'elasticsearch',
+    'prometheus_client',
     'jinja2',
     'tornado>=5.0',
 ]

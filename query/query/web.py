@@ -1,5 +1,3 @@
-import zipfile
-
 import aio_pika
 import asyncio
 from datetime import datetime
@@ -8,11 +6,13 @@ import elasticsearch
 import logging
 import json
 import os
+import prometheus_client
 import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+import zipfile
 
 from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import log_future, Type
@@ -24,6 +24,16 @@ logger = logging.getLogger(__name__)
 
 MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.4
+
+
+PROM_SEARCH_TIME = prometheus_client.Summary('req_search_seconds',
+                                             "Search request time")
+PROM_DOWNLOAD_TIME = prometheus_client.Summary('req_download_seconds',
+                                               "Download request time")
+PROM_METADATA_TIME = prometheus_client.Summary('req_metadata_seconds',
+                                               "Metadata request time")
+PROM_AUGMENT_TIME = prometheus_client.Summary('req_augment_seconds',
+                                              "Augment request time")
 
 
 class BaseHandler(RequestHandler):
@@ -362,6 +372,7 @@ class Query(CorsHandler):
 
         return query_args
 
+    @PROM_SEARCH_TIME.time()
     def post(self):
         self._cors()
 
@@ -526,6 +537,7 @@ class RecursiveZipWriter(object):
 class Download(CorsHandler):
     TIMEOUT = 300
 
+    @PROM_DOWNLOAD_TIME.time()
     async def get(self, dataset_id):
         output_format = self.get_query_argument('format', 'csv')
 
@@ -576,6 +588,7 @@ class Download(CorsHandler):
 
 
 class Metadata(CorsHandler):
+    @PROM_METADATA_TIME.time()
     def get(self, dataset_id):
         es = self.application.elasticsearch
         try:
@@ -587,6 +600,7 @@ class Metadata(CorsHandler):
 
 
 class Augment(CorsHandler):
+    @PROM_AUGMENT_TIME.time()
     def post(self):
         self._cors()
         self.set_header('Content-Type', 'text/plain')
@@ -636,6 +650,7 @@ def main():
     logging.root.handlers.clear()
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
+    prometheus_client.start_http_server(8000)
 
     app = make_app()
     app.listen(8002, xheaders=True)

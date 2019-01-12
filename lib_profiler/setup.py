@@ -8,6 +8,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'numpy',
     'pandas',
+    'prometheus_client',
     'python-dateutil',
     'hdbscan',
 ]

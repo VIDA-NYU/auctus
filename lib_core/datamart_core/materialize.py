@@ -2,6 +2,7 @@ import contextlib
 import datamart_materialize
 import logging
 import os
+import prometheus_client
 import shutil
 import tempfile
 
@@ -9,6 +10,11 @@ from .discovery import encode_dataset_id
 
 
 logger = logging.getLogger(__name__)
+
+
+
+PROM_DOWNLOAD = prometheus_client.Summary('download_seconds',
+                                          "Materialization time")
 
 
 @contextlib.contextmanager
@@ -20,9 +26,10 @@ def get_dataset(metadata, dataset_id, format='csv'):
         temp_dir = tempfile.mkdtemp()
         try:
             temp_file = os.path.join(temp_dir, 'data')
-            datamart_materialize.download(
-                {'id': dataset_id, 'metadata': metadata},
-                temp_file, None, format=format)
+            with PROM_DOWNLOAD.time():
+                datamart_materialize.download(
+                    {'id': dataset_id, 'metadata': metadata},
+                    temp_file, None, format=format)
             yield temp_file
         finally:
             shutil.rmtree(temp_dir)

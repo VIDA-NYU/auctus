@@ -6,6 +6,7 @@ import jinja2
 import json
 import os
 import pkg_resources
+import prometheus_client
 import shutil
 from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
@@ -324,6 +325,7 @@ def main():
     logging.root.handlers.clear()
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
+    prometheus_client.start_http_server(8000)
 
     app = make_app()
     app.listen(8001, xheaders=True, max_buffer_size=2147483648)
