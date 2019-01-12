@@ -1,6 +1,7 @@
-import json
+import io
 import logging
 import os
+import pandas as pd
 import requests
 import warnings
 
@@ -27,30 +28,37 @@ def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
     :param query: JSON object describing the query.
     :param data: the data you are trying to augment.
         For now, it can be a path to a CSV file (str),
-        a path to a D3M dataset directory (str).
+        a path to a D3M dataset directory (str),
+        or a pandas.DataFrame object.
     :param send_data: if False, send the data path; if True, send
         the data.
     :return: None.
     """
 
     files = dict()
-    if data:
-        if not send_data:
-            files['data'] = data
+    if data is not None:
+        if isinstance(data, pd.DataFrame):
+            s_buf = io.StringIO()
+            data.to_csv(s_buf)
+            s_buf.seek(0)
+            files['data'] = s_buf
         else:
-            if os.path.isdir(data):
-                # path to a D3M dataset
-                data_file = os.path.join(data, 'tables', 'learningData.csv')
-                if not os.path.exists(data_file):
-                    raise DatamartError(
-                        "Error from DataMart: '%s' does not exist." % data_file)
-                files['data'] = open(data_file)
+            if not send_data:
+                files['data'] = data
             else:
-                # path to a CSV file
-                if not os.path.exists(data):
-                    raise DatamartError(
-                        "Error from DataMart: '%s' does not exist." % data)
-                files['data'] = open(data)
+                if os.path.isdir(data):
+                    # path to a D3M dataset
+                    data_file = os.path.join(data, 'tables', 'learningData.csv')
+                    if not os.path.exists(data_file):
+                        raise DatamartError(
+                            "Error from DataMart: '%s' does not exist." % data_file)
+                    files['data'] = open(data_file)
+                else:
+                    # path to a CSV file
+                    if not os.path.exists(data):
+                        raise DatamartError(
+                            "Error from DataMart: '%s' does not exist." % data)
+                    files['data'] = open(data)
     if query:
         files['query'] = query
 
