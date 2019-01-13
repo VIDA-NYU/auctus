@@ -1,5 +1,3 @@
-import zipfile
-
 import aio_pika
 import asyncio
 from datetime import datetime
@@ -8,11 +6,13 @@ import elasticsearch
 import logging
 import json
 import os
+import prometheus_client
 import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+import zipfile
 
 from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import log_future, Type
@@ -24,6 +24,30 @@ logger = logging.getLogger(__name__)
 
 MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.4
+
+
+BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
+
+PROM_SEARCH_TIME = prometheus_client.Histogram('req_search_seconds',
+                                               "Search request time",
+                                               buckets=BUCKETS)
+PROM_SEARCH = prometheus_client.Counter('req_search_count',
+                                        "Search requests")
+PROM_DOWNLOAD_TIME = prometheus_client.Histogram('req_download_seconds',
+                                                 "Download request time",
+                                                 buckets=BUCKETS)
+PROM_DOWNLOAD = prometheus_client.Counter('req_download_count',
+                                          "Download requests")
+PROM_METADATA_TIME = prometheus_client.Histogram('req_metadata_seconds',
+                                                 "Metadata request time",
+                                                 buckets=BUCKETS)
+PROM_METADATA = prometheus_client.Counter('req_metadata_count',
+                                          "Metadata requests")
+PROM_AUGMENT_TIME = prometheus_client.Histogram('req_augment_seconds',
+                                                "Augment request time",
+                                                buckets=BUCKETS)
+PROM_AUGMENT = prometheus_client.Counter('req_augment_count',
+                                         "Augment requests")
 
 
 class BaseHandler(RequestHandler):
@@ -362,7 +386,9 @@ class Query(CorsHandler):
 
         return query_args
 
+    @PROM_SEARCH_TIME.time()
     def post(self):
+        PROM_SEARCH.inc()
         self._cors()
 
         obj = self.get_json()
@@ -526,7 +552,10 @@ class RecursiveZipWriter(object):
 class Download(CorsHandler):
     TIMEOUT = 300
 
+    @PROM_DOWNLOAD_TIME.time()
     async def get(self, dataset_id):
+        PROM_DOWNLOAD.inc()
+
         output_format = self.get_query_argument('format', 'csv')
 
         # Get materialization data from Elasticsearch
@@ -576,7 +605,10 @@ class Download(CorsHandler):
 
 
 class Metadata(CorsHandler):
+    @PROM_METADATA_TIME.time()
     def get(self, dataset_id):
+        PROM_METADATA.inc()
+
         es = self.application.elasticsearch
         try:
             metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
@@ -587,8 +619,11 @@ class Metadata(CorsHandler):
 
 
 class Augment(CorsHandler):
+    @PROM_AUGMENT_TIME.time()
     def post(self):
+        PROM_AUGMENT.inc()
         self._cors()
+
         self.set_header('Content-Type', 'text/plain')
         return self.finish("Not yet implemented")
 
@@ -636,6 +671,7 @@ def main():
     logging.root.handlers.clear()
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
+    prometheus_client.start_http_server(8000)
 
     app = make_app()
     app.listen(8002, xheaders=True)

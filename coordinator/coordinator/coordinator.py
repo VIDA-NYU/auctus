@@ -4,11 +4,17 @@ import itertools
 import json
 import logging
 import os
+import prometheus_client
 import sys
 import time
 
 
 logger = logging.getLogger(__name__)
+
+
+PROM_DATASETS = prometheus_client.Gauge('source_count',
+                                        "Count of datasets per source",
+                                        ['source'])
 
 
 def log_future(future, message="Exception in background task",
@@ -101,6 +107,7 @@ class Coordinator(object):
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()),
                    should_never_exit=True)
+        self.sources_counts = {}
         self.update_sources_counts()
 
     async def _amqp(self):
@@ -221,9 +228,14 @@ class Coordinator(object):
                         sources[identifier] = 1
                 if len(hits) != SIZE:
                     break
-            total = sum(sources.values())
+            # Update prometheus
+            for source, count in sources.items():
+                PROM_DATASETS.labels(source).set(count)
+            for source in self.sources_counts.keys() - sources.keys():
+                PROM_DATASETS.remove(source)
+            # Update count
             self.sources_counts = sources
-            logger.info("Now %d datasets", total)
+            logger.info("Now %d datasets", sum(sources.values()))
         finally:
             asyncio.get_event_loop().call_later(
                 30,

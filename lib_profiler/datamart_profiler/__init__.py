@@ -7,6 +7,7 @@ import numpy
 import os
 import pandas
 import pkg_resources
+import prometheus_client
 import random
 import subprocess
 
@@ -17,6 +18,16 @@ logger = logging.getLogger(__name__)
 
 
 MAX_SIZE = 50_000_000
+
+
+BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
+
+PROM_PROFILE = prometheus_client.Histogram('profile_seconds',
+                                           "Profile time",
+                                           buckets=BUCKETS)
+PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
+                                           "Profile spatial coverage time",
+                                           buckets=BUCKETS)
 
 
 def mean_stddev(array):
@@ -139,6 +150,7 @@ def run_scdp(data):
             return {}
 
 
+@PROM_PROFILE.time()
 def process_dataset(data, metadata=None):
     """Compute all metafeatures from a dataset.
 
@@ -267,26 +279,27 @@ def process_dataset(data, metadata=None):
                 get_numerical_ranges(timestamps_for_range)
 
     # Lat / Lon
-    spatial_coverage = []
-    i_lat = i_lon = 0
-    while i_lat < len(column_lat) and i_lon < len(column_lon):
-        name_lat = column_lat[i_lat][0]
-        name_lon = column_lon[i_lon][0]
+    with PROM_SPATIAL.time():
+        spatial_coverage = []
+        i_lat = i_lon = 0
+        while i_lat < len(column_lat) and i_lon < len(column_lon):
+            name_lat = column_lat[i_lat][0]
+            name_lon = column_lon[i_lon][0]
 
-        values_lat = column_lat[i_lat][1]
-        values_lon = column_lon[i_lon][1]
-        values = []
-        for i in range(len(values_lat)):
-            if values_lat[i] is not None and values_lon[i] is not None:
-                values.append([values_lat[i], values_lon[i]])
+            values_lat = column_lat[i_lat][1]
+            values_lon = column_lon[i_lon][1]
+            values = []
+            for i in range(len(values_lat)):
+                if values_lat[i] is not None and values_lon[i] is not None:
+                    values.append([values_lat[i], values_lon[i]])
 
-        if len(values) > 1:
-            spatial_coverage.append({"lat": name_lat,
-                                     "lon": name_lon,
-                                     "ranges": get_spatial_ranges(values)})
+            if len(values) > 1:
+                spatial_coverage.append({"lat": name_lat,
+                                         "lon": name_lon,
+                                         "ranges": get_spatial_ranges(values)})
 
-        i_lat += 1
-        i_lon += 1
+            i_lat += 1
+            i_lon += 1
 
     if spatial_coverage:
         metadata['spatial_coverage'] = spatial_coverage

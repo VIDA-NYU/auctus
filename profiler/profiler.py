@@ -5,6 +5,7 @@ import elasticsearch
 import itertools
 import logging
 import os
+import prometheus_client
 import time
 
 from datamart_core.common import log_future, json2msg, msg2json
@@ -158,6 +159,7 @@ class Profiler(object):
 def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
+    prometheus_client.start_http_server(8000)
     Profiler()
     asyncio.get_event_loop().run_forever()
 

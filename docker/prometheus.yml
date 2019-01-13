@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: rabbitmq
+    scrape_timeout: 5s
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ["rabbitmq:15672"]
+  - job_name: query
+    dns_sd_configs:
+      - names:
+          - query
+        type: "A"
+        port: 8000
+        refresh_interval: 60s
+  - job_name: coordinator
+    static_configs:
+      - targets: ["coordinator:8000"]
+  - job_name: profiler
+    dns_sd_configs:
+      - names:
+          - profiler
+        type: "A"
+        port: 8000
+        refresh_interval: 60s

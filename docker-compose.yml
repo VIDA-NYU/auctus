@@ -14,7 +14,12 @@ services:
     ports:
       - 9200:9200
   rabbitmq:
-    image: rabbitmq:3-management
+    build:
+      context: ./docker
+      dockerfile: rabbitmq.dockerfile
+    environment:
+      - RABBITMQ_DEFAULT_USER=${AMQP_USER}
+      - RABBITMQ_DEFAULT_PASS=${AMQP_PASSWORD}
     ports:
       - 8080:15672
       - 5672:5672
@@ -26,8 +31,8 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
-      - AMQP_USER=guest
-      - AMQP_PASSWORD=guest
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
       - QUERY_HOST=http://localhost:8002
     ports:
       - 8001:8001
@@ -42,8 +47,8 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
-      - AMQP_USER=guest
-      - AMQP_PASSWORD=guest
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
     ports:
       - 8002
     volumes:
@@ -66,11 +71,21 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
-      - AMQP_USER=guest
-      - AMQP_PASSWORD=guest
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
   example_discoverer:
     build:
       context: .
@@ -79,8 +94,8 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
-      - AMQP_USER=guest
-      - AMQP_PASSWORD=guest
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
     volumes:
       - datasets:/datasets
   d3m_seeds:
@@ -91,8 +106,8 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
-      - AMQP_USER=guest
-      - AMQP_PASSWORD=guest
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
@@ -103,8 +118,8 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
-      - AMQP_USER=guest
-      - AMQP_PASSWORD=guest
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
     volumes:
       - datasets:/datasets
   noaa:
@@ -114,8 +129,8 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
-      - AMQP_USER=guest
-      - AMQP_PASSWORD=guest
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
       - NOAA_TOKEN=${NOAA_TOKEN}
     volumes:
       - datasets:/datasets
