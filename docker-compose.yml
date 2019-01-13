@@ -48,6 +48,7 @@ services:
       - 8002
     volumes:
       - datasets:/datasets
+      - cache:/cache
       - ../data/seed_datasets_current:/d3m_seed_datasets
       - ./query/query:/usr/src/app/query/query
   query_lb:
@@ -121,3 +122,4 @@ services:
       - datasets:/datasets
 volumes:
   datasets:
+  cache:

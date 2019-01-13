@@ -5,9 +5,11 @@ import asyncio
 from datetime import datetime
 from dateutil.parser import parse
 import elasticsearch
+import hashlib
 import logging
 import json
 import os
+import pickle
 import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
@@ -23,6 +25,7 @@ from datamart_profiler import process_dataset
 logger = logging.getLogger(__name__)
 
 
+BUF_SIZE = 128000
 MAX_STREAMED_SIZE = 1024 * 1024 * 1024
 MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.4
@@ -97,6 +100,27 @@ class QueryHandler(CorsHandler):
 
 
 class Query(QueryHandler):
+
+    def get_profile_data(self, filepath):
+        # hashing data
+        sha1 = hashlib.sha1()
+        with open(filepath, 'rb') as f:
+            while True:
+                data = f.read(BUF_SIZE)
+                if not data:
+                    break
+                sha1.update(data)
+        hash_ = sha1.hexdigest()
+
+        # checking for cached data
+        cached_data = os.path.join('/cache', hash_)
+        if os.path.exists(cached_data):
+            return pickle.load(open(cached_data, 'rb'))
+
+        # profile data and save
+        data_profile = process_dataset(filepath)
+        pickle.dump(data_profile, open(cached_data, 'wb'))
+        return data_profile
 
     def search_d3m_dataset_id(self, metadata):
         dataset_id = ''
@@ -433,7 +457,7 @@ class Query(QueryHandler):
                 temp_file.write(data)
                 temp_file.close()
 
-                data_profile = process_dataset(temp_file.name)
+                data_profile = self.get_profile_data(temp_file.name)
 
                 os.remove(temp_file.name)
 
@@ -446,10 +470,10 @@ class Query(QueryHandler):
                     if not os.path.exists(data_file):
                         logger.warning("Data does not exist: %s", data_file)
                     else:
-                        data_profile = process_dataset(data_file)
+                        data_profile = self.get_profile_data(data_file)
                 else:
                     # path to a CSV file
-                    data_profile = process_dataset(data)
+                    data_profile = self.get_profile_data(data)
 
         # parameter: query
         query_args = list()
