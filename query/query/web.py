@@ -23,26 +23,25 @@ from datamart_profiler import process_dataset
 logger = logging.getLogger(__name__)
 
 
+MAX_STREAMED_SIZE = 1024 * 1024 * 1024
 MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.4
 
 
-class BaseHandler(RequestHandler):
-    """Base class for all request handlers.
+@tornado.web.stream_request_body
+class QueryHandler(RequestHandler):
+    """Base class for the query request handler.
     """
-    def get_json(self):
-        type_ = self.request.headers.get('Content-Type', '')
-        if not type_.startswith('application/json'):
-            raise HTTPError(400, "Expected JSON")
-        return json.loads(self.request.body.decode('utf-8'))
+    def initialize(self):
+        # self.bytes_read = 0
+        self.data = b''
 
-    def send_json(self, obj):
-        if isinstance(obj, list):
-            obj = {'results': obj}
-        elif not isinstance(obj, dict):
-            raise ValueError("Can't encode %r to JSON" % type(obj))
-        self.set_header('Content-Type', 'application/json; charset=utf-8')
-        return self.finish(json.dumps(obj))
+    def prepare(self):
+        self.request.connection.set_max_body_size(MAX_STREAMED_SIZE)
+
+    def data_received(self, data):
+        # self.bytes_read += len(data)
+        self.data += data
 
     def get_form_data(self):
         type_ = self.request.headers.get('Content-Type', '')
@@ -52,11 +51,49 @@ class BaseHandler(RequestHandler):
         files = dict()
         tornado.httputil.parse_body_arguments(
             self.request.headers.get('Content-Type', ''),
-            self.request.body,
+            self.data,
             args,
             files
         )
         return args, files
+
+    def send_json(self, obj):
+        if isinstance(obj, list):
+            obj = {'results': obj}
+        elif not isinstance(obj, dict):
+            raise ValueError("Can't encode %r to JSON" % type(obj))
+        self.set_header('Content-Type', 'application/json; charset=utf-8')
+        return self.finish(json.dumps(obj))
+
+    def _cors(self):
+        self.set_header('Access-Control-Allow-Origin', '*')
+        self.set_header('Access-Control-Allow-Methods', 'POST')
+        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    def options(self):
+        # CORS pre-flight
+        self._cors()
+        self.set_status(204)
+        self.finish()
+
+
+class BaseHandler(RequestHandler):
+    """Base class for all request handlers.
+    """
+
+    def get_json(self):
+        type_ = self.request.headers.get('Content-Type', '')
+        if not type_.startswith('application/json'):
+            raise HTTPError(400, "Expected JSON")
+        return json.loads(self.data.decode('utf-8'))
+
+    def send_json(self, obj):
+        if isinstance(obj, list):
+            obj = {'results': obj}
+        elif not isinstance(obj, dict):
+            raise ValueError("Can't encode %r to JSON" % type(obj))
+        self.set_header('Content-Type', 'application/json; charset=utf-8')
+        return self.finish(json.dumps(obj))
 
 
 class CorsHandler(BaseHandler):
@@ -72,7 +109,7 @@ class CorsHandler(BaseHandler):
         self.finish()
 
 
-class Query(CorsHandler):
+class Query(QueryHandler):
 
     def search_d3m_dataset_id(self, metadata):
         dataset_id = ''
@@ -377,7 +414,7 @@ class Query(CorsHandler):
 
         return query_args
 
-    def post(self):
+    async def post(self):
         self._cors()
 
         args, files = self.get_form_data()
@@ -438,7 +475,7 @@ class Query(CorsHandler):
             return
 
         if not data_profile:
-            logger.info("Query: %r", query_args)
+            # logger.info("Query: %r", query_args)
             hits = self.application.elasticsearch.search(
                 index='datamart',
                 body={
@@ -468,7 +505,7 @@ class Query(CorsHandler):
         else:
             query_param = None
             if query_args:
-                logger.info("Query: %r", query_args)
+                # logger.info("Query: %r", query_args)
                 query_param = query_args
 
             join_results = get_joinable_datasets(

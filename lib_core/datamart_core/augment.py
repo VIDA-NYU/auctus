@@ -706,7 +706,7 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                     },
                 }
 
-            logger.info("Query (union-fuzzy): %r", query_obj)
+            # logger.info("Query (union-fuzzy): %r", query_obj)
 
             result = es.search(
                 index='datamart',
