@@ -914,8 +914,31 @@ def union(original_data, augment_data, columns):
     Returns the new pandas.DataFrame object.
     """
 
-    # TODO
-    return ''
+    # dropping columns not in union
+    original_columns = [c[0] for c in columns]
+    augment_data_columns = [c[1] for c in columns]
+    original_data = original_data.drop(
+        [c for c in original_data.columns if c not in original_columns],
+        axis=1
+    )
+    augment_data = augment_data.drop(
+        [c for c in augment_data.columns if c not in augment_data_columns],
+        axis=1
+    )
+
+    rename = dict()
+    for c in columns:
+        rename[c[1]] = c[0]
+    augment_data = augment_data.rename(columns=rename)
+    union_ = pd.concat([original_data, augment_data])
+
+    # create a single d3mIndex
+    union_['d3mIndex'] = pd.Series(
+        data=[i for i in range(union_.shape[0])],
+        index=union_.index
+    )
+
+    return union_
 
 
 def generate_d3m_dataset(data, destination=None):
