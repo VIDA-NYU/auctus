@@ -3,19 +3,14 @@ function getCookie(name) {
   return r ? r[1] : undefined;
 }
 
-function postJSON(url='', data={}, args) {
-  if(args) {
-    args = '&' + encodeGetParams(args);
-  } else {
-    args = '';
-  }
+function postSearchForm(url='', data={}) {
   var formData = new FormData();
   if(data.data) {
     formData.append('data', data.data);
   }
   formData.append('query', JSON.stringify(data.query));
   return fetch(
-    url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,
+    url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')),
     {
       mode: 'cors',
       cache: 'no-cache',
@@ -27,6 +22,26 @@ function postJSON(url='', data={}, args) {
       throw "Status " + response.status;
     }
     return response.json();
+  });
+}
+
+function postAugmentForm(url='', data={}) {
+  var formData = new FormData();
+  formData.append('data', data.data);
+  formData.append('task', JSON.stringify(data.task));
+  return fetch(
+    url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')),
+    {
+      mode: 'cors',
+      cache: 'no-cache',
+      method: 'POST',
+      body: formData
+    }
+  ).then(function(response) {
+    if(response.status != 200) {
+      throw "Status " + response.status;
+    }
+    return response.blob();
   });
 }
 
@@ -300,6 +315,27 @@ function add_generic(div_id) {
     variables_div.appendChild(_div_types)
 }
 
+var search_results = [];
+var search_data = null;
+
+function submitAugmentationForm(i)
+{
+    var data_augment = {};
+    data_augment.data = search_data;
+    data_augment.task = search_results[i];
+    postAugmentForm(QUERY_HOST + '/augment', data_augment)
+    .then(function(zipFile) {
+        // The actual download
+        var blob = zipFile;
+        var link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'augmentation.zip'
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}
+
 function formatSize(bytes) {
     var i = 0;
     var units = [' B', ' kB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB'];
@@ -441,18 +477,22 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         results_div.removeChild(results_div.firstChild);
     }
     document.getElementById('search-error').style.display = 'none';
+    search_results = [];
+    search_data = null;
 
     // showing progress icon
     document.getElementById('processing').style.display = 'block';
 
     console.log("Searching:", search);
-    postJSON(QUERY_HOST + '/search', search)
+    postSearchForm(QUERY_HOST + '/search', search)
     .then(function(result) {
     console.log("Got " + result.results.length + " results");
     console.log("Results:", result.results);
     results_div.innerHTML = '';
     document.getElementById('processing').style.display = 'none';
-    if((result.results.length > 0) && (search.data)) {
+    search_results = result.results;
+    search_data = search.data;
+    if((search_results.length > 0) && (search.data)) {
         var div_title = document.createElement('div');
         div_title.setAttribute('class', 'container mb-5')
         var title = document.createElement('h6');
@@ -461,9 +501,9 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         div_title.appendChild(title);
         results_div.appendChild(div_title);
     }
-    for(var i = 0; i < result.results.length; ++i) {
+    for(var i = 0; i < search_results.length; ++i) {
       var elem = document.createElement('div');
-      var data = result.results[i];
+      var data = search_results[i];
       elem.className = 'col-md-4';
       description = data.metadata.description;
       if(description) {
@@ -512,6 +552,12 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         );
       }
 
+      var augment_button = '';
+      if(search.data) {
+        augment_button = ('<a href="javascript: submitAugmentationForm('+ i + ')" ' +
+                          'class="btn btn-sm btn-outline-secondary">Augment</a>');
+      }
+
       elem.innerHTML = (
         '<div class="card mb-4 shadow-sm">' +
         '  <div class="card-body">' +
@@ -521,8 +567,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '      <div class="btn-group">' +
         '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
         '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
-        '        <a href="/join_query/' + data.id + '" class="btn btn-sm btn-outline-secondary">Join</a>' +
-        '        <a href="/union_query/' + data.id + '" class="btn btn-sm btn-outline-secondary">Union</a>' +
+        // augment_button +
         '      </div>' +
         '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
         '    </div>' + join_info + union_info +
@@ -531,7 +576,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       );
       results_div.appendChild(elem);
     }
-    if(result.results.length == 0) {
+    if(search_results.length == 0) {
       document.getElementById('search-error').style.display = '';
       document.getElementById('search-error').innerText = "No results";
     }
