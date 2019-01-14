@@ -27,11 +27,12 @@ class D3mWriter(object):
                     column['structural_type'],
                     'string',
                 )
+            role = 'index' if column['name'] == 'd3mIndex' else 'attribute'
             columns.append({
                 'colIndex': i,
                 'colName': column['name'],
                 'colType': col_type,
-                'role': ['attribute'],
+                'role': [role],
             })
 
         d3m_meta = {
