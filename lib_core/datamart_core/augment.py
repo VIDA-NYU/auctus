@@ -1,7 +1,13 @@
 import distance
+import elasticsearch
 import logging
+import os
+import pandas as pd
+import shutil
+import tempfile
+import uuid
 
-from .common import Type
+from .common import conv_datetime, conv_float, conv_int, Type
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +172,8 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
             index='datamart',
             body=query_obj,
             scroll='2m',
-            size=10000
+            size=10000,
+            request_timeout=30
         )
 
         sid = result['_scroll_id']
@@ -275,7 +282,8 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
             index='datamart',
             body=query_obj,
             scroll='2m',
-            size=10000
+            size=10000,
+            request_timeout=30
         )
 
         sid = result['_scroll_id']
@@ -454,7 +462,7 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
             score=score,
             discoverer=materialize['identifier'],
             metadata=meta,
-            columns=intersections[dt],
+            columns=[(att_1, att_2) for att_1, att_2, sim in intersections[dt]],
         ))
 
     return {'results': results}
@@ -520,7 +528,8 @@ def get_column_information(es=None, dataset_id=None, data_profile={}, query_args
         index='datamart',
         body=query_obj,
         scroll='2m',
-        size=10000
+        size=10000,
+        request_timeout=30
     )
 
     sid = result['_scroll_id']
@@ -627,7 +636,7 @@ def get_unionable_datasets_brute_force(es, dataset_id=None, data_profile={},
             score=score,
             discoverer=materialize['identifier'],
             metadata=meta,
-            columns=column_pairs[dt],
+            columns=[(att_1, att_2) for att_1, att_2, sim in column_pairs[dt]],
         ))
 
     return {'results': results}
@@ -712,7 +721,8 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                 index='datamart',
                 body=query_obj,
                 scroll='2m',
-                size=10000
+                size=10000,
+                request_timeout=30
             )
 
             sid = result['_scroll_id']
@@ -789,7 +799,7 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
             score=score,
             discoverer=materialize['identifier'],
             metadata=meta,
-            columns=column_pairs[dt],
+            columns=[(att_1, att_2) for att_1, att_2, sim in column_pairs[dt]],
         ))
 
     return {'results': results}
@@ -814,3 +824,179 @@ def get_unionable_datasets(es, dataset_id=None, data_profile={},
     if fuzzy:
         return get_unionable_datasets_fuzzy(es, dataset_id, data_profile, query_args)
     return get_unionable_datasets_brute_force(es, dataset_id, data_profile, query_args)
+
+
+def convert_to_pd(file_path, columns_metadata):
+    """
+    Convert a dataset to pandas.DataFrame based on the provided metadata.
+    """
+
+    converters = dict()
+
+    for column in columns_metadata:
+        name = column['name']
+        if Type.DATE_TIME in column['semantic_types']:
+            converters[name] = conv_datetime
+        elif Type.INTEGER in column['structural_type']:
+            converters[name] = conv_int
+        elif Type.FLOAT in column['structural_type']:
+            converters[name] = conv_float
+
+    return pd.read_csv(
+        file_path,
+        converters=converters,
+        error_bad_lines=False
+    )
+
+
+def materialize_dataset(es, dataset_id):
+    """
+    Materializes a dataset as a pandas.DataFrame
+    """
+
+    from .materialize import get_dataset
+
+    # get metadata data from Elasticsearch
+    try:
+        metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+    except elasticsearch.NotFoundError:
+        raise RuntimeError('Dataset id not found in Elasticsearch.')
+
+    getter = get_dataset(metadata, dataset_id, format='csv')
+    try:
+        dataset_path = getter.__enter__()
+        df = convert_to_pd(dataset_path, metadata['columns'])
+    except Exception:
+        raise RuntimeError('Materializer reports failure.')
+    finally:
+        getter.__exit__(None, None, None)
+
+    return df
+
+
+def join(original_data, augment_data, columns, how='inner'):
+    """
+    Performs an inner join between original_data (pandas.DataFrame)
+    and augment_data (pandas.DataFrame) using columns.
+
+    Returns the new pandas.DataFrame object.
+    """
+
+    rename = dict()
+    for c in columns:
+        rename[c[1]] = c[0]
+    augment_data = augment_data.rename(columns=rename)
+    join_ = pd.merge(
+        original_data,
+        augment_data,
+        how=how,
+        on=[c[0] for c in columns],
+        suffixes=('_l', '_r')
+    )
+
+    # remove all columns with 'd3mIndex'
+    join_ = join_.drop([c for c in join_.columns if 'd3mIndex' in c], axis=1)
+
+    # create a single d3mIndex
+    join_['d3mIndex'] = pd.Series(
+        data=[i for i in range(join_.shape[0])],
+        index=join_.index
+    )
+
+    return join_
+
+
+def union(original_data, augment_data, columns):
+    """
+    Performs a union between original_data (pandas.DataFrame)
+    and augment_data (pandas.DataFrame) using columns.
+
+    Returns the new pandas.DataFrame object.
+    """
+
+    # TODO
+    return ''
+
+
+def generate_d3m_dataset(data, destination=None):
+    """
+    Generates a D3M dataset from data (pandas.DataFrame).
+
+    Returns the path to the D3M-style directory.
+    """
+
+    from datamart_materialize.d3m import D3mWriter
+
+    def add_column(column_, type_, metadata_):
+        metadata_['columns'].append({'name': column_})
+        if 'datetime' in type_:
+            metadata_['columns'][-1]['semantic_types'] = [Type.DATE_TIME]
+            metadata_['columns'][-1]['structural_type'] = Type.TEXT
+        elif 'int' in type_:
+            metadata_['columns'][-1]['semantic_types'] = []
+            metadata_['columns'][-1]['structural_type'] = Type.INTEGER
+        elif 'float' in type_:
+            metadata_['columns'][-1]['semantic_types'] = []
+            metadata_['columns'][-1]['structural_type'] = Type.FLOAT
+        elif 'bool' in type_:
+            metadata_['columns'][-1]['semantic_types'] = []
+            metadata_['columns'][-1]['structural_type'] = Type.BOOLEAN
+        else:
+            metadata_['columns'][-1]['semantic_types'] = []
+            metadata_['columns'][-1]['structural_type'] = Type.TEXT
+
+    dir_name = uuid.uuid4().hex
+    if destination:
+        data_path = os.path.join(destination, dir_name)
+        if os.path.exists(data_path):
+            shutil.rmtree(data_path)
+    else:
+        temp_dir = tempfile.mkdtemp()
+        data_path = os.path.join(temp_dir, dir_name)
+
+    metadata = dict(columns=[])
+    for column in data.columns:
+        add_column(
+            column,
+            str(data[column].dtype),
+            metadata
+        )
+    metadata['size'] = data.memory_usage(index=True, deep=True).sum()
+
+    writer = D3mWriter(dir_name, data_path, metadata)
+    with writer.open_file('w') as fp:
+        data.to_csv(fp, index=False)
+
+    return data_path
+
+
+def augment(es, data, metadata, task, destination=None):
+    """
+    Augments original data based on the task.
+
+    :param es: Elasticsearch client.
+    :param data: the data to be augmented.
+    :param metadata: the metadata of the data to be augmented.
+    :param task: the augmentation task.
+    :param destination: location to save the files.
+    """
+
+    if 'id' not in task:
+        raise RuntimeError('Dataset id for the augmentation task not provided.')
+
+    if 'join_columns' in task and len(task['join_columns']) > 0:
+        join_ = join(
+            convert_to_pd(data, metadata['columns']),
+            materialize_dataset(es, task['id']),
+            task['join_columns']
+        )
+        return generate_d3m_dataset(join_, destination)
+    elif 'union_columns' in task and len(task['union_columns']) > 0:
+        union_ = union(
+            convert_to_pd(data, metadata['columns']),
+            materialize_dataset(es, task['id']),
+            task['union_columns']
+        )
+        return generate_d3m_dataset(union_, destination)
+    else:
+        raise RuntimeError('Augmentation task not provided.')

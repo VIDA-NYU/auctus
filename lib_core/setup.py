@@ -9,6 +9,8 @@ req = [
     'aio-pika',
     'Distance',
     'elasticsearch',
+    'pandas',
+    'numpy'
 ]
 setup(name='datamart_core',
       version='0.0',

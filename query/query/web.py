@@ -10,6 +10,7 @@ import logging
 import json
 import os
 import pickle
+import shutil
 import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
@@ -17,7 +18,8 @@ import tornado.httputil
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
 
-from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
+from datamart_core.augment import augment, \
+    get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
 from datamart_profiler import process_dataset
@@ -98,10 +100,7 @@ class QueryHandler(CorsHandler):
             raise HTTPError(400, "Expected JSON")
         return json.loads(self.data.decode('utf-8'))
 
-
-class Query(QueryHandler):
-
-    def get_profile_data(self, filepath):
+    def get_profile_data(self, filepath, metadata=None):
         # hashing data
         sha1 = hashlib.sha1()
         with open(filepath, 'rb') as f:
@@ -118,9 +117,12 @@ class Query(QueryHandler):
             return pickle.load(open(cached_data, 'rb'))
 
         # profile data and save
-        data_profile = process_dataset(filepath)
+        data_profile = process_dataset(filepath, metadata)
         pickle.dump(data_profile, open(cached_data, 'wb'))
         return data_profile
+
+
+class Query(QueryHandler):
 
     def search_d3m_dataset_id(self, metadata):
         dataset_id = ''
@@ -652,10 +654,93 @@ class Metadata(CorsHandler):
         self.send_json(metadata)
 
 
-class Augment(CorsHandler):
-    def post(self):
-        self.set_header('Content-Type', 'text/plain')
-        return self.finish("Not yet implemented")
+class Augment(QueryHandler):
+    async def post(self):
+
+        args, files = self.get_form_data()
+
+        # Params are 'task' and 'data'
+        task = data = destination = None
+        if 'task' in args:
+            task = json.loads(args['task'][0].decode('utf-8'))
+        elif 'task' in files:
+            task = json.loads(files['task'][0]['body'].decode('utf-8'))
+        if 'data' in args:
+            data = args['data'][0].decode('utf-8')
+        elif 'data' in files:
+            data = files['data'][0]['body'].decode('utf-8')
+        if 'destination' in args:
+            destination = args['destination'][0].decode('utf-8')
+        elif 'destination' in files:
+            destination = files['destination'][0]['body'].decode('utf-8')
+
+        # both parameters must be provided
+        if not task or not data:
+            self.send_error(status_code=400)
+            return
+
+        if not isinstance(data, (str, bytes)):
+            logger.warning("Data is in the wrong format!")
+            self.send_error(status_code=400)
+            return
+
+        tmp = False
+        data_path = None
+        if not os.path.exists(data):
+            # data represents the entire file
+            logger.warning("Data is not a path!")
+
+            tmp = True
+            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+            temp_file.write(data)
+            temp_file.close()
+
+            data_path = temp_file.name
+            data_profile = self.get_profile_data(data_path)
+
+        else:
+            # data represents a file path
+            logger.warning("Data is a path!")
+            if os.path.isdir(data):
+                # path to a D3M dataset
+                data_file = os.path.join(data, 'tables', 'learningData.csv')
+                if not os.path.exists(data_file):
+                    logger.warning("Data does not exist: %s", data_file)
+                else:
+                    data_path = data_file
+                    data_profile = self.get_profile_data(data_file)
+            else:
+                # path to a CSV file
+                data_path = data
+                data_profile = self.get_profile_data(data)
+
+        # augment
+        new_path = augment(
+            self.application.elasticsearch,
+            data_path,
+            data_profile,
+            task,
+            destination=destination
+        )
+
+        if destination:
+            # send the path
+            self.set_header('Content-Type', 'text/plain; charset=utf-8')
+            self.write(new_path)
+        else:
+            # send a zip file
+            self.set_header('Content-Type', 'application/zip')
+            self.set_header(
+                'Content-Disposition',
+                'attachment; filename="augmentation.zip"')
+            writer = RecursiveZipWriter(self.write)
+            writer.write_recursive(new_path, '')
+            writer.close()
+            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+        self.finish()
+
+        if tmp:
+            os.remove(data_path)
 
 
 class Application(tornado.web.Application):
