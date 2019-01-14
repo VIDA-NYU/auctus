@@ -34,7 +34,7 @@ def export():
         )['hits']['hits']
         for h in hits:
             with open(encode_dataset_id(h['_id']), 'w') as fp:
-                json.dump(h['_source'], fp)
+                json.dump(h['_source'], fp, sort_keys=True, indent=2)
         if len(hits) != SIZE:
             break
 
