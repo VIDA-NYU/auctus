@@ -23,3 +23,8 @@ Elasticsearch is used as the search index, storing one document per known datase
 The services exchange messages through `RabbitMQ`, allowing us to have complex messaging patterns with queueing and retrying semantics, and complex patterns such as the on-demand querying.
 
 ![AMQP Overview](amqp.png)
+
+Deployment
+==========
+
+The system is currently running at https://datamart.d3m.vida-nyu.org/. You can see the system status at https://grafana.datamart.d3m.vida-nyu.org/.
