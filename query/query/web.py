@@ -28,8 +28,40 @@ MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.4
 
 
+class BaseHandler(RequestHandler):
+    """Base class for all request handlers.
+    """
+
+    def get_json(self):
+        type_ = self.request.headers.get('Content-Type', '')
+        if not type_.startswith('application/json'):
+            raise HTTPError(400, "Expected JSON")
+        return json.loads(self.request.body.decode('utf-8'))
+
+    def send_json(self, obj):
+        if isinstance(obj, list):
+            obj = {'results': obj}
+        elif not isinstance(obj, dict):
+            raise ValueError("Can't encode %r to JSON" % type(obj))
+        self.set_header('Content-Type', 'application/json; charset=utf-8')
+        return self.finish(json.dumps(obj))
+
+
+class CorsHandler(BaseHandler):
+    def _cors(self):
+        self.set_header('Access-Control-Allow-Origin', '*')
+        self.set_header('Access-Control-Allow-Methods', 'POST')
+        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    def options(self):
+        # CORS pre-flight
+        self._cors()
+        self.set_status(204)
+        self.finish()
+
+
 @tornado.web.stream_request_body
-class QueryHandler(RequestHandler):
+class QueryHandler(CorsHandler):
     """Base class for the query request handler.
     """
     def initialize(self):
@@ -57,56 +89,11 @@ class QueryHandler(RequestHandler):
         )
         return args, files
 
-    def send_json(self, obj):
-        if isinstance(obj, list):
-            obj = {'results': obj}
-        elif not isinstance(obj, dict):
-            raise ValueError("Can't encode %r to JSON" % type(obj))
-        self.set_header('Content-Type', 'application/json; charset=utf-8')
-        return self.finish(json.dumps(obj))
-
-    def _cors(self):
-        self.set_header('Access-Control-Allow-Origin', '*')
-        self.set_header('Access-Control-Allow-Methods', 'POST')
-        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
-
-    def options(self):
-        # CORS pre-flight
-        self._cors()
-        self.set_status(204)
-        self.finish()
-
-
-class BaseHandler(RequestHandler):
-    """Base class for all request handlers.
-    """
-
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
         if not type_.startswith('application/json'):
             raise HTTPError(400, "Expected JSON")
         return json.loads(self.data.decode('utf-8'))
-
-    def send_json(self, obj):
-        if isinstance(obj, list):
-            obj = {'results': obj}
-        elif not isinstance(obj, dict):
-            raise ValueError("Can't encode %r to JSON" % type(obj))
-        self.set_header('Content-Type', 'application/json; charset=utf-8')
-        return self.finish(json.dumps(obj))
-
-
-class CorsHandler(BaseHandler):
-    def _cors(self):
-        self.set_header('Access-Control-Allow-Origin', '*')
-        self.set_header('Access-Control-Allow-Methods', 'POST')
-        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
-
-    def options(self):
-        # CORS pre-flight
-        self._cors()
-        self.set_status(204)
-        self.finish()
 
 
 class Query(QueryHandler):
