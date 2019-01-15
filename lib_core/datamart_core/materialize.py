@@ -24,16 +24,26 @@ PROM_DOWNLOAD = prometheus_client.Histogram(
 @contextlib.contextmanager
 def get_dataset(metadata, dataset_id, format='csv'):
     shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
-    if os.path.exists(shared):
+    if os.path.exists(shared) and format == 'csv':
+        # Read directly from stored file
         yield os.path.join(shared, 'main.csv')
     else:
         temp_dir = tempfile.mkdtemp()
         try:
             temp_file = os.path.join(temp_dir, 'data')
-            with PROM_DOWNLOAD.time():
-                datamart_materialize.download(
-                    {'id': dataset_id, 'metadata': metadata},
-                    temp_file, None, format=format)
+            if os.path.exists(shared):
+                # Do format conversion from stored file
+                with open(os.path.join(shared, 'main.csv'), 'rb') as src:
+                    writer_cls = datamart_materialize.get_writer(format)
+                    writer = writer_cls(dataset_id, temp_file, metadata)
+                    with writer.open_file('wb') as dst:
+                        shutil.copyfileobj(src, dst)
+            else:
+                # Materialize
+                with PROM_DOWNLOAD.time():
+                    datamart_materialize.download(
+                        {'id': dataset_id, 'metadata': metadata},
+                        temp_file, None, format=format)
             yield temp_file
         finally:
             shutil.rmtree(temp_dir)

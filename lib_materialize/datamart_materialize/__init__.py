@@ -94,6 +94,12 @@ def load_materializers():
             logger.info("Writer loaded: %s", entry_point.name)
 
 
+def get_writer(format):
+    if not _materializers_loaded:
+        load_materializers()
+    return writers[format]
+
+
 class CsvWriter(object):
     needs_metadata = False
 
