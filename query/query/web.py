@@ -7,6 +7,7 @@ import logging
 import json
 import os
 import prometheus_client
+from prometheus_async.aio import time as prom_async_time
 import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
@@ -552,7 +553,7 @@ class RecursiveZipWriter(object):
 class Download(CorsHandler):
     TIMEOUT = 300
 
-    @PROM_DOWNLOAD_TIME.time()
+    @prom_async_time(PROM_DOWNLOAD_TIME)
     async def get(self, dataset_id):
         PROM_DOWNLOAD.inc()
 
