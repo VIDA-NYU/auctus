@@ -3,19 +3,24 @@ import asyncio
 from datetime import datetime
 from dateutil.parser import parse
 import elasticsearch
+import hashlib
 import logging
 import json
 import os
+import pickle
 import prometheus_client
 from prometheus_async.aio import time as prom_async_time
+import shutil
 import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
+import tornado.httputil
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import zipfile
 
-from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
+from datamart_core.augment import augment, \
+    get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
 from datamart_profiler import process_dataset
@@ -23,8 +28,10 @@ from datamart_profiler import process_dataset
 logger = logging.getLogger(__name__)
 
 
+BUF_SIZE = 128000
+MAX_STREAMED_SIZE = 1024 * 1024 * 1024
 MAX_CONCURRENT = 2
-SCORE_THRESHOLD = 0.4
+SCORE_THRESHOLD = 0.0
 
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
@@ -54,6 +61,7 @@ PROM_AUGMENT = prometheus_client.Counter('req_augment_count',
 class BaseHandler(RequestHandler):
     """Base class for all request handlers.
     """
+
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
         if not type_.startswith('application/json'):
@@ -82,7 +90,64 @@ class CorsHandler(BaseHandler):
         self.finish()
 
 
-class Query(CorsHandler):
+@tornado.web.stream_request_body
+class QueryHandler(CorsHandler):
+    """Base class for the query request handler.
+    """
+    def initialize(self):
+        # self.bytes_read = 0
+        self.data = b''
+
+    def prepare(self):
+        self.request.connection.set_max_body_size(MAX_STREAMED_SIZE)
+
+    def data_received(self, data):
+        # self.bytes_read += len(data)
+        self.data += data
+
+    def get_form_data(self):
+        type_ = self.request.headers.get('Content-Type', '')
+        if not type_.startswith('multipart/form-data'):
+            raise HTTPError(400, "Expected multipart/form-data")
+        args = dict()
+        files = dict()
+        tornado.httputil.parse_body_arguments(
+            self.request.headers.get('Content-Type', ''),
+            self.data,
+            args,
+            files
+        )
+        return args, files
+
+    def get_json(self):
+        type_ = self.request.headers.get('Content-Type', '')
+        if not type_.startswith('application/json'):
+            raise HTTPError(400, "Expected JSON")
+        return json.loads(self.data.decode('utf-8'))
+
+    def get_profile_data(self, filepath, metadata=None):
+        # hashing data
+        sha1 = hashlib.sha1()
+        with open(filepath, 'rb') as f:
+            while True:
+                data = f.read(BUF_SIZE)
+                if not data:
+                    break
+                sha1.update(data)
+        hash_ = sha1.hexdigest()
+
+        # checking for cached data
+        cached_data = os.path.join('/cache', hash_)
+        if os.path.exists(cached_data):
+            return pickle.load(open(cached_data, 'rb'))
+
+        # profile data and save
+        data_profile = process_dataset(filepath, metadata)
+        pickle.dump(data_profile, open(cached_data, 'wb'))
+        return data_profile
+
+
+class Query(QueryHandler):
 
     def search_d3m_dataset_id(self, metadata):
         dataset_id = ''
@@ -387,57 +452,57 @@ class Query(CorsHandler):
 
         return query_args
 
-    @PROM_SEARCH_TIME.time()
-    def post(self):
+    @prom_async_time(PROM_SEARCH_TIME)
+    async def post(self):
         PROM_SEARCH.inc()
         self._cors()
 
-        obj = self.get_json()
-        logger.info("Query: %r", obj)
+        args, files = self.get_form_data()
 
         # Params are 'query' and 'data'
         query = data = None
-        if 'query' in obj:
-            query = obj['query']
-        if 'data' in obj:
-            data = obj['data']
+        if 'query' in args:
+            query = json.loads(args['query'][0].decode('utf-8'))
+        elif 'query' in files:
+            query = json.loads(files['query'][0]['body'].decode('utf-8'))
+        if 'data' in args:
+            data = args['data'][0].decode('utf-8')
+        elif 'data' in files:
+            data = files['data'][0]['body'].decode('utf-8')
 
         # parameter: data
-        dataset_id = ''
         data_profile = dict()
         if data:
-            if isinstance(data, dict):
-                # data is a D3M datasetDoc
-                # assumes data is in DataMart index
-                dataset_id = self.search_d3m_dataset_id(data)
+            if not isinstance(data, (str, bytes)):
+                logger.warning("Data is in the wrong format!")
+                self.send_error(status_code=400)
+                return
 
-            elif isinstance(data, (str, bytes)):
-                if not os.path.exists(data):
-                    # data represents the entire file
-                    logger.warning("Data is not a path!")
+            if not os.path.exists(data):
+                # data represents the entire file
+                logger.warning("Data is not a path!")
 
-                    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-                    temp_file.write(data)
-                    temp_file.close()
+                temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+                temp_file.write(data)
+                temp_file.close()
 
-                    data_profile = process_dataset(temp_file.name)
+                data_profile = self.get_profile_data(temp_file.name)
 
-                    os.remove(temp_file.name)
+                os.remove(temp_file.name)
 
-                else:
-                    # data represents a file path
-                    if os.path.isdir(data):
-                        # path to a D3M dataset
-                        data_file = os.path.join(data, 'tables', 'learningData.csv')
-                        if not os.path.exists(data_file):
-                            logger.warning("Data does not exist: %s", data_file)
-                        else:
-                            data_profile = process_dataset(data_file)
+            else:
+                # data represents a file path
+                logger.warning("Data is a path!")
+                if os.path.isdir(data):
+                    # path to a D3M dataset
+                    data_file = os.path.join(data, 'tables', 'learningData.csv')
+                    if not os.path.exists(data_file):
+                        logger.warning("Data does not exist: %s", data_file)
                     else:
-                        # path to a CSV file
-                        data_profile = process_dataset(data)
-
-        has_data = dataset_id or data_profile
+                        data_profile = self.get_profile_data(data_file)
+                else:
+                    # path to a CSV file
+                    data_profile = self.get_profile_data(data)
 
         # parameter: query
         query_args = list()
@@ -445,12 +510,12 @@ class Query(CorsHandler):
             query_args = self.parse_query(query)
 
         # At least one of them must be provided
-        if not query_args and not has_data:
+        if not query_args and not data_profile:
             self.send_error(status_code=400)
             return
 
-        if not has_data:
-            logger.info("Query: %r", query_args)
+        if not data_profile:
+            # logger.info("Query: %r", query_args)
             hits = self.application.elasticsearch.search(
                 index='datamart',
                 body={
@@ -480,20 +545,19 @@ class Query(CorsHandler):
         else:
             query_param = None
             if query_args:
-                logger.info("Query: %r", query_args)
+                # logger.info("Query: %r", query_args)
                 query_param = query_args
 
             join_results = get_joinable_datasets(
-                self.application.elasticsearch,
-                dataset_id,
-                data_profile,
-                query_param
+                es=self.application.elasticsearch,
+                data_profile=data_profile,
+                query_args=query_param
             )['results']
             union_results = get_unionable_datasets(
-                self.application.elasticsearch,
-                dataset_id,
-                data_profile,
-                query_param
+                es=self.application.elasticsearch,
+                data_profile=data_profile,
+                query_args=query_param,
+                fuzzy=True
             )['results']
 
             results = []
@@ -619,14 +683,96 @@ class Metadata(CorsHandler):
         self.send_json(metadata)
 
 
-class Augment(CorsHandler):
-    @PROM_AUGMENT_TIME.time()
-    def post(self):
+class Augment(QueryHandler):
+    @prom_async_time(PROM_AUGMENT_TIME)
+    async def post(self):
         PROM_AUGMENT.inc()
         self._cors()
 
-        self.set_header('Content-Type', 'text/plain')
-        return self.finish("Not yet implemented")
+        args, files = self.get_form_data()
+
+        # Params are 'task' and 'data'
+        task = data = destination = None
+        if 'task' in args:
+            task = json.loads(args['task'][0].decode('utf-8'))
+        elif 'task' in files:
+            task = json.loads(files['task'][0]['body'].decode('utf-8'))
+        if 'data' in args:
+            data = args['data'][0].decode('utf-8')
+        elif 'data' in files:
+            data = files['data'][0]['body'].decode('utf-8')
+        if 'destination' in args:
+            destination = args['destination'][0].decode('utf-8')
+        elif 'destination' in files:
+            destination = files['destination'][0]['body'].decode('utf-8')
+
+        # both parameters must be provided
+        if not task or not data:
+            self.send_error(status_code=400)
+            return
+
+        if not isinstance(data, (str, bytes)):
+            logger.warning("Data is in the wrong format!")
+            self.send_error(status_code=400)
+            return
+
+        tmp = False
+        data_path = None
+        if not os.path.exists(data):
+            # data represents the entire file
+            logger.warning("Data is not a path!")
+
+            tmp = True
+            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+            temp_file.write(data)
+            temp_file.close()
+
+            data_path = temp_file.name
+            data_profile = self.get_profile_data(data_path)
+
+        else:
+            # data represents a file path
+            logger.warning("Data is a path!")
+            if os.path.isdir(data):
+                # path to a D3M dataset
+                data_file = os.path.join(data, 'tables', 'learningData.csv')
+                if not os.path.exists(data_file):
+                    logger.warning("Data does not exist: %s", data_file)
+                else:
+                    data_path = data_file
+                    data_profile = self.get_profile_data(data_file)
+            else:
+                # path to a CSV file
+                data_path = data
+                data_profile = self.get_profile_data(data)
+
+        # augment
+        new_path = augment(
+            self.application.elasticsearch,
+            data_path,
+            data_profile,
+            task,
+            destination=destination
+        )
+
+        if destination:
+            # send the path
+            self.set_header('Content-Type', 'text/plain; charset=utf-8')
+            self.write(new_path)
+        else:
+            # send a zip file
+            self.set_header('Content-Type', 'application/zip')
+            self.set_header(
+                'Content-Disposition',
+                'attachment; filename="augmentation.zip"')
+            writer = RecursiveZipWriter(self.write)
+            writer.write_recursive(new_path, '')
+            writer.close()
+            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+        self.finish()
+
+        if tmp:
+            os.remove(data_path)
 
 
 class Application(tornado.web.Application):

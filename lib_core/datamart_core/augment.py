@@ -1,7 +1,13 @@
 import distance
+import elasticsearch
 import logging
+import os
+import pandas as pd
+import shutil
+import tempfile
+import uuid
 
-from .common import Type
+from .common import conv_datetime, conv_float, conv_int, Type
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +172,8 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
             index='datamart',
             body=query_obj,
             scroll='2m',
-            size=10000
+            size=10000,
+            request_timeout=30
         )
 
         sid = result['_scroll_id']
@@ -275,7 +282,8 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
             index='datamart',
             body=query_obj,
             scroll='2m',
-            size=10000
+            size=10000,
+            request_timeout=30
         )
 
         sid = result['_scroll_id']
@@ -346,7 +354,8 @@ def get_dataset_metadata(es, dataset_id):
     return hit
 
 
-def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
+def get_joinable_datasets(es, dataset_id=None, data_profile={},
+                          query_args=None):
     """
     Retrieve datasets that can be joined with an input dataset.
 
@@ -355,6 +364,10 @@ def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
     :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
     :param query_args: list of query arguments (optional).
     """
+
+    if not dataset_id and not data_profile:
+        raise RuntimeError('Either a dataset id or a data profile '
+                           'must be provided for the join.')
 
     # get the coverage for each column of the input dataset
 
@@ -449,7 +462,7 @@ def get_joinable_datasets(es, dataset_id, data_profile={}, query_args=None):
             score=score,
             discoverer=materialize['identifier'],
             metadata=meta,
-            columns=intersections[dt],
+            columns=[(att_1, att_2) for att_1, att_2, sim in intersections[dt]],
         ))
 
     return {'results': results}
@@ -515,7 +528,8 @@ def get_column_information(es=None, dataset_id=None, data_profile={}, query_args
         index='datamart',
         body=query_obj,
         scroll='2m',
-        size=10000
+        size=10000,
+        request_timeout=30
     )
 
     sid = result['_scroll_id']
@@ -537,15 +551,16 @@ def get_column_information(es=None, dataset_id=None, data_profile={}, query_args
     return dataset_columns
 
 
-def get_unionable_datasets(es, dataset_id, data_profile={}, query_args=None):
+def get_unionable_datasets_brute_force(es, dataset_id=None, data_profile={},
+                                       query_args=None):
     """
-    Retrieve datasets that can be unioned to an input dataset.
+    Retrieve datasets that can be unioned to an input dataset using a brute force approach.
 
     :param es: Elasticsearch client.
     :param dataset_id: The identifier of the input dataset.
     :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
     :param query_args: list of query arguments (optional).
-   """
+    """
 
     dataset_columns = get_column_information(es=es, query_args=query_args)
     if dataset_id:
@@ -621,7 +636,390 @@ def get_unionable_datasets(es, dataset_id, data_profile={}, query_args=None):
             score=score,
             discoverer=materialize['identifier'],
             metadata=meta,
-            columns=column_pairs[dt],
+            columns=[(att_1, att_2) for att_1, att_2, sim in column_pairs[dt]],
         ))
 
     return {'results': results}
+
+
+def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
+                                 query_args=None):
+    """
+    Retrieve datasets that can be unioned to an input dataset using fuzzy search
+    (max edit distance = 2).
+
+    :param es: Elasticsearch client.
+    :param dataset_id: The identifier of the input dataset.
+    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
+    :param query_args: list of query arguments (optional).
+    """
+
+    if dataset_id:
+        main_dataset_columns = get_column_information(
+            es=es,
+            dataset_id=dataset_id
+        )[dataset_id]
+    else:
+        main_dataset_columns = get_column_information(
+            data_profile=data_profile
+        )
+
+    n_columns = 0
+    for type_ in main_dataset_columns:
+        n_columns += len(main_dataset_columns[type_])
+
+    column_pairs = dict()
+    for type_ in main_dataset_columns:
+        for att in main_dataset_columns[type_]:
+            partial_query = {
+                'should': [
+                    {
+                        'match': {'columns.structural_type': type_}
+                    },
+                    {
+                        'match': {'columns.semantic_types': type_}
+                    },
+                ],
+                'must': {
+                    "fuzzy": {"columns.name": att}
+                },
+                "minimum_should_match": 1
+            }
+
+            if dataset_id:
+                partial_query['must_not'] = {
+                    'match': {'_id': dataset_id}
+                }
+
+            query = {
+                'nested': {
+                    'path': 'columns',
+                    'query': {
+                        'bool': partial_query
+                    },
+                    'inner_hits': {'_source': False}
+                }
+            }
+
+            if not query_args:
+                query_obj = {
+                    'query': query,
+                }
+            else:
+                args = [query] + query_args
+                query_obj = {
+                    'query': {
+                        'bool': {
+                            'must': args,
+                        },
+                    },
+                }
+
+            # logger.info("Query (union-fuzzy): %r", query_obj)
+
+            result = es.search(
+                index='datamart',
+                body=query_obj,
+                scroll='2m',
+                size=10000,
+                request_timeout=30
+            )
+
+            sid = result['_scroll_id']
+            scroll_size = result['hits']['total']
+
+            while scroll_size > 0:
+                for hit in result['hits']['hits']:
+
+                    dataset_name = hit['_id']
+                    columns = hit['_source']['columns']
+                    inner_hits = hit['inner_hits']
+
+                    if dataset_name not in column_pairs:
+                        column_pairs[dataset_name] = []
+
+                    for column_hit in inner_hits['columns']['hits']['hits']:
+                        column_offset = int(column_hit['_nested']['offset'])
+                        column_name = columns[column_offset]['name']
+                        sim = compute_levenshtein_sim(att.lower(), column_name.lower())
+                        column_pairs[dataset_name].append((att, column_name, sim))
+
+                # scrolling
+                result = es.scroll(
+                    scroll_id=sid,
+                    scroll='2m'
+                )
+                sid = result['_scroll_id']
+                scroll_size = len(result['hits']['hits'])
+
+    scores = dict()
+    for dataset in column_pairs:
+
+        # choose pairs with higher similarity
+        seen_1 = set()
+        seen_2 = set()
+        pairs = []
+        for att_1, att_2, sim in sorted(column_pairs[dataset],
+                                        key=lambda item: item[2],
+                                        reverse=True):
+            if att_1 in seen_1 or att_2 in seen_2:
+                continue
+            seen_1.add(att_1)
+            seen_2.add(att_2)
+            pairs.append((att_1, att_2, sim))
+
+        if len(pairs) <= 1:
+            column_pairs[dataset] = []
+            continue
+
+        column_pairs[dataset] = pairs
+        scores[dataset] = 0
+
+        for i in range(len(column_pairs[dataset])):
+            sim = column_pairs[dataset][i][2]
+            scores[dataset] += sim
+
+        scores[dataset] = scores[dataset] / n_columns
+
+    sorted_datasets = sorted(
+        scores.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )
+
+    results = []
+    for dt, score in sorted_datasets:
+        info = get_dataset_metadata(es, dt)
+        meta = info.pop('_source')
+        materialize = meta.get('materialize', {})
+        if 'description' in meta and len(meta['description']) > 100:
+            meta['description'] = meta['description'][:100] + "..."
+        results.append(dict(
+            id=dt,
+            score=score,
+            discoverer=materialize['identifier'],
+            metadata=meta,
+            columns=[(att_1, att_2) for att_1, att_2, sim in column_pairs[dt]],
+        ))
+
+    return {'results': results}
+
+
+def get_unionable_datasets(es, dataset_id=None, data_profile={},
+                           query_args=None, fuzzy=False):
+    """
+    Retrieve datasets that can be unioned to an input dataset.
+
+    :param es: Elasticsearch client.
+    :param dataset_id: The identifier of the input dataset.
+    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
+    :param query_args: list of query arguments (optional).
+    :param fuzzy: if True, applies fuzzy search instead of looking for all of the datasets.
+    """
+
+    if not dataset_id and not data_profile:
+        raise RuntimeError('Either a dataset id or a data profile '
+                           'must be provided for the union.')
+
+    if fuzzy:
+        return get_unionable_datasets_fuzzy(es, dataset_id, data_profile, query_args)
+    return get_unionable_datasets_brute_force(es, dataset_id, data_profile, query_args)
+
+
+def convert_to_pd(file_path, columns_metadata):
+    """
+    Convert a dataset to pandas.DataFrame based on the provided metadata.
+    """
+
+    converters = dict()
+
+    for column in columns_metadata:
+        name = column['name']
+        if Type.DATE_TIME in column['semantic_types']:
+            converters[name] = conv_datetime
+        elif Type.INTEGER in column['structural_type']:
+            converters[name] = conv_int
+        elif Type.FLOAT in column['structural_type']:
+            converters[name] = conv_float
+
+    return pd.read_csv(
+        file_path,
+        converters=converters,
+        error_bad_lines=False
+    )
+
+
+def materialize_dataset(es, dataset_id):
+    """
+    Materializes a dataset as a pandas.DataFrame
+    """
+
+    from .materialize import get_dataset
+
+    # get metadata data from Elasticsearch
+    try:
+        metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+    except elasticsearch.NotFoundError:
+        raise RuntimeError('Dataset id not found in Elasticsearch.')
+
+    getter = get_dataset(metadata, dataset_id, format='csv')
+    try:
+        dataset_path = getter.__enter__()
+        df = convert_to_pd(dataset_path, metadata['columns'])
+    except Exception:
+        raise RuntimeError('Materializer reports failure.')
+    finally:
+        getter.__exit__(None, None, None)
+
+    return df
+
+
+def join(original_data, augment_data, columns, how='inner'):
+    """
+    Performs an inner join between original_data (pandas.DataFrame)
+    and augment_data (pandas.DataFrame) using columns.
+
+    Returns the new pandas.DataFrame object.
+    """
+
+    rename = dict()
+    for c in columns:
+        rename[c[1]] = c[0]
+    augment_data = augment_data.rename(columns=rename)
+    join_ = pd.merge(
+        original_data,
+        augment_data,
+        how=how,
+        on=[c[0] for c in columns],
+        suffixes=('_l', '_r')
+    )
+
+    # remove all columns with 'd3mIndex'
+    join_ = join_.drop([c for c in join_.columns if 'd3mIndex' in c], axis=1)
+
+    # create a single d3mIndex
+    join_['d3mIndex'] = pd.Series(
+        data=[i for i in range(join_.shape[0])],
+        index=join_.index
+    )
+
+    return join_
+
+
+def union(original_data, augment_data, columns):
+    """
+    Performs a union between original_data (pandas.DataFrame)
+    and augment_data (pandas.DataFrame) using columns.
+
+    Returns the new pandas.DataFrame object.
+    """
+
+    # dropping columns not in union
+    original_columns = [c[0] for c in columns]
+    augment_data_columns = [c[1] for c in columns]
+    original_data = original_data.drop(
+        [c for c in original_data.columns if c not in original_columns],
+        axis=1
+    )
+    augment_data = augment_data.drop(
+        [c for c in augment_data.columns if c not in augment_data_columns],
+        axis=1
+    )
+
+    rename = dict()
+    for c in columns:
+        rename[c[1]] = c[0]
+    augment_data = augment_data.rename(columns=rename)
+    union_ = pd.concat([original_data, augment_data])
+
+    # create a single d3mIndex
+    union_['d3mIndex'] = pd.Series(
+        data=[i for i in range(union_.shape[0])],
+        index=union_.index
+    )
+
+    return union_
+
+
+def generate_d3m_dataset(data, destination=None):
+    """
+    Generates a D3M dataset from data (pandas.DataFrame).
+
+    Returns the path to the D3M-style directory.
+    """
+
+    from datamart_materialize.d3m import D3mWriter
+
+    def add_column(column_, type_, metadata_):
+        metadata_['columns'].append({'name': column_})
+        if 'datetime' in type_:
+            metadata_['columns'][-1]['semantic_types'] = [Type.DATE_TIME]
+            metadata_['columns'][-1]['structural_type'] = Type.TEXT
+        elif 'int' in type_:
+            metadata_['columns'][-1]['semantic_types'] = []
+            metadata_['columns'][-1]['structural_type'] = Type.INTEGER
+        elif 'float' in type_:
+            metadata_['columns'][-1]['semantic_types'] = []
+            metadata_['columns'][-1]['structural_type'] = Type.FLOAT
+        elif 'bool' in type_:
+            metadata_['columns'][-1]['semantic_types'] = []
+            metadata_['columns'][-1]['structural_type'] = Type.BOOLEAN
+        else:
+            metadata_['columns'][-1]['semantic_types'] = []
+            metadata_['columns'][-1]['structural_type'] = Type.TEXT
+
+    dir_name = uuid.uuid4().hex
+    if destination:
+        data_path = os.path.join(destination, dir_name)
+        if os.path.exists(data_path):
+            shutil.rmtree(data_path)
+    else:
+        temp_dir = tempfile.mkdtemp()
+        data_path = os.path.join(temp_dir, dir_name)
+
+    metadata = dict(columns=[])
+    for column in data.columns:
+        add_column(
+            column,
+            str(data[column].dtype),
+            metadata
+        )
+    metadata['size'] = data.memory_usage(index=True, deep=True).sum()
+
+    writer = D3mWriter(dir_name, data_path, metadata)
+    with writer.open_file('w') as fp:
+        data.to_csv(fp, index=False)
+
+    return data_path
+
+
+def augment(es, data, metadata, task, destination=None):
+    """
+    Augments original data based on the task.
+
+    :param es: Elasticsearch client.
+    :param data: the data to be augmented.
+    :param metadata: the metadata of the data to be augmented.
+    :param task: the augmentation task.
+    :param destination: location to save the files.
+    """
+
+    if 'id' not in task:
+        raise RuntimeError('Dataset id for the augmentation task not provided.')
+
+    if 'join_columns' in task and len(task['join_columns']) > 0:
+        join_ = join(
+            convert_to_pd(data, metadata['columns']),
+            materialize_dataset(es, task['id']),
+            task['join_columns']
+        )
+        return generate_d3m_dataset(join_, destination)
+    elif 'union_columns' in task and len(task['union_columns']) > 0:
+        union_ = union(
+            convert_to_pd(data, metadata['columns']),
+            materialize_dataset(es, task['id']),
+            task['union_columns']
+        )
+        return generate_d3m_dataset(union_, destination)
+    else:
+        raise RuntimeError('Augmentation task not provided.')

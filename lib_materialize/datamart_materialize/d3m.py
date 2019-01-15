@@ -18,6 +18,23 @@ class D3mWriter(object):
         os.mkdir(destination)
         os.mkdir(os.path.join(destination, 'tables'))
 
+        columns = []
+        for i, column in enumerate(metadata['columns']):
+            if 'http://schema.org/DateTime' in column['semantic_types']:
+                col_type = 'dateTime'
+            else:
+                col_type = STRUCTURAL_TYPE_MAP.get(
+                    column['structural_type'],
+                    'string',
+                )
+            role = 'index' if column['name'] == 'd3mIndex' else 'attribute'
+            columns.append({
+                'colIndex': i,
+                'colName': column['name'],
+                'colType': col_type,
+                'role': [role],
+            })
+
         d3m_meta = {
             'about': {
                 'datasetID': dataset_id,
@@ -35,18 +52,7 @@ class D3mWriter(object):
                     'resType': 'table',
                     'resFormat': ['text/csv'],
                     'isCollection': False,
-                    'columns': [
-                        {
-                            'colIndex': i,
-                            'colName': column['name'],
-                            'colType': STRUCTURAL_TYPE_MAP.get(
-                                column['structural_type'],
-                                'string',
-                            ),
-                            'role': ['attribute'],
-                        }
-                        for i, column in enumerate(metadata['columns'])
-                    ],
+                    'columns': columns,
                 },
             ],
         }

@@ -235,8 +235,8 @@ class Dataset(BaseHandler):
 class JoinQuery(BaseHandler):
     def get(self, dataset_id):
         results = get_joinable_datasets(
-            self.application.elasticsearch,
-            dataset_id
+            es=self.application.elasticsearch,
+            dataset_id=dataset_id
         )
         self.render(
             'join_query.html',
@@ -248,8 +248,9 @@ class JoinQuery(BaseHandler):
 class UnionQuery(BaseHandler):
     def get(self, dataset_id):
         results = get_unionable_datasets(
-            self.application.elasticsearch,
-            dataset_id
+            es=self.application.elasticsearch,
+            dataset_id=dataset_id,
+            fuzzy=True
         )
         self.render(
             'union_query.html',

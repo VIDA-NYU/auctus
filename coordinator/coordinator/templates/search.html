@@ -10,7 +10,7 @@
       <h1>Search DataMart</h1>
 
       <hr align="left">
-      <h3>Data (CSV or D3M datasetDoc file)</h3>
+      <h3>Data (CSV file)</h3>
 
       <div class="form-row">
         <div class="form-group col-md-8">
@@ -81,8 +81,15 @@
 
 <div class="album py-5 bg-light">
   <div class="container">
-    <div class="row" id="results">
+    <div id="processing" style="display:none;">
+      <div class="d-flex justify-content-center align-items-center mb-5">
+        <div class="loader"></div>
+        <div class="ml-3">
+          <p class="mb-0 font-weight-bold font-italic">Processing... Please wait!</p>
+        </div>
+      </div>
     </div>
+    <div class="row" id="results"></div>
   </div>
 </div>
 
