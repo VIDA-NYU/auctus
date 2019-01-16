@@ -737,7 +737,7 @@ class Augment(QueryHandler):
                 # path to a D3M dataset
                 data_file = os.path.join(data, 'tables', 'learningData.csv')
                 if not os.path.exists(data_file):
-                    logger.warning("Data does not exist: %s", data_file)
+                    raise ValueError("Data does not exist: %s" % data_file)
                 else:
                     data_path = data_file
                     data_profile = self.get_profile_data(data_file)
