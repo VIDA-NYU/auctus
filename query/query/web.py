@@ -117,7 +117,14 @@ class QueryHandler(CorsHandler):
             args,
             files
         )
-        return args, files
+        ret = dict()
+        for key, value in args.items():
+            if key not in ret:
+                ret[key] = value[0]
+        for key, value in files.items():
+            if key not in ret:
+                ret[key] = value[0]['body']
+        return ret
 
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
@@ -457,18 +464,14 @@ class Query(QueryHandler):
         PROM_SEARCH.inc()
         self._cors()
 
-        args, files = self.get_form_data()
+        args = self.get_form_data()
 
         # Params are 'query' and 'data'
         query = data = None
         if 'query' in args:
-            query = json.loads(args['query'][0].decode('utf-8'))
-        elif 'query' in files:
-            query = json.loads(files['query'][0]['body'].decode('utf-8'))
+            query = json.loads(args['query'].decode('utf-8'))
         if 'data' in args:
-            data = args['data'][0].decode('utf-8')
-        elif 'data' in files:
-            data = files['data'][0]['body'].decode('utf-8')
+            data = args['data'].decode('utf-8')
 
         # parameter: data
         data_profile = dict()
@@ -689,22 +692,16 @@ class Augment(QueryHandler):
         PROM_AUGMENT.inc()
         self._cors()
 
-        args, files = self.get_form_data()
+        args = self.get_form_data()
 
         # Params are 'task' and 'data'
         task = data = destination = None
         if 'task' in args:
-            task = json.loads(args['task'][0].decode('utf-8'))
-        elif 'task' in files:
-            task = json.loads(files['task'][0]['body'].decode('utf-8'))
+            task = json.loads(args['task'].decode('utf-8'))
         if 'data' in args:
-            data = args['data'][0].decode('utf-8')
-        elif 'data' in files:
-            data = files['data'][0]['body'].decode('utf-8')
+            data = args['data'].decode('utf-8')
         if 'destination' in args:
-            destination = args['destination'][0].decode('utf-8')
-        elif 'destination' in files:
-            destination = files['destination'][0]['body'].decode('utf-8')
+            destination = args['destination'].decode('utf-8')
 
         # both parameters must be provided
         if not task or not data:
