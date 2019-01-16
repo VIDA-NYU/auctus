@@ -57,7 +57,9 @@ services:
       - ../data/seed_datasets_current:/d3m_seed_datasets
 #      - ./query/query:/usr/src/app/query/query
   query_lb:
-    image: dockercloud/haproxy
+    image: dockercloud/haproxy:1.6.7
+    environment:
+      - EXTRA_DEFAULT_SETTINGS=timeout http-request 900s,timeout server 900s
     ports:
       - 8002:80
       - 8081:1936
