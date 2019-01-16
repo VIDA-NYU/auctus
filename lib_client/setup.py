@@ -10,7 +10,7 @@ req = [
     'pandas'
 ]
 setup(name='datamart',
-      version='0.0',
+      version='0.1',
       py_modules=['datamart'],
       install_requires=req,
       description="Client library for DataMart",

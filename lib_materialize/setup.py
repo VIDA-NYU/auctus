@@ -10,7 +10,7 @@ req = [
     'sodapy',
 ]
 setup(name='datamart_materialize',
-      version='0.0',
+      version='0.1',
       packages=['datamart_materialize'],
       entry_points={
           'datamart_materialize': [
