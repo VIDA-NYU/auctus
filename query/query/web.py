@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 BUF_SIZE = 128000
 MAX_STREAMED_SIZE = 1024 * 1024 * 1024
 MAX_CONCURRENT = 2
-SCORE_THRESHOLD = 0.4
+SCORE_THRESHOLD = 0.0
 
 
 class BaseHandler(RequestHandler):
