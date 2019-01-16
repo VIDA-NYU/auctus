@@ -1,5 +1,6 @@
 import aio_pika
 import asyncio
+import elasticsearch
 import itertools
 import json
 import logging
@@ -105,8 +106,40 @@ class Coordinator(object):
             else:
                 break
 
+        # Load recent datasets from Elasticsearch
+        try:
+            recent = self.elasticsearch.search(
+                index='datamart',
+                doc_type='_doc',
+                body={
+                    'query': {
+                        'match_all': {},
+                    },
+                    'sort': [
+                        {'date': {'order': 'desc'}},
+                    ],
+                },
+                size=15,
+            )['hits']['hits']
+        except elasticsearch.ElasticsearchException:
+            logging.warning("Couldn't get recent datasets from Elasticsearch")
+        else:
+            for h in recent:
+                dataset_id = h['_id']
+                obj = h['_source']
+                materialize = obj.get('materialize', {})
+                self.recent_discoveries.append(
+                    dict(id=dataset_id,
+                         discoverer=materialize.get('identifier', '(unknown)'),
+                         discovered=materialize.get('date', '???'),
+                         profiled=obj.get('date', '???'),
+                         name=obj.get('name'))
+                )
+
+        # Start AMQP coroutine
         log_future(asyncio.get_event_loop().create_task(self._amqp()),
                    should_never_exit=True)
+        # Start source count coroutine
         self.sources_counts = {}
         self.update_sources_counts()
 
