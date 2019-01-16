@@ -105,26 +105,30 @@ class QueryHandler(CorsHandler):
         # self.bytes_read += len(data)
         self.data += data
 
-    def get_form_data(self):
+    def get_form_data(self, default=None):
         type_ = self.request.headers.get('Content-Type', '')
-        if not type_.startswith('multipart/form-data'):
-            raise HTTPError(400, "Expected multipart/form-data")
-        args = dict()
-        files = dict()
-        tornado.httputil.parse_body_arguments(
-            self.request.headers.get('Content-Type', ''),
-            self.data,
-            args,
-            files
-        )
-        ret = dict()
-        for key, value in args.items():
-            if key not in ret:
-                ret[key] = value[0]
-        for key, value in files.items():
-            if key not in ret:
-                ret[key] = value[0]['body']
-        return ret
+        if type_.startswith('multipart/form-data'):
+            args = dict()
+            files = dict()
+            tornado.httputil.parse_body_arguments(
+                self.request.headers.get('Content-Type', ''),
+                self.data,
+                args,
+                files
+            )
+            ret = dict()
+            for key, value in args.items():
+                if key not in ret:
+                    ret[key] = value[0]
+            for key, value in files.items():
+                if key not in ret:
+                    ret[key] = value[0]['body']
+            return ret
+        elif type_.startswith('application/json') and default:
+            return {default: self.data}
+        else:
+            raise HTTPError(400, "Expected multipart/form-data or "
+                                 "application/json")
 
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
@@ -464,7 +468,7 @@ class Query(QueryHandler):
         PROM_SEARCH.inc()
         self._cors()
 
-        args = self.get_form_data()
+        args = self.get_form_data('query')
 
         # Params are 'query' and 'data'
         query = data = None
@@ -692,7 +696,7 @@ class Augment(QueryHandler):
         PROM_AUGMENT.inc()
         self._cors()
 
-        args = self.get_form_data()
+        args = self.get_form_data('task')
 
         # Params are 'task' and 'data'
         task = data = destination = None
