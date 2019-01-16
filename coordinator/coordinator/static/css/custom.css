@@ -27,29 +27,3 @@ table.json th, table.json td {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
-/* NYU purple */
-.nyu-purple a{color:#57068c}
-.nyu-purple .btn-primary{background-color:#57068c;border-color:#57068c}
-.nyu-purple .btn-primary.disabled,.btn-primary:disabled{background-color:#57068c;border-color:#57068c}
-.nyu-purple .btn-outline-primary{color:#57068c;border-color:#57068c}.btn-outline-primary:hover{background-color:#57068c;border-color:#57068c}
-.nyu-purple .btn-outline-primary.disabled,.btn-outline-primary:disabled{color:#57068c}
-.nyu-purple .btn-outline-primary:not(:disabled):not(.disabled).active,.btn-outline-primary:not(:disabled):not(.disabled):active,.show>.btn-outline-primary.dropdown-toggle{background-color:#57068c;border-color:#57068c}
-.nyu-purple .btn-link{color:#57068c}
-.nyu-purple .dropdown-item.active,.dropdown-item:active{background-color:#57068c}
-.nyu-purple .custom-control-input:checked~.custom-control-label::before{background-color:#57068c}
-.nyu-purple .custom-checkbox .custom-control-input:checked~.custom-control-label::before{background-color:#57068c}
-.nyu-purple .custom-checkbox .custom-control-input:indeterminate~.custom-control-label::before{background-color:#57068c}
-.nyu-purple .custom-radio .custom-control-input:checked~.custom-control-label::before{background-color:#57068c}
-.nyu-purple .custom-range::-webkit-slider-thumb{background-color:#57068c}
-.nyu-purple .custom-range::-moz-range-thumb{background-color:#57068c}
-.nyu-purple .custom-range::-ms-thumb{background-color:#57068c}
-.nyu-purple .nav-pills .nav-link.active,.nav-pills .show>.nav-link{background-color:#57068c}
-.nyu-purple .page-link{color:#57068c}
-.nyu-purple .page-item.active .page-link{background-color:#57068c;border-color:#57068c}
-.nyu-purple .badge-primary{background-color:#57068c}
-.nyu-purple .progress-bar{background-color:#57068c}
-.nyu-purple .list-group-item.active{background-color:#57068c;border-color:#57068c}
-.nyu-purple .bg-primary{background-color:#57068c !important}
-.nyu-purple .border-primary{border-color:#57068c !important}
-.nyu-purple .text-primary{color:#57068c !important}
