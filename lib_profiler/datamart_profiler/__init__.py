@@ -55,32 +55,42 @@ def get_numerical_ranges(values):
     Retrieve the numeral ranges given the input (timestamp, integer, or float).
     """
 
+    def get_ranges(values_):
+        range_diffs = []
+        for i in range(1, len(values_)):
+            diff = values_[i][0] - values_[i - 1][1]
+            diff != 0 and range_diffs.append(diff)
+
+        avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
+
+        ranges = []
+        current_min = values_[0][0]
+        current_max = values_[0][1]
+
+        for i in range(1, len(values_)):
+            if (values_[i][0] - values_[i - 1][1]) > avg_range_diff + 2 * std_dev_range_diff:
+                ranges.append([current_min, current_max])
+                current_min = values_[i][0]
+                current_max = values_[i][1]
+                continue
+            current_max = values_[i][1]
+        ranges.append([current_min, current_max])
+
+        return ranges
+
     if not values:
         return []
 
-    values = sorted(values)
+    values = [[v, v] for v in sorted(values)]
+    # run it twice
+    values = get_ranges(values)
+    values = get_ranges(values)
 
-    range_diffs = []
-    for i in range(1, len(values)):
-        diff = values[i] - values[i - 1]
-        diff != 0 and range_diffs.append(diff)
+    final_ranges = []
+    for v in values:
+        final_ranges.append({"range": {"gte": v[0], "lte": v[1]}})
 
-    avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
-
-    ranges = []
-    current_min = values[0]
-    current_max = values[0]
-
-    for i in range(1, len(values)):
-        if (values[i] - values[i - 1]) > avg_range_diff + 3 * std_dev_range_diff:
-            ranges.append({"range": {"gte": current_min, "lte": current_max}})
-            current_min = values[i]
-            current_max = values[i]
-            continue
-        current_max = values[i]
-    ranges.append({"range": {"gte": current_min, "lte": current_max}})
-
-    return ranges
+    return final_ranges
 
 
 def get_spatial_ranges(values):
@@ -291,12 +301,12 @@ def process_dataset(data, metadata=None):
             values = []
             for i in range(len(values_lat)):
                 if values_lat[i] is not None and values_lon[i] is not None:
-                    values.append([values_lat[i], values_lon[i]])
+                    values.append((values_lat[i], values_lon[i]))
 
             if len(values) > 1:
                 spatial_coverage.append({"lat": name_lat,
                                          "lon": name_lon,
-                                         "ranges": get_spatial_ranges(values)})
+                                         "ranges": get_spatial_ranges(list(set(values)))})
 
             i_lat += 1
             i_lon += 1
