@@ -681,7 +681,7 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                     },
                 ],
                 'must': {
-                    "fuzzy": {"columns.name": att}
+                    "fuzzy": {"columns.name.raw": att}
                 },
                 "minimum_should_match": 1
             }
