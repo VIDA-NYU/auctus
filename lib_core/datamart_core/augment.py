@@ -168,18 +168,18 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
 
         # logger.info("Query (numerical): %r", query_obj)
 
+        from_ = 0
         result = es.search(
             index='datamart',
             body=query_obj,
-            scroll='2m',
-            size=10000,
+            from_=from_,
+            size=100,
             request_timeout=30
         )
 
-        sid = result['_scroll_id']
-        scroll_size = result['hits']['total']
+        size_ = len(result['hits']['hits'])
 
-        while scroll_size > 0:
+        while size_ > 0:
             for hit in result['hits']['hits']:
 
                 dataset_name = hit['_id']
@@ -205,13 +205,16 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
 
                         intersections[name] += (end - start + 1)
 
-            # scrolling
-            result = es.scroll(
-                scroll_id=sid,
-                scroll='2m'
+            # pagination
+            from_ += size_
+            result = es.search(
+                index='datamart',
+                body=query_obj,
+                from_=from_,
+                size=100,
+                request_timeout=30
             )
-            sid = result['_scroll_id']
-            scroll_size = len(result['hits']['hits'])
+            size_ = len(result['hits']['hits'])
 
     return intersections, column_total_coverage
 
@@ -278,18 +281,18 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
 
         # logger.info("Query (spatial): %r", query_obj)
 
+        from_ = 0
         result = es.search(
             index='datamart',
             body=query_obj,
-            scroll='2m',
-            size=10000,
+            from_=from_,
+            size=100,
             request_timeout=30
         )
 
-        sid = result['_scroll_id']
-        scroll_size = result['hits']['total']
+        size_ = len(result['hits']['hits'])
 
-        while scroll_size > 0:
+        while size_ > 0:
             for hit in result['hits']['hits']:
 
                 dataset_name = hit['_id']
@@ -323,13 +326,16 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
 
                     intersections[name] += (n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)
 
-            # scrolling
-            result = es.scroll(
-                scroll_id=sid,
-                scroll='2m'
+            # pagination
+            from_ += size_
+            result = es.search(
+                index='datamart',
+                body=query_obj,
+                from_=from_,
+                size=100,
+                request_timeout=30
             )
-            sid = result['_scroll_id']
-            scroll_size = len(result['hits']['hits'])
+            size_ = len(result['hits']['hits'])
 
     return intersections, column_total_coverage
 
@@ -524,29 +530,32 @@ def get_column_information(es=None, dataset_id=None, data_profile={}, query_args
 
     # logger.info("Query: %r", query_obj)
 
+    from_ = 0
     result = es.search(
         index='datamart',
         body=query_obj,
-        scroll='2m',
-        size=10000,
+        from_=from_,
+        size=100,
         request_timeout=30
     )
 
-    sid = result['_scroll_id']
-    scroll_size = result['hits']['total']
+    size_ = len(result['hits']['hits'])
 
-    while scroll_size > 0:
+    while size_ > 0:
         for hit in result['hits']['hits']:
             dataset = hit['_id']
             dataset_columns[dataset] = store_column_information(hit['_source'])
 
-        # scrolling
-        result = es.scroll(
-            scroll_id=sid,
-            scroll='2m'
+        # pagination
+        from_ += size_
+        result = es.search(
+            index='datamart',
+            body=query_obj,
+            from_=from_,
+            size=100,
+            request_timeout=30
         )
-        sid = result['_scroll_id']
-        scroll_size = len(result['hits']['hits'])
+        size_ = len(result['hits']['hits'])
 
     return dataset_columns
 
@@ -717,18 +726,18 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
 
             # logger.info("Query (union-fuzzy): %r", query_obj)
 
+            from_ = 0
             result = es.search(
                 index='datamart',
                 body=query_obj,
-                scroll='2m',
-                size=10000,
+                from_=from_,
+                size=100,
                 request_timeout=30
             )
 
-            sid = result['_scroll_id']
-            scroll_size = result['hits']['total']
+            size_ = len(result['hits']['hits'])
 
-            while scroll_size > 0:
+            while size_ > 0:
                 for hit in result['hits']['hits']:
 
                     dataset_name = hit['_id']
@@ -744,13 +753,16 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                         sim = compute_levenshtein_sim(att.lower(), column_name.lower())
                         column_pairs[dataset_name].append((att, column_name, sim))
 
-                # scrolling
-                result = es.scroll(
-                    scroll_id=sid,
-                    scroll='2m'
+                # pagination
+                from_ += size_
+                result = es.search(
+                    index='datamart',
+                    body=query_obj,
+                    from_=from_,
+                    size=100,
+                    request_timeout=30
                 )
-                sid = result['_scroll_id']
-                scroll_size = len(result['hits']['hits'])
+                size_ = len(result['hits']['hits'])
 
     scores = dict()
     for dataset in column_pairs:
