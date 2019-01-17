@@ -13,6 +13,13 @@ services:
         hard: -1
     ports:
       - 9200:9200
+  elasticsearch_exporter:
+    image: justwatch/elasticsearch_exporter:1.0.2
+    restart: on-failure
+    command:
+      - '-es.uri=http://elasticsearch:9200'
+    ports:
+      - 9108
   rabbitmq:
     build:
       context: ./docker
