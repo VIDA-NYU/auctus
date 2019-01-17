@@ -10,6 +10,20 @@ import uuid
 from .common import conv_datetime, conv_float, conv_int, Type
 
 logger = logging.getLogger(__name__)
+source_filter = {
+    'excludes': [
+        'date',
+        'materialize',
+        'name',
+        'description',
+        'license',
+        'size',
+        'columns.mean',
+        'columns.stddev',
+        'columns.structural_type',
+        'columns.semantic_types'
+    ]
+}
 
 
 def compute_levenshtein_sim(str1, str2):
@@ -154,11 +168,13 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
 
         if not query_args:
             query_obj = {
+                '_source': source_filter,
                 'query': intersection,
             }
         else:
             args = [intersection] + query_args
             query_obj = {
+                '_source': source_filter,
                 'query': {
                     'bool': {
                         'must': args,
@@ -267,11 +283,13 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
 
         if not query_args:
             query_obj = {
+                '_source': source_filter,
                 'query': intersection,
             }
         else:
             args = [intersection] + query_args
             query_obj = {
+                '_source': source_filter,
                 'query': {
                     'bool': {
                         'must': args,
@@ -712,11 +730,13 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
 
             if not query_args:
                 query_obj = {
+                    '_source': source_filter,
                     'query': query,
                 }
             else:
                 args = [query] + query_args
                 query_obj = {
+                    '_source': source_filter,
                     'query': {
                         'bool': {
                             'must': args,

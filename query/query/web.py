@@ -550,20 +550,15 @@ class Query(QueryHandler):
                 ))
             self.send_json({'results': results})
         else:
-            query_param = None
-            if query_args:
-                # logger.info("Query: %r", query_args)
-                query_param = query_args
-
             join_results = get_joinable_datasets(
                 es=self.application.elasticsearch,
                 data_profile=data_profile,
-                query_args=query_param
+                query_args=query_args
             )['results']
             union_results = get_unionable_datasets(
                 es=self.application.elasticsearch,
                 data_profile=data_profile,
-                query_args=query_param,
+                query_args=query_args,
                 fuzzy=True
             )['results']
 
