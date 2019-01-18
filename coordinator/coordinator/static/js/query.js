@@ -46,34 +46,66 @@ function postAugmentForm(url='', data={}) {
 }
 
 var indices = {'required': {
-                 'temporal': 0,
-                 'geospatial_bb': 0,
-                 'geospatial_circle': 0,
-                 'generic': 0},
+                 'temporal': [],
+                 'geospatial': [],
+                 'generic': []},
                'desired': {
-                 'temporal': 0,
-                 'geospatial_bb': 0,
-                 'geospatial_circle': 0,
-                 'generic': 0}}
+                 'temporal': [],
+                 'geospatial': [],
+                 'generic': []}}
 
-var n_required_temporal = 0;
-var n_required_geospatial_bb = 0;
-var n_required_geospatial_circle = 0;
-var n_required_generic = 0;
+var n_temporal = 0;
+var n_geospatial = 0;
+var n_generic = 0;
 
-var n_desired_temporal = 0;
-var n_desired_geospatial_bb = 0;
-var n_desired_geospatial_circle = 0;
-var n_desired_generic = 0;
+var maps = [];
+var map_sources = [];
+var draws = [];
 
 function variableChange(select_id, div_id) {
     var select = document.getElementById(select_id);
     window["add_" + select.options[select.selectedIndex].value](div_id);
 }
 
+function addInteraction(index) {
+    map_sources[index-1].clear();
+    var value = document.getElementById('shape-type-' + index).value;
+    if (value !== 'None') {
+      var geometryFunction;
+      if (value === 'bb-' + index) {
+        geometryFunction = ol.interaction.Draw.createBox();
+      }
+      value = 'Circle';
+      var draw = new ol.interaction.Draw({
+        source: map_sources[index-1],
+        type: value,
+        geometryFunction: geometryFunction,
+        condition: function(e) {
+          // when the point's button is 1(leftclick), allows drawing
+          if (e.pointerEvent.buttons === 1) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+      });
+      draw.on('drawstart', function (e) {
+        map_sources[index-1].clear();
+      });
+      if (draws.length >= index) {
+        maps[index-1].removeInteraction(draws[index-1]);
+        draws[index-1] = draw;
+      } else {
+        draws.push(draw);
+      }
+      maps[index-1].addInteraction(draws[index-1]);
+    }
+ }
+
 function add_temporal(div_id) {
-    indices[div_id]['temporal'] += 1
-    var index = indices[div_id]['temporal'];
+    n_temporal += 1;
+    indices[div_id]['temporal'].push(n_temporal)
+    var index = n_temporal;
 
     var variables_div = document.getElementById(div_id);
 
@@ -112,136 +144,113 @@ function add_temporal(div_id) {
     variables_div.appendChild(_div_end_1)
 }
 
-function add_geospatial_bb(div_id) {
-    indices[div_id]['geospatial_bb'] += 1
-    var index = indices[div_id]['geospatial_bb'];
+function add_geospatial(div_id) {
+    n_geospatial += 1;
+    indices[div_id]['geospatial'].push(n_geospatial);
+    var index = n_geospatial;
 
     var variables_div = document.getElementById(div_id);
 
-    var _title = document.createElement('h5')
-    _title.innerHTML = 'Geospatial Information (Bounding Box)'
-    variables_div.appendChild(_title)
+    var _title = document.createElement('h5');
+    _title.innerHTML = 'Geospatial Bounds';
+    variables_div.appendChild(_title);
 
-    var _div_latitude_1_1 = document.createElement('div')
-    _div_latitude_1_1.setAttribute('class', 'form-row')
-    var _div_latitude_1_2 = document.createElement('div')
-    _div_latitude_1_2.setAttribute('class', 'form-group col-md-8')
-    var _label_latitude_1 = document.createElement('label')
-    _label_latitude_1.setAttribute('for', 'latitude-1-' + index)
-    _label_latitude_1.innerHTML = 'Latitude (Y) Top:'
-    _div_latitude_1_2.appendChild(_label_latitude_1)
-    var _input_latitude_1 = document.createElement('input')
-    _input_latitude_1.setAttribute('class', 'form-control')
-    _input_latitude_1.setAttribute('id', 'latitude-1-' + index)
-    _div_latitude_1_2.appendChild(_input_latitude_1)
-    _div_latitude_1_1.appendChild(_div_latitude_1_2)
-    variables_div.appendChild(_div_latitude_1_1)
+    var shape_div = document.createElement('div');
+    shape_div.setAttribute('class', 'd-flex align-items-center');
+    var shape_select = document.createElement('select');
+    shape_select.setAttribute('id', 'shape-type-' + index);
+    shape_select.setAttribute('class', 'mb-2');
+    shape_select.setAttribute('onChange', onclick='addInteraction(' + index + ');');
+    var shape_rectangle = document.createElement('option');
+    shape_rectangle.setAttribute('value', 'bb-' + index);
+    shape_rectangle.setAttribute('selected', 'selected');
+    shape_rectangle.innerHTML = 'Bounding Box';
+    shape_select.appendChild(shape_rectangle);
+    var shape_circle = document.createElement('option');
+    shape_circle.setAttribute('value', 'circle-' + index);
+    shape_circle.innerHTML = 'Circle';
+    shape_select.appendChild(shape_circle);
+    shape_div.appendChild(shape_select);
 
-    var _div_latitude_2_1 = document.createElement('div')
-    _div_latitude_2_1.setAttribute('class', 'form-row')
-    var _div_latitude_2_2 = document.createElement('div')
-    _div_latitude_2_2.setAttribute('class', 'form-group col-md-8')
-    var _label_latitude_2 = document.createElement('label')
-    _label_latitude_2.setAttribute('for', 'latitude-2-' + index)
-    _label_latitude_2.innerHTML = 'Latitude (Y) Bottom:'
-    _div_latitude_2_2.appendChild(_label_latitude_2)
-    var _input_latitude_2 = document.createElement('input')
-    _input_latitude_2.setAttribute('class', 'form-control')
-    _input_latitude_2.setAttribute('id', 'latitude-2-' + index)
-    _div_latitude_2_2.appendChild(_input_latitude_2)
-    _div_latitude_2_1.appendChild(_div_latitude_2_2)
-    variables_div.appendChild(_div_latitude_2_1)
+    var bounds = document.createElement('p');
+    bounds.setAttribute('id', 'bounds-' + index);
+    bounds.setAttribute('class', 'ml-auto mb-2 text-right');
+    bounds.setAttribute('style', 'font-size: 11px;');
+    shape_div.appendChild(bounds);
 
-    var _div_longitude_1_1 = document.createElement('div')
-    _div_longitude_1_1.setAttribute('class', 'form-row')
-    var _div_longitude_1_2 = document.createElement('div')
-    _div_longitude_1_2.setAttribute('class', 'form-group col-md-8')
-    var _label_longitude_1 = document.createElement('label')
-    _label_longitude_1.setAttribute('for', 'longitude-1-' + index)
-    _label_longitude_1.innerHTML = 'Longitude (X) Left:'
-    _div_longitude_1_2.appendChild(_label_longitude_1)
-    var _input_longitude_1 = document.createElement('input')
-    _input_longitude_1.setAttribute('class', 'form-control')
-    _input_longitude_1.setAttribute('id', 'longitude-1-' + index)
-    _div_longitude_1_2.appendChild(_input_longitude_1)
-    _div_longitude_1_1.appendChild(_div_longitude_1_2)
-    variables_div.appendChild(_div_longitude_1_1)
+    variables_div.appendChild(shape_div);
 
-    var _div_longitude_2_1 = document.createElement('div')
-    _div_longitude_2_1.setAttribute('class', 'form-row')
-    var _div_longitude_2_2 = document.createElement('div')
-    _div_longitude_2_2.setAttribute('class', 'form-group col-md-8')
-    var _label_longitude_2 = document.createElement('label')
-    _label_longitude_2.setAttribute('for', 'longitude-2-' + index)
-    _label_longitude_2.innerHTML = 'Longitude (X) Right:'
-    _div_longitude_2_2.appendChild(_label_longitude_2)
-    var _input_longitude_2 = document.createElement('input')
-    _input_longitude_2.setAttribute('class', 'form-control')
-    _input_longitude_2.setAttribute('id', 'longitude-2-' + index)
-    _div_longitude_2_2.appendChild(_input_longitude_2)
-    _div_longitude_2_1.appendChild(_div_longitude_2_2)
-    variables_div.appendChild(_div_longitude_2_1)
-}
+    var map_div = document.createElement('div');
+    map_div.setAttribute('id', 'map-' + index);
+    map_div.setAttribute('class', 'map mb-1');
+    variables_div.appendChild(map_div);
 
-function add_geospatial_circle(div_id) {
-    indices[div_id]['geospatial_circle'] += 1
-    var index = indices[div_id]['geospatial_circle'];
+    var info = document.createElement('p');
+    info.setAttribute('class', 'mb-3');
+    info.setAttribute('style', 'font-size: 11px;');
+    info.innerHTML = 'Right-click to clear selection.';
+    variables_div.appendChild(info);
 
-    var variables_div = document.getElementById(div_id);
+    var raster = new ol.layer.Tile({
+      source: new ol.source.OSM()
+    });
 
-    var _title = document.createElement('h5')
-    _title.innerHTML = 'Geospatial Information (Circle)'
-    variables_div.appendChild(_title)
+    var source = new ol.source.Vector({wrapX: false});
+    map_sources.push(source);
 
-    var _div_latitude_1 = document.createElement('div')
-    _div_latitude_1.setAttribute('class', 'form-row')
-    var _div_latitude_2 = document.createElement('div')
-    _div_latitude_2.setAttribute('class', 'form-group col-md-8')
-    var _label_latitude_1 = document.createElement('label')
-    _label_latitude_1.setAttribute('for', 'latitude-' + index)
-    _label_latitude_1.innerHTML = 'Latitude (Y) of Center Point:'
-    _div_latitude_2.appendChild(_label_latitude_1)
-    var _input_latitude_1 = document.createElement('input')
-    _input_latitude_1.setAttribute('class', 'form-control')
-    _input_latitude_1.setAttribute('id', 'latitude-' + index)
-    _div_latitude_2.appendChild(_input_latitude_1)
-    _div_latitude_1.appendChild(_div_latitude_2)
-    variables_div.appendChild(_div_latitude_1)
+    var vector = new ol.layer.Vector({
+      source: map_sources[index-1]
+    });
 
-    var _div_longitude_1 = document.createElement('div')
-    _div_longitude_1.setAttribute('class', 'form-row')
-    var _div_longitude_2 = document.createElement('div')
-    _div_longitude_2.setAttribute('class', 'form-group col-md-8')
-    var _label_longitude_1 = document.createElement('label')
-    _label_longitude_1.setAttribute('for', 'longitude-' + index)
-    _label_longitude_1.innerHTML = 'Longitude (X) of Center Point:'
-    _div_longitude_2.appendChild(_label_longitude_1)
-    var _input_longitude_1 = document.createElement('input')
-    _input_longitude_1.setAttribute('class', 'form-control')
-    _input_longitude_1.setAttribute('id', 'longitude-' + index)
-    _div_longitude_2.appendChild(_input_longitude_1)
-    _div_longitude_1.appendChild(_div_longitude_2)
-    variables_div.appendChild(_div_longitude_1)
+    map_sources[index-1].on('addfeature', function(evt) {
+      var geometry = evt.feature.getGeometry();
+      var shape = document.getElementById('shape-type-' + index).value;
+      var bounds = document.getElementById('bounds-' + index);
+      if (shape === 'bb-' + index) {
+        var coord = geometry.clone().transform('EPSG:3857', 'EPSG:4326').getCoordinates()[0];
+        var top_left_lat = coord[3][1];
+        var top_left_lon = coord[3][0];
+        var bottom_right_lat = coord[1][1];
+        var bottom_right_lon = coord[1][0];
 
-    var _div_radius_1 = document.createElement('div')
-    _div_radius_1.setAttribute('class', 'form-row')
-    var _div_radius_2 = document.createElement('div')
-    _div_radius_2.setAttribute('class', 'form-group col-md-8')
-    var _label_radius = document.createElement('label')
-    _label_radius.setAttribute('for', 'radius-' + index)
-    _label_radius.innerHTML = 'Radius:'
-    _div_radius_2.appendChild(_label_radius)
-    var _input_radius = document.createElement('input')
-    _input_radius.setAttribute('class', 'form-control')
-    _input_radius.setAttribute('id', 'radius-' + index)
-    _div_radius_2.appendChild(_input_radius)
-    _div_radius_1.appendChild(_div_radius_2)
-    variables_div.appendChild(_div_radius_1)
+        var text = 'Top Left: (' + top_left_lat + ',' + top_left_lon + ') | ';
+        text += 'Bottom Right: (' + bottom_right_lat + ',' + bottom_right_lon + ')';
+        bounds.innerHTML = text;
+      } else {
+        var new_geometry = geometry.clone().transform('EPSG:3857', 'EPSG:4326');
+        var center_lat = new_geometry.getCenter()[1];
+        var center_lon = new_geometry.getCenter()[0];
+        var radius = new_geometry.getRadius();
+
+        var text = 'Center: (' + center_lat + ',' + center_lon + ') | ';
+        text += 'Radius: ' + radius;
+        bounds.innerHTML = text;
+      }
+    });
+
+    var map = new ol.Map({
+      layers: [raster, vector],
+      target: 'map-' + index,
+      view: new ol.View({
+        projection: 'EPSG:3857',
+        center: ol.proj.fromLonLat([-73.986579, 40.6942036], 'EPSG:3857'), // Tandon
+        zoom: 12
+      })
+    });
+    maps.push(map);
+
+    maps[index-1].getViewport().addEventListener('contextmenu', function (evt) {
+      document.getElementById('bounds-' + index).innerHTML = '';
+      map_sources[index-1].clear();
+    })
+
+    addInteraction(index);
 }
 
 function add_generic(div_id) {
-    indices[div_id]['generic'] += 1
-    var index = indices[div_id]['generic'];
+    n_generic += 1;
+    indices[div_id]['generic'].push(n_generic);
+    var index = n_generic;
 
     var variables_div = document.getElementById(div_id);
 
@@ -432,29 +441,30 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     search.query.dataset = {};
     var keywords = document.getElementById('keywords').value;
     if(keywords) {
-    search.query.dataset.about = keywords;
+      search.query.dataset.about = keywords;
     }
     var names = document.getElementById('names').value;
     names = names.split(/[ ,+]+/);
     if(names.length == 1 && names[0] === '') {
-    names = [];
+      names = [];
     } else {
-    search.query.dataset.name = names;
+      search.query.dataset.name = names;
     }
     var description = document.getElementById('description').value;
     description = description.split(/[ ,+]+/);
     if(description.length == 1 && description[0] === '') {
-    description = [];
+      description = [];
     } else {
-    search.query.dataset.description = description;
+      search.query.dataset.description = description;
     }
 
     for(key in indices) {
       search.query[key + '_variables'] = []
-      if(indices[key]['temporal'] > 0) {
-        for (i = 1; i <= indices[key]['temporal']; i++) {
-            var start = document.getElementById('start-' + i).value;
-            var end = document.getElementById('end-' + i).value;
+      if(indices[key]['temporal'].length > 0) {
+        for (var i = 0; i < indices[key]['temporal'].length; i++) {
+            var index = indices[key]['temporal'][i];
+            var start = document.getElementById('start-' + index).value;
+            var end = document.getElementById('end-' + index).value;
             if(start || end) {
                 var variable = {'type': 'temporal_entity'};
                 if(start) {
@@ -467,65 +477,69 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
             }
         }
       }
-      if(indices[key]['geospatial_bb'] > 0) {
-        for (i = 1; i <= indices[key]['geospatial_bb']; i++) {
-            var latitude1 = document.getElementById('latitude-1-' + i).value;
-            var latitude2 = document.getElementById('latitude-2-' + i).value;
-            var longitude1 = document.getElementById('longitude-1-' + i).value;
-            var longitude2 = document.getElementById('longitude-2-' + i).value;
-            if(latitude1 && latitude2 && longitude1 && longitude2) {
-                var variable = {'type': 'geospatial_entity'};
-                variable['bounding_box'] = {"latitude1": latitude1,
-                                            "latitude2": latitude2,
-                                            "longitude1": longitude1,
-                                            "longitude2": longitude2}
+      if(indices[key]['geospatial'].length > 0) {
+        for (var i = 0; i < indices[key]['geospatial'].length; i++) {
+            var index = indices[key]['geospatial'][i];
+            var variable = {'type': 'geospatial_entity'};
+            var features = map_sources[index-1].getFeatures();
+            if (features.length > 0) {
+                var geometry = features[0].getGeometry();
+                var shape = document.getElementById('shape-type-' + index).value;
+                if (shape === 'bb-' + index) {
+                  var coord = geometry.clone().transform('EPSG:3857', 'EPSG:4326').getCoordinates()[0];
+                  var top_left_lat = coord[3][1];
+                  var top_left_lon = coord[3][0];
+                  var bottom_right_lat = coord[1][1];
+                  var bottom_right_lon = coord[1][0];
+
+                  variable['bounding_box'] = {'latitude1': top_left_lat,
+                                              'latitude2': bottom_right_lat,
+                                              'longitude1': top_left_lon,
+                                              'longitude2': bottom_right_lon}
+                } else {
+                  var new_geometry = geometry.clone().transform('EPSG:3857', 'EPSG:4326');
+                  var center_lat = new_geometry.getCenter()[1];
+                  var center_lon = new_geometry.getCenter()[0];
+                  var radius = new_geometry.getRadius();
+
+                  variable['circle'] = {'latitude': center_lat,
+                                        'longitude': center_lon,
+                                        'radius': radius}
+                }
                 search.query[key + '_variables'].push(variable)
             }
         }
       }
-      if(indices[key]['geospatial_circle'] > 0) {
-        for (i = 1; i <= indices[key]['geospatial_circle']; i++) {
-            var latitude = document.getElementById('latitude-' + i).value;
-            var longitude = document.getElementById('longitude-' + i).value;
-            var radius = document.getElementById('radius-' + i).value;
-            if(latitude && longitude && radius) {
-                var variable = {'type': 'geospatial_entity'};
-                variable['circle'] = {"latitude": latitude,
-                                            "longitude": longitude,
-                                            "radius": radius}
-                search.query[key + '_variables'].push(variable)
-            }
-        }
-      }
-      if(indices[key]['generic'] > 0) {
-        for (i = 1; i <= indices[key]['generic']; i++) {
-            var column_names = document.getElementById('name-' + i).value;
+      if(indices[key]['generic'].length > 0) {
+        for (var i = 0; i < indices[key]['generic'].length; i++) {
+            var index = indices[key]['generic'][i];
+            var column_names = document.getElementById('name-' + index).value;
             column_names = column_names.split(/[ ,+]+/);
             if(column_names.length == 1 && column_names[0] === '') {
                 column_names = [];
             }
             var str_types = [];
             var sem_types = [];
-            if(document.getElementById('type-integer-' + i).checked) {
+            if(document.getElementById('type-integer-' + index).checked) {
                 str_types.push('http://schema.org/Integer');
             }
-            if(document.getElementById('type-float-' + i).checked) {
+            if(document.getElementById('type-float-' + index).checked) {
                 str_types.push('http://schema.org/Float');
             }
-            if(document.getElementById('type-bool-' + i).checked) {
+            if(document.getElementById('type-bool-' + index).checked) {
                 sem_types.push('http://schema.org/Boolean');
             }
-            if(document.getElementById('type-text-' + i).checked) {
+            if(document.getElementById('type-text-' + index).checked) {
                 str_types.push('http://schema.org/Text');
             }
-            if(document.getElementById('type-datetime-' + i).checked) {
+            if(document.getElementById('type-datetime-' + index).checked) {
                 sem_types.push('http://schema.org/DateTime');
             }
-            if(document.getElementById('type-spatial-' + i).checked) {
+            if(document.getElementById('type-spatial-' + index).checked) {
                 sem_types.push('http://schema.org/latitude');
                 sem_types.push('http://schema.org/longitude');
             }
-            if(document.getElementById('type-phone-' + i).checked) {
+            if(document.getElementById('type-phone-' + index).checked) {
                 sem_types.push('https://metadata.datadrivendiscovery.org/types/PhoneNumber');
             }
             if(column_names.length > 0 || str_types.length > 0 || sem_types.length > 0) {
