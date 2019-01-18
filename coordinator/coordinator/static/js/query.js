@@ -47,19 +47,23 @@ function postAugmentForm(url='', data={}) {
 
 var indices = {'required': {
                  'temporal': 0,
-                 'geospatial': 0,
+                 'geospatial_bb': 0,
+                 'geospatial_circle': 0,
                  'generic': 0},
                'desired': {
                  'temporal': 0,
-                 'geospatial': 0,
+                 'geospatial_bb': 0,
+                 'geospatial_circle': 0,
                  'generic': 0}}
 
 var n_required_temporal = 0;
-var n_required_geospatial = 0;
+var n_required_geospatial_bb = 0;
+var n_required_geospatial_circle = 0;
 var n_required_generic = 0;
 
 var n_desired_temporal = 0;
-var n_desired_geospatial = 0;
+var n_desired_geospatial_bb = 0;
+var n_desired_geospatial_circle = 0;
 var n_desired_generic = 0;
 
 function variableChange(select_id, div_id) {
@@ -74,7 +78,7 @@ function add_temporal(div_id) {
     var variables_div = document.getElementById(div_id);
 
     var _title = document.createElement('h5')
-    _title.innerHTML = 'Temporal Entity'
+    _title.innerHTML = 'Temporal Information'
     variables_div.appendChild(_title)
 
     var _div_start_1 = document.createElement('div')
@@ -83,7 +87,7 @@ function add_temporal(div_id) {
     _div_start_2.setAttribute('class', 'form-group col-md-8')
     var _label_start = document.createElement('label')
     _label_start.setAttribute('for', 'start-' + index)
-    _label_start.innerHTML = 'Start:'
+    _label_start.innerHTML = 'From:'
     _div_start_2.appendChild(_label_start)
     var _input_start = document.createElement('input')
     _input_start.setAttribute('class', 'form-control')
@@ -98,7 +102,7 @@ function add_temporal(div_id) {
     _div_end_2.setAttribute('class', 'form-group col-md-8')
     var _label_end = document.createElement('label')
     _label_end.setAttribute('for', 'end-' + index)
-    _label_end.innerHTML = 'End:'
+    _label_end.innerHTML = 'To:'
     _div_end_2.appendChild(_label_end)
     var _input_end = document.createElement('input')
     _input_end.setAttribute('class', 'form-control')
@@ -108,14 +112,14 @@ function add_temporal(div_id) {
     variables_div.appendChild(_div_end_1)
 }
 
-function add_geospatial(div_id) {
-    indices[div_id]['geospatial'] += 1
-    var index = indices[div_id]['geospatial'];
+function add_geospatial_bb(div_id) {
+    indices[div_id]['geospatial_bb'] += 1
+    var index = indices[div_id]['geospatial_bb'];
 
     var variables_div = document.getElementById(div_id);
 
     var _title = document.createElement('h5')
-    _title.innerHTML = 'Geospatial Entity'
+    _title.innerHTML = 'Geospatial Information (Bounding Box)'
     variables_div.appendChild(_title)
 
     var _div_latitude_1_1 = document.createElement('div')
@@ -179,6 +183,62 @@ function add_geospatial(div_id) {
     variables_div.appendChild(_div_longitude_2_1)
 }
 
+function add_geospatial_circle(div_id) {
+    indices[div_id]['geospatial_circle'] += 1
+    var index = indices[div_id]['geospatial_circle'];
+
+    var variables_div = document.getElementById(div_id);
+
+    var _title = document.createElement('h5')
+    _title.innerHTML = 'Geospatial Information (Circle)'
+    variables_div.appendChild(_title)
+
+    var _div_latitude_1 = document.createElement('div')
+    _div_latitude_1.setAttribute('class', 'form-row')
+    var _div_latitude_2 = document.createElement('div')
+    _div_latitude_2.setAttribute('class', 'form-group col-md-8')
+    var _label_latitude_1 = document.createElement('label')
+    _label_latitude_1.setAttribute('for', 'latitude-' + index)
+    _label_latitude_1.innerHTML = 'Latitude (Y) of Center Point:'
+    _div_latitude_2.appendChild(_label_latitude_1)
+    var _input_latitude_1 = document.createElement('input')
+    _input_latitude_1.setAttribute('class', 'form-control')
+    _input_latitude_1.setAttribute('id', 'latitude-' + index)
+    _div_latitude_2.appendChild(_input_latitude_1)
+    _div_latitude_1.appendChild(_div_latitude_2)
+    variables_div.appendChild(_div_latitude_1)
+
+    var _div_longitude_1 = document.createElement('div')
+    _div_longitude_1.setAttribute('class', 'form-row')
+    var _div_longitude_2 = document.createElement('div')
+    _div_longitude_2.setAttribute('class', 'form-group col-md-8')
+    var _label_longitude_1 = document.createElement('label')
+    _label_longitude_1.setAttribute('for', 'longitude-' + index)
+    _label_longitude_1.innerHTML = 'Longitude (X) of Center Point:'
+    _div_longitude_2.appendChild(_label_longitude_1)
+    var _input_longitude_1 = document.createElement('input')
+    _input_longitude_1.setAttribute('class', 'form-control')
+    _input_longitude_1.setAttribute('id', 'longitude-' + index)
+    _div_longitude_2.appendChild(_input_longitude_1)
+    _div_longitude_1.appendChild(_div_longitude_2)
+    variables_div.appendChild(_div_longitude_1)
+
+    var _div_radius_1 = document.createElement('div')
+    _div_radius_1.setAttribute('class', 'form-row')
+    var _div_radius_2 = document.createElement('div')
+    _div_radius_2.setAttribute('class', 'form-group col-md-8')
+    var _label_radius = document.createElement('label')
+    _label_radius.setAttribute('for', 'radius-' + index)
+    _label_radius.innerHTML = 'Radius:'
+    _div_radius_2.appendChild(_label_radius)
+    var _input_radius = document.createElement('input')
+    _input_radius.setAttribute('class', 'form-control')
+    _input_radius.setAttribute('id', 'radius-' + index)
+    _div_radius_2.appendChild(_input_radius)
+    _div_radius_1.appendChild(_div_radius_2)
+    variables_div.appendChild(_div_radius_1)
+}
+
 function add_generic(div_id) {
     indices[div_id]['generic'] += 1
     var index = indices[div_id]['generic'];
@@ -186,7 +246,7 @@ function add_generic(div_id) {
     var variables_div = document.getElementById(div_id);
 
     var _title = document.createElement('h5')
-    _title.innerHTML = 'Generic Entity'
+    _title.innerHTML = 'Generic Column'
     variables_div.appendChild(_title)
 
     var _div_name_1 = document.createElement('div')
@@ -407,8 +467,8 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
             }
         }
       }
-      if(indices[key]['geospatial'] > 0) {
-        for (i = 1; i <= indices[key]['geospatial']; i++) {
+      if(indices[key]['geospatial_bb'] > 0) {
+        for (i = 1; i <= indices[key]['geospatial_bb']; i++) {
             var latitude1 = document.getElementById('latitude-1-' + i).value;
             var latitude2 = document.getElementById('latitude-2-' + i).value;
             var longitude1 = document.getElementById('longitude-1-' + i).value;
@@ -419,6 +479,20 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
                                             "latitude2": latitude2,
                                             "longitude1": longitude1,
                                             "longitude2": longitude2}
+                search.query[key + '_variables'].push(variable)
+            }
+        }
+      }
+      if(indices[key]['geospatial_circle'] > 0) {
+        for (i = 1; i <= indices[key]['geospatial_circle']; i++) {
+            var latitude = document.getElementById('latitude-' + i).value;
+            var longitude = document.getElementById('longitude-' + i).value;
+            var radius = document.getElementById('radius-' + i).value;
+            if(latitude && longitude && radius) {
+                var variable = {'type': 'geospatial_entity'};
+                variable['circle'] = {"latitude": latitude,
+                                            "longitude": longitude,
+                                            "radius": radius}
                 search.query[key + '_variables'].push(variable)
             }
         }

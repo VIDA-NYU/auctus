@@ -160,29 +160,6 @@ class QueryHandler(CorsHandler):
 
 class Query(QueryHandler):
 
-    def search_d3m_dataset_id(self, metadata):
-        dataset_id = ''
-        if isinstance(metadata, dict):
-            if 'about' not in metadata:
-                return dataset_id
-            id_ = 'datamart.d3m.' + \
-                  metadata['about']['datasetID'].replace('_dataset', '')
-            hits = self.application.elasticsearch.search(
-                index='datamart',
-                body={
-                    'query': {
-                        'match': {
-                            '_id': id_,
-                        },
-                    },
-                }
-            )['hits']['hits']
-            if not hits:
-                logger.warning("Data not in DataMart!")
-            else:
-                dataset_id = id_
-        return dataset_id
-
     def parse_query_variables(self, data, required=False):
         output = list()
 
@@ -191,7 +168,11 @@ class Query(QueryHandler):
 
         for variable in data:
             if 'type' not in variable:
-                continue
+                self.send_error(
+                    status_code=400,
+                    reason='variable is missing property "type"'
+                )
+                return
             variable_query = list()
 
             # temporal
@@ -243,7 +224,7 @@ class Query(QueryHandler):
                     })
 
             # spatial
-            # TODO: ignoring 'circle' and 'named_entities' for now
+            # TODO: ignoring 'named_entities' for now
             elif 'geospatial_entity' in variable['type']:
                 if 'bounding_box' in variable:
                     if ('latitude1' not in variable['bounding_box'] or
@@ -281,6 +262,38 @@ class Query(QueryHandler):
                             }
                         }
                     })
+                if 'circle' in variable:
+                    if ('latitude' not in variable['circle'] or
+                            'longitude' not in variable['circle'] or
+                            'radius' not in variable['circle']):
+                        continue
+                    radius = float(variable['circle']['radius'])
+                    longitude1 = float(variable['circle']['longitude']) - radius
+                    longitude2 = float(variable['circle']['longitude']) + radius
+                    latitude1 = float(variable['circle']['latitude']) + radius
+                    latitude2 = float(variable['circle']['latitude']) - radius
+                    variable_query.append({
+                        'nested': {
+                            'path': 'spatial_coverage.ranges',
+                            'query': {
+                                'bool': {
+                                    'filter': {
+                                        'geo_shape': {
+                                            'spatial_coverage.ranges.range': {
+                                                'shape': {
+                                                    'type': 'envelope',
+                                                    'coordinates':
+                                                        [[longitude1, latitude1],
+                                                         [longitude2, latitude2]]
+                                                },
+                                                'relation': 'intersects'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    })
 
             # dataframe columns
             # TODO: ignoring this for now -- does not make much sense
@@ -288,10 +301,27 @@ class Query(QueryHandler):
                 pass
 
             # generic entity
-            # TODO: ignoring 'about', 'variable_metadata',
+            # TODO: ignoring 'variable_metadata',
             #  'variable_description', 'named_entities', and
             #  'column_values' for now
             elif 'generic_entity' in variable['type']:
+                if 'about' in variable:
+                    about_query = list()
+                    for name in variable['about']:
+                        about_query.append({
+                            'nested': {
+                                'path': 'columns',
+                                'query': {
+                                    'match': {'columns.name': name},
+                                },
+                            },
+                        })
+                    variable_query.append({
+                        'bool': {
+                            'should': about_query,
+                            'minimum_should_match': 1
+                        }
+                    })
                 if 'variable_name' in variable:
                     name_query = list()
                     for name in variable['variable_name']:
@@ -305,7 +335,8 @@ class Query(QueryHandler):
                         })
                     variable_query.append({
                         'bool': {
-                            'should': name_query
+                            'should': name_query,
+                            'minimum_should_match': 1
                         }
                     })
                 if 'variable_syntactic_type' in variable:
@@ -321,7 +352,8 @@ class Query(QueryHandler):
                         })
                     variable_query.append({
                         'bool': {
-                            'should': structural_query
+                            'should': structural_query,
+                            'minimum_should_match': 1
                         }
                     })
                 if 'variable_semantic_type' in variable:
@@ -337,7 +369,8 @@ class Query(QueryHandler):
                         })
                     variable_query.append({
                         'bool': {
-                            'should': semantic_query
+                            'should': semantic_query,
+                            'minimum_should_match': 1
                         }
                     })
 
@@ -367,10 +400,17 @@ class Query(QueryHandler):
 
         # dataset
         # TODO: ignoring the following properties for now:
-        #   keywords, creator, date_published, date_created, publisher, url
+        #   creator, date_published, date_created
         dataset_query = list()
         if 'dataset' in query_json:
+            # about
             if 'about' in query_json['dataset']:
+                if not isinstance(query_json['dataset']['about'], str):
+                    self.send_error(
+                        status_code=400,
+                        reason='dataset.about must be a string'
+                    )
+                    return
                 about_query = list()
                 about_query.append({
                     'match': {
@@ -388,19 +428,6 @@ class Query(QueryHandler):
                         }
                     }
                 })
-                about_query.append({
-                    'nested': {
-                        'path': 'columns',
-                        'query': {
-                            'match': {
-                                'columns.name': {
-                                    'query': query_json['dataset']['about'],
-                                    'operator': 'or'
-                                }
-                            }
-                        }
-                    }
-                })
                 dataset_query.append({
                     'bool': {
                         'should': about_query,
@@ -408,8 +435,46 @@ class Query(QueryHandler):
                     }
                 })
 
+            # keywords
+            if 'keywords' in query_json['dataset']:
+                if not isinstance(query_json['dataset']['keywords'], list):
+                    self.send_error(
+                        status_code=400,
+                        reason='dataset.keywords must be an array'
+                    )
+                    return
+                keywords_query = list()
+                keywords_query.append({
+                    'match': {
+                        'description': {
+                            'query': ' '.join(query_json['dataset']['keywords']),
+                            'operator': 'or'
+                        }
+                    }
+                })
+                keywords_query.append({
+                    'match': {
+                        'name': {
+                            'query': ' '.join(query_json['dataset']['keywords']),
+                            'operator': 'or'
+                        }
+                    }
+                })
+                dataset_query.append({
+                    'bool': {
+                        'should': keywords_query,
+                        'minimum_should_match': 1
+                    }
+                })
+
             # name
             if 'name' in query_json['dataset']:
+                if not isinstance(query_json['dataset']['name'], list):
+                    self.send_error(
+                        status_code=400,
+                        reason='dataset.name must be an array'
+                    )
+                    return
                 name_query = list()
                 for name in query_json['dataset']['name']:
                     name_query.append({
@@ -424,6 +489,12 @@ class Query(QueryHandler):
 
             # description
             if 'description' in query_json['dataset']:
+                if not isinstance(query_json['dataset']['description'], list):
+                    self.send_error(
+                        status_code=400,
+                        reason='dataset.description must be an array'
+                    )
+                    return
                 desc_query = list()
                 for name in query_json['dataset']['description']:
                     desc_query.append({
@@ -432,6 +503,46 @@ class Query(QueryHandler):
                 dataset_query.append({
                     'bool': {
                         'should': desc_query,
+                        'minimum_should_match': 1
+                    }
+                })
+
+            # publisher
+            if 'publisher' in query_json['dataset']:
+                if not isinstance(query_json['dataset']['publisher'], list):
+                    self.send_error(
+                        status_code=400,
+                        reason='dataset.publisher must be an array'
+                    )
+                    return
+                pub_query = list()
+                for pub in query_json['dataset']['publisher']:
+                    pub_query.append({
+                        'wildcard': {'materialize.identifier': '*%s*' % pub.lower()}
+                    })
+                dataset_query.append({
+                    'bool': {
+                        'should': pub_query,
+                        'minimum_should_match': 1
+                    }
+                })
+
+            # url
+            if 'url' in query_json['dataset']:
+                if not isinstance(query_json['dataset']['url'], list):
+                    self.send_error(
+                        status_code=400,
+                        reason='dataset.url must be an array'
+                    )
+                    return
+                url_query = list()
+                for url in query_json['dataset']['url']:
+                    url_query.append({
+                        'wildcard': {'materialize.direct_url': '%s*' % url}
+                    })
+                dataset_query.append({
+                    'bool': {
+                        'should': url_query,
                         'minimum_should_match': 1
                     }
                 })
@@ -532,6 +643,7 @@ class Query(QueryHandler):
                         },
                     },
                 },
+                size=1000
             )['hits']['hits']
 
             results = []
