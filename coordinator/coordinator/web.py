@@ -226,9 +226,14 @@ class Dataset(BaseHandler):
                         strftime('%Y-%m-%d %H:%M')
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
+        spatial_coverage = []
+        if 'spatial_coverage' in metadata:
+            spatial_coverage = metadata['spatial_coverage']
+            del metadata['spatial_coverage']
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
                     metadata=metadata, materialize=materialize,
+                    spatial_coverage=spatial_coverage,
                     size=format_size(metadata['size']))
 
 
