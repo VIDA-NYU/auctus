@@ -213,8 +213,8 @@ function add_geospatial(div_id) {
         var bottom_right_lat = coord[1][1];
         var bottom_right_lon = coord[1][0];
 
-        var text = 'Top Left: (' + top_left_lat + ',' + top_left_lon + ') | ';
-        text += 'Bottom Right: (' + bottom_right_lat + ',' + bottom_right_lon + ')';
+        var text = 'Top Left: <code>' + ol.coordinate.toStringHDMS([top_left_lon, top_left_lat]) + '</code> &nbsp;&nbsp;&nbsp;';
+        text += '&nbsp;&nbsp;&nbsp;Bottom Right: <code>' + ol.coordinate.toStringHDMS([bottom_right_lon, bottom_right_lat]) + '</code>';
         bounds.innerHTML = text;
       } else {
         var new_geometry = geometry.clone().transform('EPSG:3857', 'EPSG:4326');
@@ -222,7 +222,7 @@ function add_geospatial(div_id) {
         var center_lon = new_geometry.getCenter()[0];
         var radius = new_geometry.getRadius();
 
-        var text = 'Center: (' + center_lat + ',' + center_lon + ') | ';
+        var text = 'Center: ' + ol.coordinate.toStringHDMS([center_lon, center_lat]) + ' | ';
         text += 'Radius: ' + radius;
         bounds.innerHTML = text;
       }
