@@ -122,7 +122,7 @@ def augment(data, augment_data, destination=None, send_data=False):
         files['destination'] = destination
 
     # Send request
-    response = requests.post(augment_data.url + '/augment',
+    response = requests.post(augment_data._url + '/augment',
                              files=files)
     if response.status_code != 200:
         raise DatamartError("Error from DataMart: %s %s" % (
@@ -157,7 +157,7 @@ class Dataset(object):
     def __init__(self, id, metadata, url=DEFAULT_URL,
                  score=None, join_columns=[], union_columns=[]):
         self.id = id
-        self.url = url
+        self._url = url
         self.score = score
         self.metadata = metadata
         self.join_columns = join_columns
