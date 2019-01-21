@@ -11,6 +11,8 @@ import uuid
 from .common import conv_datetime, conv_float, conv_int, Type
 
 logger = logging.getLogger(__name__)
+PAGINATION_SIZE = 10
+JOIN_SIMILARITY_THRESHOLD = 0.3
 source_filter = {
     'excludes': [
         'date',
@@ -69,7 +71,11 @@ def get_column_coverage(es, dataset_id, data_profile={}, filter_=[]):
     if dataset_id:
         index_query = {
             'query': {
-                'match': {'_id': dataset_id}
+                'bool': {
+                    'filter': {
+                        'match': {'_id': dataset_id}
+                    }
+                }
             }
         }
 
@@ -128,7 +134,7 @@ def get_column_coverage(es, dataset_id, data_profile={}, filter_=[]):
 
 
 def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
-                                         ranges, query_args=None):
+                                         pivot_column, ranges, query_args=None):
     """
     Retrieve numerical columns that intersect with the input numerical ranges.
 
@@ -181,7 +187,11 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
         if not query_args:
             query_obj = {
                 '_source': source_filter,
-                'query': intersection,
+                'query': {
+                    'bool': {
+                        'filter': intersection,
+                    }
+                }
             }
         else:
             args = [intersection] + query_args
@@ -189,7 +199,11 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                 '_source': source_filter,
                 'query': {
                     'bool': {
-                        'must': args,
+                        'filter': {
+                            'bool': {
+                                'must': args,
+                            },
+                        },
                     },
                 },
             }
@@ -201,7 +215,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
             index='datamart',
             body=query_obj,
             from_=from_,
-            size=100,
+            size=PAGINATION_SIZE,
             request_timeout=30
         )
 
@@ -220,6 +234,15 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                     # ignoring 'd3mIndex' for now -- seems useless
                     if 'd3mIndex' in column_name:
                         continue
+
+                    sim = compute_levenshtein_sim(
+                        pivot_column.lower(),
+                        column_name.lower()
+                    )
+                    if type_value != Type.DATE_TIME:
+                        if sim <= JOIN_SIMILARITY_THRESHOLD:
+                            continue
+
                     name = '%s$$%s' % (dataset_name, column_name)
                     if name not in intersections:
                         intersections[name] = 0
@@ -242,7 +265,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                 index='datamart',
                 body=query_obj,
                 from_=from_,
-                size=100,
+                size=PAGINATION_SIZE,
                 request_timeout=30
             )
             size_ = len(result['hits']['hits'])
@@ -299,7 +322,11 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
         if not query_args:
             query_obj = {
                 '_source': source_filter,
-                'query': intersection,
+                'query': {
+                    'bool': {
+                        'filter': intersection,
+                    }
+                }
             }
         else:
             args = [intersection] + query_args
@@ -307,7 +334,11 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
                 '_source': source_filter,
                 'query': {
                     'bool': {
-                        'must': args,
+                        'filter': {
+                            'bool': {
+                                'must': args,
+                            },
+                        },
                     },
                 },
             }
@@ -319,7 +350,7 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
             index='datamart',
             body=query_obj,
             from_=from_,
-            size=100,
+            size=PAGINATION_SIZE,
             request_timeout=30
         )
 
@@ -365,7 +396,7 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
                 index='datamart',
                 body=query_obj,
                 from_=from_,
-                size=100,
+                size=PAGINATION_SIZE,
                 request_timeout=30
             )
             size_ = len(result['hits']['hits'])
@@ -444,6 +475,7 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
                     dataset_id,
                     type_,
                     type_value,
+                    column,
                     column_coverage[column]['ranges'],
                     query_args
                 )
@@ -452,14 +484,7 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
             continue
 
         for name, size in intersections_column.items():
-            sim = compute_levenshtein_sim(
-                column.lower(),
-                name.split("$$")[1].lower()
-            )
             score = size / column_total_coverage
-            if type_value not in (Type.DATE_TIME,
-                                  Type.LATITUDE + ', ' + Type.LONGITUDE):
-                score *= sim
             if score > 0:
                 external_dataset, external_column = name.split('$$')
                 if external_dataset not in intersections:
@@ -579,14 +604,22 @@ def get_column_information(es=None, dataset_id=None, data_profile={},
 
     if not query_args:
         query_obj = {
-            'query': query,
+            'query': {
+                'bool': {
+                    'filter': query,
+                }
+            }
         }
     else:
         args = [query] + query_args
         query_obj = {
             'query': {
                 'bool': {
-                    'must': args,
+                    'filter': {
+                        'bool': {
+                            'must': args,
+                        },
+                    },
                 },
             },
         }
@@ -598,7 +631,7 @@ def get_column_information(es=None, dataset_id=None, data_profile={},
         index='datamart',
         body=query_obj,
         from_=from_,
-        size=100,
+        size=PAGINATION_SIZE,
         request_timeout=30
     )
 
@@ -615,7 +648,7 @@ def get_column_information(es=None, dataset_id=None, data_profile={},
             index='datamart',
             body=query_obj,
             from_=from_,
-            size=100,
+            size=PAGINATION_SIZE,
             request_timeout=30
         )
         size_ = len(result['hits']['hits'])
@@ -810,7 +843,11 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
             if not query_args:
                 query_obj = {
                     '_source': source_filter,
-                    'query': query,
+                    'query': {
+                        'bool': {
+                            'filter': query,
+                        }
+                    }
                 }
             else:
                 args = [query] + query_args
@@ -818,7 +855,11 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                     '_source': source_filter,
                     'query': {
                         'bool': {
-                            'must': args,
+                            'filter': {
+                                'bool': {
+                                    'must': args,
+                                },
+                            },
                         },
                     },
                 }
@@ -830,7 +871,7 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                 index='datamart',
                 body=query_obj,
                 from_=from_,
-                size=100,
+                size=PAGINATION_SIZE,
                 request_timeout=30
             )
 
@@ -858,7 +899,7 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                     index='datamart',
                     body=query_obj,
                     from_=from_,
-                    size=100,
+                    size=PAGINATION_SIZE,
                     request_timeout=30
                 )
                 size_ = len(result['hits']['hits'])
