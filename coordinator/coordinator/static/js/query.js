@@ -545,6 +545,19 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       }
     }
 
+    // search columns
+
+    var search_columns = document.getElementById('search_columns').value;
+    search_columns = search_columns.split(/[ ,+]+/);
+    if(search_columns.length == 1 && search_columns[0] === '') {
+        search_columns = [];
+    } else {
+        search.query['desired_variables'].push(
+            {'type': 'dataframe_columns',
+             'names': search_columns}
+        );
+    }
+
     var results_div = document.getElementById('results');
     // cleaning previous results
     while (results_div.firstChild) {

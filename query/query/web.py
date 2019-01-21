@@ -160,7 +160,7 @@ class QueryHandler(CorsHandler):
 
 class Query(QueryHandler):
 
-    def parse_query_variables(self, data, required=False):
+    def parse_query_variables(self, data, search_columns=[], required=False):
         output = list()
 
         if not data:
@@ -296,9 +296,11 @@ class Query(QueryHandler):
                     })
 
             # dataframe columns
-            # TODO: ignoring this for now -- does not make much sense
+            # TODO: ignoring 'index', 'relationship'
             elif 'dataframe_columns' in variable['type']:
-                pass
+                if 'names' in variable:
+                    for name in variable['names']:
+                        search_columns.append(name.strip().lower())
 
             # generic entity
             # TODO: ignoring 'variable_metadata',
@@ -374,26 +376,27 @@ class Query(QueryHandler):
                         }
                     })
 
-            output.append({
-                'bool': {
-                    'must': variable_query,
-                }
-            })
+            if variable_query:
+                output.append({
+                    'bool': {
+                        'must': variable_query,
+                    }
+                })
 
-        if required:
+        if output:
+            if required:
+                return {
+                    'bool': {
+                        'must': output,
+                    }
+                }
             return {
                 'bool': {
-                    'must': output,
+                    'should': output,
+                    'minimum_should_match': 1,
                 }
             }
-        return {
-            'bool': {
-                'must': {
-                    'match_all': {}
-                },
-                'should': output,
-            }
-        }
+        return {}
 
     def parse_query(self, query_json):
         query_args = list()
@@ -550,11 +553,16 @@ class Query(QueryHandler):
         if dataset_query:
             query_args.append(dataset_query)
 
+        # search columns
+        search_columns = {'required': [],
+                          'desired': []}
+
         # required variables
         required_query = dict()
         if 'required_variables' in query_json:
             required_query = self.parse_query_variables(
                 query_json['required_variables'],
+                search_columns=search_columns['required'],
                 required=True
             )
 
@@ -566,13 +574,17 @@ class Query(QueryHandler):
         if 'desired_variables' in query_json:
             desired_query = self.parse_query_variables(
                 query_json['desired_variables'],
+                search_columns=search_columns['desired'],
                 required=False
             )
 
         if desired_query:
             query_args.append(desired_query)
 
-        return query_args
+        search_columns['required'] = list(set(search_columns['required']))
+        search_columns['desired'] = list(set(search_columns['desired']))
+
+        return query_args, search_columns
 
     @prom_async_time(PROM_SEARCH_TIME)
     async def post(self):
@@ -624,8 +636,9 @@ class Query(QueryHandler):
 
         # parameter: query
         query_args = list()
+        search_columns = dict()
         if query:
-            query_args = self.parse_query(query)
+            query_args, search_columns = self.parse_query(query)
 
         # At least one of them must be provided
         if not query_args and not data_profile:
@@ -665,13 +678,15 @@ class Query(QueryHandler):
             join_results = get_joinable_datasets(
                 es=self.application.elasticsearch,
                 data_profile=data_profile,
-                query_args=query_args
+                query_args=query_args,
+                search_columns=search_columns
             )['results']
             union_results = get_unionable_datasets(
                 es=self.application.elasticsearch,
                 data_profile=data_profile,
                 query_args=query_args,
-                fuzzy=True
+                fuzzy=True,
+                search_columns=search_columns
             )['results']
 
             results = []
