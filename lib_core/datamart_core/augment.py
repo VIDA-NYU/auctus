@@ -1,6 +1,7 @@
 import distance
 import elasticsearch
 import logging
+import numpy as np
 import os
 import pandas as pd
 import shutil
@@ -24,6 +25,12 @@ source_filter = {
         'columns.semantic_types'
     ]
 }
+temporal_resolutions = [
+    'second',
+    'minute',
+    'hour',
+    'date'
+]
 
 
 def compute_levenshtein_sim(str1, str2):
@@ -1009,6 +1016,13 @@ def materialize_dataset(es, dataset_id):
     return df
 
 
+def get_temporal_resolution(data):
+    for res in temporal_resolutions[:-1]:
+        if len(set([eval('x.%s' % res) for x in data if x != np.nan])) > 1:
+            return temporal_resolutions.index(res)
+    return temporal_resolutions.index('date')
+
+
 def join(original_data, augment_data, columns, how='inner'):
     """
     Performs an inner join between original_data (pandas.DataFrame)
@@ -1021,6 +1035,26 @@ def join(original_data, augment_data, columns, how='inner'):
     for c in columns:
         rename[c[1]] = c[0]
     augment_data = augment_data.rename(columns=rename)
+
+    # matching temporal resolutions
+    original_data_dt = original_data.select_dtypes(include=[np.datetime64]).columns
+    augment_data_dt = augment_data.select_dtypes(include=[np.datetime64]).columns
+    for c in columns:
+        if c[0] in original_data_dt and c[0] in augment_data_dt:
+            res_original = get_temporal_resolution(original_data[c[0]])
+            res_augment = get_temporal_resolution(augment_data[c[0]])
+            if res_original > res_augment:
+                for res in temporal_resolutions[:res_original]:
+                    augment_data[c[0]] = [
+                        x.replace(**{res: 0}) for x in augment_data[c[0]]
+                    ]
+            elif res_original < res_augment:
+                for res in temporal_resolutions[:res_augment]:
+                    original_data[c[0]] = [
+                        x.replace(**{res: 0}) for x in original_data[c[0]]
+                    ]
+
+    # join
     join_ = pd.merge(
         original_data,
         augment_data,
