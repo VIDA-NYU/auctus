@@ -214,21 +214,45 @@ class Dataset(BaseHandler):
             metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
-        # readable format for temporal coverage
+        # readable format for temporal and numerical coverage
         for column in metadata['columns']:
-            if Type.DATE_TIME in column['semantic_types']:
-                for range_ in column['coverage']:
-                    range_['range']['gte'] = \
-                        datetime.datetime.utcfromtimestamp(int(range_['range']['gte'])).\
-                        strftime('%Y-%m-%d %H:%M')
-                    range_['range']['lte'] = \
-                        datetime.datetime.utcfromtimestamp(int(range_['range']['lte'])).\
-                        strftime('%Y-%m-%d %H:%M')
+            if 'coverage' in column:
+                if Type.DATE_TIME in column['semantic_types']:
+                    column['temporal coverage'] = []
+                    for range_ in column['coverage']:
+                        from_ = \
+                            datetime.datetime.utcfromtimestamp(int(range_['range']['gte'])).\
+                            strftime('%Y-%m-%d %H:%M')
+                        to_ = \
+                            datetime.datetime.utcfromtimestamp(int(range_['range']['lte'])).\
+                            strftime('%Y-%m-%d %H:%M')
+                        column['temporal coverage'].append({
+                            'from': from_,
+                            'to': to_
+                        })
+                elif Type.INTEGER in column['structural_type']:
+                    column['numerical coverage'] = [
+                        {'from': int(range_['range']['gte']),
+                         'to': int(range_['range']['lte'])
+                        } for range_ in column['coverage']
+                    ]
+                else:
+                    column['numerical coverage'] = [
+                        {'from': float(range_['range']['gte']),
+                         'to': float(range_['range']['lte'])
+                         } for range_ in column['coverage']
+                    ]
+                del column['coverage']
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
+        spatial_coverage = []
+        if 'spatial_coverage' in metadata:
+            spatial_coverage = metadata['spatial_coverage']
+            del metadata['spatial_coverage']
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
                     metadata=metadata, materialize=materialize,
+                    spatial_coverage=spatial_coverage,
                     size=format_size(metadata['size']))
 
 

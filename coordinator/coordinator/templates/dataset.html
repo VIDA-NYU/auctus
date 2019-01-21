@@ -28,7 +28,19 @@
 <p>This is the metadata that was recorded during profiling.</p>
 {{ meta_table(metadata) }}
 
-<h2>Materialization info</h2>
+<div id="spatial_coverage" style="display: none;">
+<h2>Spatial Coverage Info</h2>
+<p>This is the approximate spatial coverage of the data.</p>
+</div>
+
+<h2>Materialization Info</h2>
 <p>This was recorded by the discovery plugin <span style="font-family: monospace;">{{ discoverer }}</span></p>
 {{ meta_table(materialize) }}
+
+<script type="text/javascript">
+var spatial_coverage = '{{ spatial_coverage | tojson }}';
+</script>
+<script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
+<script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList"></script>
+<script type="text/javascript" src="{{ static_url('js/spatial.js') }}"></script>
 {% endblock %}
