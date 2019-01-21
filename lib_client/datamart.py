@@ -10,7 +10,7 @@ import warnings
 import zipfile
 
 
-__version__ = '0.0'
+__version__ = '0.2'
 
 
 __all__ = ['Dataset', 'search']
