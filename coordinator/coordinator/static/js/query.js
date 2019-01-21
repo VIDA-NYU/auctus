@@ -552,7 +552,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     if(search_columns.length == 1 && search_columns[0] === '') {
         search_columns = [];
     } else {
-        search.query['desired_variables'].push(
+        search.query['required_variables'].push(
             {'type': 'dataframe_columns',
              'names': search_columns}
         );
