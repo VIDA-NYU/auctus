@@ -24,16 +24,16 @@
   </table>
 {%- endmacro %}
 
-<h2>Metadata</h2>
+<h2 id="metadata">Metadata</h2>
 <p>This is the metadata that was recorded during profiling.</p>
 {{ meta_table(metadata) }}
 
 <div id="spatial_coverage" style="display: none;">
-<h2>Spatial Coverage Info</h2>
+<h2 id="spatial">Spatial Coverage Info</h2>
 <p>This is the approximate spatial coverage of the data.</p>
 </div>
 
-<h2>Materialization Info</h2>
+<h2 id="materialize">Materialization Info</h2>
 <p>This was recorded by the discovery plugin <span style="font-family: monospace;">{{ discoverer }}</span></p>
 {{ meta_table(materialize) }}
 
