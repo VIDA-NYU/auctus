@@ -192,7 +192,7 @@ class Upload(BaseHandler):
             '',
         )
 
-        self.redirect(self.reverse_url('dataset', dataset_id))
+        self.redirect('/')
 
 
 def format_size(bytes):
