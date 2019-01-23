@@ -761,7 +761,8 @@ class Download(CorsHandler):
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
-        if 'direct_url' in materialize and output_format == 'csv':
+        if ('direct_url' in materialize and
+                output_format == 'csv' and not materialize.get('convert')):
             # Redirect the client to it
             self.redirect(materialize['direct_url'])
         else:
