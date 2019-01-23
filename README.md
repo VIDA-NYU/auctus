@@ -28,3 +28,70 @@ Deployment
 ==========
 
 The system is currently running at https://datamart.d3m.vida-nyu.org/. You can see the system status at https://grafana.datamart.d3m.vida-nyu.org/.
+
+Local deployment / development setup
+====================================
+
+To deploy the system locally using docker-compose, follow those step:
+
+Set up environment
+------------------
+
+Copy env.default to .env and update the variables there. You might want to update the password for a production deployment.
+
+The `QUERY_HOST` is the URL at which the query containers will be visible to clients. In a production deployment, this is probably a public-facing HTTPS URL. It can be the same URL that the "coordinator" component will be served at if using a reverse proxy (see [nginx.conf](nginx.conf)).
+
+Start the base containers
+-------------------------
+
+```
+$ docker-compose up -d --build elasticsearch rabbitmq
+```
+
+Both of those will take a few seconds to get up and running. Then you can start the other components:
+
+```
+$ docker-compose up -d --build coordinator profiler query query_lb
+```
+
+You can use the `--scale` option to start more profiler or query containers, for example:
+
+```
+$ docker-compose up -d --build --scale profiler=4 --scale query=8 coordinator profiler query query_lb
+```
+
+Ports:
+* The web interface is at http://localhost:8001
+* The query interface/API at http://localhost:8002 (behind HAProxy)
+* Elasticsearch is at http://localhost:9200
+* The RabbitMQ management interface is at http://localhost:8080
+* The HAProxy statistics are at http://localhost:8081 (default login: stats/stats)
+* Prometheus is at http://localhost:9090
+* Grafana is at http://localhost:3000
+
+Import a snapshot of our index (optional)
+-----------------------------------------
+
+```
+$ scripts/docker_import_snapshot.sh
+```
+
+This will download an Elasticsearch dump from datamart.d3m.vida-nyu.org and import it into your local Elasticsearch container.
+
+Start discovery plugins (optional)
+----------------------------------
+
+```
+$ docker-compose up -d --build socrata
+```
+
+Start metric dashboard (optional)
+---------------------------------
+
+```
+$ docker-compose up -d elasticsearch_exporter prometheus grafana
+```
+
+Prometheus is configured to automatically find the containers (see [prometheus.yml](docker/prometheus.yml))
+
+A custom RabbitMQ image is used, with added plugins (management and prometheus).
