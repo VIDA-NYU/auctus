@@ -13,12 +13,17 @@ class D3MSeedsDiscoverer(Discoverer):
     """Discoverer that just "finds" the D3M datasets, *slowly*.
     """
     def main_loop(self):
-        datasets = os.listdir('/d3m_seed_datasets')
-        logger.info("Got %d folders to go through...", len(datasets))
+        self.process_seeds('/d3m_seed_datasets')
+        self.process_seeds('/d3m_seed_datasets_augmentation')
+
+    def process_seeds(self, toplevel):
+        datasets = os.listdir(toplevel)
+        logger.info("Got %d folders to go through in %s...",
+                    len(datasets), toplevel)
 
         for name in datasets:
             dir_name = os.path.join(
-                '/d3m_seed_datasets',
+                toplevel,
                 name,
                 name + '_dataset',
             )

@@ -63,6 +63,7 @@ services:
       - datasets:/datasets
       - query-cache:/cache
       - ../data/seed_datasets_current:/d3m_seed_datasets
+      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation
 #      - ./query/query:/usr/src/app/query/query
   query_lb:
     image: dockercloud/haproxy:1.6.7
@@ -87,6 +88,7 @@ services:
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
+      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation
   prometheus:
     image: prom/prometheus
     ports:
@@ -122,6 +124,7 @@ services:
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets
+      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation
   socrata:
     build:
       context: .
