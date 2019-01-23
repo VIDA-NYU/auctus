@@ -19,10 +19,15 @@ _re_phone = re.compile(r'^'
                        r'(?:[ .]?[0-9]{1,12})'  # First group of digits
                        r'(?:[ .-][0-9]{1,10}){0,5}'  # More groups of digits
                        r'$')
+_re_whitespace = re.compile(r'\s')
 
 
 # Tolerable ratio of unclean data
 MAX_UNCLEAN = 0.02  # 2%
+
+
+# Maximum number of different values for categorical columns
+MAX_CATEGORICAL = 6
 
 
 def identify_types(array, name):
@@ -30,8 +35,7 @@ def identify_types(array, name):
     ratio = 1.0 - MAX_UNCLEAN
 
     # Identify structural type
-    num_float = num_int = num_bool = num_empty = num_lat = num_lon = 0
-    # TODO: ENUM
+    num_float = num_int = num_bool = num_empty = num_text = 0
     for elem in array:
         if not elem:
             num_empty += 1
@@ -39,14 +43,16 @@ def identify_types(array, name):
             num_int += 1
         elif _re_float.match(elem):
             num_float += 1
+        elif len(_re_whitespace.findall(elem)) >= 4:
+            num_text += 1
         if elem.lower() in ('0', '1', 'true', 'false'):
             num_bool += 1
 
     if num_empty == num_total:
         structural_type = Type.MISSING_DATA
-    elif (num_empty + num_int) >= ratio * num_total:
+    elif num_empty + num_int >= ratio * num_total:
         structural_type = Type.INTEGER
-    elif (num_empty + num_int + num_float) >= ratio * num_total:
+    elif num_empty + num_int + num_float >= ratio * num_total:
         structural_type = Type.FLOAT
     else:
         structural_type = Type.TEXT
@@ -57,10 +63,24 @@ def identify_types(array, name):
     if (num_empty + num_bool) >= ratio * num_total:
         semantic_types_dict[Type.BOOLEAN] = None
 
-    # Identify ids
-    # TODO: is this enough?
-    # TODO: what about false positives?
-    if structural_type == Type.INTEGER:
+    if structural_type == Type.TEXT:
+        if num_empty + num_text >= ratio * num_total:
+            # Free text
+            semantic_types_dict[Type.TEXT] = None
+        else:
+            # Count distinct values
+            values = set()
+            for elem in array:
+                if elem not in values:
+                    values.add(elem)
+                    if len(values) > MAX_CATEGORICAL:
+                        break
+            else:
+                semantic_types_dict[Type.CATEGORICAL] = values
+    elif structural_type == Type.INTEGER:
+        # Identify ids
+        # TODO: is this enough?
+        # TODO: what about false positives?
         if (name.lower().startswith('id') or
                 name.lower().endswith('id') or
                 name.lower().startswith('identifier') or
@@ -70,6 +90,7 @@ def identify_types(array, name):
             semantic_types_dict[Type.ID] = None
 
     # Identify lat/lon
+    num_lat = num_lon = 0
     if structural_type == Type.FLOAT:
         for elem in array:
             try:

@@ -20,6 +20,7 @@ class Type:
     PHONE_NUMBER = 'https://metadata.datadrivendiscovery.org/types/' +\
                    'PhoneNumber'
     ID = 'http://schema.org/identifier'
+    CATEGORICAL = 'https://schema.org/Enumeration'
 
 
 def conv_float(x):
