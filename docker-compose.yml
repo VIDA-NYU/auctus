@@ -21,6 +21,7 @@ services:
     ports:
       - 9108
   rabbitmq:
+      image: remram/rabbitmq:3.7.8
     build:
       context: ./docker
       dockerfile: rabbitmq.dockerfile
