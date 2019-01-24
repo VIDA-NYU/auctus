@@ -19,7 +19,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import zipfile
 
-from datamart_core.augment import augment, \
+from datamart_core.augment import augment, augment_data, \
     get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
@@ -94,15 +94,14 @@ class CorsHandler(BaseHandler):
 class QueryHandler(CorsHandler):
     """Base class for the query request handler.
     """
-    def initialize(self):
-        # self.bytes_read = 0
+    def initialize(self, augmentation_type=None):
         self.data = b''
+        self.augmentation_type = augmentation_type
 
     def prepare(self):
         self.request.connection.set_max_body_size(MAX_STREAMED_SIZE)
 
     def data_received(self, data):
-        # self.bytes_read += len(data)
         self.data += data
 
     def get_form_data(self, default=None):
@@ -847,7 +846,7 @@ class Augment(QueryHandler):
 
         args = self.get_form_data('task')
 
-        # Params are 'task' and 'data'
+        # Params are 'task', 'data', and 'destination'
         task = data = destination = None
         if 'task' in args:
             task = json.loads(args['task'].decode('utf-8'))
@@ -896,6 +895,86 @@ class Augment(QueryHandler):
             os.remove(data_path)
 
 
+class JoinUnion(QueryHandler):
+    @prom_async_time(PROM_AUGMENT_TIME)
+    async def post(self):
+        PROM_AUGMENT.inc()
+        self._cors()
+
+        args = self.get_form_data('columns')
+
+        left_data = right_data = columns = destination = None
+        if 'left_data' in args:
+            left_data = args['left_data'].decode('utf-8')
+        if 'right_data' in args:
+            right_data = args['right_data'].decode('utf-8')
+        if 'columns' in args:
+            columns = json.loads(args['columns'].decode('utf-8'))
+        if 'destination' in args:
+            destination = args['destination'].decode('utf-8')
+
+        # both parameters must be provided
+        if not left_data or not right_data or not columns:
+            self.send_error(
+                status_code=400,
+                reason='"left_data", "right_data", and "columns" must be provided.'
+            )
+            return
+
+        if 'left_columns' not in columns or 'right_columns' not in columns:
+            self.send_error(
+                status_code=400,
+                reason='Incomplete "columns" information.'
+            )
+            return
+
+        # data
+        left_data_path, left_data_profile, left_tmp = \
+            self.handle_data_parameter(left_data)
+        right_data_path, right_data_profile, right_tmp = \
+            self.handle_data_parameter(right_data)
+
+        # augment
+        try:
+            new_path = augment_data(
+                left_data_path,
+                right_data_path,
+                columns['left_columns'],
+                columns['right_columns'],
+                left_data_profile,
+                right_data_profile,
+                how=self.augmentation_type,
+                destination=destination
+            )
+        except Exception as e:
+            self.send_error(
+                status_code=400,
+                reason=str(e)
+            )
+            return
+
+        if destination:
+            # send the path
+            self.set_header('Content-Type', 'text/plain; charset=utf-8')
+            self.write(new_path)
+        else:
+            # send a zip file
+            self.set_header('Content-Type', 'application/zip')
+            self.set_header(
+                'Content-Disposition',
+                'attachment; filename="augmentation.zip"')
+            writer = RecursiveZipWriter(self.write)
+            writer.write_recursive(new_path, '')
+            writer.close()
+            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+        self.finish()
+
+        if left_tmp:
+            os.remove(left_data_path)
+        if right_tmp:
+            os.remove(right_data_path)
+
+
 class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
@@ -928,6 +1007,10 @@ def make_app(debug=False):
             URLSpec('/download/([^/]+)', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
+            URLSpec('/join', JoinUnion,
+                    dict(augmentation_type='join'), name='join'),
+            URLSpec('/union', JoinUnion,
+                    dict(augmentation_type='union'), name='union'),
         ],
         debug=debug,
         serve_traceback=True,
