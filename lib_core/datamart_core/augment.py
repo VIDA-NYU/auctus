@@ -1107,6 +1107,9 @@ def join(original_data, augment_data, columns, how='inner'):
     # remove all columns with 'd3mIndex'
     join_ = join_.drop([c for c in join_.columns if 'd3mIndex' in c], axis=1)
 
+    # drop rows with missing values
+    join_.dropna(axis=0, how='any', inplace=True)
+
     # create a single d3mIndex
     join_['d3mIndex'] = pd.Series(
         data=[i for i in range(join_.shape[0])],
@@ -1141,6 +1144,9 @@ def union(original_data, augment_data, columns):
         rename[c[1]] = c[0]
     augment_data = augment_data.rename(columns=rename)
     union_ = pd.concat([original_data, augment_data])
+
+    # drop rows with missing values
+    union_.dropna(axis=0, how='any', inplace=True)
 
     # create a single d3mIndex
     union_['d3mIndex'] = pd.Series(
