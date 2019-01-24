@@ -269,6 +269,7 @@ class Coordinator(object):
                         sources[identifier] = 1
                 if len(hits) != SIZE:
                     break
+                time.sleep(5)
             # Update prometheus
             for source, count in sources.items():
                 PROM_DATASETS.labels(source).set(count)
@@ -279,6 +280,6 @@ class Coordinator(object):
             logger.info("Now %d datasets", sum(sources.values()))
         finally:
             asyncio.get_event_loop().call_later(
-                30,
+                5 * 60,
                 self.update_sources_counts,
             )
