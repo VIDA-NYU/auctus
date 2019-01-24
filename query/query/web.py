@@ -604,8 +604,10 @@ class Query(QueryHandler):
         data_profile = dict()
         if data:
             if not isinstance(data, (str, bytes)):
-                logger.warning("Data is in the wrong format!")
-                self.send_error(status_code=400)
+                self.send_error(
+                    status_code=400,
+                    reason='The parameter "data" is in the wrong format.'
+                )
                 return
 
             if not os.path.exists(data):
@@ -642,7 +644,10 @@ class Query(QueryHandler):
 
         # At least one of them must be provided
         if not query_args and not data_profile:
-            self.send_error(status_code=400)
+            self.send_error(
+                status_code=400,
+                reason='At least one of the input parameters must be provided.'
+            )
             return
 
         if not data_profile:
@@ -831,12 +836,17 @@ class Augment(QueryHandler):
 
         # both parameters must be provided
         if not task or not data:
-            self.send_error(status_code=400)
+            self.send_error(
+                status_code=400,
+                reason='Both "task" and "data" must be provided.'
+            )
             return
 
         if not isinstance(data, (str, bytes)):
-            logger.warning("Data is in the wrong format!")
-            self.send_error(status_code=400)
+            self.send_error(
+                status_code=400,
+                reason='The parameter "data" is in the wrong format.'
+            )
             return
 
         tmp = False
@@ -860,7 +870,11 @@ class Augment(QueryHandler):
                 # path to a D3M dataset
                 data_file = os.path.join(data, 'tables', 'learningData.csv')
                 if not os.path.exists(data_file):
-                    raise ValueError("Data does not exist: %s" % data_file)
+                    self.send_error(
+                        status_code=400,
+                        reason='%s does not exist.' % data_file
+                    )
+                    return
                 else:
                     data_path = data_file
                     data_profile = self.get_profile_data(data_file)
