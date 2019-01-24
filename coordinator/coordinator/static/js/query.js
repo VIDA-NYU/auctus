@@ -222,8 +222,8 @@ function add_geospatial(div_id) {
         var center_lon = new_geometry.getCenter()[0];
         var radius = new_geometry.getRadius();
 
-        var text = 'Center: ' + ol.coordinate.toStringHDMS([center_lon, center_lat]) + ' | ';
-        text += 'Radius: ' + radius;
+        var text = 'Center: <code>' + ol.coordinate.toStringHDMS([center_lon, center_lat]) + '</code> | ';
+        text += 'Radius: <code>' + radius + '</code>';
         bounds.innerHTML = text;
       }
     });
