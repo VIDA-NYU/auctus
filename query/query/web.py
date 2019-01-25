@@ -19,8 +19,10 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import zipfile
 
-from datamart_core.augment import augment, augment_data, \
+from datamart_augmentation.search import \
     get_joinable_datasets, get_unionable_datasets
+from datamart_augmentation.augmentation import \
+    augment, augment_data
 from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
 from datamart_profiler import process_dataset

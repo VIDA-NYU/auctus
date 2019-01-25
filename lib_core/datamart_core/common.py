@@ -1,8 +1,6 @@
 import aio_pika
 import asyncio
-from dateutil.parser import parse
 import json
-import numpy as np
 import sys
 import threading
 
@@ -21,27 +19,6 @@ class Type:
                    'PhoneNumber'
     ID = 'http://schema.org/identifier'
     CATEGORICAL = 'https://schema.org/Enumeration'
-
-
-def conv_float(x):
-    try:
-        return float(x)
-    except Exception:
-        return np.nan
-
-
-def conv_int(x):
-    try:
-        return int(x)
-    except Exception:
-        return np.nan
-
-
-def conv_datetime(x):
-    try:
-        return parse(x)
-    except Exception:
-        return np.nan
 
 
 def block_wait_future(future):

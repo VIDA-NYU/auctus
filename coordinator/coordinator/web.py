@@ -16,7 +16,8 @@ from tornado.web import HTTPError, RequestHandler
 import uuid
 
 from .coordinator import Coordinator
-from datamart_core.augment import get_joinable_datasets, get_unionable_datasets
+from datamart_augmentation.search import \
+    get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import Type
 
 

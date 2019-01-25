@@ -19,6 +19,8 @@ COPY lib_core lib_core
 RUN pip install -e /usr/src/app/lib_core
 COPY lib_materialize lib_materialize
 RUN pip install -e /usr/src/app/lib_materialize
+COPY lib_augmentation lib_augmentation
+RUN pip install -e /usr/src/app/lib_augmentation
 COPY lib_profiler lib_profiler
 RUN pip install -e /usr/src/app/lib_profiler
 COPY --from=java /usr/src/scdp/target/SCDP-0.1-jar-with-dependencies.jar \

@@ -6,14 +6,18 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'aio-pika',
-    'elasticsearch'
+    'datamart_core',
+    'datamart_materialize',
+    'Distance',
+    'elasticsearch',
+    'pandas',
+    'numpy'
 ]
-setup(name='datamart_core',
+setup(name='datamart_augmentation',
       version='0.0',
-      packages=['datamart_core'],
+      packages=['datamart_augmentation'],
       install_requires=req,
-      description="Core library for DataMart services",
+      description="Augmentation functions for DataMart services",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -24,7 +28,7 @@ setup(name='datamart_core',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Core library for DataMart services",
+      long_description="Augmentation functions for DataMart services",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[

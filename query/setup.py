@@ -11,6 +11,7 @@ req = [
     'prometheus_client',
     'prometheus-async',
     'tornado>=5.0',
+    'datamart_augmentation',
     'datamart_core',
     'datamart_materialize',
     'datamart_profiler',
