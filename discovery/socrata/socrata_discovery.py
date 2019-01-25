@@ -59,6 +59,7 @@ class SocrataDiscoverer(Discoverer):
                     if sleep_until is None or sleep_until > now + interval:
                         sleep_until = now + interval
 
+            logger.info("Sleeping until %s", sleep_until.isoformat())
             while datetime.utcnow() < sleep_until:
                 time.sleep((sleep_until - datetime.utcnow()).total_seconds())
 
