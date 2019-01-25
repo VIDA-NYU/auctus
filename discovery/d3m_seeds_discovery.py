@@ -13,10 +13,10 @@ class D3MSeedsDiscoverer(Discoverer):
     """Discoverer that just "finds" the D3M datasets, *slowly*.
     """
     def main_loop(self):
-        self.process_seeds('/d3m_seed_datasets')
-        self.process_seeds('/d3m_seed_datasets_augmentation')
+        self.process_seeds('/d3m_seed_datasets', 'seeds.')
+        self.process_seeds('/d3m_seed_datasets_augmentation', 'aug.')
 
-    def process_seeds(self, toplevel):
+    def process_seeds(self, toplevel, prefix):
         datasets = os.listdir(toplevel)
         logger.info("Got %d folders to go through in %s...",
                     len(datasets), toplevel)
@@ -45,12 +45,12 @@ class D3MSeedsDiscoverer(Discoverer):
                 metadata['license'] = doc['license']
 
             # Write symlink to shared storage
-            with self.write_to_shared_storage(name) as dirname:
+            with self.write_to_shared_storage(prefix + name) as dirname:
                 os.symlink(csv_name, os.path.join(dirname, 'main.csv'))
 
             self.record_dataset(dict(d3m_name=name),
                                 metadata,
-                                dataset_id=name)
+                                dataset_id=prefix + name)
 
 
 if __name__ == '__main__':
