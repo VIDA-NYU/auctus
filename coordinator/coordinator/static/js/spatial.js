@@ -52,6 +52,13 @@ if (coverage.length > 0) {
         var max_x = bottom_right[0];
         var min_y = bottom_right[1];
         var max_y = top_left[1];
+        polygons[index].push([
+            [top_left[0], top_left[1]],
+            [top_left[0], bottom_right[1]],
+            [bottom_right[0], bottom_right[1]],
+            [bottom_right[0], top_left[1]],
+            [top_left[0], top_left[1]]
+        ]);
         for (var j = 1; j < element['ranges'].length; j++) {
             top_left = element['ranges'][j]['range']['coordinates'][0];
             bottom_right = element['ranges'][j]['range']['coordinates'][1];

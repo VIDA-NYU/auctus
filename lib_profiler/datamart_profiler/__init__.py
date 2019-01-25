@@ -99,6 +99,38 @@ def get_spatial_ranges(values):
     It uses HDBSCAN for finding finer spatial ranges.
     """
 
+    def get_euclidean_distance(p1, p2):
+        return numpy.linalg.norm(numpy.array(p1) - numpy.array(p2))
+
+    def get_ranges(values_):
+        range_diffs = []
+        for j in range(1, len(values_)):
+            diff = get_euclidean_distance(values_[j - 1][1], values_[j][1])
+            diff != 0 and range_diffs.append(diff)
+
+        avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
+
+        ranges = []
+        current_bb = values_[0][0]
+        current_point = values_[0][1]
+
+        for j in range(1, len(values_)):
+            dist = get_euclidean_distance(current_point, values_[j][1])
+            if dist > avg_range_diff + 2 * std_dev_range_diff:
+                ranges.append([current_bb, current_point])
+                current_bb = values_[j][0]
+                current_point = values_[j][1]
+                continue
+            current_bb = [[min(current_bb[0][0], values_[j][0][0][0]),  # min lat
+                           max(current_bb[0][1], values_[j][0][0][1])],  # max lat
+                          [min(current_bb[1][0], values_[j][0][1][0]),  # min lon
+                           max(current_bb[1][1], values_[j][0][1][1])]]  # max lon
+            current_point = [(current_bb[0][0] + current_bb[0][1])/2,
+                             (current_bb[1][0] + current_bb[1][1])/2]
+        ranges.append([current_bb, current_point])
+
+        return ranges
+
     min_cluster_size = 10
     if len(values) <= min_cluster_size:
         min_cluster_size = 2
@@ -118,16 +150,37 @@ def get_spatial_ranges(values):
         clusters[label][1][0] = min(clusters[label][1][0], values[i][1])  # min lon
         clusters[label][1][1] = max(clusters[label][1][1], values[i][1])  # max lon
 
-    ranges = []
-    for v in clusters.values():
-        if (v[0][0] != v[0][1]) and (v[1][0] != v[1][1]):
-            ranges.append({"range": {"type": "envelope",
-                                     "coordinates": [
-                                         [v[1][0], v[0][1]],
-                                         [v[1][1], v[0][0]]
-                                     ]}})
+    # further clustering
 
-    return ranges
+    all_clusters = [v for v in clusters.values()
+                    if (v[0][0] != v[0][1]) and (v[1][0] != v[1][1])]
+    if not all_clusters:
+        return None
+
+    if len(all_clusters) == 1:
+        return [{"range": {"type": "envelope",
+                           "coordinates": [
+                               [all_clusters[0][1][0], all_clusters[0][0][1]],
+                               [all_clusters[0][1][1], all_clusters[0][0][0]]
+                           ]}}]
+
+    values = [(v, [(v[0][0] + v[0][1])/2, (v[1][0] + v[1][1])/2])
+              for v in all_clusters]  # adding centroid
+
+    # lat
+    values = get_ranges(sorted(values, key=lambda v: (v[1][0], v[1][1])))
+    # lon
+    values = get_ranges(sorted(values, key=lambda v: (v[1][1], v[1][0])))
+
+    final_ranges = []
+    for v in values:
+        final_ranges.append({"range": {"type": "envelope",
+                                       "coordinates": [
+                                           [v[0][1][0], v[0][0][1]],
+                                           [v[0][1][1], v[0][0][0]]
+                                       ]}})
+
+    return final_ranges
 
 
 def run_scdp(data):
@@ -304,9 +357,11 @@ def process_dataset(data, metadata=None):
                     values.append((values_lat[i], values_lon[i]))
 
             if len(values) > 1:
-                spatial_coverage.append({"lat": name_lat,
-                                         "lon": name_lon,
-                                         "ranges": get_spatial_ranges(list(set(values)))})
+                spatial_ranges = get_spatial_ranges(list(set(values)))
+                if spatial_ranges:
+                    spatial_coverage.append({"lat": name_lat,
+                                             "lon": name_lon,
+                                             "ranges": spatial_ranges})
 
             i_lat += 1
             i_lon += 1
