@@ -56,6 +56,8 @@ class D3mWriter(object):
                 },
             ],
         }
+        if 'qualities' in metadata:
+            d3m_meta['qualities'] = metadata.get('qualities')
 
         with open(os.path.join(destination, 'datasetDoc.json'), 'w') as fp:
             json.dump(d3m_meta, fp, sort_keys=True, indent=2)
