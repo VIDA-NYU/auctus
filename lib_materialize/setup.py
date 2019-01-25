@@ -8,6 +8,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'requests',
     'sodapy',
+    'xlrd',
 ]
 setup(name='datamart_materialize',
       version='0.1',
@@ -19,6 +20,9 @@ setup(name='datamart_materialize',
           'datamart_materialize.writer': [
               'csv = datamart_materialize:CsvWriter',
               'd3m = datamart_materialize.d3m:D3mWriter',
+          ],
+          'datamart_materialize.converter': [
+              'xls = datamart_materialize.excel:ExcelConverter',
           ],
       },
       install_requires=req,

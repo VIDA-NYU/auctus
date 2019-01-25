@@ -7,9 +7,11 @@ import logging
 import os
 import prometheus_client
 import time
+import xlrd
 
 from datamart_core.common import log_future, json2msg, msg2json
 from datamart_core.materialize import get_dataset
+from datamart_materialize.excel import xls_to_csv
 from datamart_profiler import process_dataset
 
 
@@ -21,8 +23,25 @@ MAX_CONCURRENT = 2
 
 def materialize_and_process_dataset(dataset_id, metadata):
     with get_dataset(metadata, dataset_id) as dataset_path:
-        metadata.pop('materialize')
-        return process_dataset(dataset_path, metadata)
+        materialize = metadata.pop('materialize')
+
+        # Check for Excel file format
+        try:
+            xlrd.open_workbook(dataset_path)
+        except xlrd.XLRDError:
+            pass
+        else:
+            logger.info("This is an Excel file")
+            materialize.setdefault('convert', []).append({'identifier': 'xls'})
+            os.rename(dataset_path, dataset_path + '.xls')
+            with open(dataset_path, 'w', newline='') as dst:
+                xls_to_csv(dataset_path + '.xls', dst)
+
+        # Profile
+        metadata = process_dataset(dataset_path, metadata)
+
+        metadata['materialize'] = materialize
+        return metadata
 
 
 class Profiler(object):
@@ -104,13 +123,13 @@ class Profiler(object):
 
             future.add_done_callback(
                 self.process_dataset_callback(
-                    message, dataset_id, materialize,
+                    message, dataset_id,
                 )
             )
 
             await self.work_tickets.acquire()
 
-    def process_dataset_callback(self, message, dataset_id, materialize):
+    def process_dataset_callback(self, message, dataset_id):
         async def coro(future):
             try:
                 try:
@@ -127,7 +146,6 @@ class Profiler(object):
                 else:
                     # Insert results in Elasticsearch
                     body = dict(metadata,
-                                materialize=materialize,
                                 date=datetime.utcnow().isoformat() + 'Z')
                     self.es.index(
                         'datamart',

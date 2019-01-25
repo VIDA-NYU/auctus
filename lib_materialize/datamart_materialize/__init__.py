@@ -55,6 +55,7 @@ def _proxy_download(dataset_id, writer, proxy):
 
 materializers = {}
 writers = {}
+converters = {}
 
 _materializers_loaded = False
 
@@ -65,34 +66,28 @@ def load_materializers():
     This is called automatically the first time we need it, or you can call it
     again if more materializers/writers get installed.
     """
-    global materializers, writers, _materializers_loaded
+    global materializers, writers, converters, _materializers_loaded
     _materializers_loaded = True
 
-    materializers = {}
-    for entry_point in iter_entry_points('datamart_materialize'):
-        try:
-            materializer = entry_point.load()
-        except Exception:
-            logger.exception("Failed to load materializer %s from %s %s",
-                             entry_point.name,
-                             entry_point.dist.project_name,
-                             entry_point.dist.version)
-        else:
-            materializers[entry_point.name] = materializer
-            logger.info("Materializer loaded: %s", entry_point.name)
+    def load(what, entry_point_name):
+        result = {}
+        for entry_point in iter_entry_points(entry_point_name):
+            try:
+                obj = entry_point.load()
+            except Exception:
+                logger.exception("Failed to load %s %s from %s %s",
+                                 what,
+                                 entry_point.name,
+                                 entry_point.dist.project_name,
+                                 entry_point.dist.version)
+            else:
+                result[entry_point.name] = obj
+                logger.info("%s loaded: %s", what, entry_point.name)
+        return result
 
-    writers = {}
-    for entry_point in iter_entry_points('datamart_materialize.writer'):
-        try:
-            writer = entry_point.load()
-        except Exception:
-            logger.exception("Failed to load writer %s from %s %s",
-                             entry_point.name,
-                             entry_point.dist.project_name,
-                             entry_point.dist.version)
-        else:
-            writers[entry_point.name] = writer
-            logger.info("Writer loaded: %s", entry_point.name)
+    materializers = load('materializer', 'datamart_materialize')
+    writers = load('writer', 'datamart_materialize.writer')
+    converters = load('converter', 'datamart_materialize.converter')
 
 
 def get_writer(format):
@@ -164,6 +159,12 @@ def download(dataset, destination, proxy, format='csv'):
             dataset_id = dataset.get('id')
 
     writer = writer_cls(dataset_id, destination, metadata)
+
+    for converter in reversed(materialize.get('convert', [])):
+        converter_args = dict(converter)
+        converter_id = converter_args.pop('identifier')
+        converter_class = converters[converter_id]
+        writer = converter_class(writer, **converter_args)
 
     if 'direct_url' in materialize:
         logger.info("Direct download: %s", materialize['direct_url'])
