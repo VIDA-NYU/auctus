@@ -10,7 +10,7 @@ import warnings
 import zipfile
 
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 
 __all__ = ['Dataset', 'search']
@@ -24,6 +24,35 @@ DEFAULT_URL = 'https://datamart.d3m.vida-nyu.org'
 
 class DatamartError(RuntimeError):
     """Error from DataMart."""
+
+
+def handle_data(data, send_data):
+    if isinstance(data, pd.DataFrame):
+        s_buf = io.StringIO()
+        data.to_csv(s_buf, index=False)
+        s_buf.seek(0)
+        return s_buf
+    elif isinstance(data, Dataset):
+        raise DatamartError("To have a Dataset object as input, please "
+                            "use the parameter 'augment_data' in "
+                            "the 'augment' function.")
+    else:
+        if not send_data:
+            return data
+        else:
+            if os.path.isdir(data):
+                # path to a D3M dataset
+                data_file = os.path.join(data, 'tables', 'learningData.csv')
+                if not os.path.exists(data_file):
+                    raise DatamartError(
+                        "Error from DataMart: '%s' does not exist." % data_file)
+                return open(data_file)
+            else:
+                # path to a CSV file
+                if not os.path.exists(data):
+                    raise DatamartError(
+                        "Error from DataMart: '%s' does not exist." % data)
+                return open(data)
 
 
 def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
@@ -40,28 +69,7 @@ def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
 
     files = dict()
     if data is not None:
-        if isinstance(data, pd.DataFrame):
-            s_buf = io.StringIO()
-            data.to_csv(s_buf, index=False)
-            s_buf.seek(0)
-            files['data'] = s_buf
-        else:
-            if not send_data:
-                files['data'] = data
-            else:
-                if os.path.isdir(data):
-                    # path to a D3M dataset
-                    data_file = os.path.join(data, 'tables', 'learningData.csv')
-                    if not os.path.exists(data_file):
-                        raise DatamartError(
-                            "Error from DataMart: '%s' does not exist." % data_file)
-                    files['data'] = open(data_file)
-                else:
-                    # path to a CSV file
-                    if not os.path.exists(data):
-                        raise DatamartError(
-                            "Error from DataMart: '%s' does not exist." % data)
-                    files['data'] = open(data)
+        files['data'] = handle_data(data, send_data)
     if query:
         files['query'] = json.dumps(query)
 
@@ -94,36 +102,136 @@ def augment(data, augment_data, destination=None, send_data=False):
     """
 
     files = dict()
-    if isinstance(data, pd.DataFrame):
-        s_buf = io.StringIO()
-        data.to_csv(s_buf, index=False)
-        s_buf.seek(0)
-        files['data'] = s_buf
-    else:
-        if not send_data:
-            files['data'] = data
-        else:
-            if os.path.isdir(data):
-                # path to a D3M dataset
-                data_file = os.path.join(data, 'tables', 'learningData.csv')
-                if not os.path.exists(data_file):
-                    raise DatamartError(
-                        "Error from DataMart: '%s' does not exist." % data_file)
-                files['data'] = open(data_file)
-            else:
-                # path to a CSV file
-                if not os.path.exists(data):
-                    raise DatamartError(
-                        "Error from DataMart: '%s' does not exist." % data)
-                files['data'] = open(data)
-
+    files['data'] = handle_data(data, send_data)
     files['task'] = json.dumps(augment_data.get_json())
     if destination:
         files['destination'] = destination
 
     # Send request
-    response = requests.post(augment_data._url + '/augment',
+    response = requests.post(augment_data.url + '/augment',
                              files=files)
+    if response.status_code != 200:
+        raise DatamartError("Error from DataMart: %s %s" % (
+            response.status_code, response.reason))
+
+    type_ = response.headers.get('Content-Type', '')
+    if type_.startswith('application/zip'):
+        # saving zip file
+        buf = io.BytesIO(response.content)
+        buf.seek(0)
+        temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+        shutil.copyfileobj(buf, temp_file)
+        temp_file.close()
+
+        # reading zip file
+        zip = zipfile.ZipFile(temp_file.name, 'r')
+        learning_data = pd.read_csv(zip.open('tables/learningData.csv'))
+        dataset_doc = json.load(zip.open('datasetDoc.json'))
+        zip.close()
+        os.remove(temp_file.name)
+
+        return learning_data, dataset_doc
+    elif type_.startswith('text/plain'):
+        return response.content.decode('utf-8')
+    else:
+        raise DatamartError('Unrecognized content type: "%s"' % type_)
+
+
+def join(left_data, right_data, left_columns,
+         right_columns, destination=None, send_data=False,
+         url=DEFAULT_URL):
+    """Joins two datasets.
+
+    :param left_data: the left-side dataset for join.
+        For now, it can be a path to a CSV file (str),
+        a path to a D3M dataset directory (str),
+        or a pandas.DataFrame object.
+    :param right_data: the right-side dataset for join.
+        For now, it can be a path to a CSV file (str),
+        a path to a D3M dataset directory (str),
+        or a pandas.DataFrame object.
+    :param left_columns: a list of lists of indices(int)/headers(str)
+        of the left-side dataset
+    :param right_columns: a list of lists of indices(int)/headers(str)
+        of the right-side dataset
+    :param send_data: if False, send the data path; if True, send
+        the data.
+    :param destination: the location in disk where the new data
+        will be saved (optional). DataMart must have access to
+        the path.
+    """
+
+    files = dict()
+    files['left_data'] = handle_data(left_data, send_data)
+    files['right_data'] = handle_data(right_data, send_data)
+    files['columns'] = json.dumps(dict(left_columns=left_columns,
+                                       right_columns=right_columns))
+    if destination:
+        files['destination'] = destination
+
+    # Send request
+    response = requests.post(url + '/join', files=files)
+    if response.status_code != 200:
+        raise DatamartError("Error from DataMart: %s %s" % (
+            response.status_code, response.reason))
+
+    type_ = response.headers.get('Content-Type', '')
+    if type_.startswith('application/zip'):
+        # saving zip file
+        buf = io.BytesIO(response.content)
+        buf.seek(0)
+        temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+        shutil.copyfileobj(buf, temp_file)
+        temp_file.close()
+
+        # reading zip file
+        zip = zipfile.ZipFile(temp_file.name, 'r')
+        learning_data = pd.read_csv(zip.open('tables/learningData.csv'))
+        dataset_doc = json.load(zip.open('datasetDoc.json'))
+        zip.close()
+        os.remove(temp_file.name)
+
+        return learning_data, dataset_doc
+    elif type_.startswith('text/plain'):
+        return response.content.decode('utf-8')
+    else:
+        raise DatamartError('Unrecognized content type: "%s"' % type_)
+
+
+def union(left_data, right_data, left_columns,
+          right_columns, destination=None, send_data=False,
+          url=DEFAULT_URL):
+    """Unions two datasets.
+
+    :param left_data: the first dataset for union.
+        For now, it can be a path to a CSV file (str),
+        a path to a D3M dataset directory (str),
+        or a pandas.DataFrame object.
+    :param right_data: the second dataset for union.
+        For now, it can be a path to a CSV file (str),
+        a path to a D3M dataset directory (str),
+        or a pandas.DataFrame object.
+    :param left_columns: a list of lists of indices(int)/headers(str)
+        of the left dataset
+    :param right_columns: a list of lists of indices(int)/headers(str)
+        of the right dataset
+    :param send_data: if False, send the data path; if True, send
+        the data.
+    :param destination: the location in disk where the new data
+        will be saved (optional). DataMart must have access to
+        the path.
+    """
+
+    files = dict()
+    files['left_data'] = handle_data(left_data, send_data)
+    files['right_data'] = handle_data(right_data, send_data)
+    files['columns'] = json.dumps(dict(left_columns=left_columns,
+                                       right_columns=right_columns))
+    if destination:
+        files['destination'] = destination
+
+    # Send request
+    response = requests.post(url + '/union', files=files)
     if response.status_code != 200:
         raise DatamartError("Error from DataMart: %s %s" % (
             response.status_code, response.reason))
@@ -157,7 +265,7 @@ class Dataset(object):
     def __init__(self, id, metadata, url=DEFAULT_URL,
                  score=None, join_columns=[], union_columns=[]):
         self.id = id
-        self._url = url
+        self.url = url
         self.score = score
         self.metadata = metadata
         self.join_columns = join_columns
@@ -215,7 +323,7 @@ class Dataset(object):
                 datamart_materialize.download(
                     dataset={'id': self.id, 'metadata': self.metadata},
                     destination=destination,
-                    proxy=self._url if proxy is None else None,
+                    proxy=self.url if proxy is None else None,
                 )
                 return
 
@@ -223,7 +331,7 @@ class Dataset(object):
             with open(destination, 'wb') as f:
                 return self.download(f)
 
-        response = requests.get(self._url + '/download/%s' % self.id,
+        response = requests.get(self.url + '/download/%s' % self.id,
                                 allow_redirects=True,
                                 stream=True)
         if response.status_code != 200:
