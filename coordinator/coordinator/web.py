@@ -157,6 +157,19 @@ class Upload(BaseHandler):
             except Exception:
                 shutil.rmtree(dataset_dir)
                 raise
+
+            # Publish to the profiling queue
+            await self.coordinator.profile_exchange.publish(
+                json2msg(
+                    dict(
+                        id=dataset_id,
+                        metadata=metadata,
+                    ),
+                    # Lower priority than on-demand, but higher than base
+                    priority=1,
+                ),
+                '',
+            )
         elif self.get_body_argument('address', None):
             # Check the URL
             address = self.get_body_argument('address')
@@ -165,31 +178,24 @@ class Upload(BaseHandler):
                 return self.render('upload.html',
                                    error="Error {}".format(response.code))
 
-            # Metadata with 'direct_url' in materialization info
+            # Publish to 'urls' queue for UrlDiscoverer to pick up
             metadata = dict(
                 name=self.get_body_argument('name', None),
                 description=self.get_body_argument('description', None),
-                materialize=dict(identifier='datamart.url',
-                                 direct_url=address),
             )
-            dataset_id = 'datamart.url.%s' % (
-                uuid.uuid5(uuid.NAMESPACE_URL, address).hex
+            self.coordinator.channel.default_exchange.publish(
+                json2msg(
+                    dict(
+                        url=address,
+                        metadata=metadata,
+                    ),
+                    # Lower priority than on-demand, but higher than base
+                    priority=1,
+                ),
+                'urls',
             )
         else:
             return self.render('upload.html', error="No file entered")
-
-        # Publish to the profiling queue
-        await self.coordinator.profile_exchange.publish(
-            json2msg(
-                dict(
-                    id=dataset_id,
-                    metadata=metadata,
-                ),
-                # Lower priority than on-demand datasets, but higher than base
-                priority=1,
-            ),
-            '',
-        )
 
         self.redirect('/')
 

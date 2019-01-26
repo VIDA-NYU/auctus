@@ -182,6 +182,9 @@ class Coordinator(object):
         self.queries_queue = await self.channel.declare_queue(exclusive=True)
         await self.queries_queue.bind(queries_exchange)
 
+        # Declare the urls queue
+        await self.channel.declare_queue('urls')
+
         await asyncio.gather(
             asyncio.get_event_loop().create_task(self._consume_profile()),
             asyncio.get_event_loop().create_task(self._consume_datasets()),
