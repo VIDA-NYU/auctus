@@ -146,6 +146,16 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - NOAA_TOKEN=${NOAA_TOKEN}
+  web:
+    build:
+      context: .
+      dockerfile: discovery/web/Dockerfile
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - BING_API_KEY=${BING_API_KEY}
 volumes:
   datasets:
   query-cache:
