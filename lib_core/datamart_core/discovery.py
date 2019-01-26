@@ -32,9 +32,9 @@ class _HandleQueryPublisher(object):
         self.reply_to = reply_to
 
     def __call__(self, materialize, metadata, dataset_id=None):
-        self.discoverer.record_dataset(materialize, metadata,
-                                       dataset_id=dataset_id,
-                                       bind=self.reply_to)
+        return self.discoverer.record_dataset(materialize, metadata,
+                                              dataset_id=dataset_id,
+                                              bind=self.reply_to)
 
 
 class Discoverer(object):
@@ -116,7 +116,7 @@ class Discoverer(object):
             # Call handle_query
             logger.info("Handling query")
             future = self._call(self.handle_query, obj,
-                                _HandleQueryPublisher(self.channel,
+                                _HandleQueryPublisher(self,
                                                       message.reply_to))
             future.add_done_callback(
                 self._handle_query_callback(message)
@@ -132,6 +132,10 @@ class Discoverer(object):
                 # The message only gets re-queued if this process gets killed
                 message.ack()
             else:
+
+                message.ack()
+                logger.info("Query handled successfully")
+            finally:
                 # Let the requester know that we are done working on this
                 await self.channel.default_exchange.publish(
                     json2msg(dict(
@@ -139,9 +143,6 @@ class Discoverer(object):
                     )),
                     message.reply_to,
                 )
-
-                message.ack()
-                logger.info("Query handled successfully")
 
         def callback(future):
             self.work_tickets.release()

@@ -12,6 +12,7 @@ import prometheus_client
 from prometheus_async.aio import time as prom_async_time
 import shutil
 import tempfile
+import time
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.httputil
@@ -23,7 +24,7 @@ from datamart_augmentation.search import \
     get_joinable_datasets, get_unionable_datasets
 from datamart_augmentation.augmentation import \
     augment, augment_data
-from datamart_core.common import log_future, Type
+from datamart_core.common import log_future, Type, json2msg, msg2json
 from datamart_core.materialize import get_dataset
 from datamart_profiler import process_dataset
 
@@ -34,6 +35,9 @@ BUF_SIZE = 128000
 MAX_STREAMED_SIZE = 1024 * 1024 * 1024
 MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.0
+
+ONDEMAND_DELAY = 2  # Give 2 seconds for discoverers to indicate interest
+ONDEMAND_MAX = 5 * 60  # 5 minutes to provide datasets
 
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
@@ -640,6 +644,79 @@ class Query(QueryHandler):
 
         return query_args, search_columns
 
+    def ondemand_datasets(self, query):
+        datasets = []
+
+        async def coro():
+            # Make a queue for responses
+            ondemand_queue = await self.application.channel.declare_queue(
+                auto_delete=True
+            )
+
+            # Trigger on-demand discovery
+            await self.application.queries_exchange.publish(
+                json2msg(
+                    query,
+                    reply_to=ondemand_queue.name,
+                ),
+                '',
+            )
+            start = time.time()
+            logging.info("Waiting for on-demand results on queue %s",
+                         ondemand_queue.name)
+
+            working = set()
+
+            # Process messages until no discovery plugin is working and we
+            # waited long enough for them to start
+            async def process_messages():
+                async for message in ondemand_queue:
+                    obj = msg2json(message)
+                    if 'work_started' in obj:
+                        # This discoverer is currently working
+                        working.add(obj['work_started'])
+                        logging.info("On-demand discovery in progress: %s",
+                                     obj['work_started'])
+                    elif 'work_done' in obj:
+                        # This discoverer is done
+                        working.discard(obj['work_done'])
+                        logging.info("On-demand discovery done: %s",
+                                     obj['work_done'])
+                        # If we waited long enough and no discoverer is working
+                        if (not working and
+                                time.time() > start + ONDEMAND_DELAY):
+                            return
+                    else:
+                        logger.info("Dataset discovered on-demand: %s",
+                                    obj.get('id', '(unknown)'))
+                        datasets.append(obj)
+                    message.ack()
+
+            future = asyncio.get_event_loop().create_task(
+                process_messages()
+            )
+
+            # Wait ONDEMAND_DELAY for discoverers to start working
+            done, pending = await asyncio.wait(
+                [future],
+                timeout=start + ONDEMAND_DELAY - time.time(),
+            )
+            if pending:
+                if not working:
+                    # If no discoverer is working, cancel
+                    future.cancel()
+                else:
+                    # Else, wait an additional ONDEMAND_MAX for them to finish
+                    try:
+                        await asyncio.wait_for(
+                            future,
+                            timeout=start + ONDEMAND_MAX - time.time(),
+                        )
+                    except asyncio.TimeoutError:
+
+        future = asyncio.get_event_loop().create_task(coro())
+        return future, datasets
+
     @prom_async_time(PROM_SEARCH_TIME)
     async def post(self):
         PROM_SEARCH.inc()
@@ -653,6 +730,11 @@ class Query(QueryHandler):
             query = json.loads(args['query'].decode('utf-8'))
         if 'data' in args:
             data = args['data'].decode('utf-8')
+
+        if query:
+            future, datasets = self.ondemand_datasets(query)
+            await future
+            # TODO: Special treatment for those datasets found on-demand?
 
         # parameter: data
         data_profile = dict()
@@ -1006,6 +1088,11 @@ class Application(tornado.web.Application):
         )
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
+
+        # Setup the queries exchange
+        self.queries_exchange = await self.channel.declare_exchange(
+            'queries',
+            aio_pika.ExchangeType.FANOUT)
 
     def log_request(self, handler):
         if handler.request.path == '/health':
