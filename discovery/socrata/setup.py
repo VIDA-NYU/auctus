@@ -7,7 +7,6 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'elasticsearch',
-    'requests',
     'sodapy',
     'datamart_core',
 ]
