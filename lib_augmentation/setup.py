@@ -14,7 +14,7 @@ req = [
     'numpy'
 ]
 setup(name='datamart_augmentation',
-      version='0.0',
+      version='0.1',
       packages=['datamart_augmentation'],
       install_requires=req,
       description="Augmentation functions for DataMart services",
