@@ -136,8 +136,6 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
-    volumes:
-      - datasets:/datasets
   noaa:
     build:
       context: .
@@ -148,8 +146,6 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - NOAA_TOKEN=${NOAA_TOKEN}
-    volumes:
-      - datasets:/datasets
 volumes:
   datasets:
   query-cache:
