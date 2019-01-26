@@ -30,13 +30,16 @@ class WebDiscoverer(AsyncDiscoverer):
     BAD_EXTS = ['.html', '.html5', '.php', '.php5']
     MAX_FILES = 20
 
-    async def _process_url(self, session, obj):
+    async def _process_url(self, session, obj, publish=None):
+        if publish is None:
+            publish = self.record_dataset
+
         logger.info("Processing URL %s", obj['url'])
         async with session.get(obj['url'], headers=obj.get('headers')) as resp:
             mimetype = get_mimetype(resp)
             if mimetype in self.GOOD_TYPES:
                 logger.info("Checking file...")
-                return await self._process_file(resp)
+                return await self._process_file(resp, publish)
             elif mimetype != 'text/html':
                 logger.info("Ignoring URL, type is %s", mimetype)
                 return
@@ -76,7 +79,7 @@ class WebDiscoverer(AsyncDiscoverer):
                 mimetype = get_mimetype(resp)
                 if mimetype and mimetype not in self.GOOD_TYPES:
                     logger.info("Ignoring %s", mimetype)
-                await self._process_file(resp)
+                await self._process_file(resp, publish)
 
         futures = []
         for link in links:
@@ -86,7 +89,7 @@ class WebDiscoverer(AsyncDiscoverer):
         await asyncio.wait(futures)
         logger.info("URL processing done")
 
-    async def _process_file(self, resp):
+    async def _process_file(self, resp, publish):
         content = await resp.content.read(8192)
         lines = content.splitlines()
         if len(lines) <= 5:
@@ -110,9 +113,9 @@ class WebDiscoverer(AsyncDiscoverer):
             uuid.uuid5(uuid.NAMESPACE_URL, str(resp.url)).hex
         )
 
-        await self.record_dataset(dict(direct_url=resp.url),
-                                  metadata,
-                                  dataset_id=dataset_id)
+        await publish(dict(direct_url=str(resp.url)),
+                      metadata,
+                      dataset_id=dataset_id)
 
 
 class UrlDiscoverer(WebDiscoverer):
@@ -171,7 +174,8 @@ class BingDiscoverer(WebDiscoverer):
             futures = []
             for page in results:
                 futures.append(self.loop.create_task(
-                    self._process_url(session, dict(url=page['url']))
+                    self._process_url(session, dict(url=page['url']),
+                                      publish=publish)
                 ))
             await asyncio.wait(futures)
 
