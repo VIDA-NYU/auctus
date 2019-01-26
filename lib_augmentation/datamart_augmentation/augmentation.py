@@ -136,14 +136,17 @@ def join(original_data, augment_data, columns, how='inner',
         new_columns = list(set(join_.columns).difference(
             set([c for c in original_data.columns if 'd3mIndex' not in c])
         ))
-        if new_columns:
-            qualities_list.append(dict(
-                qualName='augmentation_info',
-                qualValue=dict(
-                    new_columns=new_columns,
-                ),
-                qualValueType='dict'
-            ))
+        qualities_list.append(dict(
+            qualName='augmentation_info',
+            qualValue=dict(
+                new_columns=new_columns,
+                removed_columns=[],
+                nb_rows_before=original_data.shape[0],
+                nb_rows_after=join_.shape[0],
+                augmentation_type='join'
+            ),
+            qualValueType='dict'
+        ))
 
     # create a single d3mIndex
     join_['d3mIndex'] = pd.Series(
@@ -204,14 +207,17 @@ def union(original_data, augment_data, columns,
                 union_.columns
             )
         )
-        if removed_columns:
-            qualities_list.append(dict(
-                qualName='augmentation_info',
-                qualValue=dict(
-                    removed_columns=removed_columns,
-                ),
-                qualValueType='dict'
-            ))
+        qualities_list.append(dict(
+            qualName='augmentation_info',
+            qualValue=dict(
+                new_columns=[],
+                removed_columns=removed_columns,
+                nb_rows_before=original_data.shape[0],
+                nb_rows_after=union_.shape[0],
+                augmentation_type='union'
+            ),
+            qualValueType='dict'
+        ))
 
     # create a single d3mIndex
     union_['d3mIndex'] = pd.Series(
