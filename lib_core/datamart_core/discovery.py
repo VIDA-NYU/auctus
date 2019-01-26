@@ -96,7 +96,9 @@ class Discoverer(object):
         log_future(self._call(self.main_loop), logger)
 
         if hasattr(self, 'handle_query'):
-            await self.loop.create_task(self._consume_queries())
+            log_future(self.loop.create_task(self._consume_queries()),
+                       logger,
+                       should_never_exit=True)
 
     async def _consume_queries(self):
         async for message in self.query_queue:
