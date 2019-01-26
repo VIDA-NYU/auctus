@@ -1,4 +1,3 @@
-import aio_pika
 import datetime
 import elasticsearch
 import logging
@@ -18,8 +17,7 @@ import uuid
 from .coordinator import Coordinator
 from datamart_augmentation.search import \
     get_joinable_datasets, get_unionable_datasets
-from datamart_core.common import Type
-
+from datamart_core.common import Type, json2msg
 
 logger = logging.getLogger(__name__)
 
@@ -182,11 +180,11 @@ class Upload(BaseHandler):
 
         # Publish to the profiling queue
         await self.coordinator.profile_exchange.publish(
-            aio_pika.Message(
-                json.dumps(dict(
+            json2msg(
+                dict(
                     id=dataset_id,
                     metadata=metadata,
-                )).encode('utf-8'),
+                ),
                 # Lower priority than on-demand datasets, but higher than base
                 priority=1,
             ),
