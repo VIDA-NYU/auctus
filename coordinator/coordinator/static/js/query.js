@@ -668,7 +668,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '      <div class="btn-group">' +
         '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
         '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
-        // augment_button +
+         augment_button +
         '      </div>' +
         '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
         '    </div>' + join_info + union_info +
