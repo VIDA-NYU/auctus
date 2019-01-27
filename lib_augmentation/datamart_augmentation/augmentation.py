@@ -128,7 +128,7 @@ def join(original_data, augment_data, columns, how='inner',
     join_ = join_.drop([c for c in join_.columns if 'd3mIndex' in c], axis=1)
 
     # drop rows with missing values
-    join_.dropna(axis=0, how='any', inplace=True)
+    # join_.dropna(axis=0, how='any', inplace=True)
 
     # qualities
     qualities_list = list()
@@ -197,7 +197,7 @@ def union(original_data, augment_data, columns,
     union_ = pd.concat([original_data, augment_data])
 
     # drop rows with missing values
-    union_.dropna(axis=0, how='any', inplace=True)
+    # union_.dropna(axis=0, how='any', inplace=True)
 
     # qualities
     qualities_list = list()
