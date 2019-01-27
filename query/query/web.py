@@ -682,6 +682,7 @@ class Query(QueryHandler):
                         working.discard(obj['work_done'])
                         logging.info("On-demand discovery done: %s",
                                      obj['work_done'])
+                        # TODO: NEED TO WAIT FOR DATASETS TO FINISH PROFILING
                         # If we waited long enough and no discoverer is working
                         if (not working and
                                 time.time() > start + ONDEMAND_DELAY):
