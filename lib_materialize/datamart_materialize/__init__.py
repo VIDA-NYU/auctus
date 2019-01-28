@@ -105,7 +105,10 @@ class CsvWriter(object):
     def open_file(self, mode='wb', name=None, **kwargs):
         if name is not None:
             raise ValueError("CsvWriter can only write single-table datasets")
-        return open(self.destination, mode, **kwargs)
+        if hasattr(self.destination, 'write'):
+            return self.destination
+        else:
+            return open(self.destination, mode, **kwargs)
 
     def finish(self):
         return None
