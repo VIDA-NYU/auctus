@@ -392,6 +392,29 @@ function submitAugmentationForm(i)
     var data_augment = {};
     data_augment.data = search_data;
     data_augment.task = search_results[i];
+
+    // checking which pairs to submit
+    var active_pairs = [];
+    if((data_augment.task.join_columns) && (data_augment.task.join_columns.length > 0)) {
+        for(var j=0; j < data_augment.task.join_columns.length; j++) {
+            if(document.getElementById('pair-join-' + i + '-' + j).getAttribute('class').includes('active')) {
+                active_pairs.push(data_augment.task.join_columns[j])
+            }
+        }
+        if(active_pairs.length > 0) {
+            data_augment.task.join_columns = active_pairs;
+        }
+    } else if ((data_augment.task.union_columns) && (data_augment.task.union_columns.length > 0)) {
+        for(var j=0; j < data_augment.task.union_columns.length; j++) {
+            if(document.getElementById('pair-union-' + i + '-' + j).getAttribute('class').includes('active')) {
+                active_pairs.push(data_augment.task.union_columns[j])
+            }
+        }
+        if(active_pairs.length > 0) {
+            data_augment.task.union_columns = active_pairs;
+        }
+    }
+
     postAugmentForm(QUERY_HOST + '/augment', data_augment)
     .then(function(zipFile) {
         // The actual download
@@ -403,6 +426,60 @@ function submitAugmentationForm(i)
         link.click();
         document.body.removeChild(link);
     });
+}
+
+function changePairStatus(type_, result_id, pair_id) {
+    var pair = document.getElementById('pair-' + type_ + '-' + result_id + '-' + pair_id);
+    var pair_class = pair.getAttribute('class');
+    if(pair_class.includes('active')) {
+        pair.setAttribute('class', 'list-group-item list-group-item-action');
+    } else {
+        pair.setAttribute('class', 'list-group-item list-group-item-action active');
+    }
+}
+
+function toggleAugmentation(id) {
+    var aug = document.getElementById('aug-info-' + id);
+    if(aug.style.display == 'block') {
+        aug.style.display = 'none';
+        document.getElementById('arrow-aug-' + id).innerHTML = '&#x25BC;';
+    }
+    else {
+        aug.style.display = 'block';
+        document.getElementById('arrow-aug-' + id).innerHTML = '&#x25B2;';
+    }
+}
+
+function getAugmentationInfoHTML(pairs, score, result_id, type_) {
+    var columns_info = '';
+    for(var j = 0; j < pairs.length; j++) {
+        var column = pairs[j];
+        columns_info += (
+            '<a href="javascript: changePairStatus(\'' + type_ + '\',' + result_id + ',' + j + ');" class="list-group-item list-group-item-action" ' +
+            '  id="pair-' + type_ + '-' + result_id + '-' + j + '">' +
+            '  <small><em>' + column[0] + '</em> and <em>' + column[1] + '</em></small>' +
+            '</a>'
+        );
+    }
+
+    info = (
+        '    <hr>' +
+        '    <div class="d-flex justify-content-between align-items-center">' +
+        '      <p class="mb-0">Augmentation Information</p>' +
+        '      <button type="button" class="btn btn-outline-secondary" onclick="javascript: toggleAugmentation(' + result_id + ')" id="arrow-aug-' + result_id + '">&#x25BC;</button>' +
+        '    </div>' +
+        '    <div id="aug-info-' + result_id + '" style="display:none;">' +
+        '      <p class="card-text"><small>Type: <em>' + type_.charAt(0).toUpperCase() + type_.substr(1) + '</em></small></p>' +
+        '      <div class="list-group text-muted">' +
+        '        <a class="list-group-item"><small>Score: ' + score + '</small></li>' + columns_info +
+        '      </div>' +
+        '      <div class="btn-group mt-3">' +
+        '        <a href="javascript: submitAugmentationForm('+ result_id + ')" class="btn btn-sm btn-outline-secondary">Augment</a>' +
+        '      </div>' +
+        '    </div>'
+    );
+
+    return info;
 }
 
 function formatSize(bytes) {
@@ -621,42 +698,20 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
 
       var join_info = '';
       if((data.join_columns) && (data.join_columns.length > 0)) {
-        var columns_info = '';
-        for(var j = 0; j < data.join_columns.length; j++) {
-            var column = data.join_columns[j];
-            columns_info += '      <li class="list-group-item"><small><em>' + column[0] + '</em> and <em>' + column[1] + '</em></small></li>';
-        }
-
-        join_info = (
-            '    <hr>' +
-            '    <p class="card-text"><em>Join Information</em></p>' +
-            '    <ul class="list-group text-muted">' +
-            '      <li class="list-group-item"><small>Score: ' + data.score + '</small></li>' + columns_info +
-            '    </ul>'
-        );
+        join_info = getAugmentationInfoHTML(
+            data.join_columns,
+            data.score,
+            i,
+            'join');
       }
 
       var union_info = '';
       if((data.union_columns) && (data.union_columns.length > 0)) {
-        var columns_info = '';
-        for(var j = 0; j < data.union_columns.length; j++) {
-            var column = data.union_columns[j];
-            columns_info += '      <li class="list-group-item"><small><em>' + column[0] + '</em> and <em>' + column[1] + '</em></small></li>';
-        }
-
-        union_info = (
-            '    <hr>' +
-            '    <p class="card-text"><em>Union Information</em></p>' +
-            '    <ul class="list-group text-muted">' +
-            '      <li class="list-group-item"><small>Score: ' + data.score + '</small></li>' + columns_info +
-            '    </ul>'
-        );
-      }
-
-      var augment_button = '';
-      if(search.data) {
-        augment_button = ('<a href="javascript: submitAugmentationForm('+ i + ')" ' +
-                          'class="btn btn-sm btn-outline-secondary">Augment</a>');
+        union_info = getAugmentationInfoHTML(
+            data.union_columns,
+            data.score,
+            i,
+            'union');
       }
 
       elem.innerHTML = (
@@ -668,7 +723,6 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '      <div class="btn-group">' +
         '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
         '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
-         augment_button +
         '      </div>' +
         '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
         '    </div>' + join_info + union_info +
