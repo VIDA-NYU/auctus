@@ -36,6 +36,12 @@ def handle_data(data, send_data):
         raise DatamartError("To have a Dataset object as input, please "
                             "use the parameter 'augment_data' in "
                             "the 'augment' function.")
+    elif isinstance(data, dict) and len(data.keys()) > 0:
+        # d3m.container.Dataset
+        s_buf = io.StringIO()
+        data[list(data.keys())[0]].to_csv(s_buf, index=False)
+        s_buf.seek(0)
+        return s_buf
     else:
         if not send_data:
             return data
@@ -53,6 +59,51 @@ def handle_data(data, send_data):
                     raise DatamartError(
                         "Error from DataMart: '%s' does not exist." % data)
                 return open(data)
+
+
+def handle_response(response, format):
+    type_ = response.headers.get('Content-Type', '')
+    if type_.startswith('application/zip'):
+        # saving zip file
+        buf = io.BytesIO(response.content)
+        buf.seek(0)
+        temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+        shutil.copyfileobj(buf, temp_file)
+        temp_file.close()
+
+        # reading zip file
+        zip = zipfile.ZipFile(temp_file.name, 'r')
+
+        if 'pandas' in format:
+            learning_data = pd.read_csv(zip.open('tables/learningData.csv'))
+            dataset_doc = json.load(zip.open('datasetDoc.json'))
+            zip.close()
+            os.remove(temp_file.name)
+
+            return learning_data, dataset_doc
+        elif 'd3m' in format:
+
+            try:
+                from d3m.container import Dataset
+            except ImportError:
+                raise RuntimeError('d3m.container.Dataset not found')
+
+            temp_dir = tempfile.mkdtemp()
+            zip.extractall(temp_dir)
+            zip.close()
+
+            d3m_dataset = Dataset.load('file://' + os.path.join(temp_dir, 'datasetDoc.json'))
+
+            os.remove(temp_file.name)
+            os.remove(temp_dir)
+
+            return d3m_dataset
+        else:
+            return None
+    elif type_.startswith('text/plain'):
+        return response.content.decode('utf-8')
+    else:
+        raise RuntimeError('Unrecognized content type: "%s"' % type_)
 
 
 def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
@@ -85,7 +136,7 @@ def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
             for result in response.json()['results']]
 
 
-def augment(data, augment_data, destination=None, send_data=False):
+def augment(data, augment_data, destination=None, format='pandas', send_data=False):
     """Augments data with augment_data.
 
     :param data: the data you are trying to augment.
@@ -99,6 +150,9 @@ def augment(data, augment_data, destination=None, send_data=False):
     :param destination: the location in disk where the new data
         will be saved (optional). DataMart must have access to
         the path.
+    :param format: the format of the output, if destination is not defined.
+        Either 'pandas' for a pandas.DataFrame object, or 'd3m'
+        for a d3m.container.Dataset object.
     """
 
     files = dict()
@@ -114,32 +168,12 @@ def augment(data, augment_data, destination=None, send_data=False):
         raise DatamartError("Error from DataMart: %s %s" % (
             response.status_code, response.reason))
 
-    type_ = response.headers.get('Content-Type', '')
-    if type_.startswith('application/zip'):
-        # saving zip file
-        buf = io.BytesIO(response.content)
-        buf.seek(0)
-        temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
-        shutil.copyfileobj(buf, temp_file)
-        temp_file.close()
-
-        # reading zip file
-        zip = zipfile.ZipFile(temp_file.name, 'r')
-        learning_data = pd.read_csv(zip.open('tables/learningData.csv'))
-        dataset_doc = json.load(zip.open('datasetDoc.json'))
-        zip.close()
-        os.remove(temp_file.name)
-
-        return learning_data, dataset_doc
-    elif type_.startswith('text/plain'):
-        return response.content.decode('utf-8')
-    else:
-        raise DatamartError('Unrecognized content type: "%s"' % type_)
+    return handle_response(response, format)
 
 
 def join(left_data, right_data, left_columns,
-         right_columns, destination=None, send_data=False,
-         url=DEFAULT_URL):
+         right_columns, destination=None, format='pandas',
+         send_data=False, url=DEFAULT_URL):
     """Joins two datasets.
 
     :param left_data: the left-side dataset for join.
@@ -159,6 +193,9 @@ def join(left_data, right_data, left_columns,
     :param destination: the location in disk where the new data
         will be saved (optional). DataMart must have access to
         the path.
+    :param format: the format of the output, if destination is not defined.
+        Either 'pandas' for a pandas.DataFrame object, or 'd3m'
+        for a d3m.container.Dataset object.
     """
 
     files = dict()
@@ -175,32 +212,12 @@ def join(left_data, right_data, left_columns,
         raise DatamartError("Error from DataMart: %s %s" % (
             response.status_code, response.reason))
 
-    type_ = response.headers.get('Content-Type', '')
-    if type_.startswith('application/zip'):
-        # saving zip file
-        buf = io.BytesIO(response.content)
-        buf.seek(0)
-        temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
-        shutil.copyfileobj(buf, temp_file)
-        temp_file.close()
-
-        # reading zip file
-        zip = zipfile.ZipFile(temp_file.name, 'r')
-        learning_data = pd.read_csv(zip.open('tables/learningData.csv'))
-        dataset_doc = json.load(zip.open('datasetDoc.json'))
-        zip.close()
-        os.remove(temp_file.name)
-
-        return learning_data, dataset_doc
-    elif type_.startswith('text/plain'):
-        return response.content.decode('utf-8')
-    else:
-        raise DatamartError('Unrecognized content type: "%s"' % type_)
+    return handle_response(response, format)
 
 
 def union(left_data, right_data, left_columns,
-          right_columns, destination=None, send_data=False,
-          url=DEFAULT_URL):
+          right_columns, destination=None, format='pandas',
+          send_data=False, url=DEFAULT_URL):
     """Unions two datasets.
 
     :param left_data: the first dataset for union.
@@ -220,6 +237,9 @@ def union(left_data, right_data, left_columns,
     :param destination: the location in disk where the new data
         will be saved (optional). DataMart must have access to
         the path.
+    :param format: the format of the output, if destination is not defined.
+        Either 'pandas' for a pandas.DataFrame object, or 'd3m'
+        for a d3m.container.Dataset object.
     """
 
     files = dict()
@@ -236,27 +256,7 @@ def union(left_data, right_data, left_columns,
         raise DatamartError("Error from DataMart: %s %s" % (
             response.status_code, response.reason))
 
-    type_ = response.headers.get('Content-Type', '')
-    if type_.startswith('application/zip'):
-        # saving zip file
-        buf = io.BytesIO(response.content)
-        buf.seek(0)
-        temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
-        shutil.copyfileobj(buf, temp_file)
-        temp_file.close()
-
-        # reading zip file
-        zip = zipfile.ZipFile(temp_file.name, 'r')
-        learning_data = pd.read_csv(zip.open('tables/learningData.csv'))
-        dataset_doc = json.load(zip.open('datasetDoc.json'))
-        zip.close()
-        os.remove(temp_file.name)
-
-        return learning_data, dataset_doc
-    elif type_.startswith('text/plain'):
-        return response.content.decode('utf-8')
-    else:
-        raise DatamartError('Unrecognized content type: "%s"' % type_)
+    return handle_response(response, format)
 
 
 class Dataset(object):
