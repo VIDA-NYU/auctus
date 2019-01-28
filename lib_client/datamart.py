@@ -95,7 +95,7 @@ def handle_response(response, format):
             d3m_dataset = Dataset.load('file://' + os.path.join(temp_dir, 'datasetDoc.json'))
 
             os.remove(temp_file.name)
-            os.remove(temp_dir)
+            shutil.rmtree(temp_dir)
 
             return d3m_dataset
         else:
