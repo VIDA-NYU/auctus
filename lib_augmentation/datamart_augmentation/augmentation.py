@@ -43,30 +43,6 @@ def convert_to_pd(file_path, columns_metadata):
     )
 
 
-def materialize_dataset(es, dataset_id):
-    """
-    Materializes a dataset as a pandas.DataFrame
-    """
-
-    # get metadata data from Elasticsearch
-    try:
-        metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
-    except elasticsearch.NotFoundError:
-        raise RuntimeError('Dataset id not found in Elasticsearch.')
-
-    getter = get_dataset(metadata, dataset_id, format='csv')
-    try:
-        dataset_path = getter.__enter__()
-    except Exception:
-        raise RuntimeError('Materializer reports failure.')
-    else:
-        df = convert_to_pd(dataset_path, metadata['columns'])
-    finally:
-        getter.__exit__(None, None, None)
-
-    return df
-
-
 def get_temporal_resolution(data):
     for res in temporal_resolutions[:-1]:
         if len(set([eval('x.%s' % res) for x in data if x != np.nan])) > 1:
@@ -363,12 +339,12 @@ def augment_data(left_data, right_data, left_columns, right_columns,
         raise RuntimeError('Augmentation task not recognized: %s.' % how)
 
 
-def augment(es, data, metadata, task, destination=None):
+def augment(data, newdata, metadata, task, destination=None):
     """
     Augments original data based on the task.
 
-    :param es: Elasticsearch client.
     :param data: the data to be augmented.
+    :param newdata: the data to augment with.
     :param metadata: the metadata of the data to be augmented.
     :param task: the augmentation task.
     :param destination: location to save the files.
@@ -380,7 +356,7 @@ def augment(es, data, metadata, task, destination=None):
     if 'join_columns' in task and len(task['join_columns']) > 0:
         join_, qualities = join(
             convert_to_pd(data, metadata['columns']),
-            materialize_dataset(es, task['id']),
+            convert_to_pd(newdata, metadata['columns']),
             task['join_columns'],
             qualities=True
         )
@@ -388,7 +364,7 @@ def augment(es, data, metadata, task, destination=None):
     elif 'union_columns' in task and len(task['union_columns']) > 0:
         union_, qualities = union(
             convert_to_pd(data, metadata['columns']),
-            materialize_dataset(es, task['id']),
+            convert_to_pd(newdata, metadata['columns']),
             task['union_columns'],
             qualities=True
         )

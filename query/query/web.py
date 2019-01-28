@@ -781,9 +781,10 @@ class Download(CorsHandler):
         output_format = self.get_query_argument('format', 'csv')
 
         # Get materialization data from Elasticsearch
-        es = self.application.elasticsearch
         try:
-            metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+            metadata = self.application.elasticsearch.get(
+                'datamart', '_doc', id=dataset_id
+            )['_source']
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
         materialize = metadata.get('materialize', {})
@@ -869,14 +870,17 @@ class Augment(QueryHandler):
         # data
         data_path, data_profile, tmp = self.handle_data_parameter(data)
 
-        # augment
-        new_path = augment(
-            self.application.elasticsearch,
-            data_path,
-            data_profile,
-            task,
-            destination=destination
-        )
+        # materialize augmentation data
+        metadata = task['metadata']
+        with get_dataset(metadata, task['id'], format='csv') as newdata:
+            # perform augmentation
+            new_path = augment(
+                data_path,
+                newdata,
+                data_profile,
+                task,
+                destination=destination
+            )
 
         if destination:
             # send the path
