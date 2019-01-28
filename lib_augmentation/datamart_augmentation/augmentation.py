@@ -57,9 +57,10 @@ def materialize_dataset(es, dataset_id):
     getter = get_dataset(metadata, dataset_id, format='csv')
     try:
         dataset_path = getter.__enter__()
-        df = convert_to_pd(dataset_path, metadata['columns'])
     except Exception:
         raise RuntimeError('Materializer reports failure.')
+    else:
+        df = convert_to_pd(dataset_path, metadata['columns'])
     finally:
         getter.__exit__(None, None, None)
 
