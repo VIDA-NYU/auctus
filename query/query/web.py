@@ -1007,6 +1007,10 @@ class Application(tornado.web.Application):
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
 
+    def log_request(self, handler):
+        if handler.request.path == '/health':
+            return
+
 
 def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
