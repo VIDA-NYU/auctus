@@ -186,11 +186,3 @@ class BingDiscoverer(WebDiscoverer):
                     self._process_url(session, dict(url=page['url']))
                 ))
             await asyncio.wait(futures)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s: %(message)s")
-    UrlDiscoverer('datamart.url')
-    BingDiscoverer('datamart.bing')
-    asyncio.get_event_loop().run_forever()

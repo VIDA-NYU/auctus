@@ -156,6 +156,8 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - BING_API_KEY=${BING_API_KEY}
+    ports:
+      - 8003:8003
 volumes:
   datasets:
   query-cache:

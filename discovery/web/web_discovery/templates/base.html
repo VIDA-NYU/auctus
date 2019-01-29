@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+{% set fluid = False %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ static_url('css/custom.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/css/ol.css" type="text/css">
+    <title>{% block title %}NYU DataMart{% endblock %}</title>
+  </head>
+  <body class="nyu-purple">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" id="special-nav">
+      <div class="container">
+        <a class="navbar-brand special-brand" href="#">NYU DataMart</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarColor01">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item {{ 'active' if active_page == 'index' else '' }}">
+              <a class="nav-link" href="{{ reverse_url('index') }}">Dashboard</a>
+            </li>
+            <li class="nav-item {{ 'active' if active_page == 'search' else '' }}">
+              <a class="nav-link" href="{{ reverse_url('search') }}">Search</a>
+            </li>
+            {% if active_page in ('union_query', 'join_query') %}
+            <li class="nav-item active">
+              <a class="nav-link" href="#">Augmentation</a>
+            </li>
+            {% endif %}
+            <li class="nav-item {{ 'active' if active_page == 'upload' else '' }}">
+              <a class="nav-link" href="{{ reverse_url('upload') }}">Upload</a>
+            </li>
+            {% if active_page == 'dataset' %}
+            <li class="nav-item active">
+              <a class="nav-link" href="#">{{ dataset_id }}</a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="{% block containerclass %}container{% endblock %} container-body">
+      {% block contents %}{% endblock %}
+
+      <footer class="footer">
+        <hr/>
+        <div class="container">
+          <p>Part of the DataMart project</p>
+        </div>
+      </footer>
+    </div>
+
+    <script src="{{ static_url('js/jquery-3.3.1.min.js') }}"></script>
+    <script src="{{ static_url('js/bootstrap.bundle.min.js') }}"></script>
+  </body>
+</html>

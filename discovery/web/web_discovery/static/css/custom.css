@@ -1,0 +1,9 @@
+/* Some space before content */
+.container-body {
+  padding-top: 1em;
+}
+
+.navbar-dark .navbar-brand {
+    cursor: default;
+    font-size: 130%;
+}

@@ -11,10 +11,16 @@ req = [
     'html5lib',
     'requests',
     'datamart_core',
+    'tornado>=5.0',
 ]
 setup(name='web_discovery',
       version='0.0',
-      py_modules=['web_discovery'],
+      packages=['web_discovery'],
+      package_data={'web_discovery': [
+          'static/css/*.css', 'static/css/*.css.map',
+          'static/js/*.js', 'static/js/*.js.map',
+          'templates/*.html',
+      ]},
       install_requires=req,
       description="Web discovery service for DataMart",
       author="Remi Rampin",
