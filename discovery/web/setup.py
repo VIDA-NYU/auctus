@@ -11,6 +11,7 @@ req = [
     'html5lib',
     'requests',
     'datamart_core',
+    'jinja2',
     'tornado>=5.0',
 ]
 setup(name='web_discovery',
@@ -21,6 +22,9 @@ setup(name='web_discovery',
           'static/js/*.js', 'static/js/*.js.map',
           'templates/*.html',
       ]},
+      entry_points={
+          'console_scripts': [
+              'web_discovery = web_discovery:main']},
       install_requires=req,
       description="Web discovery service for DataMart",
       author="Remi Rampin",

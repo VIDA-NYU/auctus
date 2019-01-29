@@ -11,7 +11,7 @@ def main():
     UrlDiscoverer('datamart.url')
     BingDiscoverer('datamart.bing')
 
-    app = make_web_discovery_app
+    app = make_web_discovery_app(True)
     app.listen(8003)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()

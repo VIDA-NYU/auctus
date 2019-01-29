@@ -8,4 +8,4 @@ COPY lib_core lib_core
 RUN pip install -e /usr/src/app/lib_core
 COPY discovery/web /usr/src/app/web
 RUN pip install -e web
-CMD ["python", "-m", "web_discovery"]
+CMD ["web_discovery"]

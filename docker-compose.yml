@@ -150,6 +150,7 @@ services:
     build:
       context: .
       dockerfile: discovery/web/Dockerfile
+    command: python -c 'import web_discovery; web_discovery.main()'
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -158,6 +159,8 @@ services:
       - BING_API_KEY=${BING_API_KEY}
     ports:
       - 8003:8003
+    volumes:
+      - ./discovery/web/web_discovery:/usr/src/app/web/web_discovery
 volumes:
   datasets:
   query-cache:
