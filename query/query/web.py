@@ -982,6 +982,11 @@ class JoinUnion(QueryHandler):
             os.remove(right_data_path)
 
 
+class Health(QueryHandler):
+    def get(self):
+        self.finish('ok')
+
+
 class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
@@ -1018,6 +1023,7 @@ def make_app(debug=False):
                     dict(augmentation_type='join'), name='join'),
             URLSpec('/union', JoinUnion,
                     dict(augmentation_type='union'), name='union'),
+            URLSpec('/health', Health, name='health'),
         ],
         debug=debug,
         serve_traceback=True,

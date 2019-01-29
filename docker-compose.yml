@@ -51,12 +51,13 @@ services:
     build:
       context: .
       dockerfile: query/Dockerfile
-    command: python -m query.web
+    command: [sh, -c, "python -m query.web 2>&1 | grep -v 'INFO: 200 GET /health' >&2"]
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - HTTP_CHECK=GET /health
     ports:
       - 8002
     volumes:
