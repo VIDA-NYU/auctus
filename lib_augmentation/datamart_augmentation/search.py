@@ -137,7 +137,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                                 }
                             }
                         },
-                        'inner_hits': {'_source': False}
+                        'inner_hits': {'_source': False, 'size': 100}
                     }
                 }
             ]
@@ -154,7 +154,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                 'query': {
                     'bool': bool_query
                 },
-                'inner_hits': {'_source': False}
+                'inner_hits': {'_source': False, 'size': 100}
             }
         }
 
@@ -289,7 +289,7 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
                 'query': {
                     'bool': bool_query
                 },
-                'inner_hits': {'_source': False}
+                'inner_hits': {'_source': False, 'size': 100}
             }
         }
 
@@ -815,7 +815,7 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                     'query': {
                         'bool': partial_query
                     },
-                    'inner_hits': {'_source': False}
+                    'inner_hits': {'_source': False, 'size': 100}
                 }
             }
 
