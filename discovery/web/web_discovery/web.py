@@ -69,6 +69,20 @@ class Index(BaseHandler):
         self.render('index.html')
 
 
+class Pages(BaseHandler):
+    def post(self):
+        obj = self.get_json()
+        query = obj('keywords')
+        # TODO: Bing search
+        return self.send_json({'results': []})
+
+
+class Profile(BaseHandler):
+    def post(self):
+        obj = self.get_json()
+        # TODO: "discover" those datasets (send for profiling)
+
+
 def make_web_discovery_app(debug=False):
     if 'XDG_CACHE_HOME' in os.environ:
         cache = os.environ['XDG_CACHE_HOME']
@@ -104,6 +118,7 @@ def make_web_discovery_app(debug=False):
     return tornado.web.Application(
         [
             URLSpec('/', Index, name='index'),
+            URLSpec('/pages', Pages, name='pages'),
         ],
         static_path=pkg_resources.resource_filename('web_discovery',
                                                     'static'),
