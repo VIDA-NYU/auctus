@@ -5,8 +5,13 @@ import numpy as np
 
 def compute_levenshtein_sim(str1, str2):
     """
-    Computer the Levenshtein Similarity between two strings using 3-grams.
+    Computer the Levenshtein Similarity between two strings using 3-grams, if one string
+    is not contained in the other.
     """
+
+    if str1 in str2 or str2 in str1:
+        return 1
+
     if len(str1) < 3:
         str1_set = [str1]
     else:
