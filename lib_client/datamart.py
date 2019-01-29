@@ -300,7 +300,7 @@ class Dataset(object):
 
         return dict(union=self.union_columns, join=self.join_columns)
 
-    def download(self, destination, proxy=None):
+    def download(self, destination, proxy=None, format='csv'):
         """Download this dataset to the disk.
 
         :param destination: Path or opened file where to write the data.
@@ -324,6 +324,7 @@ class Dataset(object):
                     dataset={'id': self.id, 'metadata': self.metadata},
                     destination=destination,
                     proxy=self.url if proxy is None else None,
+                    format=format,
                 )
                 return
 
@@ -331,7 +332,8 @@ class Dataset(object):
             with open(destination, 'wb') as f:
                 return self.download(f)
 
-        response = requests.get(self.url + '/download/%s' % self.id,
+        url = self.url + '/download/%s?format=%s' % (self.id, format)
+        response = requests.get(url,
                                 allow_redirects=True,
                                 stream=True)
         if response.status_code != 200:
