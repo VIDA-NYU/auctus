@@ -68,7 +68,8 @@ services:
   querylb:
     image: dockercloud/haproxy:1.6.7
     environment:
-      - EXTRA_DEFAULT_SETTINGS=timeout http-request 900s,timeout server 900s,check inter 1000 rise 2 fall 1
+      - EXTRA_DEFAULT_SETTINGS=timeout http-request 900s,timeout server 900s
+      - HEALTH_CHECK=check inter 1000 rise 2 fall 1
     ports:
       - 8002:80
       - 8081:1936
