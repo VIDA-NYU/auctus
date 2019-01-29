@@ -30,13 +30,28 @@ class WebDiscoverer(AsyncDiscoverer):
     BAD_EXTS = ['.html', '.html5', '.php', '.php5']
     MAX_FILES = 20
 
-    async def _process_url(self, session, obj):
+    async def _process_url(self, session, obj, metadata=None):
+        async for url in self._find_datasets(session, obj):
+            if metadata is None:
+                metadata = {}
+
+            dataset_id = 'datamart.url.%s' % (
+                uuid.uuid5(uuid.NAMESPACE_URL, str(url)).hex
+            )
+
+            await self.record_dataset(dict(direct_url=url),
+                                      metadata,
+                                      dataset_id=dataset_id)
+
+    async def _find_datasets(self, session, obj):
         logger.info("Processing URL %s", obj['url'])
         async with session.get(obj['url'], headers=obj.get('headers')) as resp:
             mimetype = get_mimetype(resp)
             if mimetype in self.GOOD_TYPES:
                 logger.info("Checking file...")
-                return await self._process_file(resp)
+                url = await self._check_file(resp)
+                if url:
+                    yield url
             elif mimetype != 'text/html':
                 logger.info("Ignoring URL, type is %s", mimetype)
                 return
@@ -76,17 +91,24 @@ class WebDiscoverer(AsyncDiscoverer):
                 mimetype = get_mimetype(resp)
                 if mimetype and mimetype not in self.GOOD_TYPES:
                     logger.info("Ignoring %s", mimetype)
-                await self._process_file(resp)
+                return await self._check_file(resp)
 
         futures = []
         for link in links:
             futures.append(self.loop.create_task(
                 do_link(link)
             ))
-        await asyncio.wait(futures)
+        for url in asyncio.as_completed(futures):
+            try:
+                url = await url
+            except Exception:
+                logger.exception("Exception processing link")
+            else:
+                if url:
+                    yield url
         logger.info("URL processing done")
 
-    async def _process_file(self, resp):
+    async def _check_file(self, resp):
         content = await resp.content.read(8192)
         lines = content.splitlines()
         if len(lines) <= 5:
@@ -101,18 +123,8 @@ class WebDiscoverer(AsyncDiscoverer):
         if any(c != commas[1] for c in commas):
             logging.info("File: inconsistent number of commas")
             return
-        logging.info("File: is a CSV, discovering")
-
-        # TODO: Metadata provided with URL?
-        metadata = {}
-
-        dataset_id = 'datamart.url.%s' % (
-            uuid.uuid5(uuid.NAMESPACE_URL, str(resp.url)).hex
-        )
-
-        await self.record_dataset(dict(direct_url=resp.url),
-                                  metadata,
-                                  dataset_id=dataset_id)
+        logging.info("File: is a CSV")
+        return str(resp.url)
 
 
 class UrlDiscoverer(WebDiscoverer):
