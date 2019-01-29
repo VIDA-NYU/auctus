@@ -697,22 +697,36 @@ class Query(QueryHandler):
             )
 
             # Wait ONDEMAND_DELAY for discoverers to start working
+            logger.warning("Waiting %ds...", ONDEMAND_DELAY)
             done, pending = await asyncio.wait(
                 [future],
                 timeout=start + ONDEMAND_DELAY - time.time(),
             )
             if pending:
+                logger.warning("Task is pending")
                 if not working:
+                    logger.warning("No discoverer working, cancelling")
                     # If no discoverer is working, cancel
                     future.cancel()
+                    logger.warning("Cancelled")
                 else:
+                    logger.warning("%d pending discoverers, waiting %ds...",
+                                   len(working), ONDEMAND_MAX)
                     # Else, wait an additional ONDEMAND_MAX for them to finish
                     try:
                         await asyncio.wait_for(
                             future,
                             timeout=start + ONDEMAND_MAX - time.time(),
                         )
+                        logger.warning("Finished before deadline")
                     except asyncio.TimeoutError:
+                        logger.warning("Timeout waiting for on-demand "
+                                       "datasets")
+            else:
+                logger.warning("Task was done (shouldn't happen)")
+
+            logger.warning("End of on-demand handling")
+            logger.info("")
 
         future = asyncio.get_event_loop().create_task(coro())
         return future, datasets
@@ -732,8 +746,10 @@ class Query(QueryHandler):
             data = args['data'].decode('utf-8')
 
         if query:
+            logger.warning("Using on-demand discovery")
             future, datasets = self.ondemand_datasets(query)
             await future
+            logger.warning("On-demand discovery done")
             # TODO: Special treatment for those datasets found on-demand?
 
         # parameter: data
