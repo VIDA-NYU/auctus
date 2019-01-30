@@ -368,14 +368,6 @@ class Query(QueryHandler):
                             'nested': {
                                 'path': 'columns',
                                 'query': {
-                                    'match': {'columns.name': name},
-                                },
-                            },
-                        })
-                        about_query.append({
-                            'nested': {
-                                'path': 'columns',
-                                'query': {
                                     'wildcard': {'columns.name': '*%s*' % name.lower()},
                                 },
                             },
@@ -389,14 +381,6 @@ class Query(QueryHandler):
                 if 'variable_name' in variable:
                     name_query = list()
                     for name in variable['variable_name']:
-                        name_query.append({
-                            'nested': {
-                                'path': 'columns',
-                                'query': {
-                                    'match': {'columns.name': name},
-                                },
-                            },
-                        })
                         name_query.append({
                             'nested': {
                                 'path': 'columns',
@@ -487,24 +471,10 @@ class Query(QueryHandler):
                 about_query = list()
                 for name in query_json['dataset']['about'].split():
                     about_query.append({
-                        'match': {'description': name}
-                    })
-                    about_query.append({
                         'wildcard': {'description': '*%s*' % name.lower()}
                     })
                     about_query.append({
-                        'match': {'name': name}
-                    })
-                    about_query.append({
                         'wildcard': {'name': '*%s*' % name.lower()}
-                    })
-                    about_query.append({
-                        'nested': {
-                            'path': 'columns',
-                            'query': {
-                                'match': {'columns.name': name},
-                            },
-                        },
                     })
                     about_query.append({
                         'nested': {
@@ -532,24 +502,10 @@ class Query(QueryHandler):
                 keywords_query = list()
                 for name in query_json['dataset']['keywords']:
                     keywords_query.append({
-                        'match': {'description': name}
-                    })
-                    keywords_query.append({
                         'wildcard': {'description': '*%s*' % name.lower()}
                     })
                     keywords_query.append({
-                        'match': {'name': name}
-                    })
-                    keywords_query.append({
                         'wildcard': {'name': '*%s*' % name.lower()}
-                    })
-                    keywords_query.append({
-                        'nested': {
-                            'path': 'columns',
-                            'query': {
-                                'match': {'columns.name': name},
-                            },
-                        },
                     })
                     keywords_query.append({
                         'nested': {
@@ -577,9 +533,6 @@ class Query(QueryHandler):
                 name_query = list()
                 for name in query_json['dataset']['name']:
                     name_query.append({
-                        'match': {'name': name}
-                    })
-                    name_query.append({
                         'wildcard': {'name': '*%s*' % name.lower()}
                     })
                 dataset_query.append({
@@ -599,9 +552,6 @@ class Query(QueryHandler):
                     return
                 desc_query = list()
                 for name in query_json['dataset']['description']:
-                    desc_query.append({
-                        'match': {'description': name}
-                    })
                     desc_query.append({
                         'wildcard': {'description': '*%s*' % name.lower()}
                     })
