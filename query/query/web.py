@@ -372,6 +372,14 @@ class Query(QueryHandler):
                                 },
                             },
                         })
+                        about_query.append({
+                            'nested': {
+                                'path': 'columns',
+                                'query': {
+                                    'wildcard': {'columns.name': '*%s*' % name.lower()},
+                                },
+                            },
+                        })
                     variable_query.append({
                         'bool': {
                             'should': about_query,
@@ -386,6 +394,14 @@ class Query(QueryHandler):
                                 'path': 'columns',
                                 'query': {
                                     'match': {'columns.name': name},
+                                },
+                            },
+                        })
+                        name_query.append({
+                            'nested': {
+                                'path': 'columns',
+                                'query': {
+                                    'wildcard': {'columns.name': '*%s*' % name.lower()},
                                 },
                             },
                         })
@@ -469,22 +485,35 @@ class Query(QueryHandler):
                     )
                     return
                 about_query = list()
-                about_query.append({
-                    'match': {
-                        'description': {
-                            'query': query_json['dataset']['about'],
-                            'operator': 'or'
-                        }
-                    }
-                })
-                about_query.append({
-                    'match': {
-                        'name': {
-                            'query': query_json['dataset']['about'],
-                            'operator': 'or'
-                        }
-                    }
-                })
+                for name in query_json['dataset']['about'].split():
+                    about_query.append({
+                        'match': {'description': name}
+                    })
+                    about_query.append({
+                        'wildcard': {'description': '*%s*' % name.lower()}
+                    })
+                    about_query.append({
+                        'match': {'name': name}
+                    })
+                    about_query.append({
+                        'wildcard': {'name': '*%s*' % name.lower()}
+                    })
+                    about_query.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'match': {'columns.name': name},
+                            },
+                        },
+                    })
+                    about_query.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'wildcard': {'columns.name': '*%s*' % name.lower()},
+                            },
+                        },
+                    })
                 dataset_query.append({
                     'bool': {
                         'should': about_query,
@@ -501,22 +530,35 @@ class Query(QueryHandler):
                     )
                     return
                 keywords_query = list()
-                keywords_query.append({
-                    'match': {
-                        'description': {
-                            'query': ' '.join(query_json['dataset']['keywords']),
-                            'operator': 'or'
-                        }
-                    }
-                })
-                keywords_query.append({
-                    'match': {
-                        'name': {
-                            'query': ' '.join(query_json['dataset']['keywords']),
-                            'operator': 'or'
-                        }
-                    }
-                })
+                for name in query_json['dataset']['keywords']:
+                    keywords_query.append({
+                        'match': {'description': name}
+                    })
+                    keywords_query.append({
+                        'wildcard': {'description': '*%s*' % name.lower()}
+                    })
+                    keywords_query.append({
+                        'match': {'name': name}
+                    })
+                    keywords_query.append({
+                        'wildcard': {'name': '*%s*' % name.lower()}
+                    })
+                    keywords_query.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'match': {'columns.name': name},
+                            },
+                        },
+                    })
+                    keywords_query.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'wildcard': {'columns.name': '*%s*' % name.lower()},
+                            },
+                        },
+                    })
                 dataset_query.append({
                     'bool': {
                         'should': keywords_query,
@@ -537,6 +579,9 @@ class Query(QueryHandler):
                     name_query.append({
                         'match': {'name': name}
                     })
+                    name_query.append({
+                        'wildcard': {'name': '*%s*' % name.lower()}
+                    })
                 dataset_query.append({
                     'bool': {
                         'should': name_query,
@@ -556,6 +601,9 @@ class Query(QueryHandler):
                 for name in query_json['dataset']['description']:
                     desc_query.append({
                         'match': {'description': name}
+                    })
+                    desc_query.append({
+                        'wildcard': {'description': '*%s*' % name.lower()}
                     })
                 dataset_query.append({
                     'bool': {
@@ -595,7 +643,7 @@ class Query(QueryHandler):
                 url_query = list()
                 for url in query_json['dataset']['url']:
                     url_query.append({
-                        'wildcard': {'materialize.direct_url': '%s*' % url}
+                        'wildcard': {'materialize.direct_url': '%s*' % url.lower()}
                     })
                 dataset_query.append({
                     'bool': {
