@@ -74,7 +74,8 @@ class BaseHandler(RequestHandler):
 
 class Index(BaseHandler):
     def get(self):
-        self.render('index.html')
+        self.render('index.html',
+                    coordinator_host=os.environ.get('COORDINATOR_HOST', ''))
 
 
 class PagesWithDatasetsFinder(crawl.DatasetFinder):

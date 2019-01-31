@@ -126,8 +126,7 @@ function buildFileList(file_list, files) {
         '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a>';
     } else if(file.status == 'ingested') {
       file_elem.innerHTML =
-        '<input type="checkbox" disabled> ' +
-        '<a href="https://datamart.d3m.vida-nyu.org/dataset/' + file.dataset_id + '"><code>' + file.url + '</code></a> ' +
+        '<a href="' + COORDINATOR_HOST + '/dataset/' + file.dataset_id + '"><code>' + file.url + '</code></a> ' +
         '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a>';
     }
 

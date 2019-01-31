@@ -25,6 +25,9 @@
   <button class="btn btn-lg btn-outline-primary btn-block offset-md-7 col-md-4" type="submit">Ingest checked results</button>
 </div>
 
+<script type="text/javascript">
+var COORDINATOR_HOST = '{{coordinator_host | safe }}';
+</script>
 <script type="text/javascript" src="{{ static_url('js/websearch.js') }}"></script>
 
 {% endblock %}
