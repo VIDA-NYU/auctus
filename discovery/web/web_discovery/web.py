@@ -1,3 +1,4 @@
+import aiohttp
 import logging
 import jinja2
 import json
@@ -7,6 +8,9 @@ import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+
+from . import discovery
+
 
 logger = logging.getLogger(__name__)
 
@@ -70,43 +74,28 @@ class Index(BaseHandler):
 
 
 class Pages(BaseHandler):
-    def post(self):
+    async def post(self):
         obj = self.get_json()
-        query = obj['keywords']
-        # TODO: Bing search
-        return self.send_json({
-            'pages': [
-                {
-                    'title': "Result 1",
-                    'url': 'http://url.of.result.1/page/from/bing',
-                    'files': [
-                        {
-                            'url': 'http://url.of.result.1/file1.csv',
-                            'format': 'CSV',
-                        },
-                        {
-                            'url': 'http://url.of.result.1/extra/another.file.csv',
-                            'format': 'XSLX',
-                        },
-                        {
-                            'url': 'http://url.of.result.1/already.processed.file.csv',
-                            'format': 'CSV',
-                            'status': 'indexed',
-                        },
-                    ],
-                },
-                {
-                    'title': "Result 2",
-                    'url': 'http://another.result/with.a/different/url.html',
-                    'files': [
-                        {
-                            'url': 'http://url.of.result.1/file1.csv',
-                            'format': 'CSV',
-                        },
-                    ],
-                },
-            ],
-        })
+        keywords = obj['keywords']
+
+        finder = discovery.DatasetFinder()
+
+        async with aiohttp.ClientSession() as session:
+            results = []
+            pages = await discovery.bing_search(session, keywords)
+
+            for page in pages:
+                datasets = finder.find_datasets(session, dict(url=page['url']))
+                files = []
+                async for url in datasets:
+                    files.append({'url': url, 'format': 'CSV'})
+                results.append({
+                    'title': page['name'],
+                    'url': page['url'],
+                    'files': files,
+                })
+
+        return self.send_json({'pages': results})
 
 
 class Profile(BaseHandler):

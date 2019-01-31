@@ -22,34 +22,23 @@ def get_mimetype(resp):
         return mimetype.lower()
 
 
-class WebDiscoverer(AsyncDiscoverer):
-    """Base class for web discoverer, which can find CSV in web pages.
-    """
-
+class DatasetFinder(object):
     GOOD_TYPES = {'text/csv', 'application/octet-stream', 'text/plain'}
     BAD_EXTS = ['.html', '.html5', '.php', '.php5']
     MAX_FILES = 20
 
-    async def _process_url(self, session, obj, metadata=None):
-        async for url in self._find_datasets(session, obj):
-            if metadata is None:
-                metadata = {}
+    def __init__(self):
+        super(DatasetFinder, self).__init__()
 
-            dataset_id = 'datamart.url.%s' % (
-                uuid.uuid5(uuid.NAMESPACE_URL, str(url)).hex
-            )
+        self.loop = asyncio.get_event_loop()
 
-            await self.record_dataset(dict(direct_url=url),
-                                      metadata,
-                                      dataset_id=dataset_id)
-
-    async def _find_datasets(self, session, obj):
+    async def find_datasets(self, session, obj):
         logger.info("Processing URL %s", obj['url'])
         async with session.get(obj['url'], headers=obj.get('headers')) as resp:
             mimetype = get_mimetype(resp)
             if mimetype in self.GOOD_TYPES:
                 logger.info("Checking file...")
-                url = await self._check_file(resp)
+                url = await self.check_file(resp)
                 if url:
                     yield url
             elif mimetype != 'text/html':
@@ -91,7 +80,7 @@ class WebDiscoverer(AsyncDiscoverer):
                 mimetype = get_mimetype(resp)
                 if mimetype and mimetype not in self.GOOD_TYPES:
                     logger.info("Ignoring %s", mimetype)
-                return await self._check_file(resp)
+                return await self.check_file(resp)
 
         futures = []
         for link in links:
@@ -108,7 +97,7 @@ class WebDiscoverer(AsyncDiscoverer):
                     yield url
         logger.info("URL processing done")
 
-    async def _check_file(self, resp):
+    async def check_file(self, resp):
         content = await resp.content.read(8192)
         lines = content.splitlines()
         if len(lines) <= 5:
@@ -125,6 +114,23 @@ class WebDiscoverer(AsyncDiscoverer):
             return
         logging.info("File: is a CSV")
         return str(resp.url)
+
+
+class WebDiscoverer(AsyncDiscoverer, DatasetFinder):
+    """Base class for web discoverer, which can find CSV in web pages.
+    """
+    async def _process_url(self, session, obj, metadata=None):
+        async for url in self.find_datasets(session, obj):
+            if metadata is None:
+                metadata = {}
+
+            dataset_id = 'datamart.url.%s' % (
+                uuid.uuid5(uuid.NAMESPACE_URL, str(url)).hex
+            )
+
+            await self.record_dataset(dict(direct_url=url),
+                                      metadata,
+                                      dataset_id=dataset_id)
 
 
 class UrlDiscoverer(WebDiscoverer):
@@ -153,12 +159,27 @@ class UrlDiscoverer(WebDiscoverer):
                 message.ack()
 
 
+BING_API_KEY = os.environ['BING_API_KEY']
+
+
+async def bing_search(session, keywords):
+    logger.info("Bing search: %s", keywords)
+    async with session.get(
+        'https://api.cognitive.microsoft.com/bing/v7.0/search',
+        params={'q': keywords},
+        headers={'Ocp-Apim-Subscription-Key': BING_API_KEY},
+    ) as resp:
+        data = await resp.json()
+
+    results = data['webPages']['value']
+    logger.info("Got %d/%d results", len(results),
+                data['webPages']['totalEstimatedMatches'])
+    return results
+
+
 class BingDiscoverer(WebDiscoverer):
     """Discoverer feeding on-demand queries into Bing Web Search.
     """
-
-    BING_API_KEY = os.environ['BING_API_KEY']
-
     async def handle_query(self, query, publish):
         keywords = set()
         if 'about' in query.get('dataset', {}):
@@ -166,18 +187,8 @@ class BingDiscoverer(WebDiscoverer):
         # TODO: Keywords from other interesting fields?
         keywords = ' '.join(keywords)
 
-        logger.info("Bing search: %s", keywords)
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                'https://api.cognitive.microsoft.com/bing/v7.0/search',
-                params={'q': keywords},
-                headers={'Ocp-Apim-Subscription-Key': self.BING_API_KEY},
-            ) as resp:
-                data = await resp.json()
-
-            results = data['webPages']['value']
-            logger.info("Got %d/%d results", len(results),
-                        data['webPages']['totalEstimatedMatches'])
+            results = await bing_search(session, keywords)
 
             # Try all the top results
             futures = []
