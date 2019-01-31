@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class WebDiscoverer(AsyncDiscoverer, DatasetFinder):
     """Base class for web discoverer, which can find CSV in web pages.
     """
-    async def dataset_found(self, url, page):
+    async def dataset_found(self, page, url, **kwargs):
         metadata = page.get('metadata', {})
 
         dataset_id = uuid.uuid5(uuid.NAMESPACE_URL, str(url)).hex

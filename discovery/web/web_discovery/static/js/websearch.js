@@ -36,6 +36,17 @@ function postJSON(url='', data={}, args) {
   });
 }
 
+function formatSize(bytes) {
+  var i = 0;
+  var units = [' B', ' kB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB'];
+  while(bytes > 1000 && i + 1 < units.length) {
+    bytes = bytes / 1000;
+    i++;
+  }
+
+  return bytes.toFixed(1) + units[i];
+}
+
 var keywords_input = document.getElementById('keywords');
 var results_list = document.getElementById('results');
 
@@ -113,8 +124,12 @@ function buildFileList(file_list, files) {
     if(file.format != 'CSV') {
       file_format_style = 'badge-warning';
     }
-    var status;
+    var file_size = '???';
+    if(file.size) {
+      file_size = formatSize(file.size);
+    }
     if(!file.status) {
+      var status;
       if(j < 20) {
         status = 'checked';
       } else {
@@ -123,11 +138,13 @@ function buildFileList(file_list, files) {
       file_elem.innerHTML =
         '<input type="checkbox" ' + status + '> ' +
         '<code>' + file.url + '</code> ' +
-        '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a>';
+        '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a> ' +
+        '<span class="badge badge-pill badge-info">' + file_size + '</span>';
     } else if(file.status == 'ingested') {
       file_elem.innerHTML =
         '<a href="' + COORDINATOR_HOST + '/dataset/' + file.dataset_id + '"><code>' + file.url + '</code></a> ' +
-        '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a>';
+        '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a> ' +
+        '<span class="badge badge-pill badge-info">' + file_size + '</span>';
     }
 
     file_list.appendChild(file_elem);

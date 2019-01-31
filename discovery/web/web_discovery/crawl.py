@@ -37,10 +37,9 @@ class DatasetFinder(object):
                 mimetype = get_mimetype(resp)
                 if mimetype in self.GOOD_TYPES:
                     logger.info("Checking file...")
-                    url = await self.check_file(resp)
-                    if url:
-                        await self.dataset_found(url, page)
-                        return
+                    result = await self.check_file(resp)
+                    if result:
+                        await self.dataset_found(page, **result)
                 elif mimetype != 'text/html':
                     logger.info("Ignoring URL, type is %s", mimetype)
                     return
@@ -84,7 +83,9 @@ class DatasetFinder(object):
                     mimetype = get_mimetype(resp)
                     if mimetype and mimetype not in self.GOOD_TYPES:
                         logger.info("Ignoring %s", mimetype)
-                    return await self.check_file(resp)
+                    result = await self.check_file(resp)
+                    if result:
+                        await self.dataset_found(page, **result)
             except aiohttp.ClientError:
                 logger.info("Exception getting link %s", link)
 
@@ -93,14 +94,11 @@ class DatasetFinder(object):
             futures.append(self.loop.create_task(
                 do_link(link)
             ))
-        for url in asyncio.as_completed(futures):
+        for fut in futures:
             try:
-                url = await url
+                await fut
             except Exception:
                 logger.exception("Exception processing link")
-            else:
-                if url:
-                    await self.dataset_found(url, page)
         logger.info("URL processing done")
 
     async def check_file(self, resp):
@@ -119,9 +117,12 @@ class DatasetFinder(object):
             logger.info("File: inconsistent number of commas")
             return
         logger.info("File: is a CSV")
-        return str(resp.url)
+        result = {'url' :str(resp.url)}
+        if 'Content-Length' in resp.headers:
+            result['size'] = resp.headers['Content-Length']
+        return result
 
-    async def dataset_found(self, url, page):
+    async def dataset_found(self, page, url, **kwargs):
         raise NotImplementedError
 
 

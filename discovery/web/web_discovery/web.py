@@ -84,7 +84,7 @@ class PagesWithDatasetsFinder(crawl.DatasetFinder):
 
         self.pages = {}
 
-    async def dataset_found(self, url, page):
+    async def dataset_found(self, page, url, size=None):
         try:
             result = self.pages[page['url']]
         except KeyError:
@@ -96,6 +96,7 @@ class PagesWithDatasetsFinder(crawl.DatasetFinder):
         result['files'].append({
             'url': url,
             'format': 'CSV',
+            'size': size,
         })
 
 
@@ -143,6 +144,7 @@ class Ingest(BaseHandler):
             results.append({
                 'url': file_url,
                 'format': 'CSV',
+                'size': None,
                 'status': 'ingested',
                 'dataset_id': self.discoverer.identifier + '.' + dataset_id,
             })
