@@ -46,6 +46,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
 
   postJSON('/pages', {keywords: keywords})
   .then(function(result) {
+    console.log("Got results:", result);
     results_list.innerHTML = '';
     for(var i = 0; i < result.pages.length; ++i) {
       var page = result.pages[i];
@@ -92,5 +93,11 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
 
       results_list.appendChild(page_elem);
     }
+  },
+  function(error) {
+    alert("Error getting search results", error);
+  })
+  .catch(function(error) {
+    alert("Error processing search results", error);
   });
 });

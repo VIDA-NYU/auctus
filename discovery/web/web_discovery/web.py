@@ -1,3 +1,5 @@
+import asyncio
+
 import aiohttp
 import logging
 import jinja2
@@ -9,7 +11,7 @@ from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
 
-from . import discovery
+from . import crawl
 
 
 logger = logging.getLogger(__name__)
@@ -73,29 +75,46 @@ class Index(BaseHandler):
         self.render('index.html')
 
 
+class PagesWithDatasetsFinder(crawl.DatasetFinder):
+    def __init__(self):
+        super(PagesWithDatasetsFinder, self).__init__()
+
+        self.pages = {}
+
+    async def dataset_found(self, url, page):
+        try:
+            result = self.pages[page['url']]
+        except KeyError:
+            result = self.pages[page['url']] = {
+                'title': page['name'],
+                'url': page['url'],
+                'files': [],
+            }
+        result['files'].append({
+            'url': url,
+            'format': 'CSV',
+        })
+
+
 class Pages(BaseHandler):
     async def post(self):
         obj = self.get_json()
         keywords = obj['keywords']
 
-        finder = discovery.DatasetFinder()
+        finder = PagesWithDatasetsFinder()
 
         async with aiohttp.ClientSession() as session:
-            results = []
-            pages = await discovery.bing_search(session, keywords)
+            top_results = await crawl.bing_search(session, keywords)
 
-            for page in pages:
-                datasets = finder.find_datasets(session, dict(url=page['url']))
-                files = []
-                async for url in datasets:
-                    files.append({'url': url, 'format': 'CSV'})
-                results.append({
-                    'title': page['name'],
-                    'url': page['url'],
-                    'files': files,
-                })
+            futures = []
+            for page in top_results[:3]:
+                futures.append(asyncio.get_event_loop().create_task(
+                    finder.find_datasets(session, page)
+                ))
+                #await finder.find_datasets(session, page)
+            await asyncio.wait(futures)
 
-        return self.send_json({'pages': results})
+        return self.send_json({'pages': list(finder.pages.values())})
 
 
 class Profile(BaseHandler):
