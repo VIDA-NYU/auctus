@@ -150,7 +150,7 @@ services:
     build:
       context: .
       dockerfile: discovery/web/Dockerfile
-    command: python -c 'import web_discovery; web_discovery.main()'
+    command: web_discovery
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq

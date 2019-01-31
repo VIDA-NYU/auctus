@@ -72,9 +72,41 @@ class Index(BaseHandler):
 class Pages(BaseHandler):
     def post(self):
         obj = self.get_json()
-        query = obj('keywords')
+        query = obj['keywords']
         # TODO: Bing search
-        return self.send_json({'results': []})
+        return self.send_json({
+            'pages': [
+                {
+                    'title': "Result 1",
+                    'url': 'http://url.of.result.1/page/from/bing',
+                    'files': [
+                        {
+                            'url': 'http://url.of.result.1/file1.csv',
+                            'format': 'CSV',
+                        },
+                        {
+                            'url': 'http://url.of.result.1/extra/another.file.csv',
+                            'format': 'XSLX',
+                        },
+                        {
+                            'url': 'http://url.of.result.1/already.processed.file.csv',
+                            'format': 'CSV',
+                            'status': 'indexed',
+                        },
+                    ],
+                },
+                {
+                    'title': "Result 2",
+                    'url': 'http://another.result/with.a/different/url.html',
+                    'files': [
+                        {
+                            'url': 'http://url.of.result.1/file1.csv',
+                            'format': 'CSV',
+                        },
+                    ],
+                },
+            ],
+        })
 
 
 class Profile(BaseHandler):
