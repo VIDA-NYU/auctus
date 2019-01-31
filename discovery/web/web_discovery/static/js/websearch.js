@@ -73,8 +73,23 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '</div>';
       var file_list = page_elem.querySelector('ul');
 
+      // Wire the checkbox
+      var checkbox = page_elem.querySelector('input[type=checkbox]');
+      (function(checkbox, file_list) {
+        checkbox.addEventListener('change', function(e) {
+          var checkboxes = file_list.querySelectorAll('input[type=checkbox]');
+          for(var j = 0; j < checkboxes.length; ++j) {
+            if(!checkboxes[j].disabled) {
+              checkboxes[j].checked = this.checked;
+            }
+          }
+        });
+      })(checkbox, file_list);
+
+      // Fill in the list of files
       buildFileList(file_list, page.files);
 
+      // Wire the "ingest" button
       setupIngestButton(page_elem.querySelector('button'), file_list);
 
       results_list.appendChild(page_elem);
