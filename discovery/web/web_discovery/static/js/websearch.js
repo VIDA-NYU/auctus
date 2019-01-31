@@ -71,25 +71,11 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '    </ul>' +
         '  </div>' +
         '</div>';
-      var file_list = page_elem.firstElementChild.lastElementChild.firstElementChild;
-      console.log(file_list);
+      var file_list = page_elem.querySelector('ul');
 
-      for(var j = 0; j < page.files.length; ++j) {
-        var file = page.files[j];
+      buildFileList(file_list, page.files);
 
-        // Create element for file
-        var file_elem = document.createElement('li');
-        var file_format_style = 'badge-success';
-        if(file.format != 'CSV') {
-          file_format_style = 'badge-warning';
-        }
-        file_elem.innerHTML =
-          '<input type="checkbox" checked> ' +
-          '<code>' + file.url + '</code> ' +
-          '<span class="badge badge-pill ' + file_format_style + '">' + file.format + '</span>';
-
-        file_list.appendChild(file_elem);
-      }
+      setupIngestButton(page_elem.querySelector('button'), file_list);
 
       results_list.appendChild(page_elem);
     }
@@ -101,3 +87,74 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     alert("Error processing search results", error);
   });
 });
+
+function buildFileList(file_list, files) {
+  for(var j = 0; j < files.length; ++j) {
+    var file = files[j];
+
+    // Create element for file
+    var file_elem = document.createElement('li');
+    var file_format_style = 'badge-success';
+    if(file.format != 'CSV') {
+      file_format_style = 'badge-warning';
+    }
+    var status;
+    if(!file.status) {
+      if(j < 20) {
+        status = 'checked';
+      } else {
+        status = '';
+      }
+      file_elem.innerHTML =
+        '<input type="checkbox" ' + status + '> ' +
+        '<code>' + file.url + '</code> ' +
+        '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a>';
+    } else if(file.status == 'ingested') {
+      file_elem.innerHTML =
+        '<input type="checkbox" checked disabled> ' +
+        '<a href="https://datamart.d3m.vida-nyu.org/dataset/' + file.dataset_id + '"><code>' + file.url + '</code></a> ' +
+        '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a>';
+    }
+
+    file_list.appendChild(file_elem);
+  }
+}
+
+function setupIngestButton(button, file_list) {
+  button.addEventListener('click', function(e) {
+    e.preventDefault();
+
+    // Find files to ingest
+    var files = [];
+    var file_elems = [];
+    for(var i = 0; i < file_list.childElementCount; ++i) {
+      var elem = file_list.children[i];
+      var checkbox = elem.querySelector('input');
+      if(checkbox !== null && !checkbox.disabled && checkbox.checked) {
+        files.push(elem.querySelector('code').innerText);
+        file_elems.push(elem);
+      }
+    }
+
+    console.log("Ingesting files:", files);
+
+    postJSON('/ingest', {files: files})
+    .then(function(result) {
+      console.log("Got results:", result);
+
+      // Remove the elements we had sent
+      for(var i = 0; i < file_elems.length; ++i) {
+        file_list.removeChild(file_elems[i]);
+      }
+
+      // Add what we were just sent
+      buildFileList(file_list, result.files);
+    },
+    function(error) {
+      alert("Error ingesting datasets", error);
+    })
+    .catch(function(error) {
+      alert("Error processing ingestion response", error);
+    });
+  });
+}

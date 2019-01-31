@@ -21,7 +21,7 @@ def get_mimetype(resp):
 class DatasetFinder(object):
     GOOD_TYPES = {'text/csv', 'application/octet-stream', 'text/plain'}
     BAD_EXTS = ['.html', '.html5', '.php', '.php5']
-    MAX_FILES = 20
+    MAX_FILES = 150
 
     def __init__(self):
         super(DatasetFinder, self).__init__()
@@ -72,7 +72,7 @@ class DatasetFinder(object):
             links = newlinks
 
         logger.info("Got %d/%d links...", len(links), total_links)
-        if len(links) > 20:
+        if len(links) > self.MAX_FILES:
             logger.info("Too many links, only checking %d", self.MAX_FILES)
             links = links[:self.MAX_FILES]
 

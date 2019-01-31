@@ -117,10 +117,22 @@ class Pages(BaseHandler):
         return self.send_json({'pages': list(finder.pages.values())})
 
 
-class Profile(BaseHandler):
+class Ingest(BaseHandler):
     def post(self):
-        obj = self.get_json()
-        # TODO: "discover" those datasets (send for profiling)
+        files = self.get_json()['files']
+        logger.info("Profiling requested: %s", ' '.join(files))
+
+        results = []
+        for file_url in files:
+            # TODO: "discover" those datasets (send for profiling)
+            results.append({
+                'url': file_url,
+                'format': 'CSV',
+                'status': 'ingested',
+                'dataset_id': 'notreally',
+            })
+
+        return self.send_json({'files': results})
 
 
 def make_web_discovery_app(debug=False):
@@ -159,6 +171,7 @@ def make_web_discovery_app(debug=False):
         [
             URLSpec('/', Index, name='index'),
             URLSpec('/pages', Pages, name='pages'),
+            URLSpec('/ingest', Ingest, name='ingest'),
         ],
         static_path=pkg_resources.resource_filename('web_discovery',
                                                     'static'),
