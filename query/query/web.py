@@ -485,6 +485,15 @@ class Query(QueryHandler):
                         }
                     }
                 })
+                for name in query_json['dataset']['about'].split():
+                    about_query.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'match': {'columns.name': name},
+                            },
+                        },
+                    })
                 dataset_query.append({
                     'bool': {
                         'should': about_query,
@@ -517,6 +526,15 @@ class Query(QueryHandler):
                         }
                     }
                 })
+                for name in query_json['dataset']['keywords']:
+                    keywords_query.append({
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'match': {'columns.name': name},
+                            },
+                        },
+                    })
                 dataset_query.append({
                     'bool': {
                         'should': keywords_query,
