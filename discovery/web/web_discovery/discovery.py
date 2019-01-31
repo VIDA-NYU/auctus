@@ -18,9 +18,7 @@ class WebDiscoverer(AsyncDiscoverer, DatasetFinder):
     async def dataset_found(self, url, page):
         metadata = page.get('metadata', {})
 
-        dataset_id = 'datamart.url.%s' % (
-            uuid.uuid5(uuid.NAMESPACE_URL, str(url)).hex
-        )
+        dataset_id = uuid.uuid5(uuid.NAMESPACE_URL, str(url)).hex
 
         await self.record_dataset(dict(direct_url=url),
                                   metadata,

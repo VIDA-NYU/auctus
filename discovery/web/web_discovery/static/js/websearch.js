@@ -111,7 +111,7 @@ function buildFileList(file_list, files) {
         '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a>';
     } else if(file.status == 'ingested') {
       file_elem.innerHTML =
-        '<input type="checkbox" checked disabled> ' +
+        '<input type="checkbox" disabled> ' +
         '<a href="https://datamart.d3m.vida-nyu.org/dataset/' + file.dataset_id + '"><code>' + file.url + '</code></a> ' +
         '<a href="' + file.url + '" class="badge badge-pill ' + file_format_style + '">' + file.format + '</a>';
     }
@@ -133,6 +133,7 @@ function setupIngestButton(button, file_list) {
       if(checkbox !== null && !checkbox.disabled && checkbox.checked) {
         files.push(elem.querySelector('code').innerText);
         file_elems.push(elem);
+        checkbox.disabled = true;
       }
     }
 
@@ -152,6 +153,9 @@ function setupIngestButton(button, file_list) {
     },
     function(error) {
       alert("Error ingesting datasets", error);
+      for(var i = 0; i < file_elems.length; ++i) {
+        file_elems.disabled = false;
+      }
     })
     .catch(function(error) {
       alert("Error processing ingestion response", error);

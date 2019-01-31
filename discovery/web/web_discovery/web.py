@@ -1,5 +1,4 @@
 import asyncio
-
 import aiohttp
 import logging
 import jinja2
@@ -10,6 +9,9 @@ import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+import uuid
+
+from datamart_core import AsyncDiscoverer
 
 from . import crawl
 
@@ -107,29 +109,38 @@ class Pages(BaseHandler):
             top_results = await crawl.bing_search(session, keywords)
 
             futures = []
-            for page in top_results[:3]:
+            for page in top_results:
                 futures.append(asyncio.get_event_loop().create_task(
                     finder.find_datasets(session, page)
                 ))
-                #await finder.find_datasets(session, page)
-            await asyncio.wait(futures)
+            _, notdone = await asyncio.wait(futures, timeout=60)
+            if notdone:
+                logger.warning("%d top results timed out", len(notdone))
+                for fut in notdone:
+                    fut.cancel()
 
         return self.send_json({'pages': list(finder.pages.values())})
 
 
 class Ingest(BaseHandler):
-    def post(self):
+    discoverer = AsyncDiscoverer('datamart.websearch')
+
+    async def post(self):
         files = self.get_json()['files']
         logger.info("Profiling requested: %s", ' '.join(files))
 
         results = []
         for file_url in files:
-            # TODO: "discover" those datasets (send for profiling)
+            metadata = {}
+            dataset_id = uuid.uuid5(uuid.NAMESPACE_URL, str(file_url)).hex
+            await self.discoverer.record_dataset(dict(direct_url=file_url),
+                                                 metadata,
+                                                 dataset_id=dataset_id)
             results.append({
                 'url': file_url,
                 'format': 'CSV',
                 'status': 'ingested',
-                'dataset_id': 'notreally',
+                'dataset_id': self.discoverer.identifier + '.' + dataset_id,
             })
 
         return self.send_json({'files': results})

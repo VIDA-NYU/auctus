@@ -32,7 +32,8 @@ class DatasetFinder(object):
         logger.info("Processing URL %s", page['url'])
         try:
             async with session.get(page['url'],
-                                   headers=page.get('headers')) as resp:
+                                   headers=page.get('headers'),
+                                   timeout=15) as resp:
                 mimetype = get_mimetype(resp)
                 if mimetype in self.GOOD_TYPES:
                     logger.info("Checking file...")
@@ -79,7 +80,7 @@ class DatasetFinder(object):
         # Try the links
         async def do_link(link):
             try:
-                async with session.get(link) as resp:
+                async with session.get(link, timeout=15) as resp:
                     mimetype = get_mimetype(resp)
                     if mimetype and mimetype not in self.GOOD_TYPES:
                         logger.info("Ignoring %s", mimetype)
