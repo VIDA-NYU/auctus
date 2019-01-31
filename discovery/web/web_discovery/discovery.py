@@ -41,6 +41,7 @@ class DatasetFinder(object):
                 url = await self.check_file(resp)
                 if url:
                     yield url
+                    return
             elif mimetype != 'text/html':
                 logger.info("Ignoring URL, type is %s", mimetype)
                 return
