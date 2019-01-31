@@ -120,6 +120,9 @@ class Pages(BaseHandler):
                 for fut in notdone:
                     fut.cancel()
 
+        for page in finder.pages.values():
+            page['files'].sort(key=lambda f: f['url'])
+
         return self.send_json({'pages': list(finder.pages.values())})
 
 
