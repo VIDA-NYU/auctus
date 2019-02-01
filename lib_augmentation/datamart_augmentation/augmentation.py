@@ -356,7 +356,7 @@ def augment(data, newdata, metadata, task, destination=None):
     if 'join_columns' in task and len(task['join_columns']) > 0:
         join_, qualities = join(
             convert_to_pd(data, metadata['columns']),
-            convert_to_pd(newdata, metadata['columns']),
+            convert_to_pd(newdata, task['metadata']['columns']),
             task['join_columns'],
             qualities=True
         )
@@ -364,7 +364,7 @@ def augment(data, newdata, metadata, task, destination=None):
     elif 'union_columns' in task and len(task['union_columns']) > 0:
         union_, qualities = union(
             convert_to_pd(data, metadata['columns']),
-            convert_to_pd(newdata, metadata['columns']),
+            convert_to_pd(newdata, task['metadata']['columns']),
             task['union_columns'],
             qualities=True
         )
