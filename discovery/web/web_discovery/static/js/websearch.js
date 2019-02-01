@@ -55,6 +55,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
 
   var keywords = keywords_input.value;
 
+  document.getElementById('processing').style.display = 'block';
   postJSON('/pages', {keywords: keywords})
   .then(function(result) {
     console.log("Got results:", result);
@@ -111,6 +112,9 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
   })
   .catch(function(error) {
     alert("Error processing search results", error);
+  })
+  .then(function() {
+    document.getElementById('processing').style.display = 'none';
   });
 });
 

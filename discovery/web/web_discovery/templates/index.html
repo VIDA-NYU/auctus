@@ -18,11 +18,16 @@
   No results
 </div>
 
-<div class="list-group" id="results">
+<div id="processing" style="display:none;">
+  <div class="d-flex justify-content-center align-items-center mb-5">
+    <div class="loader"></div>
+    <div class="ml-3">
+      <p class="mb-0 font-weight-bold font-italic">Processing... Please wait!</p>
+    </div>
+  </div>
 </div>
 
-<div class="form-group row justify-content-center mt-4">
-  <button class="btn btn-lg btn-outline-primary btn-block offset-md-7 col-md-4" type="submit">Ingest checked results</button>
+<div class="list-group" id="results">
 </div>
 
 <script type="text/javascript">
