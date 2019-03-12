@@ -1028,6 +1028,7 @@ class Application(tornado.web.Application):
     def log_request(self, handler):
         if handler.request.path == '/health':
             return
+        super(Application, self).log_request(handler)
 
 
 def make_app(debug=False):
