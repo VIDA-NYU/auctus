@@ -106,7 +106,8 @@ def handle_response(response, format):
         raise RuntimeError('Unrecognized content type: "%s"' % type_)
 
 
-def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
+def search(url=DEFAULT_URL, query=None, data=None, send_data=False,
+           timeout=None):
     """Search for datasets.
 
     :param query: JSON object describing the query.
@@ -125,7 +126,7 @@ def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
         files['query'] = json.dumps(query)
 
     # Send request
-    response = requests.post(url + '/search',
+    response = requests.post(url + '/search', timeout=timeout,
                              files=files)
     if response.status_code != 200:
         raise DatamartError("Error from DataMart: %s %s" % (
@@ -136,7 +137,8 @@ def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
             for result in response.json()['results']]
 
 
-def download(dataset, destination, url=DEFAULT_URL, proxy=None, format='csv'):
+def download(dataset, destination, url=DEFAULT_URL, proxy=None, format='csv',
+             timeout=None):
     if isinstance(dataset, Dataset):
         dataset.download(destination, proxy, format)
     elif not isinstance(dataset, str):
@@ -149,7 +151,8 @@ def download(dataset, destination, url=DEFAULT_URL, proxy=None, format='csv'):
     url = url + '/download/%s?format=%s' % (dataset, format)
     response = requests.get(url,
                             allow_redirects=True,
-                            stream=True)
+                            stream=True,
+                            timeout=timeout)
     if response.status_code != 200:
         if response.headers.get('Content-Type') == 'application/json':
             try:
