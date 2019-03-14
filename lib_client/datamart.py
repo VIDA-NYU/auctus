@@ -136,6 +136,35 @@ def search(url=DEFAULT_URL, query=None, data=None, send_data=False):
             for result in response.json()['results']]
 
 
+def download(dataset, destination, url=DEFAULT_URL, proxy=None, format='csv'):
+    if isinstance(dataset, Dataset):
+        dataset.download(destination, proxy, format)
+    elif not isinstance(dataset, str):
+        raise TypeError("'dataset' argument should be a str or Dataset object")
+
+    if not hasattr(destination, 'write'):
+        with open(destination, 'wb') as f:
+            return download(dataset, f, url, proxy, format)
+
+    url = url + '/download/%s?format=%s' % (dataset, format)
+    response = requests.get(url,
+                            allow_redirects=True,
+                            stream=True)
+    if response.status_code != 200:
+        if response.headers.get('Content-Type') == 'application/json':
+            try:
+                raise DatamartError("Error from DataMart: %s" %
+                                    response.json()['error'])
+            except (KeyError, ValueError):
+                pass
+        raise DatamartError("Error from DataMart: %s %s" % (
+            response.status_code, response.reason))
+
+    for chunk in response.iter_content(chunk_size=4096):
+        if chunk:  # filter out keep-alive chunks
+            destination.write(chunk)
+
+
 def augment(data, augment_data, destination=None, format='pandas', send_data=False):
     """Augments data with augment_data.
 
@@ -328,27 +357,7 @@ class Dataset(object):
                 )
                 return
 
-        if not hasattr(destination, 'write'):
-            with open(destination, 'wb') as f:
-                return self.download(f)
-
-        url = self.url + '/download/%s?format=%s' % (self.id, format)
-        response = requests.get(url,
-                                allow_redirects=True,
-                                stream=True)
-        if response.status_code != 200:
-            if response.headers.get('Content-Type') == 'application/json':
-                try:
-                    raise DatamartError("Error from DataMart: %s" %
-                                        response.json()['error'])
-                except (KeyError, ValueError):
-                    pass
-            raise DatamartError("Error from DataMart: %s %s" % (
-                response.status_code, response.reason))
-
-        for chunk in response.iter_content(chunk_size=4096):
-            if chunk:  # filter out keep-alive chunks
-                destination.write(chunk)
+        download(self.id, destination, self.url, proxy, format)
 
     def __repr__(self):
         if self.join_columns or self.union_columns:
