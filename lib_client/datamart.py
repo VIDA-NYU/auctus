@@ -144,7 +144,7 @@ def download(dataset, destination, url=DEFAULT_URL, proxy=None, format='csv',
     elif not isinstance(dataset, str):
         raise TypeError("'dataset' argument should be a str or Dataset object")
 
-    if not hasattr(destination, 'write'):
+    if format != 'd3m' and not hasattr(destination, 'write'):
         with open(destination, 'wb') as f:
             return download(dataset, f, url, proxy, format)
 
@@ -163,9 +163,26 @@ def download(dataset, destination, url=DEFAULT_URL, proxy=None, format='csv',
         raise DatamartError("Error from DataMart: %s %s" % (
             response.status_code, response.reason))
 
-    for chunk in response.iter_content(chunk_size=4096):
-        if chunk:  # filter out keep-alive chunks
-            destination.write(chunk)
+    if format != 'd3m':
+        for chunk in response.iter_content(chunk_size=4096):
+            if chunk:  # filter out keep-alive chunks
+                destination.write(chunk)
+    else:
+        # Download D3M ZIP to temporary file
+        fd, tmpfile = tempfile.mkstemp(prefix='datamart_download_',
+                                       suffix='.d3m.zip')
+        try:
+            with open(tmpfile, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=4096):
+                    if chunk:  # filter out keep-alive chunks
+                        f.write(chunk)
+
+            # Unzip
+            zip = zipfile.ZipFile(tmpfile)
+            zip.extractall(destination)
+        finally:
+            os.close(fd)
+            os.remove(tmpfile)
 
 
 def augment(data, augment_data, destination=None, format='pandas', send_data=False):
