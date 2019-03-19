@@ -204,9 +204,13 @@ def augment(data, augment_data, destination=None, format='pandas', send_data=Fal
         for a d3m.container.Dataset object.
     """
 
+    data_json = augment_data.get_json()
+    if 'join_columns' not in data_json and 'union-columns' not in data_json:
+        raise RuntimeError('There is no augmentation task to perform.')
+
     files = dict()
     files['data'] = handle_data(data, send_data)
-    files['task'] = json.dumps(augment_data.get_json())
+    files['task'] = json.dumps(data_json)
     if destination:
         files['destination'] = destination
 
@@ -339,8 +343,6 @@ class Dataset(object):
             result['join_columns'] = self.join_columns
         elif self.union_columns:
             result['union_columns'] = self.union_columns
-        else:
-            raise RuntimeError('There is no augmentation task to perform.')
         return result
 
     def get_augmentation_information(self):
