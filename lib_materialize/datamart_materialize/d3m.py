@@ -47,7 +47,7 @@ class D3mWriter(object):
             },
             'dataResources': [
                 {
-                    'resID': '0',
+                    'resID': 'learningData',
                     'resPath': 'tables/learningData.csv',
                     'resType': 'table',
                     'resFormat': ['text/csv'],
