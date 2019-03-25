@@ -351,33 +351,19 @@ class Dataset(object):
 
         return dict(union=self.union_columns, join=self.join_columns)
 
-    def download(self, destination, proxy=None, format='csv'):
+    def download(self, destination, proxy=True, format='csv'):
         """Download this dataset to the disk.
 
         :param destination: Path or opened file where to write the data.
-        :param proxy: Whether we should have the DataMart server do the
-            materialization for us. If ``False``, raise an error unless we can
-            do it locally; if ``True``, do not attempt to materialize locally,
-            only use the server. If ``None`` (default), use the server if we
-            can't materialize locally.
         """
-        if not proxy:
-            try:
-                import datamart_materialize
-            except ImportError:
-                if proxy is False:
-                    raise RuntimeError("proxy=False but datamart_materialize "
-                                       "is not installed locally")
-                warnings.warn("datamart_materialize is not installed, "
-                              "DataMart server will do materialization for us")
-            else:
-                datamart_materialize.download(
-                    dataset={'id': self.id, 'metadata': self.metadata},
-                    destination=destination,
-                    proxy=self.url if proxy is None else None,
-                    format=format,
-                )
-                return
+        if proxy is False:
+            raise ValueError("Local materialization through this library has "
+                             "been removed. Please use datamart-materialize "
+                             "directly.")
+        elif proxy is None:
+            warnings.warn("This library will no longer attempt local "
+                          "materialization. Use datamart-materialize directly "
+                          "if you need it.", DeprecationWarning)
 
         download(self.id, destination, self.url, proxy, format)
 
