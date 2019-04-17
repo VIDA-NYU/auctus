@@ -6,7 +6,7 @@ This project is designed to be a web crawler and search engine for datasets, spe
 It is divided in multiple components:
 
 * Libraries
-  * [Client library](lib_client/) `datamart`. This can be installed by clients to query the DataMart server. It is able to perform profiling and materialization locally, if the corresponding libraries are installed.
+  * [Client library](https://gitlab.com/ViDA-NYU/datamart/api) `datamart`. This can be installed by clients to query the DataMart server. It is able to perform profiling and materialization locally, if the corresponding libraries are installed. This lives in a separate repository to ease collaboration.
   * [Profiling library](lib_profiler/) `datamart_profiler`. This can be installed by clients, will allow the client library to profile datasets locally instead of sending them to the server. It is also used by the query and profiler services.
   * [Materialization library](lib_materialize/) `datamart_materialize`. This is used to materialize dataset from the various sources that DataMart supports. It can be installed by clients, which will allow them to materialize datasets locally instead of using the server as a proxy.
   * [Core server library](lib_core/) `datamart_core`. This contains common code for services. Only used for the server components.
