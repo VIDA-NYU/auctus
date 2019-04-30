@@ -72,9 +72,9 @@ def get_column_coverage(es, dataset_id, data_profile={}, filter_=[]):
         if Type.ID in column['semantic_types']:
             type_ = 'semantic_types'
             type_value = Type.ID
-        elif column['structural_type'] in (Type.INTEGER, Type.FLOAT):
-            type_ = 'structural_type'
-            type_value = column['structural_type']
+        # elif column['structural_type'] in (Type.INTEGER, Type.FLOAT):
+        #     type_ = 'structural_type'
+        #     type_value = column['structural_type']
         elif Type.DATE_TIME in column['semantic_types']:
             type_ = 'semantic_types'
             type_value = Type.DATE_TIME
