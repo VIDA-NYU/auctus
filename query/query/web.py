@@ -92,51 +92,9 @@ class CorsHandler(BaseHandler):
         self.finish()
 
 
-@tornado.web.stream_request_body
 class QueryHandler(CorsHandler):
     """Base class for the query request handler.
     """
-    def initialize(self, augmentation_type=None):
-        self.data = b''
-        self.augmentation_type = augmentation_type
-
-    def prepare(self):
-        self.request.connection.set_max_body_size(MAX_STREAMED_SIZE)
-
-    def data_received(self, data):
-        self.data += data
-
-    def get_form_data(self, default=None):
-        type_ = self.request.headers.get('Content-Type', '')
-        if type_.startswith('multipart/form-data'):
-            args = dict()
-            files = dict()
-            tornado.httputil.parse_body_arguments(
-                self.request.headers.get('Content-Type', ''),
-                self.data,
-                args,
-                files
-            )
-            ret = dict()
-            for key, value in args.items():
-                if key not in ret:
-                    ret[key] = value[0]
-            for key, value in files.items():
-                if key not in ret:
-                    ret[key] = value[0]['body']
-            return ret
-        elif type_.startswith('application/json') and default:
-            return {default: self.data}
-        else:
-            raise HTTPError(400, "Expected multipart/form-data or "
-                                 "application/json")
-
-    def get_json(self):
-        type_ = self.request.headers.get('Content-Type', '')
-        if not type_.startswith('application/json'):
-            raise HTTPError(400, "Expected JSON")
-        return json.loads(self.data.decode('utf-8'))
-
     @staticmethod
     def get_profile_data(filepath, metadata=None):
         # hashing data
@@ -171,11 +129,10 @@ class QueryHandler(CorsHandler):
         """
 
         if not isinstance(data, (str, bytes)):
-            self.send_error(
+            return self.send_error(
                 status_code=400,
                 reason='The parameter "data" is in the wrong format.'
             )
-            return
 
         tmp = False
         if not os.path.exists(data):
@@ -183,7 +140,7 @@ class QueryHandler(CorsHandler):
             logger.warning("Data is not a path!")
 
             tmp = True
-            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+            temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
             temp_file.write(data)
             temp_file.close()
 
@@ -665,14 +622,30 @@ class Query(QueryHandler):
         PROM_SEARCH.inc()
         self._cors()
 
-        args = self.get_form_data('query')
-
-        # Params are 'query' and 'data'
-        query = data = None
-        if 'query' in args:
-            query = json.loads(args['query'].decode('utf-8'))
-        if 'data' in args:
-            data = args['data'].decode('utf-8')
+        type_ = self.request.headers.get('Content-type', '')
+        data = None
+        if type_.startswith('application/json'):
+            query = self.get_json()
+        elif type_.startswith('multipart/form-data'):
+            query = self.get_body_argument('query', None)
+            if query is None and 'query' in self.request.files:
+                query = self.request.files['query'][0].body.decode('utf-8')
+            if query is not None:
+                query = json.loads(query)
+            if 'data' in self.request.files:
+                data = self.request.files['data'][0].body
+        elif (type_.startswith('text/csv') or
+                type_.startswith('application/csv')):
+            query = None
+            data = self.request.body
+        else:
+            self.set_status(400)
+            return self.send_json({'error': "Either use multipart/form-data "
+                                            "to send the 'data' file and "
+                                            "'query' JSON, or use "
+                                            "application/json to send a query "
+                                            "alone, or use text/csv to send "
+                                            "data alone"})
 
         # parameter: data
         data_profile = dict()
@@ -868,16 +841,19 @@ class Augment(QueryHandler):
         PROM_AUGMENT.inc()
         self._cors()
 
-        args = self.get_form_data('task')
+        type_ = self.request.headers.get('Content-type', '')
+        if not type_.startswith('multipart/form-data'):
+            self.set_status(400, "Use multipart")
+            return self.send_json({'error': "Use multipart/form-data to send "
+                                            "the 'data' file and 'task' JSON"})
 
-        # Params are 'task', 'data', and 'destination'
-        task = data = destination = None
-        if 'task' in args:
-            task = json.loads(args['task'].decode('utf-8'))
-        if 'data' in args:
-            data = args['data'].decode('utf-8')
-        if 'destination' in args:
-            destination = args['destination'].decode('utf-8')
+        task = self.get_body_argument('task', None)
+        if task is not None:
+            task = json.loads(task.decode('utf-8'))
+        destination = self.get_body_argument('destination', None)
+        if destination is not None:
+            destination = destination.decode('utf-8')
+        data = self.request.files['data'][0].body
 
         # both parameters must be provided
         if not task or not data:
@@ -923,37 +899,39 @@ class Augment(QueryHandler):
 
 
 class JoinUnion(QueryHandler):
+    def initialize(self, augmentation_type=None):
+        self.augmentation_type = augmentation_type
+
     @prom_async_time(PROM_AUGMENT_TIME)
     async def post(self):
         PROM_AUGMENT.inc()
         self._cors()
 
-        args = self.get_form_data('columns')
+        type_ = self.request.headers.get('Content-type', '')
+        if not type_.startswith('multipart/form-data'):
+            return self.send_error(400)
 
-        left_data = right_data = columns = destination = None
-        if 'left_data' in args:
-            left_data = args['left_data'].decode('utf-8')
-        if 'right_data' in args:
-            right_data = args['right_data'].decode('utf-8')
-        if 'columns' in args:
-            columns = json.loads(args['columns'].decode('utf-8'))
-        if 'destination' in args:
-            destination = args['destination'].decode('utf-8')
+        columns = self.get_body_argument('columns', None)
+        if columns is None and 'columns' in self.request.files:
+            columns = self.request.files['columns'][0].body.decode('utf-8')
+        if columns is None:
+            return self.send_error(400)
+        columns = json.loads(columns)
 
-        # both parameters must be provided
-        if not left_data or not right_data or not columns:
-            self.send_error(
-                status_code=400,
-                reason='"left_data", "right_data", and "columns" must be provided.'
-            )
-            return
+        destination = self.get_body_argument('destination', None)
+        if destination is None and 'destination' in self.request.files:
+            destination = (
+                self.request.files['destination'][0].body.decode('utf-8'))
+        if destination is None:
+            return self.send_error(400)
 
-        if 'left_columns' not in columns or 'right_columns' not in columns:
-            self.send_error(
-                status_code=400,
-                reason='Incomplete "columns" information.'
-            )
-            return
+        if 'left_data' not in self.request.files:
+            return self.send_error(400)
+        left_data = self.request.files['left_data'][0]
+
+        if 'right_data' not in self.request.files:
+            return self.send_error(400)
+        right_data = self.request.files['right_data'][0]
 
         # data
         left_data_path, left_data_profile, left_tmp = \
