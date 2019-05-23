@@ -899,37 +899,39 @@ class Augment(QueryHandler):
 
 
 class JoinUnion(QueryHandler):
+    def initialize(self, augmentation_type=None):
+        self.augmentation_type = augmentation_type
+
     @prom_async_time(PROM_AUGMENT_TIME)
     async def post(self):
         PROM_AUGMENT.inc()
         self._cors()
 
-        args = self.get_form_data('columns')
+        type_ = self.request.headers.get('Content-type', '')
+        if not type_.startswith('multipart/form-data'):
+            return self.send_error(400)
 
-        left_data = right_data = columns = destination = None
-        if 'left_data' in args:
-            left_data = args['left_data'].decode('utf-8')
-        if 'right_data' in args:
-            right_data = args['right_data'].decode('utf-8')
-        if 'columns' in args:
-            columns = json.loads(args['columns'].decode('utf-8'))
-        if 'destination' in args:
-            destination = args['destination'].decode('utf-8')
+        columns = self.get_body_argument('columns', None)
+        if columns is None and 'columns' in self.request.files:
+            columns = self.request.files['columns'][0].body.decode('utf-8')
+        if columns is None:
+            return self.send_error(400)
+        columns = json.loads(columns)
 
-        # both parameters must be provided
-        if not left_data or not right_data or not columns:
-            self.send_error(
-                status_code=400,
-                reason='"left_data", "right_data", and "columns" must be provided.'
-            )
-            return
+        destination = self.get_body_argument('destination', None)
+        if destination is None and 'destination' in self.request.files:
+            destination = (
+                self.request.files['destination'][0].body.decode('utf-8'))
+        if destination is None:
+            return self.send_error(400)
 
-        if 'left_columns' not in columns or 'right_columns' not in columns:
-            self.send_error(
-                status_code=400,
-                reason='Incomplete "columns" information.'
-            )
-            return
+        if 'left_data' not in self.request.files:
+            return self.send_error(400)
+        left_data = self.request.files['left_data'][0]
+
+        if 'right_data' not in self.request.files:
+            return self.send_error(400)
+        right_data = self.request.files['right_data'][0]
 
         # data
         left_data_path, left_data_profile, left_tmp = \
