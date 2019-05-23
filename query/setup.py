@@ -7,7 +7,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'aio-pika',
-    'elasticsearch',
+    'elasticsearch~=6.3',
     'prometheus_client',
     'prometheus-async',
     'tornado>=5.0',
