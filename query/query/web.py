@@ -137,7 +137,8 @@ class QueryHandler(CorsHandler):
             raise HTTPError(400, "Expected JSON")
         return json.loads(self.data.decode('utf-8'))
 
-    def get_profile_data(self, filepath, metadata=None):
+    @staticmethod
+    def get_profile_data(filepath, metadata=None):
         # hashing data
         sha1 = hashlib.sha1()
         with open(filepath, 'rb') as f:
@@ -213,9 +214,10 @@ class QueryHandler(CorsHandler):
 
 
 class Query(QueryHandler):
-
-    def parse_query_variables(self, data, search_columns=[], required=False):
+    def parse_query_variables(self, data, search_columns=None, required=False):
         output = list()
+        if search_columns is None:
+            search_columns = []
 
         if not data:
             return output

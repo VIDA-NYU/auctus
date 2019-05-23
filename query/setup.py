@@ -10,6 +10,7 @@ req = [
     'elasticsearch~=6.3',
     'prometheus_client',
     'prometheus-async',
+    'python-dateutil',
     'tornado>=5.0',
     'datamart_augmentation',
     'datamart_core',
