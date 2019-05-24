@@ -5,6 +5,7 @@ import elasticsearch
 import json
 import os
 import sys
+import time
 
 from datamart_core.common import json2msg
 
@@ -44,12 +45,22 @@ async def import_all(folder):
         path = os.path.join(folder, name)
         with open(path, 'r') as fp:
             obj = json.load(fp)
-        es.index(
-            'datamart',
-            '_doc',
-            obj,
-            id=name,
-        )
+        try:
+            es.index(
+                'datamart',
+                '_doc',
+                obj,
+                id=name,
+            )
+        except elasticsearch.TransportError:
+            print('X', end='', flush=True)
+            time.sleep(10)  # If writing can't keep up, needs a real break
+            es.index(
+                'datamart',
+                '_doc',
+                obj,
+                id=name,
+            )
         await amqp_datasets_exchange.publish(
             json2msg(dict(obj, id=name)),
             name,
