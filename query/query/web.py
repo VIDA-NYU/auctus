@@ -3,15 +3,12 @@ import asyncio
 from datetime import datetime
 from dateutil.parser import parse
 import elasticsearch
-import hashlib
 import logging
 import json
 import os
-import pickle
 import prometheus_client
 from prometheus_async.aio import time as prom_async_time
 import shutil
-import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.httputil
@@ -25,7 +22,9 @@ from datamart_augmentation.augmentation import \
     augment, augment_data
 from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
-from datamart_profiler import process_dataset
+
+from .search import ClientError, handle_data_parameter
+
 
 logger = logging.getLogger(__name__)
 
@@ -80,97 +79,19 @@ class BaseHandler(RequestHandler):
 
 
 class CorsHandler(BaseHandler):
-    def _cors(self):
+    def prepare(self):
         self.set_header('Access-Control-Allow-Origin', '*')
         self.set_header('Access-Control-Allow-Methods', 'POST')
         self.set_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def options(self):
         # CORS pre-flight
-        self._cors()
+        self.prepare()
         self.set_status(204)
         self.finish()
 
 
-class QueryHandler(CorsHandler):
-    """Base class for the query request handler.
-    """
-    @staticmethod
-    def get_profile_data(filepath, metadata=None):
-        # hashing data
-        sha1 = hashlib.sha1()
-        with open(filepath, 'rb') as f:
-            while True:
-                data = f.read(BUF_SIZE)
-                if not data:
-                    break
-                sha1.update(data)
-        hash_ = sha1.hexdigest()
-
-        # checking for cached data
-        cached_data = os.path.join('/cache', hash_)
-        if os.path.exists(cached_data):
-            return pickle.load(open(cached_data, 'rb'))
-
-        # profile data and save
-        data_profile = process_dataset(filepath, metadata)
-        pickle.dump(data_profile, open(cached_data, 'wb'))
-        return data_profile
-
-    def handle_data_parameter(self, data):
-        """
-        Handles the 'data' parameter.
-
-        :param data: the input parameter
-        :return: (data_path, data_profile, tmp)
-          data_path: path to the input data
-          data_profile: the profiling (metadata) of the data
-          tmp: True if data_path points to a temporary file
-        """
-
-        if not isinstance(data, (str, bytes)):
-            return self.send_error(
-                status_code=400,
-                reason='The parameter "data" is in the wrong format.'
-            )
-
-        tmp = False
-        if not os.path.exists(data):
-            # data represents the entire file
-            logger.warning("Data is not a path!")
-
-            tmp = True
-            temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
-            temp_file.write(data)
-            temp_file.close()
-
-            data_path = temp_file.name
-            data_profile = self.get_profile_data(data_path)
-
-        else:
-            # data represents a file path
-            logger.warning("Data is a path!")
-            if os.path.isdir(data):
-                # path to a D3M dataset
-                data_file = os.path.join(data, 'tables', 'learningData.csv')
-                if not os.path.exists(data_file):
-                    self.send_error(
-                        status_code=400,
-                        reason='%s does not exist.' % data_file
-                    )
-                    return
-                else:
-                    data_path = data_file
-                    data_profile = self.get_profile_data(data_file)
-            else:
-                # path to a CSV file
-                data_path = data
-                data_profile = self.get_profile_data(data)
-
-        return data_path, data_profile, tmp
-
-
-class Query(QueryHandler):
+class Query(CorsHandler):
     def parse_query_variables(self, data, search_columns=None, required=False):
         output = list()
         if search_columns is None:
@@ -620,7 +541,6 @@ class Query(QueryHandler):
     @prom_async_time(PROM_SEARCH_TIME)
     async def post(self):
         PROM_SEARCH.inc()
-        self._cors()
 
         type_ = self.request.headers.get('Content-type', '')
         data = None
@@ -650,7 +570,10 @@ class Query(QueryHandler):
         # parameter: data
         data_profile = dict()
         if data:
-            data_path, data_profile, tmp = self.handle_data_parameter(data)
+            try:
+                data_path, data_profile, tmp = handle_data_parameter(data)
+            except ClientError as e:
+                return self.send_error(400, reason=e.args[0])
 
         # parameter: query
         query_args = list()
@@ -835,11 +758,10 @@ class Metadata(CorsHandler):
         self.send_json(metadata)
 
 
-class Augment(QueryHandler):
+class Augment(CorsHandler):
     @prom_async_time(PROM_AUGMENT_TIME)
     async def post(self):
         PROM_AUGMENT.inc()
-        self._cors()
 
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
@@ -849,10 +771,8 @@ class Augment(QueryHandler):
 
         task = self.get_body_argument('task', None)
         if task is not None:
-            task = json.loads(task.decode('utf-8'))
+            task = json.loads(task)
         destination = self.get_body_argument('destination', None)
-        if destination is not None:
-            destination = destination.decode('utf-8')
         data = self.request.files['data'][0].body
 
         # both parameters must be provided
@@ -864,7 +784,10 @@ class Augment(QueryHandler):
             return
 
         # data
-        data_path, data_profile, tmp = self.handle_data_parameter(data)
+        try:
+            data_path, data_profile, tmp = handle_data_parameter(data)
+        except ClientError as e:
+            return self.send_error(400, reason=e.args[0])
 
         # materialize augmentation data
         metadata = task['metadata']
@@ -898,14 +821,13 @@ class Augment(QueryHandler):
             os.remove(data_path)
 
 
-class JoinUnion(QueryHandler):
+class JoinUnion(CorsHandler):
     def initialize(self, augmentation_type=None):
         self.augmentation_type = augmentation_type
 
     @prom_async_time(PROM_AUGMENT_TIME)
     async def post(self):
         PROM_AUGMENT.inc()
-        self._cors()
 
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
@@ -934,10 +856,13 @@ class JoinUnion(QueryHandler):
         right_data = self.request.files['right_data'][0]
 
         # data
-        left_data_path, left_data_profile, left_tmp = \
-            self.handle_data_parameter(left_data)
-        right_data_path, right_data_profile, right_tmp = \
-            self.handle_data_parameter(right_data)
+        try:
+            left_data_path, left_data_profile, left_tmp = \
+                handle_data_parameter(left_data)
+            right_data_path, right_data_profile, right_tmp = \
+                handle_data_parameter(right_data)
+        except ClientError as e:
+            return self.send_error(400, reason=e.args[0])
 
         # augment
         try:
@@ -980,7 +905,7 @@ class JoinUnion(QueryHandler):
             os.remove(right_data_path)
 
 
-class Health(QueryHandler):
+class Health(CorsHandler):
     def get(self):
         self.finish('ok')
 
