@@ -97,6 +97,8 @@ class DatasetFinder(object):
         for fut in futures:
             try:
                 await fut
+            except asyncio.TimeoutError:
+                logger.warning("Timeout processing link")
             except Exception:
                 logger.exception("Exception processing link")
         logger.info("URL processing done")

@@ -28,7 +28,6 @@ class WebDiscoverer(AsyncDiscoverer, DatasetFinder):
 class UrlDiscoverer(WebDiscoverer):
     """Discoverer reading URLs of interest from an AMQP queue.
     """
-
     async def _run(self):
         await super(WebDiscoverer, self)._run()
 
