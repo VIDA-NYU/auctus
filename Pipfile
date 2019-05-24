@@ -13,8 +13,8 @@ datamart_core = {editable = true, path = "./lib_core"}
 coordinator = {editable = true, path = "./coordinator"}
 profiler = {editable = true, path = "./profiler"}
 query = {editable = true, path = "./query"}
-noaa = {editable = true, path="./discovery/noaa"}
-socrata = {editable = true, path="./discovery/socrata"}
+noaa = {editable = true, path = "./discovery/noaa"}
+socrata = {editable = true, path = "./discovery/socrata"}
 
 [dev-packages]
 flake8 = "*"

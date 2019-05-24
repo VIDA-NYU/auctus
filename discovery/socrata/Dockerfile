@@ -2,10 +2,11 @@ FROM python:3.6
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
-RUN pip install aio-pika elasticsearch
-RUN pip install requests sodapy
+COPY Pipfile.lock install_deps.py /usr/src/app/
+RUN python3 install_deps.py Pipfile.lock
+
 COPY lib_core lib_core
-RUN pip install -e /usr/src/app/lib_core
+RUN pip install --no-deps -e /usr/src/app/lib_core
 COPY discovery/socrata /usr/src/app/socrata
-RUN pip install -e socrata
+RUN pip install --no-deps -e /usr/src/app/socrata
 CMD ["python", "-m", "socrata_discovery"]
