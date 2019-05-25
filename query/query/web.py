@@ -91,7 +91,7 @@ class CorsHandler(BaseHandler):
         self.finish()
 
 
-class Query(CorsHandler):
+class Search(CorsHandler):
     def parse_query_variables(self, data, search_columns=None, required=False):
         output = list()
         if search_columns is None:
@@ -943,7 +943,7 @@ def make_app(debug=False):
 
     return Application(
         [
-            URLSpec('/search', Query, name='search'),
+            URLSpec('/search', Search, name='search'),
             URLSpec('/download/([^/]+)', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
