@@ -47,6 +47,8 @@ PROM_DOWNLOAD_TIME = prometheus_client.Histogram('req_download_seconds',
                                                  buckets=BUCKETS)
 PROM_DOWNLOAD = prometheus_client.Counter('req_download_count',
                                           "Download requests")
+PROM_DOWNLOAD_ID = prometheus_client.Counter('req_download_id_count',
+                                             "Download by ID requests")
 PROM_METADATA_TIME = prometheus_client.Histogram('req_metadata_seconds',
                                                  "Metadata request time",
                                                  buckets=BUCKETS)
@@ -687,22 +689,8 @@ class RecursiveZipWriter(object):
         self._zip.close()
 
 
-class Download(CorsHandler):
-    TIMEOUT = 300
-
-    @prom_async_time(PROM_DOWNLOAD_TIME)
-    async def get(self, dataset_id):
-        PROM_DOWNLOAD.inc()
-
-        output_format = self.get_query_argument('format', 'csv')
-
-        # Get materialization data from Elasticsearch
-        try:
-            metadata = self.application.elasticsearch.get(
-                'datamart', '_doc', id=dataset_id
-            )['_source']
-        except elasticsearch.NotFoundError:
-            raise HTTPError(404)
+class BaseDownload(BaseHandler):
+    def send_dataset(self, dataset_id, metadata, output_format='csv'):
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
@@ -742,6 +730,37 @@ class Download(CorsHandler):
                 self.finish()
             finally:
                 getter.__exit__(None, None, None)
+
+
+class DownloadId(CorsHandler, BaseDownload):
+    @prom_async_time(PROM_DOWNLOAD_TIME)
+    def get(self, dataset_id):
+        PROM_DOWNLOAD_ID.inc()
+
+        output_format = self.get_query_argument('format', 'csv')
+
+        # Get materialization data from Elasticsearch
+        try:
+            metadata = self.application.elasticsearch.get(
+                'datamart', '_doc', id=dataset_id
+            )['_source']
+        except elasticsearch.NotFoundError:
+            raise HTTPError(404)
+
+        return self.send_dataset(dataset_id, metadata, output_format)
+
+
+class Download(CorsHandler, BaseDownload):
+    @prom_async_time(PROM_DOWNLOAD_TIME)
+    def post(self):
+        PROM_DOWNLOAD.inc()
+
+        obj = self.get_json()
+        dataset_id = obj['id']
+        metadata = obj['metadata']
+        output_format = self.get_query_argument('format', 'd3m')
+
+        return self.send_dataset(dataset_id, metadata, output_format)
 
 
 class Metadata(CorsHandler):
@@ -944,7 +963,8 @@ def make_app(debug=False):
     return Application(
         [
             URLSpec('/search', Search, name='search'),
-            URLSpec('/download/([^/]+)', Download, name='download'),
+            URLSpec('/download/([^/]+)', DownloadId, name='download'),
+            URLSpec('/download', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
             URLSpec('/join', JoinUnion,
