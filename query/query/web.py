@@ -755,9 +755,27 @@ class Download(CorsHandler, BaseDownload):
     def post(self):
         PROM_DOWNLOAD.inc()
 
-        obj = self.get_json()
-        dataset_id = obj['id']
-        metadata = obj['metadata']
+        type_ = self.request.headers.get('Content-type', '')
+        search_result = None
+        if type_.startswith('application/json'):
+            search_result = self.get_json()
+        elif type_.startswith('multipart/form-data'):
+            search_result = self.get_body_argument('result', None)
+            if search_result is None and 'result' in self.request.files:
+                search_result = (
+                    self.request.files['result'][0].body.decode('utf-8'))
+        if search_result is None:
+            self.set_status(400)
+            return self.send_json({'error': "Either use multipart/form-data "
+                                            "to send the 'data' file and "
+                                            "'result' JSON, or use "
+                                            "application/json to send a "
+                                            "search result alone"})
+
+        search_result = json.loads(search_result)
+
+        dataset_id = search_result['id']
+        metadata = search_result['metadata']
         output_format = self.get_query_argument('format', 'd3m')
 
         return self.send_dataset(dataset_id, metadata, output_format)
