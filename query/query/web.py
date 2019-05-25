@@ -617,7 +617,7 @@ class Query(CorsHandler):
                     join_columns=[],
                     union_columns=[],
                 ))
-            self.send_json({'results': results})
+            return self.send_json({'results': results})
         else:
             join_results = get_joinable_datasets(
                 es=self.application.elasticsearch,
@@ -653,7 +653,7 @@ class Query(CorsHandler):
                     union_columns=r['columns'],
                 ))
 
-            self.send_json({
+            return self.send_json({
                 'results':
                     sorted(
                         results,
@@ -716,7 +716,7 @@ class Download(CorsHandler):
                 dataset_path = getter.__enter__()
             except Exception:
                 self.set_status(500)
-                self.send_json(dict(error="Materializer reports failure"))
+                self.send_json({'error': "Materializer reports failure"})
                 raise
             try:
                 if os.path.isfile(dataset_path):
@@ -755,7 +755,7 @@ class Metadata(CorsHandler):
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
 
-        self.send_json(metadata)
+        return self.send_json(metadata)
 
 
 class Augment(CorsHandler):

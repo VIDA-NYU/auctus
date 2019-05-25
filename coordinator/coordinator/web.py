@@ -122,7 +122,7 @@ class Index(BaseHandler):
 
 class Status(BaseHandler):
     def get(self):
-        self.send_json({
+        return self.send_json({
             'recent_discoveries': self.coordinator.recent_discoveries,
             'sources_counts': self.coordinator.sources_counts,
         })
