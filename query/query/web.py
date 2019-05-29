@@ -23,6 +23,7 @@ from datamart_augmentation.augmentation import \
 from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
 
+from .graceful_shutdown import GracefulApplication, GracefulHandler
 from .search import ClientError, handle_data_parameter
 
 
@@ -82,18 +83,18 @@ class BaseHandler(RequestHandler):
 
 class CorsHandler(BaseHandler):
     def prepare(self):
+        super(CorsHandler, self).prepare()
         self.set_header('Access-Control-Allow-Origin', '*')
         self.set_header('Access-Control-Allow-Methods', 'POST')
         self.set_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def options(self):
         # CORS pre-flight
-        self.prepare()
         self.set_status(204)
-        self.finish()
+        return self.finish()
 
 
-class Search(CorsHandler):
+class Search(CorsHandler, GracefulHandler):
     def parse_query_variables(self, data, search_columns=None, required=False):
         output = list()
         if search_columns is None:
@@ -732,7 +733,7 @@ class BaseDownload(BaseHandler):
                 getter.__exit__(None, None, None)
 
 
-class DownloadId(CorsHandler, BaseDownload):
+class DownloadId(CorsHandler, GracefulHandler, BaseDownload):
     @prom_async_time(PROM_DOWNLOAD_TIME)
     def get(self, dataset_id):
         PROM_DOWNLOAD_ID.inc()
@@ -750,7 +751,7 @@ class DownloadId(CorsHandler, BaseDownload):
         return self.send_dataset(dataset_id, metadata, output_format)
 
 
-class Download(CorsHandler, BaseDownload):
+class Download(CorsHandler, GracefulHandler, BaseDownload):
     @prom_async_time(PROM_DOWNLOAD_TIME)
     def post(self):
         PROM_DOWNLOAD.inc()
@@ -781,7 +782,7 @@ class Download(CorsHandler, BaseDownload):
         return self.send_dataset(dataset_id, metadata, output_format)
 
 
-class Metadata(CorsHandler):
+class Metadata(CorsHandler, GracefulHandler):
     @PROM_METADATA_TIME.time()
     def get(self, dataset_id):
         PROM_METADATA.inc()
@@ -795,7 +796,7 @@ class Metadata(CorsHandler):
         return self.send_json(metadata)
 
 
-class Augment(CorsHandler):
+class Augment(CorsHandler, GracefulHandler):
     @prom_async_time(PROM_AUGMENT_TIME)
     async def post(self):
         PROM_AUGMENT.inc()
@@ -858,7 +859,7 @@ class Augment(CorsHandler):
             os.remove(data_path)
 
 
-class JoinUnion(CorsHandler):
+class JoinUnion(CorsHandler, GracefulHandler):
     def initialize(self, augmentation_type=None):
         self.augmentation_type = augmentation_type
 
@@ -944,12 +945,18 @@ class JoinUnion(CorsHandler):
 
 class Health(CorsHandler):
     def get(self):
-        self.finish('ok')
+        if self.application.is_closing:
+            self.set_status(503, reason="Shutting down")
+            return self.finish('shutting down')
+        else:
+            return self.finish('ok')
 
 
-class Application(tornado.web.Application):
+class Application(GracefulApplication):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
+
+        self.is_closing = False
 
         self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
 
