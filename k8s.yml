@@ -346,6 +346,7 @@ spec:
       - name: query-cache
         persistentVolumeClaim:
           claimName: query-cache-pvc
+      terminationGracePeriodSeconds: 300
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
