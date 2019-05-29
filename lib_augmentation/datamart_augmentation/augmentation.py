@@ -1,4 +1,3 @@
-import elasticsearch
 import numpy as np
 import os
 import pandas as pd
@@ -8,7 +7,6 @@ import uuid
 
 from .utils import conv_datetime, conv_float, conv_int
 from datamart_core.common import Type
-from datamart_core.materialize import get_dataset
 from datamart_materialize.d3m import D3mWriter
 
 
