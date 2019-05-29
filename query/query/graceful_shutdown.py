@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import signal
-import time
 import tornado.ioloop
 import tornado.web
 
@@ -10,22 +9,18 @@ logger = logging.getLogger(__name__)
 
 
 class GracefulApplication(tornado.web.Application):
-    SHUTDOWN_DEADLINE = 60 * 5
-
     def __init__(self, *args, **kwargs):
         super(GracefulApplication, self).__init__(*args, **kwargs)
 
         self.is_closing = False
-        self.deadline = None
         self.nb_requests = 0
         self.close_condition = asyncio.Condition()
 
         signal.signal(signal.SIGTERM, self.signal_handler)
 
     def signal_handler(self, signum, frame):
-        logger.info("Got signal %s, exiting...", signum)
+        logger.warning("Got signal %s, exiting...", signum)
         self.is_closing = True
-        self.deadline = time.perf_counter() + self.SHUTDOWN_DEADLINE
         tornado.ioloop.IOLoop.current().add_callback_from_signal(self.try_exit)
 
     def try_exit(self):
@@ -35,7 +30,7 @@ class GracefulApplication(tornado.web.Application):
                     logger.info("%d requests in progress, waiting...",
                                 self.nb_requests)
                     await self.close_condition.wait()
-            logger.info("Closing gracefully")
+            logger.warning("Closing gracefully")
             tornado.ioloop.IOLoop.current().stop()
 
         asyncio.get_event_loop().create_task(do_exit())
