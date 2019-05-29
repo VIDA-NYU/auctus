@@ -145,9 +145,11 @@ spec:
   selector:
     app: datamart
     what: coordinator
+  type: NodePort
   ports:
   - protocol: TCP
     port: 8001
+    nodePort: 30080
 ---
 apiVersion: v1
 kind: Service
@@ -160,9 +162,11 @@ spec:
   selector:
     app: datamart
     what: query
+  type: NodePort
   ports:
   - protocol: TCP
     port: 8002
+    nodePort: 30081
 
 
 ##########
