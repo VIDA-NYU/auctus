@@ -981,7 +981,7 @@ def make_app(debug=False):
     return Application(
         [
             URLSpec('/search', Search, name='search'),
-            URLSpec('/download/([^/]+)', DownloadId, name='download'),
+            URLSpec('/download/([^/]+)', DownloadId, name='download_id'),
             URLSpec('/download', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
