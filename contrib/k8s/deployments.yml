@@ -35,12 +35,18 @@ spec:
         image: docker.elastic.co/elasticsearch/elasticsearch:6.4.3
         env:
         - name: cluster.name
-          value: "docker-cluster"
+          valueFrom:
+            configMapKeyRef:
+              name: dm-config
+              key: elasticsearch.cluster_name
         # This needs special permissions that I don't know how to grant
         # - name: bootstrap.memory_lock
         #   value: "true"
         - name: ES_HEAP_SIZE
-          value: "2g"
+          valueFrom:
+            configMapKeyRef:
+              name: dm-config
+              key: elasticsearch.heap_size
         ports:
         - containerPort: 9200
         volumeMounts:
@@ -74,9 +80,15 @@ spec:
         imagePullPolicy: Never
         env:
         - name: RABBITMQ_DEFAULT_USER
-          value: datamart
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.user
         - name: RABBITMQ_DEFAULT_PASS
-          value: hackme
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.password
         ports:
         - containerPort: 5672
         - containerPort: 15672
@@ -108,11 +120,20 @@ spec:
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_USER
-          value: datamart
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.user
         - name: AMQP_PASSWORD
-          value: hackme
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.password
         - name: QUERY_HOST
-          value: http://192.168.99.100:30081
+          valueFrom:
+            configMapKeyRef:
+              name: dm-config
+              key: query_host
         ports:
         - containerPort: 8001
           hostPort: 8001
@@ -154,9 +175,15 @@ spec:
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_USER
-          value: datamart
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.user
         - name: AMQP_PASSWORD
-          value: hackme
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.password
         ports:
         - containerPort: 8002
         volumeMounts:
@@ -203,9 +230,15 @@ spec:
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_USER
-          value: datamart
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.user
         - name: AMQP_PASSWORD
-          value: hackme
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.password
         volumeMounts:
         - mountPath: /datasets
           name: datasets
@@ -245,9 +278,15 @@ spec:
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_USER
-          value: datamart
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.user
         - name: AMQP_PASSWORD
-          value: hackme
+          valueFrom:
+            secretKeyRef:
+              name: dm-secrets
+              key: amqp.password
         volumeMounts:
         - mountPath: /datasets
           name: datasets

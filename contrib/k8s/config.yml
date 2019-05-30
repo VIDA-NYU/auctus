@@ -1,0 +1,11 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dm-config
+  labels:
+    app: datamart
+data:
+  elasticsearch.cluster_name: "docker-cluster"
+  elasticsearch.heap_size: "4g"
+  query_host: http://192.168.99.100:30081
