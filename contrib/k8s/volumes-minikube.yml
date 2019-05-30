@@ -1,0 +1,96 @@
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: elasticsearch-pv
+  labels:
+    type: local
+    app: datamart
+    what: elasticsearch
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/var/lib/datamart/prod/elasticsearch"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: elasticsearch-pvc
+spec:
+  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: elasticsearch
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: datasets-pv
+  labels:
+    type: local
+    app: datamart
+    what: datasets
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/var/lib/datamart/prod/datasets"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: datasets-pvc
+spec:
+  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: datasets
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: cache-pv
+  labels:
+    type: local
+    app: datamart
+    what: cache
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: "/var/lib/datamart/prod/cache"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: cache-pvc
+spec:
+  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: cache
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
