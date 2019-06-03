@@ -807,7 +807,7 @@ class Augment(CorsHandler, GracefulHandler):
             return self.send_json({'error': "Use multipart/form-data to send "
                                             "the 'data' file and 'task' JSON"})
 
-        task = self.get_body_argument('task', None)
+        task = self.request.files['task'][0].body
         if task is not None:
             task = json.loads(task)
         destination = self.get_body_argument('destination', None)
