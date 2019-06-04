@@ -807,19 +807,19 @@ class Augment(CorsHandler, GracefulHandler):
             return self.send_json({'error': "Use multipart/form-data to send "
                                             "the 'data' file and 'task' JSON"})
 
-        task = self.request.files['task'][0].body
-        if task is not None:
-            task = json.loads(task)
-        destination = self.get_body_argument('destination', None)
-        data = self.request.files['data'][0].body
+        task = self.get_body_argument('task', None)
+        if task is None and 'task' in self.request.files:
+            task = self.request.files['task'][0].body.decode('utf-8')
+        if task is None:
+            return self.send_error(400, reason="'task' must be provided")
+        task = json.loads(task)
 
-        # both parameters must be provided
-        if not task or not data:
-            self.send_error(
-                status_code=400,
-                reason='Both "task" and "data" must be provided.'
-            )
-            return
+        destination = self.get_body_argument('destination', None)
+        if destination is None and 'destination' in self.request.files:
+            destination = (
+                self.request.files['destination'][0].body.decode('utf-8'))
+
+        data = self.request.files['data'][0].body
 
         # data
         try:
