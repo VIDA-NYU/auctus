@@ -23,15 +23,13 @@ source_filter = {
 }
 
 
-def get_column_coverage(es, dataset_id, data_profile={}, filter_=[]):
+def get_column_coverage(data_profile, filter_=[]):
     """
     Get coverage for each column of the input dataset.
 
-    :param es: Elasticsearch client.
-    :param dataset_id: The identifier of the input dataset, if dataset is in DataMart index.
     :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
-    :param filter_: list of columns to return. If an empty list, return all the columns.
-    :return: dict, where key is the column name, and value is a dict as follows:
+    :param filter_: list of column indices to return. If an empty list, return all the columns.
+    :return: dict, where key is the column index, and value is a dict as follows:
 
         {
             'type': column meta-type ('structural_type', 'semantic_types', 'spatial'),
@@ -42,29 +40,15 @@ def get_column_coverage(es, dataset_id, data_profile={}, filter_=[]):
 
     column_coverage = dict()
 
-    if dataset_id:
-        index_query = {
-            'query': {
-                'bool': {
-                    'filter': {
-                        'match': {'_id': dataset_id}
-                    }
-                }
-            }
-        }
-
-        result = es.search(
-            index='datamart',
-            body=index_query
-        )['hits']['hits'][0]['_source']
-    else:
-        result = data_profile
-
-    for column in result['columns']:
+    column_index = -1
+    column_index_mapping = dict()
+    for column in data_profile['columns']:
+        column_index += 1
+        column_name = column['name']
+        column_index_mapping[column_name] = column_index
         if 'coverage' not in column:
             continue
-        column_name = column['name']
-        if filter_ and column['name'].lower() not in filter_:
+        if filter_ and column_index not in filter_:
             continue
         # ignoring 'd3mIndex' for now -- seems useless
         if 'd3mIndex' in column_name:
@@ -80,21 +64,24 @@ def get_column_coverage(es, dataset_id, data_profile={}, filter_=[]):
             type_value = Type.DATE_TIME
         else:
             continue
-        column_coverage[column_name] = {
+        column_coverage[str(column_index)] = {
             'type':       type_,
             'type_value': type_value,
             'ranges':     []
         }
         for range_ in column['coverage']:
-            column_coverage[column_name]['ranges'].\
+            column_coverage[str(column_index)]['ranges'].\
                 append([float(range_['range']['gte']),
                         float(range_['range']['lte'])])
 
-    if 'spatial_coverage' in result:
-        for spatial in result['spatial_coverage']:
-            if filter_ and (spatial['lat'] not in filter_ or spatial['lon'] not in filter_):
+    if 'spatial_coverage' in data_profile:
+        for spatial in data_profile['spatial_coverage']:
+            if filter_ and (
+                    column_index_mapping[spatial['lat']] not in filter_ or
+                    column_index_mapping[spatial['lon']] not in filter_):
                 continue
-            names = '(' + spatial['lat'] + ', ' + spatial['lon'] + ')'
+            names = str(column_index_mapping[spatial['lat']]) + ',' +\
+                    str(column_index_mapping[spatial['lat']])
             column_coverage[names] = {
                 'type':      'spatial',
                 'type_value': Type.LATITUDE + ', ' + Type.LONGITUDE,
@@ -107,8 +94,8 @@ def get_column_coverage(es, dataset_id, data_profile={}, filter_=[]):
     return column_coverage
 
 
-def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
-                                         pivot_column, ranges, query_args=None):
+def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ranges,
+                                         dataset_id=None, query_args=None):
     """
     Retrieve numerical columns that intersect with the input numerical ranges.
 
@@ -144,9 +131,9 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
         }
 
         if dataset_id:
-            bool_query['must_not'] = {
-                'match': {'_id': dataset_id}
-            }
+            bool_query['must'].append(
+                {'match': {'_id': dataset_id}}
+            )
 
         intersection = {
             'nested': {
@@ -205,6 +192,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                 for column_hit in inner_hits['columns']['hits']['hits']:
                     column_offset = int(column_hit['_nested']['offset'])
                     column_name = columns[column_offset]['name']
+
                     # ignoring 'd3mIndex' for now -- seems useless
                     if 'd3mIndex' in column_name:
                         continue
@@ -217,7 +205,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
                         if sim <= JOIN_SIMILARITY_THRESHOLD:
                             continue
 
-                    name = '%s$$%s' % (dataset_name, column_name)
+                    name = '%s$$%d' % (dataset_name, column_offset)
                     if name not in intersections:
                         intersections[name] = 0
 
@@ -247,7 +235,7 @@ def get_numerical_coverage_intersections(es, dataset_id, type_, type_value,
     return intersections, column_total_coverage
 
 
-def get_spatial_coverage_intersections(es, dataset_id, ranges,
+def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
                                        query_args=None):
     """
     Retrieve spatial columns that intersect with the input spatial ranges.
@@ -279,7 +267,7 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
         }
 
         if dataset_id:
-            bool_query['must_not'] = {
+            bool_query['must'] = {
                 'match': {'_id': dataset_id}
             }
 
@@ -339,9 +327,13 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
 
                 for coverage_hit in inner_hits['spatial_coverage.ranges']['hits']['hits']:
                     spatial_coverage_offset = int(coverage_hit['_nested']['offset'])
-                    spatial_coverage_name = \
-                        '(' + spatial_coverages[spatial_coverage_offset]['lat'] + ', ' \
-                        + spatial_coverages[spatial_coverage_offset]['lon'] + ')'
+                    lat_index, lon_index = get_column_identifiers(
+                        es,
+                        [spatial_coverages[spatial_coverage_offset]['lat'],
+                         spatial_coverages[spatial_coverage_offset]['lon']],
+                        dataset_id=dataset_name
+                    )
+                    spatial_coverage_name = str(lat_index) + ',' + str(lon_index)
                     name = '%s$$%s' % (dataset_name, spatial_coverage_name)
                     if name not in intersections:
                         intersections[name] = 0
@@ -378,6 +370,29 @@ def get_spatial_coverage_intersections(es, dataset_id, ranges,
     return intersections, column_total_coverage
 
 
+# TODO: ideally, this should be stored in the index
+def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
+    column_indices = [-1 for _ in column_names]
+    if not data_profile:
+        columns = es.search(
+            index='datamart',
+            body={
+                'query': {
+                    'match': {
+                        '_id': dataset_id,
+                    }
+                }
+            }
+        )['hits']['hits'][0]['_source']['columns']
+    else:
+        columns = data_profile['columns']
+    for i in range(len(columns)):
+        for j in range(len(column_names)):
+            if columns[i]['name'] == column_names[j]:
+                column_indices[j] = i
+    return column_indices
+
+
 def get_dataset_metadata(es, dataset_id):
     """
     Retrieve metadata about input dataset.
@@ -398,35 +413,28 @@ def get_dataset_metadata(es, dataset_id):
     return hit
 
 
-def get_joinable_datasets(es, dataset_id=None, data_profile={},
-                          query_args=None, search_columns={}):
+def get_joinable_datasets(es, data_profile, dataset_id=None,
+                          query_args=None, tabular_variables=[]):
     """
     Retrieve datasets that can be joined with an input dataset.
 
     :param es: Elasticsearch client.
-    :param dataset_id: The identifier of the input dataset, if dataset is in DataMart index.
-    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
+    :param data_profile: Profiled input dataset.
+    :param dataset_id: The identifier of the desired DataMart dataset for augmentation.
     :param query_args: list of query arguments (optional).
-    :param search_columns: specifies which columns to focus on for the search.
+    :param tabular_variables: specifies which columns to focus on for the search.
     """
 
     if not dataset_id and not data_profile:
         raise RuntimeError('Either a dataset id or a data profile '
                            'must be provided for the join.')
 
-    # search columns
-
-    required_columns = [] if 'required' not in search_columns else search_columns['required']
-    desired_columns = [] if 'desired' not in search_columns else search_columns['desired']
-
     # get the coverage for each column of the input dataset
 
     intersections = dict()
     column_coverage = get_column_coverage(
-        es,
-        dataset_id,
         data_profile,
-        required_columns
+        tabular_variables
     )
 
     # get coverage intersections
@@ -438,19 +446,25 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
             intersections_column, column_total_coverage = \
                 get_spatial_coverage_intersections(
                     es,
-                    dataset_id,
                     column_coverage[column]['ranges'],
+                    dataset_id,
                     query_args
                 )
         else:
+            try:
+                column_name = data_profile['columns'][int(column)]['name']
+            except:
+                index_1, index_2 = column.split(',')
+                column_name = data_profile['columns'][int(index_1)]['name'] +\
+                              ',' + data_profile['columns'][int(index_2)]['name']
             intersections_column, column_total_coverage = \
                 get_numerical_coverage_intersections(
                     es,
-                    dataset_id,
                     type_,
                     type_value,
-                    column,
+                    column_name,
                     column_coverage[column]['ranges'],
+                    dataset_id,
                     query_args
                 )
 
@@ -469,6 +483,7 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
 
     # get pairs of columns with higher score
 
+    all_pairs = []
     for dt in intersections:
         intersections[dt] = sorted(
             intersections[dt],
@@ -478,309 +493,111 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
 
         seen_1 = set()
         seen_2 = set()
-        pairs = []
         for column, external_column, score in intersections[dt]:
             if column in seen_1 or external_column in seen_2:
                 continue
             seen_1.add(column)
             seen_2.add(external_column)
-            pairs.append((column, external_column, score))
-        intersections[dt] = pairs
+            all_pairs.append((column, dt, external_column, score))
 
-    # filtering based on search columns
-
-    if required_columns or desired_columns:
-        for dt in list(intersections.keys()):
-            required = 0
-            desired = 0
-            for att_1, att_2, sim in intersections[dt]:
-                if required_columns and att_1.lower() in required_columns:
-                    required += 1
-                if desired_columns and att_1.lower() in desired_columns:
-                    desired += 1
-            if required_columns and required < len(required_columns):
-                del intersections[dt]
-            elif desired_columns and desired == 0:
-                del intersections[dt]
-
-    # sorting datasets based on the column with highest score
-
-    sorted_datasets = []
-    for dt in intersections:
-        items = intersections[dt]
-        sorted_datasets.append((dt, items[0][2]))
-    sorted_datasets = sorted(
-        sorted_datasets,
-        key=lambda item: item[1],
+    all_pairs = sorted(
+        all_pairs,
+        key=lambda item: item[3],
         reverse=True
     )
 
     results = []
-    for dt, score in sorted_datasets:
+    for column, dt, external_column, score in all_pairs:
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
-        materialize = meta.get('materialize', {})
+        # materialize = meta.get('materialize', {})
         if 'description' in meta and len(meta['description']) > 100:
             meta['description'] = meta['description'][:100] + "..."
+        left_columns = []
+        right_columns = []
+        left_columns_names = []
+        try:
+            left_columns.append([int(column)])
+            left_columns_names.append(data_profile['columns'][int(column)]['name'])
+        except ValueError:
+            index_1, index_2 = column.split(",")
+            left_columns.append([int(index_1), int(index_2)])
+            left_columns_names.append(data_profile['columns'][int(index_1)]['name'] +
+                                      ', ' + data_profile['columns'][int(index_2)]['name'])
+        try:
+            right_columns.append([int(external_column)])
+        except ValueError:
+            index_1, index_2 = external_column.split(",")
+            right_columns.append([int(index_1), int(index_2)])
         results.append(dict(
             id=dt,
             score=score,
-            discoverer=materialize['identifier'],
+            # discoverer=materialize['identifier'],
             metadata=meta,
-            columns=[(att_1, att_2) for att_1, att_2, sim in intersections[dt]],
+            augmentation={
+                'type': 'join',
+                'left_columns': left_columns,
+                'right_columns': right_columns,
+                'left_columns_names': left_columns_names
+            }
         ))
 
-    return {'results': results}
+    return results
 
 
-def get_column_information(es=None, dataset_id=None, data_profile={},
-                           query_args=None, filter_=[]):
+def get_column_information(data_profile, filter_=[]):
     """
-    Retrieve information about the columns (name and type) of either
-    all of the datasets, or the input dataset.
+    Retrieve information about the columns (name and type) of a dataset.
 
     """
 
-    def store_column_information(metadata, filter_=[]):
-        output = dict()
-        for column in metadata['columns']:
-            name = column['name']
-            if filter_ and column['name'] not in filter_:
-                continue
-            # ignoring 'd3mIndex' for now -- seems useless
-            if 'd3mIndex' in name:
-                continue
-            # ignoring phone numbers for now
-            semantic_types = [
-                sem for sem in column['semantic_types']
-                if Type.PHONE_NUMBER not in sem
-            ]
-            for semantic_type in semantic_types:
-                if semantic_type not in output:
-                    output[semantic_type] = []
-                output[semantic_type].append(name)
-            if not semantic_types:
-                if column['structural_type'] not in output:
-                    output[column['structural_type']] = []
-                output[column['structural_type']].append(name)
-        return output
-
-    if data_profile:
-        return store_column_information(data_profile, filter_)
-
-    dataset_columns = dict()
-
-    if dataset_id:
-        query = {
-            'match': {
-                '_id': dataset_id,
-            }
-        }
-    else:
-        query = {
-            'match_all': {}
-        }
-
-    if not query_args:
-        query_obj = {
-            'query': {
-                'bool': {
-                    'filter': query,
-                }
-            }
-        }
-    else:
-        args = [query] + query_args
-        query_obj = {
-            'query': {
-                'bool': {
-                    'filter': {
-                        'bool': {
-                            'must': args,
-                        },
-                    },
-                },
-            },
-        }
-
-    # logger.info("Query: %r", query_obj)
-
-    from_ = 0
-    result = es.search(
-        index='datamart',
-        body=query_obj,
-        from_=from_,
-        size=PAGINATION_SIZE,
-        request_timeout=30
-    )
-
-    size_ = len(result['hits']['hits'])
-
-    while size_ > 0:
-        for hit in result['hits']['hits']:
-            dataset = hit['_id']
-            dataset_columns[dataset] = store_column_information(hit['_source'], filter_)
-
-        # pagination
-        from_ += size_
-        result = es.search(
-            index='datamart',
-            body=query_obj,
-            from_=from_,
-            size=PAGINATION_SIZE,
-            request_timeout=30
-        )
-        size_ = len(result['hits']['hits'])
-
-    return dataset_columns
-
-
-def get_unionable_datasets_brute_force(es, dataset_id=None, data_profile={},
-                                       query_args=None, search_columns={}):
-    """
-    Retrieve datasets that can be unioned to an input dataset using a brute force approach.
-
-    :param es: Elasticsearch client.
-    :param dataset_id: The identifier of the input dataset.
-    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
-    :param query_args: list of query arguments (optional).
-    :param search_columns: specifies which columns to focus on for the search.
-    """
-
-    # search columns
-
-    required_columns = [] if 'required' not in search_columns else search_columns['required']
-    desired_columns = [] if 'desired' not in search_columns else search_columns['desired']
-
-    dataset_columns = get_column_information(es=es, query_args=query_args)
-    if dataset_id:
-        if dataset_id in dataset_columns:
-            del dataset_columns[dataset_id]
-        main_dataset_columns = get_column_information(
-            es=es,
-            dataset_id=dataset_id,
-            filter_=required_columns
-        )[dataset_id]
-    else:
-        main_dataset_columns = get_column_information(
-            data_profile=data_profile,
-            filter_=required_columns
-        )
-
-    n_columns = 0
-    for type_ in main_dataset_columns:
-        n_columns += len(main_dataset_columns[type_])
-
-    column_pairs = dict()
-    scores = dict()
-    for dataset in list(dataset_columns.keys()):
-
-        # check all pairs of attributes
-        pairs = []
-        for type_ in main_dataset_columns:
-            if type_ not in dataset_columns[dataset]:
-                continue
-            for att_1 in main_dataset_columns[type_]:
-                for att_2 in dataset_columns[dataset][type_]:
-                    sim = compute_levenshtein_sim(att_1.lower(), att_2.lower())
-                    pairs.append((att_1, att_2, sim))
-
-        # choose pairs with higher Jaccard distance
-        seen_1 = set()
-        seen_2 = set()
-        column_pairs[dataset] = []
-        for att_1, att_2, sim in sorted(pairs,
-                                        key=lambda item: item[2],
-                                        reverse=True):
-            if att_1 in seen_1 or att_2 in seen_2:
-                continue
-            seen_1.add(att_1)
-            seen_2.add(att_2)
-            column_pairs[dataset].append((att_1, att_2, sim))
-
-        if len(column_pairs[dataset]) <= 1:
-            del column_pairs[dataset]
+    output = dict()
+    column_index = -1
+    for column in data_profile['columns']:
+        column_index += 1
+        name = column['name']
+        if filter_ and column_index not in filter_:
             continue
-
-        scores[dataset] = 0
-
-        for i in range(len(column_pairs[dataset])):
-            sim = column_pairs[dataset][i][2]
-            scores[dataset] += sim
-
-    scores[dataset] = scores[dataset] / n_columns
-
-    # filtering based on search columns
-
-    if required_columns or desired_columns:
-        for dt in list(column_pairs.keys()):
-            required = 0
-            desired = 0
-            for att_1, att_2, sim in column_pairs[dt]:
-                if required_columns and att_1.lower() in required_columns:
-                    required += 1
-                if desired_columns and att_1.lower() in desired_columns:
-                    desired += 1
-            if required_columns and required < len(required_columns):
-                del column_pairs[dt]
-                del scores[dt]
-            elif desired_columns and desired == 0:
-                del column_pairs[dt]
-                del scores[dt]
-
-    sorted_datasets = sorted(
-        scores.items(),
-        key=lambda item: item[1],
-        reverse=True
-    )
-
-    results = []
-    for dt, score in sorted_datasets:
-        info = get_dataset_metadata(es, dt)
-        meta = info.pop('_source')
-        materialize = meta.get('materialize', {})
-        if 'description' in meta and len(meta['description']) > 100:
-            meta['description'] = meta['description'][:100] + "..."
-        results.append(dict(
-            id=dt,
-            score=score,
-            discoverer=materialize['identifier'],
-            metadata=meta,
-            columns=[(att_1, att_2) for att_1, att_2, sim in column_pairs[dt]],
-        ))
-
-    return {'results': results}
+        # ignoring 'd3mIndex' for now -- seems useless
+        if 'd3mIndex' in name:
+            continue
+        # ignoring phone numbers for now
+        semantic_types = [
+            sem for sem in column['semantic_types']
+            if Type.PHONE_NUMBER not in sem
+        ]
+        for semantic_type in semantic_types:
+            if semantic_type not in output:
+                output[semantic_type] = []
+            output[semantic_type].append(name)
+        if not semantic_types:
+            if column['structural_type'] not in output:
+                output[column['structural_type']] = []
+            output[column['structural_type']].append(name)
+    return output
 
 
-def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
-                                 query_args=None, search_columns={}):
+def get_unionable_datasets(es, data_profile, dataset_id=None,
+                           query_args=None, tabular_variables=[]):
     """
     Retrieve datasets that can be unioned to an input dataset using fuzzy search
     (max edit distance = 2).
 
     :param es: Elasticsearch client.
-    :param dataset_id: The identifier of the input dataset.
-    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
+    :param data_profile: Profiled input dataset.
+    :param dataset_id: The identifier of the desired DataMart dataset for augmentation.
     :param query_args: list of query arguments (optional).
-    :param search_columns: specifies which columns to focus on for the search.
+    :param tabular_variables: specifies which columns to focus on for the search.
     """
 
-    # search columns
+    if not dataset_id and not data_profile:
+        raise RuntimeError('Either a dataset id or a data profile '
+                           'must be provided for the union.')
 
-    required_columns = [] if 'required' not in search_columns else search_columns['required']
-    desired_columns = [] if 'desired' not in search_columns else search_columns['desired']
-
-    if dataset_id:
-        main_dataset_columns = get_column_information(
-            es=es,
-            dataset_id=dataset_id,
-            filter_=required_columns
-        )[dataset_id]
-    else:
-        main_dataset_columns = get_column_information(
-            data_profile=data_profile,
-            filter_=required_columns
-        )
+    main_dataset_columns = get_column_information(
+        data_profile=data_profile,
+        filter_=tabular_variables
+    )
 
     n_columns = 0
     for type_ in main_dataset_columns:
@@ -798,16 +615,18 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
                         'match': {'columns.semantic_types': type_}
                     },
                 ],
-                'must': {
-                    "fuzzy": {"columns.name.raw": att}
-                },
-                "minimum_should_match": 1
+                'must': [
+                    {
+                        'fuzzy': {'columns.name.raw': att}
+                    }
+                ],
+                'minimum_should_match': 1
             }
 
             if dataset_id:
-                partial_query['must_not'] = {
-                    'match': {'_id': dataset_id}
-                }
+                partial_query['must'].append(
+                    {'match': {'_id': dataset_id}}
+                )
 
             query = {
                 'nested': {
@@ -912,24 +731,6 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
 
         scores[dataset] = scores[dataset] / n_columns
 
-    # filtering based on search columns
-
-    if required_columns or desired_columns:
-        for dt in list(column_pairs.keys()):
-            required = 0
-            desired = 0
-            for att_1, att_2, sim in column_pairs[dt]:
-                if required_columns and att_1.lower() in required_columns:
-                    required += 1
-                if desired_columns and att_1.lower() in desired_columns:
-                    desired += 1
-            if required_columns and required < len(required_columns):
-                del column_pairs[dt]
-                del scores[dt]
-            elif desired_columns and desired == 0:
-                del column_pairs[dt]
-                del scores[dt]
-
     sorted_datasets = sorted(
         scores.items(),
         key=lambda item: item[1],
@@ -940,49 +741,37 @@ def get_unionable_datasets_fuzzy(es, dataset_id=None, data_profile={},
     for dt, score in sorted_datasets:
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
-        materialize = meta.get('materialize', {})
+        # materialize = meta.get('materialize', {})
         if 'description' in meta and len(meta['description']) > 100:
             meta['description'] = meta['description'][:100] + "..."
+        # TODO: augmentation information is incorrect
+        left_columns = []
+        right_columns = []
+        left_columns_names = []
+        for att_1, att_2, sim in column_pairs[dt]:
+            if dataset_id:
+                left_columns.append(
+                    get_column_identifiers(es, [att_1], dataset_id=dataset_id)
+                )
+            else:
+                left_columns.append(
+                    get_column_identifiers(es, [att_1], data_profile=data_profile)
+                )
+            left_columns_names.append(att_1)
+            right_columns.append(
+                get_column_identifiers(es, [att_2], dataset_id=dt)
+            )
         results.append(dict(
             id=dt,
             score=score,
-            discoverer=materialize['identifier'],
+            # discoverer=materialize['identifier'],
             metadata=meta,
-            columns=[(att_1, att_2) for att_1, att_2, sim in column_pairs[dt]],
+            augmentation={
+                'type': 'union',
+                'left_columns': left_columns,
+                'right_columns': right_columns,
+                'left_columns_names': left_columns_names
+            }
         ))
 
-    return {'results': results}
-
-
-def get_unionable_datasets(es, dataset_id=None, data_profile={},
-                           query_args=None, fuzzy=False, search_columns={}):
-    """
-    Retrieve datasets that can be unioned to an input dataset.
-
-    :param es: Elasticsearch client.
-    :param dataset_id: The identifier of the input dataset.
-    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
-    :param query_args: list of query arguments (optional).
-    :param fuzzy: if True, applies fuzzy search instead of looking for all of the datasets.
-    :param search_columns: specifies which columns to focus on for the search.
-    """
-
-    if not dataset_id and not data_profile:
-        raise RuntimeError('Either a dataset id or a data profile '
-                           'must be provided for the union.')
-
-    if fuzzy:
-        return get_unionable_datasets_fuzzy(
-            es,
-            dataset_id,
-            data_profile,
-            query_args,
-            search_columns
-        )
-    return get_unionable_datasets_brute_force(
-        es,
-        dataset_id,
-        data_profile,
-        query_args,
-        search_columns
-    )
+    return results

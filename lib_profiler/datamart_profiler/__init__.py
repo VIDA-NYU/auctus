@@ -369,8 +369,6 @@ def process_dataset(data, metadata=None):
     if spatial_coverage:
         metadata['spatial_coverage'] = spatial_coverage
 
-    # TODO: Compute histogram
-
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
     return metadata

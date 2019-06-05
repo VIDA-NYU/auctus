@@ -45,36 +45,25 @@ function postAugmentForm(url='', data={}) {
   });
 }
 
-var indices = {'required': {
-                 'temporal': [],
-                 'geospatial': [],
-                 'generic': []},
-               'desired': {
-                 'temporal': [],
-                 'geospatial': [],
-                 'generic': []}}
+var indices = {'temporal': [],
+               'geospatial': []}
 
 var n_temporal = 0;
 var n_geospatial = 0;
-var n_generic = 0;
 
 var maps = [];
 var map_sources = [];
 var draws = [];
 
-function variableChange(select_id, div_id) {
+function variableChange(select_id) {
     var select = document.getElementById(select_id);
-    window["add_" + select.options[select.selectedIndex].value](div_id);
+    window["add_" + select.options[select.selectedIndex].value]();
 }
 
 function addInteraction(index) {
     map_sources[index-1].clear();
-    var value = document.getElementById('shape-type-' + index).value;
-    if (value !== 'None') {
       var geometryFunction;
-      if (value === 'bb-' + index) {
-        geometryFunction = ol.interaction.Draw.createBox();
-      }
+      geometryFunction = ol.interaction.Draw.createBox();
       value = 'Circle';
       var draw = new ol.interaction.Draw({
         source: map_sources[index-1],
@@ -99,15 +88,14 @@ function addInteraction(index) {
         draws.push(draw);
       }
       maps[index-1].addInteraction(draws[index-1]);
-    }
  }
 
-function add_temporal(div_id) {
+function add_temporal() {
     n_temporal += 1;
-    indices[div_id]['temporal'].push(n_temporal)
+    indices['temporal'].push(n_temporal)
     var index = n_temporal;
 
-    var variables_div = document.getElementById(div_id);
+    var variables_div = document.getElementById('variables');
 
     var _title = document.createElement('h5')
     _title.innerHTML = 'Temporal Information'
@@ -144,12 +132,12 @@ function add_temporal(div_id) {
     variables_div.appendChild(_div_end_1)
 }
 
-function add_geospatial(div_id) {
+function add_geospatial() {
     n_geospatial += 1;
-    indices[div_id]['geospatial'].push(n_geospatial);
+    indices['geospatial'].push(n_geospatial);
     var index = n_geospatial;
 
-    var variables_div = document.getElementById(div_id);
+    var variables_div = document.getElementById('variables');
 
     var _title = document.createElement('h5');
     _title.innerHTML = 'Geospatial Bounds';
@@ -157,20 +145,6 @@ function add_geospatial(div_id) {
 
     var shape_div = document.createElement('div');
     shape_div.setAttribute('class', 'd-flex align-items-center');
-    var shape_select = document.createElement('select');
-    shape_select.setAttribute('id', 'shape-type-' + index);
-    shape_select.setAttribute('class', 'mb-2');
-    shape_select.setAttribute('onChange', onclick='addInteraction(' + index + ');');
-    var shape_rectangle = document.createElement('option');
-    shape_rectangle.setAttribute('value', 'bb-' + index);
-    shape_rectangle.setAttribute('selected', 'selected');
-    shape_rectangle.innerHTML = 'Bounding Box';
-    shape_select.appendChild(shape_rectangle);
-    var shape_circle = document.createElement('option');
-    shape_circle.setAttribute('value', 'circle-' + index);
-    shape_circle.innerHTML = 'Circle';
-    shape_select.appendChild(shape_circle);
-    shape_div.appendChild(shape_select);
 
     var bounds = document.createElement('p');
     bounds.setAttribute('id', 'bounds-' + index);
@@ -204,28 +178,17 @@ function add_geospatial(div_id) {
 
     map_sources[index-1].on('addfeature', function(evt) {
       var geometry = evt.feature.getGeometry();
-      var shape = document.getElementById('shape-type-' + index).value;
       var bounds = document.getElementById('bounds-' + index);
-      if (shape === 'bb-' + index) {
-        var coord = geometry.clone().transform('EPSG:3857', 'EPSG:4326').getCoordinates()[0];
-        var top_left_lat = coord[3][1];
-        var top_left_lon = coord[3][0];
-        var bottom_right_lat = coord[1][1];
-        var bottom_right_lon = coord[1][0];
 
-        var text = 'Top Left: <code>' + ol.coordinate.toStringHDMS([top_left_lon, top_left_lat]) + '</code> &nbsp;&nbsp;&nbsp;';
-        text += '&nbsp;&nbsp;&nbsp;Bottom Right: <code>' + ol.coordinate.toStringHDMS([bottom_right_lon, bottom_right_lat]) + '</code>';
-        bounds.innerHTML = text;
-      } else {
-        var new_geometry = geometry.clone().transform('EPSG:3857', 'EPSG:4326');
-        var center_lat = new_geometry.getCenter()[1];
-        var center_lon = new_geometry.getCenter()[0];
-        var radius = new_geometry.getRadius();
+      var coord = geometry.clone().transform('EPSG:3857', 'EPSG:4326').getCoordinates()[0];
+      var top_left_lat = coord[3][1];
+      var top_left_lon = coord[3][0];
+      var bottom_right_lat = coord[1][1];
+      var bottom_right_lon = coord[1][0];
 
-        var text = 'Center: <code>' + ol.coordinate.toStringHDMS([center_lon, center_lat]) + '</code> | ';
-        text += 'Radius: <code>' + radius + '</code>';
-        bounds.innerHTML = text;
-      }
+      var text = 'Top Left: <code>' + ol.coordinate.toStringHDMS([top_left_lon, top_left_lat]) + '</code> &nbsp;&nbsp;&nbsp;';
+      text += '&nbsp;&nbsp;&nbsp;Bottom Right: <code>' + ol.coordinate.toStringHDMS([bottom_right_lon, bottom_right_lat]) + '</code>';
+      bounds.innerHTML = text;
     });
 
     var map = new ol.Map({
@@ -245,143 +208,6 @@ function add_geospatial(div_id) {
     })
 
     addInteraction(index);
-}
-
-function add_generic(div_id) {
-    n_generic += 1;
-    indices[div_id]['generic'].push(n_generic);
-    var index = n_generic;
-
-    var variables_div = document.getElementById(div_id);
-
-    var _title = document.createElement('h5')
-    _title.innerHTML = 'Generic Column'
-    variables_div.appendChild(_title)
-
-    var _div_name_1 = document.createElement('div')
-    _div_name_1.setAttribute('class', 'form-row')
-    var _div_name_2 = document.createElement('div')
-    _div_name_2.setAttribute('class', 'form-group col-md-8')
-    var _label_name = document.createElement('label')
-    _label_name.setAttribute('for', 'name-' + index)
-    _label_name.innerHTML = 'Column Name:'
-    _div_name_2.appendChild(_label_name)
-    var _input_name = document.createElement('input')
-    _input_name.setAttribute('class', 'form-control')
-    _input_name.setAttribute('id', 'name-' + index)
-    _div_name_2.appendChild(_input_name)
-    _div_name_1.appendChild(_div_name_2)
-    variables_div.appendChild(_div_name_1)
-
-    var _div_types = document.createElement('div')
-    _div_types.setAttribute('class', 'form-group col-md-8')
-
-    var _div_integer = document.createElement('div')
-    _div_integer.setAttribute('class', 'form-check form-check-inline')
-    var _input_integer = document.createElement('input')
-    _input_integer.setAttribute('class', 'form-check-input')
-    _input_integer.setAttribute('type', 'checkbox')
-    _input_integer.setAttribute('id', 'type-integer-' + index)
-    _div_integer.appendChild(_input_integer)
-    var _label_integer = document.createElement('label')
-    _label_integer.setAttribute('class', 'form-check-label')
-    _label_integer.setAttribute('for', 'type-integer-' + index)
-    _label_integer.innerHTML = 'Integer'
-    _div_integer.appendChild(_label_integer)
-
-    _div_types.appendChild(_div_integer)
-
-    var _div_float = document.createElement('div')
-    _div_float.setAttribute('class', 'form-check form-check-inline')
-    var _input_float = document.createElement('input')
-    _input_float.setAttribute('class', 'form-check-input')
-    _input_float.setAttribute('type', 'checkbox')
-    _input_float.setAttribute('id', 'type-float-' + index)
-    _div_float.appendChild(_input_float)
-    var _label_float = document.createElement('label')
-    _label_float.setAttribute('class', 'form-check-label')
-    _label_float.setAttribute('for', 'type-float-' + index)
-    _label_float.innerHTML = 'Float'
-    _div_float.appendChild(_label_float)
-
-    _div_types.appendChild(_div_float)
-
-    var _div_bool = document.createElement('div')
-    _div_bool.setAttribute('class', 'form-check form-check-inline')
-    var _input_bool = document.createElement('input')
-    _input_bool.setAttribute('class', 'form-check-input')
-    _input_bool.setAttribute('type', 'checkbox')
-    _input_bool.setAttribute('id', 'type-bool-' + index)
-    _div_bool.appendChild(_input_bool)
-    var _label_bool = document.createElement('label')
-    _label_bool.setAttribute('class', 'form-check-label')
-    _label_bool.setAttribute('for', 'type-bool-' + index)
-    _label_bool.innerHTML = 'Boolean'
-    _div_bool.appendChild(_label_bool)
-
-    _div_types.appendChild(_div_bool)
-
-    var _div_text = document.createElement('div')
-    _div_text.setAttribute('class', 'form-check form-check-inline')
-    var _input_text = document.createElement('input')
-    _input_text.setAttribute('class', 'form-check-input')
-    _input_text.setAttribute('type', 'checkbox')
-    _input_text.setAttribute('id', 'type-text-' + index)
-    _div_text.appendChild(_input_text)
-    var _label_text = document.createElement('label')
-    _label_text.setAttribute('class', 'form-check-label')
-    _label_text.setAttribute('for', 'type-text-' + index)
-    _label_text.innerHTML = 'Text'
-    _div_text.appendChild(_label_text)
-
-    _div_types.appendChild(_div_text)
-
-    var _div_datetime = document.createElement('div')
-    _div_datetime.setAttribute('class', 'form-check form-check-inline')
-    var _input_datetime = document.createElement('input')
-    _input_datetime.setAttribute('class', 'form-check-input')
-    _input_datetime.setAttribute('type', 'checkbox')
-    _input_datetime.setAttribute('id', 'type-datetime-' + index)
-    _div_datetime.appendChild(_input_datetime)
-    var _label_datetime = document.createElement('label')
-    _label_datetime.setAttribute('class', 'form-check-label')
-    _label_datetime.setAttribute('for', 'type-datetime-' + index)
-    _label_datetime.innerHTML = 'Date/Time'
-    _div_datetime.appendChild(_label_datetime)
-
-    _div_types.appendChild(_div_datetime)
-
-    var _div_spatial = document.createElement('div')
-    _div_spatial.setAttribute('class', 'form-check form-check-inline')
-    var _input_spatial = document.createElement('input')
-    _input_spatial.setAttribute('class', 'form-check-input')
-    _input_spatial.setAttribute('type', 'checkbox')
-    _input_spatial.setAttribute('id', 'type-spatial-' + index)
-    _div_spatial.appendChild(_input_spatial)
-    var _label_spatial = document.createElement('label')
-    _label_spatial.setAttribute('class', 'form-check-label')
-    _label_spatial.setAttribute('for', 'type-spatial-' + index)
-    _label_spatial.innerHTML = 'Spatial'
-    _div_spatial.appendChild(_label_spatial)
-
-    _div_types.appendChild(_div_spatial)
-
-    var _div_phone = document.createElement('div')
-    _div_phone.setAttribute('class', 'form-check form-check-inline')
-    var _input_phone = document.createElement('input')
-    _input_phone.setAttribute('class', 'form-check-input')
-    _input_phone.setAttribute('type', 'checkbox')
-    _input_phone.setAttribute('id', 'type-phone-' + index)
-    _div_phone.appendChild(_input_phone)
-    var _label_phone = document.createElement('label')
-    _label_phone.setAttribute('class', 'form-check-label')
-    _label_phone.setAttribute('for', 'type-phone-' + index)
-    _label_phone.innerHTML = 'Phone Number'
-    _div_phone.appendChild(_label_phone)
-
-    _div_types.appendChild(_div_phone)
-
-    variables_div.appendChild(_div_types)
 }
 
 var search_results = [];
@@ -450,14 +276,18 @@ function toggleAugmentation(id) {
     }
 }
 
-function getAugmentationInfoHTML(pairs, score, result_id, type_) {
+function getAugmentationInfoHTML(left_columns_names, right_metadata, right_columns, score, result_id, type_) {
     var columns_info = '';
-    for(var j = 0; j < pairs.length; j++) {
-        var column = pairs[j];
+    for(var j = 0; j < left_columns_names.length; j++) {
+        var left_column = left_columns_names[j];
+        var right_column = right_metadata.columns[right_columns[j][0]].name;
+        for (var k = 1; k < right_columns[j].length; k++) {
+            right_column += ',' + right_metadata.columns[right_columns[j][k]].name;
+        }
         columns_info += (
             '<a href="javascript: changePairStatus(\'' + type_ + '\',' + result_id + ',' + j + ');" class="list-group-item list-group-item-action" ' +
             '  id="pair-' + type_ + '-' + result_id + '-' + j + '">' +
-            '  <small><em>' + column[0] + '</em> and <em>' + column[1] + '</em></small>' +
+            '  <small><em>' + left_column + '</em> and <em>' + right_column + '</em></small>' +
             '</a>'
         );
     }
@@ -473,9 +303,9 @@ function getAugmentationInfoHTML(pairs, score, result_id, type_) {
         '      <div class="list-group text-muted">' +
         '        <a class="list-group-item"><small>Score: ' + score + '</small></li>' + columns_info +
         '      </div>' +
-        '      <div class="btn-group mt-3">' +
-        '        <a href="javascript: submitAugmentationForm('+ result_id + ')" class="btn btn-sm btn-outline-secondary">Augment</a>' +
-        '      </div>' +
+//        '      <div class="btn-group mt-3">' +
+//        '        <a href="javascript: submitAugmentationForm('+ result_id + ')" class="btn btn-sm btn-outline-secondary">Augment</a>' +
+//        '      </div>' +
         '    </div>'
     );
 
@@ -515,122 +345,52 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     // Query
     search.query = {};
 
-    search.query.dataset = {};
+    search.query.keywords = [];
     var keywords = document.getElementById('keywords').value;
-    if(keywords) {
-      search.query.dataset.about = keywords;
-    }
-    var names = document.getElementById('names').value;
-    names = names.split(/[ ,+]+/);
-    if(names.length == 1 && names[0] === '') {
-      names = [];
+    keywords = keywords.split(/[ ,+]+/);
+    if(keywords.length == 1 && keywords[0] === '') {
+      keywords = [];
     } else {
-      search.query.dataset.name = names;
+      search.query.keywords = keywords;
     }
-    var description = document.getElementById('description').value;
-    description = description.split(/[ ,+]+/);
-    if(description.length == 1 && description[0] === '') {
-      description = [];
-    } else {
-      search.query.dataset.description = description;
-    }
+
+    search.query.variables = []
 
     for(key in indices) {
-      search.query[key + '_variables'] = []
-      if(indices[key]['temporal'].length > 0) {
-        for (var i = 0; i < indices[key]['temporal'].length; i++) {
-            var index = indices[key]['temporal'][i];
-            var start = document.getElementById('start-' + index).value;
-            var end = document.getElementById('end-' + index).value;
-            if(start || end) {
-                var variable = {'type': 'temporal_entity'};
-                if(start) {
-                    variable['start'] = start;
+      if(indices[key].length > 0) {
+        for (var i = 0; i < indices[key].length; i++) {
+            var index = indices[key][i];
+            if (key == 'temporal') {
+                var start = document.getElementById('start-' + index).value;
+                var end = document.getElementById('end-' + index).value;
+                if(start || end) {
+                    var variable = {'type': 'temporal_variable'};
+                    if(start) {
+                        variable['start'] = start;
+                    }
+                    if(end) {
+                        variable['end'] = end;
+                    }
+                    search.query.variables.push(variable)
                 }
-                if(end) {
-                    variable['end'] = end;
-                }
-                search.query[key + '_variables'].push(variable)
-            }
-        }
-      }
-      if(indices[key]['geospatial'].length > 0) {
-        for (var i = 0; i < indices[key]['geospatial'].length; i++) {
-            var index = indices[key]['geospatial'][i];
-            var variable = {'type': 'geospatial_entity'};
-            var features = map_sources[index-1].getFeatures();
-            if (features.length > 0) {
-                var geometry = features[0].getGeometry();
-                var shape = document.getElementById('shape-type-' + index).value;
-                if (shape === 'bb-' + index) {
-                  var coord = geometry.clone().transform('EPSG:3857', 'EPSG:4326').getCoordinates()[0];
-                  var top_left_lat = coord[3][1];
-                  var top_left_lon = coord[3][0];
-                  var bottom_right_lat = coord[1][1];
-                  var bottom_right_lon = coord[1][0];
+            } else {
+                var variable = {'type': 'geospatial_variable'};
+                var features = map_sources[index-1].getFeatures();
+                if (features.length > 0) {
+                    var geometry = features[0].getGeometry();
+                    var coord = geometry.clone().transform('EPSG:3857', 'EPSG:4326').getCoordinates()[0];
+                    var top_left_lat = coord[3][1];
+                    var top_left_lon = coord[3][0];
+                    var bottom_right_lat = coord[1][1];
+                    var bottom_right_lon = coord[1][0];
 
-                  variable['bounding_box'] = {'latitude1': top_left_lat,
-                                              'latitude2': bottom_right_lat,
-                                              'longitude1': top_left_lon,
-                                              'longitude2': bottom_right_lon}
-                } else {
-                  var new_geometry = geometry.clone().transform('EPSG:3857', 'EPSG:4326');
-                  var center_lat = new_geometry.getCenter()[1];
-                  var center_lon = new_geometry.getCenter()[0];
-                  var radius = new_geometry.getRadius();
+                    variable['latitude1'] = top_left_lat;
+                    variable['latitude2'] = bottom_right_lat;
+                    variable['longitude1'] = top_left_lon;
+                    variable['longitude2'] = bottom_right_lon;
 
-                  variable['circle'] = {'latitude': center_lat,
-                                        'longitude': center_lon,
-                                        'radius': radius}
+                    search.query.variables.push(variable);
                 }
-                search.query[key + '_variables'].push(variable)
-            }
-        }
-      }
-      if(indices[key]['generic'].length > 0) {
-        for (var i = 0; i < indices[key]['generic'].length; i++) {
-            var index = indices[key]['generic'][i];
-            var column_names = document.getElementById('name-' + index).value;
-            column_names = column_names.split(/[ ,+]+/);
-            if(column_names.length == 1 && column_names[0] === '') {
-                column_names = [];
-            }
-            var str_types = [];
-            var sem_types = [];
-            if(document.getElementById('type-integer-' + index).checked) {
-                str_types.push('http://schema.org/Integer');
-            }
-            if(document.getElementById('type-float-' + index).checked) {
-                str_types.push('http://schema.org/Float');
-            }
-            if(document.getElementById('type-bool-' + index).checked) {
-                sem_types.push('http://schema.org/Boolean');
-            }
-            if(document.getElementById('type-text-' + index).checked) {
-                str_types.push('http://schema.org/Text');
-            }
-            if(document.getElementById('type-datetime-' + index).checked) {
-                sem_types.push('http://schema.org/DateTime');
-            }
-            if(document.getElementById('type-spatial-' + index).checked) {
-                sem_types.push('http://schema.org/latitude');
-                sem_types.push('http://schema.org/longitude');
-            }
-            if(document.getElementById('type-phone-' + index).checked) {
-                sem_types.push('https://metadata.datadrivendiscovery.org/types/PhoneNumber');
-            }
-            if(column_names.length > 0 || str_types.length > 0 || sem_types.length > 0) {
-                var variable = {'type': 'generic_entity'};
-                if(column_names.length > 0) {
-                    variable['variable_name'] = column_names;
-                }
-                if(str_types.length > 0) {
-                    variable['variable_syntactic_type'] = str_types;
-                }
-                if(sem_types.length > 0) {
-                    variable['variable_semantic_type'] = sem_types;
-                }
-                search.query[key + '_variables'].push(variable)
             }
         }
       }
@@ -643,10 +403,13 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     if(search_columns.length == 1 && search_columns[0] === '') {
         search_columns = [];
     } else {
-        search.query['desired_variables'].push(
-            {'type': 'dataframe_columns',
-             'names': search_columns}
-        );
+       for (var i = 0; i < search_columns.length; i++) {
+           search_columns[i] = parseInt(search_columns[i]);
+       }
+       var variable = {'type': 'tabular_variable'};
+       variable['columns'] = search_columns
+       variable['relationship'] = 'contains'
+       search.query.variables.push(variable);
     }
 
     var results_div = document.getElementById('results');
@@ -696,22 +459,15 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         description = "(no description)";
       }
 
-      var join_info = '';
-      if((data.join_columns) && (data.join_columns.length > 0)) {
-        join_info = getAugmentationInfoHTML(
-            data.join_columns,
+      var aug_info = '';
+      if ((data.augmentation) && data.augmentation.type != 'none') {
+         aug_info = getAugmentationInfoHTML(
+            data.augmentation.left_columns_names,
+            data.metadata,
+            data.augmentation.right_columns,
             data.score,
             i,
-            'join');
-      }
-
-      var union_info = '';
-      if((data.union_columns) && (data.union_columns.length > 0)) {
-        union_info = getAugmentationInfoHTML(
-            data.union_columns,
-            data.score,
-            i,
-            'union');
+            data.augmentation.type);
       }
 
       elem.innerHTML = (
@@ -725,7 +481,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
         '      </div>' +
         '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
-        '    </div>' + join_info + union_info +
+        '    </div>' + aug_info +
         '  </div>' +
         '</div>'
       );
