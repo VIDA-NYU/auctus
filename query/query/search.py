@@ -3,6 +3,10 @@ import logging
 import os
 import pickle
 import tempfile
+
+
+from datamart_augmentation.search import \
+    get_joinable_datasets, get_unionable_datasets
 from datamart_profiler import process_dataset
 
 
@@ -15,6 +19,56 @@ BUF_SIZE = 128000
 class ClientError(ValueError):
     """Error in query sent by client.
     """
+
+
+def get_augmentation_search_results(es, data_profile, query_args,
+                                    tabular_variables, score_threshold,
+                                    dataset_id=None, join=True, union=True):
+    join_results = []
+    union_results = []
+
+    if join:
+        join_results = get_joinable_datasets(
+            es=es,
+            data_profile=data_profile,
+            dataset_id=dataset_id,
+            query_args=query_args,
+            tabular_variables=tabular_variables
+        )
+    if union:
+        union_results = get_unionable_datasets(
+            es=es,
+            data_profile=data_profile,
+            dataset_id=dataset_id,
+            query_args=query_args,
+            tabular_variables=tabular_variables
+        )
+
+    results = []
+    for r in join_results:
+        if r['score'] < score_threshold:
+            continue
+        results.append(dict(
+            id=r['id'],
+            score=r['score'],
+            metadata=r['metadata'],
+            augmentation=r['augmentation'],
+        ))
+    for r in union_results:
+        if r['score'] < score_threshold:
+            continue
+        results.append(dict(
+            id=r['id'],
+            score=r['score'],
+            metadata=r['metadata'],
+            augmentation=r['augmentation'],
+        ))
+
+    return sorted(
+        results,
+        key=lambda item: item['score'],
+        reverse=True
+    )
 
 
 def get_profile_data(filepath, metadata=None):

@@ -70,7 +70,8 @@ def fix_temporal_resolution(left_data, right_data,
 
 
 def join(original_data, augment_data, left_columns, right_columns,
-         columns=None, how='left', qualities=False):
+         columns=None, how='left', qualities=False,
+         return_only_datamart_data=False):
     """
     Performs a join between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
@@ -119,21 +120,42 @@ def join(original_data, augment_data, left_columns, right_columns,
 
     # qualities
     qualities_list = list()
-    if qualities:
-        new_columns = list(set(join_.columns).difference(
-            set([c for c in original_data.columns])
-        ))
-        qualities_list.append(dict(
-            qualName='augmentation_info',
-            qualValue=dict(
-                new_columns=new_columns,
-                removed_columns=[],
-                nb_rows_before=original_data.shape[0],
-                nb_rows_after=join_.shape[0],
-                augmentation_type='join'
-            ),
-            qualValueType='dict'
-        ))
+
+    if return_only_datamart_data:
+        # dropping columns from original data
+        join_ = join_.drop(
+            list(set(original_data.columns).difference(set(rename.values()))),
+            axis=1
+        )
+
+        # dropping rows with all null values
+        join_.dropna(axis=0, how='all', inplace=True)
+
+        # finally, rename back columns
+        rename_back = dict()
+        for k, v in rename.items():
+            rename_back[v] = k
+        for column in join_.columns:
+            if column.endswith('_r'):
+                rename_back[column] = column[:-2]
+        join_ = join_.rename(columns=rename_back)
+
+    else:
+        if qualities:
+            new_columns = list(set(join_.columns).difference(
+                set([c for c in original_data.columns])
+            ))
+            qualities_list.append(dict(
+                qualName='augmentation_info',
+                qualValue=dict(
+                    new_columns=new_columns,
+                    removed_columns=[],
+                    nb_rows_before=original_data.shape[0],
+                    nb_rows_after=join_.shape[0],
+                    augmentation_type='join'
+                ),
+                qualValueType='dict'
+            ))
 
     return join_, qualities_list
 
@@ -342,7 +364,8 @@ def augment_data(left_data, right_data, left_columns, right_columns,
         raise RuntimeError('Augmentation task not recognized: %s.' % how)
 
 
-def augment(data, newdata, metadata, task, columns=None, destination=None):
+def augment(data, newdata, metadata, task, columns=None, destination=None,
+            return_only_datamart_data=False):
     """
     Augments original data based on the task.
 
@@ -352,6 +375,8 @@ def augment(data, newdata, metadata, task, columns=None, destination=None):
     :param task: the augmentation task.
     :param columns: a list of column indices from newdata that will be added to data
     :param destination: location to save the files.
+    :param return_only_datamart_data: only returns the portion of newdata that matches
+      well with data.
     """
 
     if 'id' not in task:
@@ -364,7 +389,8 @@ def augment(data, newdata, metadata, task, columns=None, destination=None):
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             columns=columns,
-            qualities=True
+            qualities=True,
+            return_only_datamart_data=return_only_datamart_data
         )
         return generate_d3m_dataset(join_, destination, qualities)
     elif task['augmentation']['type'] == 'union':
@@ -377,5 +403,4 @@ def augment(data, newdata, metadata, task, columns=None, destination=None):
         )
         return generate_d3m_dataset(union_, destination, qualities)
     else:
-        # TODO: handle 'none' case
         raise RuntimeError('Augmentation task not provided.')

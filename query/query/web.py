@@ -16,15 +16,14 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import zipfile
 
-from datamart_augmentation.search import \
-    get_joinable_datasets, get_unionable_datasets
 from datamart_augmentation.augmentation import \
     augment, augment_data
 from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
 
 from .graceful_shutdown import GracefulApplication, GracefulHandler
-from .search import ClientError, handle_data_parameter
+from .search import ClientError, get_augmentation_search_results, \
+    handle_data_parameter
 
 
 logger = logging.getLogger(__name__)
@@ -386,44 +385,13 @@ class Search(CorsHandler, GracefulHandler):
                 ))
             return self.send_json(results)
         else:
-            join_results = get_joinable_datasets(
-                es=self.application.elasticsearch,
-                data_profile=data_profile,
-                query_args=query_args,
-                tabular_variables=tabular_variables
-            )
-            union_results = get_unionable_datasets(
-                es=self.application.elasticsearch,
-                data_profile=data_profile,
-                query_args=query_args,
-                tabular_variables=tabular_variables
-            )
-
-            results = []
-            for r in join_results:
-                if r['score'] < SCORE_THRESHOLD:
-                    continue
-                results.append(dict(
-                    id=r['id'],
-                    score=r['score'],
-                    metadata=r['metadata'],
-                    augmentation=r['augmentation'],
-                ))
-            for r in union_results:
-                if r['score'] < SCORE_THRESHOLD:
-                    continue
-                results.append(dict(
-                    id=r['id'],
-                    score=r['score'],
-                    metadata=r['metadata'],
-                    augmentation=r['augmentation'],
-                ))
-
             return self.send_json(
-                sorted(
-                    results,
-                    key=lambda item: item['score'],
-                    reverse=True
+                get_augmentation_search_results(
+                    self.application.elasticsearch,
+                    data_profile,
+                    query_args,
+                    tabular_variables,
+                    SCORE_THRESHOLD
                 )
             )
 
@@ -518,44 +486,94 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
     def post(self):
         PROM_DOWNLOAD.inc()
 
-        # TODO: handle 'data'
-
         type_ = self.request.headers.get('Content-type', '')
-        params = None
+
+        task = None
+        data = None
+        output_format = 'd3m'
         if type_.startswith('application/json'):
-            params = self.get_json()
+            task = self.get_json()
         elif type_.startswith('multipart/form-data'):
-            params = self.get_body_argument('params', None)
-            if params is None and 'params' in self.request.files:
-                params = (
-                    self.request.files['params'][0].body.decode('utf-8'))
-        if params is None:
+            task = self.get_body_argument('task', None)
+            if task is None and 'task' in self.request.files:
+                task = (
+                    self.request.files['task'][0].body.decode('utf-8'))
+            if 'data' in self.request.files:
+                data = self.request.files['data'][0].body
+            output_format = self.get_body_argument('format', None)
+            if output_format is None and 'format' in self.request.files:
+                output_format = (
+                    self.request.files['format'][0].body.decode('utf-8'))
+        if task is None:
             self.set_status(400)
             return self.send_json({'error': "Either use multipart/form-data "
                                             "to send the 'data' file and "
-                                            "'params' JSON, or use "
+                                            "'task' JSON, or use "
                                             "application/json to send "
-                                            "'params' alone"})
+                                            "'task' alone"})
 
-        params = json.loads(params)
-        if 'id' not in params or 'format' not in params:
-            self.set_status(400)
-            return self.send_json({'error': "Both 'id' and 'format' "
-                                            "must be specified in "
-                                            "'params' JSON"})
+        task = json.loads(task)
 
-        dataset_id = params['id']
-        # Get materialization data from Elasticsearch
-        try:
-            metadata = self.application.elasticsearch.get(
-                'datamart', '_doc', id=dataset_id
-            )['_source']
-        except elasticsearch.NotFoundError:
-            raise HTTPError(404)
-        output_format = params['format']
+        # materialize augmentation data
+        metadata = task['metadata']
 
-        return self.send_dataset(dataset_id, metadata, output_format)
+        if not data:
+            return self.send_dataset(task['id'], metadata, output_format)
+        else:
+            # data
+            try:
+                data_path, data_profile, tmp = handle_data_parameter(data)
+            except ClientError as e:
+                return self.send_error(400, reason=e.args[0])
 
+            # first, look for possible augmentation
+            search_results = get_augmentation_search_results(
+                es=self.application.elasticsearch,
+                data_profile=data_profile,
+                query_args=None,
+                tabular_variables=None,
+                score_threshold=SCORE_THRESHOLD,
+                dataset_id=task['id'],
+                union=False
+            )
+
+            if search_results:
+                task = search_results[0]
+
+                try:
+                    with get_dataset(metadata, task['id'], format='csv') as newdata:
+                        # perform augmentation
+                        new_path = augment(
+                            data_path,
+                            newdata,
+                            data_profile,
+                            task,
+                            return_only_datamart_data=True
+                        )
+
+                except Exception as e:
+                    return self.send_error(400, reason=e.args[0])
+
+                # send a zip file
+                self.set_header('Content-Type', 'application/zip')
+                self.set_header(
+                    'Content-Disposition',
+                    'attachment; filename="augmentation.zip"')
+                writer = RecursiveZipWriter(self.write)
+                writer.write_recursive(new_path, '')
+                writer.close()
+                shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+                self.finish()
+
+                if tmp:
+                    os.remove(data_path)
+            else:
+                self.send_error(
+                    status_code=400,
+                    reason='The DataMart dataset referenced by "task" '
+                           'cannot augment "data".'
+                )
+                return
 
 class Metadata(CorsHandler, GracefulHandler):
     @PROM_METADATA_TIME.time()
@@ -582,12 +600,21 @@ class Augment(CorsHandler, GracefulHandler):
             return self.send_json({'error': "Use multipart/form-data to send "
                                             "the 'data' file and 'task' JSON"})
 
-        task = self.request.files['task'][0].body
+        task = None
+        if 'task' in self.request.files:
+            task = self.request.files['task'][0].body
         if task is not None:
             task = json.loads(task)
+
         destination = self.get_body_argument('destination', None)
-        data = self.request.files['data'][0].body
-        columns = self.request.files['columns'][0].body
+
+        data = None
+        if 'data' in self.request.files:
+            data = self.request.files['data'][0].body
+
+        columns = None
+        if 'columns' in self.request.files:
+            columns = self.request.files['columns'][0].body
         if columns is not None:
             columns = json.loads(columns)
 
@@ -607,6 +634,29 @@ class Augment(CorsHandler, GracefulHandler):
 
         # materialize augmentation data
         metadata = task['metadata']
+
+        # no augmentation task provided -- will first look for possible augmentation
+        if task['augmentation']['type'] == 'none':
+            search_results = get_augmentation_search_results(
+                es=self.application.elasticsearch,
+                data_profile=data_profile,
+                query_args=None,
+                tabular_variables=None,
+                score_threshold=SCORE_THRESHOLD,
+                dataset_id=task['id'],
+                union=False
+            )
+
+            if search_results:
+                # get first result
+                task = search_results[0]
+            else:
+                self.send_error(
+                    status_code=400,
+                    reason='The DataMart dataset referenced by "task" '
+                           'cannot augment "data".'
+                )
+                return
 
         try:
             with get_dataset(metadata, task['id'], format='csv') as newdata:
