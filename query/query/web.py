@@ -353,7 +353,7 @@ class Search(CorsHandler, GracefulHandler):
             return
 
         if not data_profile:
-            logger.info("Query: %r", query_args)
+            # logger.info("Query: %r", query_args)
             hits = self.application.elasticsearch.search(
                 index='datamart',
                 body={
