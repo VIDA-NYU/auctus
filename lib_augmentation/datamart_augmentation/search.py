@@ -515,11 +515,15 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
             meta['description'] = meta['description'][:100] + "..."
         left_columns = []
         right_columns = []
+        left_columns_names = []
         try:
             left_columns.append([int(column)])
+            left_columns_names.append(data_profile['columns'][int(column)]['name'])
         except ValueError:
             index_1, index_2 = column.split(",")
             left_columns.append([int(index_1), int(index_2)])
+            left_columns_names.append(data_profile['columns'][int(index_1)]['name'] +
+                                      ', ' + data_profile['columns'][int(index_2)]['name'])
         try:
             right_columns.append([int(external_column)])
         except ValueError:
@@ -533,7 +537,8 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
             augmentation={
                 'type': 'join',
                 'left_columns': left_columns,
-                'right_columns': right_columns
+                'right_columns': right_columns,
+                'left_columns_names': left_columns_names
             }
         ))
 
@@ -742,6 +747,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
         # TODO: augmentation information is incorrect
         left_columns = []
         right_columns = []
+        left_columns_names = []
         for att_1, att_2, sim in column_pairs[dt]:
             if dataset_id:
                 left_columns.append(
@@ -751,6 +757,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 left_columns.append(
                     get_column_identifiers(es, [att_1], data_profile=data_profile)
                 )
+            left_columns_names.append(att_1)
             right_columns.append(
                 get_column_identifiers(es, [att_2], dataset_id=dt)
             )
@@ -762,7 +769,8 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
             augmentation={
                 'type': 'union',
                 'left_columns': left_columns,
-                'right_columns': right_columns
+                'right_columns': right_columns,
+                'left_columns_names': left_columns_names
             }
         ))
 

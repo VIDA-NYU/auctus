@@ -234,7 +234,7 @@ class Search(CorsHandler, GracefulHandler):
 
         # keywords
         keywords_query_all = list()
-        if 'keywords' in query_json:
+        if 'keywords' in query_json and query_json['keywords']:
             if not isinstance(query_json['keywords'], list):
                 self.send_error(
                     status_code=400,
@@ -353,7 +353,7 @@ class Search(CorsHandler, GracefulHandler):
             return
 
         if not data_profile:
-            # logger.info("Query: %r", query_args)
+            logger.info("Query: %r", query_args)
             hits = self.application.elasticsearch.search(
                 index='datamart',
                 body={

@@ -29,50 +29,24 @@
 
       <div class="form-row">
         <div class="form-group col-md-8">
-          <label for="keywords">Dataset Keywords:</label>
+          <label for="keywords">Keywords:</label>
           <input class="form-control" id="keywords" autofocus />
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group col-md-8">
-          <label for="names">Dataset Name:</label>
-          <input class="form-control" id="names" autofocus />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group col-md-8">
-          <label for="description">Dataset Description:</label>
-          <input class="form-control" id="description" autofocus />
-        </div>
-      </div>
 
-      <h4>Required Variables</h4>
+      <h4>Variables</h4>
 
-      <div id="required"></div>
+      <div id="variables"></div>
       <div class="form-row">
         <select id="select-required">
-          <option value="generic">Generic</option>
           <option value="temporal">Temporal</option>
           <option value="geospatial">Geospatial</option>
         </select>
         <button class="btn btn-secondary btn-sm ml-3" type="button"
-                onclick="variableChange('select-required', 'required');">Add</button>
+                onclick="variableChange('select-required');">Add</button>
       </div>
 
       <p></p>
-
-      <h4>Desired Variables</h4>
-
-      <div id="desired"></div>
-      <div class="form-row">
-        <select id="select-desired">
-          <option value="generic">Generic</option>
-          <option value="temporal">Temporal</option>
-          <option value="geospatial">Geospatial</option>
-        </select>
-        <button class="btn btn-secondary btn-sm ml-3" type="button"
-                onclick="variableChange('select-desired', 'desired');">Add</button>
-      </div>
 
       <div class="form-group row justify-content-center mt-4">
         <button class="btn btn-lg btn-primary btn-block col-md-8" type="submit">Go</button>

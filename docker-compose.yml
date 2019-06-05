@@ -46,7 +46,7 @@ services:
       - 8001:8001
     volumes:
       - datasets:/datasets
-      - ./coordinator/coordinator:/usr/src/app/coordinator/coordinator
+#      - ./coordinator/coordinator:/usr/src/app/coordinator/coordinator
   query:
     build:
       context: .
@@ -63,11 +63,9 @@ services:
     volumes:
       - datasets:/datasets
       - query-cache:/cache
-#      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
-#      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
-      - ../datasets/seed_datasets_current:/d3m_seed_datasets:ro
-      - ../datasets/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
-      - ./query/query:/usr/src/app/query/query
+      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
+      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
+#      - ./query/query:/usr/src/app/query/query
   querylb:
     image: dockercloud/haproxy:1.6.7
     environment:
@@ -91,32 +89,30 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
     volumes:
       - datasets:/datasets
-#      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
-#      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
-      - ../datasets/seed_datasets_current:/d3m_seed_datasets:ro
-      - ../datasets/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
-#  prometheus:
-#    image: prom/prometheus
-#    ports:
-#      - 9090:9090
-#    volumes:
-#      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
-#  grafana:
-#    image: grafana/grafana
-#    ports:
-#      - 3000:3000
-#  example_discoverer:
-#    build:
-#      context: .
-#      dockerfile: discovery/Dockerfile
-#    command: example
-#    environment:
-#      - ELASTICSEARCH_HOSTS=elasticsearch:9200
-#      - AMQP_HOST=rabbitmq
-#      - AMQP_USER=${AMQP_USER}
-#      - AMQP_PASSWORD=${AMQP_PASSWORD}
-#    volumes:
-#      - datasets:/datasets
+      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
+      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+  example_discoverer:
+    build:
+      context: .
+      dockerfile: discovery/Dockerfile
+    command: example
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
+    volumes:
+      - datasets:/datasets
   d3m_seeds:
     build:
       context: .
@@ -129,29 +125,27 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
     volumes:
       - datasets:/datasets
-#      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
-#      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
-      - ../datasets/seed_datasets_current:/d3m_seed_datasets:ro
-      - ../datasets/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
-#  socrata:
-#    build:
-#      context: .
-#      dockerfile: discovery/socrata/Dockerfile
-#    environment:
-#      - ELASTICSEARCH_HOSTS=elasticsearch:9200
-#      - AMQP_HOST=rabbitmq
-#      - AMQP_USER=${AMQP_USER}
-#      - AMQP_PASSWORD=${AMQP_PASSWORD}
-#  noaa:
-#    build:
-#      context: .
-#      dockerfile: discovery/noaa/Dockerfile
-#    environment:
-#      - ELASTICSEARCH_HOSTS=elasticsearch:9200
-#      - AMQP_HOST=rabbitmq
-#      - AMQP_USER=${AMQP_USER}
-#      - AMQP_PASSWORD=${AMQP_PASSWORD}
-#      - NOAA_TOKEN=${NOAA_TOKEN}
+      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
+      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
+  socrata:
+    build:
+      context: .
+      dockerfile: discovery/socrata/Dockerfile
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
+  noaa:
+    build:
+      context: .
+      dockerfile: discovery/noaa/Dockerfile
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - NOAA_TOKEN=${NOAA_TOKEN}
 volumes:
   datasets:
   query-cache:
