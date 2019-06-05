@@ -69,47 +69,59 @@ def fix_temporal_resolution(left_data, right_data,
             ]
 
 
-def join(original_data, augment_data, columns, how='inner',
-         qualities=False):
+def join(original_data, augment_data, left_columns, right_columns,
+         columns=None, how='left', qualities=False):
     """
-    Performs an inner join between original_data (pandas.DataFrame)
-    and augment_data (pandas.DataFrame) using columns.
+    Performs a join between original_data (pandas.DataFrame)
+    and augment_data (pandas.DataFrame) using left_columns and right_columns.
 
     Returns the new pandas.DataFrame object.
     """
 
+    for i in range(len(left_columns)):
+        if len(left_columns[i]) > 1 or len(right_columns[i]) > 1:
+            raise Exception('DataMart currently does not support '
+                            'combination between columns for augmentation.')
+
+    # remove undesirable columns from augment_data
+    # but first, make sure to keep the join keys
+    if columns:
+        for right_column in right_columns:
+            columns.append(right_column[0])
+        columns = set([augment_data.columns[c] for c in columns])
+        drop_columns = list(set(augment_data.columns).difference(columns))
+        augment_data = augment_data.drop(drop_columns, axis=1)
+
     rename = dict()
-    for c in columns:
-        rename[c[1]] = c[0]
+    for i in range(len(left_columns)):
+        rename[augment_data.columns[right_columns[i][0]]] = \
+            original_data.columns[left_columns[i][0]]
     augment_data = augment_data.rename(columns=rename)
 
     # matching temporal resolutions
     original_data_dt = original_data.select_dtypes(include=[np.datetime64]).columns
     augment_data_dt = augment_data.select_dtypes(include=[np.datetime64]).columns
-    for c in columns:
-        if c[0] in original_data_dt and c[0] in augment_data_dt:
-            fix_temporal_resolution(original_data, augment_data, c[0], c[0])
+    for i in range(len(left_columns)):
+        column_name = original_data.columns[left_columns[i][0]]
+        if column_name in original_data_dt and column_name in augment_data_dt:
+            fix_temporal_resolution(original_data, augment_data, column_name, column_name)
+
+    # TODO: work on aggregations
 
     # join
     join_ = pd.merge(
         original_data,
         augment_data,
         how=how,
-        on=[c[0] for c in columns],
-        suffixes=('_l', '_r')
+        on=list(rename.values()),
+        suffixes=('', '_r')
     )
-
-    # remove all columns with 'd3mIndex'
-    join_ = join_.drop([c for c in join_.columns if 'd3mIndex' in c], axis=1)
-
-    # drop rows with missing values
-    # join_.dropna(axis=0, how='any', inplace=True)
 
     # qualities
     qualities_list = list()
     if qualities:
         new_columns = list(set(join_.columns).difference(
-            set([c for c in original_data.columns if 'd3mIndex' not in c])
+            set([c for c in original_data.columns])
         ))
         qualities_list.append(dict(
             qualName='augmentation_info',
@@ -123,16 +135,10 @@ def join(original_data, augment_data, columns, how='inner',
             qualValueType='dict'
         ))
 
-    # create a single d3mIndex
-    join_['d3mIndex'] = pd.Series(
-        data=[i for i in range(join_.shape[0])],
-        index=join_.index
-    )
-
     return join_, qualities_list
 
 
-def union(original_data, augment_data, columns,
+def union(original_data, augment_data, left_columns, right_columns,
           qualities=False):
     """
     Performs a union between original_data (pandas.DataFrame)
@@ -141,12 +147,18 @@ def union(original_data, augment_data, columns,
     Returns the new pandas.DataFrame object.
     """
 
+    for i in range(len(left_columns)):
+        if len(left_columns[i]) > 1 or len(right_columns[i]) > 1:
+            raise Exception('DataMart currently does not support '
+                            'combination between columns for augmentation.')
+
     # saving all columns from original data
     original_data_cols = original_data.columns
 
     # dropping columns not in union
-    original_columns = [c[0] for c in columns]
-    augment_data_columns = [c[1] for c in columns]
+    original_columns = [original_data.columns[c[0]] for c in left_columns]
+    original_columns.append('d3mIndex')
+    augment_data_columns = [augment_data.columns[c[0]] for c in right_columns]
     original_data = original_data.drop(
         [c for c in original_data.columns if c not in original_columns],
         axis=1
@@ -157,28 +169,27 @@ def union(original_data, augment_data, columns,
     )
 
     rename = dict()
-    for c in columns:
-        rename[c[1]] = c[0]
+    for i in range(len(left_columns)):
+        rename[augment_data.columns[right_columns[i][0]]] = \
+            original_data.columns[left_columns[i][0]]
     augment_data = augment_data.rename(columns=rename)
 
     # matching temporal resolutions
     original_data_dt = original_data.select_dtypes(include=[np.datetime64]).columns
     augment_data_dt = augment_data.select_dtypes(include=[np.datetime64]).columns
-    for c in columns:
-        if c[0] in original_data_dt and c[0] in augment_data_dt:
-            fix_temporal_resolution(original_data, augment_data, c[0], c[0])
+    for i in range(len(left_columns)):
+        column_name = original_data.columns[left_columns[i][0]]
+        if column_name in original_data_dt and column_name in augment_data_dt:
+            fix_temporal_resolution(original_data, augment_data, column_name, column_name)
 
     # union
     union_ = pd.concat([original_data, augment_data])
-
-    # drop rows with missing values
-    # union_.dropna(axis=0, how='any', inplace=True)
 
     # qualities
     qualities_list = list()
     if qualities:
         removed_columns = list(
-            set([c for c in original_data_cols if 'd3mIndex' not in c]).difference(
+            set([c for c in original_data_cols]).difference(
                 union_.columns
             )
         )
@@ -193,12 +204,6 @@ def union(original_data, augment_data, columns,
             ),
             qualValueType='dict'
         ))
-
-    # create a single d3mIndex
-    union_['d3mIndex'] = pd.Series(
-        data=[i for i in range(union_.shape[0])],
-        index=union_.index
-    )
 
     return union_, qualities_list
 
@@ -337,7 +342,7 @@ def augment_data(left_data, right_data, left_columns, right_columns,
         raise RuntimeError('Augmentation task not recognized: %s.' % how)
 
 
-def augment(data, newdata, metadata, task, destination=None):
+def augment(data, newdata, metadata, task, columns=None, destination=None):
     """
     Augments original data based on the task.
 
@@ -345,27 +350,32 @@ def augment(data, newdata, metadata, task, destination=None):
     :param newdata: the data to augment with.
     :param metadata: the metadata of the data to be augmented.
     :param task: the augmentation task.
+    :param columns: a list of column indices from newdata that will be added to data
     :param destination: location to save the files.
     """
 
     if 'id' not in task:
         raise RuntimeError('Dataset id for the augmentation task not provided.')
 
-    if 'join_columns' in task and len(task['join_columns']) > 0:
+    if task['augmentation']['type'] == 'join':
         join_, qualities = join(
             convert_to_pd(data, metadata['columns']),
             convert_to_pd(newdata, task['metadata']['columns']),
-            task['join_columns'],
+            task['augmentation']['left_columns'],
+            task['augmentation']['right_columns'],
+            columns=columns,
             qualities=True
         )
         return generate_d3m_dataset(join_, destination, qualities)
-    elif 'union_columns' in task and len(task['union_columns']) > 0:
+    elif task['augmentation']['type'] == 'union':
         union_, qualities = union(
             convert_to_pd(data, metadata['columns']),
             convert_to_pd(newdata, task['metadata']['columns']),
-            task['union_columns'],
+            task['augmentation']['left_columns'],
+            task['augmentation']['right_columns'],
             qualities=True
         )
         return generate_d3m_dataset(union_, destination, qualities)
     else:
+        # TODO: handle 'none' case
         raise RuntimeError('Augmentation task not provided.')

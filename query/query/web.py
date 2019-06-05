@@ -223,8 +223,9 @@ class Search(CorsHandler, GracefulHandler):
         if output:
             return {
                 'bool': {
-                    'should': output,
-                    'minimum_should_match': 1,
+#                    'should': output,
+#                    'minimum_should_match': 1,
+                    'must': output
                 }
             }
         return {}
@@ -340,7 +341,7 @@ class Search(CorsHandler, GracefulHandler):
 
         # parameter: query
         query_args = list()
-        search_columns = dict()
+        tabular_variables = list()
         if query:
             query_args, tabular_variables = self.parse_query(query)
 
@@ -517,28 +518,41 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
     def post(self):
         PROM_DOWNLOAD.inc()
 
+        # TODO: handle 'data'
+
         type_ = self.request.headers.get('Content-type', '')
-        search_result = None
+        params = None
         if type_.startswith('application/json'):
-            search_result = self.get_json()
+            params = self.get_json()
         elif type_.startswith('multipart/form-data'):
-            search_result = self.get_body_argument('result', None)
-            if search_result is None and 'result' in self.request.files:
-                search_result = (
-                    self.request.files['result'][0].body.decode('utf-8'))
-        if search_result is None:
+            params = self.get_body_argument('params', None)
+            if params is None and 'params' in self.request.files:
+                params = (
+                    self.request.files['params'][0].body.decode('utf-8'))
+        if params is None:
             self.set_status(400)
             return self.send_json({'error': "Either use multipart/form-data "
                                             "to send the 'data' file and "
-                                            "'result' JSON, or use "
-                                            "application/json to send a "
-                                            "search result alone"})
+                                            "'params' JSON, or use "
+                                            "application/json to send "
+                                            "'params' alone"})
 
-        search_result = json.loads(search_result)
+        params = json.loads(params)
+        if 'id' not in params or 'format' not in params:
+            self.set_status(400)
+            return self.send_json({'error': "Both 'id' and 'format' "
+                                            "must be specified in "
+                                            "'params' JSON"})
 
-        dataset_id = search_result['id']
-        metadata = search_result['metadata']
-        output_format = self.get_query_argument('format', 'd3m')
+        dataset_id = params['id']
+        # Get materialization data from Elasticsearch
+        try:
+            metadata = self.application.elasticsearch.get(
+                'datamart', '_doc', id=dataset_id
+            )['_source']
+        except elasticsearch.NotFoundError:
+            raise HTTPError(404)
+        output_format = params['format']
 
         return self.send_dataset(dataset_id, metadata, output_format)
 
@@ -573,6 +587,9 @@ class Augment(CorsHandler, GracefulHandler):
             task = json.loads(task)
         destination = self.get_body_argument('destination', None)
         data = self.request.files['data'][0].body
+        columns = self.request.files['columns'][0].body
+        if columns is not None:
+            columns = json.loads(columns)
 
         # both parameters must be provided
         if not task or not data:
@@ -590,15 +607,20 @@ class Augment(CorsHandler, GracefulHandler):
 
         # materialize augmentation data
         metadata = task['metadata']
-        with get_dataset(metadata, task['id'], format='csv') as newdata:
-            # perform augmentation
-            new_path = augment(
-                data_path,
-                newdata,
-                data_profile,
-                task,
-                destination=destination
-            )
+
+        try:
+            with get_dataset(metadata, task['id'], format='csv') as newdata:
+                # perform augmentation
+                new_path = augment(
+                    data_path,
+                    newdata,
+                    data_profile,
+                    task,
+                    columns=columns,
+                    destination=destination
+                )
+        except Exception as e:
+            return self.send_error(400, reason=e.args[0])
 
         if destination:
             # send the path

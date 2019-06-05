@@ -498,6 +498,7 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
 
     # get pairs of columns with higher score
 
+    all_pairs = []
     for dt in intersections:
         intersections[dt] = sorted(
             intersections[dt],
@@ -507,29 +508,21 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
 
         seen_1 = set()
         seen_2 = set()
-        pairs = []
         for column, external_column, score in intersections[dt]:
             if column in seen_1 or external_column in seen_2:
                 continue
             seen_1.add(column)
             seen_2.add(external_column)
-            pairs.append((column, external_column, score))
-        intersections[dt] = pairs
+            all_pairs.append((column, dt, external_column, score))
 
-    # sorting datasets based on the column with highest score
-
-    sorted_datasets = []
-    for dt in intersections:
-        items = intersections[dt]
-        sorted_datasets.append((dt, items[0][2]))
-    sorted_datasets = sorted(
-        sorted_datasets,
-        key=lambda item: item[1],
+    all_pairs = sorted(
+        all_pairs,
+        key=lambda item: item[3],
         reverse=True
     )
 
     results = []
-    for dt, score in sorted_datasets:
+    for column, dt, external_column, score in all_pairs:
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
         # materialize = meta.get('materialize', {})
@@ -537,17 +530,16 @@ def get_joinable_datasets(es, dataset_id=None, data_profile={},
             meta['description'] = meta['description'][:100] + "..."
         left_columns = []
         right_columns = []
-        for att_1, att_2, sim in intersections[dt]:
-            try:
-                left_columns.append([int(att_1)])
-            except ValueError:
-                index_1, index_2 = att_1.split(",")
-                left_columns.append([int(index_1), int(index_2)])
-            try:
-                right_columns.append([int(att_2)])
-            except ValueError:
-                index_1, index_2 = att_2.split(",")
-                right_columns.append([int(index_1), int(index_2)])
+        try:
+            left_columns.append([int(column)])
+        except ValueError:
+            index_1, index_2 = column.split(",")
+            left_columns.append([int(index_1), int(index_2)])
+        try:
+            right_columns.append([int(external_column)])
+        except ValueError:
+            index_1, index_2 = external_column.split(",")
+            right_columns.append([int(index_1), int(index_2)])
         results.append(dict(
             id=dt,
             score=score,
