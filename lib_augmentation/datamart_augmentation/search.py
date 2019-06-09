@@ -59,6 +59,9 @@ def get_column_coverage(data_profile, filter_=[]):
         # elif column['structural_type'] in (Type.INTEGER, Type.FLOAT):
         #     type_ = 'structural_type'
         #     type_value = column['structural_type']
+        elif column['structural_type'] == Type.INTEGER:
+            type_ = 'structural_type'
+            type_value = column['structural_type']
         elif Type.DATE_TIME in column['semantic_types']:
             type_ = 'semantic_types'
             type_value = Type.DATE_TIME
@@ -197,11 +200,12 @@ def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ra
                     if 'd3mIndex' in column_name:
                         continue
 
-                    sim = compute_levenshtein_sim(
-                        pivot_column.lower(),
-                        column_name.lower()
-                    )
+                    sim = 1.0
                     if type_value != Type.DATE_TIME:
+                        sim = compute_levenshtein_sim(
+                            pivot_column.lower(),
+                            column_name.lower()
+                        )
                         if sim <= JOIN_SIMILARITY_THRESHOLD:
                             continue
 
@@ -219,7 +223,7 @@ def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ra
                         start = max(start_result, range_[0])
                         end = min(end_result, range_[1])
 
-                        intersections[name] += (end - start + 1)
+                        intersections[name] += (end - start + 1) * sim
 
             # pagination
             from_ += size_
