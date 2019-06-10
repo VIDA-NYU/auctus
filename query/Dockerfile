@@ -16,7 +16,7 @@ WORKDIR /usr/src/app
 COPY Pipfile.lock install_deps.py /usr/src/app/
 RUN python3 install_deps.py Pipfile.lock
 RUN git clone https://gitlab.com/ViDA-NYU/datamart/lazo-index-service.git
-RUN cd src/main/python && python3 setup.py install
+RUN cd lazo-index-service/src/main/python && python3 setup.py install
 
 WORKDIR /usr/src/app
 COPY lib_core lib_core
