@@ -15,8 +15,6 @@ from tornado.web import HTTPError, RequestHandler
 import uuid
 
 from .coordinator import Coordinator
-from datamart_augmentation.search import \
-    get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import Type, json2msg
 
 logger = logging.getLogger(__name__)
@@ -255,33 +253,6 @@ class Dataset(BaseHandler):
                     size=format_size(metadata['size']))
 
 
-class JoinQuery(BaseHandler):
-    def get(self, dataset_id):
-        results = get_joinable_datasets(
-            es=self.application.elasticsearch,
-            dataset_id=dataset_id
-        )
-        self.render(
-            'join_query.html',
-            dataset_id=dataset_id,
-            result=results
-        )
-
-
-class UnionQuery(BaseHandler):
-    def get(self, dataset_id):
-        results = get_unionable_datasets(
-            es=self.application.elasticsearch,
-            dataset_id=dataset_id,
-            fuzzy=True
-        )
-        self.render(
-            'union_query.html',
-            dataset_id=dataset_id,
-            result=results
-        )
-
-
 class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
@@ -333,8 +304,6 @@ def make_app(debug=False):
             URLSpec('/search_form', Search, name='search'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
-            URLSpec('/join_query/([^/]+)', JoinQuery, name='join_query'),
-            URLSpec('/union_query/([^/]+)', UnionQuery, name='union_query'),
         ],
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
