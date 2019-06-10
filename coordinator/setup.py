@@ -7,7 +7,6 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'aio-pika',
-    'datamart_augmentation',
     'datamart_core',
     'elasticsearch~=6.3',
     'prometheus_client',

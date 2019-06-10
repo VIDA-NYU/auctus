@@ -686,90 +686,6 @@ class Augment(CorsHandler, GracefulHandler):
             os.remove(data_path)
 
 
-class JoinUnion(CorsHandler, GracefulHandler):
-    def initialize(self, augmentation_type=None):
-        self.augmentation_type = augmentation_type
-
-    @prom_async_time(PROM_AUGMENT_TIME)
-    async def post(self):
-        PROM_AUGMENT.inc()
-
-        type_ = self.request.headers.get('Content-type', '')
-        if not type_.startswith('multipart/form-data'):
-            return self.send_error(400)
-
-        columns = self.get_body_argument('columns', None)
-        if columns is None and 'columns' in self.request.files:
-            columns = self.request.files['columns'][0].body.decode('utf-8')
-        if columns is None:
-            return self.send_error(400)
-        columns = json.loads(columns)
-
-        destination = self.get_body_argument('destination', None)
-        if destination is None and 'destination' in self.request.files:
-            destination = (
-                self.request.files['destination'][0].body.decode('utf-8'))
-        if destination is None:
-            return self.send_error(400)
-
-        if 'left_data' not in self.request.files:
-            return self.send_error(400)
-        left_data = self.request.files['left_data'][0]
-
-        if 'right_data' not in self.request.files:
-            return self.send_error(400)
-        right_data = self.request.files['right_data'][0]
-
-        # data
-        try:
-            left_data_path, left_data_profile, left_tmp = \
-                handle_data_parameter(left_data)
-            right_data_path, right_data_profile, right_tmp = \
-                handle_data_parameter(right_data)
-        except ClientError as e:
-            return self.send_error(400, reason=e.args[0])
-
-        # augment
-        try:
-            new_path = augment_data(
-                left_data_path,
-                right_data_path,
-                columns['left_columns'],
-                columns['right_columns'],
-                left_data_profile,
-                right_data_profile,
-                how=self.augmentation_type,
-                destination=destination
-            )
-        except Exception as e:
-            self.send_error(
-                status_code=400,
-                reason=str(e)
-            )
-            return
-
-        if destination:
-            # send the path
-            self.set_header('Content-Type', 'text/plain; charset=utf-8')
-            self.write(new_path)
-        else:
-            # send a zip file
-            self.set_header('Content-Type', 'application/zip')
-            self.set_header(
-                'Content-Disposition',
-                'attachment; filename="augmentation.zip"')
-            writer = RecursiveZipWriter(self.write)
-            writer.write_recursive(new_path, '')
-            writer.close()
-            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-        self.finish()
-
-        if left_tmp:
-            os.remove(left_data_path)
-        if right_tmp:
-            os.remove(right_data_path)
-
-
 class Health(CorsHandler):
     def get(self):
         if self.application.is_closing:
@@ -819,10 +735,6 @@ def make_app(debug=False):
             URLSpec('/download', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
-            URLSpec('/join', JoinUnion,
-                    dict(augmentation_type='join'), name='join'),
-            URLSpec('/union', JoinUnion,
-                    dict(augmentation_type='union'), name='union'),
             URLSpec('/health', Health, name='health'),
         ],
         debug=debug,
