@@ -1,6 +1,7 @@
 import codecs
 import hdbscan
 import json
+import lazo_index
 import logging
 import math
 import numpy
