@@ -9,8 +9,6 @@ COPY lib_core lib_core
 RUN pip install --no-deps -e /usr/src/app/lib_core
 COPY lib_materialize lib_materialize
 RUN pip install --no-deps -e /usr/src/app/lib_materialize
-COPY lib_augmentation lib_augmentation
-RUN pip install --no-deps -e /usr/src/app/lib_augmentation
 COPY coordinator coordinator
 RUN pip install --no-deps -e /usr/src/app/coordinator
 CMD ["coordinator"]
