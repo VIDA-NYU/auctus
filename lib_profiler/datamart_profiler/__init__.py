@@ -144,11 +144,11 @@ def get_spatial_ranges(values):
             continue
         if label not in clusters:
             clusters[label] = [[float("inf"), -float("inf")], [float("inf"), -float("inf")]]
-        clusters[label][0][0] = min(clusters[label][0][0], values[i][0])  # min lat
-        clusters[label][0][1] = max(clusters[label][0][1], values[i][0])  # max lat
+        clusters[label][0][0] = max(-90.0, min(clusters[label][0][0], values[i][0]))  # min lat
+        clusters[label][0][1] = min(90.0, max(clusters[label][0][1], values[i][0]))  # max lat
 
-        clusters[label][1][0] = min(clusters[label][1][0], values[i][1])  # min lon
-        clusters[label][1][1] = max(clusters[label][1][1], values[i][1])  # max lon
+        clusters[label][1][0] = max(-180.0, min(clusters[label][1][0], values[i][1]))  # min lon
+        clusters[label][1][1] = min(180.0, max(clusters[label][1][1], values[i][1]))  # max lon
 
     # further clustering
 
@@ -158,10 +158,11 @@ def get_spatial_ranges(values):
         return None
 
     if len(all_clusters) == 1:
+        cluster = all_clusters[0]
         return [{"range": {"type": "envelope",
                            "coordinates": [
-                               [all_clusters[0][1][0], all_clusters[0][0][1]],
-                               [all_clusters[0][1][1], all_clusters[0][0][0]]
+                               [cluster[1][0], cluster[0][1]],
+                               [cluster[1][1], cluster[0][0]]
                            ]}}]
 
     values = [(v, [(v[0][0] + v[0][1])/2, (v[1][0] + v[1][1])/2])
