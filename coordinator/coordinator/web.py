@@ -158,10 +158,12 @@ class Upload(BaseHandler):
         elif self.get_body_argument('address', None):
             # Check the URL
             address = self.get_body_argument('address')
-            response = await self.http_client.fetch(address)
+            response = await self.http_client.fetch(address, raise_error=False)
             if response.code != 200:
-                return self.render('upload.html',
-                                   error="Error {}".format(response.code))
+                return self.render(
+                    'upload.html',
+                    error="Error {} {}".format(response.code, response.reason),
+                )
 
             # Metadata with 'direct_url' in materialization info
             metadata = dict(
