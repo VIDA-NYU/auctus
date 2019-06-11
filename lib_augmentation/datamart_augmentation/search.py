@@ -5,7 +5,7 @@ from .utils import compute_levenshtein_sim
 
 logger = logging.getLogger(__name__)
 
-PAGINATION_SIZE = 10
+PAGINATION_SIZE = 50
 JOIN_SIMILARITY_THRESHOLD = 0.3
 source_filter = {
     'excludes': [
