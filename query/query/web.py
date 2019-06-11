@@ -337,6 +337,8 @@ class Search(CorsHandler, GracefulHandler):
                 data_path, data_profile, tmp = handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error(400, reason=e.args[0])
+            if tmp:
+                os.remove(data_path)
 
         # parameter: query
         query_args = list()
