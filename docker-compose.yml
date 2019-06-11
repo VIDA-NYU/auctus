@@ -31,6 +31,15 @@ services:
     ports:
       - 8080:15672
       - 5672:5672
+  lazo_server:
+    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:latest
+    environment:
+      - db=elasticsearch
+      - p=50051
+      - eh=elasticsearch
+      - ep=9200
+    ports:
+      - 50051:50051
   coordinator:
     build:
       context: .
@@ -58,6 +67,8 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - HTTP_CHECK=GET /health
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     ports:
       - 8002
     volumes:
@@ -87,6 +98,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
