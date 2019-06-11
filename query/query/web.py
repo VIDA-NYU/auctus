@@ -750,7 +750,7 @@ def main():
     prometheus_client.start_http_server(8000)
 
     app = make_app()
-    app.listen(8002, xheaders=True)
+    app.listen(8002, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()
 
