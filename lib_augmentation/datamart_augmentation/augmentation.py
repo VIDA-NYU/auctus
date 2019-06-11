@@ -5,7 +5,6 @@ import shutil
 import tempfile
 import uuid
 
-from .utils import conv_datetime, conv_float, conv_int
 from datamart_core.common import Type
 from datamart_materialize.d3m import D3mWriter
 
@@ -23,27 +22,24 @@ def convert_to_pd(file_path, columns_metadata):
     Convert a dataset to pandas.DataFrame based on the provided metadata.
     """
 
-    converters = dict()
+    df = pd.read_csv(
+        file_path,
+        error_bad_lines=False
+    )
 
     for column in columns_metadata:
         name = column['name']
         if Type.DATE_TIME in column['semantic_types']:
-            converters[name] = conv_datetime
-        elif Type.INTEGER in column['structural_type']:
-            converters[name] = conv_int
-        elif Type.FLOAT in column['structural_type']:
-            converters[name] = conv_float
+            df[name] = pd.to_datetime(df[name], errors='coerce')
+        elif column['structural_type'] in (Type.INTEGER, Type.FLOAT):
+            df[name] = pd.to_numeric(df[name], errors='coerce')
 
-    return pd.read_csv(
-        file_path,
-        converters=converters,
-        error_bad_lines=False
-    )
+    return df
 
 
 def get_temporal_resolution(data):
     for res in temporal_resolutions[:-1]:
-        if len(set([eval('x.%s' % res) for x in data if x != np.nan])) > 1:
+        if len(set([eval('x.%s' % res) for x in data[data.notnull()]])) > 1:
             return temporal_resolutions.index(res)
     return temporal_resolutions.index('date')
 
