@@ -78,6 +78,10 @@ class BaseHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
 
+    def send_error_json(self, status, message):
+        self.set_status(status)
+        return self.send_json({'error': message})
+
 
 class CorsHandler(BaseHandler):
     def prepare(self):
@@ -101,11 +105,10 @@ class Search(CorsHandler, GracefulHandler):
 
         for variable in data:
             if 'type' not in variable:
-                self.send_error(
-                    status_code=400,
-                    reason='variable is missing property "type"'
+                return self.send_error_json(
+                    400,
+                    'variable is missing property "type"',
                 )
-                return
             variable_query = list()
 
             # temporal variable
@@ -235,11 +238,7 @@ class Search(CorsHandler, GracefulHandler):
         keywords_query_all = list()
         if 'keywords' in query_json and query_json['keywords']:
             if not isinstance(query_json['keywords'], list):
-                self.send_error(
-                    status_code=400,
-                    reason='"keywords" must be an array'
-                )
-                return
+                return self.send_error_json(400, '"keywords" must be an array')
             keywords_query = list()
             # description
             keywords_query.append({
@@ -321,13 +320,12 @@ class Search(CorsHandler, GracefulHandler):
             query = None
             data = self.request.body
         else:
-            self.set_status(400)
-            return self.send_json({'error': "Either use multipart/form-data "
-                                            "to send the 'data' file and "
-                                            "'query' JSON, or use "
-                                            "application/json to send a query "
-                                            "alone, or use text/csv to send "
-                                            "data alone"})
+            return self.send_error_json(
+                400,
+                "Either use multipart/form-data to send the 'data' file and "
+                "'query' JSON, or use application/json to send a query alone, "
+                "or use text/csv to send data alone",
+            )
 
         logger.info("Got search, content-type=%r%s%s",
                     type_.split(';')[0],
@@ -340,7 +338,7 @@ class Search(CorsHandler, GracefulHandler):
             try:
                 data_path, data_profile, tmp = handle_data_parameter(data)
             except ClientError as e:
-                return self.send_error(400, reason=e.args[0])
+                return self.send_error_json(400, e.args[0])
             if tmp:
                 os.remove(data_path)
 
@@ -352,11 +350,10 @@ class Search(CorsHandler, GracefulHandler):
 
         # At least one of them must be provided
         if not query_args and not data_profile:
-            self.send_error(
-                status_code=400,
-                reason='At least one of the input parameters must be provided.'
+            return self.send_error_json(
+                400,
+                "At least one of the input parameters must be provided.",
             )
-            return
 
         if not data_profile:
             hits = self.application.elasticsearch.search(
@@ -437,8 +434,7 @@ class BaseDownload(BaseHandler):
             try:
                 dataset_path = getter.__enter__()
             except Exception:
-                self.set_status(500)
-                self.send_json({'error': "Materializer reports failure"})
+                self.send_error_json(500, "Materializer reports failure")
                 raise
             try:
                 if os.path.isfile(dataset_path):
@@ -461,7 +457,7 @@ class BaseDownload(BaseHandler):
                     writer = RecursiveZipWriter(self.write)
                     writer.write_recursive(dataset_path, '')
                     writer.close()
-                self.finish()
+                return self.finish()
             finally:
                 getter.__exit__(None, None, None)
 
@@ -508,12 +504,11 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
                 output_format = (
                     self.request.files['format'][0].body.decode('utf-8'))
         if task is None:
-            self.set_status(400)
-            return self.send_json({'error': "Either use multipart/form-data "
-                                            "to send the 'data' file and "
-                                            "'task' JSON, or use "
-                                            "application/json to send "
-                                            "'task' alone"})
+            return self.send_error_json(
+                400,
+                "Either use multipart/form-data to send the 'data' file and "
+                "'task' JSON, or use application/json to send 'task' alone",
+            )
 
         task = json.loads(task)
 
@@ -527,7 +522,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
             try:
                 data_path, data_profile, tmp = handle_data_parameter(data)
             except ClientError as e:
-                return self.send_error(400, reason=e.args[0])
+                return self.send_error_json(400, e.args[0])
 
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
@@ -555,7 +550,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
                         )
 
                 except Exception as e:
-                    return self.send_error(400, reason=e.args[0])
+                    return self.send_error_json(400, e.args[0])
 
                 # send a zip file
                 self.set_header('Content-Type', 'application/zip')
@@ -573,10 +568,10 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
             else:
                 if tmp:
                     os.remove(data_path)
-                return self.send_error(
-                    status_code=400,
-                    reason='The DataMart dataset referenced by "task" '
-                           'cannot augment "data".'
+                return self.send_error_json(
+                    400,
+                    "The DataMart dataset referenced by 'task' cannot augment "
+                    "'data'.",
                 )
 
 class Metadata(CorsHandler, GracefulHandler):
@@ -600,9 +595,8 @@ class Augment(CorsHandler, GracefulHandler):
 
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
-            self.set_status(400, "Use multipart")
-            return self.send_json({'error': "Use multipart/form-data to send "
-                                            "the 'data' file and 'task' JSON"})
+            return self.send_error_json(400, "Use multipart/form-data to send "
+                                             "the 'data' file and 'task' JSON")
 
         task = None
         if 'task' in self.request.files:
@@ -626,7 +620,7 @@ class Augment(CorsHandler, GracefulHandler):
         try:
             data_path, data_profile, tmp = handle_data_parameter(data)
         except ClientError as e:
-            return self.send_error(400, reason=e.args[0])
+            return self.send_error_json(400, e.args[0])
 
         # materialize augmentation data
         metadata = task['metadata']
@@ -647,12 +641,9 @@ class Augment(CorsHandler, GracefulHandler):
                 # get first result
                 task = search_results[0]
             else:
-                self.send_error(
-                    status_code=400,
-                    reason='The DataMart dataset referenced by "task" '
-                           'cannot augment "data".'
-                )
-                return
+                return self.send_error_json(400,
+                                            "The DataMart dataset referenced "
+                                            "by 'task' cannot augment 'data'.")
 
         try:
             with get_dataset(metadata, task['id'], format='csv') as newdata:
@@ -666,7 +657,7 @@ class Augment(CorsHandler, GracefulHandler):
                     destination=destination
                 )
         except Exception as e:
-            return self.send_error(400, reason=e.args[0])
+            return self.send_error_json(400, e.args[0])
 
         if destination:
             # send the path
