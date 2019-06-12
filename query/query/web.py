@@ -16,8 +16,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import zipfile
 
-from datamart_augmentation.augmentation import \
-    augment, augment_data
+from datamart_augmentation.augmentation import augment
 from datamart_core.common import log_future, Type
 from datamart_core.materialize import get_dataset
 
@@ -330,6 +329,11 @@ class Search(CorsHandler, GracefulHandler):
                                             "alone, or use text/csv to send "
                                             "data alone"})
 
+        logger.info("Got search, content-type=%r%s%s",
+                    type_.split(';')[0],
+                    ', query' if query else '',
+                    ', data' if data else '')
+
         # parameter: data
         data_profile = dict()
         if data:
@@ -373,7 +377,7 @@ class Search(CorsHandler, GracefulHandler):
                 meta = h.pop('_source')
                 # materialize = meta.get('materialize', {})
                 if 'description' in meta and len(meta['description']) > 100:
-                    meta['description'] = meta['description'][:100] + "..."
+                    meta['description'] = meta['description'][:97] + "..."
                 results.append(dict(
                     id=h['_id'],
                     score=h['_score'],
@@ -565,17 +569,18 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
                 writer.write_recursive(new_path, '')
                 writer.close()
                 shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-                self.finish()
 
                 if tmp:
                     os.remove(data_path)
+                return self.finish()
             else:
-                self.send_error(
+                if tmp:
+                    os.remove(data_path)
+                return self.send_error(
                     status_code=400,
                     reason='The DataMart dataset referenced by "task" '
                            'cannot augment "data".'
                 )
-                return
 
 class Metadata(CorsHandler, GracefulHandler):
     @PROM_METADATA_TIME.time()
@@ -682,10 +687,10 @@ class Augment(CorsHandler, GracefulHandler):
             writer.write_recursive(new_path, '')
             writer.close()
             shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-        self.finish()
 
         if tmp:
             os.remove(data_path)
+        return self.finish()
 
 
 class Health(CorsHandler):
