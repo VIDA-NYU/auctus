@@ -359,7 +359,6 @@ class Search(CorsHandler, GracefulHandler):
             return
 
         if not data_profile:
-            # logger.info("Query: %r", query_args)
             hits = self.application.elasticsearch.search(
                 index='datamart',
                 body={
@@ -375,13 +374,11 @@ class Search(CorsHandler, GracefulHandler):
             results = []
             for h in hits:
                 meta = h.pop('_source')
-                # materialize = meta.get('materialize', {})
                 if 'description' in meta and len(meta['description']) > 100:
                     meta['description'] = meta['description'][:97] + "..."
                 results.append(dict(
                     id=h['_id'],
                     score=h['_score'],
-                    # discoverer=materialize['identifier'],
                     metadata=meta,
                     augmentation={
                         'type': 'none',
@@ -624,8 +621,6 @@ class Augment(CorsHandler, GracefulHandler):
             columns = self.request.files['columns'][0].body
         if columns is not None:
             columns = json.loads(columns)
-
-        data = self.request.files['data'][0].body
 
         # data
         try:
