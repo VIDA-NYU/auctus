@@ -495,14 +495,15 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
         elif type_.startswith('multipart/form-data'):
             task = self.get_body_argument('task', None)
             if task is None and 'task' in self.request.files:
-                task = (
-                    self.request.files['task'][0].body.decode('utf-8'))
+                task = self.request.files['task'][0].body.decode('utf-8')
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
-            output_format = self.get_body_argument('format', None)
+            output_format = self.get_argument('format', None)
             if output_format is None and 'format' in self.request.files:
                 output_format = (
                     self.request.files['format'][0].body.decode('utf-8'))
+            if output_format is None:
+                output_format = 'csv'
         if task is None:
             return self.send_error_json(
                 400,
@@ -598,21 +599,22 @@ class Augment(CorsHandler, GracefulHandler):
             return self.send_error_json(400, "Use multipart/form-data to send "
                                              "the 'data' file and 'task' JSON")
 
-        task = None
-        if 'task' in self.request.files:
-            task = self.request.files['task'][0].body
-        if task is not None:
-            task = json.loads(task)
+        task = self.get_body_argument('task', None)
+        if task is None and 'task' in self.request.files:
+            task = self.request.files['task'][0].body.decode('utf-8')
+        if task is None:
+            return self.send_error_json(400, "Missing 'task' JSON")
+        task = json.loads(task)
 
-        destination = self.get_body_argument('destination', None)
+        destination = self.get_argument('destination', None)
 
-        data = None
-        if 'data' in self.request.files:
-            data = self.request.files['data'][0].body
+        if 'data' not in self.request.files:
+            return self.send_error_json(400, "Missing 'data'")
+        data = self.request.files['data'][0].body
 
-        columns = None
+        columns = self.get_body_argument('columns', None)
         if 'columns' in self.request.files:
-            columns = self.request.files['columns'][0].body
+            columns = self.request.files['columns'][0].body.decode('utf-8')
         if columns is not None:
             columns = json.loads(columns)
 
