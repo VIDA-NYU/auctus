@@ -6,7 +6,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'lazo_index',
+    'lazo_index_service',
     'numpy',
     'pandas',
     'prometheus_client',

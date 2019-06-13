@@ -28,7 +28,7 @@ def get_dataset(metadata, dataset_id, format='csv'):
         # Read directly from stored file
         yield os.path.join(shared, 'main.csv')
     else:
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp(dir='/lazo-data')
         try:
             temp_file = os.path.join(temp_dir, 'data')
             if os.path.exists(shared):

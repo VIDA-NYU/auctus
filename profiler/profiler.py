@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime
 import elasticsearch
 import itertools
+import lazo_index_service
 import logging
 import os
 import prometheus_client
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 MAX_CONCURRENT = 2
 
 
-def materialize_and_process_dataset(dataset_id, metadata):
+def materialize_and_process_dataset(dataset_id, metadata, lazo_client):
     with get_dataset(metadata, dataset_id) as dataset_path:
         materialize = metadata.pop('materialize')
 
@@ -38,7 +39,12 @@ def materialize_and_process_dataset(dataset_id, metadata):
                 xls_to_csv(dataset_path + '.xls', dst)
 
         # Profile
-        metadata = process_dataset(dataset_path, metadata)
+        metadata = process_dataset(
+            data=dataset_path,
+            metadata=metadata,
+            lazo_client=lazo_client,
+            dataset_id=dataset_id
+        )
 
         metadata['materialize'] = materialize
         return metadata
@@ -49,6 +55,10 @@ class Profiler(object):
         self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
         self.es = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+        self.lazo_client = lazo_index_service.LazoIndexClient(
+            host=os.environ['LAZO_SERVER_HOST'],
+            port=int(os.environ['LAZO_SERVER_PORT'])
         )
         self.channel = None
 
@@ -119,6 +129,7 @@ class Profiler(object):
                 materialize_and_process_dataset,
                 dataset_id,
                 metadata,
+                self.lazo_client
             )
 
             future.add_done_callback(

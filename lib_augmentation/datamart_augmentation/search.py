@@ -53,7 +53,7 @@ def get_column_coverage(data_profile, filter_=[]):
         # ignoring 'd3mIndex' for now -- seems useless
         if 'd3mIndex' in column_name:
             continue
-        if Type.ID in column['semantic_types']:
+        if Type.ID in column['semantic_types'] and column['structural_type'] == Type.INTEGER:
             type_ = 'semantic_types'
             type_value = Type.ID
         # elif column['structural_type'] == Type.FLOAT:

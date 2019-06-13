@@ -88,7 +88,10 @@ def get_profile_data(filepath, metadata=None):
         return pickle.load(open(cached_data, 'rb'))
 
     # profile data and save
-    data_profile = process_dataset(filepath, metadata)
+    data_profile = process_dataset(
+        data=filepath,
+        metadata=metadata
+    )
     pickle.dump(data_profile, open(cached_data, 'wb'))
     return data_profile
 

@@ -9,16 +9,13 @@ RUN cd scdp && mvn package
 
 FROM python:3.6
 
-RUN apt-get update && apt-get install -y default-jre git && \
-    rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY Pipfile.lock install_deps.py /usr/src/app/
 RUN python3 install_deps.py Pipfile.lock
-RUN git clone https://gitlab.com/ViDA-NYU/datamart/lazo-index-service.git
-RUN cd lazo-index-service/src/main/python && python3 setup.py install
 
-WORKDIR /usr/src/app
+RUN apt-get update && apt-get install -y default-jre && \
+    rm -rf /var/lib/apt/lists/*
 COPY lib_core lib_core
 RUN pip install --no-deps -e /usr/src/app/lib_core
 COPY lib_materialize lib_materialize

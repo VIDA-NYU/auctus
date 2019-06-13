@@ -1,7 +1,6 @@
 import codecs
 import hdbscan
 import json
-import lazo_index
 import logging
 import math
 import numpy
@@ -215,11 +214,18 @@ def run_scdp(data):
 
 
 @PROM_PROFILE.time()
-def process_dataset(data, metadata=None):
+def process_dataset(
+        data,
+        dataset_id=None,
+        metadata=None,
+        lazo_client=None):
     """Compute all metafeatures from a dataset.
 
+    :param data: path to dataset
+    :param dataset_id: id of the dataset
     :param metadata: The metadata provided by the discovery plugin (might be
         very limited).
+    :param lazo_client: client for the Lazo Index Server
     """
     if metadata is None:
         metadata = {}
@@ -283,6 +289,9 @@ def process_dataset(data, metadata=None):
     column_lat = []
     column_lon = []
 
+    # Textual columns
+    column_textual = []
+
     # Identify types
     logger.info("Identifying types...")
     for i, column_meta in enumerate(columns):
@@ -341,6 +350,22 @@ def process_dataset(data, metadata=None):
             # Get temporal ranges
             column_meta['coverage'] = \
                 get_numerical_ranges(timestamps_for_range)
+
+        if structural_type == Type.TEXT:
+            column_textual.append(column_meta['name'])
+
+    # Textual columns
+    # Indexing with lazo
+    if lazo_client and dataset_id and column_textual:
+        try:
+            index_results = lazo_client.index_data_path(
+                data,
+                dataset_id,
+                column_textual
+            )
+        except Exception as e:
+            logger.warning('Error indexing textual attributes from %s', dataset_id)
+            logger.warning(str(e))
 
     # Lat / Lon
     with PROM_SPATIAL.time():
