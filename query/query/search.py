@@ -3,7 +3,7 @@ import logging
 import os
 import pickle
 import tempfile
-
+import time
 
 from datamart_augmentation.search import \
     get_joinable_datasets, get_unionable_datasets
@@ -28,6 +28,8 @@ def get_augmentation_search_results(es, data_profile, query_args,
     union_results = []
 
     if join:
+        logger.info("Looking for joins...")
+        start = time.perf_counter()
         join_results = get_joinable_datasets(
             es=es,
             data_profile=data_profile,
@@ -35,7 +37,11 @@ def get_augmentation_search_results(es, data_profile, query_args,
             query_args=query_args,
             tabular_variables=tabular_variables
         )
+        logger.info("Found %d join results in %.2fs",
+                    len(join_results), time.perf_counter() - start)
     if union:
+        logger.info("Looking for unions...")
+        start = time.perf_counter()
         union_results = get_unionable_datasets(
             es=es,
             data_profile=data_profile,
@@ -43,6 +49,8 @@ def get_augmentation_search_results(es, data_profile, query_args,
             query_args=query_args,
             tabular_variables=tabular_variables
         )
+        logger.info("Found %d union results in %.2fs",
+                    len(union_results), time.perf_counter() - start)
 
     results = []
     for r in join_results:
@@ -85,13 +93,17 @@ def get_profile_data(filepath, metadata=None):
     # checking for cached data
     cached_data = os.path.join('/cache', hash_)
     if os.path.exists(cached_data):
+        logger.info("Found cached profile_data")
         return pickle.load(open(cached_data, 'rb'))
 
     # profile data and save
+    logger.info("Profiling...")
+    start = time.perf_counter()
     data_profile = process_dataset(
         data=filepath,
-        metadata=metadata
+        metadata=metadata,
     )
+    logger.info("Profiled in %.2fs", time.perf_counter() - start)
     pickle.dump(data_profile, open(cached_data, 'wb'))
     return data_profile
 
@@ -113,7 +125,7 @@ def handle_data_parameter(data):
     tmp = False
     if not os.path.exists(data):
         # data represents the entire file
-        logger.warning("Data is not a path!")
+        logger.info("Data is not a path")
 
         tmp = True
         temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
@@ -125,7 +137,7 @@ def handle_data_parameter(data):
 
     else:
         # data represents a file path
-        logger.warning("Data is a path!")
+        logger.info("Data is a path")
         if os.path.isdir(data):
             # path to a D3M dataset
             data_file = os.path.join(data, 'tables', 'learningData.csv')

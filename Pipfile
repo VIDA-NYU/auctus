@@ -4,8 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-aio-pika = "*"
-datamart = {editable = true, path = "../datamart-api"}
 datamart_profiler = {editable = true, path = "./lib_profiler"}
 datamart_materialize = {editable = true, path = "./lib_materialize"}
 datamart_augmentation = {editable = true, path = "./lib_augmentation"}

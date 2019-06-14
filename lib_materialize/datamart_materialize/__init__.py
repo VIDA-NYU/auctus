@@ -171,9 +171,9 @@ def download(dataset, destination, proxy, format='csv'):
 
     if 'direct_url' in materialize:
         logger.info("Direct download: %s", materialize['direct_url'])
-        start = time.time()
+        start = time.perf_counter()
         _direct_download(materialize['direct_url'], writer)
-        logger.info("Download successful, %.2fs", time.time() - start)
+        logger.info("Download successful, %.2fs", time.perf_counter() - start)
         return writer.finish()
     elif 'identifier' in materialize:
         identifier = materialize['identifier']
@@ -184,20 +184,20 @@ def download(dataset, destination, proxy, format='csv'):
         else:
             try:
                 logger.info("Calling materializer...")
-                start = time.time()
+                start = time.perf_counter()
                 materializer.download(materialize, writer)
                 logger.info("Materializer successful, %.2fs",
-                            time.time() - start)
+                            time.perf_counter() - start)
                 return writer.finish()
             except UnconfiguredMaterializer as e:
                 logger.warning("Materializer is not configured properly: %s",
                                ", ".join(e.args))
         if proxy and dataset_id:
             logger.info("Calling materialization proxy...")
-            start = time.time()
+            start = time.perf_counter()
             _proxy_download(dataset_id, writer, proxy)
             logger.info("Materialization through proxy successful, %.2fs",
-                        time.time() - start)
+                        time.perf_counter() - start)
             return writer.finish()
         else:
             raise KeyError("Materializer unavailable: '%s'" % identifier)

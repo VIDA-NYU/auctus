@@ -5,7 +5,6 @@ import shutil
 import tempfile
 import uuid
 
-from .utils import conv_datetime, conv_float, conv_int
 from datamart_core.common import Type
 from datamart_materialize.d3m import D3mWriter
 
@@ -23,27 +22,24 @@ def convert_to_pd(file_path, columns_metadata):
     Convert a dataset to pandas.DataFrame based on the provided metadata.
     """
 
-    converters = dict()
+    df = pd.read_csv(
+        file_path,
+        error_bad_lines=False
+    )
 
     for column in columns_metadata:
         name = column['name']
         if Type.DATE_TIME in column['semantic_types']:
-            converters[name] = conv_datetime
-        elif Type.INTEGER in column['structural_type']:
-            converters[name] = conv_int
-        elif Type.FLOAT in column['structural_type']:
-            converters[name] = conv_float
+            df[name] = pd.to_datetime(df[name], errors='coerce')
+        elif column['structural_type'] in (Type.INTEGER, Type.FLOAT):
+            df[name] = pd.to_numeric(df[name], errors='coerce')
 
-    return pd.read_csv(
-        file_path,
-        converters=converters,
-        error_bad_lines=False
-    )
+    return df
 
 
 def get_temporal_resolution(data):
     for res in temporal_resolutions[:-1]:
-        if len(set([eval('x.%s' % res) for x in data if x != np.nan])) > 1:
+        if len(set([eval('x.%s' % res) for x in data[data.notnull()]])) > 1:
             return temporal_resolutions.index(res)
     return temporal_resolutions.index('date')
 
@@ -281,87 +277,6 @@ def generate_d3m_dataset(data, destination=None, qualities=None):
         data.to_csv(fp, index=False)
 
     return data_path
-
-
-def augment_data(left_data, right_data, left_columns, right_columns,
-                 left_metadata, right_metadata, how='join', destination=None):
-    """
-    Augments two given datasets.
-
-    :param left_data: the leftside dataset for augmentation
-    :param right_data: the rightside dataset for augmentation
-    :param left_columns: a list of lists of headers(str)
-      of the leftside dataset
-    :param right_columns: a list of lists of headers(str)
-      of the rightside dataset
-    :param left_metadata: the metadata of the leftside dataset
-    :param right_metadata: the metadata of the rightside dataset
-    :param how: type of augmentation ('join' or 'union')
-    :param destination: location to save the files.
-    """
-
-    def get_column(column, metadata):
-        name = None
-        type_ = None
-        if isinstance(column, list):
-            item = column[0]
-        else:
-            item = column
-        if isinstance(item, int):
-            try:
-                name = metadata['columns'][item]['name']
-                if Type.DATE_TIME in metadata['columns'][item]['semantic_types']:
-                    type_ = Type.DATE_TIME
-                else:
-                    type_ = metadata['columns'][item]['structural_type']
-            except Exception:
-                raise RuntimeError('Column not identified: %d' % item)
-        elif isinstance(item, str):
-            for c in metadata['columns']:
-                if item.strip() == c['name']:
-                    name = c['name']
-                    if Type.DATE_TIME in c['semantic_types']:
-                        type_ = Type.DATE_TIME
-                    else:
-                        type_ = c['structural_type']
-                    break
-            if not name:
-                raise RuntimeError('Column not identified: %s' % item)
-        else:
-            raise RuntimeError('Column not identified: %r' % item)
-        return name, type_
-
-    if len(left_columns) != len(right_columns):
-        raise RuntimeError('left_columns and right_columns must have the same length.')
-
-    pairs = []
-    for i in range(len(left_columns)):
-        name_left, type_left = get_column(left_columns[i], left_metadata)
-        name_right, type_right = get_column(right_columns[i], right_metadata)
-        if type_left != type_right:
-            raise RuntimeError('Columns %s and %s have different types: %s and %s' %
-                               (name_left, name_right, type_left, type_right))
-        pairs.append([name_left, name_right])
-
-    if not pairs:
-        raise RuntimeError('No columns for augmentation.')
-
-    if 'join' in how:
-        join_, qualities = join(
-            convert_to_pd(left_data, left_metadata['columns']),
-            convert_to_pd(right_data, right_metadata['columns']),
-            pairs
-        )
-        return generate_d3m_dataset(join_, destination)
-    elif 'union' in how:
-        union_, qualities = union(
-            convert_to_pd(left_data, left_metadata['columns']),
-            convert_to_pd(right_data, right_metadata['columns']),
-            pairs
-        )
-        return generate_d3m_dataset(union_, destination)
-    else:
-        raise RuntimeError('Augmentation task not recognized: %s.' % how)
 
 
 def augment(data, newdata, metadata, task, columns=None, destination=None,

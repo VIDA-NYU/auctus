@@ -25,6 +25,9 @@ BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
 PROM_PROFILE = prometheus_client.Histogram('profile_seconds',
                                            "Profile time",
                                            buckets=BUCKETS)
+PROM_TYPES = prometheus_client.Histogram('profile_types_seconds',
+                                         "Profile types time",
+                                         buckets=BUCKETS)
 PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
                                            "Profile spatial coverage time",
                                            buckets=BUCKETS)
@@ -144,11 +147,11 @@ def get_spatial_ranges(values):
             continue
         if label not in clusters:
             clusters[label] = [[float("inf"), -float("inf")], [float("inf"), -float("inf")]]
-        clusters[label][0][0] = min(clusters[label][0][0], values[i][0])  # min lat
-        clusters[label][0][1] = max(clusters[label][0][1], values[i][0])  # max lat
+        clusters[label][0][0] = max(-90.0, min(clusters[label][0][0], values[i][0]))  # min lat
+        clusters[label][0][1] = min(90.0, max(clusters[label][0][1], values[i][0]))  # max lat
 
-        clusters[label][1][0] = min(clusters[label][1][0], values[i][1])  # min lon
-        clusters[label][1][1] = max(clusters[label][1][1], values[i][1])  # max lon
+        clusters[label][1][0] = max(-180.0, min(clusters[label][1][0], values[i][1]))  # min lon
+        clusters[label][1][1] = min(180.0, max(clusters[label][1][1], values[i][1]))  # max lon
 
     # further clustering
 
@@ -158,10 +161,11 @@ def get_spatial_ranges(values):
         return None
 
     if len(all_clusters) == 1:
+        cluster = all_clusters[0]
         return [{"range": {"type": "envelope",
                            "coordinates": [
-                               [all_clusters[0][1][0], all_clusters[0][0][1]],
-                               [all_clusters[0][1][1], all_clusters[0][0][0]]
+                               [cluster[1][0], cluster[0][1]],
+                               [cluster[1][1], cluster[0][0]]
                            ]}}]
 
     values = [(v, [(v[0][0] + v[0][1])/2, (v[1][0] + v[1][1])/2])
@@ -294,62 +298,63 @@ def process_dataset(
 
     # Identify types
     logger.info("Identifying types...")
-    for i, column_meta in enumerate(columns):
-        array = data.iloc[:, i]
-        structural_type, semantic_types_dict = \
-            identify_types(array, column_meta['name'])
-        # Set structural type
-        column_meta['structural_type'] = structural_type
-        # Add semantic types to the ones already present
-        sem_types = column_meta.setdefault('semantic_types', [])
-        for sem_type in semantic_types_dict:
-            if sem_type not in sem_types:
-                sem_types.append(sem_type)
+    with PROM_TYPES.time():
+        for i, column_meta in enumerate(columns):
+            array = data.iloc[:, i]
+            structural_type, semantic_types_dict = \
+                identify_types(array, column_meta['name'])
+            # Set structural type
+            column_meta['structural_type'] = structural_type
+            # Add semantic types to the ones already present
+            sem_types = column_meta.setdefault('semantic_types', [])
+            for sem_type in semantic_types_dict:
+                if sem_type not in sem_types:
+                    sem_types.append(sem_type)
 
-        if structural_type in (Type.INTEGER, Type.FLOAT):
-            column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
+            if structural_type in (Type.INTEGER, Type.FLOAT):
+                column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
 
-            # Get numerical ranges
-            # logger.warning(" Column Name: " + column_meta['name'])
-            numerical_values = []
-            for e in array:
-                try:
-                    numerical_values.append(float(e))
-                except ValueError:
-                    numerical_values.append(None)
+                # Get numerical ranges
+                # logger.warning(" Column Name: " + column_meta['name'])
+                numerical_values = []
+                for e in array:
+                    try:
+                        numerical_values.append(float(e))
+                    except ValueError:
+                        numerical_values.append(None)
 
-            # Get lat/lon columns
-            if Type.LATITUDE in semantic_types_dict:
-                column_lat.append(
-                    (column_meta['name'], numerical_values)
+                # Get lat/lon columns
+                if Type.LATITUDE in semantic_types_dict:
+                    column_lat.append(
+                        (column_meta['name'], numerical_values)
+                    )
+                elif Type.LONGITUDE in semantic_types_dict:
+                    column_lon.append(
+                        (column_meta['name'], numerical_values)
+                    )
+                else:
+                    column_meta['coverage'] = get_numerical_ranges(
+                        [x for x in numerical_values if x is not None]
+                    )
+
+            if Type.DATE_TIME in semantic_types_dict:
+                timestamps = numpy.empty(
+                    len(semantic_types_dict[Type.DATE_TIME]),
+                    dtype='float32',
                 )
-            elif Type.LONGITUDE in semantic_types_dict:
-                column_lon.append(
-                    (column_meta['name'], numerical_values)
-                )
-            else:
-                column_meta['coverage'] = get_numerical_ranges(
-                    [x for x in numerical_values if x is not None]
-                )
+                timestamps_for_range = []
+                for j, dt in enumerate(
+                        semantic_types_dict[Type.DATE_TIME]):
+                    timestamps[j] = dt.timestamp()
+                    timestamps_for_range.append(
+                        dt.replace(minute=0, second=0).timestamp()
+                    )
+                column_meta['mean'], column_meta['stddev'] = \
+                    mean_stddev(timestamps)
 
-        if Type.DATE_TIME in semantic_types_dict:
-            timestamps = numpy.empty(
-                len(semantic_types_dict[Type.DATE_TIME]),
-                dtype='float32',
-            )
-            timestamps_for_range = []
-            for j, dt in enumerate(
-                    semantic_types_dict[Type.DATE_TIME]):
-                timestamps[j] = dt.timestamp()
-                timestamps_for_range.append(
-                    dt.replace(minute=0, second=0).timestamp()
-                )
-            column_meta['mean'], column_meta['stddev'] = \
-                mean_stddev(timestamps)
-
-            # Get temporal ranges
-            column_meta['coverage'] = \
-                get_numerical_ranges(timestamps_for_range)
+                # Get temporal ranges
+                column_meta['coverage'] = \
+                    get_numerical_ranges(timestamps_for_range)
 
         if structural_type == Type.TEXT:
             column_textual.append(column_meta['name'])
@@ -368,6 +373,7 @@ def process_dataset(
             logger.warning(str(e))
 
     # Lat / Lon
+    logger.info("Computing spatial coverage...")
     with PROM_SPATIAL.time():
         spatial_coverage = []
         i_lat = i_lon = 0
