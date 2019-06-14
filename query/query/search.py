@@ -106,7 +106,6 @@ def get_profile_data(filepath, metadata=None, lazo_client=None):
         search=True
     )
     logger.info("Profiled in %.2fs", time.perf_counter() - start)
-    logger.info("Metadata: %r", data_profile)
     pickle.dump(data_profile, open(cached_data, 'wb'))
     return data_profile
 
@@ -132,12 +131,19 @@ def handle_data_parameter(data, lazo_client=None):
         logger.info("Data is not a path")
 
         tmp = True
-        temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+        temp_file = tempfile.NamedTemporaryFile(
+            mode='wb',
+            delete=False,
+            dir='/lazo-data'
+        )
         temp_file.write(data)
         temp_file.close()
 
         data_path = temp_file.name
-        data_profile = get_profile_data(data_path, lazo_client)
+        data_profile = get_profile_data(
+            filepath=data_path,
+            lazo_client=lazo_client
+        )
 
     else:
         # data represents a file path
@@ -149,10 +155,16 @@ def handle_data_parameter(data, lazo_client=None):
                 raise ClientError("%s does not exist" % data_file)
             else:
                 data_path = data_file
-                data_profile = get_profile_data(data_file, lazo_client)
+                data_profile = get_profile_data(
+                    filepath=data_file,
+                    lazo_client=lazo_client
+                )
         else:
             # path to a CSV file
             data_path = data
-            data_profile = get_profile_data(data, lazo_client)
+            data_profile = get_profile_data(
+                filepath=data,
+                lazo_client=lazo_client
+            )
 
     return data_path, data_profile, tmp

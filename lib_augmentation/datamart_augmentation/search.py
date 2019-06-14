@@ -27,8 +27,9 @@ def get_column_coverage(data_profile, filter_=[]):
     """
     Get coverage for each column of the input dataset.
 
-    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
-    :param filter_: list of column indices to return. If an empty list, return all the columns.
+    :param data_profile: Profiled input dataset.
+    :param filter_: list of column indices to return.
+        If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a dict as follows:
 
         {
@@ -95,6 +96,35 @@ def get_column_coverage(data_profile, filter_=[]):
                     append(range_['range']['coordinates'])
 
     return column_coverage
+
+
+def get_lazo_sketches(data_profile, column_index_mapping, filter_=[]):
+    """
+    Get Lazo sketches of the input dataset, if available.
+
+    :param data_profile: Profiled input dataset.
+    :param filter_: list of column indices to return.
+        If an empty list, return all the columns.
+    :param: column_index_mapping: mapping from column name to column index
+    :return: dict, where key is the column index, and value is a tuple
+        (n_permutations, hash_values, cardinality)
+    """
+
+    lazo_sketches = dict()
+
+    if data_profile['lazo']:
+        for column in data_profile['lazo']:
+            column_name = column['name']
+            column_index = column_index_mapping[column_name]
+            if filter_ and column_index not in filter_:
+                continue
+            lazo_sketches[column_index] = (
+                column['n_permutations'],
+                column['hash_values'],
+                column['cardinality']
+            )
+
+    return lazo_sketches
 
 
 def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ranges,

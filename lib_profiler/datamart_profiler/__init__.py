@@ -364,13 +364,15 @@ def process_dataset(
                 column_meta['coverage'] = \
                     get_numerical_ranges(timestamps_for_range)
 
-        if structural_type == Type.TEXT:
-            column_textual.append(column_meta['name'])
+            if structural_type == Type.TEXT and \
+                    Type.DATE_TIME not in semantic_types_dict:
+                column_textual.append(column_meta['name'])
 
     # Textual columns
     if lazo_client and column_textual:
         # Indexing with lazo
         if not search:
+            logger.info("Indexing textual data with Lazo...")
             try:
                 if data_path:
                     # if we have the path, send the path
@@ -392,6 +394,7 @@ def process_dataset(
                 logger.warning(str(e))
         # Generating Lazo sketches for the search
         else:
+            logger.info("Generating Lazo sketches...")
             try:
                 if data_path:
                     # if we have the path, send the path
@@ -419,7 +422,7 @@ def process_dataset(
                     metadata_lazo.append(dict(
                         name=column_textual[i],
                         n_permutations=n_permutations,
-                        hash_values=hash_values,
+                        hash_values=list(hash_values),
                         cardinality=cardinality
                     ))
                 metadata['lazo'] = metadata_lazo
