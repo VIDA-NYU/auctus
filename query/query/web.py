@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime
 from dateutil.parser import parse
 import elasticsearch
+import lazo_index_service
 import logging
 import json
 import os
@@ -336,7 +337,10 @@ class Search(CorsHandler, GracefulHandler):
         data_profile = dict()
         if data:
             try:
-                data_path, data_profile, tmp = handle_data_parameter(data)
+                data_path, data_profile, tmp = handle_data_parameter(
+                    data,
+                    self.application.lazo_client
+                )
             except ClientError as e:
                 return self.send_error_json(400, e.args[0])
             if tmp:
@@ -521,7 +525,10 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
         else:
             # data
             try:
-                data_path, data_profile, tmp = handle_data_parameter(data)
+                data_path, data_profile, tmp = handle_data_parameter(
+                    data,
+                    self.application.lazo_client
+                )
             except ClientError as e:
                 return self.send_error_json(400, e.args[0])
 
@@ -620,7 +627,10 @@ class Augment(CorsHandler, GracefulHandler):
 
         # data
         try:
-            data_path, data_profile, tmp = handle_data_parameter(data)
+            data_path, data_profile, tmp = handle_data_parameter(
+                data,
+                self.application.lazo_client
+            )
         except ClientError as e:
             return self.send_error_json(400, e.args[0])
 
@@ -691,7 +701,7 @@ class Health(CorsHandler):
 
 
 class Application(GracefulApplication):
-    def __init__(self, *args, es, **kwargs):
+    def __init__(self, *args, es, lazo, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
         self.is_closing = False
@@ -699,6 +709,7 @@ class Application(GracefulApplication):
         self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
 
         self.elasticsearch = es
+        self.lazo_client = lazo
         self.channel = None
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()), logger)
@@ -722,6 +733,10 @@ def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
+    lazo_client = lazo_index_service.LazoIndexClient(
+        host=os.environ['LAZO_SERVER_HOST'],
+        port=int(os.environ['LAZO_SERVER_PORT'])
+    )
 
     return Application(
         [
@@ -735,6 +750,7 @@ def make_app(debug=False):
         debug=debug,
         serve_traceback=True,
         es=es,
+        lazo=lazo_client
     )
 
 

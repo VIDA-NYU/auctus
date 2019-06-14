@@ -222,7 +222,8 @@ def process_dataset(
         data,
         dataset_id=None,
         metadata=None,
-        lazo_client=None):
+        lazo_client=None,
+        search=False):
     """Compute all metafeatures from a dataset.
 
     :param data: path to dataset
@@ -230,6 +231,8 @@ def process_dataset(
     :param metadata: The metadata provided by the discovery plugin (might be
         very limited).
     :param lazo_client: client for the Lazo Index Server
+    :param search: True if this method is being called during the search
+        operation (and not for indexing).
     """
     if metadata is None:
         metadata = {}
@@ -238,9 +241,14 @@ def process_dataset(
     # scdp_out = run_scdp(data)
     scdp_out = {}
 
+    data_path = None
     if isinstance(data, (str, bytes)):
         if not os.path.exists(data):
             raise ValueError("data file does not exist")
+
+        # saving path
+        if isinstance(data, str):
+            data_path = data
 
         # File size
         metadata['size'] = os.path.getsize(data)
@@ -360,17 +368,64 @@ def process_dataset(
             column_textual.append(column_meta['name'])
 
     # Textual columns
-    # Indexing with lazo
-    if lazo_client and dataset_id and column_textual:
-        try:
-            index_results = lazo_client.index_data_path(
-                data,
-                dataset_id,
-                column_textual
-            )
-        except Exception as e:
-            logger.warning('Error indexing textual attributes from %s', dataset_id)
-            logger.warning(str(e))
+    if lazo_client and column_textual:
+        # Indexing with lazo
+        if not search:
+            try:
+                if data_path:
+                    # if we have the path, send the path
+                    lazo_client.index_data_path(
+                        data_path,
+                        dataset_id,
+                        column_textual
+                    )
+                else:
+                    # if path is not available, send the data instead
+                    for column_name in column_textual:
+                        lazo_client.index_data(
+                            data[column_name].values.tolist(),
+                            dataset_id,
+                            column_name
+                        )
+            except Exception as e:
+                logger.warning('Error indexing textual attributes from %s', dataset_id)
+                logger.warning(str(e))
+        # Generating Lazo sketches for the search
+        else:
+            try:
+                if data_path:
+                    # if we have the path, send the path
+                    lazo_sketches = lazo_client.get_lazo_sketch_from_data_path(
+                        data_path,
+                        "",
+                        column_textual
+                    )
+                else:
+                    # if path is not available, send the data instead
+                    lazo_sketches = []
+                    for column_name in column_textual:
+                        lazo_sketches.append(
+                            lazo_client.get_lazo_sketch_from_data(
+                                data[column_name].values.tolist(),
+                                "",
+                                column_name
+                            )
+                        )
+                ## saving sketches into metadata
+                metadata_lazo = []
+                for i in range(len(column_textual)):
+                    n_permutations, hash_values, cardinality =\
+                        lazo_sketches[i]
+                    metadata_lazo.append(dict(
+                        name=column_textual[i],
+                        n_permutations=n_permutations,
+                        hash_values=hash_values,
+                        cardinality=cardinality
+                    ))
+                metadata['lazo'] = metadata_lazo
+            except Exception as e:
+                logger.warning('Error getting Lazo sketches textual attributes from %s', dataset_id)
+                logger.warning(str(e))
 
     # Lat / Lon
     logger.info("Computing spatial coverage...")

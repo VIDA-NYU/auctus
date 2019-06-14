@@ -43,6 +43,8 @@ services:
     volumes:
       - datasets:/datasets
       - lazo-data:/lazo-data
+      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
+      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   coordinator:
     build:
       context: .
