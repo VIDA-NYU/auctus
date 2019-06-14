@@ -5,18 +5,16 @@ name = "pypi"
 
 [packages]
 aio-pika = "*"
-datamart = {editable = true,path = "../datamart-api"}
-datamart_profiler = {editable = true,path = "./lib_profiler"}
-datamart_materialize = {editable = true,path = "./lib_materialize"}
-datamart_augmentation = {editable = true,path = "./lib_augmentation"}
-datamart_core = {editable = true,path = "./lib_core"}
-coordinator = {editable = true,path = "./coordinator"}
-profiler = {editable = true,path = "./profiler"}
-query = {editable = true,path = "./query"}
-noaa = {editable = true,path = "./discovery/noaa"}
-socrata = {editable = true,path = "./discovery/socrata"}
-lazo-index-service = "*"
-sodapy = "==1.5.0"
+datamart = {editable = true, path = "../datamart-api"}
+datamart_profiler = {editable = true, path = "./lib_profiler"}
+datamart_materialize = {editable = true, path = "./lib_materialize"}
+datamart_augmentation = {editable = true, path = "./lib_augmentation"}
+datamart_core = {editable = true, path = "./lib_core"}
+coordinator = {editable = true, path = "./coordinator"}
+profiler = {editable = true, path = "./profiler"}
+query = {editable = true, path = "./query"}
+noaa = {editable = true, path = "./discovery/noaa"}
+socrata = {editable = true, path = "./discovery/socrata"}
 
 [dev-packages]
 flake8 = "*"
