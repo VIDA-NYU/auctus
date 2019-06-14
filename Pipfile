@@ -16,6 +16,7 @@ query = {editable = true,path = "./query"}
 noaa = {editable = true,path = "./discovery/noaa"}
 socrata = {editable = true,path = "./discovery/socrata"}
 lazo-index-service = "*"
+sodapy = "==1.5.0"
 
 [dev-packages]
 flake8 = "*"
