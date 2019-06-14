@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "448d24c63180056eb953892c9838b8550af03d62460df0e198253f8680962da8"
+            "sha256": "9c576d9e05ed2a081a33990e35d892dd6ad7af7cdeee9cf0d938f71baedd89e6"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -81,10 +81,6 @@
                 "sha256:f86b96e014732c0d1ded2c1f51444c80176a98c21856d0da533db4e4aef54070"
             ],
             "version": "==0.29.7"
-        },
-        "datamart": {
-            "editable": true,
-            "path": "../datamart-api"
         },
         "datamart-augmentation": {
             "editable": true,
