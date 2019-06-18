@@ -21,7 +21,7 @@ class ClientError(ValueError):
     """
 
 
-def get_augmentation_search_results(es, data_profile, query_args,
+def get_augmentation_search_results(es, lazo_client, data_profile, query_args,
                                     tabular_variables, score_threshold,
                                     dataset_id=None, join=True, union=True):
     join_results = []
@@ -32,6 +32,7 @@ def get_augmentation_search_results(es, data_profile, query_args,
         start = time.perf_counter()
         join_results = get_joinable_datasets(
             es=es,
+            lazo_client=lazo_client,
             data_profile=data_profile,
             dataset_id=dataset_id,
             query_args=query_args,

@@ -392,6 +392,7 @@ class Search(CorsHandler, GracefulHandler):
             return self.send_json(
                 get_augmentation_search_results(
                     self.application.elasticsearch,
+                    self.application.lazo_client,
                     data_profile,
                     query_args,
                     tabular_variables,
@@ -535,6 +536,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
+                lazo_client=self.application.lazo_client,
                 data_profile=data_profile,
                 query_args=None,
                 tabular_variables=None,
@@ -641,6 +643,7 @@ class Augment(CorsHandler, GracefulHandler):
         if task['augmentation']['type'] == 'none':
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
+                lazo_client=self.application.lazo_client,
                 data_profile=data_profile,
                 query_args=None,
                 tabular_variables=None,

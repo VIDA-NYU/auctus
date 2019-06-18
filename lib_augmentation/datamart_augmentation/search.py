@@ -23,11 +23,28 @@ source_filter = {
 }
 
 
-def get_column_coverage(data_profile, filter_=[]):
+def get_column_index_mapping(data_profile):
+    """
+    Get the mapping between column name and column index.
+
+    :param data_profile: Profiled input dataset.
+    :return: dict, where the key is the column name, and value is the column index
+    """
+
+    column_index = -1
+    column_index_mapping = dict()
+    for column in data_profile['columns']:
+        column_index += 1
+        column_index_mapping[column['name']] = column_index
+    return column_index_mapping
+
+
+def get_column_coverage(data_profile, column_index_mapping, filter_=[]):
     """
     Get coverage for each column of the input dataset.
 
     :param data_profile: Profiled input dataset.
+    :param column_index_mapping: mapping from column name to column index
     :param filter_: list of column indices to return.
         If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a dict as follows:
@@ -40,13 +57,9 @@ def get_column_coverage(data_profile, filter_=[]):
     """
 
     column_coverage = dict()
-
-    column_index = -1
-    column_index_mapping = dict()
     for column in data_profile['columns']:
-        column_index += 1
         column_name = column['name']
-        column_index_mapping[column_name] = column_index
+        column_index = column_index_mapping[column_name]
         if 'coverage' not in column:
             continue
         if filter_ and column_index not in filter_:
@@ -118,7 +131,7 @@ def get_lazo_sketches(data_profile, column_index_mapping, filter_=[]):
             column_index = column_index_mapping[column_name]
             if filter_ and column_index not in filter_:
                 continue
-            lazo_sketches[column_index] = (
+            lazo_sketches[str(column_index)] = (
                 column['n_permutations'],
                 column['hash_values'],
                 column['cardinality']
@@ -447,12 +460,13 @@ def get_dataset_metadata(es, dataset_id):
     return hit
 
 
-def get_joinable_datasets(es, data_profile, dataset_id=None,
+def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
                           query_args=None, tabular_variables=[]):
     """
     Retrieve datasets that can be joined with an input dataset.
 
     :param es: Elasticsearch client.
+    :param lazo_client: client for the Lazo Index Server
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired DataMart dataset for augmentation.
     :param query_args: list of query arguments (optional).
@@ -463,11 +477,16 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
         raise RuntimeError('Either a dataset id or a data profile '
                            'must be provided for the join.')
 
+    intersections = dict()
+    column_index_mapping = get_column_index_mapping(data_profile)
+
+    # spatial, temporal, and numerical attributes
+
     # get the coverage for each column of the input dataset
 
-    intersections = dict()
     column_coverage = get_column_coverage(
         data_profile,
+        column_index_mapping,
         tabular_variables
     )
 
@@ -514,6 +533,44 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
                 intersections[external_dataset].append(
                     (column, external_column, score)
                 )
+
+    # textual and categorical attributes
+
+    # get lazo sketches
+
+    lazo_sketches = get_lazo_sketches(
+        data_profile,
+        column_index_mapping,
+        tabular_variables
+    )
+
+    # get intersections
+
+    for column in lazo_sketches:
+        pivot_column = data_profile['columns'][int(column)]['name']
+        logger.info("Column: %s" %pivot_column)
+        n_permutations, hash_values, cardinality = lazo_sketches[column]
+        query_results = lazo_client.query_lazo_sketch_data(
+            n_permutations,
+            hash_values,
+            cardinality
+        )
+        for dataset_id, column_name, threshold in query_results:
+            sim = compute_levenshtein_sim(
+                pivot_column.lower(),
+                column_name.lower()
+            )
+            external_column_id = str(get_column_identifiers(
+                es,
+                [column_name],
+                dataset_id=dataset_id
+            )[0])
+            if dataset_id not in intersections:
+                intersections[dataset_id] = []
+            intersections[dataset_id].append(
+                (column, external_column_id, threshold * sim)
+            )
+            logger.info("   %s, %s: %.4f" % (dataset_id, column_name, threshold * sim))
 
     # get pairs of columns with higher score
 
