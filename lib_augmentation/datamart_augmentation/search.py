@@ -548,7 +548,6 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
 
     for column in lazo_sketches:
         pivot_column = data_profile['columns'][int(column)]['name']
-        logger.info("Column: %s" %pivot_column)
         n_permutations, hash_values, cardinality = lazo_sketches[column]
         query_results = lazo_client.query_lazo_sketch_data(
             n_permutations,
@@ -570,7 +569,6 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
             intersections[dataset_id].append(
                 (column, external_column_id, threshold * sim)
             )
-            logger.info("   %s, %s: %.4f" % (dataset_id, column_name, threshold * sim))
 
     # get pairs of columns with higher score
 
