@@ -401,11 +401,11 @@ class RecursiveZipWriter(object):
         self._write = write
         self._zip = zipfile.ZipFile(self, 'w')
 
-    def write_recursive(self, src, dst):
+    def write_recursive(self, src, dst=''):
         if os.path.isdir(src):
             for name in os.listdir(src):
                 self.write_recursive(os.path.join(src, name),
-                                     dst + '/' + name)
+                                     dst + '/' + name if dst else name)
         else:
             self._zip.write(src, dst)
 
@@ -455,7 +455,7 @@ class BaseDownload(BaseHandler):
                         'Content-Disposition',
                         'attachment; filename="%s.zip"' % dataset_id)
                     writer = RecursiveZipWriter(self.write)
-                    writer.write_recursive(dataset_path, '')
+                    writer.write_recursive(dataset_path)
                     writer.close()
                 return self.finish()
             finally:
@@ -559,7 +559,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
                     'Content-Disposition',
                     'attachment; filename="augmentation.zip"')
                 writer = RecursiveZipWriter(self.write)
-                writer.write_recursive(new_path, '')
+                writer.write_recursive(new_path)
                 writer.close()
                 shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
 
@@ -672,7 +672,7 @@ class Augment(CorsHandler, GracefulHandler):
                 'Content-Disposition',
                 'attachment; filename="augmentation.zip"')
             writer = RecursiveZipWriter(self.write)
-            writer.write_recursive(new_path, '')
+            writer.write_recursive(new_path)
             writer.close()
             shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
 
