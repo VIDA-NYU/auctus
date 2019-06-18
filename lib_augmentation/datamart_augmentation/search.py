@@ -546,8 +546,9 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
 
     # get intersections
 
+    lazo_intersections = dict()
     for column in lazo_sketches:
-        # pivot_column = data_profile['columns'][int(column)]['name']
+        pivot_column = data_profile['columns'][int(column)]['name']
         n_permutations, hash_values, cardinality = lazo_sketches[column]
         query_results = lazo_client.query_lazo_sketch_data(
             n_permutations,
@@ -555,20 +556,30 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
             cardinality
         )
         for dataset_id, column_name, threshold in query_results:
-            # sim = compute_levenshtein_sim(
-            #     pivot_column.lower(),
-            #     column_name.lower()
-            # )
+            sim = compute_levenshtein_sim(
+                pivot_column.lower(),
+                column_name.lower()
+            )
             external_column_id = str(get_column_identifiers(
                 es,
                 [column_name],
                 dataset_id=dataset_id
             )[0])
-            if dataset_id not in intersections:
-                intersections[dataset_id] = []
-            # intersections[dataset_id].append(
-            #     (column, external_column_id, threshold * sim)
-            # )
+            if dataset_id not in lazo_intersections:
+                lazo_intersections[dataset_id] = []
+            lazo_intersections[dataset_id].append(
+                (column, external_column_id, threshold, sim)
+            )
+    for dataset_id in lazo_intersections:
+        lazo_intersections[dataset_id] = sorted(
+            lazo_intersections[dataset_id],
+            key=lambda item: (item[2], item[3]),
+            reverse=True
+        )
+        if dataset_id not in intersections:
+            intersections[dataset_id] = []
+        for column, external_column_id, threshold, sim \
+                in lazo_intersections[dataset_id]:
             intersections[dataset_id].append(
                 (column, external_column_id, threshold)
             )
