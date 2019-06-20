@@ -127,19 +127,19 @@ class Search(CorsHandler, GracefulHandler):
                     try:
                         start = parse(variable['start']).timestamp()
                         end = parse(variable['end']).timestamp()
-                    except Exception:
+                    except (KeyError, ValueError, OverflowError):
                         pass
                 elif 'start' in variable:
                     try:
                         start = parse(variable['start']).timestamp()
                         end = datetime.now().timestamp()
-                    except Exception:
+                    except (KeyError, ValueError, OverflowError):
                         pass
                 elif 'end' in variable:
                     try:
                         start = 0
                         end = parse(variable['end']).timestamp()
-                    except Exception:
+                    except (KeyError, ValueError, OverflowError):
                         pass
                 else:
                     pass
@@ -574,6 +574,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
                     "The DataMart dataset referenced by 'task' cannot augment "
                     "'data'.",
                 )
+
 
 class Metadata(CorsHandler, GracefulHandler):
     @PROM_METADATA_TIME.time()
