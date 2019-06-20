@@ -300,14 +300,16 @@ def get_profile_data(filepath, metadata=None):
     cached_data = os.path.join('/cache', hash_)
     if os.path.exists(cached_data):
         logger.info("Found cached profile_data")
-        return pickle.load(open(cached_data, 'rb'))
+        with open(cached_data, 'rb') as fp:
+            return pickle.load(fp)
 
     # profile data and save
     logger.info("Profiling...")
     start = time.perf_counter()
     data_profile = process_dataset(filepath, metadata)
     logger.info("Profiled in %.2fs", time.perf_counter() - start)
-    pickle.dump(data_profile, open(cached_data, 'wb'))
+    with open(cached_data, 'wb') as fp:
+        pickle.dump(data_profile, fp)
     return data_profile
 
 
