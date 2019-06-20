@@ -1,7 +1,5 @@
 import aio_pika
 import asyncio
-from datetime import datetime
-from dateutil.parser import parse
 import elasticsearch
 import logging
 import json
@@ -17,12 +15,12 @@ from tornado.web import HTTPError, RequestHandler
 import zipfile
 
 from datamart_augmentation.augmentation import augment
-from datamart_core.common import log_future, Type
+from datamart_core.common import log_future
 from datamart_core.materialize import get_dataset
 
 from .graceful_shutdown import GracefulApplication, GracefulHandler
-from .search import ClientError, get_augmentation_search_results, \
-    handle_data_parameter
+from .search import ClientError, parse_query, \
+    get_augmentation_search_results, handle_data_parameter
 
 
 logger = logging.getLogger(__name__)
@@ -97,208 +95,6 @@ class CorsHandler(BaseHandler):
 
 
 class Search(CorsHandler, GracefulHandler):
-    def parse_query_variables(self, data, tabular_variables=None):
-        output = list()
-
-        if not data:
-            return output
-
-        for variable in data:
-            if 'type' not in variable:
-                return self.send_error_json(
-                    400,
-                    'variable is missing property "type"',
-                )
-            variable_query = list()
-
-            # temporal variable
-            # TODO: handle 'granularity'
-            if 'temporal_variable' in variable['type']:
-                variable_query.append({
-                    'nested': {
-                        'path': 'columns',
-                        'query': {
-                            'match': {'columns.semantic_types': Type.DATE_TIME},
-                        },
-                    },
-                })
-                start = end = None
-                if 'start' in variable and 'end' in variable:
-                    try:
-                        start = parse(variable['start']).timestamp()
-                        end = parse(variable['end']).timestamp()
-                    except (KeyError, ValueError, OverflowError):
-                        pass
-                elif 'start' in variable:
-                    try:
-                        start = parse(variable['start']).timestamp()
-                        end = datetime.now().timestamp()
-                    except (KeyError, ValueError, OverflowError):
-                        pass
-                elif 'end' in variable:
-                    try:
-                        start = 0
-                        end = parse(variable['end']).timestamp()
-                    except (KeyError, ValueError, OverflowError):
-                        pass
-                else:
-                    pass
-                if start and end:
-                    variable_query.append({
-                        'nested': {
-                            'path': 'columns.coverage',
-                            'query': {
-                                'range': {
-                                    'columns.coverage.range': {
-                                        'gte': start,
-                                        'lte': end,
-                                        'relation': 'intersects'
-                                    }
-                                }
-                            }
-                        }
-                    })
-
-            # geospatial variable
-            # TODO: handle 'granularity'
-            elif 'geospatial_variable' in variable['type']:
-                if ('latitude1' not in variable or
-                        'latitude2' not in variable or
-                        'longitude1' not in variable or
-                        'longitude2' not in variable):
-                    continue
-                longitude1 = min(
-                    float(variable['longitude1']),
-                    float(variable['longitude2'])
-                )
-                longitude2 = max(
-                    float(variable['longitude1']),
-                    float(variable['longitude2'])
-                )
-                latitude1 = max(
-                    float(variable['latitude1']),
-                    float(variable['latitude2'])
-                )
-                latitude2 = min(
-                    float(variable['latitude1']),
-                    float(variable['latitude2'])
-                )
-                variable_query.append({
-                    'nested': {
-                        'path': 'spatial_coverage.ranges',
-                        'query': {
-                            'bool': {
-                                'filter': {
-                                    'geo_shape': {
-                                        'spatial_coverage.ranges.range': {
-                                            'shape': {
-                                                'type': 'envelope',
-                                                'coordinates':
-                                                    [[longitude1, latitude1],
-                                                     [longitude2, latitude2]]
-                                            },
-                                            'relation': 'intersects'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                })
-
-            # tabular variable
-            # TODO: handle 'relationship'
-            #  for now, it assumes the relationship is 'contains'
-            elif 'tabular_variable' in variable['type']:
-                if 'columns' in variable:
-                    for column_index in variable['columns']:
-                        tabular_variables.append(column_index)
-
-            if variable_query:
-                output.append({
-                    'bool': {
-                        'must': variable_query,
-                    }
-                })
-
-        if output:
-            return {
-                'bool': {
-#                    'should': output,
-#                    'minimum_should_match': 1,
-                    'must': output
-                }
-            }
-        return {}
-
-    def parse_query(self, query_json):
-        query_args = list()
-
-        # keywords
-        keywords_query_all = list()
-        if 'keywords' in query_json and query_json['keywords']:
-            if not isinstance(query_json['keywords'], list):
-                return self.send_error_json(400, '"keywords" must be an array')
-            keywords_query = list()
-            # description
-            keywords_query.append({
-                'match': {
-                    'description': {
-                        'query': ' '.join(query_json['keywords']),
-                        'operator': 'or'
-                    }
-                }
-            })
-            # name
-            keywords_query.append({
-                'match': {
-                    'name': {
-                        'query': ' '.join(query_json['keywords']),
-                        'operator': 'or'
-                    }
-                }
-            })
-            # keywords
-            for name in query_json['keywords']:
-                keywords_query.append({
-                    'nested': {
-                        'path': 'columns',
-                        'query': {
-                            'match': {'columns.name': name},
-                        },
-                    },
-                })
-                keywords_query.append({
-                    'wildcard': {
-                        'materialize.identifier': '*%s*' % name.lower()
-                    }
-                })
-            keywords_query_all.append({
-                'bool': {
-                    'should': keywords_query,
-                    'minimum_should_match': 1
-                }
-            })
-
-        if keywords_query_all:
-            query_args.append(keywords_query_all)
-
-        # tabular_variables
-        tabular_variables = []
-
-        # variables
-        variables_query = None
-        if 'variables' in query_json:
-            variables_query = self.parse_query_variables(
-                query_json['variables'],
-                tabular_variables=tabular_variables
-            )
-
-        if variables_query:
-            query_args.append(variables_query)
-
-        return query_args, list(set(tabular_variables))
-
     @prom_async_time(PROM_SEARCH_TIME)
     async def post(self):
         PROM_SEARCH.inc()
@@ -346,7 +142,10 @@ class Search(CorsHandler, GracefulHandler):
         query_args = list()
         tabular_variables = list()
         if query:
-            query_args, tabular_variables = self.parse_query(query)
+            try:
+                query_args, tabular_variables = parse_query(query)
+            except ClientError as e:
+                return self.send_error_json(400, e.args[0])
 
         # At least one of them must be provided
         if not query_args and not data_profile:
