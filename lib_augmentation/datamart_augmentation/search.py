@@ -372,16 +372,7 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
-        columns = es.search(
-            index='datamart',
-            body={
-                'query': {
-                    'match': {
-                        '_id': dataset_id,
-                    }
-                }
-            }
-        )['hits']['hits'][0]['_source']['columns']
+        columns = es.get('datamart', '_doc', id=dataset_id)['_source']['columns']
     else:
         columns = data_profile['columns']
     for i in range(len(columns)):
@@ -397,16 +388,7 @@ def get_dataset_metadata(es, dataset_id):
 
     """
 
-    hit = es.search(
-        index='datamart',
-        body={
-            'query': {
-                'match': {
-                    '_id': dataset_id,
-                }
-            }
-        }
-    )['hits']['hits'][0]
+    hit = es.get('datamart', '_doc', id=dataset_id)
 
     return hit
 
