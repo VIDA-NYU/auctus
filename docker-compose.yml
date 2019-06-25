@@ -35,8 +35,6 @@ services:
     build:
       context: .
       dockerfile: coordinator/Dockerfile
-      cache_from:
-        - datamart_base
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -51,8 +49,6 @@ services:
     build:
       context: .
       dockerfile: query/Dockerfile
-      cache_from:
-        - datamart_base
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -82,8 +78,6 @@ services:
     build:
       context: .
       dockerfile: profiler/Dockerfile
-      cache_from:
-        - datamart_base
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -107,8 +101,6 @@ services:
     build:
       context: .
       dockerfile: discovery/Dockerfile
-      cache_from:
-        - datamart_base
     command: example
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
@@ -121,8 +113,6 @@ services:
     build:
       context: .
       dockerfile: discovery/Dockerfile
-      cache_from:
-        - datamart_base
     command: d3m
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
@@ -137,8 +127,6 @@ services:
     build:
       context: .
       dockerfile: discovery/socrata/Dockerfile
-      cache_from:
-        - datamart_base
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -148,8 +136,6 @@ services:
     build:
       context: .
       dockerfile: discovery/noaa/Dockerfile
-      cache_from:
-        - datamart_base
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq

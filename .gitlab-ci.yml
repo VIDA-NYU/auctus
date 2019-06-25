@@ -16,6 +16,7 @@ before_script:
 test:
   stage: test
   script:
+    - pip install pyyaml
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     - |
       # Pull the base image so we don't have to build from scratch
@@ -30,7 +31,8 @@ test:
       # Push the updated image to the registry (might be no-op)
       docker tag datamart_base $CI_REGISTRY_IMAGE/base
       docker push $CI_REGISTRY_IMAGE/base
-    - docker-compose build
+    - python3 docker-compose-cached-build.py
+    - docker-compose pull rabbitmq  # Don't build it
     - |
       patch -p1 <<'END'
       --- a/docker-compose.yml
