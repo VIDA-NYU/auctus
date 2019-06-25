@@ -16,6 +16,17 @@ before_script:
 test:
   stage: test
   script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - |
+      # Pull the base image so we don't have to build from scratch
+      docker pull $CI_REGISTRY_IMAGE/base || true
+      # Update the base image (maybe)
+      docker build -t datamart_base . \
+        --cache-from=$CI_REGISTRY_IMAGE/base \
+        -f base.Dockerfile
+      # Push the updated image to the registry (might be no-op)
+      docker tag datamart_base $CI_REGISTRY_IMAGE/base
+      docker push $CI_REGISTRY_IMAGE/base
     - docker-compose build
     - |
       patch -p1 <<'END'
@@ -32,5 +43,5 @@ test:
     - sleep 10
     - docker-compose up -d coordinator
     - sleep 3
-    - docker-compose up -d profiler query example_discoverer
+    - docker-compose up -d profiler query querylb example_discoverer
     - sleep 10; docker-compose ps
