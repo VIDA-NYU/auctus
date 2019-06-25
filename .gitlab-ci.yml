@@ -17,3 +17,20 @@ test:
   stage: test
   script:
     - docker-compose build
+    - |
+      patch -p1 <<'END'
+      --- a/docker-compose.yml
+      +++ b/docker-compose.yml
+      @@ -7,4 +7,4 @@ services:
+             - cluster.name=docker-cluster
+             - bootstrap.memory_lock=true
+      -      - ES_HEAP_SIZE=4g
+      +      - ES_HEAP_SIZE=256m
+           ulimits:
+      END
+    - docker-compose up -d elasticsearch rabbitmq
+    - sleep 10
+    - docker-compose up -d coordinator
+    - sleep 3
+    - docker-compose up -d profiler query example_discoverer
+    - sleep 10; docker-compose ps
