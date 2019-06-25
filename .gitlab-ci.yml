@@ -21,6 +21,9 @@ test:
       # Pull the base image so we don't have to build from scratch
       docker pull $CI_REGISTRY_IMAGE/base || true
       # Update the base image (maybe)
+      chmod 644 Pipfile.lock install_deps.py
+      touch -t 200001010000.00 Pipfile.lock install_deps.py
+      ls -l Pipfile.lock install_deps.py && shasum -a 1 Pipfile.lock install_deps.py
       docker build -t datamart_base . \
         --cache-from=$CI_REGISTRY_IMAGE/base \
         -f base.Dockerfile
