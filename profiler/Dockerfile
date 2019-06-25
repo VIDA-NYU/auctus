@@ -15,8 +15,8 @@ WORKDIR /usr/src/app
 COPY Pipfile.lock install_deps.py /usr/src/app/
 RUN python3 install_deps.py Pipfile.lock
 
-RUN apt-get update && apt-get install -y default-jre && \
-    rm -rf /var/lib/apt/lists/*
+#RUN apt-get update && apt-get install -y default-jre && \
+#    rm -rf /var/lib/apt/lists/*
 COPY lib_core lib_core
 RUN pip install --no-deps -e /usr/src/app/lib_core
 COPY lib_materialize lib_materialize
