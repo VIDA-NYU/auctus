@@ -1,5 +1,6 @@
 import itertools
 import json
+import os
 import requests
 import time
 import unittest
@@ -61,7 +62,7 @@ class TestSearch(unittest.TestCase):
         @self.do_test_ingested
         def query():
             response = requests.post(
-                'http://127.0.0.1:8002/search',
+                os.environ['QUERY_HOST'] + '/search',
                 json={'keywords': ['people']},
             )
             self.assertEqual(response.request.headers['Content-Type'],
@@ -72,7 +73,7 @@ class TestSearch(unittest.TestCase):
         @self.do_test_ingested
         def query():
             response = requests.post(
-                'http://127.0.0.1:8002/search',
+                os.environ['QUERY_HOST'] + '/search',
                 data={'query': json.dumps({'keywords': ['people']})},
             )
             self.assertEqual(response.request.headers['Content-Type'],
@@ -83,7 +84,7 @@ class TestSearch(unittest.TestCase):
         @self.do_test_ingested
         def query():
             response = requests.post(
-                'http://127.0.0.1:8002/search',
+                os.environ['QUERY_HOST'] + '/search',
                 files={'query': json.dumps({'keywords': ['people']})
                                 .encode('utf-8')},
             )

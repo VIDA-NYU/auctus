@@ -32,6 +32,8 @@ test:
       # Push the updated image to the registry (might be no-op)
       docker tag datamart_base $CI_REGISTRY_IMAGE/base
       docker push $CI_REGISTRY_IMAGE/base
+    - cp tests/ci.env .env
+    - cat .env | while read l; do echo "export $l"; done >.env.sh && . .env.sh
     - python3 docker-compose-cached-build.py
     - docker-compose pull rabbitmq  # Don't build it
     - |
@@ -45,7 +47,6 @@ test:
       +      - ES_HEAP_SIZE=256m
            ulimits:
       END
-    - cp env.default .env
     - docker network create -d bridge --subnet 172.0.44.0/24 --gateway 172.0.44.1 datamart_default
     - docker-compose up -d elasticsearch rabbitmq
     - |
