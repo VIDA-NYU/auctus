@@ -1,3 +1,4 @@
+import elasticsearch
 import json
 import os
 import requests
@@ -5,6 +6,29 @@ import time
 import unittest
 
 from .utils import assert_json
+
+
+class TestProfile(unittest.TestCase):
+    def test_basic(self):
+        es = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+        hits = es.search(
+            index='datamart',
+            body={
+                'query': {
+                    'match_all': {},
+                },
+            },
+        )['hits']['hits']
+        hits = {h['_id']: h['_source'] for h in hits}
+
+        assert_json(
+            hits,
+            {
+                'datamart.test.basic': basic_metadata
+            },
+        )
 
 
 class TestSearch(unittest.TestCase):
@@ -48,23 +72,14 @@ class TestSearch(unittest.TestCase):
             return response
 
     def do_test_basic_search(self, query_func):
-        start = time.perf_counter()
-        while time.perf_counter() < start + 30:
-            response = query_func()
-            if response.status_code == 404:
-                print('x', end='', flush=True)
-                time.sleep(2)
-                continue
-            if response.status_code == 400:
-                try:
-                    error = response.json()['error']
-                except (KeyError, ValueError):
-                    error = "(not JSON)"
-                self.fail("Error 400 from server: %s" % error)
-            response.raise_for_status()
-            break
-        else:
-            self.fail("No dataset ingested")
+        response = query_func()
+        if response.status_code == 400:
+            try:
+                error = response.json()['error']
+            except (KeyError, ValueError):
+                error = "(not JSON)"
+            self.fail("Error 400 from server: %s" % error)
+        response.raise_for_status()
 
         results = response.json()['results']
         self.assertEqual(len(results), 1)
@@ -79,58 +94,61 @@ class TestSearch(unittest.TestCase):
                     'right_columns': [],
                 },
                 'score': lambda n: isinstance(n, float),
-                'metadata': {
-                    "description": "This is a very simple CSV with people",
-                    "size": 125,
-                    "nb_rows": 5,
-                    "columns": [
-                        {
-                            "name": "name",
-                            "structural_type": "http://schema.org/Text",
-                            "semantic_types": [
-                                "https://schema.org/Enumeration"
-                            ]
-                        },
-                        {
-                            "name": "country",
-                            "structural_type": "http://schema.org/Text",
-                            "semantic_types": [
-                                "https://schema.org/Enumeration"
-                            ]
-                        },
-                        {
-                            "name": "number",
-                            "structural_type": "http://schema.org/Integer",
-                            "semantic_types": [],
-                            "mean": 6.2,
-                            "stddev": lambda n: round(n, 3) == 2.315,
-                            "coverage": [
-                                {
-                                    "range": {
-                                        "gte": 3.0,
-                                        "lte": 9.0
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "name": "what",
-                            "structural_type": "http://schema.org/Text",
-                            "semantic_types": [
-                                "http://schema.org/Boolean",
-                                "https://schema.org/Enumeration"
-                            ]
-                        }
-                    ],
-                    "materialize": {
-                        "direct_url": "http://test_discoverer:7000/basic.csv",
-                        "identifier": "datamart.test",
-                        "date": lambda d: isinstance(d, str)
-                    },
-                    "date": lambda d: isinstance(d, str)
-                }
+                'metadata': basic_metadata
             },
         )
+
+
+basic_metadata = {
+    "description": "This is a very simple CSV with people",
+    "size": 125,
+    "nb_rows": 5,
+    "columns": [
+        {
+            "name": "name",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": [
+                "https://schema.org/Enumeration"
+            ]
+        },
+        {
+            "name": "country",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": [
+                "https://schema.org/Enumeration"
+            ]
+        },
+        {
+            "name": "number",
+            "structural_type": "http://schema.org/Integer",
+            "semantic_types": [],
+            "mean": 6.2,
+            "stddev": lambda n: round(n, 3) == 2.315,
+            "coverage": [
+                {
+                    "range": {
+                        "gte": 3.0,
+                        "lte": 9.0
+                    }
+                }
+            ]
+        },
+        {
+            "name": "what",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": [
+                "http://schema.org/Boolean",
+                "https://schema.org/Enumeration"
+            ]
+        }
+    ],
+    "materialize": {
+        "direct_url": "http://test_discoverer:7000/basic.csv",
+        "identifier": "datamart.test",
+        "date": lambda d: isinstance(d, str)
+    },
+    "date": lambda d: isinstance(d, str)
+}
 
 
 if __name__ == '__main__':
