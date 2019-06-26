@@ -1,4 +1,4 @@
-version: '3'
+version: '3.2'
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.4.3
@@ -35,7 +35,6 @@ services:
     build:
       context: .
       dockerfile: coordinator/Dockerfile
-    command: python -m coordinator.web
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -46,12 +45,10 @@ services:
       - 8001:8001
     volumes:
       - datasets:/datasets
-#      - ./coordinator/coordinator:/usr/src/app/coordinator/coordinator
   query:
     build:
       context: .
       dockerfile: query/Dockerfile
-    command: python -m query.web
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -65,7 +62,6 @@ services:
       - query-cache:/cache
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
       - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
-#      - ./query/query:/usr/src/app/query/query
   querylb:
     image: dockercloud/haproxy:1.6.7
     environment:
@@ -127,6 +123,18 @@ services:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
       - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
+  test_discoverer:
+    build:
+      context: .
+      dockerfile: discovery/Dockerfile
+    command: testsuite
+    environment:
+    - ELASTICSEARCH_HOSTS=elasticsearch:9200
+    - AMQP_HOST=rabbitmq
+    - AMQP_USER=${AMQP_USER}
+    - AMQP_PASSWORD=${AMQP_PASSWORD}
+    volumes:
+      - datasets:/datasets
   socrata:
     build:
       context: .
