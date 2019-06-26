@@ -123,6 +123,18 @@ services:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
       - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
+  test_discoverer:
+    build:
+      context: .
+      dockerfile: discovery/Dockerfile
+    command: testsuite
+    environment:
+    - ELASTICSEARCH_HOSTS=elasticsearch:9200
+    - AMQP_HOST=rabbitmq
+    - AMQP_USER=${AMQP_USER}
+    - AMQP_PASSWORD=${AMQP_PASSWORD}
+    volumes:
+      - datasets:/datasets
   socrata:
     build:
       context: .

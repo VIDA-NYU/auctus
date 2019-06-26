@@ -35,7 +35,7 @@ class ExampleDiscoverer(Discoverer):
 
         # We found a dataset
         self.record_dataset(
-            dict(filename='nyu.zip'),  # Materialization information
+            dict(filename='nyu.csv'),  # Materialization information
             self.metadata,  # Metadata (profiler will update it)
             dataset_id=self.dataset_id,
         )

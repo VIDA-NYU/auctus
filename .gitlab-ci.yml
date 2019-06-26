@@ -44,10 +44,13 @@ test:
       +      - ES_HEAP_SIZE=256m
            ulimits:
       END
+    - cp env.default .env
     - docker network create -d bridge --subnet 172.0.44.0/24 --gateway 172.0.44.1 datamart_default
     - docker-compose up -d elasticsearch rabbitmq
     - sleep 10
     - docker-compose up -d coordinator
+    - (cd tests/data && python -m http.server 7000) &
     - sleep 3
-    - docker-compose up -d profiler query querylb example_discoverer
+    - docker-compose up -d profiler query querylb test_discoverer
     - sleep 10; docker-compose ps
+    - python tests
