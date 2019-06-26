@@ -2,7 +2,6 @@ import elasticsearch
 import json
 import os
 import requests
-import time
 import unittest
 
 from .utils import assert_json
@@ -26,7 +25,8 @@ class TestProfile(unittest.TestCase):
         assert_json(
             hits,
             {
-                'datamart.test.basic': basic_metadata
+                'datamart.test.basic': basic_metadata,
+                'datamart.test.geo': geo_metadata,
             },
         )
 
@@ -101,7 +101,7 @@ class TestSearch(unittest.TestCase):
 
 basic_metadata = {
     "description": "This is a very simple CSV with people",
-    "size": 125,
+    "size": 126,
     "nb_rows": 5,
     "columns": [
         {
@@ -122,16 +122,30 @@ basic_metadata = {
             "name": "number",
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
-            "mean": 6.2,
-            "stddev": lambda n: round(n, 3) == 2.315,
-            "coverage": [
-                {
-                    "range": {
-                        "gte": 3.0,
-                        "lte": 9.0
+            "mean": 6.4,
+            "stddev": lambda n: round(n, 3) == 2.577,
+            "coverage": (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {
+                        "range": {
+                            "gte": 3.0,
+                            "lte": 4.0
+                        }
+                    },
+                    {
+                        "range": {
+                            "gte": 7.0,
+                            "lte": 8.0
+                        }
+                    },
+                    {
+                        "range": {
+                            "gte": 10.0,
+                            "lte": 10.0
+                        }
                     }
-                }
-            ]
+                ]
+            )
         },
         {
             "name": "what",
@@ -144,6 +158,68 @@ basic_metadata = {
     ],
     "materialize": {
         "direct_url": "http://test_discoverer:7000/basic.csv",
+        "identifier": "datamart.test",
+        "date": lambda d: isinstance(d, str)
+    },
+    "date": lambda d: isinstance(d, str)
+}
+
+
+geo_metadata = {
+    "description": "Another simple CSV with places",
+    "size": 2913,
+    "nb_rows": 100,
+    "columns": [
+        {
+            "name": "id",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": []
+        },
+        {
+            "name": "lat",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: "http://schema.org/latitude" in l,
+            "mean": lambda n: round(n, 3) == 40.712,
+            "stddev": lambda n: round(n, 4) == 0.0187
+        },
+        {
+            "name": "long",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: "http://schema.org/longitude" in l,
+            "mean": lambda n: round(n, 3) == -73.993,
+            "stddev": lambda n: round(n, 5) == 0.00654
+        }
+    ],
+    "spatial_coverage": [
+        {
+            "lat": "lat",
+            "lon": "long",
+            "ranges": (
+                lambda l: sorted(l, key=lambda e: e['range']['coordinates'][0][0]) == [
+                    {
+                        "range": {
+                            "type": "envelope",
+                            "coordinates": [
+                                [-74.004091, 40.735087],
+                                [-73.995449, 40.725162]
+                            ]
+                        },
+                    },
+                    {
+                        "range": {
+                            "type": "envelope",
+                            "coordinates": [
+                                [-73.989869, 40.695784],
+                                [-73.983673, 40.690462]
+                            ]
+                        },
+                    }
+                ]
+            )
+        }
+    ],
+    "materialize": {
+        "direct_url": "http://test_discoverer:7000/geo.csv",
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
