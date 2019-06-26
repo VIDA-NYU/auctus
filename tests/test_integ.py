@@ -102,8 +102,11 @@ class TestSearch(unittest.TestCase):
                 time.sleep(2)
                 continue
             if response.status_code == 400:
-                self.fail("Error 400 from server: %s" %
-                          response.json()['error'])
+                try:
+                    error = response.json()['error']
+                except (KeyError, ValueError):
+                    error = "(not JSON)"
+                self.fail("Error 400 from server: %s" % error)
             response.raise_for_status()
             break
         else:

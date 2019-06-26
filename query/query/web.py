@@ -103,7 +103,8 @@ class Search(CorsHandler, GracefulHandler):
         data = None
         if type_.startswith('application/json'):
             query = self.get_json()
-        elif type_.startswith('multipart/form-data'):
+        elif (type_.startswith('multipart/form-data') or
+                type_.startswith('application/x-www-form-urlencoded')):
             query = self.get_body_argument('query', None)
             if query is None and 'query' in self.request.files:
                 query = self.request.files['query'][0].body.decode('utf-8')
@@ -291,7 +292,8 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
         output_format = 'd3m'
         if type_.startswith('application/json'):
             task = self.get_json()
-        elif type_.startswith('multipart/form-data'):
+        elif (type_.startswith('multipart/form-data') or
+                type_.startswith('application/x-www-form-urlencoded')):
             task = self.get_body_argument('task', None)
             if task is None and 'task' in self.request.files:
                 task = self.request.files['task'][0].body.decode('utf-8')
