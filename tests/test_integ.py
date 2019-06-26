@@ -1,65 +1,16 @@
-import itertools
 import json
 import os
 import requests
 import time
 import unittest
 
-
-def assert_json(actual, expected, pos='@'):
-    if callable(expected):
-        # The reason this function exists
-        if not expected(actual):
-            raise AssertionError(
-                "Validation failed for %r at %s" % (actual, pos)
-            )
-        return
-
-    if type(actual) != type(expected):
-        raise AssertionError(
-            "Type mismatch: expected %r, got %r at %s" % (
-                type(expected), type(actual), pos,
-            )
-        )
-    elif isinstance(actual, list):
-        if len(actual) != len(expected):
-            raise AssertionError(
-                "List lengths don't match: expected %d, got %d at %s" % (
-                    len(expected), len(actual), pos,
-                )
-            )
-        for i, (a, e) in enumerate(zip(actual, expected)):
-            assert_json(a, e, '%s[%d]' % (pos, i))
-    elif isinstance(actual, dict):
-        if actual.keys() != expected.keys():
-            msg = "Dict lengths don't match; expected %d, got %d at %s" % (
-                len(expected), len(actual), pos,
-            )
-            if len(actual) > len(expected):
-                unexpected = set(actual) - set(expected)
-                msg += "\nUnexpected keys: "
-            else:
-                unexpected = set(expected) - set(actual)
-                msg += "\nMissing keys: "
-            if len(unexpected) > 3:
-                msg += ', '.join(repr(key)
-                                 for key in itertools.islice(unexpected, 3))
-                msg += ', ...'
-            else:
-                msg += ', '.join(repr(key)
-                                 for key in unexpected)
-            raise AssertionError(msg)
-        for k, a in actual.items():
-            e = expected[k]
-            assert_json(a, e, '%s.%r' % (pos, k))
-    else:
-        if actual != expected:
-            raise ValueError("%r != %r at %s" % (actual, expected, pos))
+from .utils import assert_json
 
 
 class TestSearch(unittest.TestCase):
-    def test_post_json(self):
-        @self.do_test_ingested
+    def test_basic_search_json(self):
+        """Basic search, posting the query as JSON."""
+        @self.do_test_basic_search
         def query():
             response = requests.post(
                 os.environ['QUERY_HOST'] + '/search',
@@ -69,8 +20,9 @@ class TestSearch(unittest.TestCase):
                              'application/json')
             return response
 
-    def test_post_data(self):
-        @self.do_test_ingested
+    def test_basic_search_formdata(self):
+        """Basic search, posting the query as formdata-urlencoded."""
+        @self.do_test_basic_search
         def query():
             response = requests.post(
                 os.environ['QUERY_HOST'] + '/search',
@@ -80,13 +32,14 @@ class TestSearch(unittest.TestCase):
                              'application/x-www-form-urlencoded')
             return response
 
-    def test_post_file(self):
-        @self.do_test_ingested
+    def test_basic_search_file(self):
+        """Basic search, posting the query as a file in multipart/form-data."""
+        @self.do_test_basic_search
         def query():
             response = requests.post(
                 os.environ['QUERY_HOST'] + '/search',
                 files={'query': json.dumps({'keywords': ['people']})
-                                .encode('utf-8')},
+                       .encode('utf-8')},
             )
             self.assertEqual(
                 response.request.headers['Content-Type'].split(';', 1)[0],
@@ -94,7 +47,7 @@ class TestSearch(unittest.TestCase):
             )
             return response
 
-    def do_test_ingested(self, query_func):
+    def do_test_basic_search(self, query_func):
         start = time.perf_counter()
         while time.perf_counter() < start + 30:
             response = query_func()
@@ -139,7 +92,7 @@ class TestSearch(unittest.TestCase):
                             ]
                         },
                         {
-                        "name": "country",
+                            "name": "country",
                             "structural_type": "http://schema.org/Text",
                             "semantic_types": [
                                 "https://schema.org/Enumeration"
@@ -154,8 +107,8 @@ class TestSearch(unittest.TestCase):
                             "coverage": [
                                 {
                                     "range": {
-                                    "gte": 3.0,
-                                    "lte": 9.0
+                                        "gte": 3.0,
+                                        "lte": 9.0
                                     }
                                 }
                             ]
