@@ -39,7 +39,6 @@ def materialize_and_process_dataset(dataset_id, metadata):
 
         # Profile
         metadata = process_dataset(dataset_path, metadata)
-        import subprocess; subprocess.call(['sh', '-c', 'find %s -type f -exec cat -v {} +' % dataset_path])
 
         metadata['materialize'] = materialize
         return metadata
