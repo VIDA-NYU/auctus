@@ -15,6 +15,9 @@ before_script:
 
 test:
   stage: test
+  # Important note about this: the Docker server is on a separate host,
+  # so exposed ports are at 'docker' not 'localhost', and
+  # Docker containers can't reach the local runner!
   script:
     - pip install pipenv
     - pipenv install --deploy --system --dev
@@ -59,7 +62,6 @@ test:
         exit 1
       fi
     - docker-compose up -d coordinator
-    - (cd tests/data && python -m http.server 7000) &
     - sleep 10
     - docker-compose up -d profiler query querylb test_discoverer
     - sleep 10; docker-compose ps

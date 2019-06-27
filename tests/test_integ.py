@@ -170,7 +170,7 @@ class TestSearch(unittest.TestCase):
                         }
                     ],
                     "materialize": {
-                        "direct_url": "http://172.0.44.1:7000/basic.csv",
+                        "direct_url": "http://test_discoverer:7000/basic.csv",
                         "identifier": "datamart.test",
                         "date": lambda d: isinstance(d, str)
                     },
