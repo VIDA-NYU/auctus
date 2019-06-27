@@ -286,11 +286,11 @@ def process_dataset(data, metadata=None):
     column_lat = []
     column_lon = []
 
-    # Identify types
-    logger.info("Identifying types...")
     with PROM_TYPES.time():
         for i, column_meta in enumerate(columns):
+            logger.info("Processing column %d...", i)
             array = data.iloc[:, i]
+            # Identify types
             structural_type, semantic_types_dict = \
                 identify_types(array, column_meta['name'])
             # Set structural type
@@ -301,11 +301,11 @@ def process_dataset(data, metadata=None):
                 if sem_type not in sem_types:
                     sem_types.append(sem_type)
 
+            # Compute ranges for numerical/spatial data
             if structural_type in (Type.INTEGER, Type.FLOAT):
                 column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
 
                 # Get numerical ranges
-                # logger.warning(" Column Name: " + column_meta['name'])
                 numerical_values = []
                 for e in array:
                     try:
@@ -327,6 +327,7 @@ def process_dataset(data, metadata=None):
                         [x for x in numerical_values if x is not None]
                     )
 
+            # Compute ranges for temporal data
             if Type.DATE_TIME in semantic_types_dict:
                 timestamps = numpy.empty(
                     len(semantic_types_dict[Type.DATE_TIME]),
