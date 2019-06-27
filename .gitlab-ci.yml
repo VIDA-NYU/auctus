@@ -64,6 +64,14 @@ test:
     - docker-compose up -d coordinator
     - sleep 10
     - docker-compose up -d profiler query querylb test_discoverer
-    - sleep 10; docker-compose ps
+    - |
+      # Wait for profiling to end
+      slept=0; while [ $slept -le 180 -a $(curl -s -o /dev/null -w "%{http_code}" http://docker:9200/datamart/_doc/datamart.test.basic) != 200 ]; do sleep 5; slept=$((slept + 5)); done
+      if [ $slept -le 180 ]; then
+        echo "Profiling ended after ${slept}s"
+      else
+        exit 1
+      fi
+    - docker-compose ps
     - docker-compose logs profiler
     - python tests
