@@ -48,10 +48,18 @@ test:
     - cp env.default .env
     - docker network create -d bridge --subnet 172.0.44.0/24 --gateway 172.0.44.1 datamart_default
     - docker-compose up -d elasticsearch rabbitmq
-    - sleep 10
+    - |
+      # Wait for Elasticsearch to come up
+      slept=0; while [ $slept -le 120 -a $(curl -s -o /dev/null -w "%{http_code}" http://docker:9200/) != 200 ]; do sleep 5; slept=$((slept + 5)); done
+      if [ $slept -le 120 ]; then
+        echo "Elasticsearch came up after ${slept}s"
+      else
+        echo "Elasticsearch didn't come up after ${slept}s"
+        exit 1
+      fi
     - docker-compose up -d coordinator
     - (cd tests/data && python -m http.server 7000) &
-    - sleep 3
+    - sleep 10
     - docker-compose up -d profiler query querylb test_discoverer
     - sleep 10; docker-compose ps
     - python tests
