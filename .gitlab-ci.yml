@@ -65,4 +65,5 @@ test:
     - sleep 10
     - docker-compose up -d profiler query querylb test_discoverer
     - sleep 10; docker-compose ps
+    - docker-compose logs profiler
     - python tests
