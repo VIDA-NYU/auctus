@@ -45,7 +45,7 @@ def identify_types(array, name):
             num_float += 1
         elif len(_re_whitespace.findall(elem)) >= 4:
             num_text += 1
-        if elem.lower() in ('0', '1', 'true', 'false'):
+        if elem.lower() in ('0', '1', 'true', 'false', 'y', 'n', 'yes', 'no'):
             num_bool += 1
 
     threshold = ratio * (num_total - num_empty)
