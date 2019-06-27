@@ -99,6 +99,23 @@ class TestSearch(unittest.TestCase):
         )
 
 
+def check_ranges(min_long, min_lat, max_long, max_lat):
+    def check(ranges):
+        assert len(ranges) == 3
+        for rg in ranges:
+            assert rg.keys() == {'range'}
+            rg = rg['range']
+            assert rg.keys() == {'type', 'coordinates'}
+            assert rg['type'] == 'envelope'
+            [long1, lat1], [long2, lat2] = rg['coordinates']
+            assert min_lat <= lat2 <= lat1 <= max_lat
+            assert min_long <= long1 <= long2 <= max_long
+
+        return True
+
+    return check
+
+
 basic_metadata = {
     "description": "This is a very simple CSV with people",
     "size": 126,
@@ -194,28 +211,7 @@ geo_metadata = {
         {
             "lat": "lat",
             "lon": "long",
-            "ranges": (
-                lambda l: sorted(l, key=lambda e: e['range']['coordinates'][0][0]) == [
-                    {
-                        "range": {
-                            "type": "envelope",
-                            "coordinates": [
-                                [-74.004091, 40.735087],
-                                [-73.995449, 40.725162]
-                            ]
-                        },
-                    },
-                    {
-                        "range": {
-                            "type": "envelope",
-                            "coordinates": [
-                                [-73.989869, 40.695784],
-                                [-73.983673, 40.690462]
-                            ]
-                        },
-                    }
-                ]
-            )
+            "ranges": check_ranges(-74.005, 40.6885, -73.9808, 40.7374)
         }
     ],
     "materialize": {

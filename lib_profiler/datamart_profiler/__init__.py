@@ -86,35 +86,6 @@ def get_numerical_ranges(values):
         ])
     logger.info("Ranges: %r", ranges)
 
-    # Merge overlapping clusters
-    i1 = 0
-    while i1 < len(ranges):
-        i2 = i1 + 1
-        while i2 < len(ranges):
-            rg1 = ranges[i1]
-            rg2 = ranges[i2]
-
-            # Compute interval centers and sizes
-            c1 = 0.5 * (rg1[0] + rg1[1])
-            c2 = 0.5 * (rg2[0] + rg2[1])
-            # Note that we grow the intervals 10%
-            s1 = 1.1 * (rg1[1] - rg1[0])
-            s2 = 1.1 * (rg2[1] - rg2[0])
-            logger.info("Centers: %r %r sizes: %r %r", c1, c2, s1, s2)
-
-            # Check for overlap
-            if abs(c2 - c1) < 0.5 * (s1 + s2):
-                # Merge rg2 into rg1
-                logger.info("Merging cluster %d into %d", i2, i1)
-                ranges[i1] = [min(rg1[0], rg2[0]), max(rg1[1], rg2[1])]
-                del ranges[i2]
-            else:
-                logger.info("Cluster %d doesn't overlap with cluster %d",
-                             i2, i1)
-                i2 += 1
-        i1 += 1
-    logger.info("Final numerical ranges: %r", ranges)
-
     # Convert to Elasticsearch syntax
     ranges = [{'range': {'gte': rg[0], 'lte': rg[1]}}
               for rg in ranges]
@@ -155,42 +126,6 @@ def get_spatial_ranges(values):
             [max_long, min_lat],
         ])
     logger.info("Ranges: %r", ranges)
-
-    # Merge overlapping clusters
-    i1 = 0
-    while i1 < len(ranges):
-        i2 = i1 + 1
-        while i2 < len(ranges):
-            rg1 = ranges[i1]
-            rg2 = ranges[i2]
-
-            # Compute boxes centers and sizes
-            c1x = 0.5 * (rg1[0][0] + rg1[1][0])
-            c1y = 0.5 * (rg1[0][1] + rg1[1][1])
-            c2x = 0.5 * (rg2[0][0] + rg2[1][0])
-            c2y = 0.5 * (rg2[0][1] + rg2[1][1])
-            # Note that we grow the boxes 10%
-            s1x = 1.1 * (rg1[1][0] - rg1[0][0])
-            s1y = 1.1 * (rg1[0][1] - rg1[1][1])
-            s2x = 1.1 * (rg2[1][0] - rg2[0][0])
-            s2y = 1.1 * (rg2[0][1] - rg2[1][1])
-
-            # Check for overlap
-            if (abs(c1x - c2x) < 0.5 * (s1x + s2x) and
-                    abs(c1y - c2y) < 0.5 * (s1y + s2y)):
-                # Merge rg2 into rg1
-                logger.info("Merging cluster %d into %d", i2, i1)
-                ranges[i1] = [
-                    [min(rg1[0][0], rg2[0][0]), max(rg1[0][1], rg2[0][1])],
-                    [max(rg1[1][0], rg2[1][0]), min(rg1[1][1], rg2[1][1])],
-                ]
-                del ranges[i2]
-            else:
-                logger.info("Cluster %d doesn't overlap with cluster %d",
-                             i2, i1)
-                i2 += 1
-        i1 += 1
-    logger.info("Final spatial ranges: %r", ranges)
 
     # Convert to Elasticsearch syntax
     ranges = [{'range': {'type': 'envelope',
