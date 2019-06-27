@@ -1,5 +1,4 @@
 import codecs
-import hdbscan
 import json
 import logging
 import math
@@ -9,6 +8,7 @@ import pandas
 import pkg_resources
 import prometheus_client
 import random
+from sklearn.cluster import KMeans
 import subprocess
 
 from .identify_types import identify_types
@@ -53,138 +53,150 @@ def mean_stddev(array):
     return mean, stddev
 
 
+N_RANGES = 3
+
+
 def get_numerical_ranges(values):
     """
     Retrieve the numeral ranges given the input (timestamp, integer, or float).
+
+    This performs K-Means clustering, returning a maximum of 3 ranges.
     """
 
-    def get_ranges(values_):
-        range_diffs = []
-        for i in range(1, len(values_)):
-            diff = values_[i][0] - values_[i - 1][1]
-            diff != 0 and range_diffs.append(diff)
+    logger.info("Computing numerical ranges, %d values", len(values))
 
-        avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
+    clustering = KMeans(n_clusters=N_RANGES, random_state=0)
+    clustering.fit(numpy.array(values).reshape(-1, 1))
+    logger.info("K-Means clusters: %r", clustering.cluster_centers_)
 
-        ranges = []
-        current_min = values_[0][0]
-        current_max = values_[0][1]
+    # Compute confidence intervals for each range
+    ranges = []
+    for rg in range(N_RANGES):
+        cluster = [values[i]
+                   for i in range(len(values))
+                   if clustering.labels_[i] == rg]
+        if not cluster:
+            continue
+        cluster.sort()
+        min_idx = int(0.05 * len(cluster))
+        max_idx = int(0.95 * len(cluster))
+        ranges.append([
+            cluster[min_idx],
+            cluster[max_idx],
+        ])
+    logger.info("Ranges: %r", ranges)
 
-        for i in range(1, len(values_)):
-            if (values_[i][0] - values_[i - 1][1]) > avg_range_diff + 2 * std_dev_range_diff:
-                ranges.append([current_min, current_max])
-                current_min = values_[i][0]
-                current_max = values_[i][1]
-                continue
-            current_max = values_[i][1]
-        ranges.append([current_min, current_max])
+    # Merge overlapping clusters
+    i1 = 0
+    while i1 < len(ranges):
+        i2 = i1 + 1
+        while i2 < len(ranges):
+            rg1 = ranges[i1]
+            rg2 = ranges[i2]
 
-        return ranges
+            # Compute interval centers and sizes
+            c1 = 0.5 * (rg1[0] + rg1[1])
+            c2 = 0.5 * (rg2[0] + rg2[1])
+            # Note that we grow the intervals 10%
+            s1 = 1.1 * (rg1[1] - rg1[0])
+            s2 = 1.1 * (rg2[1] - rg2[0])
+            logger.info("Centers: %r %r sizes: %r %r", c1, c2, s1, s2)
 
-    if not values:
-        return []
+            # Check for overlap
+            if abs(c2 - c1) < 0.5 * (s1 + s2):
+                # Merge rg2 into rg1
+                logger.info("Merging cluster %d into %d", i2, i1)
+                ranges[i1] = [min(rg1[0], rg2[0]), max(rg1[1], rg2[1])]
+                del ranges[i2]
+            else:
+                logger.info("Cluster %d doesn't overlap with cluster %d",
+                             i2, i1)
+                i2 += 1
+        i1 += 1
+    logger.info("Final numerical ranges: %r", ranges)
 
-    values = [[v, v] for v in sorted(values)]
-    # run it twice
-    values = get_ranges(values)
-    values = get_ranges(values)
-
-    final_ranges = []
-    for v in values:
-        final_ranges.append({"range": {"gte": v[0], "lte": v[1]}})
-
-    return final_ranges
+    # Convert to Elasticsearch syntax
+    ranges = [{'range': {'gte': rg[0], 'lte': rg[1]}}
+              for rg in ranges]
+    return ranges
 
 
 def get_spatial_ranges(values):
     """
     Retrieve the spatial ranges (i.e. bounding boxes) given the input gps points.
-    It uses HDBSCAN for finding finer spatial ranges.
+
+    This performs K-Means clustering, returning a maximum of 3 ranges.
     """
 
-    def get_euclidean_distance(p1, p2):
-        return numpy.linalg.norm(numpy.array(p1) - numpy.array(p2))
+    logger.info("Computing spatial ranges, %d values", len(values))
 
-    def get_ranges(values_):
-        range_diffs = []
-        for j in range(1, len(values_)):
-            diff = get_euclidean_distance(values_[j - 1][1], values_[j][1])
-            diff != 0 and range_diffs.append(diff)
+    clustering = KMeans(n_clusters=N_RANGES, random_state=0)
+    clustering.fit(values)
+    logger.info("K-Means clusters: %r", clustering.cluster_centers_)
 
-        avg_range_diff, std_dev_range_diff = mean_stddev(range_diffs)
-
-        ranges = []
-        current_bb = values_[0][0]
-        current_point = values_[0][1]
-
-        for j in range(1, len(values_)):
-            dist = get_euclidean_distance(current_point, values_[j][1])
-            if dist > avg_range_diff + 2 * std_dev_range_diff:
-                ranges.append([current_bb, current_point])
-                current_bb = values_[j][0]
-                current_point = values_[j][1]
-                continue
-            current_bb = [[min(current_bb[0][0], values_[j][0][0][0]),  # min lat
-                           max(current_bb[0][1], values_[j][0][0][1])],  # max lat
-                          [min(current_bb[1][0], values_[j][0][1][0]),  # min lon
-                           max(current_bb[1][1], values_[j][0][1][1])]]  # max lon
-            current_point = [(current_bb[0][0] + current_bb[0][1])/2,
-                             (current_bb[1][0] + current_bb[1][1])/2]
-        ranges.append([current_bb, current_point])
-
-        return ranges
-
-    min_cluster_size = 10
-    if len(values) <= min_cluster_size:
-        min_cluster_size = 2
-
-    clustering = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size).fit(values)
-
-    clusters = {}
-    for i in range(len(values)):
-        label = clustering.labels_[i]
-        if label < 0:
+    # Compute confidence intervals for each range
+    ranges = []
+    for rg in range(N_RANGES):
+        cluster = [values[i]
+                   for i in range(len(values))
+                   if clustering.labels_[i] == rg]
+        if not cluster:
             continue
-        if label not in clusters:
-            clusters[label] = [[float("inf"), -float("inf")], [float("inf"), -float("inf")]]
-        clusters[label][0][0] = max(-90.0, min(clusters[label][0][0], values[i][0]))  # min lat
-        clusters[label][0][1] = min(90.0, max(clusters[label][0][1], values[i][0]))  # max lat
+        cluster.sort(key=lambda p: p[0])
+        min_idx = int(0.05 * len(cluster))
+        max_idx = int(0.95 * len(cluster))
+        min_lat = cluster[min_idx][0]
+        max_lat = cluster[max_idx][0]
+        cluster.sort(key=lambda p: p[1])
+        min_long = cluster[min_idx][1]
+        max_long = cluster[max_idx][1]
+        ranges.append([
+            [min_long, max_lat],
+            [max_long, min_lat],
+        ])
+    logger.info("Ranges: %r", ranges)
 
-        clusters[label][1][0] = max(-180.0, min(clusters[label][1][0], values[i][1]))  # min lon
-        clusters[label][1][1] = min(180.0, max(clusters[label][1][1], values[i][1]))  # max lon
+    # Merge overlapping clusters
+    i1 = 0
+    while i1 < len(ranges):
+        i2 = i1 + 1
+        while i2 < len(ranges):
+            rg1 = ranges[i1]
+            rg2 = ranges[i2]
 
-    # further clustering
+            # Compute boxes centers and sizes
+            c1x = 0.5 * (rg1[0][0] + rg1[1][0])
+            c1y = 0.5 * (rg1[0][1] + rg1[1][1])
+            c2x = 0.5 * (rg2[0][0] + rg2[1][0])
+            c2y = 0.5 * (rg2[0][1] + rg2[1][1])
+            # Note that we grow the boxes 10%
+            s1x = 1.1 * (rg1[1][0] - rg1[0][0])
+            s1y = 1.1 * (rg1[0][1] - rg1[1][1])
+            s2x = 1.1 * (rg2[1][0] - rg2[0][0])
+            s2y = 1.1 * (rg2[0][1] - rg2[1][1])
 
-    all_clusters = [v for v in clusters.values()
-                    if (v[0][0] != v[0][1]) and (v[1][0] != v[1][1])]
-    if not all_clusters:
-        return None
+            # Check for overlap
+            if (abs(c1x - c2x) < 0.5 * (s1x + s2x) and
+                    abs(c1y - c2y) < 0.5 * (s1y + s2y)):
+                # Merge rg2 into rg1
+                logger.info("Merging cluster %d into %d", i2, i1)
+                ranges[i1] = [
+                    [min(rg1[0][0], rg2[0][0]), max(rg1[0][1], rg2[0][1])],
+                    [max(rg1[1][0], rg2[1][0]), min(rg1[1][1], rg2[1][1])],
+                ]
+                del ranges[i2]
+            else:
+                logger.info("Cluster %d doesn't overlap with cluster %d",
+                             i2, i1)
+                i2 += 1
+        i1 += 1
+    logger.info("Final spatial ranges: %r", ranges)
 
-    if len(all_clusters) == 1:
-        cluster = all_clusters[0]
-        return [{"range": {"type": "envelope",
-                           "coordinates": [
-                               [cluster[1][0], cluster[0][1]],
-                               [cluster[1][1], cluster[0][0]]
-                           ]}}]
-
-    values = [(v, [(v[0][0] + v[0][1])/2, (v[1][0] + v[1][1])/2])
-              for v in all_clusters]  # adding centroid
-
-    # lat
-    values = get_ranges(sorted(values, key=lambda v: (v[1][0], v[1][1])))
-    # lon
-    values = get_ranges(sorted(values, key=lambda v: (v[1][1], v[1][0])))
-
-    final_ranges = []
-    for v in values:
-        final_ranges.append({"range": {"type": "envelope",
-                                       "coordinates": [
-                                           [v[0][1][0], v[0][0][1]],
-                                           [v[0][1][1], v[0][0][0]]
-                                       ]}})
-
-    return final_ranges
+    # Convert to Elasticsearch syntax
+    ranges = [{'range': {'type': 'envelope',
+                         'coordinates': coords}}
+              for coords in ranges]
+    return ranges
 
 
 def run_scdp(data):
@@ -364,7 +376,7 @@ def process_dataset(data, metadata=None):
                     values.append((values_lat[i], values_lon[i]))
 
             if len(values) > 1:
-                spatial_ranges = get_spatial_ranges(list(set(values)))
+                spatial_ranges = get_spatial_ranges(values)
                 if spatial_ranges:
                     spatial_coverage.append({"lat": name_lat,
                                              "lon": name_lon,
