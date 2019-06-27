@@ -63,9 +63,13 @@ def get_numerical_ranges(values):
     This performs K-Means clustering, returning a maximum of 3 ranges.
     """
 
+    if not values:
+        return []
+
     logger.info("Computing numerical ranges, %d values", len(values))
 
-    clustering = KMeans(n_clusters=N_RANGES, random_state=0)
+    clustering = KMeans(n_clusters=min(N_RANGES, len(values)),
+                        random_state=0)
     clustering.fit(numpy.array(values).reshape(-1, 1))
     logger.info("K-Means clusters: %r", clustering.cluster_centers_)
 
@@ -101,7 +105,8 @@ def get_spatial_ranges(values):
 
     logger.info("Computing spatial ranges, %d values", len(values))
 
-    clustering = KMeans(n_clusters=N_RANGES, random_state=0)
+    clustering = KMeans(n_clusters=min(N_RANGES, len(values)),
+                        random_state=0)
     clustering.fit(values)
     logger.info("K-Means clusters: %r", clustering.cluster_centers_)
 
