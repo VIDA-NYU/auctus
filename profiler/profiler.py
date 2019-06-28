@@ -38,7 +38,9 @@ def materialize_and_process_dataset(dataset_id, metadata):
                 xls_to_csv(dataset_path + '.xls', dst)
 
         # Profile
+        start = time.perf_counter()
         metadata = process_dataset(dataset_path, metadata)
+        logger.info("Profiling took %.2fs", time.perf_counter() - start)
 
         metadata['materialize'] = materialize
         return metadata
