@@ -1,16 +1,11 @@
 import contextlib
 import datamart_materialize
-import logging
 import os
 import prometheus_client
 import shutil
 import tempfile
 
 from .discovery import encode_dataset_id
-
-
-logger = logging.getLogger(__name__)
-
 
 
 PROM_DOWNLOAD = prometheus_client.Histogram(

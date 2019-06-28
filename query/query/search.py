@@ -1,3 +1,5 @@
+from datetime import datetime
+from dateutil.parser import parse
 import hashlib
 import logging
 import os
@@ -7,6 +9,7 @@ import time
 
 from datamart_augmentation.search import \
     get_joinable_datasets, get_unionable_datasets
+from datamart_core.common import Type
 from datamart_profiler import process_dataset
 
 
@@ -19,6 +22,209 @@ BUF_SIZE = 128000
 class ClientError(ValueError):
     """Error in query sent by client.
     """
+
+
+def parse_query(query_json):
+    """Parses a Datamart query, turning it into an Elasticsearch query.
+    """
+    query_args = list()
+
+    # keywords
+    keywords_query_all = list()
+    if 'keywords' in query_json and query_json['keywords']:
+        if not isinstance(query_json['keywords'], list):
+            raise ClientError("'keywords' must be an array")
+        keywords_query = list()
+        # description
+        keywords_query.append({
+            'match': {
+                'description': {
+                    'query': ' '.join(query_json['keywords']),
+                    'operator': 'or'
+                }
+            }
+        })
+        # name
+        keywords_query.append({
+            'match': {
+                'name': {
+                    'query': ' '.join(query_json['keywords']),
+                    'operator': 'or'
+                }
+            }
+        })
+        # keywords
+        for name in query_json['keywords']:
+            keywords_query.append({
+                'nested': {
+                    'path': 'columns',
+                    'query': {
+                        'match': {'columns.name': name},
+                    },
+                },
+            })
+            keywords_query.append({
+                'wildcard': {
+                    'materialize.identifier': '*%s*' % name.lower()
+                }
+            })
+        keywords_query_all.append({
+            'bool': {
+                'should': keywords_query,
+                'minimum_should_match': 1
+            }
+        })
+
+    if keywords_query_all:
+        query_args.append(keywords_query_all)
+
+    # tabular_variables
+    tabular_variables = []
+
+    # variables
+    variables_query = None
+    if 'variables' in query_json:
+        variables_query = parse_query_variables(
+            query_json['variables'],
+            tabular_variables=tabular_variables
+        )
+
+    if variables_query:
+        query_args.append(variables_query)
+
+    return query_args, list(set(tabular_variables))
+
+
+def parse_query_variables(data, tabular_variables=None):
+    output = list()
+
+    if not data:
+        return output
+
+    for variable in data:
+        if 'type' not in variable:
+            raise ClientError("variable is missing property 'type'")
+        variable_query = list()
+
+        # temporal variable
+        # TODO: handle 'granularity'
+        if 'temporal_variable' in variable['type']:
+            variable_query.append({
+                'nested': {
+                    'path': 'columns',
+                    'query': {
+                        'match': {'columns.semantic_types': Type.DATE_TIME},
+                    },
+                },
+            })
+            start = end = None
+            if 'start' in variable and 'end' in variable:
+                try:
+                    start = parse(variable['start']).timestamp()
+                    end = parse(variable['end']).timestamp()
+                except (KeyError, ValueError, OverflowError):
+                    pass
+            elif 'start' in variable:
+                try:
+                    start = parse(variable['start']).timestamp()
+                    end = datetime.now().timestamp()
+                except (KeyError, ValueError, OverflowError):
+                    pass
+            elif 'end' in variable:
+                try:
+                    start = 0
+                    end = parse(variable['end']).timestamp()
+                except (KeyError, ValueError, OverflowError):
+                    pass
+            else:
+                pass
+            if start and end:
+                variable_query.append({
+                    'nested': {
+                        'path': 'columns.coverage',
+                        'query': {
+                            'range': {
+                                'columns.coverage.range': {
+                                    'gte': start,
+                                    'lte': end,
+                                    'relation': 'intersects'
+                                }
+                            }
+                        }
+                    }
+                })
+
+        # geospatial variable
+        # TODO: handle 'granularity'
+        elif 'geospatial_variable' in variable['type']:
+            if ('latitude1' not in variable or
+                    'latitude2' not in variable or
+                    'longitude1' not in variable or
+                    'longitude2' not in variable):
+                continue
+            longitude1 = min(
+                float(variable['longitude1']),
+                float(variable['longitude2'])
+            )
+            longitude2 = max(
+                float(variable['longitude1']),
+                float(variable['longitude2'])
+            )
+            latitude1 = max(
+                float(variable['latitude1']),
+                float(variable['latitude2'])
+            )
+            latitude2 = min(
+                float(variable['latitude1']),
+                float(variable['latitude2'])
+            )
+            variable_query.append({
+                'nested': {
+                    'path': 'spatial_coverage.ranges',
+                    'query': {
+                        'bool': {
+                            'filter': {
+                                'geo_shape': {
+                                    'spatial_coverage.ranges.range': {
+                                        'shape': {
+                                            'type': 'envelope',
+                                            'coordinates':
+                                                [[longitude1, latitude1],
+                                                 [longitude2, latitude2]]
+                                        },
+                                        'relation': 'intersects'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+
+        # tabular variable
+        # TODO: handle 'relationship'
+        #  for now, it assumes the relationship is 'contains'
+        elif 'tabular_variable' in variable['type']:
+            if 'columns' in variable:
+                for column_index in variable['columns']:
+                    tabular_variables.append(column_index)
+
+        if variable_query:
+            output.append({
+                'bool': {
+                    'must': variable_query,
+                }
+            })
+
+    if output:
+        return {
+            'bool': {
+#                    'should': output,
+#                    'minimum_should_match': 1,
+                'must': output
+            }
+        }
+    return {}
 
 
 def get_augmentation_search_results(es, lazo_client, data_profile, query_args,
@@ -95,7 +301,8 @@ def get_profile_data(filepath, metadata=None, lazo_client=None):
     cached_data = os.path.join('/cache', hash_)
     if os.path.exists(cached_data):
         logger.info("Found cached profile_data")
-        return pickle.load(open(cached_data, 'rb'))
+        with open(cached_data, 'rb') as fp:
+            return pickle.load(fp)
 
     # profile data and save
     logger.info("Profiling...")
@@ -107,7 +314,8 @@ def get_profile_data(filepath, metadata=None, lazo_client=None):
         search=True
     )
     logger.info("Profiled in %.2fs", time.perf_counter() - start)
-    pickle.dump(data_profile, open(cached_data, 'wb'))
+    with open(cached_data, 'wb') as fp:
+        pickle.dump(data_profile, fp)
     return data_profile
 
 

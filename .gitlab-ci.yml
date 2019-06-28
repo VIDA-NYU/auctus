@@ -1,0 +1,77 @@
+image: python:3.6
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+
+services:
+  - docker:dind
+
+before_script:
+  - curl -Lo /tmp/docker.tgz https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz && tar -xf /tmp/docker.tgz -C /usr/local && rm /tmp/docker.tgz && export PATH=/usr/local/docker:$PATH && export DOCKER_HOST=tcp://docker:2375
+  - docker info
+  - curl -Lo /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)"
+  - chmod +x /usr/local/bin/docker-compose
+
+test:
+  stage: test
+  # Important note about this: the Docker server is on a separate host,
+  # so exposed ports are at 'docker' not 'localhost', and
+  # Docker containers can't reach the local runner!
+  script:
+    - pip install pipenv
+    - pipenv install --deploy --system --dev
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - |
+      # Pull the base image so we don't have to build from scratch
+      docker pull $CI_REGISTRY_IMAGE/base || true
+      # Update the base image (maybe)
+      chmod 644 Pipfile.lock install_deps.py
+      touch -t 200001010000.00 Pipfile.lock install_deps.py
+      ls -l Pipfile.lock install_deps.py && shasum -a 1 Pipfile.lock install_deps.py
+      docker build -t datamart_base . \
+        --cache-from=$CI_REGISTRY_IMAGE/base \
+        -f base.Dockerfile
+      # Push the updated image to the registry (might be no-op)
+      docker tag datamart_base $CI_REGISTRY_IMAGE/base
+      docker push $CI_REGISTRY_IMAGE/base
+    - cp tests/ci.env .env
+    - cat .env | while read l; do echo "export $l"; done >.env.sh && . .env.sh
+    - python3 docker-compose-cached-build.py
+    - docker-compose pull rabbitmq  # Don't build it
+    - |
+      patch -p1 <<'END'
+      --- a/docker-compose.yml
+      +++ b/docker-compose.yml
+      @@ -7,4 +7,4 @@ services:
+             - cluster.name=docker-cluster
+             - bootstrap.memory_lock=true
+      -      - ES_HEAP_SIZE=4g
+      +      - ES_HEAP_SIZE=256m
+           ulimits:
+      END
+    - docker network create -d bridge --subnet 172.0.44.0/24 --gateway 172.0.44.1 datamart_default
+    - docker-compose up -d elasticsearch rabbitmq
+    - |
+      # Wait for Elasticsearch to come up
+      slept=0; while [ $slept -le 120 -a $(curl -s -o /dev/null -w "%{http_code}" http://docker:9200/) != 200 ]; do sleep 5; slept=$((slept + 5)); done
+      if [ $slept -le 120 ]; then
+        echo "Elasticsearch came up after ${slept}s"
+      else
+        echo "Elasticsearch didn't come up after ${slept}s"
+        exit 1
+      fi
+    - docker-compose up -d coordinator
+    - sleep 10
+    - docker-compose up -d profiler query querylb test_discoverer
+    - |
+      # Wait for profiling to end
+      slept=0; while [ $slept -le 180 -a $(curl -s -o /dev/null -w "%{http_code}" http://docker:9200/datamart/_doc/datamart.test.basic) != 200 ]; do sleep 5; slept=$((slept + 5)); done
+      if [ $slept -le 180 ]; then
+        echo "Profiling ended after ${slept}s"
+      else
+        exit 1
+      fi
+    - docker-compose ps
+    - docker-compose logs profiler
+    - python tests

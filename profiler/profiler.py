@@ -39,12 +39,14 @@ def materialize_and_process_dataset(dataset_id, metadata, lazo_client):
                 xls_to_csv(dataset_path + '.xls', dst)
 
         # Profile
+        start = time.perf_counter()
         metadata = process_dataset(
             data=dataset_path,
             metadata=metadata,
             lazo_client=lazo_client,
             dataset_id=dataset_id
         )
+        logger.info("Profiling took %.2fs", time.perf_counter() - start)
 
         metadata['materialize'] = materialize
         return metadata

@@ -16,7 +16,8 @@ socrata = {editable = true, path = "./discovery/socrata"}
 
 [dev-packages]
 flake8 = "*"
-ipykernel = "*"
+PyYaml = "*"
+requests = "*"
 
 [requires]
 python_version = "3.6"

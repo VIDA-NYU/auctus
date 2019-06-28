@@ -39,7 +39,7 @@ def get_column_index_mapping(data_profile):
     return column_index_mapping
 
 
-def get_column_coverage(data_profile, column_index_mapping, filter_=[]):
+def get_column_coverage(data_profile, column_index_mapping, filter_=()):
     """
     Get coverage for each column of the input dataset.
 
@@ -74,8 +74,8 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=[]):
         #     type_ = 'structural_type'
         #     type_value = column['structural_type']
         elif column['structural_type'] == Type.INTEGER:
-           type_ = 'structural_type'
-           type_value = column['structural_type']
+            type_ = 'structural_type'
+            type_value = column['structural_type']
         elif Type.DATE_TIME in column['semantic_types']:
             type_ = 'semantic_types'
             type_value = Type.DATE_TIME
@@ -97,8 +97,8 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=[]):
                     column_index_mapping[spatial['lat']] not in filter_ or
                     column_index_mapping[spatial['lon']] not in filter_):
                 continue
-            names = str(column_index_mapping[spatial['lat']]) + ',' +\
-                    str(column_index_mapping[spatial['lat']])
+            names = (str(column_index_mapping[spatial['lat']]) + ',' +
+                     str(column_index_mapping[spatial['lat']]))
             column_coverage[names] = {
                 'type':      'spatial',
                 'type_value': Type.LATITUDE + ', ' + Type.LONGITUDE,
@@ -387,19 +387,13 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
 
                     # compute intersection
                     range_offset = int(coverage_hit['_nested']['_nested']['offset'])
-                    min_lon = \
-                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][0][0]
-                    max_lat = \
-                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][0][1]
-                    max_lon = \
-                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][1][0]
-                    min_lat = \
-                        spatial_coverages[spatial_coverage_offset]['ranges'][range_offset]['range']['coordinates'][1][1]
+                    other_ranges = spatial_coverages[spatial_coverage_offset]['ranges']
+                    other_range = other_ranges[range_offset]['range']['coordinates']
 
-                    n_min_lon = max(min_lon, range_[0][0])
-                    n_max_lat = min(max_lat, range_[0][1])
-                    n_max_lon = max(max_lon, range_[1][0])
-                    n_min_lat = min(min_lat, range_[1][1])
+                    n_min_lon = max(other_range[0][0], range_[0][0])
+                    n_max_lat = min(other_range[0][1], range_[0][1])
+                    n_max_lon = max(other_range[1][0], range_[1][0])
+                    n_min_lat = min(other_range[1][1], range_[1][1])
 
                     intersections[name] += (n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)
 
@@ -421,16 +415,7 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
-        columns = es.search(
-            index='datamart',
-            body={
-                'query': {
-                    'match': {
-                        '_id': dataset_id,
-                    }
-                }
-            }
-        )['hits']['hits'][0]['_source']['columns']
+        columns = es.get('datamart', '_doc', id=dataset_id)['_source']['columns']
     else:
         columns = data_profile['columns']
     for i in range(len(columns)):
@@ -446,22 +431,13 @@ def get_dataset_metadata(es, dataset_id):
 
     """
 
-    hit = es.search(
-        index='datamart',
-        body={
-            'query': {
-                'match': {
-                    '_id': dataset_id,
-                }
-            }
-        }
-    )['hits']['hits'][0]
+    hit = es.get('datamart', '_doc', id=dataset_id)
 
     return hit
 
 
 def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
-                          query_args=None, tabular_variables=[]):
+                          query_args=None, tabular_variables=()):
     """
     Retrieve datasets that can be joined with an input dataset.
 
@@ -506,10 +482,10 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
         else:
             try:
                 column_name = data_profile['columns'][int(column)]['name']
-            except:
+            except (IndexError, KeyError):
                 index_1, index_2 = column.split(',')
-                column_name = data_profile['columns'][int(index_1)]['name'] +\
-                              ',' + data_profile['columns'][int(index_2)]['name']
+                column_name = (data_profile['columns'][int(index_1)]['name'] +
+                               ',' + data_profile['columns'][int(index_2)]['name'])
             intersections_column, column_total_coverage = \
                 get_numerical_coverage_intersections(
                     es,
@@ -648,7 +624,7 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
     return results
 
 
-def get_column_information(data_profile, filter_=[]):
+def get_column_information(data_profile, filter_=()):
     """
     Retrieve information about the columns (name and type) of a dataset.
 
@@ -681,7 +657,7 @@ def get_column_information(data_profile, filter_=[]):
 
 
 def get_unionable_datasets(es, data_profile, dataset_id=None,
-                           query_args=None, tabular_variables=[]):
+                           query_args=None, tabular_variables=()):
     """
     Retrieve datasets that can be unioned to an input dataset using fuzzy search
     (max edit distance = 2).
