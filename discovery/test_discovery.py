@@ -15,9 +15,14 @@ class TestDiscoverer(Discoverer):
     """
     def main_loop(self):
         self.record_dataset(
+            dict(direct_url='http://test_discoverer:7000/geo.csv'),
+            {'description': "Another simple CSV with places"},
+            dataset_id='geo',
+        )
+        self.record_dataset(
             dict(direct_url='http://test_discoverer:7000/basic.csv'),
             {'description': "This is a very simple CSV with people"},
-            dataset_id='basic',
+            dataset_id='basic',  # Needs to be last, CI waits for it to test
         )
 
 
