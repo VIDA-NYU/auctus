@@ -63,17 +63,12 @@ services:
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
       - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   querylb:
-    image: dockercloud/haproxy:1.6.7
-    environment:
-      - EXTRA_DEFAULT_SETTINGS=timeout http-request 900s,timeout server 900s
-      - HEALTH_CHECK=check inter 1000 rise 2 fall 1
+    image: haproxy:2.0
     ports:
       - 8002:80
-      - 8081:1936
-    links:
-      - query
+      - 8081:8000
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/haproxy.conf:/usr/local/etc/haproxy/haproxy.cfg:ro
   profiler:
     build:
       context: .
