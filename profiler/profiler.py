@@ -136,16 +136,6 @@ class Profiler(object):
             try:
                 try:
                     metadata = future.result()
-                except Exception:
-                    logger.exception("Error processing dataset %r", dataset_id)
-                    # Move message to failed queue
-                    await self.channel.default_exchange.publish(
-                        aio_pika.Message(message.body),
-                        self.failed_queue.name,
-                    )
-                    # Ack anyway, retrying would probably fail again
-                    message.ack()
-                else:
                     # Insert results in Elasticsearch
                     body = dict(metadata,
                                 date=datetime.utcnow().isoformat() + 'Z')
@@ -154,8 +144,29 @@ class Profiler(object):
                         '_doc',
                         body,
                         id=dataset_id,
-                    )  # failed
-
+                    )
+                except Exception as e:
+                    if isinstance(e, elasticsearch.RequestError):
+                        # This is a problem with our computed metadata
+                        logger.exception(
+                            "Error inserting dataset %r in Elasticsearch",
+                            dataset_id,
+                        )
+                    elif isinstance(e, elasticsearch.TransportError):
+                        # This is probably an issue with Elasticsearch
+                        # We'll log, nack and retry
+                        raise
+                    else:
+                        logger.exception("Error processing dataset %r",
+                                         dataset_id)
+                    # Move message to failed queue
+                    await self.channel.default_exchange.publish(
+                        aio_pika.Message(message.body),
+                        self.failed_queue.name,
+                    )
+                    # Ack anyway, retrying would probably fail again
+                    message.ack()
+                else:
                     # Publish to RabbitMQ
                     await self.datasets_exchange.publish(
                         json2msg(dict(body, id=dataset_id)),
