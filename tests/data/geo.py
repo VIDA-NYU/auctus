@@ -21,7 +21,7 @@ def main():
     ])
 
     print("id,lat,long")
-    for i, (lat, long) in enumerate(zip(latitudes, longitudes), 1):
+    for i, (lat, long) in enumerate(zip(latitudes, longitudes)):
         print("place%02d,%f,%f" % (i, lat, long))
 
 

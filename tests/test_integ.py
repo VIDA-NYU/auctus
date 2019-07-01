@@ -184,7 +184,7 @@ basic_metadata = {
 
 geo_metadata = {
     "description": "Another simple CSV with places",
-    "size": 2913,
+    "size": 2912,
     "nb_rows": 100,
     "columns": [
         {
