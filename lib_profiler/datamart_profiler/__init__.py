@@ -235,8 +235,8 @@ def process_dataset(data, metadata=None):
         column_meta.update(scdp_out.get(name, {}))
 
     # Lat / Lon
-    column_lat = []
-    column_lon = []
+    columns_lat = []
+    columns_lon = []
 
     with PROM_TYPES.time():
         for i, column_meta in enumerate(columns):
@@ -267,11 +267,11 @@ def process_dataset(data, metadata=None):
 
                 # Get lat/lon columns
                 if Type.LATITUDE in semantic_types_dict:
-                    column_lat.append(
+                    columns_lat.append(
                         (column_meta['name'], numerical_values)
                     )
                 elif Type.LONGITUDE in semantic_types_dict:
-                    column_lon.append(
+                    columns_lon.append(
                         (column_meta['name'], numerical_values)
                     )
                 else:
@@ -305,11 +305,8 @@ def process_dataset(data, metadata=None):
         spatial_coverage = []
         # TODO: Pair lat/lon columns by column name similarity
         # if there are column names
-        i_lat = i_lon = 0
-        while i_lat < len(column_lat) and i_lon < len(column_lon):
-            name_lat, values_lat = column_lat[i_lat]
-            name_lon, values_lon = column_lon[i_lon]
-
+        for (name_lat, values_lat), (name_lon, values_lon) in zip(columns_lat,
+                                                                  columns_lon):
             values = []
             for i in range(len(values_lat)):
                 if values_lat[i] and values_lon[i]:  # Ignore None and 0
@@ -323,9 +320,6 @@ def process_dataset(data, metadata=None):
                     spatial_coverage.append({"lat": name_lat,
                                              "lon": name_lon,
                                              "ranges": spatial_ranges})
-
-            i_lat += 1
-            i_lon += 1
 
     if spatial_coverage:
         metadata['spatial_coverage'] = spatial_coverage
