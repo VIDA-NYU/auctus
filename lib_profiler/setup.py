@@ -10,7 +10,7 @@ req = [
     'pandas',
     'prometheus_client',
     'python-dateutil',
-    'hdbscan',
+    'scikit-learn',
 ]
 setup(name='datamart_profiler',
       version='0.0',

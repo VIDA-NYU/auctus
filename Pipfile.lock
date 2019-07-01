@@ -49,39 +49,6 @@
             "editable": true,
             "path": "./coordinator"
         },
-        "cython": {
-            "hashes": [
-                "sha256:0ce8f6c789c907472c9084a44b625eba76a85d0189513de1497ab102a9d39ef8",
-                "sha256:0d67964b747ac09758ba31fe25da2f66f575437df5f121ff481889a7a4485f56",
-                "sha256:1630823619a87a814e5c1fa9f96544272ce4f94a037a34093fbec74989342328",
-                "sha256:1a4c634bb049c8482b7a4f3121330de1f1c1f66eac3570e1e885b0c392b6a451",
-                "sha256:1ec91cc09e9f9a2c3173606232adccc68f3d14be1a15a8c5dc6ab97b47b31528",
-                "sha256:237a8fdd8333f7248718875d930d1e963ffa519fefeb0756d01d91cbfadab0bc",
-                "sha256:28a308cbfdf9b7bb44def918ad4a26b2d25a0095fa2f123addda33a32f308d00",
-                "sha256:2fe3dde34fa125abf29996580d0182c18b8a240d7fa46d10984cc28d27808731",
-                "sha256:30bda294346afa78c49a343e26f3ab2ad701e09f6a6373f579593f0cfcb1235a",
-                "sha256:33d27ea23e12bf0d420e40c20308c03ef192d312e187c1f72f385edd9bd6d570",
-                "sha256:34d24d9370a6089cdd5afe56aa3c4af456e6400f8b4abb030491710ee765bafc",
-                "sha256:4e4877c2b96fae90f26ee528a87b9347872472b71c6913715ca15c8fe86a68c9",
-                "sha256:50d6f1f26702e5f2a19890c7bc3de00f9b8a0ec131b52edccd56a60d02519649",
-                "sha256:55d081162191b7c11c7bfcb7c68e913827dfd5de6ecdbab1b99dab190586c1e8",
-                "sha256:59d339c7f99920ff7e1d9d162ea309b35775172e4bab9553f1b968cd43b21d6d",
-                "sha256:6cf4d10df9edc040c955fca708bbd65234920e44c30fccd057ecf3128efb31ad",
-                "sha256:6ec362539e2a6cf2329cd9820dec64868d8f0babe0d8dc5deff6c87a84d13f68",
-                "sha256:7edc61a17c14b6e54d5317b0300d2da23d94a719c466f93cafa3b666b058c43b",
-                "sha256:8e37fc4db3f2c4e7e1ed98fe4fe313f1b7202df985de4ee1451d2e331332afae",
-                "sha256:b8c996bde5852545507bff45af44328fa48a7b22b5bec2f43083f0b8d1024fd9",
-                "sha256:bf9c16f3d46af82f89fdefc0d64b2fb02f899c20da64548a8ea336beefcf8d23",
-                "sha256:c1038aba898bed34ab1b5ddb0d3f9c9ae33b0649387ab9ffe6d0af677f66bfc1",
-                "sha256:d405649c1bfc42e20d86178257658a859a3217b6e6d950ee8cb76353fcea9c39",
-                "sha256:db6eeb20a3bd60e1cdcf6ce9a784bc82aec6ab891c800dc5d7824d5cfbfe77f2",
-                "sha256:e382f8cb40dca45c3b439359028a4b60e74e22d391dc2deb360c0b8239d6ddc0",
-                "sha256:f3f6c09e2c76f2537d61f907702dd921b04d1c3972f01d5530ef1f748f22bd89",
-                "sha256:f749287087f67957c020e1de26906e88b8b0c4ea588facb7349c115a63346f67",
-                "sha256:f86b96e014732c0d1ded2c1f51444c80176a98c21856d0da533db4e4aef54070"
-            ],
-            "version": "==0.29.7"
-        },
         "datamart-augmentation": {
             "editable": true,
             "path": "./lib_augmentation"
@@ -116,12 +83,6 @@
                 "sha256:67045236dcfd6816dc439556d009594abf643e5eb48992e36beac09c2ca659b8"
             ],
             "version": "==0.17.1"
-        },
-        "hdbscan": {
-            "hashes": [
-                "sha256:5cfdc25375123eb9a72363449979141cc928c1953f220f0f81d7baabcaccec2d"
-            ],
-            "version": "==0.8.22"
         },
         "idna": {
             "hashes": [
@@ -427,6 +388,20 @@
         }
     },
     "develop": {
+        "certifi": {
+            "hashes": [
+                "sha256:046832c04d4e752f37383b628bc601a7ea7211496b4638f6514d0e5b9acc4939",
+                "sha256:945e3ba63a0b9f577b1395204e13c3a231f9bc0223888be653286534e5873695"
+            ],
+            "version": "==2019.6.16"
+        },
+        "chardet": {
+            "hashes": [
+                "sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae",
+                "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"
+            ],
+            "version": "==3.0.4"
+        },
         "entrypoints": {
             "hashes": [
                 "sha256:589f874b313739ad35be6e0cd7efde2a4e9b6fea91edcc34e58ecbb8dbe56d19",
@@ -441,6 +416,13 @@
             ],
             "index": "pypi",
             "version": "==3.7.7"
+        },
+        "idna": {
+            "hashes": [
+                "sha256:c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407",
+                "sha256:ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"
+            ],
+            "version": "==2.8"
         },
         "mccabe": {
             "hashes": [
