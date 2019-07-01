@@ -103,8 +103,6 @@ def get_spatial_ranges(values):
     This performs K-Means clustering, returning a maximum of 3 ranges.
     """
 
-    logger.info("Computing spatial ranges, %d values", len(values))
-
     clustering = KMeans(n_clusters=min(N_RANGES, len(values)),
                         random_state=0)
     clustering.fit(values)
@@ -305,17 +303,17 @@ def process_dataset(data, metadata=None):
         spatial_coverage = []
         i_lat = i_lon = 0
         while i_lat < len(column_lat) and i_lon < len(column_lon):
-            name_lat = column_lat[i_lat][0]
-            name_lon = column_lon[i_lon][0]
+            name_lat, values_lat = column_lat[i_lat]
+            name_lon, values_lon = column_lon[i_lon]
 
-            values_lat = column_lat[i_lat][1]
-            values_lon = column_lon[i_lon][1]
             values = []
             for i in range(len(values_lat)):
                 if values_lat[i] is not None and values_lon[i] is not None:
                     values.append((values_lat[i], values_lon[i]))
 
             if len(values) > 1:
+                logger.info("Computing spatial ranges %r,%r (%d rows)",
+                            name_lat, name_lon, len(values))
                 spatial_ranges = get_spatial_ranges(values)
                 if spatial_ranges:
                     spatial_coverage.append({"lat": name_lat,
