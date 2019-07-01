@@ -498,12 +498,12 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
         left_columns_names = []
         try:
             left_columns.append([int(column)])
-            left_columns_names.append(data_profile['columns'][int(column)]['name'])
+            left_columns_names.append([data_profile['columns'][int(column)]['name']])
         except ValueError:
             index_1, index_2 = column.split(",")
             left_columns.append([int(index_1), int(index_2)])
-            left_columns_names.append(data_profile['columns'][int(index_1)]['name'] +
-                                      ', ' + data_profile['columns'][int(index_2)]['name'])
+            left_columns_names.append([data_profile['columns'][int(index_1)]['name'] +
+                                       ', ' + data_profile['columns'][int(index_2)]['name']])
         try:
             right_columns.append([int(external_column)])
         except ValueError:
@@ -737,7 +737,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 left_columns.append(
                     get_column_identifiers(es, [att_1], data_profile=data_profile)
                 )
-            left_columns_names.append(att_1)
+            left_columns_names.append([att_1])
             right_columns.append(
                 get_column_identifiers(es, [att_2], dataset_id=dt)
             )

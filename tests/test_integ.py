@@ -129,7 +129,7 @@ class TestAugment(unittest.TestCase):
                     'score': 1.0,
                     'augmentation': {
                         'left_columns': [[0]],
-                        'left_columns_names': ['number'],
+                        'left_columns_names': [['number']],
                         'right_columns': [[2]],
                         'type': 'join'
                     }
@@ -172,7 +172,7 @@ class TestAugment(unittest.TestCase):
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0], [1], [2]],
-                        'left_columns_names': ['lat', 'long', 'id'],
+                        'left_columns_names': [['lat'], ['long'], ['id']],
                         'right_columns': [[1], [2], [0]],
                         'type': 'union'
                     }

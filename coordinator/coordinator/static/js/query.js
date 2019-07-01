@@ -279,11 +279,10 @@ function toggleAugmentation(id) {
 function getAugmentationInfoHTML(left_columns_names, right_metadata, right_columns, score, result_id, type_) {
     var columns_info = '';
     for(var j = 0; j < left_columns_names.length; j++) {
-        var left_column = left_columns_names[j];
-        var right_column = right_metadata.columns[right_columns[j][0]].name;
-        for (var k = 1; k < right_columns[j].length; k++) {
-            right_column += ',' + right_metadata.columns[right_columns[j][k]].name;
-        }
+        var left_column = left_columns_names[j].join(", ");
+        var right_column = right_columns[j]
+          .map(function(i) { return right_metadata.columns[i].name; })
+          .join(", ");
         columns_info += (
             '<a href="javascript: changePairStatus(\'' + type_ + '\',' + result_id + ',' + j + ');" class="list-group-item list-group-item-action" ' +
             '  id="pair-' + type_ + '-' + result_id + '-' + j + '">' +
