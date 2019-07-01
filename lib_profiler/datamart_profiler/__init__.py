@@ -130,6 +130,8 @@ def get_spatial_ranges(values):
         ])
     logger.info("Ranges: %r", ranges)
 
+    # TODO: Deal with clusters made of outliers
+
     # Convert to Elasticsearch syntax
     ranges = [{'range': {'type': 'envelope',
                          'coordinates': coords}}
@@ -301,6 +303,8 @@ def process_dataset(data, metadata=None):
     logger.info("Computing spatial coverage...")
     with PROM_SPATIAL.time():
         spatial_coverage = []
+        # TODO: Pair lat/lon columns by column name similarity
+        # if there are column names
         i_lat = i_lon = 0
         while i_lat < len(column_lat) and i_lon < len(column_lon):
             name_lat, values_lat = column_lat[i_lat]
@@ -308,7 +312,7 @@ def process_dataset(data, metadata=None):
 
             values = []
             for i in range(len(values_lat)):
-                if values_lat[i] is not None and values_lon[i] is not None:
+                if values_lat[i] and values_lon[i]:  # Ignore None and 0
                     values.append((values_lat[i], values_lon[i]))
 
             if len(values) > 1:
