@@ -129,10 +129,10 @@ services:
       dockerfile: discovery/Dockerfile
     command: testsuite
     environment:
-    - ELASTICSEARCH_HOSTS=elasticsearch:9200
-    - AMQP_HOST=rabbitmq
-    - AMQP_USER=${AMQP_USER}
-    - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
     volumes:
       - datasets:/datasets
   socrata:
