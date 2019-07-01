@@ -75,6 +75,7 @@ def get_numerical_ranges(values):
 
     # Compute confidence intervals for each range
     ranges = []
+    sizes = []
     for rg in range(N_RANGES):
         cluster = [values[i]
                    for i in range(len(values))
@@ -88,7 +89,9 @@ def get_numerical_ranges(values):
             cluster[min_idx],
             cluster[max_idx],
         ])
+        sizes.append(len(cluster))
     logger.info("Ranges: %r", ranges)
+    logger.info("Sizes: %r", sizes)
 
     # Convert to Elasticsearch syntax
     ranges = [{'range': {'gte': rg[0], 'lte': rg[1]}}
@@ -110,6 +113,7 @@ def get_spatial_ranges(values):
 
     # Compute confidence intervals for each range
     ranges = []
+    sizes = []
     for rg in range(N_RANGES):
         cluster = [values[i]
                    for i in range(len(values))
@@ -128,7 +132,9 @@ def get_spatial_ranges(values):
             [min_long, max_lat],
             [max_long, min_lat],
         ])
+        sizes.append(len(cluster))
     logger.info("Ranges: %r", ranges)
+    logger.info("Sizes: %r", sizes)
 
     # TODO: Deal with clusters made of outliers
 
