@@ -41,23 +41,30 @@ Copy env.default to .env and update the variables there. You might want to updat
 
 The `QUERY_HOST` is the URL at which the query containers will be visible to clients. In a production deployment, this is probably a public-facing HTTPS URL. It can be the same URL that the "coordinator" component will be served at if using a reverse proxy (see [nginx.conf](nginx.conf)).
 
+Build the containers
+--------------------
+
+```
+$ docker-compose build --build-arg version=$(git describe) coordinator profiler query socrata
+```
+
 Start the base containers
 -------------------------
 
 ```
-$ docker-compose up -d --build elasticsearch rabbitmq
+$ docker-compose up -d elasticsearch rabbitmq
 ```
 
 Both of those will take a few seconds to get up and running. Then you can start the other components:
 
 ```
-$ docker-compose up -d --build coordinator profiler query query_lb
+$ docker-compose up -d coordinator profiler query querylb
 ```
 
 You can use the `--scale` option to start more profiler or query containers, for example:
 
 ```
-$ docker-compose up -d --build --scale profiler=4 --scale query=8 coordinator profiler query query_lb
+$ docker-compose up -d --scale profiler=4 --scale query=8 coordinator profiler query querylb
 ```
 
 Ports:
@@ -82,7 +89,7 @@ Start discovery plugins (optional)
 ----------------------------------
 
 ```
-$ docker-compose up -d --build socrata
+$ docker-compose up -d socrata
 ```
 
 Start metric dashboard (optional)
