@@ -7,23 +7,7 @@ import os
 import sys
 import time
 
-from datamart_core.common import json2msg
-
-
-def decode_dataset_id(dataset_id):
-    dataset_id = list(dataset_id)
-    i = 0
-    while i < len(dataset_id):
-        if dataset_id[i] == '_':
-            if dataset_id[i + 1] == '_':
-                del dataset_id[i + 1]
-            else:
-                char_hex = dataset_id[i + 1:i + 3]
-                dataset_id[i + 1:i + 3] = []
-                char_hex = ''.join(dataset_id[i + 1: i + 3])
-                dataset_id[i] = chr(int(char_hex, 16))
-        i += 1
-    return dataset_id
+from datamart_core.common import json2msg, decode_dataset_id
 
 
 async def import_all(folder):
@@ -42,6 +26,7 @@ async def import_all(folder):
     )
 
     for name in os.listdir(folder):
+        dataset_id = decode_dataset_id(name)
         path = os.path.join(folder, name)
         with open(path, 'r') as fp:
             obj = json.load(fp)
@@ -50,7 +35,7 @@ async def import_all(folder):
                 'datamart',
                 '_doc',
                 obj,
-                id=name,
+                id=dataset_id,
             )
         except elasticsearch.TransportError:
             print('X', end='', flush=True)
@@ -59,11 +44,11 @@ async def import_all(folder):
                 'datamart',
                 '_doc',
                 obj,
-                id=name,
+                id=dataset_id,
             )
         await amqp_datasets_exchange.publish(
-            json2msg(dict(obj, id=name)),
-            name,
+            json2msg(dict(obj, id=dataset_id)),
+            dataset_id,
         )
         print('.', end='', flush=True)
 

@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 import json
+import re
 import sys
 import threading
 
@@ -63,3 +64,33 @@ def log_future(future, logger, message="Exception in background task",
             asyncio.get_event_loop().stop()
             sys.exit(1)
     future.add_done_callback(log)
+
+
+re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')
+
+
+def encode_dataset_id(dataset_id):
+    """Encode a dataset ID to a format suitable for file names.
+    """
+    dataset_id = dataset_id.replace('_', '__')
+    dataset_id = re_non_path_safe.sub(lambda m: '_%X' % ord(m.group(0)),
+                                      dataset_id)
+    return dataset_id
+
+
+def decode_dataset_id(dataset_id):
+    """Decode a dataset ID encoded using `encode_dataset_id()`.
+    """
+    dataset_id = list(dataset_id)
+    i = 0
+    while i < len(dataset_id):
+        if dataset_id[i] == '_':
+            if dataset_id[i + 1] == '_':
+                del dataset_id[i + 1]
+            else:
+                char_hex = dataset_id[i + 1:i + 3]
+                dataset_id[i + 1:i + 3] = []
+                char_hex = ''.join(char_hex)
+                dataset_id[i] = chr(int(char_hex, 16))
+        i += 1
+    return ''.join(dataset_id)
