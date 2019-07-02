@@ -175,13 +175,6 @@ class Coordinator(object):
         self.datasets_queue = await self.channel.declare_queue(exclusive=True)
         await self.datasets_queue.bind(datasets_exchange, '#')
 
-        # Register to queries exchange
-        queries_exchange = await self.channel.declare_exchange(
-            'queries',
-            aio_pika.ExchangeType.FANOUT)
-        self.queries_queue = await self.channel.declare_queue(exclusive=True)
-        await self.queries_queue.bind(queries_exchange)
-
         await asyncio.gather(
             asyncio.get_event_loop().create_task(self._consume_profile()),
             asyncio.get_event_loop().create_task(self._consume_datasets()),
