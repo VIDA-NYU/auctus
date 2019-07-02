@@ -169,6 +169,44 @@ def run_scdp(data):
             return {}
 
 
+def normalize_latlon_column_name(name, *substrings):
+    name = name.lower()
+    for substr in substrings:
+        idx = name.find(substr)
+        if idx >= 0:
+            name = name[:idx] + name[idx + len(substr):]
+            break
+    return name
+
+
+def pair_latlon_columns(columns_lat, columns_lon):
+    # Normalize latitude column names
+    normalized_lat = {}
+    for i, (name, values_lat) in enumerate(columns_lat):
+        name = normalize_latlon_column_name(name, 'latitude', 'lat')
+        normalized_lat[name] = i
+
+    # Go over normalized longitude column names and try to match
+    pairs = []
+    missed_lon = []
+    for name, values_long in columns_lon:
+        norm_name = normalize_latlon_column_name(name, 'longitude', 'long')
+        if norm_name in normalized_lat:
+            pairs.append((columns_lat[normalized_lat.pop(norm_name)],
+                          (name, values_long)))
+        else:
+            missed_lon.append(name)
+
+    # Gather missed columns and log them
+    missed_lat = [columns_lat[i][0] for i in sorted(normalized_lat.values())]
+    if missed_lat:
+        logger.warning("Unmatched latitude columns: %r", missed_lat)
+    if missed_lon:
+        logger.warning("Unmatched longitude columns: %r", missed_lon)
+
+    return pairs
+
+
 @PROM_PROFILE.time()
 def process_dataset(data, metadata=None):
     """Compute all metafeatures from a dataset.
@@ -303,10 +341,8 @@ def process_dataset(data, metadata=None):
     logger.info("Computing spatial coverage...")
     with PROM_SPATIAL.time():
         spatial_coverage = []
-        # TODO: Pair lat/lon columns by column name similarity
-        # if there are column names
-        for (name_lat, values_lat), (name_lon, values_lon) in zip(columns_lat,
-                                                                  columns_lon):
+        latlon_columns = pair_latlon_columns(columns_lat, columns_lon)
+        for (name_lat, values_lat), (name_lon, values_lon) in latlon_columns:
             values = []
             for i in range(len(values_lat)):
                 if values_lat[i] and values_lon[i]:  # Ignore None and 0
