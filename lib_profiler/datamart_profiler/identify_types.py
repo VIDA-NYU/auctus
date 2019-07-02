@@ -91,8 +91,8 @@ def identify_types(array, name):
                 name.lower().endswith('index')):
             semantic_types_dict[Type.ID] = None
 
-    # Identify lat/lon
-    num_lat = num_lon = 0
+    # Identify lat/long
+    num_lat = num_long = 0
     if structural_type == Type.FLOAT:
         for elem in array:
             try:
@@ -101,13 +101,13 @@ def identify_types(array, name):
                 pass
             else:
                 if -180.0 <= float(elem) <= 180.0:
-                    num_lon += 1
+                    num_long += 1
                     if -90.0 <= float(elem) <= 90.0:
                         num_lat += 1
 
         if (num_empty + num_lat) >= threshold and 'lat' in name.lower():
             semantic_types_dict[Type.LATITUDE] = None
-        if (num_empty + num_lon) >= threshold and 'lon' in name.lower():
+        if (num_empty + num_long) >= threshold and 'lon' in name.lower():
             semantic_types_dict[Type.LONGITUDE] = None
 
     # Identify dates

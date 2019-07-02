@@ -331,13 +331,13 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
 
                 for coverage_hit in inner_hits['spatial_coverage.ranges']['hits']['hits']:
                     spatial_coverage_offset = int(coverage_hit['_nested']['offset'])
-                    lat_index, lon_index = get_column_identifiers(
+                    lat_index, long_index = get_column_identifiers(
                         es,
                         [spatial_coverages[spatial_coverage_offset]['lat'],
                          spatial_coverages[spatial_coverage_offset]['lon']],
                         dataset_id=dataset_name
                     )
-                    spatial_coverage_name = str(lat_index) + ',' + str(lon_index)
+                    spatial_coverage_name = '%s,%s' % (lat_index, long_index)
                     name = '%s$$%s' % (dataset_name, spatial_coverage_name)
                     if name not in intersections:
                         intersections[name] = 0
@@ -347,12 +347,12 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
                     other_ranges = spatial_coverages[spatial_coverage_offset]['ranges']
                     other_range = other_ranges[range_offset]['range']['coordinates']
 
-                    n_min_lon = max(other_range[0][0], range_[0][0])
+                    n_min_long = max(other_range[0][0], range_[0][0])
                     n_max_lat = min(other_range[0][1], range_[0][1])
-                    n_max_lon = max(other_range[1][0], range_[1][0])
+                    n_max_long = max(other_range[1][0], range_[1][0])
                     n_min_lat = min(other_range[1][1], range_[1][1])
 
-                    intersections[name] += (n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)
+                    intersections[name] += (n_max_long - n_min_long) * (n_max_lat - n_min_lat)
 
             # pagination
             from_ += size_

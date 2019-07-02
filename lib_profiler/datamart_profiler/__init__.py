@@ -175,7 +175,7 @@ def run_scdp(data):
             return {}
 
 
-def normalize_latlon_column_name(name, *substrings):
+def normalize_latlong_column_name(name, *substrings):
     name = name.lower()
     for substr in substrings:
         idx = name.find(substr)
@@ -185,30 +185,30 @@ def normalize_latlon_column_name(name, *substrings):
     return name
 
 
-def pair_latlon_columns(columns_lat, columns_lon):
+def pair_latlong_columns(columns_lat, columns_long):
     # Normalize latitude column names
     normalized_lat = {}
     for i, (name, values_lat) in enumerate(columns_lat):
-        name = normalize_latlon_column_name(name, 'latitude', 'lat')
+        name = normalize_latlong_column_name(name, 'latitude', 'lat')
         normalized_lat[name] = i
 
     # Go over normalized longitude column names and try to match
     pairs = []
-    missed_lon = []
-    for name, values_long in columns_lon:
-        norm_name = normalize_latlon_column_name(name, 'longitude', 'long')
+    missed_long = []
+    for name, values_long in columns_long:
+        norm_name = normalize_latlong_column_name(name, 'longitude', 'long')
         if norm_name in normalized_lat:
             pairs.append((columns_lat[normalized_lat.pop(norm_name)],
                           (name, values_long)))
         else:
-            missed_lon.append(name)
+            missed_long.append(name)
 
     # Gather missed columns and log them
     missed_lat = [columns_lat[i][0] for i in sorted(normalized_lat.values())]
     if missed_lat:
         logger.warning("Unmatched latitude columns: %r", missed_lat)
-    if missed_lon:
-        logger.warning("Unmatched longitude columns: %r", missed_lon)
+    if missed_long:
+        logger.warning("Unmatched longitude columns: %r", missed_long)
 
     return pairs
 
@@ -278,9 +278,9 @@ def process_dataset(data, metadata=None):
     for column_meta, name in zip(columns, data.columns):
         column_meta.update(scdp_out.get(name, {}))
 
-    # Lat / Lon
+    # Lat / Long
     columns_lat = []
-    columns_lon = []
+    columns_long = []
 
     with PROM_TYPES.time():
         for i, column_meta in enumerate(columns):
@@ -309,13 +309,13 @@ def process_dataset(data, metadata=None):
                     except ValueError:
                         numerical_values.append(None)
 
-                # Get lat/lon columns
+                # Get lat/long columns
                 if Type.LATITUDE in semantic_types_dict:
                     columns_lat.append(
                         (column_meta['name'], numerical_values)
                     )
                 elif Type.LONGITUDE in semantic_types_dict:
-                    columns_lon.append(
+                    columns_long.append(
                         (column_meta['name'], numerical_values)
                     )
                 else:
@@ -343,24 +343,24 @@ def process_dataset(data, metadata=None):
                 column_meta['coverage'] = \
                     get_numerical_ranges(timestamps_for_range)
 
-    # Lat / Lon
+    # Lat / Long
     logger.info("Computing spatial coverage...")
     with PROM_SPATIAL.time():
         spatial_coverage = []
-        latlon_columns = pair_latlon_columns(columns_lat, columns_lon)
-        for (name_lat, values_lat), (name_lon, values_lon) in latlon_columns:
+        pairs = pair_latlong_columns(columns_lat, columns_long)
+        for (name_lat, values_lat), (name_long, values_long) in pairs:
             values = []
             for i in range(len(values_lat)):
-                if values_lat[i] and values_lon[i]:  # Ignore None and 0
-                    values.append((values_lat[i], values_lon[i]))
+                if values_lat[i] and values_long[i]:  # Ignore None and 0
+                    values.append((values_lat[i], values_long[i]))
 
             if len(values) > 1:
                 logger.info("Computing spatial ranges %r,%r (%d rows)",
-                            name_lat, name_lon, len(values))
+                            name_lat, name_long, len(values))
                 spatial_ranges = get_spatial_ranges(values)
                 if spatial_ranges:
                     spatial_coverage.append({"lat": name_lat,
-                                             "lon": name_lon,
+                                             "lon": name_long,
                                              "ranges": spatial_ranges})
 
     if spatial_coverage:

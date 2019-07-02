@@ -1,29 +1,30 @@
 import unittest
 from unittest.mock import call, patch
 
-from datamart_profiler import pair_latlon_columns, normalize_latlon_column_name
+from datamart_profiler import pair_latlong_columns, \
+    normalize_latlong_column_name
 
 
 class TestLatlongSelection(unittest.TestCase):
     def test_normalize_name(self):
         """Test normalizing column names."""
         self.assertEqual(
-            normalize_latlon_column_name('latitude', 'latitude', 'lat'),
+            normalize_latlong_column_name('latitude', 'latitude', 'lat'),
             '',
         )
         self.assertEqual(
-            normalize_latlon_column_name('Pickup_Latitude', 'latitude', 'lat'),
-            'pickup_',
+            normalize_latlong_column_name('Place_Latitude', 'latitude', 'lat'),
+            'place_',
         )
         self.assertEqual(
-            normalize_latlon_column_name('start_Lat_deg', 'latitude', 'lat'),
+            normalize_latlong_column_name('start_Lat_deg', 'latitude', 'lat'),
             'start__deg',
         )
 
     def test_pairing(self):
         """Test pairing latitude and longitude columns by name."""
         with patch('datamart_profiler.logger') as mock_warn:
-            pairs = pair_latlon_columns(
+            pairs = pair_latlong_columns(
                 [
                     ('Pickup_latitude', 1),
                     ('lat', 7),
