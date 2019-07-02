@@ -1,4 +1,5 @@
 from dateutil.parser import parse
+from dateutil.tz import UTC
 import re
 import unittest
 
@@ -115,9 +116,13 @@ def identify_types(array, name):
         parsed_dates = []
         for elem in array:
             try:
-                parsed_dates.append(parse(elem))
+                elem = parse(elem)
             except Exception:  # ValueError, OverflowError
                 pass
+            else:
+                if elem.tzinfo is None:
+                    elem = elem.replace(tzinfo=UTC)
+                parsed_dates.append(elem)
 
         if (num_empty + len(parsed_dates)) >= threshold:
             semantic_types_dict[Type.DATE_TIME] = parsed_dates
