@@ -1,6 +1,7 @@
 import elasticsearch
 import json
 import os
+import re
 import requests
 import unittest
 
@@ -198,6 +199,10 @@ def check_ranges(min_long, min_lat, max_long, max_lat):
     return check
 
 
+version = os.environ['DATAMART_VERSION']
+assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+)?-g[0-9a-f]{7}$', version)
+
+
 basic_metadata = {
     "description": "This is a very simple CSV with people",
     "size": 126,
@@ -260,7 +265,8 @@ basic_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
-    "date": lambda d: isinstance(d, str)
+    "date": lambda d: isinstance(d, str),
+    "version": version
 }
 
 
@@ -301,7 +307,8 @@ geo_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
-    "date": lambda d: isinstance(d, str)
+    "date": lambda d: isinstance(d, str),
+    "version": version
 }
 
 
