@@ -320,9 +320,11 @@ def process_dataset(data, metadata=None):
                         (column_meta['name'], numerical_values)
                     )
                 else:
-                    column_meta['coverage'] = get_numerical_ranges(
+                    ranges = get_numerical_ranges(
                         [x for x in numerical_values if x is not None]
                     )
+                    if ranges:
+                        column_meta['coverage'] = ranges
 
             # Compute ranges for temporal data
             if Type.DATE_TIME in semantic_types_dict:
@@ -341,8 +343,9 @@ def process_dataset(data, metadata=None):
                     mean_stddev(timestamps)
 
                 # Get temporal ranges
-                column_meta['coverage'] = \
-                    get_numerical_ranges(timestamps_for_range)
+                ranges = get_numerical_ranges(timestamps_for_range)
+                if ranges:
+                    column_meta['coverage'] = ranges
 
     # Lat / Long
     logger.info("Computing spatial coverage...")
