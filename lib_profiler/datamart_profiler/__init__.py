@@ -305,9 +305,13 @@ def process_dataset(data, metadata=None):
                 numerical_values = []
                 for e in array:
                     try:
-                        numerical_values.append(float(e))
+                        e = float(e)
                     except ValueError:
-                        numerical_values.append(None)
+                        e = None
+                    else:
+                        if not (-3.4e38 < e < 3.4e38):  # Overflows in ES
+                            e = None
+                    numerical_values.append(e)
 
                 # Get lat/long columns
                 if Type.LATITUDE in semantic_types_dict:
