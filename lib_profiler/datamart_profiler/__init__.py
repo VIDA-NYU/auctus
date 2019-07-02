@@ -36,18 +36,14 @@ PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
 def mean_stddev(array):
     total = 0
     for elem in array:
-        try:
-            total += float(elem)
-        except ValueError:
-            pass
+        if elem is not None:
+            total += elem
     mean = total / len(array)if len(array) > 0 else 0
     total = 0
     for elem in array:
-        try:
-            elem = float(elem) - mean
-        except ValueError:
-            continue
-        total += elem * elem
+        if elem is not None:
+            elem = elem - mean
+            total += elem * elem
     stddev = math.sqrt(total / len(array)) if len(array) > 0 else 0
 
     return mean, stddev
@@ -299,8 +295,6 @@ def process_dataset(data, metadata=None):
 
             # Compute ranges for numerical/spatial data
             if structural_type in (Type.INTEGER, Type.FLOAT):
-                column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
-
                 # Get numerical ranges
                 numerical_values = []
                 for e in array:
@@ -312,6 +306,9 @@ def process_dataset(data, metadata=None):
                         if not (-3.4e38 < e < 3.4e38):  # Overflows in ES
                             e = None
                     numerical_values.append(e)
+
+                column_meta['mean'], column_meta['stddev'] = \
+                    mean_stddev(numerical_values)
 
                 # Get lat/long columns
                 if Type.LATITUDE in semantic_types_dict:
