@@ -138,7 +138,8 @@ class Profiler(object):
                     metadata = future.result()
                     # Insert results in Elasticsearch
                     body = dict(metadata,
-                                date=datetime.utcnow().isoformat() + 'Z')
+                                date=datetime.utcnow().isoformat() + 'Z',
+                                version=os.environ['DATAMART_VERSION'])
                     self.es.index(
                         'datamart',
                         '_doc',

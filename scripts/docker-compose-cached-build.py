@@ -15,6 +15,8 @@ def main():
     with open('docker-compose.yml') as fp:
         config = yaml.load(fp)
 
+    version = os.environ['DATAMART_VERSION']
+
     for name, svc in config['services'].items():
         if 'image' not in svc:
             build = svc['build']
@@ -27,6 +29,7 @@ def main():
                 '-t', image,
                 '-f', os.path.join(build['context'], build['dockerfile']),
                 '--cache-from=datamart_base',
+                '--build-arg', 'version=%s' % version,
                 build['context'],
             ]
             print(' '.join(cmd))
