@@ -233,7 +233,7 @@ class Dataset(BaseHandler):
                     column['numerical coverage'] = [
                         {'from': int(range_['range']['gte']),
                          'to': int(range_['range']['lte'])
-                        } for range_ in column['coverage']
+                         } for range_ in column['coverage']
                     ]
                 else:
                     column['numerical coverage'] = [

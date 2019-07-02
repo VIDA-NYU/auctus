@@ -185,7 +185,6 @@ class Coordinator(object):
         await asyncio.gather(
             asyncio.get_event_loop().create_task(self._consume_profile()),
             asyncio.get_event_loop().create_task(self._consume_datasets()),
-            asyncio.get_event_loop().create_task(self._consume_queries()),
         )
 
     async def _consume_profile(self):
@@ -232,13 +231,6 @@ class Coordinator(object):
                          name=obj.get('name')),
                 )
                 del self.recent_discoveries[15:]
-
-    async def _consume_queries(self):
-        # Consume queries messages
-        async for message in self.queries_queue.iterator(no_ack=True):
-            obj = json.loads(message.body.decode('utf-8'))
-            logger.info("Got query message")
-            # TODO: Store recent queries
 
     def update_sources_counts(self):
         try:

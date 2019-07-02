@@ -219,8 +219,6 @@ def parse_query_variables(data, tabular_variables=None):
     if output:
         return {
             'bool': {
-#                    'should': output,
-#                    'minimum_should_match': 1,
                 'must': output
             }
         }
