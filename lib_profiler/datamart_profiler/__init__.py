@@ -350,9 +350,10 @@ def process_dataset(data, metadata=None):
         pairs = pair_latlong_columns(columns_lat, columns_long)
         for (name_lat, values_lat), (name_long, values_long) in pairs:
             values = []
-            for i in range(len(values_lat)):
-                if values_lat[i] and values_long[i]:  # Ignore None and 0
-                    values.append((values_lat[i], values_long[i]))
+            for lat, long in zip(values_lat, values_long):
+                if (lat and long and  # Ignore None and 0
+                        -90 < lat < 90 and -180 < long < 180):
+                    values.append((lat, long))
 
             if len(values) > 1:
                 logger.info("Computing spatial ranges %r,%r (%d rows)",
