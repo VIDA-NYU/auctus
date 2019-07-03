@@ -37,6 +37,7 @@ test:
       docker push $CI_REGISTRY_IMAGE/base
     - cp tests/ci.env .env
     - cat .env | while read l; do echo "export $l"; done >.env.sh && . .env.sh
+    - export DATAMART_VERSION=$(git describe)
     - python3 scripts/docker-compose-cached-build.py
     - docker-compose pull rabbitmq  # Don't build it
     - |

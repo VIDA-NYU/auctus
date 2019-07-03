@@ -36,18 +36,14 @@ PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
 def mean_stddev(array):
     total = 0
     for elem in array:
-        try:
-            total += float(elem)
-        except ValueError:
-            pass
+        if elem is not None:
+            total += elem
     mean = total / len(array)if len(array) > 0 else 0
     total = 0
     for elem in array:
-        try:
-            elem = float(elem) - mean
-        except ValueError:
-            continue
-        total += elem * elem
+        if elem is not None:
+            elem = elem - mean
+            total += elem * elem
     stddev = math.sqrt(total / len(array)) if len(array) > 0 else 0
 
     return mean, stddev
@@ -299,15 +295,20 @@ def process_dataset(data, metadata=None):
 
             # Compute ranges for numerical/spatial data
             if structural_type in (Type.INTEGER, Type.FLOAT):
-                column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
-
                 # Get numerical ranges
                 numerical_values = []
                 for e in array:
                     try:
-                        numerical_values.append(float(e))
+                        e = float(e)
                     except ValueError:
-                        numerical_values.append(None)
+                        e = None
+                    else:
+                        if not (-3.4e38 < e < 3.4e38):  # Overflows in ES
+                            e = None
+                    numerical_values.append(e)
+
+                column_meta['mean'], column_meta['stddev'] = \
+                    mean_stddev(numerical_values)
 
                 # Get lat/long columns
                 if Type.LATITUDE in semantic_types_dict:
@@ -319,9 +320,11 @@ def process_dataset(data, metadata=None):
                         (column_meta['name'], numerical_values)
                     )
                 else:
-                    column_meta['coverage'] = get_numerical_ranges(
+                    ranges = get_numerical_ranges(
                         [x for x in numerical_values if x is not None]
                     )
+                    if ranges:
+                        column_meta['coverage'] = ranges
 
             # Compute ranges for temporal data
             if Type.DATE_TIME in semantic_types_dict:
@@ -340,8 +343,9 @@ def process_dataset(data, metadata=None):
                     mean_stddev(timestamps)
 
                 # Get temporal ranges
-                column_meta['coverage'] = \
-                    get_numerical_ranges(timestamps_for_range)
+                ranges = get_numerical_ranges(timestamps_for_range)
+                if ranges:
+                    column_meta['coverage'] = ranges
 
     # Lat / Long
     logger.info("Computing spatial coverage...")
@@ -350,9 +354,10 @@ def process_dataset(data, metadata=None):
         pairs = pair_latlong_columns(columns_lat, columns_long)
         for (name_lat, values_lat), (name_long, values_long) in pairs:
             values = []
-            for i in range(len(values_lat)):
-                if values_lat[i] and values_long[i]:  # Ignore None and 0
-                    values.append((values_lat[i], values_long[i]))
+            for lat, long in zip(values_lat, values_long):
+                if (lat and long and  # Ignore None and 0
+                        -90 < lat < 90 and -180 < long < 180):
+                    values.append((lat, long))
 
             if len(values) > 1:
                 logger.info("Computing spatial ranges %r,%r (%d rows)",

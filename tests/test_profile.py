@@ -1,8 +1,11 @@
+from datetime import datetime
+from dateutil.tz import UTC
 import unittest
 from unittest.mock import call, patch
 
 from datamart_profiler import pair_latlong_columns, \
     normalize_latlong_column_name
+from datamart_profiler.identify_types import parse_date
 
 
 class TestLatlongSelection(unittest.TestCase):
@@ -52,4 +55,26 @@ class TestLatlongSelection(unittest.TestCase):
                 call("Unmatched latitude columns: %r", ['latitude_place']),
                 call("Unmatched longitude columns: %r", ['other_Longitude']),
             ],
+        )
+
+
+class TestDates(unittest.TestCase):
+    def test_parse(self):
+        """Test parsing dates."""
+        self.assertEqual(
+            parse_date('Monday July 1, 2019'),
+            datetime(2019, 7, 1, tzinfo=UTC),
+        )
+        self.assertEqual(
+            parse_date('20190702T211319Z'),
+            datetime(2019, 7, 2, 21, 13, 19, tzinfo=UTC),
+        )
+        dt = parse_date('2019-07-02T21:13:19-04:00')
+        self.assertEqual(
+            dt.replace(tzinfo=None),
+            datetime(2019, 7, 2, 21, 13, 19),
+        )
+        self.assertEqual(
+            dt.astimezone(UTC),
+            datetime(2019, 7, 3, 1, 13, 19, tzinfo=UTC),
         )

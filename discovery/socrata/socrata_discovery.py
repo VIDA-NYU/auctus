@@ -69,12 +69,57 @@ class SocrataDiscoverer(Discoverer):
                                  **domain.get('auth', {'app_token': None}))
         datasets = socrata.datasets()
         logger.info("Found %d datasets", len(datasets))
+        seen = set()
         for dataset in datasets:
             try:
-                self.process_dataset(domain, dataset)
+                valid = self.process_dataset(domain, dataset)
             except Exception:
                 logger.exception("Error processing dataset %s",
                                  dataset['resource']['id'])
+            else:
+                assert isinstance(valid, bool)
+                if valid:
+                    seen.add(dataset['resource']['id'])
+
+        # Clean up the datasets we didn't see
+        deleted = 0
+        from_ = 0
+        size = 10000
+        query = {
+            'query': {
+                'bool': {
+                    'must': [
+                        {
+                            'term': {
+                                'materialize.identifier': self.identifier,
+                            },
+                        },
+                        {
+                            'term': {
+                                'materialize.socrata_domain': domain['url'],
+                            },
+                        },
+                    ],
+                },
+            }
+        }
+        while True:
+            hits = self.elasticsearch.search(
+                index='datamart',
+                body=query,
+                size=size,
+                from_=from_,
+            )['hits']['hits']
+            from_ += size
+            for h in hits:
+                if h['_source']['materialize']['socrata_id'] not in seen:
+                    self.elasticsearch.delete('datamart', '_doc', h['_id'])
+                    deleted += 1
+                    from_ -= 1
+            if len(hits) != size:
+                break
+        if deleted:
+            logger.info("Deleted %d missing datasets", deleted)
 
     def process_dataset(self, domain, dataset):
         # Get metadata
@@ -89,7 +134,7 @@ class SocrataDiscoverer(Discoverer):
         # filter, form, href, link, map, measure, story, visualization
         if resource['type'] != 'dataset':
             logger.info("Skipping %s, type %s", id, resource['type'])
-            return
+            return False
 
         # Get record from Elasticsearch
         try:
@@ -103,7 +148,7 @@ class SocrataDiscoverer(Discoverer):
             updated = hit['_source']['materialize']['socrata_updated']
             if resource['updatedAt'] <= updated:
                 logger.info("Dataset has not changed: %s", id)
-                return
+                return True
 
         # Read metadata
         metadata = dict(
@@ -123,6 +168,7 @@ class SocrataDiscoverer(Discoverer):
                                  direct_url=direct_url),
                             metadata,
                             dataset_id=dataset_id)
+        return True
 
 
 if __name__ == '__main__':
