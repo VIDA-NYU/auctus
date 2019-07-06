@@ -346,7 +346,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
 
     search.query.keywords = [];
     var keywords = document.getElementById('keywords').value;
-    keywords = keywords.split(/[ ,+]+/);
+    keywords = keywords.split(',');
     if(keywords.length == 1 && keywords[0] === '') {
       keywords = [];
     } else {

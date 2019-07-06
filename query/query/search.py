@@ -35,31 +35,36 @@ def parse_query(query_json):
         if not isinstance(query_json['keywords'], list):
             raise ClientError("'keywords' must be an array")
         keywords_query = list()
-        # description
-        keywords_query.append({
-            'match': {
-                'description': {
-                    'query': ' '.join(query_json['keywords']),
-                    'operator': 'or'
-                }
-            }
-        })
-        # name
-        keywords_query.append({
-            'match': {
-                'name': {
-                    'query': ' '.join(query_json['keywords']),
-                    'operator': 'or'
-                }
-            }
-        })
-        # keywords
         for name in query_json['keywords']:
+            # description
+            keywords_query.append({
+                'match': {
+                    'description': {
+                        'query': name,
+                        'operator': 'and'
+                    }
+                }
+            })
+            # name
+            keywords_query.append({
+                'match': {
+                    'name': {
+                        'query': name,
+                        'operator': 'and'
+                    }
+                }
+            })
+            # keywords
             keywords_query.append({
                 'nested': {
                     'path': 'columns',
                     'query': {
-                        'match': {'columns.name': name},
+                        'match': {
+                            'columns.name': {
+                                'query': name,
+                                'operator': 'and'
+                            }
+                        },
                     },
                 },
             })
