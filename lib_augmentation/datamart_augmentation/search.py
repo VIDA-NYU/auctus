@@ -149,28 +149,17 @@ def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ra
         }
 
         if not query_args:
-            query_obj = {
-                '_source': source_filter,
-                'query': {
-                    'bool': {
-                        'filter': intersection,
-                    }
-                }
-            }
+            args = intersection
         else:
             args = [intersection] + query_args
-            query_obj = {
-                '_source': source_filter,
-                'query': {
-                    'bool': {
-                        'filter': {
-                            'bool': {
-                                'must': args,
-                            },
-                        },
-                    },
-                },
+        query_obj = {
+            '_source': source_filter,
+            'query': {
+                'bool': {
+                    'must': args,
+                }
             }
+        }
 
         # logger.info("Query (numerical): %r", query_obj)
 
@@ -189,6 +178,7 @@ def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ra
             for hit in result['hits']['hits']:
 
                 dataset_name = hit['_id']
+                score = hit['_score'] if query_args else 1
                 columns = hit['_source']['columns']
                 inner_hits = hit['inner_hits']
 
@@ -211,7 +201,7 @@ def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ra
 
                     name = '%s$$%d' % (dataset_name, column_offset)
                     if name not in intersections:
-                        intersections[name] = 0
+                        intersections[name] = [0, sim, score]
 
                     # ranges from column
                     for range_hit in column_hit['inner_hits']['columns.coverage']['hits']['hits']:
@@ -223,7 +213,7 @@ def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ra
                         start = max(start_result, range_[0])
                         end = min(end_result, range_[1])
 
-                        intersections[name] += (end - start + 1) * sim
+                        intersections[name][0] += (end - start + 1)
 
             # pagination
             from_ += size_
@@ -286,28 +276,17 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
         }
 
         if not query_args:
-            query_obj = {
-                '_source': source_filter,
-                'query': {
-                    'bool': {
-                        'filter': intersection,
-                    }
-                }
-            }
+            args = intersection
         else:
             args = [intersection] + query_args
-            query_obj = {
-                '_source': source_filter,
-                'query': {
-                    'bool': {
-                        'filter': {
-                            'bool': {
-                                'must': args,
-                            },
-                        },
-                    },
-                },
+        query_obj = {
+            '_source': source_filter,
+            'query': {
+                'bool': {
+                    'must': args,
+                }
             }
+        }
 
         # logger.info("Query (spatial): %r", query_obj)
 
@@ -326,6 +305,7 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
             for hit in result['hits']['hits']:
 
                 dataset_name = hit['_id']
+                score = hit['_score'] if query_args else 1
                 spatial_coverages = hit['_source']['spatial_coverage']
                 inner_hits = hit['inner_hits']
 
@@ -340,7 +320,7 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
                     spatial_coverage_name = '%s,%s' % (lat_index, long_index)
                     name = '%s$$%s' % (dataset_name, spatial_coverage_name)
                     if name not in intersections:
-                        intersections[name] = 0
+                        intersections[name] = [0, 1, score]
 
                     # compute intersection
                     range_offset = int(coverage_hit['_nested']['_nested']['offset'])
@@ -352,7 +332,7 @@ def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
                     n_max_long = max(other_range[1][0], range_[1][0])
                     n_min_lat = min(other_range[1][1], range_[1][1])
 
-                    intersections[name] += (n_max_long - n_min_long) * (n_max_lat - n_min_lat)
+                    intersections[name][0] += (n_max_long - n_min_long) * (n_max_lat - n_min_lat)
 
             # pagination
             from_ += size_
@@ -451,14 +431,15 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
         if not intersections_column:
             continue
 
-        for name, size in intersections_column.items():
-            score = size / column_total_coverage
-            if score > 0:
+        for name, intersection_data in intersections_column.items():
+            size, sim, score = intersection_data
+            new_score = (size / column_total_coverage) * sim * score
+            if new_score > 0:
                 external_dataset, external_column = name.split('$$')
                 if external_dataset not in intersections:
                     intersections[external_dataset] = []
                 intersections[external_dataset].append(
-                    (column, external_column, score)
+                    (column, external_column, new_score)
                 )
 
     # get pairs of columns with higher score
@@ -619,28 +600,17 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
             }
 
             if not query_args:
-                query_obj = {
-                    '_source': source_filter,
-                    'query': {
-                        'bool': {
-                            'filter': query,
-                        }
-                    }
-                }
+                args = query
             else:
                 args = [query] + query_args
-                query_obj = {
-                    '_source': source_filter,
-                    'query': {
-                        'bool': {
-                            'filter': {
-                                'bool': {
-                                    'must': args,
-                                },
-                            },
-                        },
-                    },
+            query_obj = {
+                '_source': source_filter,
+                'query': {
+                    'bool': {
+                        'must': args,
+                    }
                 }
+            }
 
             # logger.info("Query (union-fuzzy): %r", query_obj)
 
@@ -659,6 +629,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 for hit in result['hits']['hits']:
 
                     dataset_name = hit['_id']
+                    es_score = hit['_score'] if query_args else 1
                     columns = hit['_source']['columns']
                     inner_hits = hit['inner_hits']
 
@@ -669,7 +640,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                         column_offset = int(column_hit['_nested']['offset'])
                         column_name = columns[column_offset]['name']
                         sim = compute_levenshtein_sim(att.lower(), column_name.lower())
-                        column_pairs[dataset_name].append((att, column_name, sim))
+                        column_pairs[dataset_name].append((att, column_name, sim, es_score))
 
                 # pagination
                 from_ += size_
@@ -689,14 +660,14 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
         seen_1 = set()
         seen_2 = set()
         pairs = []
-        for att_1, att_2, sim in sorted(column_pairs[dataset],
-                                        key=lambda item: item[2],
-                                        reverse=True):
+        for att_1, att_2, sim, es_score in sorted(column_pairs[dataset],
+                                               key=lambda item: item[2],
+                                               reverse=True):
             if att_1 in seen_1 or att_2 in seen_2:
                 continue
             seen_1.add(att_1)
             seen_2.add(att_2)
-            pairs.append((att_1, att_2, sim))
+            pairs.append((att_1, att_2, sim, es_score))
 
         if len(pairs) <= 1:
             del column_pairs[dataset]
@@ -704,12 +675,14 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
 
         column_pairs[dataset] = pairs
         scores[dataset] = 0
+        es_score = 1
 
         for i in range(len(column_pairs[dataset])):
             sim = column_pairs[dataset][i][2]
             scores[dataset] += sim
+            es_score = column_pairs[dataset][i][3]
 
-        scores[dataset] = scores[dataset] / n_columns
+        scores[dataset] = (scores[dataset] / n_columns) * es_score
 
     sorted_datasets = sorted(
         scores.items(),
@@ -728,7 +701,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
         left_columns = []
         right_columns = []
         left_columns_names = []
-        for att_1, att_2, sim in column_pairs[dt]:
+        for att_1, att_2, sim, es_score in column_pairs[dt]:
             if dataset_id:
                 left_columns.append(
                     get_column_identifiers(es, [att_1], dataset_id=dataset_id)
