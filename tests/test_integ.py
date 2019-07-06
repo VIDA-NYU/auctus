@@ -127,7 +127,7 @@ class TestAugment(unittest.TestCase):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
-                    'score': 1.0,
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
                         'left_columns_names': [['number']],
