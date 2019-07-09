@@ -26,7 +26,7 @@ function getJSON(url='', args) {
     url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,
     {
       credentials: 'same-origin',
-      mode: 'same-origin'
+      mode: 'cors'
     }
   ).then(function(response) {
     if(response.status != 200) {
