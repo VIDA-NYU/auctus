@@ -340,19 +340,15 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
             if search_results:
                 task = search_results[0]
 
-                try:
-                    with get_dataset(metadata, task['id'], format='csv') as newdata:
-                        # perform augmentation
-                        new_path = augment(
-                            data_path,
-                            newdata,
-                            data_profile,
-                            task,
-                            return_only_datamart_data=True
-                        )
-
-                except Exception as e:
-                    return self.send_error_json(400, e.args[0])
+                with get_dataset(metadata, task['id'], format='csv') as newdata:
+                    # perform augmentation
+                    new_path = augment(
+                        data_path,
+                        newdata,
+                        data_profile,
+                        task,
+                        return_only_datamart_data=True
+                    )
 
                 # send a zip file
                 self.set_header('Content-Type', 'application/zip')
@@ -449,19 +445,16 @@ class Augment(CorsHandler, GracefulHandler):
                                             "The DataMart dataset referenced "
                                             "by 'task' cannot augment 'data'.")
 
-        try:
-            with get_dataset(metadata, task['id'], format='csv') as newdata:
-                # perform augmentation
-                new_path = augment(
-                    data_path,
-                    newdata,
-                    data_profile,
-                    task,
-                    columns=columns,
-                    destination=destination
-                )
-        except Exception as e:
-            return self.send_error_json(400, e.args[0])
+        with get_dataset(metadata, task['id'], format='csv') as newdata:
+            # perform augmentation
+            new_path = augment(
+                data_path,
+                newdata,
+                data_profile,
+                task,
+                columns=columns,
+                destination=destination
+            )
 
         if destination:
             # send the path
