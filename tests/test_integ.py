@@ -1,9 +1,11 @@
 import elasticsearch
+import io
 import json
 import os
 import re
 import requests
 import unittest
+import zipfile
 
 from .utils import assert_json
 
@@ -212,6 +214,56 @@ class TestDataSearch(unittest.TestCase):
                 }
             ]
         )
+
+
+class TestAugment(unittest.TestCase):
+    def test_basic_join(self):
+        meta = requests.get(
+            os.environ['QUERY_HOST'] + '/metadata/' + 'datamart.test.basic'
+        )
+        meta.raise_for_status()
+        meta = meta.json()
+
+        task = {
+            'id': 'datamart.test.basic',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['number']],
+                'right_columns': [[2]],
+                'type': 'join'
+            }
+        }
+
+        response = requests.post(
+            os.environ['QUERY_HOST'] + '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': basic_aug_data.encode('utf-8'),
+            },
+        )
+        response.raise_for_status()
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip = zipfile.ZipFile(io.BytesIO(response.content))
+        zip.testzip()
+        self.assertEqual(
+            set(zip.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip.open('tables/learningData.csv') as table:
+            self.assertEqual(
+                table.read().decode('utf-8'),
+                'number,desk_faces,name,country,what\n'
+                '4,west,remi,france,False\n'
+                '3,south,aecio,brazil,True\n'
+                '7,west,sonia,peru,True\n'
+                '8,east,roque,peru,True\n'
+                '10,west,fernando,brazil,False\n',
+            )
 
 
 def check_ranges(min_long, min_lat, max_long, max_lat):
