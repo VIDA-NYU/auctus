@@ -1,10 +1,8 @@
 import aio_pika
 import asyncio
 import elasticsearch
-import fcntl
 import json
 import logging
-import os
 import re
 import sys
 import threading
@@ -71,53 +69,6 @@ def log_future(future, logger, message="Exception in background task",
             asyncio.get_event_loop().stop()
             sys.exit(1)
     future.add_done_callback(log)
-
-
-class FilesystemLocks(object):
-    """File locking system.
-
-    Warning: this is NOT thread-safe, do not use it when multiple threads might
-    lock the same files!
-    """
-    def __init__(self):
-        self._locks = {}
-
-    def lock_exclusive(self, filepath):
-        filepath = os.path.realpath(filepath)
-        if filepath in self._locks:
-            raise RuntimeError("Getting lock on already-locked file %r" %
-                               filepath)
-        fd = os.open(filepath, os.O_RDONLY | os.O_CREAT)
-        self._locks[filepath] = 'ex'
-        fcntl.flock(fd, fcntl.LOCK_EX)
-        logger.debug("Acquired exclusive lock: %r", filepath)
-        return fd, filepath
-
-    def unlock_exclusive(self, lock):
-        fd, filepath = lock
-        assert self._locks.pop(filepath) == 'ex'
-        fcntl.flock(fd, fcntl.LOCK_UN)
-        logger.debug("Released exclusive lock: %r", filepath)
-
-    def lock_shared(self, filepath):
-        filepath = os.path.realpath(filepath)
-        if filepath in self._locks:
-            raise RuntimeError("Getting lock on already-locked file %r" %
-                               filepath)
-        fd = os.open(filepath, os.O_RDONLY)
-        self._locks[filepath] = 'sh'
-        fcntl.flock(fd, fcntl.LOCK_SH)
-        logger.debug("Acquired shared lock: %r", filepath)
-        return fd, filepath
-
-    def unlock_shared(self, lock):
-        fd, filepath = lock
-        assert self._locks.pop(filepath) == 'sh'
-        fcntl.flock(fd, fcntl.LOCK_UN)
-        logger.debug("Released shared lock: %r", filepath)
-
-
-FilesystemLocks = FilesystemLocks()
 
 
 re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')
