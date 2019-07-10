@@ -111,8 +111,11 @@ class Search(CorsHandler, GracefulHandler):
                 query = self.request.files['query'][0].body.decode('utf-8')
             if query is not None:
                 query = json.loads(query)
+            data = self.get_body_argument('data', None)
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
+            elif data is not None:
+                data = data.encode('utf-8')
         elif (type_.startswith('text/csv') or
                 type_.startswith('application/csv')):
             query = None
@@ -298,8 +301,11 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
             task = self.get_body_argument('task', None)
             if task is None and 'task' in self.request.files:
                 task = self.request.files['task'][0].body.decode('utf-8')
+            data = self.get_body_argument('data', None)
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
+            elif data is not None:
+                data = data.encode('utf-8')
             output_format = self.get_argument('format', None)
             if output_format is None and 'format' in self.request.files:
                 output_format = (
@@ -407,9 +413,13 @@ class Augment(CorsHandler, GracefulHandler):
 
         destination = self.get_argument('destination', None)
 
-        if 'data' not in self.request.files:
+        data = self.get_body_argument('data', None)
+        if data is not None:
+            data = data.encode('utf-8')
+        elif 'data' in self.request.files:
+            data = self.request.files['data'][0].body
+        else:
             return self.send_error_json(400, "Missing 'data'")
-        data = self.request.files['data'][0].body
 
         columns = self.get_body_argument('columns', None)
         if 'columns' in self.request.files:
