@@ -41,9 +41,11 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - QUERY_HOST=${QUERY_HOST}
+    # CI: command: ["sh", "-c", "coverage run --branch -p --source=. -m coordinator; cp .coverage* /cov/"]
     ports:
       - 8001:8001
     volumes:
+      # CI: - ./cov:/cov
       - datasets:/datasets
   query:
     build:
@@ -56,7 +58,9 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
     ports:
       - 8002
+    # CI: command: ["sh", "-c", "coverage run --branch -p --source=. -m query; cp .coverage* /cov/"]
     volumes:
+      # CI: - ./cov:/cov
       - datasets:/datasets
       - query-cache:/cache
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
@@ -77,7 +81,9 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+    # CI: command: ["sh", "-c", "coverage run --branch -p --source=. -m query; cp .coverage* /cov/"]
     volumes:
+      # CI: - ./cov:/cov
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
       - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
