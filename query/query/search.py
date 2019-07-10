@@ -4,8 +4,10 @@ import hashlib
 import logging
 import os
 import pickle
+import shutil
 import tempfile
 import time
+import tornado.web
 
 from datamart_augmentation.search import \
     get_joinable_datasets, get_unionable_datasets
@@ -316,47 +318,52 @@ def get_profile_data(filepath, metadata=None):
     return data_profile
 
 
-def handle_data_parameter(data):
-    """
-    Handles the 'data' parameter.
+class ProfilePostedData(tornado.web.RequestHandler):
+    temp_data_path = None
 
-    :param data: the input parameter
-    :return: (data_path, data_profile, tmp)
-      data_path: path to the input data
-      data_profile: the profiling (metadata) of the data
-      tmp: True if data_path points to a temporary file
-    """
+    def handle_data_parameter(self, data):
+        """
+        Handles the 'data' parameter.
 
-    if not isinstance(data, (str, bytes)):
-        raise ClientError("The parameter 'data' is in the wrong format")
+        :param data: the input parameter
+        :return: (data_path, data_profile)
+          data_path: path to the input data
+          data_profile: the profiling (metadata) of the data
+        """
 
-    tmp = False
-    if not os.path.exists(data):
-        # data represents the entire file
-        logger.info("Data is not a path")
+        if not isinstance(data, (str, bytes)):
+            raise ClientError("The parameter 'data' is in the wrong format")
 
-        tmp = True
-        temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
-        temp_file.write(data)
-        temp_file.close()
+        if not os.path.exists(data):
+            # data represents the entire file
+            logger.info("Data is not a path")
 
-        data_path = temp_file.name
-        data_profile = get_profile_data(data_path)
+            temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+            temp_file.write(data)
+            temp_file.close()
 
-    else:
-        # data represents a file path
-        logger.info("Data is a path")
-        if os.path.isdir(data):
-            # path to a D3M dataset
-            data_file = os.path.join(data, 'tables', 'learningData.csv')
-            if not os.path.exists(data_file):
-                raise ClientError("%s does not exist" % data_file)
-            else:
-                data_path = data_file
-                data_profile = get_profile_data(data_file)
+            self.temp_data_path = data_path = temp_file.name
+            data_profile = get_profile_data(data_path)
         else:
-            # path to a CSV file
-            data_path = data
-            data_profile = get_profile_data(data)
+            # data represents a file path
+            logger.info("Data is a path")
+            if os.path.isdir(data):
+                # path to a D3M dataset
+                data_file = os.path.join(data, 'tables', 'learningData.csv')
+                if not os.path.exists(data_file):
+                    raise ClientError("%s does not exist" % data_file)
+                else:
+                    data_path = data_file
+                    data_profile = get_profile_data(data_file)
+            else:
+                # path to a CSV file
+                data_path = data
+                data_profile = get_profile_data(data)
 
-    return data_path, data_profile, tmp
+        return data_path, data_profile
+
+    def on_finish(self):
+        super(ProfilePostedData, self).on_finish()
+
+        if self.temp_data_path is not None:
+            shutil.rmtree(self.temp_data_path)

@@ -20,7 +20,7 @@ from datamart_core.materialize import get_dataset
 
 from .graceful_shutdown import GracefulApplication, GracefulHandler
 from .search import ClientError, parse_query, \
-    get_augmentation_search_results, handle_data_parameter
+    get_augmentation_search_results, ProfilePostedData
 
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ class CorsHandler(BaseHandler):
         return self.finish()
 
 
-class Search(CorsHandler, GracefulHandler):
+class Search(CorsHandler, GracefulHandler, ProfilePostedData):
     @prom_async_time(PROM_SEARCH_TIME)
     async def post(self):
         PROM_SEARCH.inc()
@@ -137,11 +137,9 @@ class Search(CorsHandler, GracefulHandler):
         data_profile = dict()
         if data:
             try:
-                data_path, data_profile, tmp = handle_data_parameter(data)
+                data_path, data_profile = self.handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error_json(400, e.args[0])
-            if tmp:
-                os.remove(data_path)
 
         # parameter: query
         query_args = list()
@@ -284,7 +282,7 @@ class DownloadId(CorsHandler, GracefulHandler, BaseDownload):
         return self.send_dataset(dataset_id, metadata, output_format)
 
 
-class Download(CorsHandler, GracefulHandler, BaseDownload):
+class Download(CorsHandler, GracefulHandler, BaseDownload, ProfilePostedData):
     @PROM_DOWNLOAD_TIME.time()
     def post(self):
         PROM_DOWNLOAD.inc()
@@ -329,7 +327,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
         else:
             # data
             try:
-                data_path, data_profile, tmp = handle_data_parameter(data)
+                data_path, data_profile = self.handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error_json(400, e.args[0])
 
@@ -344,40 +342,34 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
                 union=False
             )
 
-            if search_results:
-                task = search_results[0]
-
-                with get_dataset(metadata, task['id'], format='csv') as newdata:
-                    # perform augmentation
-                    new_path = augment(
-                        data_path,
-                        newdata,
-                        data_profile,
-                        task,
-                        return_only_datamart_data=True
-                    )
-
-                # send a zip file
-                self.set_header('Content-Type', 'application/zip')
-                self.set_header(
-                    'Content-Disposition',
-                    'attachment; filename="augmentation.zip"')
-                writer = RecursiveZipWriter(self.write)
-                writer.write_recursive(new_path)
-                writer.close()
-                shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-
-                if tmp:
-                    os.remove(data_path)
-                return self.finish()
-            else:
-                if tmp:
-                    os.remove(data_path)
+            if not search_results:
                 return self.send_error_json(
                     400,
                     "The DataMart dataset referenced by 'task' cannot augment "
                     "'data'.",
                 )
+
+            task = search_results[0]
+
+            with get_dataset(metadata, task['id'], format='csv') as newdata:
+                # perform augmentation
+                new_path = augment(
+                    data_path,
+                    newdata,
+                    data_profile,
+                    task,
+                    return_only_datamart_data=True
+                )
+
+            # send a zip file
+            self.set_header('Content-Type', 'application/zip')
+            self.set_header(
+                'Content-Disposition',
+                'attachment; filename="augmentation.zip"')
+            writer = RecursiveZipWriter(self.write)
+            writer.write_recursive(new_path)
+            writer.close()
+            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
 
 
 class Metadata(CorsHandler, GracefulHandler):
@@ -394,7 +386,7 @@ class Metadata(CorsHandler, GracefulHandler):
         return self.send_json(metadata)
 
 
-class Augment(CorsHandler, GracefulHandler):
+class Augment(CorsHandler, GracefulHandler, ProfilePostedData):
     @prom_async_time(PROM_AUGMENT_TIME)
     async def post(self):
         PROM_AUGMENT.inc()
@@ -429,7 +421,7 @@ class Augment(CorsHandler, GracefulHandler):
 
         # data
         try:
-            data_path, data_profile, tmp = handle_data_parameter(data)
+            data_path, data_profile = self.handle_data_parameter(data)
         except ClientError as e:
             return self.send_error_json(400, e.args[0])
 
@@ -482,8 +474,6 @@ class Augment(CorsHandler, GracefulHandler):
             writer.close()
             shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
 
-        if tmp:
-            os.remove(data_path)
         return self.finish()
 
 
