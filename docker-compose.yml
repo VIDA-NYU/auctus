@@ -40,7 +40,7 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
-      - QUERY_HOST=http://localhost:8002
+      - QUERY_HOST=${QUERY_HOST}
     ports:
       - 8001:8001
     volumes:
@@ -54,7 +54,6 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
-      - HTTP_CHECK=GET /health
     ports:
       - 8002
     volumes:
