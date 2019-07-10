@@ -386,8 +386,8 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
     """
 
     if not dataset_id and not data_profile:
-        raise RuntimeError('Either a dataset id or a data profile '
-                           'must be provided for the join.')
+        raise TypeError("Either a dataset id or a data profile "
+                        "must be provided for the join")
 
     # get the coverage for each column of the input dataset
 
@@ -552,8 +552,8 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
     """
 
     if not dataset_id and not data_profile:
-        raise RuntimeError('Either a dataset id or a data profile '
-                           'must be provided for the union.')
+        raise TypeError("Either a dataset id or a data profile "
+                        "must be provided for the union")
 
     main_dataset_columns = get_column_information(
         data_profile=data_profile,

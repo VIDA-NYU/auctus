@@ -77,8 +77,8 @@ def join(original_data, augment_data, left_columns, right_columns,
 
     for i in range(len(left_columns)):
         if len(left_columns[i]) > 1 or len(right_columns[i]) > 1:
-            raise Exception('DataMart currently does not support '
-                            'combination between columns for augmentation.')
+            raise ValueError("DataMart currently does not support "
+                             "combination between columns for augmentation")
 
     # remove undesirable columns from augment_data
     # but first, make sure to keep the join keys
@@ -167,8 +167,8 @@ def union(original_data, augment_data, left_columns, right_columns,
 
     for i in range(len(left_columns)):
         if len(left_columns[i]) > 1 or len(right_columns[i]) > 1:
-            raise Exception('DataMart currently does not support '
-                            'combination between columns for augmentation.')
+            raise ValueError("DataMart currently does not support "
+                             "combination between columns for augmentation")
 
     # saving all columns from original data
     original_data_cols = original_data.columns
@@ -295,7 +295,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     """
 
     if 'id' not in task:
-        raise RuntimeError('Dataset id for the augmentation task not provided.')
+        raise ValueError("Dataset id for the augmentation task not provided")
 
     if task['augmentation']['type'] == 'join':
         join_, qualities = join(
@@ -318,4 +318,4 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         )
         return generate_d3m_dataset(union_, destination, qualities)
     else:
-        raise RuntimeError('Augmentation task not provided.')
+        raise ValueError("Augmentation task not provided")
