@@ -103,20 +103,38 @@ class TestSearch(unittest.TestCase):
 class TestDataSearch(unittest.TestCase):
     def test_basic_join(self):
         query = {'keywords': ['people']}
-        data = (
-            'number,desk_faces\n'
-            '4,west\n'
-            '3,south\n'
-            '7,west\n'
-            '8,east\n'
-            '10,west\n'
-        )
 
         response = requests.post(
             os.environ['QUERY_HOST'] + '/search',
             files={
                 'query': json.dumps(query).encode('utf-8'),
-                'data': data.encode('utf-8'),
+                'data': basic_aug_data.encode('utf-8'),
+            },
+        )
+        response.raise_for_status()
+        results = response.json()['results']
+        assert_json(
+            results,
+            [
+                {
+                    'id': 'datamart.test.basic',
+                    'metadata': basic_metadata,
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['number']],
+                        'right_columns': [[2]],
+                        'type': 'join'
+                    }
+                }
+            ]
+        )
+
+    def test_basic_join_only_data(self):
+        response = requests.post(
+            os.environ['QUERY_HOST'] + '/search',
+            files={
+                'data': basic_aug_data.encode('utf-8'),
             },
         )
         response.raise_for_status()
@@ -140,25 +158,39 @@ class TestDataSearch(unittest.TestCase):
 
     def test_geo_union(self):
         query = {'keywords': ['places']}
-        data = (
-            'lat,long,id\n'
-            '40.732792,-73.998516,place100\n'
-            '40.729707,-73.997885,place101\n'
-            '40.732666,-73.997576,place102\n'
-            '40.731173,-74.001817,place103\n'
-            '40.694272,-73.989852,place104\n'
-            '40.694424,-73.987888,place105\n'
-            '40.693446,-73.988829,place106\n'
-            '40.692157,-73.989549,place107\n'
-            '40.695933,-73.986665,place108\n'
-            '40.692827,-73.988438,place109\n'
-        )
 
         response = requests.post(
             os.environ['QUERY_HOST'] + '/search',
             files={
                 'query': json.dumps(query).encode('utf-8'),
-                'data': data.encode('utf-8'),
+                'data': geo_aug_data.encode('utf-8'),
+            },
+        )
+        response.raise_for_status()
+        results = response.json()['results']
+        results = [r for r in results if r['augmentation']['type'] == 'union']
+        assert_json(
+            results,
+            [
+                {
+                    'id': 'datamart.test.geo',
+                    'metadata': geo_metadata,
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0], [1], [2]],
+                        'left_columns_names': [['lat'], ['long'], ['id']],
+                        'right_columns': [[1], [2], [0]],
+                        'type': 'union'
+                    }
+                }
+            ]
+        )
+
+    def test_geo_union_only_data(self):
+        response = requests.post(
+            os.environ['QUERY_HOST'] + '/search',
+            files={
+                'data': geo_aug_data.encode('utf-8'),
             },
         )
         response.raise_for_status()
@@ -310,6 +342,31 @@ geo_metadata = {
     "date": lambda d: isinstance(d, str),
     "version": version
 }
+
+
+basic_aug_data = (
+    'number,desk_faces\n'
+    '4,west\n'
+    '3,south\n'
+    '7,west\n'
+    '8,east\n'
+    '10,west\n'
+)
+
+
+geo_aug_data = (
+    'lat,long,id\n'
+    '40.732792,-73.998516,place100\n'
+    '40.729707,-73.997885,place101\n'
+    '40.732666,-73.997576,place102\n'
+    '40.731173,-74.001817,place103\n'
+    '40.694272,-73.989852,place104\n'
+    '40.694424,-73.987888,place105\n'
+    '40.693446,-73.988829,place106\n'
+    '40.692157,-73.989549,place107\n'
+    '40.695933,-73.986665,place108\n'
+    '40.692827,-73.988438,place109\n'
+)
 
 
 if __name__ == '__main__':
