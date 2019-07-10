@@ -100,7 +100,7 @@ class TestSearch(unittest.TestCase):
         )
 
 
-class TestAugment(unittest.TestCase):
+class TestDataSearch(unittest.TestCase):
     def test_basic_join(self):
         query = {'keywords': ['people']}
         data = (
