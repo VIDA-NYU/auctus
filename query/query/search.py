@@ -11,6 +11,7 @@ import tornado.web
 from datamart_augmentation.search import \
     get_joinable_datasets, get_unionable_datasets
 from datamart_core.common import Type
+from datamart_core.fscache import cache_get_or_set
 from datamart_profiler import process_dataset
 
 
@@ -352,25 +353,29 @@ def get_augmentation_search_results(es, data_profile,
 
 
 def get_profile_data(data, metadata=None):
-    # hashing data
+    # Use SHA1 of file as cache key
     sha1 = hashlib.sha1(data)
     data_hash = sha1.hexdigest()
 
-    # checking for cached data
-    cached_data = os.path.join('/cache', data_hash)
-    if os.path.exists(cached_data):
-        logger.info("Found cached profile_data")
-        with open(cached_data, 'rb') as fp:
-            return pickle.load(fp), data_hash
+    cache_path = os.path.join('/cache', data_hash)
+    data_profile = [None]
 
-    # profile data and save
-    logger.info("Profiling...")
-    start = time.perf_counter()
-    data_profile = process_dataset(io.BytesIO(data), metadata)
-    logger.info("Profiled in %.2fs", time.perf_counter() - start)
-    with open(cached_data, 'wb') as fp:
-        pickle.dump(data_profile, fp)
-    return data_profile, data_hash
+    def create():
+        logger.info("Profiling...")
+        start = time.perf_counter()
+        data_profile[0] = process_dataset(io.BytesIO(data), metadata)
+        logger.info("Profiled in %.2fs", time.perf_counter() - start)
+        with open(cache_path, 'wb') as fp:
+            pickle.dump(data_profile[0], fp)
+
+    with cache_get_or_set(cache_path, create):
+        if data_profile[0]:
+            # We just profiled it, no need to re-read from disk
+            return data_profile[0], data_hash
+        else:
+            logger.info("Found cached profile_data")
+            with open(cache_path, 'rb') as fp:
+                return pickle.load(fp), data_hash
 
 
 class ProfilePostedData(tornado.web.RequestHandler):
