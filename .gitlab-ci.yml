@@ -71,6 +71,8 @@ test:
       if [ $slept -le 180 ]; then
         echo "Profiling ended after ${slept}s"
       else
+        echo "Profiling didn't end after ${slept}s"
+        docker-compose logs profiler
         exit 1
       fi
     - docker-compose ps
