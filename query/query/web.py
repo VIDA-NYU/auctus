@@ -544,7 +544,3 @@ def main():
     app.listen(8002, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()
-
-
-if __name__ == '__main__':
-    main()
