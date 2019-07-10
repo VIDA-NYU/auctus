@@ -116,7 +116,7 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         logger.info("Got profile")
 
         try:
-            _, data_profile = self.handle_data_parameter(data)
+            _, data_profile, _ = self.handle_data_parameter(data)
         except ClientError as e:
             return self.send_error_json(400, str(e))
 
@@ -185,7 +185,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         # parameter: data
         if data:
             try:
-                _, data_profile = self.handle_data_parameter(data)
+                _, data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
 
@@ -391,7 +391,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         else:
             # data
             try:
-                data, data_profile = self.handle_data_parameter(data)
+                data, data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
 
@@ -505,7 +505,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # data
         try:
-            data, data_profile = self.handle_data_parameter(data)
+            data, data_profile, data_hash = self.handle_data_parameter(data)
         except ClientError as e:
             return self.send_error_json(400, str(e))
 

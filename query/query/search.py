@@ -354,14 +354,14 @@ def get_augmentation_search_results(es, data_profile,
 def get_profile_data(data, metadata=None):
     # hashing data
     sha1 = hashlib.sha1(data)
-    hash_ = sha1.hexdigest()
+    data_hash = sha1.hexdigest()
 
     # checking for cached data
-    cached_data = os.path.join('/cache', hash_)
+    cached_data = os.path.join('/cache', data_hash)
     if os.path.exists(cached_data):
         logger.info("Found cached profile_data")
         with open(cached_data, 'rb') as fp:
-            return pickle.load(fp)
+            return pickle.load(fp), data_hash
 
     # profile data and save
     logger.info("Profiling...")
@@ -370,7 +370,7 @@ def get_profile_data(data, metadata=None):
     logger.info("Profiled in %.2fs", time.perf_counter() - start)
     with open(cached_data, 'wb') as fp:
         pickle.dump(data_profile, fp)
-    return data_profile
+    return data_profile, data_hash
 
 
 class ProfilePostedData(tornado.web.RequestHandler):
@@ -396,7 +396,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
             # data represents the entire file
             logger.info("Data is not a path")
 
-            data_profile = get_profile_data(data)
+            data_profile, data_hash = get_profile_data(data)
         else:
             # data represents a file path
             logger.info("Data is a path")
@@ -408,11 +408,11 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 else:
                     with open(data_file, 'rb') as fp:
                         data = fp.read()
-                    data_profile = get_profile_data(data)
+                    data_profile, data_hash = get_profile_data(data)
             else:
                 # path to a CSV file
                 with open(data, 'rb') as fp:
                     data = fp.read()
-                data_profile = get_profile_data(data)
+                data_profile, data_hash = get_profile_data(data)
 
-        return data, data_profile
+        return data, data_profile, data_hash
