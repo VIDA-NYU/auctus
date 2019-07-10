@@ -77,6 +77,7 @@ class BaseHandler(RequestHandler):
         return self.finish(json.dumps(obj))
 
     def send_error_json(self, status, message):
+        logger.info("Sending error %s JSON: %s", status, message)
         self.set_status(status)
         return self.send_json({'error': message})
 
