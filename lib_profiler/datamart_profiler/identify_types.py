@@ -16,7 +16,7 @@ _re_float = re.compile(r'^[+-]?'
                        r'(?:[Ee][0-9]+)?$')
 _re_phone = re.compile(r'^'
                        r'(?:\+[0-9]{1,3})?'  # Optional country prefix
-                       r'(?=(?:[() .-]*[0-9]){4,15}$)'  # 4-15 digits
+                       r'(?=(?:[() .-]*[0-9]){6,11}$)'  # 6-11 digits
                        r'(?:[ .]?\([0-9]{3}\))?'  # Area code in parens
                        r'(?:[ .]?[0-9]{1,12})'  # First group of digits
                        r'(?:[ .-][0-9]{1,10}){0,5}'  # More groups of digits
