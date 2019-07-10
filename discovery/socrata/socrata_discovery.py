@@ -69,6 +69,8 @@ class SocrataDiscoverer(Discoverer):
                                  **domain.get('auth', {'app_token': None}))
         datasets = socrata.datasets()
         logger.info("Found %d datasets", len(datasets))
+        if not datasets:
+            return
         seen = set()
         for dataset in datasets:
             try:
