@@ -267,7 +267,7 @@ class BaseDownload(BaseHandler):
 
 
 class DownloadId(CorsHandler, GracefulHandler, BaseDownload):
-    @prom_async_time(PROM_DOWNLOAD_TIME)
+    @PROM_DOWNLOAD_TIME.time()
     def get(self, dataset_id):
         PROM_DOWNLOAD_ID.inc()
 
@@ -285,7 +285,7 @@ class DownloadId(CorsHandler, GracefulHandler, BaseDownload):
 
 
 class Download(CorsHandler, GracefulHandler, BaseDownload):
-    @prom_async_time(PROM_DOWNLOAD_TIME)
+    @PROM_DOWNLOAD_TIME.time()
     def post(self):
         PROM_DOWNLOAD.inc()
 
