@@ -592,6 +592,63 @@ class TestAugment(DatamartTest):
                 '10,west,fernando,brazil,False\n',
             )
 
+    def test_geo_union(self):
+        meta = requests.get(
+            os.environ['QUERY_HOST'] + '/metadata/' + 'datamart.test.geo'
+        )
+        meta.raise_for_status()
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.geo',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0], [1], [2]],
+                'left_columns_names': [['lat'], ['long'], ['id']],
+                'right_columns': [[1], [2], [0]],
+                'type': 'union'
+            }
+        }
+
+        response = requests.post(
+            os.environ['QUERY_HOST'] + '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': geo_aug_data.encode('utf-8'),
+            },
+        )
+        response.raise_for_status()
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip = zipfile.ZipFile(io.BytesIO(response.content))
+        zip.testzip()
+        self.assertEqual(
+            set(zip.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip.open('tables/learningData.csv') as table:
+            expected = []
+            for line in geo_aug_data.splitlines():
+                row = line.split(',')
+                expected.append('%s,%s,%s' % (row[2], row[0], row[1]))
+            expected.append('')
+            expected = '\n'.join(expected)
+            orig_geo_data_path = os.path.join(
+                os.path.dirname(__file__),
+                'data',
+                'geo.csv',
+            )
+            with open(orig_geo_data_path, encoding='utf-8') as old:
+                old.readline()
+                expected += old.read()
+            self.assertEqual(
+                table.read().decode('utf-8'),
+                expected,
+            )
+
     def test_agg_join(self):
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.agg'
