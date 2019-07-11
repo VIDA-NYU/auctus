@@ -366,4 +366,4 @@ class ProfilePostedData(tornado.web.RequestHandler):
         super(ProfilePostedData, self).on_finish()
 
         if self.temp_data_path is not None:
-            shutil.rmtree(self.temp_data_path)
+            os.remove(self.temp_data_path)
