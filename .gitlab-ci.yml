@@ -77,7 +77,7 @@ test:
       fi
     - docker-compose ps
     - docker-compose logs profiler
-    - coverage run --branch --source=$(pwd) tests/__main__.py
+    - coverage run --branch tests/__main__.py
     - docker-compose down -t 30
     - coverage combine -a cov/
     - coverage html

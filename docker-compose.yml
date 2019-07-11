@@ -41,7 +41,7 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - QUERY_HOST=${QUERY_HOST}
-    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p --source=$$(pwd) -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     ports:
       - 8001:8001
     volumes:
@@ -58,7 +58,7 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
     ports:
       - 8002
-    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p --source=$$(pwd) -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov
       - datasets:/datasets
@@ -81,7 +81,7 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
-    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p --source=$$(pwd) -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov
       - datasets:/datasets

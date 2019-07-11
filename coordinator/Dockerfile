@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 COPY Pipfile.lock install_deps.py /usr/src/app/
 RUN python3 install_deps.py Pipfile.lock
 # CI: RUN pip install coverage
+# CI: COPY .coveragerc /usr/src/app/
 ARG version
 ENV DATAMART_VERSION ${version}
 RUN echo x${DATAMART_VERSION}x && test -n "${DATAMART_VERSION}"
