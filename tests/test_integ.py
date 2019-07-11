@@ -10,6 +10,33 @@ import zipfile
 from .utils import assert_json
 
 
+class DatamartTest(unittest.TestCase):
+    def datamart_get(self, url, **kwargs):
+        response = requests.get(
+            os.environ['QUERY_HOST'] + url,
+            **kwargs
+        )
+        self.assert_response(response)
+        return response
+
+    def datamart_post(self, url, **kwargs):
+        response = requests.post(
+            os.environ['QUERY_HOST'] + url,
+            **kwargs
+        )
+        self.assert_response(response)
+        return response
+
+    def assert_response(self, response):
+        if response.status_code == 400:  # pragma: no cover
+            try:
+                error = response.json()['error']
+            except (KeyError, ValueError):
+                error = "(not JSON)"
+            self.fail("Error 400 from server: %s" % error)
+        response.raise_for_status()
+
+
 class TestProfile(unittest.TestCase):
     def test_basic(self):
         es = elasticsearch.Elasticsearch(
@@ -34,13 +61,13 @@ class TestProfile(unittest.TestCase):
         )
 
 
-class TestSearch(unittest.TestCase):
+class TestSearch(DatamartTest):
     def test_basic_search_json(self):
         """Basic search, posting the query as JSON."""
         @self.do_test_basic_search
         def query():
-            response = requests.post(
-                os.environ['QUERY_HOST'] + '/search',
+            response = self.datamart_post(
+                '/search',
                 json={'keywords': ['people']},
             )
             self.assertEqual(response.request.headers['Content-Type'],
@@ -51,8 +78,8 @@ class TestSearch(unittest.TestCase):
         """Basic search, posting the query as formdata-urlencoded."""
         @self.do_test_basic_search
         def query():
-            response = requests.post(
-                os.environ['QUERY_HOST'] + '/search',
+            response = self.datamart_post(
+                '/search',
                 data={'query': json.dumps({'keywords': ['people']})},
             )
             self.assertEqual(response.request.headers['Content-Type'],
@@ -63,8 +90,8 @@ class TestSearch(unittest.TestCase):
         """Basic search, posting the query as a file in multipart/form-data."""
         @self.do_test_basic_search
         def query():
-            response = requests.post(
-                os.environ['QUERY_HOST'] + '/search',
+            response = self.datamart_post(
+                '/search',
                 files={'query': json.dumps({'keywords': ['people']})
                        .encode('utf-8')},
             )
@@ -76,14 +103,6 @@ class TestSearch(unittest.TestCase):
 
     def do_test_basic_search(self, query_func):
         response = query_func()
-        if response.status_code == 400:
-            try:
-                error = response.json()['error']
-            except (KeyError, ValueError):
-                error = "(not JSON)"
-            self.fail("Error 400 from server: %s" % error)
-        response.raise_for_status()
-
         results = response.json()['results']
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['id'], 'datamart.test.basic')
@@ -102,18 +121,17 @@ class TestSearch(unittest.TestCase):
         )
 
 
-class TestDataSearch(unittest.TestCase):
+class TestDataSearch(DatamartTest):
     def test_basic_join(self):
         query = {'keywords': ['people']}
 
-        response = requests.post(
-            os.environ['QUERY_HOST'] + '/search',
+        response = self.datamart_post(
+            '/search',
             files={
                 'query': json.dumps(query).encode('utf-8'),
                 'data': basic_aug_data.encode('utf-8'),
             },
         )
-        response.raise_for_status()
         results = response.json()['results']
         assert_json(
             results,
@@ -133,13 +151,12 @@ class TestDataSearch(unittest.TestCase):
         )
 
     def test_basic_join_only_data(self):
-        response = requests.post(
-            os.environ['QUERY_HOST'] + '/search',
+        response = self.datamart_post(
+            '/search',
             files={
                 'data': basic_aug_data.encode('utf-8'),
             },
         )
-        response.raise_for_status()
         results = response.json()['results']
         assert_json(
             results,
@@ -161,14 +178,13 @@ class TestDataSearch(unittest.TestCase):
     def test_geo_union(self):
         query = {'keywords': ['places']}
 
-        response = requests.post(
-            os.environ['QUERY_HOST'] + '/search',
+        response = self.datamart_post(
+            '/search',
             files={
                 'query': json.dumps(query).encode('utf-8'),
                 'data': geo_aug_data.encode('utf-8'),
             },
         )
-        response.raise_for_status()
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
         assert_json(
@@ -189,13 +205,12 @@ class TestDataSearch(unittest.TestCase):
         )
 
     def test_geo_union_only_data(self):
-        response = requests.post(
-            os.environ['QUERY_HOST'] + '/search',
+        response = self.datamart_post(
+            '/search',
             files={
                 'data': geo_aug_data.encode('utf-8'),
             },
         )
-        response.raise_for_status()
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
         assert_json(
@@ -216,12 +231,11 @@ class TestDataSearch(unittest.TestCase):
         )
 
 
-class TestAugment(unittest.TestCase):
+class TestAugment(DatamartTest):
     def test_basic_join(self):
-        meta = requests.get(
-            os.environ['QUERY_HOST'] + '/metadata/' + 'datamart.test.basic'
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic'
         )
-        meta.raise_for_status()
         meta = meta.json()
 
         task = {
@@ -236,14 +250,13 @@ class TestAugment(unittest.TestCase):
             }
         }
 
-        response = requests.post(
-            os.environ['QUERY_HOST'] + '/augment',
+        response = self.datamart_post(
+            '/augment',
             files={
                 'task': json.dumps(task).encode('utf-8'),
                 'data': basic_aug_data.encode('utf-8'),
             },
         )
-        response.raise_for_status()
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
