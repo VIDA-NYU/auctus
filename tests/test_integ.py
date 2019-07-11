@@ -419,7 +419,3 @@ geo_aug_data = (
     '40.695933,-73.986665,place108\n'
     '40.692827,-73.988438,place109\n'
 )
-
-
-if __name__ == '__main__':
-    unittest.main()
