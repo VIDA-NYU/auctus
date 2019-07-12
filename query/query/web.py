@@ -299,6 +299,8 @@ class Download(CorsHandler, GracefulHandler, BaseDownload, ProfilePostedData):
             task = self.get_body_argument('task', None)
             if task is None and 'task' in self.request.files:
                 task = self.request.files['task'][0].body.decode('utf-8')
+            if task is not None:
+                task = json.loads(task)
             data = self.get_body_argument('data', None)
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
@@ -316,8 +318,6 @@ class Download(CorsHandler, GracefulHandler, BaseDownload, ProfilePostedData):
                 "Either use multipart/form-data to send the 'data' file and "
                 "'task' JSON, or use application/json to send 'task' alone",
             )
-
-        task = json.loads(task)
 
         # materialize augmentation data
         metadata = task['metadata']
