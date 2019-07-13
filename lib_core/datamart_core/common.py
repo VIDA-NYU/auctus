@@ -110,11 +110,17 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
         common_dataset_metadata['dataset_description'] = \
             metadata['description']
 
+    column_name_to_index = dict()
+
     # 'datamart_columns' index
+    column_index = -1
     for column in metadata['columns']:
+        column_index += 1
         column_metadata = dict()
         column_metadata.update(common_dataset_metadata)
         column_metadata.update(column)
+        column_metadata['index'] = column_index
+        column_name_to_index[column_metadata['name']] = column_index
         if 'coverage' in column_metadata:
             for i in range(len(column_metadata['coverage'])):
                 column_metadata['coverage'][i]['gte'] = \
@@ -133,12 +139,20 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             spatial_coverage_metadata = dict()
             spatial_coverage_metadata.update(common_dataset_metadata)
             spatial_coverage_metadata.update(spatial_coverage)
+            spatial_coverage_metadata['name'] = ' , '.join([
+                spatial_coverage_metadata['lat'],
+                spatial_coverage_metadata['lon']
+            ])
+            spatial_coverage_metadata['lat_index'] = \
+                column_name_to_index[spatial_coverage_metadata['lat']]
+            spatial_coverage_metadata['lon_index'] = \
+                column_name_to_index[spatial_coverage_metadata['lon']]
             for i in range(len(spatial_coverage_metadata['ranges'])):
-                spatial_coverage_metadata['ranges'][i]['min_long'] = \
+                spatial_coverage_metadata['ranges'][i]['min_lon'] = \
                     spatial_coverage_metadata['ranges'][i]['range']['coordinates'][0][0]
                 spatial_coverage_metadata['ranges'][i]['max_lat'] = \
                     spatial_coverage_metadata['ranges'][i]['range']['coordinates'][0][1]
-                spatial_coverage_metadata['ranges'][i]['max_long'] = \
+                spatial_coverage_metadata['ranges'][i]['max_lon'] = \
                     spatial_coverage_metadata['ranges'][i]['range']['coordinates'][1][0]
                 spatial_coverage_metadata['ranges'][i]['min_lat'] = \
                     spatial_coverage_metadata['ranges'][i]['range']['coordinates'][1][1]

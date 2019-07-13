@@ -142,16 +142,18 @@ class Search(CorsHandler, GracefulHandler, ProfilePostedData):
                 return self.send_error_json(400, e.args[0])
 
         # parameter: query
-        query_args = list()
+        query_args_main = list()
+        query_args_sup = list()
         tabular_variables = list()
         if query:
             try:
-                query_args, tabular_variables = parse_query(query)
+                query_args_main, query_args_sup, tabular_variables = \
+                    parse_query(query)
             except ClientError as e:
                 return self.send_error_json(400, e.args[0])
 
         # At least one of them must be provided
-        if not query_args and not data_profile:
+        if not query_args_main and not data_profile:
             return self.send_error_json(
                 400,
                 "At least one of the input parameters must be provided.",
@@ -163,7 +165,7 @@ class Search(CorsHandler, GracefulHandler, ProfilePostedData):
                 body={
                     'query': {
                         'bool': {
-                            'must': query_args,
+                            'must': query_args_main,
                         },
                     },
                 },
@@ -191,9 +193,11 @@ class Search(CorsHandler, GracefulHandler, ProfilePostedData):
                 get_augmentation_search_results(
                     self.application.elasticsearch,
                     data_profile,
-                    query_args,
+                    query_args_main,
+                    query_args_sup,
                     tabular_variables,
-                    SCORE_THRESHOLD
+                    SCORE_THRESHOLD,
+                    union=False
                 )
             )
 
@@ -335,7 +339,8 @@ class Download(CorsHandler, GracefulHandler, BaseDownload, ProfilePostedData):
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
                 data_profile=data_profile,
-                query_args=None,
+                query_args_main=None,
+                query_args_sup=None,
                 tabular_variables=None,
                 score_threshold=SCORE_THRESHOLD,
                 dataset_id=task['id'],
@@ -433,7 +438,8 @@ class Augment(CorsHandler, GracefulHandler, ProfilePostedData):
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
                 data_profile=data_profile,
-                query_args=None,
+                query_args_main=None,
+                query_args_sup=None,
                 tabular_variables=None,
                 score_threshold=SCORE_THRESHOLD,
                 dataset_id=task['id'],

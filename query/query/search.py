@@ -26,12 +26,11 @@ class ClientError(ValueError):
     """
 
 
-def parse_query(query_json):
-    """Parses a Datamart query, turning it into an Elasticsearch query.
+def parse_keyword_query_main_index(query_json):
+    """Parses a DataMart keyword query, turning it into an
+    Elasticsearch query over 'datamart' index.
     """
-    query_args = list()
 
-    # keywords
     keywords_query_all = list()
     if 'keywords' in query_json and query_json['keywords']:
         if not isinstance(query_json['keywords'], list):
@@ -82,8 +81,74 @@ def parse_query(query_json):
             }
         })
 
-    if keywords_query_all:
-        query_args.append(keywords_query_all)
+    return keywords_query_all
+
+
+def parse_keyword_query_sup_index(query_json):
+    """Parses a DataMart keyword query, turning it into an
+    Elasticsearch query over 'datamart_column' and
+    'datamart_spatial_coverage' indices.
+    """
+
+    keywords_query = list()
+    if 'keywords' in query_json and query_json['keywords']:
+        if not isinstance(query_json['keywords'], list):
+            raise ClientError("'keywords' must be an array")
+        for name in query_json['keywords']:
+            # dataset description
+            keywords_query.append({
+                'filter': {
+                    'match': {
+                        'dataset_description': {
+                            'query': name,
+                            'operator': 'and'
+                        }
+                    }
+                },
+                'weight': 10
+            })
+            # dataset name
+            keywords_query.append({
+                'filter': {
+                    'match': {
+                        'dataset_name': {
+                            'query': name,
+                            'operator': 'and'
+                        }
+                    }
+                },
+                'weight': 10
+            })
+            # column name
+            keywords_query.append({
+                'filter': {
+                    'match': {
+                        'name': {
+                            'query': name,
+                            'operator': 'and'
+                        }
+                    }
+                },
+                'weight': 10
+            })
+
+    return keywords_query
+
+
+def parse_query(query_json):
+    """Parses a DataMart query, turning it into an Elasticsearch query
+    over 'datamart' index as well as the supplementary indices
+    ('datamart_columns' and 'datamart_spatial_coverage').
+    """
+
+    query_args_main = list()
+
+    # keywords
+    keywords_query_main = parse_keyword_query_main_index(query_json)
+    query_args_sup = parse_keyword_query_sup_index(query_json)
+
+    if keywords_query_main:
+        query_args_main.append(keywords_query_main)
 
     # tabular_variables
     tabular_variables = []
@@ -96,13 +161,20 @@ def parse_query(query_json):
             tabular_variables=tabular_variables
         )
 
+    # TODO: for now, temporal and geospatial variables are ignored
+    #   for 'datamart_columns' and 'datamart_spatial_coverage' indices,
+    #   since we do not have information about a dataset in these indices
     if variables_query:
-        query_args.append(variables_query)
+        query_args_main.append(variables_query)
 
-    return query_args, list(set(tabular_variables))
+    return query_args_main, query_args_sup, list(set(tabular_variables))
 
 
 def parse_query_variables(data, tabular_variables=None):
+    """Parses the variables of a DataMart query, turning it into an
+    Elasticsearch query over 'datamart' index
+    """
+
     output = list()
 
     if not data:
@@ -232,7 +304,8 @@ def parse_query_variables(data, tabular_variables=None):
     return {}
 
 
-def get_augmentation_search_results(es, data_profile, query_args,
+def get_augmentation_search_results(es, data_profile,
+                                    query_args_main, query_args_sup,
                                     tabular_variables, score_threshold,
                                     dataset_id=None, join=True, union=True):
     join_results = []
@@ -245,7 +318,7 @@ def get_augmentation_search_results(es, data_profile, query_args,
             es=es,
             data_profile=data_profile,
             dataset_id=dataset_id,
-            query_args=query_args,
+            query_args=query_args_sup,
             tabular_variables=tabular_variables
         )
         logger.info("Found %d join results in %.2fs",
@@ -257,7 +330,7 @@ def get_augmentation_search_results(es, data_profile, query_args,
             es=es,
             data_profile=data_profile,
             dataset_id=dataset_id,
-            query_args=query_args,
+            query_args=query_args_main,
             tabular_variables=tabular_variables
         )
         logger.info("Found %d union results in %.2fs",
@@ -287,7 +360,7 @@ def get_augmentation_search_results(es, data_profile, query_args,
         results,
         key=lambda item: item['score'],
         reverse=True
-    )
+    )[:50] # top-50
 
 
 def get_profile_data(filepath, metadata=None):

@@ -56,6 +56,8 @@ class Coordinator(object):
                                             'properties': {
                                                 'name': {
                                                     'type': 'text',
+                                                    # the following is needed for
+                                                    # the fuzzy query in union search
                                                     'fields': {
                                                         'raw': {
                                                             'type': 'keyword'
@@ -106,6 +108,7 @@ class Coordinator(object):
                             },
                         },
                     )
+                if not es.indices.exists('datamart_columns'):
                     # 'datamart_columns' index: column-oriented
                     logger.info("Creating 'datamart_columns' index in Elasticsearch")
                     es.indices.create(
@@ -116,11 +119,16 @@ class Coordinator(object):
                                     'properties': {
                                         'name': {
                                             'type': 'text',
+                                            # the following is needed for
+                                            # the fuzzy query for numerical attributes
                                             'fields': {
                                                 'raw': {
                                                     'type': 'keyword'
                                                 }
                                             }
+                                        },
+                                        'index': {
+                                            'type': 'integer'
                                         },
                                         'dataset_id': {
                                             'type': 'text'
@@ -157,6 +165,7 @@ class Coordinator(object):
                             }
                         }
                     )
+                if not es.indices.exists('datamart_spatial_coverage'):
                     # 'datamart_spatial_coverage' index: spatial-oriented
                     logger.info("Creating 'datamart_spatial_coverage' index in Elasticsearch")
                     es.indices.create(
@@ -165,11 +174,20 @@ class Coordinator(object):
                             'mappings': {
                                 '_doc': {
                                     'properties': {
+                                        'name': {
+                                            'type': 'text'
+                                        },
                                         'lat': {
                                             'type': 'text'
                                         },
                                         'lon': {
                                             'type': 'text'
+                                        },
+                                        'lat_index': {
+                                            'type': 'integer'
+                                        },
+                                        'lon_index': {
+                                            'type': 'integer'
                                         },
                                         'dataset_id': {
                                             'type': 'text'
