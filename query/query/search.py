@@ -336,8 +336,16 @@ def get_augmentation_search_results(es, data_profile,
         logger.info("Found %d union results in %.2fs",
                     len(union_results), time.perf_counter() - start)
 
-    results = list(zip(join_results, union_results))
-    return [elt for sublist in results for elt in sublist][:50] # top-50
+    min_size = min(len(join_results), len(union_results))
+    results = list(zip(join_results[:min_size], union_results[:min_size]))
+    results = [elt for sublist in results for elt in sublist]
+
+    if len(join_results) > min_size:
+        results += join_results[min_size:]
+    if len(union_results) > min_size:
+        results += union_results[min_size:]
+
+    return results[:50] # top-50
 
 
 def get_profile_data(filepath, metadata=None):

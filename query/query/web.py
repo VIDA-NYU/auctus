@@ -184,7 +184,9 @@ class Search(CorsHandler, GracefulHandler, ProfilePostedData):
                     augmentation={
                         'type': 'none',
                         'left_columns': [],
-                        'right_columns': []
+                        'left_columns_names': [],
+                        'right_columns': [],
+                        'right_columns_names': []
                     }
                 ))
             return self.send_json(results)

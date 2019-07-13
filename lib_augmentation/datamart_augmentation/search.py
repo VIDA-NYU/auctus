@@ -615,6 +615,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
         left_columns = []
         right_columns = []
         left_columns_names = []
+        right_columns_names = []
         for att_1, att_2, sim, es_score in column_pairs[dt]:
             if dataset_id:
                 left_columns.append(
@@ -628,6 +629,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
             right_columns.append(
                 get_column_identifiers(es, [att_2], dataset_id=dt)
             )
+            right_columns_names.append([att_2])
         results.append(dict(
             id=dt,
             score=score,
@@ -637,7 +639,8 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 'type': 'union',
                 'left_columns': left_columns,
                 'right_columns': right_columns,
-                'left_columns_names': left_columns_names
+                'left_columns_names': left_columns_names,
+                'right_columns_names': right_columns_names
             }
         ))
 
