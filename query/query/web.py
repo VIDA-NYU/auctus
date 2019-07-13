@@ -196,8 +196,7 @@ class Search(CorsHandler, GracefulHandler, ProfilePostedData):
                     query_args_main,
                     query_args_sup,
                     tabular_variables,
-                    SCORE_THRESHOLD,
-                    union=False
+                    SCORE_THRESHOLD
                 )
             )
 

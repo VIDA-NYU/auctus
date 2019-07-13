@@ -336,31 +336,8 @@ def get_augmentation_search_results(es, data_profile,
         logger.info("Found %d union results in %.2fs",
                     len(union_results), time.perf_counter() - start)
 
-    results = []
-    for r in join_results:
-        if r['score'] < score_threshold:
-            continue
-        results.append(dict(
-            id=r['id'],
-            score=r['score'],
-            metadata=r['metadata'],
-            augmentation=r['augmentation'],
-        ))
-    for r in union_results:
-        if r['score'] < score_threshold:
-            continue
-        results.append(dict(
-            id=r['id'],
-            score=r['score'],
-            metadata=r['metadata'],
-            augmentation=r['augmentation'],
-        ))
-
-    return sorted(
-        results,
-        key=lambda item: item['score'],
-        reverse=True
-    )[:50] # top-50
+    results = list(zip(join_results, union_results))
+    return [elt for sublist in results for elt in sublist][:50] # top-50
 
 
 def get_profile_data(filepath, metadata=None):
