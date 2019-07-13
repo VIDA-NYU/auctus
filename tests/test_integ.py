@@ -114,6 +114,8 @@ class TestSearch(DatamartTest):
                     'type': 'none',
                     'left_columns': [],
                     'right_columns': [],
+                    'left_columns_names': [],
+                    'right_columns_names': []
                 },
                 'score': lambda n: isinstance(n, float),
                 'metadata': basic_metadata
