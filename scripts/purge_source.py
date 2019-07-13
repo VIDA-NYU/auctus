@@ -3,6 +3,8 @@ import elasticsearch
 import os
 import sys
 
+from datamart_core.common import delete_dataset_from_index
+
 
 SIZE = 10000
 
@@ -24,7 +26,7 @@ def clear(identifier):
             size=SIZE,
         )['hits']['hits']
         for h in hits:
-            es.delete('datamart', '_doc', h['_id'])
+            delete_dataset_from_index(es, h['_id'])
         if len(hits) != SIZE:
             break
 

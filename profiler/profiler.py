@@ -9,7 +9,8 @@ import prometheus_client
 import time
 import xlrd
 
-from datamart_core.common import log_future, json2msg, msg2json
+from datamart_core.common import add_dataset_to_index, \
+    delete_dataset_from_index, log_future, json2msg, msg2json
 from datamart_core.materialize import get_dataset
 from datamart_materialize.excel import xls_to_csv
 from datamart_profiler import process_dataset
@@ -136,16 +137,13 @@ class Profiler(object):
             try:
                 try:
                     metadata = future.result()
+                    # Delete dataset if already exists in index
+                    delete_dataset_from_index(self.es, dataset_id)
                     # Insert results in Elasticsearch
                     body = dict(metadata,
                                 date=datetime.utcnow().isoformat() + 'Z',
                                 version=os.environ['DATAMART_VERSION'])
-                    self.es.index(
-                        'datamart',
-                        '_doc',
-                        body,
-                        id=dataset_id,
-                    )
+                    add_dataset_to_index(self.es, dataset_id, body)
                 except Exception as e:
                     if isinstance(e, elasticsearch.RequestError):
                         # This is a problem with our computed metadata
