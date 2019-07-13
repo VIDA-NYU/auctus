@@ -236,6 +236,7 @@ class TestDownload(DatamartTest):
         """Download datasets via GET /download/{dataset_id}"""
         # Basic dataset, materialized via direct_url
         response = self.datamart_get('/download/' + 'datamart.test.basic',
+                                     # format defaults to csv
                                      allow_redirects=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
@@ -268,6 +269,7 @@ class TestDownload(DatamartTest):
                          {'datasetDoc.json', 'tables/learningData.csv'})
 
         response = self.datamart_get('/download/' + 'datamart.test.geo',
+                                     # format defaults to csv
                                      allow_redirects=False)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
@@ -301,6 +303,7 @@ class TestDownload(DatamartTest):
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
+            params={'format': 'csv'},
             json={
                 'id': 'datamart.test.basic',
                 'score': 1.0,
@@ -319,6 +322,7 @@ class TestDownload(DatamartTest):
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
+            # format defaults to csv
             files={'task': json.dumps(
                 {
                     'id': 'datamart.test.geo',

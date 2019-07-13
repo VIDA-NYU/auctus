@@ -291,7 +291,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload, ProfilePostedData):
 
         task = None
         data = None
-        output_format = 'd3m'
+        output_format = self.get_query_argument('format', 'csv')
         if type_.startswith('application/json'):
             task = self.get_json()
         elif (type_.startswith('multipart/form-data') or
