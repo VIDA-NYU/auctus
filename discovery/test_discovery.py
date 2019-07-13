@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import logging
 import os
@@ -14,11 +15,16 @@ class TestDiscoverer(Discoverer):
     """Discovery plugin for the test suite.
     """
     def main_loop(self):
+        # Put this one on disk
+        with self.write_to_shared_storage('geo') as dirname:
+            shutil.copy2('geo.csv', os.path.join(dirname, 'main.csv'))
         self.record_dataset(
-            dict(direct_url='http://test_discoverer:7000/geo.csv'),
+            dict(),
             {'description': "Another simple CSV with places"},
             dataset_id='geo',
         )
+
+        # Use URL for this one
         self.record_dataset(
             dict(direct_url='http://test_discoverer:7000/basic.csv'),
             {'description': "This is a very simple CSV with people"},

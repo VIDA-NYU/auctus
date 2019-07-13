@@ -400,7 +400,6 @@ geo_metadata = {
         }
     ],
     "materialize": {
-        "direct_url": "http://test_discoverer:7000/geo.csv",
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
