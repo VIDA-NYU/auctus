@@ -23,7 +23,11 @@ PROM_DOWNLOAD = prometheus_client.Histogram(
 
 @contextlib.contextmanager
 def get_dataset(metadata, dataset_id, format='csv'):
+    if not format:
+        raise ValueError
+
     logger.info("Getting dataset %r", dataset_id)
+
     shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
     if format == 'csv' and os.path.exists(shared):
         # Read directly from stored file
@@ -31,7 +35,9 @@ def get_dataset(metadata, dataset_id, format='csv'):
         yield os.path.join(shared, 'main.csv')
         return
 
-    cache_path = '/dataset_cache/' + encode_dataset_id(dataset_id)
+    cache_path = (
+        '/dataset_cache/' + encode_dataset_id(dataset_id) + '_' + format
+    )
 
     def create():
         if os.path.exists(shared):
