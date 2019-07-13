@@ -231,6 +231,123 @@ class TestDataSearch(DatamartTest):
         )
 
 
+class TestDownload(DatamartTest):
+    def test_get_id(self):
+        """Download datasets via GET /download/{dataset_id}"""
+        # Basic dataset, materialized via direct_url
+        response = self.datamart_get('/download/' + 'datamart.test.basic',
+                                     allow_redirects=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers['Location'],
+                         'http://test_discoverer:7000/basic.csv')
+
+        response = self.datamart_get('/download/' + 'datamart.test.basic',
+                                     params={'format': 'csv'},
+                                     allow_redirects=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers['Location'],
+                         'http://test_discoverer:7000/basic.csv')
+
+        response = self.datamart_get('/download/' + 'datamart.test.basic',
+                                     params={'format': 'd3m'},
+                                     allow_redirects=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        self.assertEqual(set(zip_.namelist()),
+                         {'datasetDoc.json', 'tables/learningData.csv'})
+
+        # Geo dataset, materialized via /datasets storage
+        response = self.datamart_get('/download/' + 'datamart.test.basic',
+                                     params={'format': 'd3m'},
+                                     allow_redirects=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        self.assertEqual(set(zip_.namelist()),
+                         {'datasetDoc.json', 'tables/learningData.csv'})
+
+        response = self.datamart_get('/download/' + 'datamart.test.geo',
+                                     allow_redirects=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'],
+                         'application/octet-stream')
+        self.assertTrue(response.content.startswith(b'id,lat,long\n'))
+
+    def test_post(self):
+        """Download datasets via POST /download"""
+        # Basic dataset, materialized via direct_url
+        basic_meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic'
+        )
+        basic_meta = basic_meta.json()
+
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
+            params={'format': 'd3m'},
+            files={'task': json.dumps(
+                {
+                    'id': 'datamart.test.basic',
+                    'score': 1.0,
+                    'metadata': basic_meta
+                }
+            ).encode('utf-8')},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        self.assertEqual(set(zip_.namelist()),
+                         {'datasetDoc.json', 'tables/learningData.csv'})
+
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
+            json={
+                'id': 'datamart.test.basic',
+                'score': 1.0,
+                'metadata': basic_meta
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers['Location'],
+                         'http://test_discoverer:7000/basic.csv')
+
+        # Geo dataset, materialized via /datasets storage
+        geo_meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.geo'
+        )
+        geo_meta = geo_meta.json()
+
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
+            files={'task': json.dumps(
+                {
+                    'id': 'datamart.test.geo',
+                    'score': 1.0,
+                    'metadata': geo_meta
+                }
+            ).encode('utf-8')},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'],
+                         'application/octet-stream')
+        self.assertTrue(response.content.startswith(b'id,lat,long\n'))
+
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
+            params={'format': 'd3m'},
+            json={
+                'id': 'datamart.test.geo',
+                'score': 1.0,
+                'metadata': geo_meta
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        self.assertEqual(set(zip_.namelist()),
+                         {'datasetDoc.json', 'tables/learningData.csv'})
+
+
 class TestAugment(DatamartTest):
     def test_basic_join(self):
         meta = self.datamart_get(
