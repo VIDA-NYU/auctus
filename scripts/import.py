@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import elasticsearch
 import json
+import logging
 import os
 import sys
 
@@ -16,4 +17,6 @@ def import_json(dataset_id, fp):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     import_json(sys.argv[1], sys.stdin)

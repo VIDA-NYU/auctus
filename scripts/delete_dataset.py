@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import elasticsearch
+import logging
 import os
 import sys
 
@@ -18,4 +19,6 @@ def delete(datasets):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     delete(sys.argv[1:])

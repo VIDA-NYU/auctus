@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import elasticsearch
+import logging
 import json
 import os
 
@@ -32,4 +33,6 @@ def export():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     export()

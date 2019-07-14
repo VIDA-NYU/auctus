@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import logging
+
 import aio_pika
 import asyncio
 import json
@@ -36,6 +38,8 @@ async def import_all(folder):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(loop.create_task(
         import_all(sys.argv[1])

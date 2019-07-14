@@ -3,6 +3,7 @@ import aio_pika
 import asyncio
 import elasticsearch
 import json
+import logging
 import os
 import sys
 import time
@@ -45,6 +46,8 @@ async def import_all(folder):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(loop.create_task(
         import_all(sys.argv[1])

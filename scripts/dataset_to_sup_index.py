@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import elasticsearch
+import logging
 import os
 
 from datamart_core.common import add_dataset_to_sup_index
@@ -43,4 +44,6 @@ def create_indices():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     create_indices()
