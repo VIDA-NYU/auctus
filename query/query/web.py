@@ -187,7 +187,9 @@ class Search(CorsHandler, GracefulHandler, ProfilePostedData):
                         'left_columns_names': [],
                         'right_columns': [],
                         'right_columns_names': []
-                    }
+                    },
+                    supplied_id=None,
+                    supplied_resource_id=None
                 ))
             return self.send_json(results)
         else:

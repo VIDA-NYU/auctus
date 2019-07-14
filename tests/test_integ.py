@@ -118,7 +118,9 @@ class TestSearch(DatamartTest):
                     'right_columns_names': []
                 },
                 'score': lambda n: isinstance(n, float),
-                'metadata': basic_metadata
+                'metadata': basic_metadata,
+                'supplied_id': None,
+                'supplied_resource_id': None
             },
         )
 
@@ -148,7 +150,9 @@ class TestDataSearch(DatamartTest):
                         'right_columns': [[2]],
                         'right_columns_names': [['number']],
                         'type': 'join'
-                    }
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
                 }
             ]
         )
@@ -174,7 +178,9 @@ class TestDataSearch(DatamartTest):
                         'right_columns': [[2]],
                         'right_columns_names': [['number']],
                         'type': 'join'
-                    }
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
                 }
             ]
         )
@@ -204,7 +210,9 @@ class TestDataSearch(DatamartTest):
                         'right_columns': [[1], [2], [0]],
                         'right_columns_names': [['lat'], ['long'], ['id']],
                         'type': 'union'
-                    }
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
                 }
             ]
         )
@@ -231,7 +239,9 @@ class TestDataSearch(DatamartTest):
                         'right_columns': [[1], [2], [0]],
                         'right_columns_names': [['lat'], ['long'], ['id']],
                         'type': 'union'
-                    }
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
                 }
             ]
         )
@@ -375,7 +385,9 @@ class TestAugment(DatamartTest):
                 'right_columns': [[2]],
                 'right_columns_names': [['number']],
                 'type': 'join'
-            }
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
         }
 
         response = self.datamart_post(

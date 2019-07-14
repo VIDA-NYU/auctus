@@ -345,6 +345,10 @@ def get_augmentation_search_results(es, data_profile,
     if len(union_results) > min_size:
         results += union_results[min_size:]
 
+    for result in results:
+        result['supplied_id'] = None
+        result['supplied_resource_id'] = None
+
     return results[:50] # top-50
 
 
