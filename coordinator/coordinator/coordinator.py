@@ -41,6 +41,7 @@ class Coordinator(object):
         for i in itertools.count():
             try:
                 if not es.indices.exists('datamart'):
+                    # 'datamart' index: dataset-oriented
                     logger.info("Creating 'datamart' index in Elasticsearch")
                     es.indices.create(
                         'datamart',
@@ -55,6 +56,8 @@ class Coordinator(object):
                                             'properties': {
                                                 'name': {
                                                     'type': 'text',
+                                                    # the following is needed for
+                                                    # the fuzzy query in union search
                                                     'fields': {
                                                         'raw': {
                                                             'type': 'keyword'
@@ -104,6 +107,124 @@ class Coordinator(object):
                                 },
                             },
                         },
+                    )
+                if not es.indices.exists('datamart_columns'):
+                    # 'datamart_columns' index: column-oriented
+                    logger.info("Creating 'datamart_columns' index in Elasticsearch")
+                    es.indices.create(
+                        'datamart_columns',
+                        {
+                            'mappings': {
+                                '_doc': {
+                                    'properties': {
+                                        'name': {
+                                            'type': 'text',
+                                            # the following is needed for
+                                            # the fuzzy query for numerical attributes
+                                            'fields': {
+                                                'raw': {
+                                                    'type': 'keyword'
+                                                }
+                                            }
+                                        },
+                                        'index': {
+                                            'type': 'integer'
+                                        },
+                                        'dataset_id': {
+                                            'type': 'text'
+                                        },
+                                        'dataset_name': {
+                                            'type': 'text'
+                                        },
+                                        'dataset_description': {
+                                            'type': 'text'
+                                        },
+                                        'semantic_types': {
+                                            'type': 'keyword',
+                                            'index': True
+                                        },
+                                        'coverage': {
+                                            'type': 'nested',
+                                            'properties': {
+                                                'range': {
+                                                    'type': 'double_range'
+                                                },
+                                                # the following is needed so we can access this information
+                                                #   inside the script, and this is not available for type
+                                                #   'double_range'
+                                                'gte': {
+                                                    'type': 'double'
+                                                },
+                                                'lte': {
+                                                    'type': 'double'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    )
+                if not es.indices.exists('datamart_spatial_coverage'):
+                    # 'datamart_spatial_coverage' index: spatial-oriented
+                    logger.info("Creating 'datamart_spatial_coverage' index in Elasticsearch")
+                    es.indices.create(
+                        'datamart_spatial_coverage',
+                        {
+                            'mappings': {
+                                '_doc': {
+                                    'properties': {
+                                        'name': {
+                                            'type': 'text'
+                                        },
+                                        'lat': {
+                                            'type': 'text'
+                                        },
+                                        'lon': {
+                                            'type': 'text'
+                                        },
+                                        'lat_index': {
+                                            'type': 'integer'
+                                        },
+                                        'lon_index': {
+                                            'type': 'integer'
+                                        },
+                                        'dataset_id': {
+                                            'type': 'text'
+                                        },
+                                        'dataset_name': {
+                                            'type': 'text'
+                                        },
+                                        'dataset_description': {
+                                            'type': 'text'
+                                        },
+                                        'ranges': {
+                                            'type': 'nested',
+                                            'properties': {
+                                                'range': {
+                                                    'type': 'geo_shape'
+                                                },
+                                                # the following is needed so we can access this information
+                                                #   inside the script, and this is not available for type
+                                                #   'geo_shape'
+                                                'min_lon': {
+                                                    'type': 'double'
+                                                },
+                                                'max_lat': {
+                                                    'type': 'double'
+                                                },
+                                                'max_lon': {
+                                                    'type': 'double'
+                                                },
+                                                'min_lat': {
+                                                    'type': 'double'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     )
             except Exception:
                 logger.warning("Can't connect to Elasticsearch, retrying...")

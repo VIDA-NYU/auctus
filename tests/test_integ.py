@@ -114,6 +114,8 @@ class TestSearch(DatamartTest):
                     'type': 'none',
                     'left_columns': [],
                     'right_columns': [],
+                    'left_columns_names': [],
+                    'right_columns_names': []
                 },
                 'score': lambda n: isinstance(n, float),
                 'metadata': basic_metadata
@@ -144,6 +146,7 @@ class TestDataSearch(DatamartTest):
                         'left_columns': [[0]],
                         'left_columns_names': [['number']],
                         'right_columns': [[2]],
+                        'right_columns_names': [['number']],
                         'type': 'join'
                     }
                 }
@@ -169,6 +172,7 @@ class TestDataSearch(DatamartTest):
                         'left_columns': [[0]],
                         'left_columns_names': [['number']],
                         'right_columns': [[2]],
+                        'right_columns_names': [['number']],
                         'type': 'join'
                     }
                 }
@@ -198,6 +202,7 @@ class TestDataSearch(DatamartTest):
                         'left_columns': [[0], [1], [2]],
                         'left_columns_names': [['lat'], ['long'], ['id']],
                         'right_columns': [[1], [2], [0]],
+                        'right_columns_names': [['lat'], ['long'], ['id']],
                         'type': 'union'
                     }
                 }
@@ -224,6 +229,7 @@ class TestDataSearch(DatamartTest):
                         'left_columns': [[0], [1], [2]],
                         'left_columns_names': [['lat'], ['long'], ['id']],
                         'right_columns': [[1], [2], [0]],
+                        'right_columns_names': [['lat'], ['long'], ['id']],
                         'type': 'union'
                     }
                 }
@@ -367,6 +373,7 @@ class TestAugment(DatamartTest):
                 'left_columns': [[0]],
                 'left_columns_names': [['number']],
                 'right_columns': [[2]],
+                'right_columns_names': [['number']],
                 'type': 'join'
             }
         }

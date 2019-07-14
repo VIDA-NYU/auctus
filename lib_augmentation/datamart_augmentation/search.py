@@ -6,21 +6,7 @@ from .utils import compute_levenshtein_sim
 logger = logging.getLogger(__name__)
 
 PAGINATION_SIZE = 50
-JOIN_SIMILARITY_THRESHOLD = 0.3
-source_filter = {
-    'excludes': [
-        'date',
-        'materialize',
-        'name',
-        'description',
-        'license',
-        'size',
-        'columns.mean',
-        'columns.stddev',
-        'columns.structural_type',
-        'columns.semantic_types'
-    ]
-}
+TOP_K_SIZE = 50
 
 
 def get_column_coverage(data_profile, filter_=()):
@@ -50,15 +36,12 @@ def get_column_coverage(data_profile, filter_=()):
             continue
         if filter_ and column_index not in filter_:
             continue
-        # ignoring 'd3mIndex' for now -- seems useless
+        # ignoring 'd3mIndex'
         if 'd3mIndex' in column_name:
             continue
         if Type.ID in column['semantic_types']:
             type_ = 'semantic_types'
             type_value = Type.ID
-        # elif column['structural_type'] == Type.FLOAT:
-        #     type_ = 'structural_type'
-        #     type_value = column['structural_type']
         elif column['structural_type'] == Type.INTEGER:
             type_ = 'structural_type'
             type_value = column['structural_type']
@@ -84,10 +67,10 @@ def get_column_coverage(data_profile, filter_=()):
                     column_index_mapping[spatial['lon']] not in filter_):
                 continue
             names = (str(column_index_mapping[spatial['lat']]) + ',' +
-                     str(column_index_mapping[spatial['lat']]))
+                     str(column_index_mapping[spatial['lon']]))
             column_coverage[names] = {
                 'type':      'spatial',
-                'type_value': Type.LATITUDE + ', ' + Type.LONGITUDE,
+                'type_value': Type.LATITUDE + ',' + Type.LONGITUDE,
                 'ranges':     []
             }
             for range_ in spatial['ranges']:
@@ -97,258 +80,200 @@ def get_column_coverage(data_profile, filter_=()):
     return column_coverage
 
 
-def get_numerical_coverage_intersections(es, type_, type_value, pivot_column, ranges,
-                                         dataset_id=None, query_args=None):
-    """
-    Retrieve numerical columns that intersect with the input numerical ranges.
-
+def get_numerical_join_search_results(es, type_, type_value, pivot_column, ranges,
+                                      dataset_id=None, query_args=None):
+    """Retrieve numerical join search results that intersect with the input numerical ranges.
     """
 
-    intersections = dict()
-    column_total_coverage = 0
+    filter_query = [{'match': {'%s' % type_: type_value}}]
+    if dataset_id:
+        filter_query.append(
+            {'match': {'dataset_id': dataset_id}}
+        )
+    if type_value != Type.DATE_TIME:
+        filter_query.append(
+            {'fuzzy': {'name.raw': pivot_column}}
+        )
 
+    should_query = list()
+    coverage = sum([range_[1] - range_[0] + 1 for range_ in ranges])
     for range_ in ranges:
-        column_total_coverage += (range_[1] - range_[0] + 1)
-
-        bool_query = {
-            'must': [
-                {
-                    'match': {'columns.%s' % type_: type_value}
-                },
-                {
-                    'nested': {
-                        'path': 'columns.coverage',
+        should_query.append({
+            'nested': {
+                'path': 'coverage',
+                'query': {
+                    'function_score': {
                         'query': {
                             'range': {
-                                'columns.coverage.range': {
+                                'coverage.range': {
                                     'gte': range_[0],
                                     'lte': range_[1],
                                     'relation': 'intersects'
                                 }
                             }
                         },
-                        'inner_hits': {'_source': False, 'size': 100}
-                    }
-                }
-            ]
-        }
-
-        if dataset_id:
-            bool_query['must'].append(
-                {'match': {'_id': dataset_id}}
-            )
-
-        intersection = {
-            'nested': {
-                'path': 'columns',
-                'query': {
-                    'bool': bool_query
-                },
-                'inner_hits': {'_source': False, 'size': 100}
-            }
-        }
-
-        if not query_args:
-            args = intersection
-        else:
-            args = [intersection] + query_args
-        query_obj = {
-            '_source': source_filter,
-            'query': {
-                'bool': {
-                    'must': args,
-                }
-            }
-        }
-
-        # logger.info("Query (numerical): %r", query_obj)
-
-        from_ = 0
-        result = es.search(
-            index='datamart',
-            body=query_obj,
-            from_=from_,
-            size=PAGINATION_SIZE,
-            request_timeout=30
-        )
-
-        size_ = len(result['hits']['hits'])
-
-        while size_ > 0:
-            for hit in result['hits']['hits']:
-
-                dataset_name = hit['_id']
-                score = hit['_score'] if query_args else 1
-                columns = hit['_source']['columns']
-                inner_hits = hit['inner_hits']
-
-                for column_hit in inner_hits['columns']['hits']['hits']:
-                    column_offset = int(column_hit['_nested']['offset'])
-                    column_name = columns[column_offset]['name']
-
-                    # ignoring 'd3mIndex' for now -- seems useless
-                    if 'd3mIndex' in column_name:
-                        continue
-
-                    sim = 1.0
-                    if type_value != Type.DATE_TIME:
-                        sim = compute_levenshtein_sim(
-                            pivot_column.lower(),
-                            column_name.lower()
-                        )
-                        if sim <= JOIN_SIMILARITY_THRESHOLD:
-                            continue
-
-                    name = '%s$$%d' % (dataset_name, column_offset)
-                    if name not in intersections:
-                        intersections[name] = [0, sim, score]
-
-                    # ranges from column
-                    for range_hit in column_hit['inner_hits']['columns.coverage']['hits']['hits']:
-                        # compute intersection
-                        range_offset = int(range_hit['_nested']['_nested']['offset'])
-                        start_result = columns[column_offset]['coverage'][range_offset]['range']['gte']
-                        end_result = columns[column_offset]['coverage'][range_offset]['range']['lte']
-
-                        start = max(start_result, range_[0])
-                        end = min(end_result, range_[1])
-
-                        intersections[name][0] += (end - start + 1)
-
-            # pagination
-            from_ += size_
-            result = es.search(
-                index='datamart',
-                body=query_obj,
-                from_=from_,
-                size=PAGINATION_SIZE,
-                request_timeout=30
-            )
-            size_ = len(result['hits']['hits'])
-
-    return intersections, column_total_coverage
-
-
-def get_spatial_coverage_intersections(es, ranges, dataset_id=None,
-                                       query_args=None):
-    """
-    Retrieve spatial columns that intersect with the input spatial ranges.
-
-    """
-
-    intersections = dict()
-    column_total_coverage = 0
-
-    for range_ in ranges:
-        column_total_coverage += \
-            (range_[1][0] - range_[0][0]) * (range_[0][1] - range_[1][1])
-
-        bool_query = {
-            'filter': {
-                'geo_shape': {
-                    'spatial_coverage.ranges.range': {
-                        'shape': {
-                            'type': 'envelope',
-                            'coordinates': [
-                                [range_[0][0], range_[0][1]],
-                                [range_[1][0], range_[1][1]]
-                            ]
+                        'script_score': {
+                            'script': {
+                                'params': {
+                                    'gte': range_[0],
+                                    'lte': range_[1],
+                                    'coverage': coverage
+                                },
+                                'source': '''
+                                double start = Math.max(params.gte, doc['coverage.gte'].value);
+                                double end = Math.min(params.lte, doc['coverage.lte'].value);
+                                return (end - start + 1) / params.coverage;'''
+                            }
                         },
-                        'relation': 'intersects'
+                        'boost_mode': 'replace'
                     }
-                }
-            }
-        }
-
-        if dataset_id:
-            bool_query['must'] = {
-                'match': {'_id': dataset_id}
-            }
-
-        intersection = {
-            'nested': {
-                'path': 'spatial_coverage.ranges',
-                'query': {
-                    'bool': bool_query
                 },
-                'inner_hits': {'_source': False, 'size': 100}
+                'inner_hits': {
+                    '_source': False,
+                    'size': 100
+                },
+                'score_mode': 'sum'
+            }
+        })
+
+
+    body = {
+        '_source': {
+            'excludes': [
+                'dataset_name',
+                'dataset_description',
+                'coverage',
+                'mean',
+                'stddev',
+                'structural_type',
+                'semantic_types'
+            ]
+        },
+        'query': {
+            'function_score': {
+                'query': {
+                    'bool': {
+                        'filter': filter_query,
+                        'should': should_query,
+                        'minimum_should_match': 1
+                    }
+                },
+                'functions': [] if not query_args else query_args,
+                'score_mode': 'sum',
+                'boost_mode': 'multiply'
             }
         }
+    }
 
-        if not query_args:
-            args = intersection
-        else:
-            args = [intersection] + query_args
-        query_obj = {
-            '_source': source_filter,
-            'query': {
-                'bool': {
-                    'must': args,
-                }
-            }
-        }
+    # logger.info("Query (numerical): %r", body)
 
-        # logger.info("Query (spatial): %r", query_obj)
+    return es.search(
+        index='datamart_columns',
+        body=body,
+        from_=0,
+        size=TOP_K_SIZE
+    )['hits']['hits']
 
-        from_ = 0
-        result = es.search(
-            index='datamart',
-            body=query_obj,
-            from_=from_,
-            size=PAGINATION_SIZE,
-            request_timeout=30
+
+def get_spatial_join_search_results(es, ranges, dataset_id=None,
+                                    query_args=None):
+    """Retrieve spatial join search results that intersect
+    with the input spatial ranges.
+    """
+
+    filter_query = list()
+    if dataset_id:
+        filter_query.append(
+            {'match': {'dataset_id': dataset_id}}
         )
 
-        size_ = len(result['hits']['hits'])
+    should_query = list()
+    coverage = sum([
+        (range_[1][0] - range_[0][0]) * (range_[0][1] - range_[1][1])
+        for range_ in ranges])
+    for range_ in ranges:
+        should_query.append({
+            'nested': {
+                'path': 'ranges',
+                'query': {
+                    'function_score': {
+                        'query': {
+                            'geo_shape': {
+                                'ranges.range': {
+                                    'shape': {
+                                        'type': 'envelope',
+                                        'coordinates': [
+                                            [range_[0][0], range_[0][1]],
+                                            [range_[1][0], range_[1][1]]
+                                        ]
+                                    },
+                                    'relation': 'intersects'
+                                }
+                            }
+                        },
+                        'script_score': {
+                            'script': {
+                                'params': {
+                                    'min_lon': range_[0][0],
+                                    'max_lat': range_[0][1],
+                                    'max_lon': range_[1][0],
+                                    'min_lat': range_[1][1],
+                                    'coverage': coverage
+                                },
+                                'source': '''
+                                double n_min_lon = Math.max(doc['ranges.min_lon'].value, params.min_lon);
+                                double n_max_lat = Math.min(doc['ranges.max_lat'].value, params.max_lat);
+                                double n_max_lon = Math.min(doc['ranges.max_lon'].value, params.max_lon);
+                                double n_min_lat = Math.max(doc['ranges.min_lat'].value, params.min_lat);
+                                return ((n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)) / params.coverage;'''
+                            }
+                        },
+                        'boost_mode': 'replace'
+                    }
+                },
+                'inner_hits': {
+                    '_source': False,
+                    'size': 100
+                },
+                'score_mode': 'sum'
+            }
+        })
 
-        while size_ > 0:
-            for hit in result['hits']['hits']:
+    body = {
+        '_source': {
+            'excludes': [
+                'name',
+                'dataset_name',
+                'dataset_description',
+                'ranges'
+            ]
+        },
+        'query': {
+            'function_score': {
+                'query': {
+                    'bool': {
+                        'filter': filter_query,
+                        'should': should_query,
+                        'minimum_should_match': 1
+                    }
+                },
+                'functions': [] if not query_args else query_args,
+                'score_mode': 'sum',
+                'boost_mode': 'multiply'
+            }
+        }
+    }
 
-                dataset_name = hit['_id']
-                score = hit['_score'] if query_args else 1
-                spatial_coverages = hit['_source']['spatial_coverage']
-                inner_hits = hit['inner_hits']
+    # logger.info("Query (spatial): %r", body)
 
-                for coverage_hit in inner_hits['spatial_coverage.ranges']['hits']['hits']:
-                    spatial_coverage_offset = int(coverage_hit['_nested']['offset'])
-                    lat_index, long_index = get_column_identifiers(
-                        es,
-                        [spatial_coverages[spatial_coverage_offset]['lat'],
-                         spatial_coverages[spatial_coverage_offset]['lon']],
-                        dataset_id=dataset_name
-                    )
-                    spatial_coverage_name = '%s,%s' % (lat_index, long_index)
-                    name = '%s$$%s' % (dataset_name, spatial_coverage_name)
-                    if name not in intersections:
-                        intersections[name] = [0, 1, score]
-
-                    # compute intersection
-                    range_offset = int(coverage_hit['_nested']['_nested']['offset'])
-                    other_ranges = spatial_coverages[spatial_coverage_offset]['ranges']
-                    other_range = other_ranges[range_offset]['range']['coordinates']
-
-                    n_min_long = max(other_range[0][0], range_[0][0])
-                    n_max_lat = min(other_range[0][1], range_[0][1])
-                    n_max_long = max(other_range[1][0], range_[1][0])
-                    n_min_lat = min(other_range[1][1], range_[1][1])
-
-                    intersections[name][0] += (n_max_long - n_min_long) * (n_max_lat - n_min_lat)
-
-            # pagination
-            from_ += size_
-            result = es.search(
-                index='datamart',
-                body=query_obj,
-                from_=from_,
-                size=PAGINATION_SIZE,
-                request_timeout=30
-            )
-            size_ = len(result['hits']['hits'])
-
-    return intersections, column_total_coverage
+    return es.search(
+        index='datamart_spatial_coverage',
+        body=body,
+        from_=0,
+        size=TOP_K_SIZE
+    )['hits']['hits']
 
 
-# TODO: ideally, this should be stored in the index
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
@@ -391,84 +316,51 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
 
     # get the coverage for each column of the input dataset
 
-    intersections = dict()
     column_coverage = get_column_coverage(
         data_profile,
         tabular_variables
     )
 
-    # get coverage intersections
+    # get search results
 
+    search_results = list()
     for column in column_coverage:
         type_ = column_coverage[column]['type']
         type_value = column_coverage[column]['type_value']
         if type_ == 'spatial':
-            intersections_column, column_total_coverage = \
-                get_spatial_coverage_intersections(
-                    es,
-                    column_coverage[column]['ranges'],
-                    dataset_id,
-                    query_args
-                )
+            spatial_results = get_spatial_join_search_results(
+                es,
+                column_coverage[column]['ranges'],
+                dataset_id,
+                query_args
+            )
+            for result in spatial_results:
+                result['companion_column'] = column
+                search_results.append(result)
         else:
-            try:
-                column_name = data_profile['columns'][int(column)]['name']
-            except (IndexError, KeyError):
-                index_1, index_2 = column.split(',')
-                column_name = (data_profile['columns'][int(index_1)]['name'] +
-                               ',' + data_profile['columns'][int(index_2)]['name'])
-            intersections_column, column_total_coverage = \
-                get_numerical_coverage_intersections(
-                    es,
-                    type_,
-                    type_value,
-                    column_name,
-                    column_coverage[column]['ranges'],
-                    dataset_id,
-                    query_args
-                )
+            column_name = data_profile['columns'][int(column)]['name']
+            numerical_results = get_numerical_join_search_results(
+                es,
+                type_,
+                type_value,
+                column_name,
+                column_coverage[column]['ranges'],
+                dataset_id,
+                query_args
+            )
+            for result in numerical_results:
+                result['companion_column'] = column
+                search_results.append(result)
 
-        if not intersections_column:
-            continue
-
-        for name, intersection_data in intersections_column.items():
-            size, sim, score = intersection_data
-            new_score = (size / column_total_coverage) * sim * score
-            if new_score > 0:
-                external_dataset, external_column = name.split('$$')
-                if external_dataset not in intersections:
-                    intersections[external_dataset] = []
-                intersections[external_dataset].append(
-                    (column, external_column, new_score)
-                )
-
-    # get pairs of columns with higher score
-
-    all_pairs = []
-    for dt in intersections:
-        intersections[dt] = sorted(
-            intersections[dt],
-            key=lambda item: item[2],
-            reverse=True
-        )
-
-        seen_1 = set()
-        seen_2 = set()
-        for column, external_column, score in intersections[dt]:
-            if column in seen_1 or external_column in seen_2:
-                continue
-            seen_1.add(column)
-            seen_2.add(external_column)
-            all_pairs.append((column, dt, external_column, score))
-
-    all_pairs = sorted(
-        all_pairs,
-        key=lambda item: item[3],
+    search_results = sorted(
+        search_results,
+        key=lambda item: item['_score'],
         reverse=True
     )
 
     results = []
-    for column, dt, external_column, score in all_pairs:
+    for result in search_results:
+        dt = result['_source']['dataset_id']
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
         # materialize = meta.get('materialize', {})
@@ -477,29 +369,38 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
         left_columns = []
         right_columns = []
         left_columns_names = []
+        right_columns_names = []
         try:
-            left_columns.append([int(column)])
-            left_columns_names.append([data_profile['columns'][int(column)]['name']])
+            left_columns.append([int(result['companion_column'])])
+            left_columns_names.append(
+                [data_profile['columns'][int(result['companion_column'])]['name']]
+            )
         except ValueError:
-            index_1, index_2 = column.split(",")
+            index_1, index_2 = result['companion_column'].split(",")
             left_columns.append([int(index_1), int(index_2)])
             left_columns_names.append([data_profile['columns'][int(index_1)]['name'] +
                                        ', ' + data_profile['columns'][int(index_2)]['name']])
-        try:
-            right_columns.append([int(external_column)])
-        except ValueError:
-            index_1, index_2 = external_column.split(",")
-            right_columns.append([int(index_1), int(index_2)])
+        if 'index' in result['_source']:
+            right_columns.append([result['_source']['index']])
+            right_columns_names.append([result['_source']['name']])
+        else:
+            right_columns.append([
+                result['_source']['lat_index'],
+                result['_source']['lon_index']])
+            right_columns_names.append([
+                result['_source']['lat'],
+                result['_source']['lon']])
         results.append(dict(
             id=dt,
-            score=score,
+            score=result['_score'],
             # discoverer=materialize['identifier'],
             metadata=meta,
             augmentation={
                 'type': 'join',
                 'left_columns': left_columns,
                 'right_columns': right_columns,
-                'left_columns_names': left_columns_names
+                'left_columns_names': left_columns_names,
+                'right_columns_names': right_columns_names
             }
         ))
 
@@ -519,10 +420,10 @@ def get_column_information(data_profile, filter_=()):
         name = column['name']
         if filter_ and column_index not in filter_:
             continue
-        # ignoring 'd3mIndex' for now -- seems useless
+        # ignoring 'd3mIndex'
         if 'd3mIndex' in name:
             continue
-        # ignoring phone numbers for now
+        # ignoring phone numbers
         semantic_types = [
             sem for sem in column['semantic_types']
             if Type.PHONE_NUMBER not in sem
@@ -604,7 +505,20 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
             else:
                 args = [query] + query_args
             query_obj = {
-                '_source': source_filter,
+                '_source': {
+                    'excludes': [
+                        'date',
+                        'materialize',
+                        'name',
+                        'description',
+                        'license',
+                        'size',
+                        'columns.mean',
+                        'columns.stddev',
+                        'columns.structural_type',
+                        'columns.semantic_types'
+                    ]
+                },
                 'query': {
                     'bool': {
                         'must': args,
@@ -675,12 +589,12 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
 
         column_pairs[dataset] = pairs
         scores[dataset] = 0
-        es_score = 1
+        es_score = 0
 
         for i in range(len(column_pairs[dataset])):
             sim = column_pairs[dataset][i][2]
             scores[dataset] += sim
-            es_score = column_pairs[dataset][i][3]
+            es_score = max(es_score, column_pairs[dataset][i][3])
 
         scores[dataset] = (scores[dataset] / n_columns) * es_score
 
@@ -701,6 +615,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
         left_columns = []
         right_columns = []
         left_columns_names = []
+        right_columns_names = []
         for att_1, att_2, sim, es_score in column_pairs[dt]:
             if dataset_id:
                 left_columns.append(
@@ -714,6 +629,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
             right_columns.append(
                 get_column_identifiers(es, [att_2], dataset_id=dt)
             )
+            right_columns_names.append([att_2])
         results.append(dict(
             id=dt,
             score=score,
@@ -723,7 +639,8 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 'type': 'union',
                 'left_columns': left_columns,
                 'right_columns': right_columns,
-                'left_columns_names': left_columns_names
+                'left_columns_names': left_columns_names,
+                'right_columns_names': right_columns_names
             }
         ))
 
