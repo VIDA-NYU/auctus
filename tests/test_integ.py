@@ -437,7 +437,7 @@ def check_ranges(min_long, min_lat, max_long, max_lat):
 
 
 version = os.environ['DATAMART_VERSION']
-assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+)?-g[0-9a-f]{7}$', version)
+assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 
 
 basic_metadata = {
