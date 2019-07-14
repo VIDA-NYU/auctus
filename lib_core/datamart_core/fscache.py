@@ -2,9 +2,22 @@ import contextlib
 import fcntl
 import logging
 import os
+import shutil
+import signal
 
 
 logger = logging.getLogger(__name__)
+
+
+@contextlib.contextmanager
+def timeout_syscall(seconds):
+    original_handler = signal.signal(signal.SIGALRM, lambda *a: None)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, original_handler)
 
 
 class FilesystemLocks(object):
@@ -16,39 +29,61 @@ class FilesystemLocks(object):
     def __init__(self):
         self._locks = {}
 
-    def lock_exclusive(self, filepath):
+    def lock_exclusive(self, filepath, timeout=None):
         filepath = os.path.realpath(filepath)
         if filepath in self._locks:
             raise RuntimeError("Getting lock on already-locked file %r" %
                                filepath)
         fd = os.open(filepath, os.O_RDONLY | os.O_CREAT)
-        self._locks[filepath] = 'ex'
-        fcntl.flock(fd, fcntl.LOCK_EX)
-        logger.debug("Acquired exclusive lock: %r", filepath)
-        return fd, filepath
+        if self._lock_fd(fd, fcntl.LOCK_EX, timeout):
+            self._locks[filepath] = 'ex'
+            logger.debug("Acquired exclusive lock: %r", filepath)
+            return fd, filepath
+        else:
+            logger.debug("Timeout getting exclusive lock: %r", filepath)
+            return None
 
     def unlock_exclusive(self, lock):
         fd, filepath = lock
         assert self._locks.pop(filepath) == 'ex'
-        fcntl.flock(fd, fcntl.LOCK_UN)
+        self._unlock_fd(fd)
         logger.debug("Released exclusive lock: %r", filepath)
 
-    def lock_shared(self, filepath):
+    def lock_shared(self, filepath, timeout=None):
         filepath = os.path.realpath(filepath)
         if filepath in self._locks:
             raise RuntimeError("Getting lock on already-locked file %r" %
                                filepath)
         fd = os.open(filepath, os.O_RDONLY)
-        self._locks[filepath] = 'sh'
-        fcntl.flock(fd, fcntl.LOCK_SH)
-        logger.debug("Acquired shared lock: %r", filepath)
-        return fd, filepath
+        if self._lock_fd(fd, fcntl.LOCK_SH, timeout):
+            self._locks[filepath] = 'sh'
+            logger.debug("Acquired shared lock: %r", filepath)
+            return fd, filepath
+        else:
+            logger.debug("Timeout getting shared lock: %r", filepath)
+            return None
 
     def unlock_shared(self, lock):
         fd, filepath = lock
         assert self._locks.pop(filepath) == 'sh'
-        fcntl.flock(fd, fcntl.LOCK_UN)
+        self._unlock_fd(fd)
         logger.debug("Released shared lock: %r", filepath)
+
+    def _lock_fd(self, fd, lock, timeout):
+        if timeout is None:
+            fcntl.flock(fd, lock)
+        elif timeout == 0:
+            fcntl.flock(fd, lock | fcntl.LOCK_NB)
+        else:
+            with timeout_syscall(timeout):
+                try:
+                    fcntl.flock(fd, lock)
+                except InterruptedError:
+                    return False
+        return True
+
+    def _unlock_fd(self, fd):
+        fcntl.flock(fd, fcntl.LOCK_UN)
 
 
 FilesystemLocks = FilesystemLocks()
@@ -102,5 +137,42 @@ def cache_get_or_set(path, create_function):
 
                 # We can't downgrade to a shared lock, so restart
                 continue
+        finally:
+            FilesystemLocks.unlock_exclusive(lock)
+
+
+def clear_cache(cache_root, should_delete=None):
+    """Function used to safely clear a cache.
+
+    Directory currently locked by other processes will be
+    """
+    if should_delete is None:
+        should_delete = lambda *, fname: True
+
+    files = set(os.listdir(cache_root))
+    files = sorted(
+        f for f in files
+        if not (f.endswith('.lock') and f[:-5] in files)
+    )
+    logger.info("Cleaning cache, %d entries in %r", len(files), cache_root)
+
+    for fname in files:
+        path = os.path.join(cache_root, fname)
+        if not should_delete(fname=path):
+            logger.info("Skipping entry: %r", fname)
+            continue
+        lock_path = path + '.lock'
+        logger.info("Locking entry: %r", fname)
+        lock = FilesystemLocks.lock_exclusive(lock_path, timeout=300)
+        if lock is None:
+            logger.warning("Entry is locked: %r", fname)
+            continue
+        try:
+            if os.path.exists(path):
+                logger.info("Deleting entry: %r", fname)
+                shutil.rmtree(path)
+                os.remove(lock_path)
+            else:
+                logger.error("Concurrent deletion?! Entry is gone: %r", fname)
         finally:
             FilesystemLocks.unlock_exclusive(lock)
