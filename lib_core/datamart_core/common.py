@@ -207,16 +207,9 @@ def delete_dataset_from_index(es, dataset_id):
                 'match': {'dataset_id': dataset_id}
             }
         }
-        size = 10000
         for index in ('datamart_columns', 'datamart_spatial_coverage'):
-            while True:
-                hits = es.search(
-                    index=index,
-                    body=body,
-                    _source=False,
-                    size=size,
-                )['hits']['hits']
-                for hit in hits:
-                    es.delete(index, '_doc', hit['_id'])
-                if len(hits) != size:
-                    break
+            es.delete_by_query(
+                index=index,
+                body=body,
+                doc_type='_doc',
+            )
