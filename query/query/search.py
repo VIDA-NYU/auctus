@@ -396,7 +396,12 @@ class ProfilePostedData(tornado.web.RequestHandler):
         if not isinstance(data, (str, bytes)):
             raise ClientError("The parameter 'data' is in the wrong format")
 
-        if not os.path.exists(data):
+        try:
+            is_path = os.path.exists(data)
+        except (OSError, ValueError):
+            is_path = False
+
+        if not is_path:
             # data represents the entire file
             logger.info("Data is not a path")
 
