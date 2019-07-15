@@ -213,6 +213,7 @@ def delete_dataset_from_index(es, dataset_id):
                 hits = es.search(
                     index=index,
                     body=body,
+                    _source=False,
                     size=size,
                 )['hits']['hits']
                 for hit in hits:

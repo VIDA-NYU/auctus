@@ -24,6 +24,7 @@ def clear(identifier):
                     },
                 },
             },
+            _source=False,
             size=SIZE,
         )['hits']['hits']
         for h in hits:

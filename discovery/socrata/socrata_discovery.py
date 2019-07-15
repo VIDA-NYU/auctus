@@ -111,6 +111,7 @@ class SocrataDiscoverer(Discoverer):
                 index='datamart',
                 body=query,
                 size=size,
+                _source=['materialize.socrata_id'],
                 from_=from_,
             )['hits']['hits']
             from_ += size

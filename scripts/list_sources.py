@@ -19,6 +19,7 @@ def count():
                     'match_all': {},
                 },
             },
+            _source='materialize.identifier',
             size=SIZE,
         )['hits']['hits']
         for h in hits:
