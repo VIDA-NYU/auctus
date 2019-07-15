@@ -113,9 +113,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
     column_name_to_index = dict()
 
     # 'datamart_columns' index
-    column_index = -1
-    for column in metadata['columns']:
-        column_index += 1
+    for column_index, column in enumerate(metadata['columns']):
         column_metadata = dict()
         column_metadata.update(common_dataset_metadata)
         column_metadata.update(column)
@@ -209,24 +207,15 @@ def delete_dataset_from_index(es, dataset_id):
                 'match': {'dataset_id': dataset_id}
             }
         }
+        size = 10000
         for index in ('datamart_columns', 'datamart_spatial_coverage'):
-            from_ = 0
-            result = es.search(
-                index=index,
-                body=body,
-                from_=from_,
-                size=100
-            )
-
-            size = len(result['hits']['hits'])
-            while size > 0:
-                for hit in result['hits']['hits']:
-                    es.delete(index, '_doc', hit['_id'])
-                from_ += size
-                result = es.search(
+            while True:
+                hits = es.search(
                     index=index,
                     body=body,
-                    from_=from_,
-                    size=100
-                )
-                size = len(result['hits']['hits'])
+                    size=size,
+                )['hits']['hits']
+                for hit in hits:
+                    es.delete(index, '_doc', hit['_id'])
+                if len(hits) != size:
+                    break
