@@ -1,5 +1,4 @@
 import logging
-import numpy as np
 import os
 import pandas as pd
 import shutil
@@ -252,14 +251,6 @@ def union(original_data, augment_data, left_columns, right_columns,
         rename[augment_data.columns[right_columns[i][0]]] = \
             original_data.columns[left_columns[i][0]]
     augment_data = augment_data.rename(columns=rename)
-
-    # matching temporal resolutions
-    original_data_dt = original_data.select_dtypes(include=[np.datetime64]).columns
-    augment_data_dt = augment_data.select_dtypes(include=[np.datetime64]).columns
-    for i in range(len(left_columns)):
-        column_name = original_data.columns[left_columns[i][0]]
-        if column_name in original_data_dt and column_name in augment_data_dt:
-            fix_temporal_resolution(original_data, augment_data, column_name, column_name)
 
     # union
     start = time.perf_counter()
