@@ -537,9 +537,9 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 request_timeout=30
             )
 
-            size_ = len(result['hits']['hits'])
+            size = len(result['hits']['hits'])
 
-            while size_ > 0:
+            while size > 0:
                 for hit in result['hits']['hits']:
 
                     dataset_name = hit['_id']
@@ -557,7 +557,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                         column_pairs[dataset_name].append((att, column_name, sim, es_score))
 
                 # pagination
-                from_ += size_
+                from_ += size
                 result = es.search(
                     index='datamart',
                     body=query_obj,
@@ -565,7 +565,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                     size=PAGINATION_SIZE,
                     request_timeout=30
                 )
-                size_ = len(result['hits']['hits'])
+                size = len(result['hits']['hits'])
 
     scores = dict()
     for dataset in list(column_pairs.keys()):

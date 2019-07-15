@@ -218,15 +218,15 @@ def delete_dataset_from_index(es, dataset_id):
                 size=100
             )
 
-            size_ = len(result['hits']['hits'])
-            while size_ > 0:
+            size = len(result['hits']['hits'])
+            while size > 0:
                 for hit in result['hits']['hits']:
                     es.delete(index, '_doc', hit['_id'])
-                from_ += size_
+                from_ += size
                 result = es.search(
                     index=index,
                     body=body,
                     from_=from_,
                     size=100
                 )
-                size_ = len(result['hits']['hits'])
+                size = len(result['hits']['hits'])

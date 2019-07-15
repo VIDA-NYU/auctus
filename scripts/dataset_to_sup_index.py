@@ -26,13 +26,13 @@ def create_indices():
         request_timeout=30
     )
 
-    size_ = len(result['hits']['hits'])
+    size = len(result['hits']['hits'])
 
-    while size_ > 0:
+    while size > 0:
         for hit in result['hits']['hits']:
             add_dataset_to_sup_index(es, hit['_id'], hit['_source'])
 
-        from_ += size_
+        from_ += size
         result = es.search(
             index='datamart',
             body=body,
@@ -40,7 +40,7 @@ def create_indices():
             size=100,
             request_timeout=30
         )
-        size_ = len(result['hits']['hits'])
+        size = len(result['hits']['hits'])
 
 
 if __name__ == '__main__':
