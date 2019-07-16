@@ -140,7 +140,7 @@ class Search(CorsHandler, GracefulHandler, ProfilePostedData):
             try:
                 data_path, data_profile = self.handle_data_parameter(data)
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
+                return self.send_error_json(400, str(e))
 
         # parameter: query
         query_args_main = list()
@@ -151,7 +151,7 @@ class Search(CorsHandler, GracefulHandler, ProfilePostedData):
                 query_args_main, query_args_sup, tabular_variables = \
                     parse_query(query)
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
+                return self.send_error_json(400, str(e))
 
         # At least one of them must be provided
         if not query_args_main and not data_profile:
@@ -337,7 +337,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload, ProfilePostedData):
             try:
                 data_path, data_profile = self.handle_data_parameter(data)
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
+                return self.send_error_json(400, str(e))
 
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
@@ -432,7 +432,7 @@ class Augment(CorsHandler, GracefulHandler, ProfilePostedData):
         try:
             data_path, data_profile = self.handle_data_parameter(data)
         except ClientError as e:
-            return self.send_error_json(400, e.args[0])
+            return self.send_error_json(400, str(e))
 
         # materialize augmentation data
         metadata = task['metadata']
@@ -470,8 +470,7 @@ class Augment(CorsHandler, GracefulHandler, ProfilePostedData):
                     destination=destination
                 )
         except AugmentationError as e:
-            self.set_status(400, reason=str(e))
-            return self.finish()
+            return self.send_error_json(400, str(e))
 
         if destination:
             # send the path
