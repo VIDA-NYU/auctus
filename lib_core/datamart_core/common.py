@@ -1,9 +1,14 @@
 import aio_pika
 import asyncio
+import elasticsearch
 import json
+import logging
 import re
 import sys
 import threading
+
+
+logger = logging.getLogger(__name__)
 
 
 class Type:
@@ -188,28 +193,22 @@ def delete_dataset_from_index(es, dataset_id):
     'datamart_columns' and 'datamart_spatial_coverage' indices.
     """
 
-    result = es.search(
-        index='datamart',
-        body={
-            'query': {
-                'match': {'_id': dataset_id }
-            }
-        }
-    )
-
-    if int(result['hits']['total']) > 0:
-        # deleting from 'datamart'
+    # deleting from 'datamart'
+    try:
         es.delete('datamart', '_doc', dataset_id)
+    except elasticsearch.NotFoundError:
+        return
 
-        # deleting from 'datamart_columns' and 'datamart_spatial_coverage'
-        body = {
-            'query': {
-                'match': {'dataset_id': dataset_id}
-            }
+    # deleting from 'datamart_columns' and 'datamart_spatial_coverage'
+    body = {
+        'query': {
+            'term': {'dataset_id': dataset_id}
         }
-        for index in ('datamart_columns', 'datamart_spatial_coverage'):
-            es.delete_by_query(
-                index=index,
-                body=body,
-                doc_type='_doc',
-            )
+    }
+    for index in ('datamart_columns', 'datamart_spatial_coverage'):
+        nb = es.delete_by_query(
+            index=index,
+            body=body,
+            doc_type='_doc',
+        )['deleted']
+        logger.info("Deleted %d documents from %s", nb, index)

@@ -85,10 +85,10 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
     """Retrieve numerical join search results that intersect with the input numerical ranges.
     """
 
-    filter_query = [{'match': {'%s' % type_: type_value}}]
+    filter_query = [{'term': {'%s' % type_: type_value}}]
     if dataset_id:
         filter_query.append(
-            {'match': {'dataset_id': dataset_id}}
+            {'term': {'dataset_id': dataset_id}}
         )
     if type_value != Type.DATE_TIME:
         filter_query.append(
@@ -184,7 +184,7 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
     filter_query = list()
     if dataset_id:
         filter_query.append(
-            {'match': {'dataset_id': dataset_id}}
+            {'term': {'dataset_id': dataset_id}}
         )
 
     should_query = list()
@@ -471,10 +471,10 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
             partial_query = {
                 'should': [
                     {
-                        'match': {'columns.structural_type': type_}
+                        'term': {'columns.structural_type': type_}
                     },
                     {
-                        'match': {'columns.semantic_types': type_}
+                        'term': {'columns.semantic_types': type_}
                     },
                 ],
                 'must': [
@@ -487,7 +487,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
 
             if dataset_id:
                 partial_query['must'].append(
-                    {'match': {'_id': dataset_id}}
+                    {'term': {'_id': dataset_id}}
                 )
 
             query = {

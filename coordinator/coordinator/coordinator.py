@@ -64,6 +64,10 @@ class Coordinator(object):
                                                         }
                                                     }
                                                 },
+                                                'structural_type': {
+                                                    'type': 'keyword',
+                                                    'index': True,
+                                                },
                                                 'semantic_types': {
                                                     'type': 'keyword',
                                                     'index': True,
@@ -131,13 +135,18 @@ class Coordinator(object):
                                             'type': 'integer'
                                         },
                                         'dataset_id': {
-                                            'type': 'text'
+                                            'type': 'keyword',
+                                            'index': True,
                                         },
                                         'dataset_name': {
                                             'type': 'text'
                                         },
                                         'dataset_description': {
                                             'type': 'text'
+                                        },
+                                        'structural_type': {
+                                            'type': 'keyword',
+                                            'index': True,
                                         },
                                         'semantic_types': {
                                             'type': 'keyword',
@@ -190,7 +199,8 @@ class Coordinator(object):
                                             'type': 'integer'
                                         },
                                         'dataset_id': {
-                                            'type': 'text'
+                                            'type': 'keyword',
+                                            'index': True
                                         },
                                         'dataset_name': {
                                             'type': 'text'
