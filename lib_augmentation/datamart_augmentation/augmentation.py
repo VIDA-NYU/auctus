@@ -91,6 +91,7 @@ def match_temporal_resolutions(input_data, companion_data):
     """
 
     if isinstance(input_data.index, pd.MultiIndex):
+        # TODO: support MultiIndex
         pass
     elif (isinstance(input_data.index, pd.DatetimeIndex)
           and isinstance(companion_data.index, pd.DatetimeIndex)):
@@ -358,15 +359,19 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     if 'id' not in task:
         raise AugmentationError("Dataset id for the augmentation task not provided")
 
-    # only converting data types for columns involved in augmentation
     # TODO: add support for combining multiple columns before an augmentation
     #   e.g.: [['street number', 'street', 'city']] and [['address']]
-    #   currently, DataMart does not support such cases -- it only takes into
-    #   account the first column, e.g.: 'street number' and 'address'
+    #   currently, DataMart does not support such cases
     #   this means that spatial joins (with GPS) are not supported for now
+
+    # only converting data types for columns involved in augmentation
     aug_columns_input_data = []
     aug_columns_companion_data = []
     for i in range(len(task['augmentation']['left_columns'])):
+        if (len(task['augmentation']['left_columns'][i] > 1) or
+                len(task['augmentation']['right_columns'][i]) > 1):
+            raise AugmentationError("DataMart currently does not provide support "
+                                    "for combining multiple columns for an augmentation.")
         aug_columns_input_data.append(task['augmentation']['left_columns'][i][0])
         aug_columns_companion_data.append(task['augmentation']['right_columns'][i][0])
 
