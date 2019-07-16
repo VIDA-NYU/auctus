@@ -262,7 +262,7 @@ def union(original_data, augment_data, left_columns, right_columns,
 
     # union
     start = time.perf_counter()
-    union_ = pd.concat([original_data, augment_data])
+    union_ = pd.concat([original_data, augment_data], sort=False)
     logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
 
     # qualities
