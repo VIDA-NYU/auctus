@@ -15,6 +15,7 @@ from tornado.web import HTTPError, RequestHandler
 import zipfile
 
 from datamart_augmentation.augmentation import augment
+from datamart_augmentation.utils import AugmentationError
 from datamart_core.common import log_future
 from datamart_core.materialize import get_dataset
 
@@ -468,7 +469,7 @@ class Augment(CorsHandler, GracefulHandler, ProfilePostedData):
                     columns=columns,
                     destination=destination
                 )
-        except ValueError as e:
+        except AugmentationError as e:
             return self.send_error_json(400, str(e))
 
         if destination:

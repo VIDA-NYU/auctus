@@ -1,6 +1,11 @@
 import distance
 
 
+class AugmentationError(ValueError):
+    """Error during augmentation.
+    """
+
+
 def compute_levenshtein_sim(str1, str2):
     """
     Computer the Levenshtein Similarity between two strings using 3-grams, if one string

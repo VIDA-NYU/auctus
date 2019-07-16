@@ -9,6 +9,7 @@ import uuid
 
 from datamart_core.common import Type
 from datamart_materialize.d3m import D3mWriter
+from .utils import AugmentationError
 
 
 logger = logging.getLogger(__name__)
@@ -173,7 +174,7 @@ def perform_aggregations(data, groupby_columns,
                         np.mean, np.sum, np.max, np.min
                     ]
         if not agg_functions:
-            raise ValueError("No numerical columns to perform aggregation.")
+            raise AugmentationError("No numerical columns to perform aggregation.")
         data = data.groupby(by=groupby_columns).agg(agg_functions)
         data = data.reset_index(drop=False)
         data.columns = [' '.join(col[::-1]).strip()
@@ -417,7 +418,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     """
 
     if 'id' not in task:
-        raise ValueError("Dataset id for the augmentation task not provided")
+        raise AugmentationError("Dataset id for the augmentation task not provided")
 
     # TODO: add support for combining multiple columns before an augmentation
     #   e.g.: [['street number', 'street', 'city']] and [['address']]
@@ -430,8 +431,8 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     for i in range(len(task['augmentation']['left_columns'])):
         if (len(task['augmentation']['left_columns'][i]) > 1 or
                 len(task['augmentation']['right_columns'][i]) > 1):
-            raise ValueError("DataMart currently does not support "
-                             "combination of columns for augmentation.")
+            raise AugmentationError("DataMart currently does not support "
+                                    "combination of columns for augmentation.")
         aug_columns_input_data.append(task['augmentation']['left_columns'][i][0])
         aug_columns_companion_data.append(task['augmentation']['right_columns'][i][0])
 
@@ -467,6 +468,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             )
             return generate_d3m_dataset(union_, destination, qualities)
         else:
-            raise ValueError("Augmentation task not provided")
-    except ValueError:
+            raise AugmentationError("Augmentation task not provided")
+    except AugmentationError:
         raise
