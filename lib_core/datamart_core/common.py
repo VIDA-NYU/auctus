@@ -192,7 +192,7 @@ def delete_dataset_from_index(es, dataset_id):
         index='datamart',
         body={
             'query': {
-                'match': {'_id': dataset_id }
+                'term': {'_id': dataset_id }
             }
         }
     )
@@ -204,7 +204,7 @@ def delete_dataset_from_index(es, dataset_id):
         # deleting from 'datamart_columns' and 'datamart_spatial_coverage'
         body = {
             'query': {
-                'match': {'dataset_id': dataset_id}
+                'term': {'dataset_id': dataset_id}
             }
         }
         for index in ('datamart_columns', 'datamart_spatial_coverage'):
