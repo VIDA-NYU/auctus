@@ -8,7 +8,6 @@ import uuid
 
 from datamart_core.common import Type
 from datamart_materialize.d3m import D3mWriter
-from .utils import AugmentationError
 
 
 logger = logging.getLogger(__name__)
@@ -151,11 +150,6 @@ def join(original_data, augment_data, left_columns, right_columns,
     Returns the new pandas.DataFrame object.
     """
 
-    for i in range(len(left_columns)):
-        if len(left_columns[i]) > 1 or len(right_columns[i]) > 1:
-            raise AugmentationError("DataMart currently does not support "
-                                    "combination between columns for augmentation")
-
     # remove undesirable columns from augment_data
     # but first, make sure to keep the join keys
     if columns:
@@ -180,31 +174,42 @@ def join(original_data, augment_data, left_columns, right_columns,
 
     # TODO: work on aggregations
     if join_[join_.duplicated(original_data.columns)].shape[0] > 0:
-        raise AugmentationError("After a successful join, "
-                                "the shape of the data changed "
-                                "(i.e., the number of records increased), "
-                                "and therefore aggregations are required. DataMart "
-                                "currently does not have support for aggregations.")
+        raise ValueError("After a successful join, "
+                         "the shape of the data changed "
+                         "(i.e., the number of records increased), "
+                         "and therefore aggregations are required. DataMart "
+                         "currently does not have support for aggregations.")
 
     # qualities
     qualities_list = list()
 
     if return_only_datamart_data:
         # dropping columns from original data
-        join_ = join_.drop(
-            list(set(original_data.columns).difference(set(augment_data.columns))),
-            axis=1
-        )
+        drop_columns = list()
+        intersection = set(original_data.columns).intersection(set(augment_data.columns))
+        if len(intersection) > 0:
+            drop_columns = list(intersection)
+        drop_columns += list(set(original_data.columns).difference(intersection))
+        join_ = join_.drop(drop_columns, axis=1)
+        if len(intersection) > 0:
+            rename = dict()
+            for column in intersection:
+                rename[column + '_r'] = column
+            join_ = join_.rename(columns=rename)
 
         # dropping rows with all null values
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
         # removing duplicated join columns
-        join_ = join_.drop(
-            [augment_data.columns[column[0]] for column in right_columns],
-            axis=1
-        )
+        drop_join_columns = list()
+        for i in range(len(right_columns)):
+            name = augment_data.columns[right_columns[i][0]]
+            if (augment_data.columns[right_columns[i][0]] ==
+                    original_data.columns[left_columns[i][0]]):
+                name += '_r'
+            drop_join_columns.append(name)
+        join_ = join_.drop(drop_join_columns, axis=1)
         if qualities:
             new_columns = list(set(join_.columns).difference(
                 set([c for c in original_data.columns])
@@ -232,11 +237,6 @@ def union(original_data, augment_data, left_columns, right_columns,
 
     Returns the new pandas.DataFrame object.
     """
-
-    for i in range(len(left_columns)):
-        if len(left_columns[i]) > 1 or len(right_columns[i]) > 1:
-            raise AugmentationError("DataMart currently does not support "
-                                    "combination between columns for augmentation")
 
     # saving all columns from original data
     original_data_cols = original_data.columns
@@ -357,7 +357,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     """
 
     if 'id' not in task:
-        raise AugmentationError("Dataset id for the augmentation task not provided")
+        raise ValueError("Dataset id for the augmentation task not provided")
 
     # TODO: add support for combining multiple columns before an augmentation
     #   e.g.: [['street number', 'street', 'city']] and [['address']]
@@ -368,10 +368,10 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     aug_columns_input_data = []
     aug_columns_companion_data = []
     for i in range(len(task['augmentation']['left_columns'])):
-        if (len(task['augmentation']['left_columns'][i] > 1) or
+        if (len(task['augmentation']['left_columns'][i]) > 1 or
                 len(task['augmentation']['right_columns'][i]) > 1):
-            raise AugmentationError("DataMart currently does not provide support "
-                                    "for combining multiple columns for an augmentation.")
+            raise ValueError("DataMart currently does not support "
+                             "combination of columns for augmentation.")
         aug_columns_input_data.append(task['augmentation']['left_columns'][i][0])
         aug_columns_companion_data.append(task['augmentation']['right_columns'][i][0])
 
@@ -407,6 +407,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             )
             return generate_d3m_dataset(union_, destination, qualities)
         else:
-            raise AugmentationError("Augmentation task not provided")
-    except AugmentationError:
+            raise ValueError("Augmentation task not provided")
+    except ValueError:
         raise

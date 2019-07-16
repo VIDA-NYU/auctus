@@ -21,8 +21,3 @@ def compute_levenshtein_sim(str1, str2):
         str2_set = [str2[i:i + 3] for i in range(len(str2) - 2)]
 
     return 1 - distance.nlevenshtein(str1_set, str2_set, method=2)
-
-
-class AugmentationError(Exception):
-    """Error while augmenting data.
-    """
