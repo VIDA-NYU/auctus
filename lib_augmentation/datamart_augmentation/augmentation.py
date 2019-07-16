@@ -265,6 +265,12 @@ def union(original_data, augment_data, left_columns, right_columns,
     union_ = pd.concat([original_data, augment_data], sort=False)
     logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
 
+    # special treatment for 'd3mIndex' column
+    if 'd3mIndex' in union_.columns:
+        filler = [i for i in range(int(union_['d3mIndex'].max() + 1), union_.shape[0])]
+        union_.loc[union_['d3mIndex'].isnull(), 'd3mIndex'] = filler
+        union_['d3mIndex'] = pd.to_numeric(union_['d3mIndex'], downcast='integer')
+
     # qualities
     qualities_list = list()
     if qualities:
