@@ -192,7 +192,7 @@ def parse_query_variables(data, tabular_variables=None):
                 'nested': {
                     'path': 'columns',
                     'query': {
-                        'match': {'columns.semantic_types': Type.DATE_TIME},
+                        'term': {'columns.semantic_types': Type.DATE_TIME},
                     },
                 },
             })
