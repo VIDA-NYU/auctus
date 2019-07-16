@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 import os
 import pandas as pd
 import shutil
@@ -140,6 +141,51 @@ def check_temporal_resolution(data):
     return 'date'
 
 
+def perform_aggregations(data, groupby_columns,
+                         original_data_join_columns,
+                         augment_data_join_columns):
+    """Performs group by on dataset after join, to keep the shape of the
+    new, augmented dataset the same as the original, input data.
+    """
+
+    if data[data.duplicated(groupby_columns)].shape[0] > 0:
+        start = time.perf_counter()
+        agg_columns = list(
+            set(data.columns).difference(
+                set(groupby_columns))
+        )
+        agg_functions = dict()
+        for column in agg_columns:
+            index = -1
+            if column in augment_data_join_columns:
+                index += 1
+                # column is a join column
+                if ('int' in str(data.dtypes[column]) or
+                        'float' in str(data.dtypes[column])):
+                    agg_functions[column] = \
+                        lambda x: int(np.mean(x.tolist()))
+                # TODO: datetime and other potential cases
+            else:
+                # column is not a join column
+                if ('int' in str(data.dtypes[column]) or
+                        'float' in str(data.dtypes[column])):
+                    agg_functions[column] = [
+                        np.mean, np.sum, np.max, np.min
+                    ]
+        if not agg_functions:
+            raise ValueError("No numerical columns to perform aggregation.")
+        data = data.groupby(by=groupby_columns).agg(agg_functions)
+        data = data.reset_index(drop=False)
+        data.columns = [' '.join(col[::-1]).strip()
+                        # keep same name for join column
+                        if col[0] not in (original_data_join_columns +
+                                          augment_data_join_columns)
+                        else col[0].strip()
+                        for col in data.columns.values]
+        logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
+    return data
+
+
 def join(original_data, augment_data, left_columns, right_columns,
          columns=None, how='left', qualities=False,
          return_only_datamart_data=False):
@@ -149,6 +195,17 @@ def join(original_data, augment_data, left_columns, right_columns,
 
     Returns the new pandas.DataFrame object.
     """
+
+    # join columns
+    original_join_columns = list()
+    augment_join_columns = list()
+    for i in range(len(right_columns)):
+        name = augment_data.columns[right_columns[i][0]]
+        if (augment_data.columns[right_columns[i][0]] ==
+                original_data.columns[left_columns[i][0]]):
+            name += '_r'
+        augment_join_columns.append(name)
+        original_join_columns.append(original_data.columns[left_columns[i][0]])
 
     # remove undesirable columns from augment_data
     # but first, make sure to keep the join keys
@@ -172,14 +229,6 @@ def join(original_data, augment_data, left_columns, right_columns,
     )
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
 
-    # TODO: work on aggregations
-    if join_[join_.duplicated(original_data.columns)].shape[0] > 0:
-        raise ValueError("After a successful join, "
-                         "the shape of the data changed "
-                         "(i.e., the number of records increased), "
-                         "and therefore aggregations are required. DataMart "
-                         "currently does not have support for aggregations.")
-
     # qualities
     qualities_list = list()
 
@@ -201,15 +250,20 @@ def join(original_data, augment_data, left_columns, right_columns,
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
+        # aggregations
+        join_ = perform_aggregations(
+            join_,
+            list(original_data.columns),
+            original_join_columns,
+            augment_join_columns
+        )
+
         # removing duplicated join columns
-        drop_join_columns = list()
-        for i in range(len(right_columns)):
-            name = augment_data.columns[right_columns[i][0]]
-            if (augment_data.columns[right_columns[i][0]] ==
-                    original_data.columns[left_columns[i][0]]):
-                name += '_r'
-            drop_join_columns.append(name)
-        join_ = join_.drop(drop_join_columns, axis=1)
+        join_ = join_.drop(
+            list(set(augment_join_columns).intersection(set(join_.columns))),
+            axis=1
+        )
+
         if qualities:
             new_columns = list(set(join_.columns).difference(
                 set([c for c in original_data.columns])
