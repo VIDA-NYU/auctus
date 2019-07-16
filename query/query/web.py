@@ -15,6 +15,7 @@ from tornado.web import HTTPError, RequestHandler
 import zipfile
 
 from datamart_augmentation.augmentation import augment
+from datamart_augmentation.utils import AugmentationError
 from datamart_core.common import log_future
 from datamart_core.materialize import get_dataset
 
@@ -457,16 +458,20 @@ class Augment(CorsHandler, GracefulHandler, ProfilePostedData):
                                             "The DataMart dataset referenced "
                                             "by 'task' cannot augment 'data'.")
 
-        with get_dataset(metadata, task['id'], format='csv') as newdata:
-            # perform augmentation
-            new_path = augment(
-                data_path,
-                newdata,
-                data_profile,
-                task,
-                columns=columns,
-                destination=destination
-            )
+        try:
+            with get_dataset(metadata, task['id'], format='csv') as newdata:
+                # perform augmentation
+                new_path = augment(
+                    data_path,
+                    newdata,
+                    data_profile,
+                    task,
+                    columns=columns,
+                    destination=destination
+                )
+        except AugmentationError as e:
+            self.set_status(400, reason=str(e))
+            return self.finish()
 
         if destination:
             # send the path

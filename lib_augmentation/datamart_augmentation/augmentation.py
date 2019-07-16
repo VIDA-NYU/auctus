@@ -8,6 +8,7 @@ import uuid
 
 from datamart_core.common import Type
 from datamart_materialize.d3m import D3mWriter
+from .utils import AugmentationError
 
 
 logger = logging.getLogger(__name__)
@@ -151,8 +152,8 @@ def join(original_data, augment_data, left_columns, right_columns,
 
     for i in range(len(left_columns)):
         if len(left_columns[i]) > 1 or len(right_columns[i]) > 1:
-            raise ValueError("DataMart currently does not support "
-                             "combination between columns for augmentation")
+            raise AugmentationError("DataMart currently does not support "
+                                    "combination between columns for augmentation")
 
     # remove undesirable columns from augment_data
     # but first, make sure to keep the join keys
@@ -167,8 +168,6 @@ def join(original_data, augment_data, left_columns, right_columns,
     original_data, augment_data = \
         match_temporal_resolutions(original_data, augment_data)
 
-    # TODO: work on aggregations
-
     # join
     start = time.perf_counter()
     join_ = original_data.join(
@@ -177,6 +176,14 @@ def join(original_data, augment_data, left_columns, right_columns,
         rsuffix='_r'
     )
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
+
+    # TODO: work on aggregations
+    if join_[join_.duplicated(original_data.columns)].shape[0] > 0:
+        raise AugmentationError("After a successful join, "
+                                "the shape of the data changed "
+                                "(i.e., the number of records increased), "
+                                "and therefore aggregations are required. DataMart "
+                                "currently does not have support for aggregations.")
 
     # qualities
     qualities_list = list()
@@ -227,8 +234,8 @@ def union(original_data, augment_data, left_columns, right_columns,
 
     for i in range(len(left_columns)):
         if len(left_columns[i]) > 1 or len(right_columns[i]) > 1:
-            raise ValueError("DataMart currently does not support "
-                             "combination between columns for augmentation")
+            raise AugmentationError("DataMart currently does not support "
+                                    "combination between columns for augmentation")
 
     # saving all columns from original data
     original_data_cols = original_data.columns
@@ -349,7 +356,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     """
 
     if 'id' not in task:
-        raise ValueError("Dataset id for the augmentation task not provided")
+        raise AugmentationError("Dataset id for the augmentation task not provided")
 
     # only converting data types for columns involved in augmentation
     # TODO: add support for combining multiple columns before an augmentation
@@ -363,35 +370,38 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         aug_columns_input_data.append(task['augmentation']['left_columns'][i][0])
         aug_columns_companion_data.append(task['augmentation']['right_columns'][i][0])
 
-    if task['augmentation']['type'] == 'join':
-        logger.info("Performing join...")
-        join_, qualities = join(
-            convert_data_types(
+    try:
+        if task['augmentation']['type'] == 'join':
+            logger.info("Performing join...")
+            join_, qualities = join(
+                convert_data_types(
+                    pd.read_csv(data, error_bad_lines=False),
+                    aug_columns_input_data,
+                    metadata['columns']
+                ),
+                convert_data_types(
+                    pd.read_csv(newdata, error_bad_lines=False),
+                    aug_columns_companion_data,
+                    task['metadata']['columns']
+                ),
+                task['augmentation']['left_columns'],
+                task['augmentation']['right_columns'],
+                columns=columns,
+                qualities=True,
+                return_only_datamart_data=return_only_datamart_data
+            )
+            return generate_d3m_dataset(join_, destination, qualities)
+        elif task['augmentation']['type'] == 'union':
+            logger.info("Performing union...")
+            union_, qualities = union(
                 pd.read_csv(data, error_bad_lines=False),
-                aug_columns_input_data,
-                metadata['columns']
-            ),
-            convert_data_types(
                 pd.read_csv(newdata, error_bad_lines=False),
-                aug_columns_companion_data,
-                task['metadata']['columns']
-            ),
-            task['augmentation']['left_columns'],
-            task['augmentation']['right_columns'],
-            columns=columns,
-            qualities=True,
-            return_only_datamart_data=return_only_datamart_data
-        )
-        return generate_d3m_dataset(join_, destination, qualities)
-    elif task['augmentation']['type'] == 'union':
-        logger.info("Performing union...")
-        union_, qualities = union(
-            pd.read_csv(data, error_bad_lines=False),
-            pd.read_csv(newdata, error_bad_lines=False),
-            task['augmentation']['left_columns'],
-            task['augmentation']['right_columns'],
-            qualities=True
-        )
-        return generate_d3m_dataset(union_, destination, qualities)
-    else:
-        raise ValueError("Augmentation task not provided")
+                task['augmentation']['left_columns'],
+                task['augmentation']['right_columns'],
+                qualities=True
+            )
+            return generate_d3m_dataset(union_, destination, qualities)
+        else:
+            raise AugmentationError("Augmentation task not provided")
+    except AugmentationError:
+        raise
