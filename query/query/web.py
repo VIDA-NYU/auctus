@@ -1,5 +1,6 @@
 import aio_pika
 import asyncio
+import contextlib
 import elasticsearch
 import logging
 import json
@@ -286,13 +287,18 @@ class BaseDownload(BaseHandler):
             logger.info("Sending redirect to direct_url")
             return self.redirect(materialize['direct_url'])
         else:
-            getter = get_dataset(metadata, dataset_id, format=output_format)
+            # We want to catch exceptions from get_dataset(), without catching
+            # exceptions from inside the with block
+            # https://docs.python.org/3/library/contextlib.html#catching-exceptions-from-enter-methods
+            stack = contextlib.ExitStack()
             try:
-                dataset_path = getter.__enter__()
+                dataset_path = stack.enter_context(
+                    get_dataset(metadata, dataset_id, format=output_format)
+                )
             except Exception:
                 self.send_error_json(500, "Materializer reports failure")
                 raise
-            try:
+            with stack:
                 if os.path.isfile(dataset_path):
                     self.set_header('Content-Type', 'application/octet-stream')
                     self.set_header('X-Content-Type-Options', 'nosniff')
@@ -316,8 +322,6 @@ class BaseDownload(BaseHandler):
                     writer.write_recursive(dataset_path)
                     writer.close()
                 return self.finish()
-            finally:
-                getter.__exit__(None, None, None)
 
 
 class DownloadId(BaseDownload, GracefulHandler):
