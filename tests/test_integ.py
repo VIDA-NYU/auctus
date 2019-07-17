@@ -461,6 +461,29 @@ class TestDownload(DatamartTest):
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
 
+    def test_post_invalid(self):
+        """Post invalid materialization information."""
+        response = requests.post(
+            os.environ['QUERY_HOST'] + '/download', allow_redirects=False,
+            files={'task': json.dumps(
+                {
+                    'id': 'datamart.nonexistent',
+                    'score': 0.0,
+                    'metadata': {
+                        'name': "Non-existent dataset",
+                        'materialize': {
+                            'identifier': 'datamart.nonexistent',
+                        }
+                    }
+                }
+            ).encode('utf-8')}
+        )
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(
+            response.json(),
+            {'error': "Materializer reports failure"},
+        )
+
 
 class TestAugment(DatamartTest):
     def test_basic_join(self):
