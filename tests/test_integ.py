@@ -482,6 +482,7 @@ assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 
 
 basic_metadata = {
+    "name": "basic",
     "description": "This is a very simple CSV with people",
     "size": 126,
     "nb_rows": 5,
@@ -549,6 +550,7 @@ basic_metadata = {
 
 
 geo_metadata = {
+    "name": "geo",
     "description": "Another simple CSV with places",
     "size": 2912,
     "nb_rows": 100,
