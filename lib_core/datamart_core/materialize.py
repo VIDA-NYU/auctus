@@ -1,11 +1,15 @@
 import contextlib
 import datamart_materialize
+import logging
 import os
 import prometheus_client
 import shutil
 import tempfile
 
 from .discovery import encode_dataset_id
+
+
+logger = logging.getLogger(__name__)
 
 
 PROM_DOWNLOAD = prometheus_client.Histogram(
@@ -28,6 +32,7 @@ def get_dataset(metadata, dataset_id, format='csv'):
             temp_file = os.path.join(temp_dir, 'data')
             if os.path.exists(shared):
                 # Do format conversion from stored file
+                logger.info("Converting stored file to %r", format)
                 with open(os.path.join(shared, 'main.csv'), 'rb') as src:
                     writer_cls = datamart_materialize.get_writer(format)
                     writer = writer_cls(dataset_id, temp_file, metadata)

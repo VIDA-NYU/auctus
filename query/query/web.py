@@ -235,7 +235,8 @@ class BaseDownload(BaseHandler):
         if ('direct_url' in materialize and
                 output_format == 'csv' and not materialize.get('convert')):
             # Redirect the client to it
-            self.redirect(materialize['direct_url'])
+            logger.info("Sending redirect to direct_url")
+            return self.redirect(materialize['direct_url'])
         else:
             getter = get_dataset(metadata, dataset_id, format=output_format)
             try:
@@ -249,6 +250,7 @@ class BaseDownload(BaseHandler):
                     self.set_header('X-Content-Type-Options', 'nosniff')
                     self.set_header('Content-Disposition',
                                     'attachment; filename="%s"' % dataset_id)
+                    logger.info("Sending file...")
                     with open(dataset_path, 'rb') as fp:
                         buf = fp.read(4096)
                         while buf:
@@ -261,6 +263,7 @@ class BaseDownload(BaseHandler):
                     self.set_header(
                         'Content-Disposition',
                         'attachment; filename="%s.zip"' % dataset_id)
+                    logger.info("Sending ZIP...")
                     writer = RecursiveZipWriter(self.write)
                     writer.write_recursive(dataset_path)
                     writer.close()
@@ -324,6 +327,9 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 "'task' JSON, or use application/json to send 'task' alone",
             )
 
+        logger.info("Got POST download %s data",
+                    "without" if data is None else "with")
+
         # materialize augmentation data
         metadata = task['metadata']
 
@@ -359,6 +365,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
 
             with get_dataset(metadata, task['id'], format='csv') as newdata:
                 # perform augmentation
+                logger.info("Performing half-augmentation with supplied data")
                 new_path = augment(
                     data_path,
                     newdata,
@@ -372,6 +379,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             self.set_header(
                 'Content-Disposition',
                 'attachment; filename="augmentation.zip"')
+            logger.info("Sending ZIP...")
             writer = RecursiveZipWriter(self.write)
             writer.write_recursive(new_path)
             writer.close()
@@ -434,8 +442,11 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         # materialize augmentation data
         metadata = task['metadata']
 
+        logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
+
         # no augmentation task provided -- will first look for possible augmentation
         if task['augmentation']['type'] == 'none':
+            logger.info("No task, searching for augmentations")
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
                 data_profile=data_profile,
@@ -449,6 +460,8 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
             if search_results:
                 # get first result
+                logger.info("Using first of %d augmentation results",
+                            len(search_results))
                 task = search_results[0]
             else:
                 return self.send_error_json(400,
@@ -457,6 +470,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         with get_dataset(metadata, task['id'], format='csv') as newdata:
             # perform augmentation
+            logger.info("Performing augmentation with supplied data")
             new_path = augment(
                 data_path,
                 newdata,
@@ -476,6 +490,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             self.set_header(
                 'Content-Disposition',
                 'attachment; filename="augmentation.zip"')
+            logger.info("Sending ZIP...")
             writer = RecursiveZipWriter(self.write)
             writer.write_recursive(new_path)
             writer.close()
