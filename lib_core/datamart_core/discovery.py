@@ -191,6 +191,8 @@ class Discoverer(object):
 
     def record_dataset(self, materialize, metadata,
                        dataset_id=None, bind=None):
+        if not 'name' in metadata:
+            metadata['name'] = dataset_id
         coro = self._record_dataset(materialize, metadata,
                                     dataset_id=dataset_id, bind=bind)
         if self._async:

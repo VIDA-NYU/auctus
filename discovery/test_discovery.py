@@ -20,14 +20,20 @@ class TestDiscoverer(Discoverer):
             shutil.copy2('geo.csv', os.path.join(dirname, 'main.csv'))
         self.record_dataset(
             dict(),
-            {'description': "Another simple CSV with places"},
+            {
+                # Omit name, should be set to 'geo' automatically
+                'description': "Another simple CSV with places",
+            },
             dataset_id='geo',
         )
 
         # Use URL for this one
         self.record_dataset(
             dict(direct_url='http://test_discoverer:7000/basic.csv'),
-            {'description': "This is a very simple CSV with people"},
+            {
+                'name': "basic",
+                'description': "This is a very simple CSV with people",
+            },
             dataset_id='basic',  # Needs to be last, CI waits for it to test
         )
 

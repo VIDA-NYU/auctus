@@ -1,6 +1,7 @@
 import elasticsearch
 import io
 import json
+import jsonschema
 import os
 import re
 import requests
@@ -10,21 +11,54 @@ import zipfile
 from .utils import assert_json
 
 
+schemas = os.path.join(os.path.dirname(__file__), '..', 'schemas')
+schemas = os.path.abspath(schemas)
+
+
+# https://github.com/Julian/jsonschema/issues/343
+def _fix_refs(obj, name):
+    if isinstance(obj, dict):
+        return {
+            k: _fix_refs(v, name) if k != '$ref' else 'file://%s/%s%s' % (schemas, name, v)
+            for k, v in obj.items()
+        }
+    elif isinstance(obj, list):
+        return [_fix_refs(v, name) for v in obj]
+    else:
+        return obj
+
+
+with open(os.path.join(schemas, 'query_result_schema.json')) as fp:
+    result_schema = json.load(fp)
+result_schema = _fix_refs(result_schema, 'query_result_schema.json')
+result_list_schema = {
+    'type': 'object',
+    'properties': {
+        'results': {'type': 'array', 'items': result_schema}
+    },
+    'definitions': result_schema.pop('definitions'),
+}
+
+
 class DatamartTest(unittest.TestCase):
-    def datamart_get(self, url, **kwargs):
+    def datamart_get(self, url, schema=None, **kwargs):
         response = requests.get(
             os.environ['QUERY_HOST'] + url,
             **kwargs
         )
         self.assert_response(response)
+        if schema is not None:
+            jsonschema.validate(response.json(), schema)
         return response
 
-    def datamart_post(self, url, **kwargs):
+    def datamart_post(self, url, schema=None, **kwargs):
         response = requests.post(
             os.environ['QUERY_HOST'] + url,
             **kwargs
         )
         self.assert_response(response)
+        if schema is not None:
+            jsonschema.validate(response.json(), schema)
         return response
 
     def assert_response(self, response):
@@ -69,6 +103,7 @@ class TestSearch(DatamartTest):
             response = self.datamart_post(
                 '/search',
                 json={'keywords': ['people']},
+                schema=result_list_schema,
             )
             self.assertEqual(response.request.headers['Content-Type'],
                              'application/json')
@@ -81,6 +116,7 @@ class TestSearch(DatamartTest):
             response = self.datamart_post(
                 '/search',
                 data={'query': json.dumps({'keywords': ['people']})},
+                schema=result_list_schema,
             )
             self.assertEqual(response.request.headers['Content-Type'],
                              'application/x-www-form-urlencoded')
@@ -94,6 +130,7 @@ class TestSearch(DatamartTest):
                 '/search',
                 files={'query': json.dumps({'keywords': ['people']})
                        .encode('utf-8')},
+                schema=result_list_schema,
             )
             self.assertEqual(
                 response.request.headers['Content-Type'].split(';', 1)[0],
@@ -135,6 +172,7 @@ class TestDataSearch(DatamartTest):
                 'query': json.dumps(query).encode('utf-8'),
                 'data': basic_aug_data.encode('utf-8'),
             },
+            schema=result_list_schema,
         )
         results = response.json()['results']
         assert_json(
@@ -163,6 +201,7 @@ class TestDataSearch(DatamartTest):
             files={
                 'data': basic_aug_data.encode('utf-8'),
             },
+            schema=result_list_schema,
         )
         results = response.json()['results']
         assert_json(
@@ -194,6 +233,7 @@ class TestDataSearch(DatamartTest):
                 'query': json.dumps(query).encode('utf-8'),
                 'data': geo_aug_data.encode('utf-8'),
             },
+            schema=result_list_schema,
         )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
@@ -223,6 +263,7 @@ class TestDataSearch(DatamartTest):
             files={
                 'data': geo_aug_data.encode('utf-8'),
             },
+            schema=result_list_schema,
         )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
@@ -441,6 +482,7 @@ assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 
 
 basic_metadata = {
+    "name": "basic",
     "description": "This is a very simple CSV with people",
     "size": 126,
     "nb_rows": 5,
@@ -508,6 +550,7 @@ basic_metadata = {
 
 
 geo_metadata = {
+    "name": "geo",
     "description": "Another simple CSV with places",
     "size": 2912,
     "nb_rows": 100,

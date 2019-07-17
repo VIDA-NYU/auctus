@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gitlab.com/datadrivendiscovery/datamart-api/query_result_schema.json",
+  "title": "Result",
+  "definitions": {
+    "augmentation_unit": {
+      "type": "array",
+      "description": "An array of column identifiers that represents an unit for the augmentation. In the simplest case, we have a single identifier, and in more complex cases, we have multiple identifiers (e.g.: columns 'latitude' and 'longitude' could be combined to join and/or concatenate with column 'country')."
+    }
+  },
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "The dataset identifier provided by DataMart."
+    },
+    "score": {
+      "type": "number",
+      "description": "A non-negative number that represents the relevance of this dataset to query. Larger scores indicate better matches. Scores across different DataMart systems are not comparable."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "The metadata associated with the dataset. Metadata from different DataMart systems can have different schemas.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": ["name"]
+    },
+    "augmentation": {
+      "type": "object",
+      "description": "The augmentation suggested by the DataMart system.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "join",
+            "union",
+            "none"
+          ]
+        },
+        "left_columns": {
+          "type": "array",
+          "description": "The left-side columns for the augmentation, which correspond to the supplied dataset.",
+          "items": {
+            "$ref": "#/definitions/augmentation_unit"
+          }
+        },
+        "right_columns": {
+          "type": "array",
+          "description": "The right-side columns for the augmentation, which correspond to the DataMart dataset.",
+          "items": {
+            "$ref": "#/definitions/augmentation_unit"
+          }
+        }
+      }
+    }
+  },
+  "required": ["id", "score", "metadata"]
+}
