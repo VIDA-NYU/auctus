@@ -71,7 +71,7 @@ class DatamartTest(unittest.TestCase):
         response.raise_for_status()
 
 
-class TestProfile(unittest.TestCase):
+class TestProfiler(unittest.TestCase):
     def test_basic(self):
         es = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
@@ -92,6 +92,24 @@ class TestProfile(unittest.TestCase):
                 'datamart.test.basic': basic_metadata,
                 'datamart.test.geo': geo_metadata,
             },
+        )
+
+
+class TestProfileQuery(DatamartTest):
+    def test_basic(self):
+        basic_path = os.path.join(
+            os.path.dirname(__file__),
+            'data', 'basic.csv',
+        )
+        with open(basic_path, 'rb') as basic_fp:
+            response = self.datamart_post(
+                '/profile',
+                files={'data': basic_fp}
+            )
+        assert_json(
+            response.json(),
+            {k: v for k, v in basic_metadata.items()
+             if k not in {'name', 'description', 'date', 'materialize'}},
         )
 
 
@@ -200,6 +218,41 @@ class TestDataSearch(DatamartTest):
             '/search',
             files={
                 'data': basic_aug_data.encode('utf-8'),
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        assert_json(
+            results,
+            [
+                {
+                    'id': 'datamart.test.basic',
+                    'metadata': basic_metadata,
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['number']],
+                        'right_columns': [[2]],
+                        'right_columns_names': [['number']],
+                        'type': 'join'
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
+                }
+            ]
+        )
+
+    def test_basic_join_only_profile(self):
+        response = self.datamart_post(
+            '/profile',
+            files={'data': basic_aug_data.encode('utf-8')},
+        )
+        profile = response.json()
+
+        response = self.datamart_post(
+            '/search',
+            files={
+                'data_profile': json.dumps(profile).encode('utf-8'),
             },
             schema=result_list_schema,
         )
