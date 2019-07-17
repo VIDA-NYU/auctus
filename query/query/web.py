@@ -134,6 +134,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
         type_ = self.request.headers.get('Content-type', '')
         data = None
+        data_profile = None
         if type_.startswith('application/json'):
             query = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -143,11 +144,20 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 query = self.request.files['query'][0].body.decode('utf-8')
             if query is not None:
                 query = json.loads(query)
+
             data = self.get_body_argument('data', None)
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
             elif data is not None:
                 data = data.encode('utf-8')
+
+            data_profile = self.get_body_argument('data_profile', None)
+            if data_profile is None and 'data_profile' in self.request.files:
+                data_profile = self.request.files['data_profile'][0].body
+                data_profile = data_profile.decode('utf-8')
+            if data_profile is not None:
+                data_profile = json.loads(data_profile)
+
         elif (type_.startswith('text/csv') or
                 type_.startswith('application/csv')):
             query = None
@@ -155,18 +165,25 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         else:
             return self.send_error_json(
                 400,
-                "Either use multipart/form-data to send the 'data' file and "
-                "'query' JSON, or use application/json to send a query alone, "
-                "or use text/csv to send data alone",
+                "Either use multipart/form-data to send the 'query' JSON and "
+                "'data' file (or 'data_profile' JSON), or use "
+                "application/json to send a query alone, or use text/csv to "
+                "send data alone",
             )
 
-        logger.info("Got search, content-type=%r%s%s",
+        if data is not None and data_profile is not None:
+            return self.send_error_json(
+                400,
+                "Please send either 'data' or 'data_profile'",
+            )
+
+        logger.info("Got search, content-type=%r%s%s%s",
                     type_.split(';')[0],
                     ', query' if query else '',
-                    ', data' if data else '')
+                    ', data' if data else '',
+                    ', data_profile' if data_profile else '')
 
         # parameter: data
-        data_profile = dict()
         if data:
             try:
                 data_path, data_profile = self.handle_data_parameter(data)
