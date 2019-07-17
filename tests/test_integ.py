@@ -242,6 +242,41 @@ class TestDataSearch(DatamartTest):
             ]
         )
 
+    def test_basic_join_only_profile(self):
+        response = self.datamart_post(
+            '/profile',
+            files={'data': basic_aug_data.encode('utf-8')},
+        )
+        profile = response.json()
+
+        response = self.datamart_post(
+            '/search',
+            files={
+                'data_profile': json.dumps(profile).encode('utf-8'),
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        assert_json(
+            results,
+            [
+                {
+                    'id': 'datamart.test.basic',
+                    'metadata': basic_metadata,
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['number']],
+                        'right_columns': [[2]],
+                        'right_columns_names': [['number']],
+                        'type': 'join'
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
+                }
+            ]
+        )
+
     def test_geo_union(self):
         query = {'keywords': ['places']}
 
