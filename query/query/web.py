@@ -81,10 +81,8 @@ class BaseHandler(RequestHandler):
         self.set_status(status)
         return self.send_json({'error': message})
 
-
-class CorsHandler(BaseHandler):
     def prepare(self):
-        super(CorsHandler, self).prepare()
+        super(BaseHandler, self).prepare()
         self.set_header('Access-Control-Allow-Origin', '*')
         self.set_header('Access-Control-Allow-Methods', 'POST')
         self.set_header('Access-Control-Allow-Headers', 'Content-Type')
@@ -95,7 +93,7 @@ class CorsHandler(BaseHandler):
         return self.finish()
 
 
-class Search(CorsHandler, GracefulHandler, ProfilePostedData):
+class Search(BaseHandler, GracefulHandler, ProfilePostedData):
     @prom_async_time(PROM_SEARCH_TIME)
     async def post(self):
         PROM_SEARCH.inc()
@@ -271,7 +269,7 @@ class BaseDownload(BaseHandler):
                 getter.__exit__(None, None, None)
 
 
-class DownloadId(CorsHandler, GracefulHandler, BaseDownload):
+class DownloadId(BaseDownload, GracefulHandler):
     @PROM_DOWNLOAD_TIME.time()
     def get(self, dataset_id):
         PROM_DOWNLOAD_ID.inc()
@@ -289,7 +287,7 @@ class DownloadId(CorsHandler, GracefulHandler, BaseDownload):
         return self.send_dataset(dataset_id, metadata, output_format)
 
 
-class Download(CorsHandler, GracefulHandler, BaseDownload, ProfilePostedData):
+class Download(BaseDownload, GracefulHandler, ProfilePostedData):
     @PROM_DOWNLOAD_TIME.time()
     def post(self):
         PROM_DOWNLOAD.inc()
@@ -380,7 +378,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload, ProfilePostedData):
             shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
 
 
-class Metadata(CorsHandler, GracefulHandler):
+class Metadata(BaseHandler, GracefulHandler):
     @PROM_METADATA_TIME.time()
     def get(self, dataset_id):
         PROM_METADATA.inc()
@@ -394,7 +392,7 @@ class Metadata(CorsHandler, GracefulHandler):
         return self.send_json(metadata)
 
 
-class Augment(CorsHandler, GracefulHandler, ProfilePostedData):
+class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
     @prom_async_time(PROM_AUGMENT_TIME)
     async def post(self):
         PROM_AUGMENT.inc()
@@ -486,7 +484,7 @@ class Augment(CorsHandler, GracefulHandler, ProfilePostedData):
         return self.finish()
 
 
-class Health(CorsHandler):
+class Health(BaseHandler):
     def get(self):
         if self.application.is_closing:
             self.set_status(503, reason="Shutting down")
