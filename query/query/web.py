@@ -1,10 +1,12 @@
 import aio_pika
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import contextlib
 import elasticsearch
 import logging
 import json
 import os
+from prometheus_async.aio import time as prom_async_time
 import prometheus_client
 import shutil
 import tornado.ioloop
@@ -28,6 +30,7 @@ from .search import ClientError, parse_query, \
 logger = logging.getLogger(__name__)
 
 
+MAX_CONCURRENT = 1
 SCORE_THRESHOLD = 0.0
 
 
@@ -98,8 +101,8 @@ class BaseHandler(RequestHandler):
 
 
 class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
-    @PROM_PROFILE_TIME.time()
-    def post(self):
+    @prom_async_time(PROM_PROFILE_TIME)
+    async def post(self):
         PROM_PROFILE.inc()
 
         data = self.get_body_argument('data', None)
@@ -117,7 +120,10 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         logger.info("Got profile")
 
         try:
-            _, data_profile, _ = self.handle_data_parameter(data)
+            _, data_profile, _ = await self.application.run_in_executor(
+                self.handle_data_parameter,
+                data,
+            )
         except ClientError as e:
             return self.send_error_json(400, str(e))
 
@@ -128,8 +134,8 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
 
 
 class Search(BaseHandler, GracefulHandler, ProfilePostedData):
-    @PROM_SEARCH_TIME.time()
-    def post(self):
+    @prom_async_time(PROM_SEARCH_TIME)
+    async def post(self):
         PROM_SEARCH.inc()
 
         type_ = self.request.headers.get('Content-type', '')
@@ -183,6 +189,18 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     ', data' if data else '',
                     ', data_profile' if data_profile else '')
 
+        try:
+            results = await self.application.run_in_executor(
+                self.do_search,
+                data,
+                data_profile,
+                query,
+            )
+        except ClientError as e:
+            return self.send_error_json(400, e.args[0])
+        return self.send_json(results)
+
+    def do_search(self, data, data_profile, query):
         # parameter: data
         if data:
             try:
@@ -240,17 +258,15 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     supplied_id=None,
                     supplied_resource_id=None
                 ))
-            return self.send_json(results)
+            return results
         else:
-            return self.send_json(
-                get_augmentation_search_results(
-                    self.application.elasticsearch,
-                    data_profile,
-                    query_args_main,
-                    query_args_sup,
-                    tabular_variables,
-                    SCORE_THRESHOLD
-                )
+            return get_augmentation_search_results(
+                self.application.elasticsearch,
+                data_profile,
+                query_args_main,
+                query_args_sup,
+                tabular_variables,
+                SCORE_THRESHOLD
             )
 
 
@@ -279,7 +295,7 @@ class RecursiveZipWriter(object):
 
 
 class BaseDownload(BaseHandler):
-    def send_dataset(self, dataset_id, metadata, output_format='csv'):
+    async def send_dataset(self, dataset_id, metadata, output_format='csv'):
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
@@ -294,9 +310,12 @@ class BaseDownload(BaseHandler):
             # https://docs.python.org/3/library/contextlib.html#catching-exceptions-from-enter-methods
             stack = contextlib.ExitStack()
             try:
-                dataset_path = stack.enter_context(
-                    get_dataset(metadata, dataset_id, format=output_format)
-                )
+                def enter():
+                    dataset_path = stack.enter_context(
+                        get_dataset(metadata, dataset_id, format=output_format)
+                    )
+                    return dataset_path
+                dataset_path = await self.application.run_in_executor(enter)
             except Exception:
                 self.send_error_json(500, "Materializer reports failure")
                 raise
@@ -327,8 +346,8 @@ class BaseDownload(BaseHandler):
 
 
 class DownloadId(BaseDownload, GracefulHandler):
-    @PROM_DOWNLOAD_TIME.time()
-    def get(self, dataset_id):
+    @prom_async_time(PROM_DOWNLOAD_TIME)
+    async def get(self, dataset_id):
         PROM_DOWNLOAD_ID.inc()
 
         output_format = self.get_query_argument('format', 'csv')
@@ -341,12 +360,12 @@ class DownloadId(BaseDownload, GracefulHandler):
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
 
-        return self.send_dataset(dataset_id, metadata, output_format)
+        return await self.send_dataset(dataset_id, metadata, output_format)
 
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
-    @PROM_DOWNLOAD_TIME.time()
-    def post(self):
+    @prom_async_time(PROM_DOWNLOAD_TIME)
+    async def post(self):
         PROM_DOWNLOAD.inc()
 
         type_ = self.request.headers.get('Content-type', '')
@@ -388,45 +407,11 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         metadata = task['metadata']
 
         if not data:
-            return self.send_dataset(task['id'], metadata, output_format)
+            return await self.send_dataset(task['id'], metadata, output_format)
         else:
-            # data
-            try:
-                data, data_profile, _ = self.handle_data_parameter(data)
-            except ClientError as e:
-                return self.send_error_json(400, str(e))
-
-            # first, look for possible augmentation
-            search_results = get_augmentation_search_results(
-                es=self.application.elasticsearch,
-                data_profile=data_profile,
-                query_args_main=None,
-                query_args_sup=None,
-                tabular_variables=None,
-                score_threshold=SCORE_THRESHOLD,
-                dataset_id=task['id'],
-                union=False
+            new_path = await self.application.run_in_executor(
+                self.do_augmentation_download,
             )
-
-            if not search_results:
-                return self.send_error_json(
-                    400,
-                    "The DataMart dataset referenced by 'task' cannot augment "
-                    "'data'",
-                )
-
-            task = search_results[0]
-
-            with get_dataset(metadata, task['id'], format='csv') as newdata:
-                # perform augmentation
-                logger.info("Performing half-augmentation with supplied data")
-                new_path = augment(
-                    data,
-                    newdata,
-                    data_profile,
-                    task,
-                    return_only_datamart_data=True
-                )
 
             # send a zip file
             self.set_header('Content-Type', 'application/zip')
@@ -438,6 +423,48 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             writer.write_recursive(new_path)
             writer.close()
             shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+            return self.finish()
+
+    def do_augmentation_download(self, data, task):
+        metadata = task['metadata']
+
+        # data
+        try:
+            data, data_profile, _ = self.handle_data_parameter(data)
+        except ClientError as e:
+            return self.send_error_json(400, str(e))
+
+        # first, look for possible augmentation
+        search_results = get_augmentation_search_results(
+            es=self.application.elasticsearch,
+            data_profile=data_profile,
+            query_args_main=None,
+            query_args_sup=None,
+            tabular_variables=None,
+            score_threshold=SCORE_THRESHOLD,
+            dataset_id=task['id'],
+            union=False
+        )
+
+        if not search_results:
+            return self.send_error_json(
+                400,
+                "The DataMart dataset referenced by 'task' cannot augment "
+                "'data'",
+            )
+
+        task = search_results[0]
+
+        with get_dataset(metadata, task['id'], format='csv') as newdata:
+            # perform augmentation
+            logger.info("Performing half-augmentation with supplied data")
+            return augment(
+                data,
+                newdata,
+                data_profile,
+                task,
+                return_only_datamart_data=True
+            )
 
 
 class Metadata(BaseHandler, GracefulHandler):
@@ -455,8 +482,8 @@ class Metadata(BaseHandler, GracefulHandler):
 
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
-    @PROM_AUGMENT_TIME.time()
-    def post(self):
+    @prom_async_time(PROM_AUGMENT_TIME)
+    async def post(self):
         PROM_AUGMENT.inc()
 
         type_ = self.request.headers.get('Content-type', '')
@@ -504,16 +531,40 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         if columns is not None:
             columns = json.loads(columns)
 
-        # data
+        logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
+
         try:
-            data, data_profile, data_hash = self.handle_data_parameter(data)
+            new_path = await self.application.run_in_executor(
+                self.do_augmentation,
+                data, task, columns, destination,
+            )
         except ClientError as e:
             return self.send_error_json(400, str(e))
 
+        if destination:
+            # send the path
+            self.set_header('Content-Type', 'text/plain; charset=utf-8')
+            self.write(new_path)
+        else:
+            # send a zip file
+            self.set_header('Content-Type', 'application/zip')
+            self.set_header(
+                'Content-Disposition',
+                'attachment; filename="augmentation.zip"')
+            logger.info("Sending ZIP...")
+            writer = RecursiveZipWriter(self.write)
+            writer.write_recursive(new_path)
+            writer.close()
+            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+
+        return self.finish()
+
+    def do_augmentation(self, data, task, columns, destination):
+        # data
+        data, data_profile, data_hash = self.handle_data_parameter(data)
+
         # materialize augmentation data
         metadata = task['metadata']
-
-        logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
 
         # no augmentation task provided -- will first look for possible augmentation
         if task['augmentation']['type'] == 'none':
@@ -535,9 +586,8 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 logger.info("Using first of %d augmentation results: %r",
                             len(search_results), task['id'])
             else:
-                return self.send_error_json(400,
-                                            "The DataMart dataset referenced "
-                                            "by 'task' cannot augment 'data'")
+                raise ClientError("The DataMart dataset referenced by 'task' "
+                                  "cannot augment 'data'")
 
         hash_ = hash_json(
             task=task,
@@ -550,7 +600,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 with get_dataset(metadata, task['id'], format='csv') as newdata:
                     # perform augmentation
                     logger.info("Performing augmentation with supplied data")
-                    augment(
+                    return augment(
                         data,
                         newdata,
                         data_profile,
@@ -597,6 +647,9 @@ class Application(GracefulApplication):
 
         self.is_closing = False
 
+        self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
+        self.thread_pool = ThreadPoolExecutor(MAX_CONCURRENT)
+
         self.elasticsearch = es
         self.channel = None
 
@@ -610,6 +663,13 @@ class Application(GracefulApplication):
         )
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
+
+    async def run_in_executor(self, func, *args):
+        async with self.work_tickets:
+            return await asyncio.get_event_loop().run_in_executor(
+                self.thread_pool,
+                func, *args,
+            )
 
     def log_request(self, handler):
         if handler.request.path == '/health':
