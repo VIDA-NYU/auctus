@@ -18,6 +18,7 @@ from datamart_augmentation.augmentation import augment
 from datamart_core.common import log_future
 from datamart_core.materialize import get_dataset
 
+from .enhance_metadata import enhance_metadata
 from .graceful_shutdown import GracefulApplication, GracefulHandler
 from .search import ClientError, parse_query, \
     get_augmentation_search_results, ProfilePostedData
@@ -189,18 +190,17 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     supplied_id=None,
                     supplied_resource_id=None
                 ))
-            return self.send_json(results)
         else:
-            return self.send_json(
-                get_augmentation_search_results(
-                    self.application.elasticsearch,
-                    data_profile,
-                    query_args_main,
-                    query_args_sup,
-                    tabular_variables,
-                    SCORE_THRESHOLD
-                )
+            results = get_augmentation_search_results(
+                self.application.elasticsearch,
+                data_profile,
+                query_args_main,
+                query_args_sup,
+                tabular_variables,
+                SCORE_THRESHOLD
             )
+        results = [enhance_metadata(result) for result in results]
+        return self.send_json(results)
 
 
 class RecursiveZipWriter(object):
@@ -398,6 +398,7 @@ class Metadata(BaseHandler, GracefulHandler):
             raise HTTPError(404)
 
         result = {'id': dataset_id, 'metadata': metadata}
+        result = enhance_metadata(result)
         return self.send_json(result)
 
 
