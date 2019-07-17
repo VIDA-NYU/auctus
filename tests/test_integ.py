@@ -71,7 +71,7 @@ class DatamartTest(unittest.TestCase):
         response.raise_for_status()
 
 
-class TestProfile(unittest.TestCase):
+class TestProfiler(unittest.TestCase):
     def test_basic(self):
         es = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
@@ -92,6 +92,24 @@ class TestProfile(unittest.TestCase):
                 'datamart.test.basic': basic_metadata,
                 'datamart.test.geo': geo_metadata,
             },
+        )
+
+
+class TestProfileQuery(DatamartTest):
+    def test_basic(self):
+        basic_path = os.path.join(
+            os.path.dirname(__file__),
+            'data', 'basic.csv',
+        )
+        with open(basic_path, 'rb') as basic_fp:
+            response = self.datamart_post(
+                '/profile',
+                files={'data': basic_fp}
+            )
+        assert_json(
+            response.json(),
+            {k: v for k, v in basic_metadata.items()
+             if k not in {'name', 'description', 'date', 'materialize'}},
         )
 
 
