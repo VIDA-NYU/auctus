@@ -111,7 +111,7 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         if data is None:
             return self.send_error_json(
                 400,
-                "Missing data",
+                "Please send 'data' as a file, using multipart/form-data",
             )
 
         logger.info("Got profile")
@@ -205,7 +205,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         if not query_args_main and not data_profile:
             return self.send_error_json(
                 400,
-                "At least one of the input parameters must be provided.",
+                "At least one of 'data' or 'query' must be provided",
             )
 
         if not data_profile:
@@ -409,7 +409,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 return self.send_error_json(
                     400,
                     "The DataMart dataset referenced by 'task' cannot augment "
-                    "'data'.",
+                    "'data'",
                 )
 
             task = search_results[0]
@@ -517,7 +517,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             else:
                 return self.send_error_json(400,
                                             "The DataMart dataset referenced "
-                                            "by 'task' cannot augment 'data'.")
+                                            "by 'task' cannot augment 'data'")
 
         with get_dataset(metadata, task['id'], format='csv') as newdata:
             # perform augmentation
