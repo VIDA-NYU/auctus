@@ -4,7 +4,6 @@ import hashlib
 import logging
 import os
 import pickle
-import shutil
 import tempfile
 import time
 import tornado.web

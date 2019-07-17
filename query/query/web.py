@@ -25,9 +25,6 @@ from .search import ClientError, parse_query, \
 logger = logging.getLogger(__name__)
 
 
-BUF_SIZE = 128000
-MAX_STREAMED_SIZE = 1024 * 1024 * 1024
-MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.0
 
 
@@ -564,8 +561,6 @@ class Application(GracefulApplication):
         super(Application, self).__init__(*args, **kwargs)
 
         self.is_closing = False
-
-        self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
 
         self.elasticsearch = es
         self.channel = None
