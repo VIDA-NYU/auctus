@@ -156,7 +156,7 @@ class TestSearch(DatamartTest):
                 },
                 'score': lambda n: isinstance(n, float),
                 'metadata': basic_metadata,
-                'd3m_metadata': basic_metadata_d3m,
+                'd3m_dataset_description': basic_metadata_d3m,
                 'supplied_id': None,
                 'supplied_resource_id': None
             },
@@ -182,7 +182,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
-                    'd3m_metadata': basic_metadata_d3m,
+                    'd3m_dataset_description': basic_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -212,7 +212,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
-                    'd3m_metadata': basic_metadata_d3m,
+                    'd3m_dataset_description': basic_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -246,7 +246,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.geo',
                     'metadata': geo_metadata,
-                    'd3m_metadata': geo_metadata_d3m,
+                    'd3m_dataset_description': geo_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0], [1], [2]],
@@ -277,7 +277,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.geo',
                     'metadata': geo_metadata,
-                    'd3m_metadata': geo_metadata_d3m,
+                    'd3m_dataset_description': geo_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0], [1], [2]],

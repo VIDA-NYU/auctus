@@ -9,5 +9,8 @@ def enhance_metadata(result):
     :return: A dict with the 'metadata' key and additional keys such as
         'd3m-metadata'
     """
-    result = dict(result, d3m_metadata=d3m_metadata(result['id'], result['metadata']))
+    result = dict(
+        result,
+        d3m_dataset_description=d3m_metadata(result['id'], result['metadata']),
+    )
     return result
