@@ -140,7 +140,7 @@ def download(dataset, destination, proxy, format='csv'):
                 logger.info("Obtaining metadata from proxy...")
                 response = requests.get(proxy + '/metadata/' + dataset)
                 response.raise_for_status()
-                metadata = response.json()
+                metadata = response.json()['metadata']
             writer = writer_cls(dataset, destination, metadata)
             _proxy_download(dataset, writer, proxy)
             return writer.finish()

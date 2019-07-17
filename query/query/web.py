@@ -397,7 +397,8 @@ class Metadata(BaseHandler, GracefulHandler):
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
 
-        return self.send_json(metadata)
+        result = {'id': dataset_id, 'metadata': metadata}
+        return self.send_json(result)
 
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
