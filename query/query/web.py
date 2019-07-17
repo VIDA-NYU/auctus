@@ -5,7 +5,6 @@ import logging
 import json
 import os
 import prometheus_client
-from prometheus_async.aio import time as prom_async_time
 import shutil
 import tornado.ioloop
 from tornado.routing import URLSpec
@@ -94,8 +93,8 @@ class BaseHandler(RequestHandler):
 
 
 class Search(BaseHandler, GracefulHandler, ProfilePostedData):
-    @prom_async_time(PROM_SEARCH_TIME)
-    async def post(self):
+    @PROM_SEARCH_TIME.time()
+    def post(self):
         PROM_SEARCH.inc()
 
         type_ = self.request.headers.get('Content-type', '')
@@ -401,8 +400,8 @@ class Metadata(BaseHandler, GracefulHandler):
 
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
-    @prom_async_time(PROM_AUGMENT_TIME)
-    async def post(self):
+    @PROM_AUGMENT_TIME.time()
+    def post(self):
         PROM_AUGMENT.inc()
 
         type_ = self.request.headers.get('Content-type', '')
