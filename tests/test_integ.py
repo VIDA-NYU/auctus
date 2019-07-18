@@ -41,22 +41,20 @@ result_list_schema = {
 
 
 class DatamartTest(unittest.TestCase):
-    def datamart_get(self, url, schema=None, **kwargs):
-        response = requests.get(
-            os.environ['QUERY_HOST'] + url,
-            **kwargs
-        )
-        self.assert_response(response)
-        if schema is not None:
-            jsonschema.validate(response.json(), schema)
-        return response
+    def datamart_get(self, url, **kwargs):
+        return self._request('get', url, **kwargs)
 
-    def datamart_post(self, url, schema=None, **kwargs):
-        response = requests.post(
+    def datamart_post(self, url, **kwargs):
+        return self._request('post', url, **kwargs)
+
+    def _request(self, method, url, schema=None, check_status=True, **kwargs):
+        response = requests.request(
+            method,
             os.environ['QUERY_HOST'] + url,
             **kwargs
         )
-        self.assert_response(response)
+        if check_status:
+            self.assert_response(response)
         if schema is not None:
             jsonschema.validate(response.json(), schema)
         return response
@@ -463,8 +461,8 @@ class TestDownload(DatamartTest):
 
     def test_post_invalid(self):
         """Post invalid materialization information."""
-        response = requests.post(
-            os.environ['QUERY_HOST'] + '/download', allow_redirects=False,
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
             files={'task': json.dumps(
                 {
                     'id': 'datamart.nonexistent',
@@ -476,7 +474,8 @@ class TestDownload(DatamartTest):
                         }
                     }
                 }
-            ).encode('utf-8')}
+            ).encode('utf-8')},
+            check_status=False,
         )
         self.assertEqual(response.status_code, 500)
         self.assertEqual(
