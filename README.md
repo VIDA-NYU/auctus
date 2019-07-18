@@ -72,7 +72,7 @@ Ports:
 * The query interface/API at http://localhost:8002 (behind HAProxy)
 * Elasticsearch is at http://localhost:9200
 * The RabbitMQ management interface is at http://localhost:8080
-* The HAProxy statistics are at http://localhost:8081 (default login: stats/stats)
+* The HAProxy statistics are at http://localhost:8081
 * Prometheus is at http://localhost:9090
 * Grafana is at http://localhost:3000
 
