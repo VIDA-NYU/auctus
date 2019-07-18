@@ -15,6 +15,7 @@ from tornado.web import HTTPError, RequestHandler
 import zipfile
 
 from datamart_augmentation.augmentation import augment
+from datamart_augmentation.utils import AugmentationError
 from datamart_core.common import log_future
 from datamart_core.materialize import get_dataset
 
@@ -117,7 +118,7 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         try:
             data_path, data_profile = self.handle_data_parameter(data)
         except ClientError as e:
-            return self.send_error_json(400, e.args[0])
+            return self.send_error_json(400, str(e))
 
         return self.send_json(dict(
             data_profile,
@@ -186,7 +187,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
             try:
                 data_path, data_profile = self.handle_data_parameter(data)
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
+                return self.send_error_json(400, str(e))
 
         # parameter: query
         query_args_main = list()
@@ -197,7 +198,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 query_args_main, query_args_sup, tabular_variables = \
                     parse_query(query)
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
+                return self.send_error_json(400, str(e))
 
         # At least one of them must be provided
         if not query_args_main and not data_profile:
@@ -392,7 +393,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             try:
                 data_path, data_profile = self.handle_data_parameter(data)
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
+                return self.send_error_json(400, str(e))
 
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
@@ -489,7 +490,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         try:
             data_path, data_profile = self.handle_data_parameter(data)
         except ClientError as e:
-            return self.send_error_json(400, e.args[0])
+            return self.send_error_json(400, str(e))
 
         # materialize augmentation data
         metadata = task['metadata']
@@ -520,17 +521,20 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                                             "The DataMart dataset referenced "
                                             "by 'task' cannot augment 'data'")
 
-        with get_dataset(metadata, task['id'], format='csv') as newdata:
-            # perform augmentation
-            logger.info("Performing augmentation with supplied data")
-            new_path = augment(
-                data_path,
-                newdata,
-                data_profile,
-                task,
-                columns=columns,
-                destination=destination
-            )
+        try:
+            with get_dataset(metadata, task['id'], format='csv') as newdata:
+                # perform augmentation
+                logger.info("Performing augmentation with supplied data")
+                new_path = augment(
+                    data_path,
+                    newdata,
+                    data_profile,
+                    task,
+                    columns=columns,
+                    destination=destination
+                )
+        except AugmentationError as e:
+            return self.send_error_json(400, str(e))
 
         if destination:
             # send the path
