@@ -256,17 +256,15 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     supplied_id=None,
                     supplied_resource_id=None
                 ))
-            return self.send_json(results)
+            return results
         else:
-            return self.send_json(
-                get_augmentation_search_results(
-                    self.application.elasticsearch,
-                    data_profile,
-                    query_args_main,
-                    query_args_sup,
-                    tabular_variables,
-                    SCORE_THRESHOLD
-                )
+            return get_augmentation_search_results(
+                self.application.elasticsearch,
+                data_profile,
+                query_args_main,
+                query_args_sup,
+                tabular_variables,
+                SCORE_THRESHOLD
             )
 
 
