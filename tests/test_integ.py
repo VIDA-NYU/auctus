@@ -5,6 +5,7 @@ import jsonschema
 import os
 import re
 import requests
+import time
 import unittest
 import zipfile
 
@@ -53,6 +54,17 @@ class DatamartTest(unittest.TestCase):
             os.environ['QUERY_HOST'] + url,
             **kwargs
         )
+        for _ in range(5):
+            if response.status_code != 503:
+                break
+            time.sleep(0.5)
+            response = requests.request(
+                method,
+                os.environ['QUERY_HOST'] + url,
+                **kwargs
+            )
+        else:
+            response.raise_for_status()
         if check_status:
             self.assert_response(response)
         if schema is not None:
