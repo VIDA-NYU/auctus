@@ -471,6 +471,23 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         task = json.loads(task)
 
         destination = self.get_argument('destination', None)
+        if destination is not None:
+            try:
+                shared_storage = os.environ['DATAMART_SHARED_STORAGE']
+            except KeyError:
+                return self.send_error_json(
+                    403,
+                    "Writing augmentation result to a file is disabled; set "
+                    "$DATAMART_SHARED_STORAGE to enable",
+                )
+            else:
+                shared_storage = shared_storage.rstrip('/') + '/'
+                if not destination.startswith(shared_storage):
+                    return self.send_error_json(
+                        403,
+                        "Requested destination does not lie under "
+                        "$DATAMART_SHARED_STORAGE",
+                    )
 
         data = self.get_body_argument('data', None)
         if data is not None:
