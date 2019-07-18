@@ -1,3 +1,4 @@
+import copy
 import logging
 import numpy as np
 import os
@@ -157,16 +158,7 @@ def perform_aggregations(data, groupby_columns,
         )
         agg_functions = dict()
         for column in agg_columns:
-            index = -1
-            if column in augment_data_join_columns:
-                index += 1
-                # column is a join column
-                if ('int' in str(data.dtypes[column]) or
-                        'float' in str(data.dtypes[column])):
-                    agg_functions[column] = \
-                        lambda x: int(np.mean(x.tolist()))
-                # TODO: datetime and other potential cases
-            else:
+            if column not in augment_data_join_columns:
                 # column is not a join column
                 if ('int' in str(data.dtypes[column]) or
                         'float' in str(data.dtypes[column])):
@@ -349,30 +341,13 @@ def union(original_data, augment_data, left_columns, right_columns,
     return union_, qualities_list
 
 
-def generate_d3m_dataset(data, destination=None, qualities=None):
+def generate_d3m_dataset(data, input_metadata, companion_metadata,
+                         destination=None, qualities=None):
     """
     Generates a D3M dataset from data (pandas.DataFrame).
 
     Returns the path to the D3M-style directory.
     """
-
-    def add_column(column_, type_, metadata_):
-        metadata_['columns'].append({'name': column_})
-        if 'datetime' in type_:
-            metadata_['columns'][-1]['semantic_types'] = [Type.DATE_TIME]
-            metadata_['columns'][-1]['structural_type'] = Type.TEXT
-        elif 'int' in type_:
-            metadata_['columns'][-1]['semantic_types'] = []
-            metadata_['columns'][-1]['structural_type'] = Type.INTEGER
-        elif 'float' in type_:
-            metadata_['columns'][-1]['semantic_types'] = []
-            metadata_['columns'][-1]['structural_type'] = Type.FLOAT
-        elif 'bool' in type_:
-            metadata_['columns'][-1]['semantic_types'] = []
-            metadata_['columns'][-1]['structural_type'] = Type.BOOLEAN
-        else:
-            metadata_['columns'][-1]['semantic_types'] = []
-            metadata_['columns'][-1]['structural_type'] = Type.TEXT
 
     dir_name = uuid.uuid4().hex
     if destination:
@@ -383,13 +358,38 @@ def generate_d3m_dataset(data, destination=None, qualities=None):
         temp_dir = tempfile.mkdtemp()
         data_path = os.path.join(temp_dir, dir_name)
 
-    metadata = dict(columns=[])
-    for column in data.columns:
-        add_column(
-            column,
-            str(data[column].dtype),
-            metadata
+    # collecting information about all the original columns
+    # from input (supplied) and companion datasets
+    original_columns_metadata = dict()
+    for column in input_metadata:
+        original_columns_metadata[column['name']] = column
+    for column in companion_metadata:
+        names = [
+            column['name'],
+            column['name'] + '_r'
+        ]
+        # agg names
+        all_names = ['sum ' + name for name in names]
+        all_names += ['mean ' + name for name in names]
+        all_names += ['amax ' + name for name in names]
+        all_names += ['amin ' + name for name in names]
+        all_names += names
+        for name in all_names:
+            column_metadata = copy.deepcopy(column)
+            column_metadata['name'] = name
+            if ('sum' in name or 'mean' in name
+                    or 'amax' in name or 'amin' in name):
+                column_metadata['structural_type'] = Type.FLOAT
+            original_columns_metadata[name] = column_metadata
+
+    # column metadata for the new, augmented dataset
+    columns_metadata = list()
+    for column_name in data.columns:
+        columns_metadata.append(
+            original_columns_metadata[column_name]
         )
+
+    metadata = dict(columns=columns_metadata)
     metadata['size'] = data.memory_usage(index=True, deep=True).sum()
 
     if qualities:
@@ -456,7 +456,13 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
                 qualities=True,
                 return_only_datamart_data=return_only_datamart_data
             )
-            return generate_d3m_dataset(join_, destination, qualities)
+            return generate_d3m_dataset(
+                join_,
+                metadata['columns'],
+                task['metadata']['columns'],
+                destination,
+                qualities
+            )
         elif task['augmentation']['type'] == 'union':
             logger.info("Performing union...")
             union_, qualities = union(
@@ -466,7 +472,13 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
                 task['augmentation']['right_columns'],
                 qualities=True
             )
-            return generate_d3m_dataset(union_, destination, qualities)
+            return generate_d3m_dataset(
+                union_,
+                metadata['columns'],
+                task['metadata']['columns'],
+                destination,
+                qualities
+            )
         else:
             raise AugmentationError("Augmentation task not provided")
     except AugmentationError:
