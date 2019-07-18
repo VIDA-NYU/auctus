@@ -1,4 +1,5 @@
 import copy
+import io
 import logging
 import numpy as np
 import os
@@ -441,7 +442,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             logger.info("Performing join...")
             join_, qualities = join(
                 convert_data_types(
-                    pd.read_csv(data, error_bad_lines=False),
+                    pd.read_csv(io.BytesIO(data), error_bad_lines=False),
                     aug_columns_input_data,
                     metadata['columns']
                 ),
@@ -466,7 +467,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         elif task['augmentation']['type'] == 'union':
             logger.info("Performing union...")
             union_, qualities = union(
-                pd.read_csv(data, error_bad_lines=False),
+                pd.read_csv(io.BytesIO(data), error_bad_lines=False),
                 pd.read_csv(newdata, error_bad_lines=False),
                 task['augmentation']['left_columns'],
                 task['augmentation']['right_columns'],
