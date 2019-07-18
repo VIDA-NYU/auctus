@@ -588,6 +588,9 @@ class Health(BaseHandler):
         if self.application.is_closing:
             self.set_status(503, reason="Shutting down")
             return self.finish('shutting down')
+        elif self.application.work_tickets.locked():
+            self.set_status(503, reason="Busy")
+            return self.finish('busy')
         else:
             return self.finish('ok')
 
