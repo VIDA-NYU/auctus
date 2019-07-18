@@ -363,14 +363,8 @@ def generate_d3m_dataset(data, input_metadata, companion_metadata,
     Returns the path to the D3M-style directory.
     """
 
-    dir_name = uuid.uuid4().hex
-    if destination:
-        data_path = os.path.join(destination, dir_name)
-        if os.path.exists(data_path):
-            shutil.rmtree(data_path)
-    else:
-        temp_dir = tempfile.mkdtemp()
-        data_path = os.path.join(temp_dir, dir_name)
+    if destination is None:
+        destination = tempfile.mkdtemp()
 
     # collecting information about all the original columns
     # from input (supplied) and companion datasets
@@ -409,11 +403,11 @@ def generate_d3m_dataset(data, input_metadata, companion_metadata,
     if qualities:
         metadata['qualities'] = qualities
 
-    writer = D3mWriter(dir_name, data_path, metadata)
+    writer = D3mWriter(uuid.uuid4().hex, destination, metadata)
     with writer.open_file('w') as fp:
         data.to_csv(fp, index=False)
 
-    return data_path
+    return destination
 
 
 def augment(data, newdata, metadata, task, columns=None, destination=None,
