@@ -29,6 +29,8 @@ def get_dataset(metadata, dataset_id, format='csv'):
     else:
         temp_dir = tempfile.mkdtemp()
         try:
+            # Use a path inside the directory instead of the directory because
+            # the materializer might expect either a directory or a file
             temp_file = os.path.join(temp_dir, 'data')
             if os.path.exists(shared):
                 # Do format conversion from stored file

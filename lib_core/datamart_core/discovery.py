@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class _HandleQueryPublisher(object):
+    """Proxy object given to discoverer for on-demand discovery.
+
+    It allows us to keep track of the query that triggered this discovery so we
+    can report back to the waiting query process.
+    """
     def __init__(self, discoverer, reply_to):
         self.discoverer = discoverer
         self.reply_to = reply_to
