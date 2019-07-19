@@ -195,7 +195,7 @@ class Upload(BaseHandler):
 
 
 def format_size(bytes):
-    units = [' B', ' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB']
+    units = [' B', ' kB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB']
 
     i = 0
     while bytes > 1000 and i + 1 < len(units):
