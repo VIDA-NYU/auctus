@@ -37,7 +37,9 @@ test:
       docker push $CI_REGISTRY_IMAGE/base
     - cp tests/ci.env .env
     - cat .env | while read l; do echo "export $l"; done >.env.sh && . .env.sh
-    - python3 docker-compose-cached-build.py
+    - export DATAMART_VERSION=$(git describe)
+    - "sed -i 's/# CI: //' docker-compose.yml base.Dockerfile */Dockerfile"
+    - python3 scripts/docker-compose-cached-build.py
     - docker-compose pull rabbitmq  # Don't build it
     - |
       patch -p1 <<'END'
@@ -50,7 +52,6 @@ test:
       +      - ES_HEAP_SIZE=256m
            ulimits:
       END
-    - docker network create -d bridge --subnet 172.0.44.0/24 --gateway 172.0.44.1 datamart_default
     - docker-compose up -d elasticsearch rabbitmq
     - |
       # Wait for Elasticsearch to come up
@@ -70,8 +71,17 @@ test:
       if [ $slept -le 180 ]; then
         echo "Profiling ended after ${slept}s"
       else
+        echo "Profiling didn't end after ${slept}s"
+        docker-compose logs profiler
         exit 1
       fi
     - docker-compose ps
     - docker-compose logs profiler
-    - python tests
+    - coverage run --branch tests/__main__.py
+    - docker-compose down -t 30
+    - coverage combine -a cov/
+    - coverage html
+  artifacts:
+    paths:
+      - htmlcov
+    expire_in: 1 week

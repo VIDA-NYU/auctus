@@ -4,6 +4,8 @@ import signal
 import tornado.ioloop
 import tornado.web
 
+from datamart_core.common import log_future
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,7 @@ class GracefulApplication(tornado.web.Application):
             logger.warning("Closing gracefully")
             tornado.ioloop.IOLoop.current().stop()
 
-        asyncio.get_event_loop().create_task(do_exit())
+        log_future(asyncio.get_event_loop().create_task(do_exit()), logger)
 
 
 class GracefulHandler(tornado.web.RequestHandler):
@@ -51,4 +53,4 @@ class GracefulHandler(tornado.web.RequestHandler):
                 app.nb_requests -= 1
                 app.close_condition.notify_all()
 
-        asyncio.get_event_loop().create_task(do_decrease())
+        log_future(asyncio.get_event_loop().create_task(do_decrease()), logger)

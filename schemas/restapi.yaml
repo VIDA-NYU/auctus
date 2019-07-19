@@ -1,0 +1,293 @@
+openapi: 3.0.1
+info:
+  title: "Datamart"
+  description: "REST API for Datamart."
+  contact:
+    email: "remi.rampin@nyu.edu"
+  license:
+    name: "MIT"
+    url: "https://gitlab.com/datadrivendiscovery/datamart-api/blob/master/LICENSE.txt"
+  version: "0.3"
+externalDocs:
+  description: "Datamart API documentation"
+  url: "https://datadrivendiscovery.gitlab.io/datamart-api/"
+servers:
+- url: "https://auctus.vida-nyu.org/"
+tags:
+- name: "query"
+  description: "Searching the index for datasets"
+- name: "augment"
+  description: "Using the Datamart to perform server-side augmentation"
+- name: "ingest"
+  description: "Adding new datasets to the index"
+paths:
+  /upload:
+    post:
+      tags:
+      - "ingest"
+      summary: "Add a new dataset to the index"
+      operationId: "upload"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              oneOf:
+                - properties:
+                    name:
+                      type: string
+                      description: "Dataset name"
+                    description:
+                      type: string
+                    address:
+                      type: string
+                  required:
+                  - name
+                  - address
+                - properties:
+                    name:
+                      type: string
+                      description: "Dataset name"
+                    description:
+                      type: string
+                    file:
+                      type: string
+                      format: binary
+                  required:
+                  - name
+                  - file
+        required: true
+      responses:
+        302:
+          description: "OK, redirects to /"
+          content: {}
+        400:
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /search:
+    post:
+      tags:
+      - "query"
+      summary: "Search the index for datasets"
+      operationId: "search"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: "Data which you want to augment"
+                  format: binary
+                query:
+                  $ref: "#/components/schemas/Query"
+              # TODO: One of the two needs to be provided
+            encoding:
+              query:
+                contentType: application/json
+            examples:
+              keyword_search:
+                summary: "Search using the keywords 'taxi' and 'medallion'"
+                value:
+                  query:
+                    keywords:
+                      - "taxi"
+                      - "medallion"
+                    variables: []
+              geo_bronx:
+                summary: "Search for geospatial datasets concerning the Bronx"
+                value:
+                  query:
+                    keywords: []
+                    variables:
+                    - type: geospatial_variable
+                      latitude1: 40.894673917657514
+                      latitude2: 40.823526516469315
+                      longitude1: -73.91395568847656
+                      longitude2: -73.82675170898438
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Query"
+            examples:
+              keyword_search:
+                summary: "Search using the keywords 'taxi' and 'medallion'"
+                value:
+                  keywords:
+                    - "taxi"
+                    - "medallion"
+                  variables: []
+              geo_bronx:
+                summary: "Search for geospatial datasets concerning the Bronx"
+                value:
+                  keywords: []
+                  variables:
+                  - type: geospatial_variable
+                    latitude1: 40.894673917657514
+                    latitude2: 40.823526516469315
+                    longitude1: -73.91395568847656
+                    longitude2: -73.82675170898438
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Results"
+        400:
+          description: "Invalid query"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /download/{dataset_id}:
+    get:
+      tags:
+      - "query"
+      summary: "Download a full dataset by its ID"
+      operationId: "download_id"
+      parameters:
+      - in: path
+        name: "dataset_id"
+        schema:
+          type: string
+        required: true
+        examples:
+          nyc_data:
+            value: "datamart.socrata.data-cityofnewyork-us.395v-hkhg"
+      - in: query
+        name: "format"
+        schema:
+          enum: ["csv", "d3m"]
+      responses:
+        404:
+          description: "No dataset with this ID"
+        200:
+          description: OK
+        302:
+          description: "OK, redirects to dataset"
+  /download:
+    post:
+      tags:
+      - "query"
+      summary: "Download a dataset from a search result and optional input data"
+      operationId: "download"
+      parameters:
+      - in: query
+        name: "format"
+        schema:
+          enum: ["csv", "d3m"]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: "Data which you want to augment"
+                  format: binary
+                task:
+                  $ref: "#/components/schemas/Result"
+              required:
+              - task
+            examples:
+              nyc_data:
+                summary: "Sample search result sent back as task"
+                value:
+                  task:
+                    id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
+                    metadata:
+                      columns:
+                        - name: "Borough"
+                        - name: "Calendar Year"
+                        - name: "Filed Violation Count"
+                      materialize:
+                        socrata_id: "vbgf-ket3"
+                        socrata_domain: "data.cityofnewyork.us"
+                        socrata_updated: "2019-04-29T16:54:13.000Z"
+                        direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
+                        identifier: datamart.socrata
+                        date: "2019-06-27T19:26:53.147559Z"
+            encoding:
+              task:
+                contentType: application/json
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Result"
+            examples:
+              nyc_data:
+                summary: "Sample search result sent back as task"
+                value:
+                  id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
+                  metadata:
+                    columns:
+                      - name: "Borough"
+                      - name: "Calendar Year"
+                      - name: "Filed Violation Count"
+                    materialize:
+                      socrata_id: "vbgf-ket3"
+                      socrata_domain: "data.cityofnewyork.us"
+                      socrata_updated: "2019-04-29T16:54:13.000Z"
+                      direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
+                      identifier: datamart.socrata
+                      date: "2019-06-27T19:26:53.147559Z"
+      responses:
+        404:
+          description: "No dataset for this result"
+        200:
+          description: OK
+        400:
+          description: "Invalid query"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /augment:
+    post:
+      tags:
+      - "augment"
+      summary: "Augment an input dataset with a selected search result"
+      operationId: "augment"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: "Data which you want to augment"
+                  format: binary
+                task:
+                  $ref: "#/components/schemas/Result"
+              required:
+              - task
+            encoding:
+              task:
+                contentType: application/json
+      responses:
+        200:
+          description: OK
+        400:
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Query:
+      $ref: "query_input_schema.json"
+    Error:
+      description: "JSON object returned by API on client errors"
+      properties:
+        error:
+          type: string
+          description: "The error message"
+    Results:
+      description: "Array of results returned by /search"
+      type: array
+      items:
+        $ref: "#/components/schemas/Result"
+    Result:
+      $ref: "query_result_schema.json"

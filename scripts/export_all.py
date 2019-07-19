@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
 import elasticsearch
+import logging
 import json
 import os
-import re
+
+from datamart_core.common import encode_dataset_id
 
 
 SIZE = 10000
-
-
-re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')
-
-
-def encode_dataset_id(dataset_id):
-    dataset_id = dataset_id.replace('_', '__')
-    dataset_id = re_non_path_safe.sub(lambda m: '_%X' % ord(m.group(0)),
-                                      dataset_id)
-    return dataset_id
 
 
 def export():
@@ -41,4 +33,6 @@ def export():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     export()

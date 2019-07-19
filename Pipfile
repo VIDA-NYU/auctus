@@ -18,6 +18,8 @@ socrata = {editable = true, path = "./discovery/socrata"}
 flake8 = "*"
 PyYaml = "*"
 requests = "*"
+coverage = "*"
+jsonschema = ">=3.0,<4"
 
 [requires]
 python_version = "3.6"

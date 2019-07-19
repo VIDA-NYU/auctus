@@ -1,30 +1,25 @@
 #!/usr/bin/env python3
+import logging
+
 import aio_pika
 import asyncio
-import elasticsearch
 import json
-import logging
 import os
 import sys
-import time
 
-from datamart_core.common import add_dataset_to_index, json2msg,\
-    decode_dataset_id
+from datamart_core.common import json2msg, decode_dataset_id
 
 
 async def import_all(folder):
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
     amqp_conn = await aio_pika.connect_robust(
         host=os.environ['AMQP_HOST'],
         login=os.environ['AMQP_USER'],
         password=os.environ['AMQP_PASSWORD'],
     )
     amqp_chan = await amqp_conn.channel()
-    amqp_datasets_exchange = await amqp_chan.declare_exchange(
-        'datasets',
-        aio_pika.ExchangeType.TOPIC,
+    amqp_profile_exchange = await amqp_chan.declare_exchange(
+        'profile',
+        aio_pika.ExchangeType.FANOUT,
     )
 
     for name in os.listdir(folder):
@@ -32,15 +27,12 @@ async def import_all(folder):
         path = os.path.join(folder, name)
         with open(path, 'r') as fp:
             obj = json.load(fp)
-        try:
-            add_dataset_to_index(es, dataset_id, obj)
-        except elasticsearch.TransportError:
-            print('X', end='', flush=True)
-            time.sleep(10)  # If writing can't keep up, needs a real break
-            add_dataset_to_index(es, dataset_id, obj)
-        await amqp_datasets_exchange.publish(
-            json2msg(dict(obj, id=dataset_id)),
-            dataset_id,
+        obj = dict(name=obj['name'],
+                   description=obj['description'],
+                   materialize=obj['materialize'])
+        await amqp_profile_exchange.publish(
+            json2msg(dict(id=dataset_id, metadata=obj)),
+            '',
         )
         print('.', end='', flush=True)
 

@@ -1,8 +1,14 @@
 import aio_pika
 import asyncio
+import elasticsearch
 import json
+import logging
+import re
 import sys
 import threading
+
+
+logger = logging.getLogger(__name__)
 
 
 class Type:
@@ -63,3 +69,146 @@ def log_future(future, logger, message="Exception in background task",
             asyncio.get_event_loop().stop()
             sys.exit(1)
     future.add_done_callback(log)
+
+
+re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')
+
+
+def encode_dataset_id(dataset_id):
+    """Encode a dataset ID to a format suitable for file names.
+    """
+    dataset_id = dataset_id.replace('_', '__')
+    dataset_id = re_non_path_safe.sub(lambda m: '_%X' % ord(m.group(0)),
+                                      dataset_id)
+    return dataset_id
+
+
+def decode_dataset_id(dataset_id):
+    """Decode a dataset ID encoded using `encode_dataset_id()`.
+    """
+    dataset_id = list(dataset_id)
+    i = 0
+    while i < len(dataset_id):
+        if dataset_id[i] == '_':
+            if dataset_id[i + 1] == '_':
+                del dataset_id[i + 1]
+            else:
+                char_hex = dataset_id[i + 1:i + 3]
+                dataset_id[i + 1:i + 3] = []
+                char_hex = ''.join(char_hex)
+                dataset_id[i] = chr(int(char_hex, 16))
+        i += 1
+    return ''.join(dataset_id)
+
+
+def add_dataset_to_sup_index(es, dataset_id, metadata):
+    """
+    Adds dataset to the supplementary DataMart indices:
+    'datamart_columns' and 'datamart_spatial_coverage'.
+    """
+
+    common_dataset_metadata = dict(dataset_id=dataset_id)
+    if 'name' in metadata:
+        common_dataset_metadata['dataset_name'] = \
+            metadata['name']
+    if 'description' in metadata:
+        common_dataset_metadata['dataset_description'] = \
+            metadata['description']
+
+    column_name_to_index = dict()
+
+    # 'datamart_columns' index
+    for column_index, column in enumerate(metadata['columns']):
+        column_metadata = dict()
+        column_metadata.update(common_dataset_metadata)
+        column_metadata.update(column)
+        column_metadata['index'] = column_index
+        column_name_to_index[column_metadata['name']] = column_index
+        if 'coverage' in column_metadata:
+            for i in range(len(column_metadata['coverage'])):
+                column_metadata['coverage'][i]['gte'] = \
+                    column_metadata['coverage'][i]['range']['gte']
+                column_metadata['coverage'][i]['lte'] = \
+                    column_metadata['coverage'][i]['range']['lte']
+        es.index(
+            index='datamart_columns',
+            doc_type='_doc',
+            body=column_metadata
+        )
+
+    # 'datamart_spatial_coverage' index
+    if 'spatial_coverage' in metadata:
+        for spatial_coverage in metadata['spatial_coverage']:
+            spatial_coverage_metadata = dict()
+            spatial_coverage_metadata.update(common_dataset_metadata)
+            spatial_coverage_metadata.update(spatial_coverage)
+            spatial_coverage_metadata['name'] = ' , '.join([
+                spatial_coverage_metadata['lat'],
+                spatial_coverage_metadata['lon']
+            ])
+            spatial_coverage_metadata['lat_index'] = \
+                column_name_to_index[spatial_coverage_metadata['lat']]
+            spatial_coverage_metadata['lon_index'] = \
+                column_name_to_index[spatial_coverage_metadata['lon']]
+            for i in range(len(spatial_coverage_metadata['ranges'])):
+                spatial_coverage_metadata['ranges'][i]['min_lon'] = \
+                    spatial_coverage_metadata['ranges'][i]['range']['coordinates'][0][0]
+                spatial_coverage_metadata['ranges'][i]['max_lat'] = \
+                    spatial_coverage_metadata['ranges'][i]['range']['coordinates'][0][1]
+                spatial_coverage_metadata['ranges'][i]['max_lon'] = \
+                    spatial_coverage_metadata['ranges'][i]['range']['coordinates'][1][0]
+                spatial_coverage_metadata['ranges'][i]['min_lat'] = \
+                    spatial_coverage_metadata['ranges'][i]['range']['coordinates'][1][1]
+            es.index(
+                index='datamart_spatial_coverage',
+                doc_type='_doc',
+                body=spatial_coverage_metadata
+            )
+
+
+def add_dataset_to_index(es, dataset_id, metadata):
+    """
+    Safely adds a dataset to all the DataMart indices.
+    """
+
+    # 'datamart' index
+    es.index(
+        index='datamart',
+        doc_type='_doc',
+        body=metadata,
+        id=dataset_id,
+    )
+
+    add_dataset_to_sup_index(
+        es,
+        dataset_id,
+        metadata
+    )
+
+
+def delete_dataset_from_index(es, dataset_id):
+    """
+    Safely deletes a dataset from the 'datamart' index,
+    including its corresponding information in
+    'datamart_columns' and 'datamart_spatial_coverage' indices.
+    """
+
+    # deleting from 'datamart'
+    try:
+        es.delete('datamart', '_doc', dataset_id)
+    except elasticsearch.NotFoundError:
+        return
+
+    # deleting from 'datamart_columns' and 'datamart_spatial_coverage'
+    body = {
+        'query': {
+            'term': {'dataset_id': dataset_id}
+        }
+    }
+    for index in ('datamart_columns', 'datamart_spatial_coverage'):
+        nb = es.delete_by_query(
+            index=index,
+            body=body,
+            doc_type='_doc',
+        )['deleted']
+        logger.info("Deleted %d documents from %s", nb, index)

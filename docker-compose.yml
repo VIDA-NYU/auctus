@@ -54,10 +54,12 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
-      - QUERY_HOST=http://localhost:8002
+      - QUERY_HOST=${QUERY_HOST}
+    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     ports:
       - 8001:8001
     volumes:
+      # CI: - ./cov:/cov
       - datasets:/datasets
   query:
     build:
@@ -73,24 +75,21 @@ services:
       - LAZO_SERVER_PORT=50051
     ports:
       - 8002
+    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
+      # CI: - ./cov:/cov
       - datasets:/datasets
       - query-cache:/cache
       - lazo-data:/lazo-data
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
       - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   querylb:
-    image: dockercloud/haproxy:1.6.7
-    environment:
-      - EXTRA_DEFAULT_SETTINGS=timeout http-request 900s,timeout server 900s
-      - HEALTH_CHECK=check inter 1000 rise 2 fall 1
+    image: haproxy:2.0
     ports:
       - 8002:80
-      - 8081:1936
-    links:
-      - query
+      - 8081:8000
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/haproxy.conf:/usr/local/etc/haproxy/haproxy.cfg:ro
   profiler:
     build:
       context: .
@@ -102,7 +101,9 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - LAZO_SERVER_HOST=lazo_server
       - LAZO_SERVER_PORT=50051
+    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
+      # CI: - ./cov:/cov
       - datasets:/datasets
       - lazo-data:/lazo-data
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
@@ -149,10 +150,10 @@ services:
       dockerfile: discovery/Dockerfile
     command: testsuite
     environment:
-    - ELASTICSEARCH_HOSTS=elasticsearch:9200
-    - AMQP_HOST=rabbitmq
-    - AMQP_USER=${AMQP_USER}
-    - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
     volumes:
       - datasets:/datasets
   socrata:

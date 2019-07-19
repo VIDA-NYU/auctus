@@ -10,7 +10,8 @@ import prometheus_client
 import time
 import xlrd
 
-from datamart_core.common import log_future, json2msg, msg2json
+from datamart_core.common import add_dataset_to_index, \
+    delete_dataset_from_index, log_future, json2msg, msg2json
 from datamart_core.materialize import get_dataset
 from datamart_materialize.excel import xls_to_csv
 from datamart_profiler import process_dataset
@@ -147,8 +148,27 @@ class Profiler(object):
             try:
                 try:
                     metadata = future.result()
-                except Exception:
-                    logger.exception("Error processing dataset %r", dataset_id)
+                    # Delete dataset if already exists in index
+                    delete_dataset_from_index(self.es, dataset_id)
+                    # Insert results in Elasticsearch
+                    body = dict(metadata,
+                                date=datetime.utcnow().isoformat() + 'Z',
+                                version=os.environ['DATAMART_VERSION'])
+                    add_dataset_to_index(self.es, dataset_id, body)
+                except Exception as e:
+                    if isinstance(e, elasticsearch.RequestError):
+                        # This is a problem with our computed metadata
+                        logger.exception(
+                            "Error inserting dataset %r in Elasticsearch",
+                            dataset_id,
+                        )
+                    elif isinstance(e, elasticsearch.TransportError):
+                        # This is probably an issue with Elasticsearch
+                        # We'll log, nack and retry
+                        raise
+                    else:
+                        logger.exception("Error processing dataset %r",
+                                         dataset_id)
                     # Move message to failed queue
                     await self.channel.default_exchange.publish(
                         aio_pika.Message(message.body),
@@ -157,16 +177,6 @@ class Profiler(object):
                     # Ack anyway, retrying would probably fail again
                     message.ack()
                 else:
-                    # Insert results in Elasticsearch
-                    body = dict(metadata,
-                                date=datetime.utcnow().isoformat() + 'Z')
-                    self.es.index(
-                        'datamart',
-                        '_doc',
-                        body,
-                        id=dataset_id,
-                    )  # failed
-
                     # Publish to RabbitMQ
                     await self.datasets_exchange.publish(
                         json2msg(dict(body, id=dataset_id)),

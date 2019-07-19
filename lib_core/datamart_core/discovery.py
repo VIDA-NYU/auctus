@@ -5,25 +5,15 @@ from datetime import datetime
 import elasticsearch
 import logging
 import os
-import re
 import shutil
 import tempfile
 import uuid
 
-from .common import block_run, log_future, json2msg, msg2json
+from .common import block_run, log_future, json2msg, msg2json, \
+    encode_dataset_id
 
 
 logger = logging.getLogger(__name__)
-
-
-re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')
-
-
-def encode_dataset_id(dataset_id):
-    dataset_id = dataset_id.replace('_', '__')
-    dataset_id = re_non_path_safe.sub(lambda m: '_%X' % ord(m.group(0)),
-                                      dataset_id)
-    return dataset_id
 
 
 class _HandleQueryPublisher(object):
@@ -201,6 +191,8 @@ class Discoverer(object):
 
     def record_dataset(self, materialize, metadata,
                        dataset_id=None, bind=None):
+        if 'name' not in metadata:
+            metadata['name'] = dataset_id
         coro = self._record_dataset(materialize, metadata,
                                     dataset_id=dataset_id, bind=bind)
         if self._async:

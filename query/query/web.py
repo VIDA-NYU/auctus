@@ -1,12 +1,12 @@
 import aio_pika
 import asyncio
+import contextlib
 import elasticsearch
 import lazo_index_service
 import logging
 import json
 import os
 import prometheus_client
-from prometheus_async.aio import time as prom_async_time
 import shutil
 import tornado.ioloop
 from tornado.routing import URLSpec
@@ -16,25 +16,28 @@ from tornado.web import HTTPError, RequestHandler
 import zipfile
 
 from datamart_augmentation.augmentation import augment
+from datamart_augmentation.utils import AugmentationError
 from datamart_core.common import log_future
 from datamart_core.materialize import get_dataset
 
 from .graceful_shutdown import GracefulApplication, GracefulHandler
 from .search import ClientError, parse_query, \
-    get_augmentation_search_results, handle_data_parameter
+    get_augmentation_search_results, ProfilePostedData
 
 
 logger = logging.getLogger(__name__)
 
 
-BUF_SIZE = 128000
-MAX_STREAMED_SIZE = 1024 * 1024 * 1024
-MAX_CONCURRENT = 2
 SCORE_THRESHOLD = 0.0
 
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
 
+PROM_PROFILE_TIME = prometheus_client.Histogram('req_profile_seconds',
+                                                "Profile request time",
+                                                buckets=BUCKETS)
+PROM_PROFILE = prometheus_client.Counter('req_profile_count',
+                                         "Profile requests")
 PROM_SEARCH_TIME = prometheus_client.Histogram('req_search_seconds',
                                                "Search request time",
                                                buckets=BUCKETS)
@@ -78,13 +81,12 @@ class BaseHandler(RequestHandler):
         return self.finish(json.dumps(obj))
 
     def send_error_json(self, status, message):
+        logger.info("Sending error %s JSON: %s", status, message)
         self.set_status(status)
         return self.send_json({'error': message})
 
-
-class CorsHandler(BaseHandler):
     def prepare(self):
-        super(CorsHandler, self).prepare()
+        super(BaseHandler, self).prepare()
         self.set_header('Access-Control-Allow-Origin', '*')
         self.set_header('Access-Control-Allow-Methods', 'POST')
         self.set_header('Access-Control-Allow-Headers', 'Content-Type')
@@ -95,13 +97,44 @@ class CorsHandler(BaseHandler):
         return self.finish()
 
 
-class Search(CorsHandler, GracefulHandler):
-    @prom_async_time(PROM_SEARCH_TIME)
-    async def post(self):
+class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
+    @PROM_PROFILE_TIME.time()
+    def post(self):
+        PROM_PROFILE.inc()
+
+        data = self.get_body_argument('data', None)
+        if 'data' in self.request.files:
+            data = self.request.files['data'][0].body
+        elif data is not None:
+            data = data.encode('utf-8')
+
+        if data is None:
+            return self.send_error_json(
+                400,
+                "Please send 'data' as a file, using multipart/form-data",
+            )
+
+        logger.info("Got profile")
+
+        try:
+            data_path, data_profile = self.handle_data_parameter(data)
+        except ClientError as e:
+            return self.send_error_json(400, str(e))
+
+        return self.send_json(dict(
+            data_profile,
+            version=os.environ['DATAMART_VERSION'],
+        ))
+
+
+class Search(BaseHandler, GracefulHandler, ProfilePostedData):
+    @PROM_SEARCH_TIME.time()
+    def post(self):
         PROM_SEARCH.inc()
 
         type_ = self.request.headers.get('Content-type', '')
         data = None
+        data_profile = None
         if type_.startswith('application/json'):
             query = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -111,8 +144,20 @@ class Search(CorsHandler, GracefulHandler):
                 query = self.request.files['query'][0].body.decode('utf-8')
             if query is not None:
                 query = json.loads(query)
+
+            data = self.get_body_argument('data', None)
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
+            elif data is not None:
+                data = data.encode('utf-8')
+
+            data_profile = self.get_body_argument('data_profile', None)
+            if data_profile is None and 'data_profile' in self.request.files:
+                data_profile = self.request.files['data_profile'][0].body
+                data_profile = data_profile.decode('utf-8')
+            if data_profile is not None:
+                data_profile = json.loads(data_profile)
+
         elif (type_.startswith('text/csv') or
                 type_.startswith('application/csv')):
             query = None
@@ -120,18 +165,25 @@ class Search(CorsHandler, GracefulHandler):
         else:
             return self.send_error_json(
                 400,
-                "Either use multipart/form-data to send the 'data' file and "
-                "'query' JSON, or use application/json to send a query alone, "
-                "or use text/csv to send data alone",
+                "Either use multipart/form-data to send the 'query' JSON and "
+                "'data' file (or 'data_profile' JSON), or use "
+                "application/json to send a query alone, or use text/csv to "
+                "send data alone",
             )
 
-        logger.info("Got search, content-type=%r%s%s",
+        if data is not None and data_profile is not None:
+            return self.send_error_json(
+                400,
+                "Please send either 'data' or 'data_profile'",
+            )
+
+        logger.info("Got search, content-type=%r%s%s%s",
                     type_.split(';')[0],
                     ', query' if query else '',
-                    ', data' if data else '')
+                    ', data' if data else '',
+                    ', data_profile' if data_profile else '')
 
         # parameter: data
-        data_profile = dict()
         if data:
             try:
                 data_path, data_profile, tmp = handle_data_parameter(
@@ -139,24 +191,24 @@ class Search(CorsHandler, GracefulHandler):
                     self.application.lazo_client
                 )
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
-            if tmp:
-                os.remove(data_path)
+                return self.send_error_json(400, str(e))
 
         # parameter: query
-        query_args = list()
+        query_args_main = list()
+        query_args_sup = list()
         tabular_variables = list()
         if query:
             try:
-                query_args, tabular_variables = parse_query(query)
+                query_args_main, query_args_sup, tabular_variables = \
+                    parse_query(query)
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
+                return self.send_error_json(400, str(e))
 
         # At least one of them must be provided
-        if not query_args and not data_profile:
+        if not query_args_main and not data_profile:
             return self.send_error_json(
                 400,
-                "At least one of the input parameters must be provided.",
+                "At least one of 'data' or 'query' must be provided",
             )
 
         if not data_profile:
@@ -165,7 +217,7 @@ class Search(CorsHandler, GracefulHandler):
                 body={
                     'query': {
                         'bool': {
-                            'must': query_args,
+                            'must': query_args_main,
                         },
                     },
                 },
@@ -184,8 +236,12 @@ class Search(CorsHandler, GracefulHandler):
                     augmentation={
                         'type': 'none',
                         'left_columns': [],
-                        'right_columns': []
-                    }
+                        'left_columns_names': [],
+                        'right_columns': [],
+                        'right_columns_names': []
+                    },
+                    supplied_id=None,
+                    supplied_resource_id=None
                 ))
             return self.send_json(results)
         else:
@@ -194,7 +250,8 @@ class Search(CorsHandler, GracefulHandler):
                     self.application.elasticsearch,
                     self.application.lazo_client,
                     data_profile,
-                    query_args,
+                    query_args_main,
+                    query_args_sup,
                     tabular_variables,
                     SCORE_THRESHOLD
                 )
@@ -233,20 +290,27 @@ class BaseDownload(BaseHandler):
         if ('direct_url' in materialize and
                 output_format == 'csv' and not materialize.get('convert')):
             # Redirect the client to it
-            self.redirect(materialize['direct_url'])
+            logger.info("Sending redirect to direct_url")
+            return self.redirect(materialize['direct_url'])
         else:
-            getter = get_dataset(metadata, dataset_id, format=output_format)
+            # We want to catch exceptions from get_dataset(), without catching
+            # exceptions from inside the with block
+            # https://docs.python.org/3/library/contextlib.html#catching-exceptions-from-enter-methods
+            stack = contextlib.ExitStack()
             try:
-                dataset_path = getter.__enter__()
+                dataset_path = stack.enter_context(
+                    get_dataset(metadata, dataset_id, format=output_format)
+                )
             except Exception:
                 self.send_error_json(500, "Materializer reports failure")
                 raise
-            try:
+            with stack:
                 if os.path.isfile(dataset_path):
                     self.set_header('Content-Type', 'application/octet-stream')
                     self.set_header('X-Content-Type-Options', 'nosniff')
                     self.set_header('Content-Disposition',
                                     'attachment; filename="%s"' % dataset_id)
+                    logger.info("Sending file...")
                     with open(dataset_path, 'rb') as fp:
                         buf = fp.read(4096)
                         while buf:
@@ -259,16 +323,15 @@ class BaseDownload(BaseHandler):
                     self.set_header(
                         'Content-Disposition',
                         'attachment; filename="%s.zip"' % dataset_id)
+                    logger.info("Sending ZIP...")
                     writer = RecursiveZipWriter(self.write)
                     writer.write_recursive(dataset_path)
                     writer.close()
                 return self.finish()
-            finally:
-                getter.__exit__(None, None, None)
 
 
-class DownloadId(CorsHandler, GracefulHandler, BaseDownload):
-    @prom_async_time(PROM_DOWNLOAD_TIME)
+class DownloadId(BaseDownload, GracefulHandler):
+    @PROM_DOWNLOAD_TIME.time()
     def get(self, dataset_id):
         PROM_DOWNLOAD_ID.inc()
 
@@ -285,8 +348,8 @@ class DownloadId(CorsHandler, GracefulHandler, BaseDownload):
         return self.send_dataset(dataset_id, metadata, output_format)
 
 
-class Download(CorsHandler, GracefulHandler, BaseDownload):
-    @prom_async_time(PROM_DOWNLOAD_TIME)
+class Download(BaseDownload, GracefulHandler, ProfilePostedData):
+    @PROM_DOWNLOAD_TIME.time()
     def post(self):
         PROM_DOWNLOAD.inc()
 
@@ -294,7 +357,7 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
 
         task = None
         data = None
-        output_format = 'd3m'
+        output_format = self.get_query_argument('format', 'csv')
         if type_.startswith('application/json'):
             task = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -302,8 +365,13 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
             task = self.get_body_argument('task', None)
             if task is None and 'task' in self.request.files:
                 task = self.request.files['task'][0].body.decode('utf-8')
+            if task is not None:
+                task = json.loads(task)
+            data = self.get_body_argument('data', None)
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
+            elif data is not None:
+                data = data.encode('utf-8')
             output_format = self.get_argument('format', None)
             if output_format is None and 'format' in self.request.files:
                 output_format = (
@@ -317,7 +385,8 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
                 "'task' JSON, or use application/json to send 'task' alone",
             )
 
-        task = json.loads(task)
+        logger.info("Got POST download %s data",
+                    "without" if data is None else "with")
 
         # materialize augmentation data
         metadata = task['metadata']
@@ -332,61 +401,54 @@ class Download(CorsHandler, GracefulHandler, BaseDownload):
                     self.application.lazo_client
                 )
             except ClientError as e:
-                return self.send_error_json(400, e.args[0])
+                return self.send_error_json(400, str(e))
 
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
                 lazo_client=self.application.lazo_client,
                 data_profile=data_profile,
-                query_args=None,
+                query_args_main=None,
+                query_args_sup=None,
                 tabular_variables=None,
                 score_threshold=SCORE_THRESHOLD,
                 dataset_id=task['id'],
                 union=False
             )
 
-            if search_results:
-                task = search_results[0]
-
-                try:
-                    with get_dataset(metadata, task['id'], format='csv') as newdata:
-                        # perform augmentation
-                        new_path = augment(
-                            data_path,
-                            newdata,
-                            data_profile,
-                            task,
-                            return_only_datamart_data=True
-                        )
-
-                except Exception as e:
-                    return self.send_error_json(400, e.args[0])
-
-                # send a zip file
-                self.set_header('Content-Type', 'application/zip')
-                self.set_header(
-                    'Content-Disposition',
-                    'attachment; filename="augmentation.zip"')
-                writer = RecursiveZipWriter(self.write)
-                writer.write_recursive(new_path)
-                writer.close()
-                shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-
-                if tmp:
-                    os.remove(data_path)
-                return self.finish()
-            else:
-                if tmp:
-                    os.remove(data_path)
+            if not search_results:
                 return self.send_error_json(
                     400,
                     "The DataMart dataset referenced by 'task' cannot augment "
-                    "'data'.",
+                    "'data'",
                 )
 
+            task = search_results[0]
 
-class Metadata(CorsHandler, GracefulHandler):
+            with get_dataset(metadata, task['id'], format='csv') as newdata:
+                # perform augmentation
+                logger.info("Performing half-augmentation with supplied data")
+                new_path = augment(
+                    data_path,
+                    newdata,
+                    data_profile,
+                    task,
+                    return_only_datamart_data=True
+                )
+
+            # send a zip file
+            self.set_header('Content-Type', 'application/zip')
+            self.set_header(
+                'Content-Disposition',
+                'attachment; filename="augmentation.zip"')
+            logger.info("Sending ZIP...")
+            writer = RecursiveZipWriter(self.write)
+            writer.write_recursive(new_path)
+            writer.close()
+            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+
+
+class Metadata(BaseHandler, GracefulHandler):
     @PROM_METADATA_TIME.time()
     def get(self, dataset_id):
         PROM_METADATA.inc()
@@ -400,9 +462,9 @@ class Metadata(CorsHandler, GracefulHandler):
         return self.send_json(metadata)
 
 
-class Augment(CorsHandler, GracefulHandler):
-    @prom_async_time(PROM_AUGMENT_TIME)
-    async def post(self):
+class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
+    @PROM_AUGMENT_TIME.time()
+    def post(self):
         PROM_AUGMENT.inc()
 
         type_ = self.request.headers.get('Content-type', '')
@@ -418,10 +480,31 @@ class Augment(CorsHandler, GracefulHandler):
         task = json.loads(task)
 
         destination = self.get_argument('destination', None)
+        if destination is not None:
+            try:
+                shared_storage = os.environ['DATAMART_SHARED_STORAGE']
+            except KeyError:
+                return self.send_error_json(
+                    403,
+                    "Writing augmentation result to a file is disabled; set "
+                    "$DATAMART_SHARED_STORAGE to enable",
+                )
+            else:
+                shared_storage = shared_storage.rstrip('/') + '/'
+                if not destination.startswith(shared_storage):
+                    return self.send_error_json(
+                        403,
+                        "Requested destination does not lie under "
+                        "$DATAMART_SHARED_STORAGE",
+                    )
 
-        if 'data' not in self.request.files:
+        data = self.get_body_argument('data', None)
+        if data is not None:
+            data = data.encode('utf-8')
+        elif 'data' in self.request.files:
+            data = self.request.files['data'][0].body
+        else:
             return self.send_error_json(400, "Missing 'data'")
-        data = self.request.files['data'][0].body
 
         columns = self.get_body_argument('columns', None)
         if 'columns' in self.request.files:
@@ -436,18 +519,22 @@ class Augment(CorsHandler, GracefulHandler):
                 self.application.lazo_client
             )
         except ClientError as e:
-            return self.send_error_json(400, e.args[0])
+            return self.send_error_json(400, str(e))
 
         # materialize augmentation data
         metadata = task['metadata']
 
+        logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
+
         # no augmentation task provided -- will first look for possible augmentation
         if task['augmentation']['type'] == 'none':
+            logger.info("No task, searching for augmentations")
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
                 lazo_client=self.application.lazo_client,
                 data_profile=data_profile,
-                query_args=None,
+                query_args_main=None,
+                query_args_sup=None,
                 tabular_variables=None,
                 score_threshold=SCORE_THRESHOLD,
                 dataset_id=task['id'],
@@ -456,15 +543,18 @@ class Augment(CorsHandler, GracefulHandler):
 
             if search_results:
                 # get first result
+                logger.info("Using first of %d augmentation results",
+                            len(search_results))
                 task = search_results[0]
             else:
                 return self.send_error_json(400,
                                             "The DataMart dataset referenced "
-                                            "by 'task' cannot augment 'data'.")
+                                            "by 'task' cannot augment 'data'")
 
         try:
             with get_dataset(metadata, task['id'], format='csv') as newdata:
                 # perform augmentation
+                logger.info("Performing augmentation with supplied data")
                 new_path = augment(
                     data_path,
                     newdata,
@@ -473,8 +563,8 @@ class Augment(CorsHandler, GracefulHandler):
                     columns=columns,
                     destination=destination
                 )
-        except Exception as e:
-            return self.send_error_json(400, e.args[0])
+        except AugmentationError as e:
+            return self.send_error_json(400, str(e))
 
         if destination:
             # send the path
@@ -486,17 +576,16 @@ class Augment(CorsHandler, GracefulHandler):
             self.set_header(
                 'Content-Disposition',
                 'attachment; filename="augmentation.zip"')
+            logger.info("Sending ZIP...")
             writer = RecursiveZipWriter(self.write)
             writer.write_recursive(new_path)
             writer.close()
             shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
 
-        if tmp:
-            os.remove(data_path)
         return self.finish()
 
 
-class Health(CorsHandler):
+class Health(BaseHandler):
     def get(self):
         if self.application.is_closing:
             self.set_status(503, reason="Shutting down")
@@ -510,8 +599,6 @@ class Application(GracefulApplication):
         super(Application, self).__init__(*args, **kwargs)
 
         self.is_closing = False
-
-        self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
 
         self.elasticsearch = es
         self.lazo_client = lazo
@@ -545,6 +632,7 @@ def make_app(debug=False):
 
     return Application(
         [
+            URLSpec('/profile', Profile, name='profile'),
             URLSpec('/search', Search, name='search'),
             URLSpec('/download/([^/]+)', DownloadId, name='download_id'),
             URLSpec('/download', Download, name='download'),
@@ -569,7 +657,3 @@ def main():
     app.listen(8002, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()
-
-
-if __name__ == '__main__':
-    main()

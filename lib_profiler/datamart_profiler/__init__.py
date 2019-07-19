@@ -36,18 +36,14 @@ PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
 def mean_stddev(array):
     total = 0
     for elem in array:
-        try:
-            total += float(elem)
-        except ValueError:
-            pass
+        if elem is not None:
+            total += elem
     mean = total / len(array)if len(array) > 0 else 0
     total = 0
     for elem in array:
-        try:
-            elem = float(elem) - mean
-        except ValueError:
-            continue
-        total += elem * elem
+        if elem is not None:
+            elem = elem - mean
+            total += elem * elem
     stddev = math.sqrt(total / len(array)) if len(array) > 0 else 0
 
     return mean, stddev
@@ -75,6 +71,7 @@ def get_numerical_ranges(values):
 
     # Compute confidence intervals for each range
     ranges = []
+    sizes = []
     for rg in range(N_RANGES):
         cluster = [values[i]
                    for i in range(len(values))
@@ -88,7 +85,9 @@ def get_numerical_ranges(values):
             cluster[min_idx],
             cluster[max_idx],
         ])
+        sizes.append(len(cluster))
     logger.info("Ranges: %r", ranges)
+    logger.info("Sizes: %r", sizes)
 
     # Convert to Elasticsearch syntax
     ranges = [{'range': {'gte': rg[0], 'lte': rg[1]}}
@@ -103,8 +102,6 @@ def get_spatial_ranges(values):
     This performs K-Means clustering, returning a maximum of 3 ranges.
     """
 
-    logger.info("Computing spatial ranges, %d values", len(values))
-
     clustering = KMeans(n_clusters=min(N_RANGES, len(values)),
                         random_state=0)
     clustering.fit(values)
@@ -112,6 +109,7 @@ def get_spatial_ranges(values):
 
     # Compute confidence intervals for each range
     ranges = []
+    sizes = []
     for rg in range(N_RANGES):
         cluster = [values[i]
                    for i in range(len(values))
@@ -130,7 +128,11 @@ def get_spatial_ranges(values):
             [min_long, max_lat],
             [max_long, min_lat],
         ])
+        sizes.append(len(cluster))
     logger.info("Ranges: %r", ranges)
+    logger.info("Sizes: %r", sizes)
+
+    # TODO: Deal with clusters made of outliers
 
     # Convert to Elasticsearch syntax
     ranges = [{'range': {'type': 'envelope',
@@ -167,6 +169,44 @@ def run_scdp(data):
         except json.JSONDecodeError:
             logger.exception("Invalid output from SCDP")
             return {}
+
+
+def normalize_latlong_column_name(name, *substrings):
+    name = name.lower()
+    for substr in substrings:
+        idx = name.find(substr)
+        if idx >= 0:
+            name = name[:idx] + name[idx + len(substr):]
+            break
+    return name
+
+
+def pair_latlong_columns(columns_lat, columns_long):
+    # Normalize latitude column names
+    normalized_lat = {}
+    for i, (name, values_lat) in enumerate(columns_lat):
+        name = normalize_latlong_column_name(name, 'latitude', 'lat')
+        normalized_lat[name] = i
+
+    # Go over normalized longitude column names and try to match
+    pairs = []
+    missed_long = []
+    for name, values_long in columns_long:
+        norm_name = normalize_latlong_column_name(name, 'longitude', 'long')
+        if norm_name in normalized_lat:
+            pairs.append((columns_lat[normalized_lat.pop(norm_name)],
+                          (name, values_long)))
+        else:
+            missed_long.append(name)
+
+    # Gather missed columns and log them
+    missed_lat = [columns_lat[i][0] for i in sorted(normalized_lat.values())]
+    if missed_lat:
+        logger.warning("Unmatched latitude columns: %r", missed_lat)
+    if missed_long:
+        logger.warning("Unmatched longitude columns: %r", missed_long)
+
+    return pairs
 
 
 @PROM_PROFILE.time()
@@ -249,9 +289,9 @@ def process_dataset(
     for column_meta, name in zip(columns, data.columns):
         column_meta.update(scdp_out.get(name, {}))
 
-    # Lat / Lon
-    column_lat = []
-    column_lon = []
+    # Lat / Long
+    columns_lat = []
+    columns_long = []
 
     # Textual columns
     column_textual = []
@@ -275,29 +315,36 @@ def process_dataset(
 
             # Compute ranges for numerical/spatial data
             if structural_type in (Type.INTEGER, Type.FLOAT):
-                column_meta['mean'], column_meta['stddev'] = mean_stddev(array)
-
                 # Get numerical ranges
                 numerical_values = []
                 for e in array:
                     try:
-                        numerical_values.append(float(e))
+                        e = float(e)
                     except ValueError:
-                        numerical_values.append(None)
+                        e = None
+                    else:
+                        if not (-3.4e38 < e < 3.4e38):  # Overflows in ES
+                            e = None
+                    numerical_values.append(e)
 
-                # Get lat/lon columns
+                column_meta['mean'], column_meta['stddev'] = \
+                    mean_stddev(numerical_values)
+
+                # Get lat/long columns
                 if Type.LATITUDE in semantic_types_dict:
-                    column_lat.append(
+                    columns_lat.append(
                         (column_meta['name'], numerical_values)
                     )
                 elif Type.LONGITUDE in semantic_types_dict:
-                    column_lon.append(
+                    columns_long.append(
                         (column_meta['name'], numerical_values)
                     )
                 else:
-                    column_meta['coverage'] = get_numerical_ranges(
+                    ranges = get_numerical_ranges(
                         [x for x in numerical_values if x is not None]
                     )
+                    if ranges:
+                        column_meta['coverage'] = ranges
 
             # Compute ranges for temporal data
             if Type.DATE_TIME in semantic_types_dict:
@@ -316,8 +363,9 @@ def process_dataset(
                     mean_stddev(timestamps)
 
                 # Get temporal ranges
-                column_meta['coverage'] = \
-                    get_numerical_ranges(timestamps_for_range)
+                ranges = get_numerical_ranges(timestamps_for_range)
+                if ranges:
+                    column_meta['coverage'] = ranges
 
             if structural_type == Type.TEXT and \
                     Type.DATE_TIME not in semantic_types_dict:
@@ -389,27 +437,22 @@ def process_dataset(
     logger.info("Computing spatial coverage...")
     with PROM_SPATIAL.time():
         spatial_coverage = []
-        i_lat = i_lon = 0
-        while i_lat < len(column_lat) and i_lon < len(column_lon):
-            name_lat = column_lat[i_lat][0]
-            name_lon = column_lon[i_lon][0]
-
-            values_lat = column_lat[i_lat][1]
-            values_lon = column_lon[i_lon][1]
+        pairs = pair_latlong_columns(columns_lat, columns_long)
+        for (name_lat, values_lat), (name_long, values_long) in pairs:
             values = []
-            for i in range(len(values_lat)):
-                if values_lat[i] is not None and values_lon[i] is not None:
-                    values.append((values_lat[i], values_lon[i]))
+            for lat, long in zip(values_lat, values_long):
+                if (lat and long and  # Ignore None and 0
+                        -90 < lat < 90 and -180 < long < 180):
+                    values.append((lat, long))
 
             if len(values) > 1:
+                logger.info("Computing spatial ranges %r,%r (%d rows)",
+                            name_lat, name_long, len(values))
                 spatial_ranges = get_spatial_ranges(values)
                 if spatial_ranges:
                     spatial_coverage.append({"lat": name_lat,
-                                             "lon": name_lon,
+                                             "lon": name_long,
                                              "ranges": spatial_ranges})
-
-            i_lat += 1
-            i_lon += 1
 
     if spatial_coverage:
         metadata['spatial_coverage'] = spatial_coverage

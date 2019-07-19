@@ -1,4 +1,6 @@
-from dateutil.parser import parse
+from datetime import datetime
+import dateutil.parser
+import dateutil.tz
 import re
 import unittest
 
@@ -14,7 +16,7 @@ _re_float = re.compile(r'^[+-]?'
                        r'(?:[Ee][0-9]+)?$')
 _re_phone = re.compile(r'^'
                        r'(?:\+[0-9]{1,3})?'  # Optional country prefix
-                       r'(?=(?:[() .-]*[0-9]){4,15}$)'  # 4-15 digits
+                       r'(?=(?:[() .-]*[0-9]){6,11}$)'  # 6-11 digits
                        r'(?:[ .]?\([0-9]{3}\))?'  # Area code in parens
                        r'(?:[ .]?[0-9]{1,12})'  # First group of digits
                        r'(?:[ .-][0-9]{1,10}){0,5}'  # More groups of digits
@@ -28,6 +30,26 @@ MAX_UNCLEAN = 0.02  # 2%
 
 # Maximum number of different values for categorical columns
 MAX_CATEGORICAL = 6
+
+
+_defaults = datetime(1985, 1, 1), datetime(2005, 6, 15)
+
+
+def parse_date(string):
+    try:
+        dt1 = dateutil.parser.parse(string, default=_defaults[0])
+        dt2 = dateutil.parser.parse(string, default=_defaults[1])
+    except Exception:  # ValueError, OverflowError
+        return None
+    else:
+        if dt1 != dt2:
+            # It was not a date, just a time; no good
+            return None
+
+        # If no timezone was read, assume UTC
+        if dt1.tzinfo is None:
+            dt1 = dt1.replace(tzinfo=dateutil.tz.UTC)
+        return dt1
 
 
 def identify_types(array, name):
@@ -91,8 +113,8 @@ def identify_types(array, name):
                 name.lower().endswith('index')):
             semantic_types_dict[Type.ID] = None
 
-    # Identify lat/lon
-    num_lat = num_lon = 0
+    # Identify lat/long
+    num_lat = num_long = 0
     if structural_type == Type.FLOAT:
         for elem in array:
             try:
@@ -101,23 +123,22 @@ def identify_types(array, name):
                 pass
             else:
                 if -180.0 <= float(elem) <= 180.0:
-                    num_lon += 1
+                    num_long += 1
                     if -90.0 <= float(elem) <= 90.0:
                         num_lat += 1
 
         if (num_empty + num_lat) >= threshold and 'lat' in name.lower():
             semantic_types_dict[Type.LATITUDE] = None
-        if (num_empty + num_lon) >= threshold and 'lon' in name.lower():
+        if (num_empty + num_long) >= threshold and 'lon' in name.lower():
             semantic_types_dict[Type.LONGITUDE] = None
 
     # Identify dates
     if structural_type == Type.TEXT:
         parsed_dates = []
         for elem in array:
-            try:
-                parsed_dates.append(parse(elem))
-            except Exception:  # ValueError, OverflowError
-                pass
+            elem = parse_date(elem)
+            if elem is not None:
+                parsed_dates.append(elem)
 
         if (num_empty + len(parsed_dates)) >= threshold:
             semantic_types_dict[Type.DATE_TIME] = parsed_dates
