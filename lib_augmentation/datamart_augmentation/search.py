@@ -316,6 +316,32 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
     )['hits']['hits']
 
 
+def get_textual_join_search_results(es, dataset_ids, column_names,
+                                    lazo_scores, query_args=None):
+    """Combine Lazo textual search results with Elasticsearch
+    (keyword search).
+    """
+
+    if not query_args:
+        results = list()
+        for i in range(len(dataset_ids)):
+            result = dict(
+                _score=lazo_scores[i],
+                _source=dict(
+                    dataset_id=dataset_ids[i],
+                    name=column_names[i]
+                    # TODO: missing 'index'
+                    #   do we need to query on Elasticsearch?
+                )
+            )
+            results.append(result)
+
+    # TODO: implement
+    #   use query_args with filter on dataset ids and names
+    #   multiply score with lazo_score
+    return []
+
+
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
@@ -367,9 +393,10 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
         tabular_variables
     )
 
-    # get search results
-
+    # search results
     search_results = list()
+
+    # numerical, temporal, and spatial attributes
     for column in column_coverage:
         type_ = column_coverage[column]['type']
         type_value = column_coverage[column]['type_value']
@@ -398,57 +425,36 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
                 result['companion_column'] = column
                 search_results.append(result)
 
-    # TODO: Take Lazo sketches into account
-
-    # # textual and categorical attributes
-    #
-    # # get lazo sketches
-    #
-    # lazo_sketches = get_lazo_sketches(
-    #     data_profile,
-    #     column_index_mapping,
-    #     tabular_variables
-    # )
-    #
-    # # get intersections
-    #
-    # lazo_intersections = dict()
-    # for column in lazo_sketches:
-    #     pivot_column = data_profile['columns'][int(column)]['name']
-    #     n_permutations, hash_values, cardinality = lazo_sketches[column]
-    #     query_results = lazo_client.query_lazo_sketch_data(
-    #         n_permutations,
-    #         hash_values,
-    #         cardinality
-    #     )
-    #     for dataset_id, column_name, threshold in query_results:
-    #         sim = compute_levenshtein_sim(
-    #             pivot_column.lower(),
-    #             column_name.lower()
-    #         )
-    #         external_column_id = str(get_column_identifiers(
-    #             es,
-    #             [column_name],
-    #             dataset_id=dataset_id
-    #         )[0])
-    #         if dataset_id not in lazo_intersections:
-    #             lazo_intersections[dataset_id] = []
-    #         lazo_intersections[dataset_id].append(
-    #             (column, external_column_id, threshold, sim)
-    #         )
-    # for dataset_id in lazo_intersections:
-    #     lazo_intersections[dataset_id] = sorted(
-    #         lazo_intersections[dataset_id],
-    #         key=lambda item: (item[2], item[3]),
-    #         reverse=True
-    #     )
-    #     if dataset_id not in intersections:
-    #         intersections[dataset_id] = []
-    #     for column, external_column_id, threshold, sim \
-    #             in lazo_intersections[dataset_id]:
-    #         intersections[dataset_id].append(
-    #             (column, external_column_id, threshold)
-    #         )
+    # textual/categorical attributes
+    lazo_sketches = get_lazo_sketches(
+        data_profile,
+        column_index_mapping,
+        tabular_variables
+    )
+    for column in lazo_sketches:
+        n_permutations, hash_values, cardinality = lazo_sketches[column]
+        query_results = lazo_client.query_lazo_sketch_data(
+            n_permutations,
+            hash_values,
+            cardinality
+        )
+        dataset_ids = list()
+        column_names = list()
+        scores = list()
+        for dataset_id, column_name, threshold in query_results:
+            dataset_ids.append(dataset_id)
+            column_names.append(column_name)
+            scores.append(threshold)
+        textual_results = get_textual_join_search_results(
+            es,
+            dataset_ids,
+            column_names,
+            scores,
+            query_args
+        )
+        for result in textual_results:
+            result['companion_column'] = column
+            search_results.append(result)
 
     search_results = sorted(
         search_results,
