@@ -1,89 +1,129 @@
 import contextlib
-import fcntl
 import logging
 import os
 import shutil
 import signal
+import subprocess
 
 
 logger = logging.getLogger(__name__)
 
 
-@contextlib.contextmanager
-def timeout_syscall(seconds):
-    original_handler = signal.signal(signal.SIGALRM, lambda *a: None)
-    signal.alarm(seconds)
-    try:
-        yield
-    finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, original_handler)
+safe_shell_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                       "abcdefghijklmnopqrstuvwxyz"
+                       "0123456789"
+                       "-+=/:.,%_")
+
+
+def shell_escape(s):
+    r"""Given bl"a, returns "bl\\"a".
+    """
+    if isinstance(s, bytes):
+        s = s.decode('utf-8')
+    if not s or any(c not in safe_shell_chars for c in s):
+        return '"%s"' % (s.replace('\\', '\\\\')
+                          .replace('"', '\\"')
+                          .replace('`', '\\`')
+                          .replace('$', '\\$'))
+    else:
+        return s
+
+
+WAIT_FOREVER_COMMAND = 'while true; do sleep 3600; done'
 
 
 class FilesystemLocks(object):
     """File locking system.
-
-    Warning: this is NOT thread-safe, do not use it when multiple threads might
-    lock the same files!
     """
-    def __init__(self):
-        self._locks = {}
-
     def lock_exclusive(self, filepath, timeout=None):
-        filepath = os.path.realpath(filepath)
-        if filepath in self._locks:
-            raise RuntimeError("Getting lock on already-locked file %r" %
-                               filepath)
-        fd = os.open(filepath, os.O_RDONLY | os.O_CREAT)
-        if self._lock_fd(fd, fcntl.LOCK_EX, timeout):
-            self._locks[filepath] = 'ex'
+        """Get an exclusive lock.
+
+        The file is created if it doesn't exist.
+        """
+        args = ['-x']
+        if timeout is not None:
+            args.extend(['--wait', timeout, '-E', 2])
+        args.extend([
+            filepath, '-c',
+            'echo LOCKED; %s' % WAIT_FOREVER_COMMAND,
+        ])
+        proc = subprocess.Popen(
+            ['flock'] + args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE,
+            # Causes subprocesses (e.g. sleep) to get killed when the shell
+            # process group is killed
+            start_new_session=True,
+        )
+        proc.stdin.close()
+
+        # Read out of stdout
+        out = proc.stdout.read(6)
+        if out == b'LOCKED':
             logger.debug("Acquired exclusive lock: %r", filepath)
-            return fd, filepath
+            return proc, filepath
         else:
-            logger.debug("Timeout getting exclusive lock: %r", filepath)
-            return None
+            out = proc.stdout.read()
+            if proc.wait() == 2:
+                logger.debug("Timeout getting exclusive lock: %r", filepath)
+                return None
+            else:
+                raise OSError("Error getting exclusive lock %r: %s" % (
+                    filepath,
+                    out.decode('utf-8', 'replace'),
+                ))
 
     def unlock_exclusive(self, lock):
-        fd, filepath = lock
-        assert self._locks.pop(filepath) == 'ex'
-        self._unlock_fd(fd)
+        proc, filepath = lock
+        os.killpg(proc.pid, signal.SIGINT)
+        proc.wait()
         logger.debug("Released exclusive lock: %r", filepath)
 
     def lock_shared(self, filepath, timeout=None):
-        filepath = os.path.realpath(filepath)
-        if filepath in self._locks:
-            raise RuntimeError("Getting lock on already-locked file %r" %
-                               filepath)
-        fd = os.open(filepath, os.O_RDONLY)
-        if self._lock_fd(fd, fcntl.LOCK_SH, timeout):
-            self._locks[filepath] = 'sh'
+        """Get a shared lock.
+
+        :raises FileNotFoundError: if the file doesn't exist.
+        """
+        cmd = '(flock -s %s 3 && echo LOCKED && %s) 3<%s' % (
+            '--wait %d -E 2' % timeout if timeout is not None else '',
+            WAIT_FOREVER_COMMAND,
+            shell_escape(filepath),
+        )
+        proc = subprocess.Popen(
+            ['bash', '-c', cmd],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE,
+            # Causes subprocesses (e.g. sleep) to get killed when the shell
+            # process group is killed
+            start_new_session=True,
+        )
+        proc.stdin.close()
+
+        # Read out of stdout
+        out = proc.stdout.read(6)
+        if out == b'LOCKED':
             logger.debug("Acquired shared lock: %r", filepath)
-            return fd, filepath
+            return proc, filepath
         else:
-            logger.debug("Timeout getting shared lock: %r", filepath)
-            return None
+            out = proc.stdout.read()
+            if proc.wait() == 2:
+                logger.debug("Timeout getting shared lock: %r", filepath)
+                return None
+            elif proc.wait() == 1:
+                raise FileNotFoundError
+            else:
+                raise OSError("Error getting shared lock %r: %s" % (
+                    filepath,
+                    out.decode('utf-8', 'replace'),
+                ))
 
     def unlock_shared(self, lock):
-        fd, filepath = lock
-        assert self._locks.pop(filepath) == 'sh'
-        self._unlock_fd(fd)
+        proc, filepath = lock
+        os.killpg(proc.pid, signal.SIGINT)
+        proc.wait()
         logger.debug("Released shared lock: %r", filepath)
-
-    def _lock_fd(self, fd, lock, timeout):
-        if timeout is None:
-            fcntl.flock(fd, lock)
-        elif timeout == 0:
-            fcntl.flock(fd, lock | fcntl.LOCK_NB)
-        else:
-            with timeout_syscall(timeout):
-                try:
-                    fcntl.flock(fd, lock)
-                except InterruptedError:
-                    return False
-        return True
-
-    def _unlock_fd(self, fd):
-        fcntl.flock(fd, fcntl.LOCK_UN)
 
 
 FilesystemLocks = FilesystemLocks()
