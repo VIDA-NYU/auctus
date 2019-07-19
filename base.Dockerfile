@@ -4,6 +4,9 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY Pipfile.lock install_deps.py /usr/src/app/
 RUN python3 install_deps.py Pipfile.lock
+ENV TINI_VERSION v0.18.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
 # CI: RUN pip install coverage
 
 # This is the common part of the Dockerfiles
