@@ -22,9 +22,11 @@ PROM_DOWNLOAD = prometheus_client.Histogram(
 
 @contextlib.contextmanager
 def get_dataset(metadata, dataset_id, format='csv'):
+    logger.info("Getting dataset %r", dataset_id)
     shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
     if os.path.exists(shared) and format == 'csv':
         # Read directly from stored file
+        logger.info("Reading from /datasets")
         yield os.path.join(shared, 'main.csv')
     else:
         temp_dir = tempfile.mkdtemp()
@@ -42,6 +44,7 @@ def get_dataset(metadata, dataset_id, format='csv'):
                         shutil.copyfileobj(src, dst)
             else:
                 # Materialize
+                logger.info("Materializing...")
                 with PROM_DOWNLOAD.time():
                     datamart_materialize.download(
                         {'id': dataset_id, 'metadata': metadata},
