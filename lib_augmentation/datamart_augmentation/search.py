@@ -364,7 +364,7 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
         # materialize = meta.get('materialize', {})
-        if 'description' in meta and len(meta['description']) > 100:
+        if meta.get('description') and len(meta['description']) > 100:
             meta['description'] = meta['description'][:97] + "..."
         left_columns = []
         right_columns = []
@@ -609,7 +609,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
         # materialize = meta.get('materialize', {})
-        if 'description' in meta and len(meta['description']) > 100:
+        if meta.get('description') and len(meta['description']) > 100:
             meta['description'] = meta['description'][:97] + "..."
         # TODO: augmentation information is incorrect
         left_columns = []

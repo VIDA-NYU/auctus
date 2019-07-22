@@ -111,7 +111,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
     if 'name' in metadata:
         common_dataset_metadata['dataset_name'] = \
             metadata['name']
-    if 'description' in metadata:
+    if metadata.get('description'):
         common_dataset_metadata['dataset_description'] = \
             metadata['description']
 
