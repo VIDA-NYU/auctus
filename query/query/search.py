@@ -388,14 +388,16 @@ def get_profile_data(filepath, metadata=None, lazo_client=None):
 class ProfilePostedData(tornado.web.RequestHandler):
     temp_data_path = None
 
-    def handle_data_parameter(self, data):
+    def handle_data_parameter(self, data, lazo_client=None):
         """
         Handles the 'data' parameter.
 
         :param data: the input parameter
+        :param lazo_client: client for the Lazo Index Server
         :return: (data_path, data_profile)
           data_path: path to the input data
           data_profile: the profiling (metadata) of the data
+          tmp: True if data_path points to a temporary file
         """
 
         if not isinstance(data, (str, bytes)):
@@ -410,12 +412,19 @@ class ProfilePostedData(tornado.web.RequestHandler):
             # data represents the entire file
             logger.info("Data is not a path")
 
-            temp_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+            temp_file = tempfile.NamedTemporaryFile(
+                mode='wb',
+                delete=False,
+                dir='/lazo-data'
+            )
             temp_file.write(data)
             temp_file.close()
 
             self.temp_data_path = data_path = temp_file.name
-            data_profile = get_profile_data(data_path)
+            data_profile = get_profile_data(
+                filepath=data_path,
+                lazo_client=lazo_client
+            )
         else:
             # data represents a file path
             logger.info("Data is a path")
@@ -426,11 +435,17 @@ class ProfilePostedData(tornado.web.RequestHandler):
                     raise ClientError("%s does not exist" % data_file)
                 else:
                     data_path = data_file
-                    data_profile = get_profile_data(data_file)
+                    data_profile = get_profile_data(
+                        filepath=data_file,
+                        lazo_client=lazo_client
+                    )
             else:
                 # path to a CSV file
                 data_path = data
-                data_profile = get_profile_data(data)
+                data_profile = get_profile_data(
+                    filepath=data,
+                    lazo_client=lazo_client
+                )
 
         return data_path, data_profile
 

@@ -117,7 +117,10 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         logger.info("Got profile")
 
         try:
-            data_path, data_profile = self.handle_data_parameter(data)
+            data_path, data_profile = self.handle_data_parameter(
+                data,
+                self.application.lazo_client
+            )
         except ClientError as e:
             return self.send_error_json(400, str(e))
 
@@ -186,7 +189,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         # parameter: data
         if data:
             try:
-                data_path, data_profile, tmp = handle_data_parameter(
+                data_path, data_profile = self.handle_data_parameter(
                     data,
                     self.application.lazo_client
                 )
@@ -396,7 +399,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         else:
             # data
             try:
-                data_path, data_profile, tmp = handle_data_parameter(
+                data_path, data_profile = self.handle_data_parameter(
                     data,
                     self.application.lazo_client
                 )
@@ -514,7 +517,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # data
         try:
-            data_path, data_profile, tmp = handle_data_parameter(
+            data_path, data_profile = self.handle_data_parameter(
                 data,
                 self.application.lazo_client
             )

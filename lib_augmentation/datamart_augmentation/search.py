@@ -108,7 +108,7 @@ def get_lazo_sketches(data_profile, column_index_mapping, filter_=[]):
 
     lazo_sketches = dict()
 
-    if data_profile['lazo']:
+    if 'lazo' in data_profile and data_profile['lazo']:
         for column in data_profile['lazo']:
             column_name = column['name']
             column_index = column_index_mapping[column_name]
