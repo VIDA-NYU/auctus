@@ -20,6 +20,7 @@ class D3mWriter(object):
 
         columns = []
         for i, column in enumerate(metadata['columns']):
+            # D3M has a 'dateTime' structural type but we use string
             if 'http://schema.org/DateTime' in column['semantic_types']:
                 col_type = 'dateTime'
             else:

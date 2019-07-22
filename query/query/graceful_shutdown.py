@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class GracefulApplication(tornado.web.Application):
+    """Application that exits on SIGTERM once no GracefulHandlers are running.
+    """
     def __init__(self, *args, **kwargs):
         super(GracefulApplication, self).__init__(*args, **kwargs)
 
@@ -39,6 +41,8 @@ class GracefulApplication(tornado.web.Application):
 
 
 class GracefulHandler(tornado.web.RequestHandler):
+    """Handlers that will prevent the application to exit until they're done.
+    """
     def prepare(self):
         super(GracefulHandler, self).prepare()
         self.application.nb_requests += 1

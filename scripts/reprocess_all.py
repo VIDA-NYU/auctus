@@ -27,11 +27,13 @@ async def import_all(folder):
         path = os.path.join(folder, name)
         with open(path, 'r') as fp:
             obj = json.load(fp)
-        obj = dict(name=obj['name'],
-                   description=obj['description'],
-                   materialize=obj['materialize'])
+        metadata = dict(name=obj['name'],
+                        description=obj['description'],
+                        materialize=obj['materialize'])
+        if obj.get('description'):
+            metadata['description'] = obj['description']
         await amqp_profile_exchange.publish(
-            json2msg(dict(id=dataset_id, metadata=obj)),
+            json2msg(dict(id=dataset_id, metadata=metadata)),
             '',
         )
         print('.', end='', flush=True)

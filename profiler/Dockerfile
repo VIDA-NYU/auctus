@@ -14,6 +14,9 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY Pipfile.lock install_deps.py /usr/src/app/
 RUN python3 install_deps.py Pipfile.lock
+ENV TINI_VERSION v0.18.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
 # CI: RUN pip install coverage
 # CI: COPY .coveragerc /usr/src/app/
 ARG version
@@ -32,4 +35,5 @@ COPY profiler profiler
 #COPY --from=java /usr/src/scdp/target/SCDP-0.1-jar-with-dependencies.jar \
 #    lib_profiler/datamart_profiler/scdp.jar
 RUN pip install --no-deps -e /usr/src/app/profiler
+ENTRYPOINT ["/tini", "--"]
 CMD ["profiler"]

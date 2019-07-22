@@ -141,9 +141,11 @@ class Upload(BaseHandler):
             metadata = dict(
                 filename=file.filename,
                 name=self.get_body_argument('name', None),
-                description=self.get_body_argument('description', None),
                 materialize=dict(identifier='datamart.upload'),
             )
+            description = self.get_body_argument('description', None)
+            if description:
+                metadata['description'] = description
             dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
             # Write file to shared storage
@@ -168,10 +170,12 @@ class Upload(BaseHandler):
             # Metadata with 'direct_url' in materialization info
             metadata = dict(
                 name=self.get_body_argument('name', None),
-                description=self.get_body_argument('description', None),
                 materialize=dict(identifier='datamart.url',
                                  direct_url=address),
             )
+            description = self.get_body_argument('description', None)
+            if description:
+                metadata['description'] = description
             dataset_id = 'datamart.url.%s' % (
                 uuid.uuid5(uuid.NAMESPACE_URL, address).hex
             )
@@ -195,7 +199,7 @@ class Upload(BaseHandler):
 
 
 def format_size(bytes):
-    units = [' B', ' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB']
+    units = [' B', ' kB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB']
 
     i = 0
     while bytes > 1000 and i + 1 < len(units):
@@ -244,10 +248,7 @@ class Dataset(BaseHandler):
                 del column['coverage']
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
-        spatial_coverage = []
-        if 'spatial_coverage' in metadata:
-            spatial_coverage = metadata['spatial_coverage']
-            del metadata['spatial_coverage']
+        spatial_coverage = metadata.pop('spatial_coverage', [])
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
                     metadata=metadata, materialize=materialize,
