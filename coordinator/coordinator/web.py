@@ -141,9 +141,11 @@ class Upload(BaseHandler):
             metadata = dict(
                 filename=file.filename,
                 name=self.get_body_argument('name', None),
-                description=self.get_body_argument('description', None),
                 materialize=dict(identifier='datamart.upload'),
             )
+            description = self.get_body_argument('description', None)
+            if description:
+                metadata['description'] = description
             dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
             # Write file to shared storage
@@ -168,10 +170,12 @@ class Upload(BaseHandler):
             # Metadata with 'direct_url' in materialization info
             metadata = dict(
                 name=self.get_body_argument('name', None),
-                description=self.get_body_argument('description', None),
                 materialize=dict(identifier='datamart.url',
                                  direct_url=address),
             )
+            description = self.get_body_argument('description', None)
+            if description:
+                metadata['description'] = description
             dataset_id = 'datamart.url.%s' % (
                 uuid.uuid5(uuid.NAMESPACE_URL, address).hex
             )
