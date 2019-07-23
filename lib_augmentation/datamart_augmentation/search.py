@@ -5,7 +5,7 @@ from .utils import compute_levenshtein_sim
 
 logger = logging.getLogger(__name__)
 
-PAGINATION_SIZE = 100
+PAGINATION_SIZE = 200
 TOP_K_SIZE = 50
 
 
@@ -405,30 +405,20 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
 
     results = list()
 
-    from_ = 0
-    query_results = es.search(
+    # get top-200 results
+    hits = es.search(
         index='datamart_columns',
         body=body,
-        from_=from_,
-        size=PAGINATION_SIZE
-    )
+        from_=0,
+        size=200
+    )['hits']['hits']
 
-    size_ = len(query_results['hits']['hits'])
-    while size_ > 0:
-        for hit in query_results['hits']['hits']:
-            # multiplying keyword query score with Lazo score
-            dataset_id = hit['_source']['dataset_id']
-            column_name = hit['_source']['name']
-            hit['_score'] *= scores_per_dataset[dataset_id][column_name]
-            results.append(hit)
-        from_ += size_
-        query_results = es.search(
-            index='datamart_columns',
-            body=body,
-            from_=from_,
-            size=PAGINATION_SIZE
-        )
-        size_ = len(query_results['hits']['hits'])
+    for hit in hits:
+        # multiplying keyword query score with Lazo score
+        dataset_id = hit['_source']['dataset_id']
+        column_name = hit['_source']['name']
+        hit['_score'] *= scores_per_dataset[dataset_id][column_name]
+        results.append(hit)
 
     return results
 
