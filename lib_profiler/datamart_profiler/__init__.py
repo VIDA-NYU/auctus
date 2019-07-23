@@ -210,12 +210,8 @@ def pair_latlong_columns(columns_lat, columns_long):
 
 
 @PROM_PROFILE.time()
-def process_dataset(
-        data,
-        dataset_id=None,
-        metadata=None,
-        lazo_client=None,
-        search=False):
+def process_dataset(data, dataset_id=None, metadata=None,
+                    lazo_client=None, search=False):
     """Compute all metafeatures from a dataset.
 
     :param data: path to dataset
@@ -417,7 +413,7 @@ def process_dataset(
                                 column_name
                             )
                         )
-                ## saving sketches into metadata
+                # saving sketches into metadata
                 metadata_lazo = []
                 for i in range(len(column_textual)):
                     n_permutations, hash_values, cardinality =\

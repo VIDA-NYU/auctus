@@ -5,7 +5,7 @@ from .utils import compute_levenshtein_sim
 
 logger = logging.getLogger(__name__)
 
-PAGINATION_SIZE = 50
+PAGINATION_SIZE = 100
 TOP_K_SIZE = 50
 
 
@@ -322,24 +322,115 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
     (keyword search).
     """
 
+    scores_per_dataset = dict()
+    column_per_dataset = dict()
+    for i in range(len(dataset_ids)):
+        if dataset_ids[i] not in column_per_dataset:
+            column_per_dataset[dataset_ids[i]] = list()
+            scores_per_dataset[dataset_ids[i]] = dict()
+        column_per_dataset[dataset_ids[i]].append(column_names[i])
+        scores_per_dataset[dataset_ids[i]][column_names[i]] = lazo_scores[i]
+
+    # if there is no keyword query
     if not query_args:
         results = list()
-        for i in range(len(dataset_ids)):
-            result = dict(
-                _score=lazo_scores[i],
-                _source=dict(
-                    dataset_id=dataset_ids[i],
-                    name=column_names[i]
-                    # TODO: missing 'index'
-                    #   do we need to query on Elasticsearch?
-                )
+        for dataset_id in column_per_dataset:
+            column_indices = get_column_identifiers(
+                es=es,
+                column_names=column_per_dataset[dataset_id],
+                dataset_id=dataset_id
             )
-            results.append(result)
+            for j in range(len(column_indices)):
+                column_name = column_per_dataset[dataset_id][j]
+                results.append(
+                    dict(
+                        _score=scores_per_dataset[dataset_id][column_name],
+                        _source=dict(
+                            dataset_id=dataset_id,
+                            name=column_name,
+                            index=column_indices[j]
+                        )
+                    )
+                )
+        return results
 
-    # TODO: implement
-    #   use query_args with filter on dataset ids and names
-    #   multiply score with lazo_score
-    return []
+    # if there is a keyword query
+    should_query = list()
+    for i in range(len(dataset_ids)):
+        should_query.append({
+            'bool': {
+                'must': [
+                    {
+                        'term': {
+                            'dataset_id': dataset_ids[i]
+                        }
+                    },
+                    {
+                        'term': {
+                            'name.raw': column_names[i]
+                        }
+                    }
+                ]
+            }
+        })
+
+    body = {
+        '_source': {
+            'excludes': [
+                'dataset_name',
+                'dataset_description',
+                'coverage',
+                'mean',
+                'stddev',
+                'structural_type',
+                'semantic_types'
+            ]
+        },
+        'query': {
+            'function_score': {
+                'query': {
+                    'bool': {
+                        'should': should_query,
+                        'minimum_should_match': 1
+                    }
+                },
+                'functions': query_args,
+                'score_mode': 'sum',
+                'boost_mode': 'replace'
+            }
+        }
+    }
+
+    # logger.info("Query (textual): %r", body)
+
+    results = list()
+
+    from_ = 0
+    query_results = es.search(
+        index='datamart_columns',
+        body=body,
+        from_=from_,
+        size=PAGINATION_SIZE
+    )
+
+    size_ = len(query_results['hits']['hits'])
+    while size_ > 0:
+        for hit in query_results['hits']['hits']:
+            # multiplying keyword query score with Lazo score
+            dataset_id = hit['_source']['dataset_id']
+            column_name = hit['_source']['name']
+            hit['_score'] *= scores_per_dataset[dataset_id][column_name]
+            results.append(hit)
+        from_ += size_
+        query_results = es.search(
+            index='datamart_columns',
+            body=body,
+            from_=from_,
+            size=PAGINATION_SIZE
+        )
+        size_ = len(query_results['hits']['hits'])
+
+    return results
 
 
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):

@@ -125,6 +125,7 @@ class Coordinator(object):
                                             'type': 'text',
                                             # the following is needed for
                                             # the fuzzy query for numerical attributes
+                                            # and for Lazo queries
                                             'fields': {
                                                 'raw': {
                                                     'type': 'keyword'
