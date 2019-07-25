@@ -165,10 +165,6 @@ def perform_aggregations(data, groupby_columns,
                     agg_functions[column] = [
                         np.mean, np.sum, np.max, np.min
                     ]
-            # else:
-            #     # column is a join column
-            #     # TODO: handle datetime
-            #     agg_functions[column] = lambda x: x.loc[x.first_valid_index()]
         if not agg_functions:
             raise AugmentationError("No numerical columns to perform aggregation.")
         data = data.groupby(by=groupby_columns).agg(agg_functions)
