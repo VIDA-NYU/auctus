@@ -74,9 +74,9 @@ def identify_types(array, name):
 
     if num_empty == num_total:
         structural_type = Type.MISSING_DATA
-    elif num_empty + num_int >= threshold:
+    elif num_int >= threshold:
         structural_type = Type.INTEGER
-    elif num_empty + num_int + num_float >= threshold:
+    elif num_int + num_float >= threshold:
         structural_type = Type.FLOAT
     else:
         structural_type = Type.TEXT
@@ -84,11 +84,11 @@ def identify_types(array, name):
     semantic_types_dict = {}
 
     # Identify booleans
-    if (num_empty + num_bool) >= threshold:
+    if num_bool >= threshold:
         semantic_types_dict[Type.BOOLEAN] = None
 
     if structural_type == Type.TEXT:
-        if num_empty + num_text >= threshold:
+        if num_text >= threshold:
             # Free text
             semantic_types_dict[Type.TEXT] = None
         else:
@@ -127,9 +127,9 @@ def identify_types(array, name):
                     if -90.0 <= float(elem) <= 90.0:
                         num_lat += 1
 
-        if (num_empty + num_lat) >= threshold and 'lat' in name.lower():
+        if num_lat >= threshold and 'lat' in name.lower():
             semantic_types_dict[Type.LATITUDE] = None
-        if (num_empty + num_long) >= threshold and 'lon' in name.lower():
+        if num_long >= threshold and 'lon' in name.lower():
             semantic_types_dict[Type.LONGITUDE] = None
 
     # Identify dates
@@ -140,7 +140,7 @@ def identify_types(array, name):
             if elem is not None:
                 parsed_dates.append(elem)
 
-        if (num_empty + len(parsed_dates)) >= threshold:
+        if len(parsed_dates) >= threshold:
             semantic_types_dict[Type.DATE_TIME] = parsed_dates
 
     # Identify phone numbers
@@ -149,7 +149,7 @@ def identify_types(array, name):
         if _re_phone.match(elem) is not None:
             num_phones += 1
 
-    if (num_empty + num_phones) >= threshold:
+    if num_phones >= threshold:
         semantic_types_dict[Type.PHONE_NUMBER] = None
 
     return structural_type, semantic_types_dict

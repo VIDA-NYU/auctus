@@ -546,9 +546,9 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
             if search_results:
                 # get first result
-                logger.info("Using first of %d augmentation results",
-                            len(search_results))
                 task = search_results[0]
+                logger.info("Using first of %d augmentation results: %r",
+                            len(search_results), task['id'])
             else:
                 return self.send_error_json(400,
                                             "The DataMart dataset referenced "
