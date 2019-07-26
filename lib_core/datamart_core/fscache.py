@@ -61,7 +61,7 @@ class FilesystemLocks(object):
         # Read out of stdout
         out = proc.stdout.read(6)
         if out == b'LOCKED':
-            logger.debug("Acquired exclusive lock: %r", filepath)
+            logger.info("Acquired exclusive lock: %r", filepath)
             return proc, filepath
         else:
             out = proc.stdout.read()
@@ -76,9 +76,10 @@ class FilesystemLocks(object):
 
     def unlock_exclusive(self, lock):
         proc, filepath = lock
+        logger.debug("Releasing exclusive lock: %r", filepath)
         os.killpg(proc.pid, signal.SIGINT)
         proc.wait()
-        logger.debug("Released exclusive lock: %r", filepath)
+        logger.info("Released exclusive lock: %r", filepath)
 
     def lock_shared(self, filepath, timeout=None):
         """Get a shared lock.
@@ -104,7 +105,7 @@ class FilesystemLocks(object):
         # Read out of stdout
         out = proc.stdout.read(6)
         if out == b'LOCKED':
-            logger.debug("Acquired shared lock: %r", filepath)
+            logger.info("Acquired shared lock: %r", filepath)
             return proc, filepath
         else:
             out = proc.stdout.read()
@@ -121,9 +122,10 @@ class FilesystemLocks(object):
 
     def unlock_shared(self, lock):
         proc, filepath = lock
+        logger.debug("Releasing shared lock: %r", filepath)
         os.killpg(proc.pid, signal.SIGINT)
         proc.wait()
-        logger.debug("Released shared lock: %r", filepath)
+        logger.info("Released shared lock: %r", filepath)
 
 
 FilesystemLocks = FilesystemLocks()
