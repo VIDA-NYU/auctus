@@ -78,7 +78,11 @@ class FilesystemLocks(object):
         proc, filepath = lock
         logger.debug("Releasing exclusive lock: %r", filepath)
         os.killpg(proc.pid, signal.SIGINT)
-        proc.wait()
+        try:
+            proc.wait(10)
+        except subprocess.TimeoutExpired:
+            logger.critical("Failed to release exclusive lock: %r", filepath)
+            raise SystemExit("Failed to release exclusive lock: %r" % filepath)
         logger.info("Released exclusive lock: %r", filepath)
 
     def lock_shared(self, filepath, timeout=None):
@@ -124,7 +128,11 @@ class FilesystemLocks(object):
         proc, filepath = lock
         logger.debug("Releasing shared lock: %r", filepath)
         os.killpg(proc.pid, signal.SIGINT)
-        proc.wait()
+        try:
+            proc.wait(10)
+        except subprocess.TimeoutExpired:
+            logger.critical("Failed to release shared lock: %r", filepath)
+            raise SystemExit("Failed to release shared lock: %r" % filepath)
         logger.info("Released shared lock: %r", filepath)
 
 
