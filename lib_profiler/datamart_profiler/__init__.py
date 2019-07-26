@@ -226,7 +226,7 @@ def process_dataset(data, metadata=None):
 
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
-        # Warning: no sampling here!
+        # FIXME: no sampling here!
     else:
         with contextlib.ExitStack() as stack:
             if isinstance(data, (str, bytes)):
