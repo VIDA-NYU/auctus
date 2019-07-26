@@ -47,6 +47,8 @@ services:
     volumes:
       # CI: - ./cov:/cov
       - datasets:/datasets
+      - dataset-cache:/dataset_cache
+      - query-cache:/cache
   query:
     build:
       context: .
