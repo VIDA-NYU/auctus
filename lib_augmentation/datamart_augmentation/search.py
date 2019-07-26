@@ -357,22 +357,29 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
     # if there is a keyword query
     should_query = list()
     for i in range(len(dataset_ids)):
-        should_query.append({
-            'bool': {
-                'must': [
-                    {
-                        'term': {
-                            'dataset_id': dataset_ids[i]
+        should_query.append(
+            {
+                'constant_score': {
+                    'filter': {
+                        'bool': {
+                            'must': [
+                                {
+                                    'term': {
+                                        'dataset_id': dataset_ids[i]
+                                    }
+                                },
+                                {
+                                    'term': {
+                                        'name.raw': column_names[i]
+                                    }
+                                }
+                            ]
                         }
                     },
-                    {
-                        'term': {
-                            'name.raw': column_names[i]
-                        }
-                    }
-                ]
+                    'boost': lazo_scores[i]
+                }
             }
-        })
+        )
 
     body = {
         '_source': {
@@ -396,31 +403,19 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
                 },
                 'functions': query_args,
                 'score_mode': 'sum',
-                'boost_mode': 'replace'
+                'boost_mode': 'multiply'
             }
         }
     }
 
     # logger.info("Query (textual): %r", body)
 
-    results = list()
-
-    # get top-200 results
-    hits = es.search(
+    return es.search(
         index='datamart_columns',
         body=body,
         from_=0,
-        size=200
+        size=TOP_K_SIZE
     )['hits']['hits']
-
-    for hit in hits:
-        # multiplying keyword query score with Lazo score
-        dataset_id = hit['_source']['dataset_id']
-        column_name = hit['_source']['name']
-        hit['_score'] *= scores_per_dataset[dataset_id][column_name]
-        results.append(hit)
-
-    return results
 
 
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
