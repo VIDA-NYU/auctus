@@ -11,7 +11,7 @@ import zipfile
 from .utils import assert_json
 
 
-schemas = os.path.join(os.path.dirname(__file__), '..', 'schemas')
+schemas = os.path.join(os.path.dirname(__file__), '..', 'doc', 'schemas')
 schemas = os.path.abspath(schemas)
 
 
