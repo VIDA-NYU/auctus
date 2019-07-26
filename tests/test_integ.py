@@ -91,6 +91,7 @@ class TestProfiler(unittest.TestCase):
             {
                 'datamart.test.basic': basic_metadata,
                 'datamart.test.geo': geo_metadata,
+                'datamart.test.basic_agg': basic_agg_metadata
             },
         )
 
@@ -535,6 +536,55 @@ class TestAugment(DatamartTest):
                 '10,west,fernando,brazil,False\n',
             )
 
+    def test_basic_join_aggregation(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic_agg'
+        )
+        meta = meta.json()
+
+        task = {
+            'id': 'datamart.test.basic_agg',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['id']],
+                'right_columns': [[0]],
+                'right_columns_names': [['id']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        response = self.datamart_post(
+            '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': basic_aug_agg_data.encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip = zipfile.ZipFile(io.BytesIO(response.content))
+        zip.testzip()
+        self.assertEqual(
+            set(zip.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip.open('tables/learningData.csv') as table:
+            self.assertEqual(
+                table.read().decode('utf-8'),
+                'id,location,mean salary,sum salary,amax salary,amin salary\n'
+                '30,korea,150,300,200,100\n'
+                '40,brazil,100,100,100,100\n'
+                '70,usa,350,700,600,100\n'
+                '80,canada,200,200,200,200\n'
+                '100,france,250,500,300,200\n',
+            )
+
 
 def check_ranges(min_long, min_lat, max_long, max_lat):
     def check(ranges):
@@ -625,6 +675,90 @@ basic_metadata = {
 }
 
 
+basic_agg_metadata = {
+    "name": "basic_agg",
+    "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
+    "size": 116,
+    "nb_rows": 8,
+    "columns": [
+        {
+            "name": "id",
+            "structural_type": "http://schema.org/Integer",
+            "semantic_types": [
+                "http://schema.org/identifier"
+            ],
+            "mean": 65.0,
+            "stddev": lambda n: round(n, 3) == 26.926,
+            "coverage": (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {
+                        "range": {
+                            "gte": 30.0,
+                            "lte": 40.0
+                        }
+                    },
+                    {
+                        "range": {
+                            "gte": 70.0,
+                            "lte": 80.0
+                        }
+                    },
+                    {
+                        "range": {
+                            "gte": 100.0,
+                            "lte": 100.0
+                        }
+                    }
+                ]
+            )
+        },
+        {
+            "name": "work",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": [
+                "http://schema.org/Boolean",
+                "https://schema.org/Enumeration"
+            ]
+        },
+        {
+            "name": "salary",
+            "structural_type": "http://schema.org/Integer",
+            "semantic_types": [],
+            "mean": 225.0,
+            "stddev": lambda n: round(n, 3) == 156.125,
+            "coverage": (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {
+                        "range": {
+                            "gte": 100.0,
+                            "lte": 100.0
+                        }
+                    },
+                    {
+                        "range": {
+                            "gte": 200.0,
+                            "lte": 300.0
+                        }
+                    },
+                    {
+                        "range": {
+                            "gte": 600.0,
+                            "lte": 600.0
+                        }
+                    }
+                ]
+            )
+        }
+    ],
+    "materialize": {
+        "identifier": "datamart.test",
+        "date": lambda d: isinstance(d, str)
+    },
+    "date": lambda d: isinstance(d, str),
+    "version": version
+}
+
+
 geo_metadata = {
     "name": "geo",
     "description": "Another simple CSV with places",
@@ -674,6 +808,16 @@ basic_aug_data = (
     '7,west\n'
     '8,east\n'
     '10,west\n'
+)
+
+
+basic_aug_agg_data = (
+    'id,location\n'
+    '40,brazil\n'
+    '30,korea\n'
+    '70,usa\n'
+    '80,canada\n'
+    '100,france\n'
 )
 
 

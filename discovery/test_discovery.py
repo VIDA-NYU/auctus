@@ -37,6 +37,19 @@ class TestDiscoverer(Discoverer):
             dataset_id='basic',  # Needs to be last, CI waits for it to test
         )
 
+        # Put this one on disk
+        with self.write_to_shared_storage('basic_agg') as dirname:
+            shutil.copy2('basic_agg.csv', os.path.join(dirname, 'main.csv'))
+        self.record_dataset(
+            dict(),
+            {
+                # Omit name, should be set to 'basic_agg' automatically
+                'description': "Simple CSV with ids and salaries to test"
+                               " aggregation for numerical attributes",
+            },
+            dataset_id='basic_agg',
+        )
+
 
 def server():
     with HTTPServer(('0.0.0.0', 7000), SimpleHTTPRequestHandler) as httpd:

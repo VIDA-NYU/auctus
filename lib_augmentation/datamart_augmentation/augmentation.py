@@ -165,8 +165,21 @@ def perform_aggregations(data, groupby_columns,
                     agg_functions[column] = [
                         np.mean, np.sum, np.max, np.min
                     ]
+            else:
+                # column is a join column
+                if 'datetime' in str(data.dtypes[column]):
+                    # TODO: handle datetime
+                    pass
+                else:
+                    # getting the first non-null element
+                    # since it is a join column, we expect all the values
+                    # to be exactly the same
+                    agg_functions[column] = lambda x: x.iloc[0]
+                    # agg_functions[column] = \
+                    #     lambda x: x.loc[x.first_valid_index()].iloc[0]
         if not agg_functions:
             raise AugmentationError("No numerical columns to perform aggregation.")
+        data.index.name = None  # avoiding warnings
         data = data.groupby(by=groupby_columns).agg(agg_functions)
         data = data.reset_index(drop=False)
         data.columns = [' '.join(col[::-1]).strip()
