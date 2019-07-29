@@ -120,12 +120,6 @@
             ],
             "version": "==1.21.1"
         },
-        "hdbscan": {
-            "hashes": [
-                "sha256:5cfdc25375123eb9a72363449979141cc928c1953f220f0f81d7baabcaccec2d"
-            ],
-            "version": "==0.8.22"
-        },
         "idna": {
             "hashes": [
                 "sha256:c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407",
@@ -149,10 +143,10 @@
         },
         "lazo-index-service": {
             "hashes": [
-                "sha256:275fb69c28ce6343c22c8cb4e5cb97bbaa77e9dedcd0b55172d5553bf045574b",
-                "sha256:d11f38d84276535cde3438962f6c4746896e0eb8dc0f0ae7f951252e8d295a77"
+                "sha256:38878b62e3ea1076579cb42a2d3ceeacddc5de5181f296db76e5f9e18cde7223",
+                "sha256:d8b053ed60935f4729c8094b33003b2c05b26bd65e1bc21c374eadf309874324"
             ],
-            "version": "==0.3"
+            "version": "==0.4"
         },
         "markupsafe": {
             "hashes": [
