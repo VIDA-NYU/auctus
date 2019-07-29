@@ -332,10 +332,10 @@
         },
         "sodapy": {
             "hashes": [
-                "sha256:f56df0a19a8be214f3be44818b8f31a0e3929c0c1bbbbfbce0a4b5a777a98f7f",
-                "sha256:f7634710d8b78350fee2ab6a56a54e0b971d122e709ad0af89c381f177c19d48"
+                "sha256:31708ed33e620e0cdc3129fb861f0661f18bf19b2b6e760b8f97c18a332aac98",
+                "sha256:d518e729973ef7567d946120ab9530798da97579d272fa6ea8f7191bca423a04"
             ],
-            "version": "==1.5.0"
+            "version": "==1.5.4"
         },
         "tornado": {
             "hashes": [
