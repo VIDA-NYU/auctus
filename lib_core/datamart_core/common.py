@@ -218,7 +218,7 @@ def delete_dataset_from_index(es, lazo_client, dataset_id):
                     {'term': {'structural_type': Type.TEXT}}
                 ],
                 'must_not': {
-                    {'term': {'semantic_types': Type.DATE_TIME}}
+                    'term': {'semantic_types': Type.DATE_TIME}
                 }
             }
         }
@@ -231,11 +231,18 @@ def delete_dataset_from_index(es, lazo_client, dataset_id):
             size=10000,
         )['hits']['hits']
         for h in hits:
-            textual_columns.append(h['name'])
+            textual_columns.append(h['_source']['name'])
         if len(hits) != 10000:
             break
     if textual_columns:
-        lazo_client.remove_sketches(dataset_id, textual_columns)
+        ack = lazo_client.remove_sketches(dataset_id, textual_columns)
+        if ack:
+            logger.info(
+                "Deleted %d documents from the lazo storage",
+                len(textual_columns)
+            )
+        else:
+            logger.info("Error while deleting documents from the lazo storage")
 
     # deleting from 'datamart'
     try:
