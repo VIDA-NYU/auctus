@@ -186,12 +186,56 @@ def add_dataset_to_index(es, dataset_id, metadata):
     )
 
 
-def delete_dataset_from_index(es, dataset_id):
+def add_dataset_to_lazo_storage(es, id, metadata):
+    """
+    Adds a dataset to the Lazo storage.
+    """
+
+    es.index(
+        index='lazo',
+        doc_type='_doc',
+        body=metadata,
+        id=id,
+    )
+
+
+def delete_dataset_from_index(es, lazo_client, dataset_id):
     """
     Safely deletes a dataset from the 'datamart' index,
     including its corresponding information in
     'datamart_columns' and 'datamart_spatial_coverage' indices.
+    This function also connects to the Lazo index service
+    and deletes any corresponding sketch.
     """
+
+    # checking if there are any textual columns in the dataset
+    # remove them from the Lazo index service
+    body = {
+        'query': {
+            'bool': {
+                'must': [
+                    {'term': {'dataset_id': dataset_id}},
+                    {'term': {'structural_type': Type.TEXT}}
+                ],
+                'must_not': {
+                    {'term': {'semantic_types': Type.DATE_TIME}}
+                }
+            }
+        }
+    }
+    textual_columns = list()
+    while True:
+        hits = es.search(
+            index='datamart_columns',
+            body=body,
+            size=10000,
+        )['hits']['hits']
+        for h in hits:
+            textual_columns.append(h['name'])
+        if len(hits) != 10000:
+            break
+    if textual_columns:
+        lazo_client.remove_sketches(dataset_id, textual_columns)
 
     # deleting from 'datamart'
     try:

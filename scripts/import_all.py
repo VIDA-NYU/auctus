@@ -8,8 +8,8 @@ import os
 import sys
 import time
 
-from datamart_core.common import add_dataset_to_index, json2msg,\
-    decode_dataset_id
+from datamart_core.common import add_dataset_to_index, \
+    add_dataset_to_lazo_storage, json2msg, decode_dataset_id
 
 
 async def import_all(folder):
@@ -28,20 +28,29 @@ async def import_all(folder):
     )
 
     for name in os.listdir(folder):
-        dataset_id = decode_dataset_id(name)
         path = os.path.join(folder, name)
         with open(path, 'r') as fp:
             obj = json.load(fp)
-        try:
-            add_dataset_to_index(es, dataset_id, obj)
-        except elasticsearch.TransportError:
-            print('X', end='', flush=True)
-            time.sleep(10)  # If writing can't keep up, needs a real break
-            add_dataset_to_index(es, dataset_id, obj)
-        await amqp_datasets_exchange.publish(
-            json2msg(dict(obj, id=dataset_id)),
-            dataset_id,
-        )
+        if name.startswith('lazo.'):
+            id = decode_dataset_id(name.replace('lazo.', '', 1))
+            try:
+                add_dataset_to_lazo_storage(es, id, obj)
+            except elasticsearch.TransportError:
+                print('X', end='', flush=True)
+                time.sleep(10)  # If writing can't keep up, needs a real break
+                add_dataset_to_lazo_storage(es, id, obj)
+        else:
+            dataset_id = decode_dataset_id(name)
+            try:
+                add_dataset_to_index(es, dataset_id, obj)
+            except elasticsearch.TransportError:
+                print('X', end='', flush=True)
+                time.sleep(10)  # If writing can't keep up, needs a real break
+                add_dataset_to_index(es, dataset_id, obj)
+            await amqp_datasets_exchange.publish(
+                json2msg(dict(obj, id=dataset_id)),
+                dataset_id,
+            )
         print('.', end='', flush=True)
 
 

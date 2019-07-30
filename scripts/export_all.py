@@ -14,22 +14,24 @@ def export():
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
-    while True:
-        hits = es.search(
-            index='datamart',
-            body={
-                'query': {
-                    'match_all': {},
+    for index in ('datamart', 'lazo'):
+        prefix = 'lazo.' if index == 'lazo' else ''
+        while True:
+            hits = es.search(
+                index=index,
+                body={
+                    'query': {
+                        'match_all': {},
+                    },
                 },
-            },
-            size=SIZE,
-        )['hits']['hits']
-        for h in hits:
-            with open(encode_dataset_id(h['_id']), 'w') as fp:
-                json.dump(h['_source'], fp, sort_keys=True, indent=2)
-        print('.', end='', flush=True)
-        if len(hits) != SIZE:
-            break
+                size=SIZE,
+            )['hits']['hits']
+            for h in hits:
+                with open(encode_dataset_id(prefix + h['_id']), 'w') as fp:
+                    json.dump(h['_source'], fp, sort_keys=True, indent=2)
+            print('.', end='', flush=True)
+            if len(hits) != SIZE:
+                break
 
 
 if __name__ == '__main__':

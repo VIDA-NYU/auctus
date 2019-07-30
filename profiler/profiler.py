@@ -149,7 +149,11 @@ class Profiler(object):
                 try:
                     metadata = future.result()
                     # Delete dataset if already exists in index
-                    delete_dataset_from_index(self.es, dataset_id)
+                    delete_dataset_from_index(
+                        self.es,
+                        self.lazo_client,
+                        dataset_id
+                    )
                     # Insert results in Elasticsearch
                     body = dict(metadata,
                                 date=datetime.utcnow().isoformat() + 'Z',

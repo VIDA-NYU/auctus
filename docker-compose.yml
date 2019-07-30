@@ -32,7 +32,7 @@ services:
       - 8080:15672
       - 5672:5672
   lazo_server:
-    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.3
+    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.4
     environment:
       - db=elasticsearch
       - p=50051
@@ -128,6 +128,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     volumes:
       - datasets:/datasets
   d3m_seeds:
@@ -140,6 +142,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
@@ -154,6 +158,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     volumes:
       - datasets:/datasets
   socrata:
@@ -165,6 +171,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
   noaa:
     build:
       context: .
@@ -175,6 +183,8 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - NOAA_TOKEN=${NOAA_TOKEN}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
 volumes:
   datasets:
   query-cache:

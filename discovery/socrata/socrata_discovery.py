@@ -117,7 +117,11 @@ class SocrataDiscoverer(Discoverer):
             from_ += size
             for h in hits:
                 if h['_source']['materialize']['socrata_id'] not in seen:
-                    delete_dataset_from_index(self.elasticsearch, h['_id'])
+                    delete_dataset_from_index(
+                        self.elasticsearch,
+                        self.lazo_client,
+                        h['_id']
+                    )
                     deleted += 1
                     from_ -= 1
             if len(hits) != size:

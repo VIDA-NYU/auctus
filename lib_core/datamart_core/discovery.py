@@ -3,6 +3,7 @@ import asyncio
 import contextlib
 from datetime import datetime
 import elasticsearch
+import lazo_index_service
 import logging
 import os
 import shutil
@@ -75,6 +76,10 @@ class Discoverer(object):
     async def _run(self):
         self.elasticsearch = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+        self.lazo_client = lazo_index_service.LazoIndexClient(
+            host=os.environ['LAZO_SERVER_HOST'],
+            port=int(os.environ['LAZO_SERVER_PORT'])
         )
 
         connection = await aio_pika.connect_robust(

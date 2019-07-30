@@ -10,7 +10,6 @@ req = [
     'datamart_materialize',
     'Distance',
     'elasticsearch~=6.3',
-    'lazo_index_service',
     'pandas',
     'numpy'
 ]
