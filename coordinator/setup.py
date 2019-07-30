@@ -10,6 +10,7 @@ req = [
     'datamart_core',
     'elasticsearch~=6.3',
     'prometheus_client',
+    'PyYaml',
     'jinja2',
     'tornado>=5.0',
 ]
@@ -20,6 +21,7 @@ setup(name='datamart-coordinator-service',
           'static/css/*.css', 'static/css/*.css.map',
           'static/js/*.js', 'static/js/*.js.map',
           'templates/*.html',
+          'elasticsearch.yml',
       ]},
       entry_points={
           'console_scripts': [
