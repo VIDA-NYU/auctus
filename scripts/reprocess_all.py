@@ -28,10 +28,11 @@ async def import_all(folder):
         with open(path, 'r') as fp:
             obj = json.load(fp)
         metadata = dict(name=obj['name'],
-                        description=obj['description'],
                         materialize=obj['materialize'])
         if obj.get('description'):
             metadata['description'] = obj['description']
+        if obj.get('date'):
+            metadata['date'] = obj['date']
         await amqp_profile_exchange.publish(
             json2msg(dict(id=dataset_id, metadata=metadata)),
             '',
