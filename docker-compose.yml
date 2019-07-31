@@ -13,6 +13,8 @@ services:
         hard: -1
     ports:
       - 9200:9200
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
   elasticsearch_exporter:
     image: justwatch/elasticsearch_exporter:1.0.2
     restart: on-failure
@@ -92,6 +94,7 @@ services:
     ports:
       - 9090:9090
     volumes:
+      - prometheus:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
   grafana:
     image: grafana/grafana
@@ -155,5 +158,7 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - NOAA_TOKEN=${NOAA_TOKEN}
 volumes:
+  elasticsearch:
   datasets:
   query-cache:
+  prometheus:
