@@ -3,11 +3,26 @@ import fcntl
 import logging
 import multiprocessing
 import os
+import prometheus_client
 import shutil
 import signal
 
 
 logger = logging.getLogger(__name__)
+
+
+PROM_LOCK_ACQUIRE = prometheus_client.Histogram(
+    'cache_lock_acquire_seconds',
+    "Time to acquire lock on cache",
+    ['type'],
+    buckets=[1.0, 10.0, 60.0, 120.0, 300.0, 600.0, 1800.0, 3600.0, 7200.0,
+             float('inf')],
+)
+PROM_LOCKS_HELD = prometheus_client.Gauge(
+    'cache_locks_held',
+    "Number of locks on cache currently held",
+    ['type'],
+)
 
 
 @contextlib.contextmanager
@@ -66,25 +81,27 @@ def _lock_process(pipe, filepath, exclusive, timeout=None):
 def _lock(filepath, exclusive, timeout=None):
     type_ = "exclusive" if exclusive else "shared"
 
-    pipe, pipe2 = multiprocessing.Pipe()
-    proc = multiprocessing.Process(
-        target=_lock_process,
-        args=(pipe2, filepath, True, timeout),
-    )
-    proc.start()
+    with PROM_LOCK_ACQUIRE.labels(type_).time():
+        pipe, pipe2 = multiprocessing.Pipe()
+        proc = multiprocessing.Process(
+            target=_lock_process,
+            args=(pipe2, filepath, True, timeout),
+        )
+        proc.start()
 
-    out = pipe.recv()
-    if out == 'LOCKED':
-        logger.info("Acquired %s lock: %r", type_, filepath)
-        return filepath, proc, pipe
-    elif out == 'TIMEOUT':
-        logger.debug("Timeout getting %s lock: %r", type_, filepath)
-        return None
-    elif out == 'NOTFOUND':
-        raise FileNotFoundError
-    else:
-        logger.error("Error getting %s lock: %r", type_, filepath)
-        raise OSError("Error getting %s lock: %r", type_, filepath)
+        out = pipe.recv()
+        if out == 'LOCKED':
+            logger.info("Acquired %s lock: %r", type_, filepath)
+            PROM_LOCKS_HELD.labels(type_).inc()
+            return filepath, proc, pipe
+        elif out == 'TIMEOUT':
+            logger.debug("Timeout getting %s lock: %r", type_, filepath)
+            return None
+        elif out == 'NOTFOUND':
+            raise FileNotFoundError
+        else:
+            logger.error("Error getting %s lock: %r", type_, filepath)
+            raise OSError("Error getting %s lock: %r", type_, filepath)
 
 
 def lock_exclusive(filepath, timeout=None):
@@ -117,6 +134,7 @@ def _unlock(lock, exclusive):
             proc.exitcode, type_, filepath,
         ))
     logger.info("Released %s lock: %r", type_, filepath)
+    PROM_LOCKS_HELD.labels(type_).dec()
 
 
 def unlock_exclusive(lock):
