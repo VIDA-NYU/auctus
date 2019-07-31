@@ -33,7 +33,7 @@ def clear(identifier):
             size=SIZE,
         )['hits']['hits']
         for h in hits:
-            delete_dataset_from_index(es, lazo_client, h['_id'])
+            delete_dataset_from_index(es, h['_id'], lazo_client)
         if len(hits) != SIZE:
             break
 

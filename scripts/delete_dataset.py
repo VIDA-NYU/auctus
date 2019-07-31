@@ -20,7 +20,7 @@ def delete(datasets):
         port=int(os.environ['LAZO_SERVER_PORT'])
     )
     for dataset in datasets:
-        delete_dataset_from_index(es, lazo_client, dataset)
+        delete_dataset_from_index(es, dataset, lazo_client)
 
 
 if __name__ == '__main__':

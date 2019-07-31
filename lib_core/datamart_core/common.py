@@ -199,7 +199,7 @@ def add_dataset_to_lazo_storage(es, id, metadata):
     )
 
 
-def delete_dataset_from_index(es, lazo_client, dataset_id):
+def delete_dataset_from_index(es, dataset_id, lazo_client=None):
     """
     Safely deletes a dataset from the 'datamart' index,
     including its corresponding information in
@@ -208,41 +208,42 @@ def delete_dataset_from_index(es, lazo_client, dataset_id):
     and deletes any corresponding sketch.
     """
 
-    # checking if there are any textual columns in the dataset
-    # remove them from the Lazo index service
-    body = {
-        'query': {
-            'bool': {
-                'must': [
-                    {'term': {'dataset_id': dataset_id}},
-                    {'term': {'structural_type': Type.TEXT}}
-                ],
-                'must_not': {
-                    'term': {'semantic_types': Type.DATE_TIME}
+    if lazo_client:
+        # checking if there are any textual columns in the dataset
+        # remove them from the Lazo index service
+        body = {
+            'query': {
+                'bool': {
+                    'must': [
+                        {'term': {'dataset_id': dataset_id}},
+                        {'term': {'structural_type': Type.TEXT}}
+                    ],
+                    'must_not': {
+                        'term': {'semantic_types': Type.DATE_TIME}
+                    }
                 }
             }
         }
-    }
-    textual_columns = list()
-    while True:
-        hits = es.search(
-            index='datamart_columns',
-            body=body,
-            size=10000,
-        )['hits']['hits']
-        for h in hits:
-            textual_columns.append(h['_source']['name'])
-        if len(hits) != 10000:
-            break
-    if textual_columns:
-        ack = lazo_client.remove_sketches(dataset_id, textual_columns)
-        if ack:
-            logger.info(
-                "Deleted %d documents from the lazo storage",
-                len(textual_columns)
-            )
-        else:
-            logger.info("Error while deleting documents from the lazo storage")
+        textual_columns = list()
+        while True:
+            hits = es.search(
+                index='datamart_columns',
+                body=body,
+                size=10000,
+            )['hits']['hits']
+            for h in hits:
+                textual_columns.append(h['_source']['name'])
+            if len(hits) != 10000:
+                break
+        if textual_columns:
+            ack = lazo_client.remove_sketches(dataset_id, textual_columns)
+            if ack:
+                logger.info(
+                    "Deleted %d documents from the lazo storage",
+                    len(textual_columns)
+                )
+            else:
+                logger.info("Error while deleting documents from the lazo storage")
 
     # deleting from 'datamart'
     try:
