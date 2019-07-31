@@ -27,6 +27,20 @@ PROM_LOCKS_HELD = prometheus_client.Gauge(
 
 @contextlib.contextmanager
 def timeout_syscall(seconds):
+    """Interrupt a system-call after a time (main thread only).
+
+    Warning: this only works from the main thread! Trying to use this on
+    another thread will cause the call to not timeout, and the main thread will
+    receive an InterruptedError instead!
+
+    Example::
+
+        with timeout_syscall(5):
+            try:
+                socket.connect(...)
+            except InterruptedError:
+                raise ValueError("This host does not respond in time")
+    """
     def timeout_handler(signum, frame):
         raise InterruptedError
 
@@ -40,6 +54,13 @@ def timeout_syscall(seconds):
 
 
 def _lock_process(pipe, filepath, exclusive, timeout=None):
+    """Locking function, runs in a subprocess.
+
+    We run the locking in a subprocess so that we are the main thread
+    (required to use SIGALRM) and to avoid spurious unlocking on Linux (which
+    can happen if a different file descriptor for the same file gets closed,
+    even by another thread).
+    """
     try:
         # Reset signal handlers
         signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -78,33 +99,51 @@ def _lock_process(pipe, filepath, exclusive, timeout=None):
     # Exiting releases the lock
 
 
+@contextlib.contextmanager
 def _lock(filepath, exclusive, timeout=None):
     type_ = "exclusive" if exclusive else "shared"
 
-    with PROM_LOCK_ACQUIRE.labels(type_).time():
-        pipe, pipe2 = multiprocessing.Pipe()
-        proc = multiprocessing.Process(
-            target=_lock_process,
-            args=(pipe2, filepath, True, timeout),
-        )
-        proc.start()
+    locked = False
+    pipe, pipe2 = multiprocessing.Pipe()
+    proc = multiprocessing.Process(
+        target=_lock_process,
+        args=(pipe2, filepath, True, timeout),
+    )
+    try:
+        with PROM_LOCK_ACQUIRE.labels(type_).time():
+            proc.start()
 
-        out = pipe.recv()
-        if out == 'LOCKED':
-            logger.info("Acquired %s lock: %r", type_, filepath)
-            PROM_LOCKS_HELD.labels(type_).inc()
-            return filepath, proc, pipe
-        elif out == 'TIMEOUT':
-            logger.debug("Timeout getting %s lock: %r", type_, filepath)
-            return None
-        elif out == 'NOTFOUND':
-            raise FileNotFoundError
-        else:
-            logger.error("Error getting %s lock: %r", type_, filepath)
-            raise OSError("Error getting %s lock: %r", type_, filepath)
+            out = pipe.recv()
+            if out == 'LOCKED':
+                logger.info("Acquired %s lock: %r", type_, filepath)
+                locked = True
+                PROM_LOCKS_HELD.labels(type_).inc()
+            elif out == 'TIMEOUT':
+                logger.debug("Timeout getting %s lock: %r", type_, filepath)
+                raise TimeoutError
+            elif out == 'NOTFOUND':
+                raise FileNotFoundError
+            else:
+                logger.error("Error getting %s lock: %r", type_, filepath)
+                raise OSError("Error getting %s lock: %r", type_, filepath)
+
+        yield
+    finally:
+        logger.debug("Releasing %s lock: %r", type_, filepath)
+        pipe.send('UNLOCK')
+        proc.join(10)
+        if proc.exitcode != 0:
+            logger.critical("Failed (%r) to release %s lock: %r",
+                            proc.exitcode, type_, filepath)
+            raise SystemExit("Failed (%r) to release %s lock: %r" % (
+                proc.exitcode, type_, filepath,
+            ))
+        logger.info("Released %s lock: %r", type_, filepath)
+        if locked:
+            PROM_LOCKS_HELD.labels(type_).dec()
 
 
-def lock_exclusive(filepath, timeout=None):
+def FSLockExclusive(filepath, timeout=None):
     """Get an exclusive lock.
 
     The file is created if it doesn't exist.
@@ -112,7 +151,7 @@ def lock_exclusive(filepath, timeout=None):
     return _lock(filepath, True, timeout=timeout)
 
 
-def lock_shared(filepath, timeout=None):
+def FSLockShared(filepath, timeout=None):
     """Get a shared lock.
 
     :raises FileNotFoundError: if the file doesn't exist.
@@ -120,36 +159,11 @@ def lock_shared(filepath, timeout=None):
     return _lock(filepath, False, timeout=timeout)
 
 
-def _unlock(lock, exclusive):
-    type_ = "exclusive" if exclusive else "shared"
-
-    filepath, proc, pipe = lock
-    logger.debug("Releasing %s lock: %r", type_, filepath)
-    pipe.send('UNLOCK')
-    proc.join(10)
-    if proc.exitcode != 0:
-        logger.critical("Failed (%r) to release %s lock: %r",
-                        proc.exitcode, type_, filepath)
-        raise SystemExit("Failed (%r) to release %s lock: %r" % (
-            proc.exitcode, type_, filepath,
-        ))
-    logger.info("Released %s lock: %r", type_, filepath)
-    PROM_LOCKS_HELD.labels(type_).dec()
-
-
-def unlock_exclusive(lock):
-    return _unlock(lock, True)
-
-
-def unlock_shared(lock):
-    return _unlock(lock, False)
-
-
 @contextlib.contextmanager
 def cache_get_or_set(path, create_function):
     """This function is a file cache safe for multiple processes (locking).
 
-    It is used like so:
+    It is used like so::
 
         # The path to be access or created
         cache_filename = '/tmp/cache/cachekey123'
@@ -167,22 +181,19 @@ def cache_get_or_set(path, create_function):
     """
     lock_path = path + '.lock'
     while True:
-        try:
-            lock = lock_shared(lock_path)
-        except FileNotFoundError:
-            pass
-        else:
+        with contextlib.ExitStack() as lock:
             try:
+                lock.enter_context(FSLockShared(lock_path))
+            except FileNotFoundError:
+                pass
+            else:
                 if os.path.exists(path):
                     # Entry exists and we have it locked, return it
                     yield
                     return
                 # Entry was removed while we waited -- we'll try creating
-            finally:
-                unlock_shared(lock)
 
-        lock = lock_exclusive(lock_path)
-        try:
+        with FSLockExclusive(lock_path):
             if os.path.exists(path):
                 # Cache was created while we waited
                 # We can't downgrade to a shared lock, so restart
@@ -193,8 +204,6 @@ def cache_get_or_set(path, create_function):
 
                 # We can't downgrade to a shared lock, so restart
                 continue
-        finally:
-            unlock_exclusive(lock)
 
 
 def clear_cache(cache_root, should_delete=None):
@@ -219,16 +228,15 @@ def clear_cache(cache_root, should_delete=None):
             continue
         lock_path = path + '.lock'
         logger.info("Locking entry: %r", fname)
-        lock = lock_exclusive(lock_path, timeout=300)
-        if lock is None:
-            logger.warning("Entry is locked: %r", fname)
-            continue
-        try:
+        with contextlib.ExitStack() as lock:
+            try:
+                lock.enter_context(FSLockExclusive(lock_path, timeout=300))
+            except TimeoutError:
+                logger.warning("Entry is locked: %r", fname)
+                continue
             if os.path.exists(path):
                 logger.info("Deleting entry: %r", fname)
                 shutil.rmtree(path)
                 os.remove(lock_path)
             else:
                 logger.error("Concurrent deletion?! Entry is gone: %r", fname)
-        finally:
-            unlock_exclusive(lock)
