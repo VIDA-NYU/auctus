@@ -13,6 +13,8 @@ services:
         hard: -1
     ports:
       - 9200:9200
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
   elasticsearch_exporter:
     image: justwatch/elasticsearch_exporter:1.0.2
     restart: on-failure
@@ -113,6 +115,7 @@ services:
     ports:
       - 9090:9090
     volumes:
+      - prometheus:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
   grafana:
     image: grafana/grafana
@@ -186,6 +189,8 @@ services:
       - LAZO_SERVER_HOST=lazo_server
       - LAZO_SERVER_PORT=50051
 volumes:
+  elasticsearch:
   datasets:
   query-cache:
   lazo-data:
+  prometheus:

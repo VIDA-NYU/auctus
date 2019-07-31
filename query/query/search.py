@@ -1,10 +1,10 @@
 from datetime import datetime
 from dateutil.parser import parse
 import hashlib
+import io
 import logging
 import os
 import pickle
-import tempfile
 import time
 import tornado.web
 
@@ -349,32 +349,26 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
         result['supplied_id'] = None
         result['supplied_resource_id'] = None
 
-    return results[:50] # top-50
+    return results[:50]  # top-50
 
 
-def get_profile_data(filepath, metadata=None, lazo_client=None):
+def get_profile_data(data, metadata=None, lazo_client=None):
     # hashing data
-    sha1 = hashlib.sha1()
-    with open(filepath, 'rb') as f:
-        while True:
-            data = f.read(BUF_SIZE)
-            if not data:
-                break
-            sha1.update(data)
-    hash_ = sha1.hexdigest()
+    sha1 = hashlib.sha1(data)
+    data_hash = sha1.hexdigest()
 
     # checking for cached data
-    cached_data = os.path.join('/cache', hash_)
+    cached_data = os.path.join('/cache', data_hash)
     if os.path.exists(cached_data):
         logger.info("Found cached profile_data")
         with open(cached_data, 'rb') as fp:
-            return pickle.load(fp)
+            return pickle.load(fp), data_hash
 
     # profile data and save
     logger.info("Profiling...")
     start = time.perf_counter()
     data_profile = process_dataset(
-        data=filepath,
+        data=io.BytesIO(data),
         metadata=metadata,
         lazo_client=lazo_client,
         search=True
@@ -382,26 +376,24 @@ def get_profile_data(filepath, metadata=None, lazo_client=None):
     logger.info("Profiled in %.2fs", time.perf_counter() - start)
     with open(cached_data, 'wb') as fp:
         pickle.dump(data_profile, fp)
-    return data_profile
+    return data_profile, data_hash
 
 
 class ProfilePostedData(tornado.web.RequestHandler):
-    temp_data_path = None
-
     def handle_data_parameter(self, data, lazo_client=None):
         """
         Handles the 'data' parameter.
 
         :param data: the input parameter
         :param lazo_client: client for the Lazo Index Server
-        :return: (data_path, data_profile)
-          data_path: path to the input data
+        :return: (data, data_profile)
+          data: data as bytes (either the input or loaded from the input)
           data_profile: the profiling (metadata) of the data
           tmp: True if data_path points to a temporary file
         """
 
-        if not isinstance(data, (str, bytes)):
-            raise ClientError("The parameter 'data' is in the wrong format")
+        if not isinstance(data, bytes):
+            raise ValueError
 
         try:
             is_path = os.path.exists(data)
@@ -412,17 +404,8 @@ class ProfilePostedData(tornado.web.RequestHandler):
             # data represents the entire file
             logger.info("Data is not a path")
 
-            temp_file = tempfile.NamedTemporaryFile(
-                mode='wb',
-                delete=False,
-                dir='/lazo-data'
-            )
-            temp_file.write(data)
-            temp_file.close()
-
-            self.temp_data_path = data_path = temp_file.name
-            data_profile = get_profile_data(
-                filepath=data_path,
+            data_profile, data_hash = get_profile_data(
+                data=data,
                 lazo_client=lazo_client
             )
         else:
@@ -434,22 +417,19 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 if not os.path.exists(data_file):
                     raise ClientError("%s does not exist" % data_file)
                 else:
-                    data_path = data_file
-                    data_profile = get_profile_data(
-                        filepath=data_file,
+                    with open(data_file, 'rb') as fp:
+                        data = fp.read()
+                    data_profile, data_hash = get_profile_data(
+                        data=data,
                         lazo_client=lazo_client
                     )
             else:
                 # path to a CSV file
-                data_path = data
-                data_profile = get_profile_data(
-                    filepath=data,
+                with open(data, 'rb') as fp:
+                    data = fp.read()
+                data_profile, data_hash = get_profile_data(
+                    data=data,
                     lazo_client=lazo_client
                 )
 
-        return data_path, data_profile
-
-    def on_finish(self):
-        super(ProfilePostedData, self).on_finish()
-        if self.temp_data_path is not None:
-            os.remove(self.temp_data_path)
+        return data, data_profile, data_hash

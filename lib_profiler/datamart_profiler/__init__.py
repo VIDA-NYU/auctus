@@ -1,4 +1,5 @@
 import codecs
+import contextlib
 import json
 import logging
 import math
@@ -230,43 +231,54 @@ def process_dataset(data, dataset_id=None, metadata=None,
     scdp_out = {}
 
     data_path = None
-    if isinstance(data, (str, bytes)):
-        if not os.path.exists(data):
-            raise ValueError("data file does not exist")
-
-        # saving path
-        if isinstance(data, str):
-            data_path = data
-
-        # File size
-        metadata['size'] = os.path.getsize(data)
-        logger.info("File size: %r bytes", metadata['size'])
-
-        # Sub-sample
-        if metadata['size'] > MAX_SIZE:
-            logger.info("Counting rows...")
-            with open(data, 'rb') as fp:
-                metadata['nb_rows'] = sum(1 for _ in fp)
-
-            ratio = MAX_SIZE / metadata['size']
-            logger.info("Loading dataframe, sample ratio=%r...", ratio)
-            data = pandas.read_csv(
-                data,
-                dtype=str, na_filter=False,
-                skiprows=lambda i: i != 0 and random.random() > ratio)
-        else:
-            logger.info("Loading dataframe...")
-            data = pandas.read_csv(data,
-                                   dtype=str, na_filter=False)
-
-            metadata['nb_rows'] = data.shape[0]
-
-        logger.info("Dataframe loaded, %d rows, %d columns",
-                    data.shape[0], data.shape[1])
-    else:
-        if not isinstance(data, pandas.DataFrame):
-            raise TypeError("data should be a filename or a pandas.DataFrame")
+    if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
+        # FIXME: no sampling here!
+    else:
+        with contextlib.ExitStack() as stack:
+            if isinstance(data, (str, bytes)):
+                if not os.path.exists(data):
+                    raise ValueError("data file does not exist")
+
+                # saving path
+                if isinstance(data, str):
+                    data_path = data
+
+                # File size
+                metadata['size'] = os.path.getsize(data)
+                logger.info("File size: %r bytes", metadata['size'])
+
+                data = stack.enter_context(open(data, 'rb'))
+            elif hasattr(data, 'read'):
+                # Get size by seeking to the end
+                data.seek(0, 2)
+                metadata['size'] = data.tell()
+                data.seek(0, 0)
+            else:
+                raise TypeError("data should be a filename, a file object, or "
+                                "a pandas.DataFrame")
+
+            # Sub-sample
+            if metadata['size'] > MAX_SIZE:
+                logger.info("Counting rows...")
+                metadata['nb_rows'] = sum(1 for _ in data)
+                data.seek(0, 0)
+
+                ratio = MAX_SIZE / metadata['size']
+                logger.info("Loading dataframe, sample ratio=%r...", ratio)
+                data = pandas.read_csv(
+                    data,
+                    dtype=str, na_filter=False,
+                    skiprows=lambda i: i != 0 and random.random() > ratio)
+            else:
+                logger.info("Loading dataframe...")
+                data = pandas.read_csv(data,
+                                       dtype=str, na_filter=False)
+
+                metadata['nb_rows'] = data.shape[0]
+
+            logger.info("Dataframe loaded, %d rows, %d columns",
+                        data.shape[0], data.shape[1])
 
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
