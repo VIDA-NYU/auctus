@@ -1,35 +1,90 @@
 import contextlib
+import fcntl
 import logging
+import multiprocessing
 import os
 import shutil
 import signal
-import subprocess
 
 
 logger = logging.getLogger(__name__)
 
 
-safe_shell_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                       "abcdefghijklmnopqrstuvwxyz"
-                       "0123456789"
-                       "-+=/:.,%_")
+@contextlib.contextmanager
+def timeout_syscall(seconds):
+    def timeout_handler(signum, frame):
+        raise InterruptedError
+
+    original_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, original_handler)
 
 
-def shell_escape(s):
-    r"""Given bl"a, returns "bl\\"a".
-    """
-    if isinstance(s, bytes):
-        s = s.decode('utf-8')
-    if not s or any(c not in safe_shell_chars for c in s):
-        return '"%s"' % (s.replace('\\', '\\\\')
-                          .replace('"', '\\"')
-                          .replace('`', '\\`')
-                          .replace('$', '\\$'))
+def _lock_process(pipe, filepath, exclusive, timeout=None):
+    try:
+        # Reset signal handlers
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        signal.signal(signal.SIGHUP, signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+
+        # Open the file
+        mode = os.O_RDONLY | os.O_CREAT if exclusive else os.O_RDONLY
+        try:
+            fd = os.open(filepath, mode)
+        except FileNotFoundError:
+            pipe.send('NOTFOUND')
+            return
+
+        # Lock it
+        op = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
+        if timeout is None:
+            fcntl.flock(fd, op)
+        elif timeout == 0:
+            fcntl.flock(fd, op | fcntl.LOCK_NB)
+        else:
+            with timeout_syscall(timeout):
+                try:
+                    fcntl.flock(fd, op)
+                except InterruptedError:
+                    pipe.send('TIMEOUT')
+                    return
+        pipe.send('LOCKED')
+    except Exception:
+        pipe.send('ERROR')
+        raise
+
+    # Wait for unlock message then exit
+    assert pipe.recv() == 'UNLOCK'
+
+    # Exiting releases the lock
+
+
+def _lock(filepath, exclusive, timeout=None):
+    type_ = "exclusive" if exclusive else "shared"
+
+    pipe, pipe2 = multiprocessing.Pipe()
+    proc = multiprocessing.Process(
+        target=_lock_process,
+        args=(pipe2, filepath, True, timeout),
+    )
+    proc.start()
+
+    out = pipe.recv()
+    if out == 'LOCKED':
+        logger.info("Acquired %s lock: %r", type_, filepath)
+        return filepath, proc, pipe
+    elif out == 'TIMEOUT':
+        logger.debug("Timeout getting %s lock: %r", type_, filepath)
+        return None
+    elif out == 'NOTFOUND':
+        raise FileNotFoundError
     else:
-        return s
-
-
-WAIT_FOREVER_COMMAND = 'while true; do sleep 3600; done'
+        logger.error("Error getting %s lock: %r", type_, filepath)
+        raise OSError("Error getting %s lock: %r", type_, filepath)
 
 
 def lock_exclusive(filepath, timeout=None):
@@ -37,51 +92,7 @@ def lock_exclusive(filepath, timeout=None):
 
     The file is created if it doesn't exist.
     """
-    args = ['-x']
-    if timeout is not None:
-        args.extend(['--wait', timeout, '-E', 2])
-    args.extend([
-        filepath, '-c',
-        'echo LOCKED; %s' % WAIT_FOREVER_COMMAND,
-    ])
-    proc = subprocess.Popen(
-        ['flock'] + args,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.PIPE,
-        # Causes subprocesses (e.g. sleep) to get killed when the shell
-        # process group is killed
-        start_new_session=True,
-    )
-    proc.stdin.close()
-
-    # Read out of stdout
-    out = proc.stdout.read(6)
-    if out == b'LOCKED':
-        logger.info("Acquired exclusive lock: %r", filepath)
-        return proc, filepath
-    else:
-        out = proc.stdout.read()
-        if proc.wait() == 2:
-            logger.debug("Timeout getting exclusive lock: %r", filepath)
-            return None
-        else:
-            raise OSError("Error getting exclusive lock %r: %s" % (
-                filepath,
-                out.decode('utf-8', 'replace'),
-            ))
-
-
-def unlock_exclusive(lock):
-    proc, filepath = lock
-    logger.debug("Releasing exclusive lock: %r", filepath)
-    os.killpg(proc.pid, signal.SIGINT)
-    try:
-        proc.wait(10)
-    except subprocess.TimeoutExpired:
-        logger.critical("Failed to release exclusive lock: %r", filepath)
-        raise SystemExit("Failed to release exclusive lock: %r" % filepath)
-    logger.info("Released exclusive lock: %r", filepath)
+    return _lock(filepath, True, timeout=timeout)
 
 
 def lock_shared(filepath, timeout=None):
@@ -89,51 +100,31 @@ def lock_shared(filepath, timeout=None):
 
     :raises FileNotFoundError: if the file doesn't exist.
     """
-    cmd = '(flock -s %s 3 && echo LOCKED && %s) 3<%s' % (
-        '--wait %d -E 2' % timeout if timeout is not None else '',
-        WAIT_FOREVER_COMMAND,
-        shell_escape(filepath),
-    )
-    proc = subprocess.Popen(
-        ['bash', '-c', cmd],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.PIPE,
-        # Causes subprocesses (e.g. sleep) to get killed when the shell
-        # process group is killed
-        start_new_session=True,
-    )
-    proc.stdin.close()
+    return _lock(filepath, False, timeout=timeout)
 
-    # Read out of stdout
-    out = proc.stdout.read(6)
-    if out == b'LOCKED':
-        logger.info("Acquired shared lock: %r", filepath)
-        return proc, filepath
-    else:
-        out = proc.stdout.read()
-        if proc.wait() == 2:
-            logger.debug("Timeout getting shared lock: %r", filepath)
-            return None
-        elif proc.wait() == 1:
-            raise FileNotFoundError
-        else:
-            raise OSError("Error getting shared lock %r: %s" % (
-                filepath,
-                out.decode('utf-8', 'replace'),
-            ))
+
+def _unlock(lock, exclusive):
+    type_ = "exclusive" if exclusive else "shared"
+
+    filepath, proc, pipe = lock
+    logger.debug("Releasing %s lock: %r", type_, filepath)
+    pipe.send('UNLOCK')
+    proc.join(10)
+    if proc.exitcode != 0:
+        logger.critical("Failed (%r) to release %s lock: %r",
+                        proc.exitcode, type_, filepath)
+        raise SystemExit("Failed (%r) to release %s lock: %r" % (
+            proc.exitcode, type_, filepath,
+        ))
+    logger.info("Released %s lock: %r", type_, filepath)
+
+
+def unlock_exclusive(lock):
+    return _unlock(lock, True)
 
 
 def unlock_shared(lock):
-    proc, filepath = lock
-    logger.debug("Releasing shared lock: %r", filepath)
-    os.killpg(proc.pid, signal.SIGINT)
-    try:
-        proc.wait(10)
-    except subprocess.TimeoutExpired:
-        logger.critical("Failed to release shared lock: %r", filepath)
-        raise SystemExit("Failed to release shared lock: %r" % filepath)
-    logger.info("Released shared lock: %r", filepath)
+    return _unlock(lock, False)
 
 
 @contextlib.contextmanager
