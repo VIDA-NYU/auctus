@@ -49,6 +49,8 @@ services:
     volumes:
       # CI: - ./cov:/cov
       - datasets:/datasets
+      - dataset-cache:/dataset_cache
+      - query-cache:/cache
   query:
     build:
       context: .
@@ -64,6 +66,7 @@ services:
     volumes:
       # CI: - ./cov:/cov
       - datasets:/datasets
+      - dataset-cache:/dataset_cache
       - query-cache:/cache
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
       - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
@@ -87,6 +90,7 @@ services:
     volumes:
       # CI: - ./cov:/cov
       - datasets:/datasets
+      - dataset-cache:/dataset_cache
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
       - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   prometheus:
@@ -160,5 +164,6 @@ services:
 volumes:
   elasticsearch:
   datasets:
+  dataset-cache:
   query-cache:
   prometheus:

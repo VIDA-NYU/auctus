@@ -14,6 +14,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import uuid
 
+from .cache import check_cache
 from .coordinator import Coordinator
 from datamart_core.common import Type, json2msg
 
@@ -326,4 +327,5 @@ def main():
     app = make_app()
     app.listen(8001, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
+    check_cache()  # Schedules itself to run periodically
     loop.start()

@@ -16,7 +16,8 @@ import zipfile
 
 from datamart_augmentation.augmentation import augment
 from datamart_augmentation.utils import AugmentationError
-from datamart_core.common import log_future
+from datamart_core.common import hash_json, log_future
+from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
 
 from .graceful_shutdown import GracefulApplication, GracefulHandler
@@ -538,36 +539,45 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                                             "The DataMart dataset referenced "
                                             "by 'task' cannot augment 'data'")
 
-        try:
-            with get_dataset(metadata, task['id'], format='csv') as newdata:
-                # perform augmentation
-                logger.info("Performing augmentation with supplied data")
-                new_path = augment(
-                    data,
-                    newdata,
-                    data_profile,
-                    task,
-                    columns=columns,
-                    destination=destination
-                )
-        except AugmentationError as e:
-            return self.send_error_json(400, str(e))
+        hash_ = hash_json(
+            task=task,
+            supplied_data=data_hash,
+        )
+        cache_path = '/dataset_cache/aug_%s' % hash_
 
-        if destination:
-            # send the path
-            self.set_header('Content-Type', 'text/plain; charset=utf-8')
-            self.write(new_path)
-        else:
-            # send a zip file
-            self.set_header('Content-Type', 'application/zip')
-            self.set_header(
-                'Content-Disposition',
-                'attachment; filename="augmentation.zip"')
-            logger.info("Sending ZIP...")
-            writer = RecursiveZipWriter(self.write)
-            writer.write_recursive(new_path)
-            writer.close()
-            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+        def create_augmentation():
+            try:
+                with get_dataset(metadata, task['id'], format='csv') as newdata:
+                    # perform augmentation
+                    logger.info("Performing augmentation with supplied data")
+                    augment(
+                        data,
+                        newdata,
+                        data_profile,
+                        task,
+                        columns=columns,
+                        destination=cache_path,
+                    )
+            except AugmentationError as e:
+                return self.send_error_json(400, str(e))
+
+        with cache_get_or_set(cache_path, create_augmentation):
+            if destination:
+                # copy to expected location
+                shutil.copytree(cache_path, destination)
+                # send the path
+                self.set_header('Content-Type', 'text/plain; charset=utf-8')
+                self.write(destination)
+            else:
+                # send a zip file
+                self.set_header('Content-Type', 'application/zip')
+                self.set_header(
+                    'Content-Disposition',
+                    'attachment; filename="augmentation.zip"')
+                logger.info("Sending ZIP...")
+                writer = RecursiveZipWriter(self.write)
+                writer.write_recursive(cache_path)
+                writer.close()
 
         return self.finish()
 
