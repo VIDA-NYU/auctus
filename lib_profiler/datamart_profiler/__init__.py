@@ -241,8 +241,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     raise ValueError("data file does not exist")
 
                 # saving path
-                if isinstance(data, str):
-                    data_path = data
+                data_path = data
 
                 # File size
                 metadata['size'] = os.path.getsize(data)

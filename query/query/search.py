@@ -394,7 +394,6 @@ class ProfilePostedData(tornado.web.RequestHandler):
         :return: (data, data_profile)
           data: data as bytes (either the input or loaded from the input)
           data_profile: the profiling (metadata) of the data
-          tmp: True if data_path points to a temporary file
         """
 
         if not isinstance(data, bytes):

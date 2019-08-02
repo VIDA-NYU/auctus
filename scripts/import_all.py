@@ -32,7 +32,7 @@ async def import_all(folder):
         with open(path, 'r') as fp:
             obj = json.load(fp)
         if name.startswith('lazo.'):
-            id = decode_dataset_id(name.replace('lazo.', '', 1))
+            id = decode_dataset_id(name[5:])
             try:
                 add_dataset_to_lazo_storage(es, id, obj)
             except elasticsearch.TransportError:
