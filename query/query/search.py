@@ -385,7 +385,7 @@ def get_profile_data(data, metadata=None, lazo_client=None):
 
 
 class ProfilePostedData(tornado.web.RequestHandler):
-    def handle_data_parameter(self, data, lazo_client=None):
+    def handle_data_parameter(self, data):
         """
         Handles the 'data' parameter.
 
@@ -410,7 +410,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
 
             data_profile, data_hash = get_profile_data(
                 data=data,
-                lazo_client=lazo_client
+                lazo_client=self.application.lazo_client,
             )
         else:
             # data represents a file path
@@ -425,7 +425,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
                         data = fp.read()
                     data_profile, data_hash = get_profile_data(
                         data=data,
-                        lazo_client=lazo_client
+                        lazo_client=self.application.lazo_client,
                     )
             else:
                 # path to a CSV file
@@ -433,7 +433,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
                     data = fp.read()
                 data_profile, data_hash = get_profile_data(
                     data=data,
-                    lazo_client=lazo_client
+                    lazo_client=self.application.lazo_client,
                 )
 
         return data, data_profile, data_hash
