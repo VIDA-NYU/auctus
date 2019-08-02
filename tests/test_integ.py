@@ -107,11 +107,19 @@ class TestProfileQuery(DatamartTest):
                 '/profile',
                 files={'data': basic_fp}
             )
-        assert_json(
-            response.json(),
-            {k: v for k, v in basic_metadata.items()
-             if k not in {'name', 'description', 'date', 'materialize'}},
+        metadata = {k: v for k, v in basic_metadata.items()
+                    if k not in {'name', 'description', 'date', 'materialize'}}
+        metadata = dict(
+            metadata,
+            lazo=lambda lazo: (
+                isinstance(lazo, list) and
+                all(e.keys() == {'cardinality', 'hash_values',
+                                 'n_permutations', 'name'}
+                    for e in lazo) and
+                {e['name'] for e in lazo} == {'name', 'country', 'what'}
+            ),
         )
+        assert_json(response.json(), metadata)
 
 
 class TestSearch(DatamartTest):
