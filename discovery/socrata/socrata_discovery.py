@@ -9,7 +9,6 @@ import sodapy
 import time
 
 from datamart_core import Discoverer
-from datamart_core.common import delete_dataset_from_index
 
 
 logger = logging.getLogger(__name__)
@@ -117,11 +116,7 @@ class SocrataDiscoverer(Discoverer):
             from_ += size
             for h in hits:
                 if h['_source']['materialize']['socrata_id'] not in seen:
-                    delete_dataset_from_index(
-                        self.elasticsearch,
-                        h['_id'],
-                        self.lazo_client
-                    )
+                    self.delete_dataset(full_id=h['_id'])
                     deleted += 1
                     from_ -= 1
             if len(hits) != size:

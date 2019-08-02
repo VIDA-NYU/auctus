@@ -11,7 +11,7 @@ import tempfile
 import uuid
 
 from .common import block_run, log_future, json2msg, msg2json, \
-    encode_dataset_id
+    encode_dataset_id, delete_dataset_from_index
 
 
 logger = logging.getLogger(__name__)
@@ -226,6 +226,19 @@ class Discoverer(object):
                 os.rename(temp_dir, dataset_dir)
             except OSError:
                 pass  # Dataset was written concurrently
+
+    def delete_dataset(self, *, full_id=None, dataset_id=None):
+        if full_id is not None == id is not None:
+            raise TypeError("Pass only one of 'id' and 'full_id'")
+
+        if full_id is None:
+            full_id = self.identifier + '.' + dataset_id
+
+        delete_dataset_from_index(
+            self.elasticsearch,
+            full_id,
+            self.lazo_client,
+        )
 
 
 class AsyncDiscoverer(Discoverer):
