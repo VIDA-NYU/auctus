@@ -4,7 +4,8 @@ import logging
 import os
 import prometheus_client
 import shutil
-import tempfile
+
+from datamart_core.fscache import cache_get_or_set
 
 from .discovery import encode_dataset_id
 
@@ -22,33 +23,38 @@ PROM_DOWNLOAD = prometheus_client.Histogram(
 
 @contextlib.contextmanager
 def get_dataset(metadata, dataset_id, format='csv'):
+    if not format:
+        raise ValueError
+
     logger.info("Getting dataset %r", dataset_id)
+
     shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
-    if os.path.exists(shared) and format == 'csv':
+    if format == 'csv' and os.path.exists(shared):
         # Read directly from stored file
         logger.info("Reading from /datasets")
         yield os.path.join(shared, 'main.csv')
-    else:
-        temp_dir = tempfile.mkdtemp(dir='/lazo-data')
-        try:
-            # Use a path inside the directory instead of the directory because
-            # the materializer might expect either a directory or a file
-            temp_file = os.path.join(temp_dir, 'data')
-            if os.path.exists(shared):
-                # Do format conversion from stored file
-                logger.info("Converting stored file to %r", format)
-                with open(os.path.join(shared, 'main.csv'), 'rb') as src:
-                    writer_cls = datamart_materialize.get_writer(format)
-                    writer = writer_cls(dataset_id, temp_file, metadata)
-                    with writer.open_file('wb') as dst:
-                        shutil.copyfileobj(src, dst)
-            else:
-                # Materialize
-                logger.info("Materializing...")
-                with PROM_DOWNLOAD.time():
-                    datamart_materialize.download(
-                        {'id': dataset_id, 'metadata': metadata},
-                        temp_file, None, format=format)
-            yield temp_file
-        finally:
-            shutil.rmtree(temp_dir)
+        return
+
+    cache_path = (
+        '/dataset_cache/' + encode_dataset_id(dataset_id) + '_' + format
+    )
+
+    def create():
+        if os.path.exists(shared):
+            # Do format conversion from stored file
+            logger.info("Converting stored file to %r", format)
+            with open(os.path.join(shared, 'main.csv'), 'rb') as src:
+                writer_cls = datamart_materialize.get_writer(format)
+                writer = writer_cls(dataset_id, cache_path, metadata)
+                with writer.open_file('wb') as dst:
+                    shutil.copyfileobj(src, dst)
+        else:
+            # Materialize
+            logger.info("Materializing...")
+            with PROM_DOWNLOAD.time():
+                datamart_materialize.download(
+                    {'id': dataset_id, 'metadata': metadata},
+                    cache_path, None, format=format)
+
+    with cache_get_or_set(cache_path, create):
+        yield cache_path

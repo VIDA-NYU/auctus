@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 import elasticsearch
+import hashlib
 import json
 import logging
 import re
@@ -99,6 +100,21 @@ def decode_dataset_id(dataset_id):
                 dataset_id[i] = chr(int(char_hex, 16))
         i += 1
     return ''.join(dataset_id)
+
+
+def hash_json(*args, **kwargs):
+    if not args:
+        dct = dict()
+    elif len(args) == 1:
+        dct = args[0]
+        assert isinstance(dct, dict)
+    else:
+        raise TypeError("Expected 1 positional argument, got %d" % len(args))
+
+    dct.update(**kwargs)
+
+    bytes_ = json.dumps(dct, sort_keys=True).encode('utf-8')
+    return hashlib.sha1(bytes_).hexdigest()
 
 
 def add_dataset_to_sup_index(es, dataset_id, metadata):
