@@ -79,7 +79,7 @@ test:
     - docker-compose logs profiler
     - |
       # Run tests
-      if ! coverage run --branch tests/__main__.py; then docker-compose logs query; fi
+      if ! coverage run --branch tests/__main__.py; then docker-compose logs query; exit 1; fi
     - docker-compose down -t 30
     - coverage combine -a cov/
     - coverage html
