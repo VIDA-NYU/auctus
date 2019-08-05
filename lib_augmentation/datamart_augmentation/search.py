@@ -5,15 +5,32 @@ from .utils import compute_levenshtein_sim
 
 logger = logging.getLogger(__name__)
 
-PAGINATION_SIZE = 50
+PAGINATION_SIZE = 200
 TOP_K_SIZE = 50
 
 
-def get_column_coverage(data_profile, filter_=()):
+def get_column_index_mapping(data_profile):
+    """
+    Get the mapping between column name and column index.
+
+    :param data_profile: Profiled input dataset.
+    :return: dict, where the key is the column name, and value is the column index
+    """
+
+    column_index = -1
+    column_index_mapping = dict()
+    for column in data_profile['columns']:
+        column_index += 1
+        column_index_mapping[column['name']] = column_index
+    return column_index_mapping
+
+
+def get_column_coverage(data_profile, column_index_mapping, filter_=()):
     """
     Get coverage for each column of the input dataset.
 
     :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
+    :param column_index_mapping: mapping from column name to column index
     :param filter_: list of column indices to return. If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a dict as follows:
 
@@ -26,12 +43,9 @@ def get_column_coverage(data_profile, filter_=()):
 
     column_coverage = dict()
 
-    column_index = -1
-    column_index_mapping = dict()
     for column in data_profile['columns']:
-        column_index += 1
         column_name = column['name']
-        column_index_mapping[column_name] = column_index
+        column_index = column_index_mapping[column_name]
         if 'coverage' not in column:
             continue
         if filter_ and column_index not in filter_:
@@ -78,6 +92,35 @@ def get_column_coverage(data_profile, filter_=()):
                     append(range_['range']['coordinates'])
 
     return column_coverage
+
+
+def get_lazo_sketches(data_profile, column_index_mapping, filter_=[]):
+    """
+    Get Lazo sketches of the input dataset, if available.
+
+    :param data_profile: Profiled input dataset.
+    :param filter_: list of column indices to return.
+       If an empty list, return all the columns.
+    :param: column_index_mapping: mapping from column name to column index
+    :return: dict, where key is the column index, and value is a tuple
+        (n_permutations, hash_values, cardinality)
+    """
+
+    lazo_sketches = dict()
+
+    if data_profile.get('lazo'):
+        for column in data_profile['lazo']:
+            column_name = column['name']
+            column_index = column_index_mapping[column_name]
+            if filter_ and column_index not in filter_:
+                continue
+            lazo_sketches[str(column_index)] = (
+                column['n_permutations'],
+                column['hash_values'],
+                column['cardinality']
+            )
+
+    return lazo_sketches
 
 
 def get_numerical_join_search_results(es, type_, type_value, pivot_column, ranges,
@@ -135,7 +178,6 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
                 'score_mode': 'sum'
             }
         })
-
 
     body = {
         '_source': {
@@ -274,6 +316,108 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
     )['hits']['hits']
 
 
+def get_textual_join_search_results(es, dataset_ids, column_names,
+                                    lazo_scores, query_args=None):
+    """Combine Lazo textual search results with Elasticsearch
+    (keyword search).
+    """
+
+    scores_per_dataset = dict()
+    column_per_dataset = dict()
+    for i in range(len(dataset_ids)):
+        if dataset_ids[i] not in column_per_dataset:
+            column_per_dataset[dataset_ids[i]] = list()
+            scores_per_dataset[dataset_ids[i]] = dict()
+        column_per_dataset[dataset_ids[i]].append(column_names[i])
+        scores_per_dataset[dataset_ids[i]][column_names[i]] = lazo_scores[i]
+
+    # if there is no keyword query
+    if not query_args:
+        results = list()
+        for dataset_id in column_per_dataset:
+            column_indices = get_column_identifiers(
+                es=es,
+                column_names=column_per_dataset[dataset_id],
+                dataset_id=dataset_id
+            )
+            for j in range(len(column_indices)):
+                column_name = column_per_dataset[dataset_id][j]
+                results.append(
+                    dict(
+                        _score=scores_per_dataset[dataset_id][column_name],
+                        _source=dict(
+                            dataset_id=dataset_id,
+                            name=column_name,
+                            index=column_indices[j]
+                        )
+                    )
+                )
+        return results
+
+    # if there is a keyword query
+    should_query = list()
+    for i in range(len(dataset_ids)):
+        should_query.append(
+            {
+                'constant_score': {
+                    'filter': {
+                        'bool': {
+                            'must': [
+                                {
+                                    'term': {
+                                        'dataset_id': dataset_ids[i]
+                                    }
+                                },
+                                {
+                                    'term': {
+                                        'name.raw': column_names[i]
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    'boost': lazo_scores[i]
+                }
+            }
+        )
+
+    body = {
+        '_source': {
+            'excludes': [
+                'dataset_name',
+                'dataset_description',
+                'coverage',
+                'mean',
+                'stddev',
+                'structural_type',
+                'semantic_types'
+            ]
+        },
+        'query': {
+            'function_score': {
+                'query': {
+                    'bool': {
+                        'should': should_query,
+                        'minimum_should_match': 1
+                    }
+                },
+                'functions': query_args,
+                'score_mode': 'sum',
+                'boost_mode': 'multiply'
+            }
+        }
+    }
+
+    # logger.info("Query (textual): %r", body)
+
+    return es.search(
+        index='datamart_columns',
+        body=body,
+        from_=0,
+        size=TOP_K_SIZE
+    )['hits']['hits']
+
+
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
@@ -298,12 +442,13 @@ def get_dataset_metadata(es, dataset_id):
     return hit
 
 
-def get_joinable_datasets(es, data_profile, dataset_id=None,
+def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
                           query_args=None, tabular_variables=()):
     """
     Retrieve datasets that can be joined with an input dataset.
 
     :param es: Elasticsearch client.
+    :param lazo_client: client for the Lazo Index Server
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired DataMart dataset for augmentation.
     :param query_args: list of query arguments (optional).
@@ -314,16 +459,20 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
         raise TypeError("Either a dataset id or a data profile "
                         "must be provided for the join")
 
+    column_index_mapping = get_column_index_mapping(data_profile)
+
     # get the coverage for each column of the input dataset
 
     column_coverage = get_column_coverage(
         data_profile,
+        column_index_mapping,
         tabular_variables
     )
 
-    # get search results
-
+    # search results
     search_results = list()
+
+    # numerical, temporal, and spatial attributes
     for column in column_coverage:
         type_ = column_coverage[column]['type']
         type_value = column_coverage[column]['type_value']
@@ -351,6 +500,39 @@ def get_joinable_datasets(es, data_profile, dataset_id=None,
             for result in numerical_results:
                 result['companion_column'] = column
                 search_results.append(result)
+
+    # textual/categorical attributes
+    lazo_sketches = get_lazo_sketches(
+        data_profile,
+        column_index_mapping,
+        tabular_variables
+    )
+    for column in lazo_sketches:
+        n_permutations, hash_values, cardinality = lazo_sketches[column]
+        query_results = lazo_client.query_lazo_sketch_data(
+            n_permutations,
+            hash_values,
+            cardinality
+        )
+        if not query_results:
+            continue
+        dataset_ids = list()
+        column_names = list()
+        scores = list()
+        for dataset_id, column_name, threshold in query_results:
+            dataset_ids.append(dataset_id)
+            column_names.append(column_name)
+            scores.append(threshold)
+        textual_results = get_textual_join_search_results(
+            es,
+            dataset_ids,
+            column_names,
+            scores,
+            query_args
+        )
+        for result in textual_results:
+            result['companion_column'] = column
+            search_results.append(result)
 
     search_results = sorted(
         search_results,
@@ -575,8 +757,8 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
         seen_2 = set()
         pairs = []
         for att_1, att_2, sim, es_score in sorted(column_pairs[dataset],
-                                               key=lambda item: item[2],
-                                               reverse=True):
+                                                  key=lambda item: item[2],
+                                                  reverse=True):
             if att_1 in seen_1 or att_2 in seen_2:
                 continue
             seen_1.add(att_1)

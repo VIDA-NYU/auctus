@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import elasticsearch
+import lazo_index_service
 import logging
 import os
 import sys
@@ -13,6 +14,10 @@ SIZE = 10000
 def clear(identifier):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
+    )
+    lazo_client = lazo_index_service.LazoIndexClient(
+        host=os.environ['LAZO_SERVER_HOST'],
+        port=int(os.environ['LAZO_SERVER_PORT'])
     )
     while True:
         hits = es.search(
@@ -28,7 +33,7 @@ def clear(identifier):
             size=SIZE,
         )['hits']['hits']
         for h in hits:
-            delete_dataset_from_index(es, h['_id'])
+            delete_dataset_from_index(es, h['_id'], lazo_client)
         if len(hits) != SIZE:
             break
 

@@ -23,21 +23,22 @@ async def import_all(folder):
     )
 
     for name in os.listdir(folder):
-        dataset_id = decode_dataset_id(name)
-        path = os.path.join(folder, name)
-        with open(path, 'r') as fp:
-            obj = json.load(fp)
-        metadata = dict(name=obj['name'],
-                        materialize=obj['materialize'])
-        if obj.get('description'):
-            metadata['description'] = obj['description']
-        if obj.get('date'):
-            metadata['date'] = obj['date']
-        await amqp_profile_exchange.publish(
-            json2msg(dict(id=dataset_id, metadata=metadata)),
-            '',
-        )
-        print('.', end='', flush=True)
+        if not name.startswith('lazo.'):
+            dataset_id = decode_dataset_id(name)
+            path = os.path.join(folder, name)
+            with open(path, 'r') as fp:
+                obj = json.load(fp)
+            metadata = dict(name=obj['name'],
+                            materialize=obj['materialize'])
+            if obj.get('description'):
+                metadata['description'] = obj['description']
+            if obj.get('date'):
+                metadata['date'] = obj['date']
+            await amqp_profile_exchange.publish(
+                json2msg(dict(id=dataset_id, metadata=metadata)),
+                '',
+            )
+            print('.', end='', flush=True)
 
 
 if __name__ == '__main__':

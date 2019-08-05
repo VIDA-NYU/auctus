@@ -40,6 +40,16 @@ class TestDiscoverer(Discoverer):
             dataset_id='basic_agg',
         )
 
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test_discoverer:7000/lazo.csv'),
+            {
+                # Omit name, should be set to 'lazo' automatically
+                'description': "Simple CSV with states and years"
+                               " to test the Lazo index service",
+            },
+            dataset_id='lazo',
+        )
 
         # Needs to be last, CI waits for it to test
 

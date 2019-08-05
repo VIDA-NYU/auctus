@@ -62,7 +62,7 @@ test:
         echo "Elasticsearch didn't come up after ${slept}s"
         exit 1
       fi
-    - docker-compose up -d coordinator
+    - docker-compose up -d coordinator lazo_server
     - sleep 10
     - docker-compose up -d profiler query querylb test_discoverer
     - |
@@ -79,7 +79,7 @@ test:
     - docker-compose logs profiler
     - |
       # Run tests
-      if ! coverage run --branch tests/__main__.py; then docker-compose logs query; exit 1; fi
+      if ! coverage run --branch tests/__main__.py; then docker-compose logs query; docker-compose logs lazo_server; exit 1; fi
     - docker-compose down -t 30
     - coverage combine -a cov/
     - coverage html

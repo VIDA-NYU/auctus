@@ -33,6 +33,20 @@ services:
     ports:
       - 8080:15672
       - 5672:5672
+  lazo_server:
+    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.4
+    environment:
+      - db=elasticsearch
+      - p=50051
+      - eh=elasticsearch
+      - ep=9200
+    ports:
+      - 50051:50051
+    volumes:
+      - datasets:/datasets
+      - dataset-cache:/dataset_cache
+      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
+      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   coordinator:
     build:
       context: .
@@ -60,6 +74,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     ports:
       - 8002
     # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
@@ -86,6 +102,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov
@@ -114,6 +132,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     volumes:
       - datasets:/datasets
   d3m_seeds:
@@ -126,6 +146,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     volumes:
       - datasets:/datasets
       - ../data/seed_datasets_current:/d3m_seed_datasets:ro
@@ -140,6 +162,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
     volumes:
       - datasets:/datasets
   socrata:
@@ -151,6 +175,8 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
   noaa:
     build:
       context: .
@@ -161,6 +187,8 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - NOAA_TOKEN=${NOAA_TOKEN}
+      - LAZO_SERVER_HOST=lazo_server
+      - LAZO_SERVER_PORT=50051
 volumes:
   elasticsearch:
   datasets:

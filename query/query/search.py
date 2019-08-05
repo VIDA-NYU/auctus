@@ -304,7 +304,7 @@ def parse_query_variables(data, tabular_variables=None):
     return {}
 
 
-def get_augmentation_search_results(es, data_profile,
+def get_augmentation_search_results(es, lazo_client, data_profile,
                                     query_args_main, query_args_sup,
                                     tabular_variables, score_threshold,
                                     dataset_id=None, join=True, union=True):
@@ -316,6 +316,7 @@ def get_augmentation_search_results(es, data_profile,
         start = time.perf_counter()
         join_results = get_joinable_datasets(
             es=es,
+            lazo_client=lazo_client,
             data_profile=data_profile,
             dataset_id=dataset_id,
             query_args=query_args_sup,
@@ -349,10 +350,10 @@ def get_augmentation_search_results(es, data_profile,
         result['supplied_id'] = None
         result['supplied_resource_id'] = None
 
-    return results[:50] # top-50
+    return results[:50]  # top-50
 
 
-def get_profile_data(data, metadata=None):
+def get_profile_data(data, metadata=None, lazo_client=None):
     # Use SHA1 of file as cache key
     sha1 = hashlib.sha1(data)
     data_hash = sha1.hexdigest()
@@ -363,7 +364,12 @@ def get_profile_data(data, metadata=None):
     def create():
         logger.info("Profiling...")
         start = time.perf_counter()
-        data_profile[0] = process_dataset(io.BytesIO(data), metadata)
+        data_profile[0] = process_dataset(
+            data=io.BytesIO(data),
+            metadata=metadata,
+            lazo_client=lazo_client,
+            search=True
+        )
         logger.info("Profiled in %.2fs", time.perf_counter() - start)
         with open(cache_path, 'wb') as fp:
             pickle.dump(data_profile[0], fp)
@@ -384,6 +390,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
         Handles the 'data' parameter.
 
         :param data: the input parameter
+        :param lazo_client: client for the Lazo Index Server
         :return: (data, data_profile)
           data: data as bytes (either the input or loaded from the input)
           data_profile: the profiling (metadata) of the data
@@ -401,7 +408,10 @@ class ProfilePostedData(tornado.web.RequestHandler):
             # data represents the entire file
             logger.info("Data is not a path")
 
-            data_profile, data_hash = get_profile_data(data)
+            data_profile, data_hash = get_profile_data(
+                data=data,
+                lazo_client=self.application.lazo_client,
+            )
         else:
             # data represents a file path
             logger.info("Data is a path")
@@ -413,11 +423,17 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 else:
                     with open(data_file, 'rb') as fp:
                         data = fp.read()
-                    data_profile, data_hash = get_profile_data(data)
+                    data_profile, data_hash = get_profile_data(
+                        data=data,
+                        lazo_client=self.application.lazo_client,
+                    )
             else:
                 # path to a CSV file
                 with open(data, 'rb') as fp:
                     data = fp.read()
-                data_profile, data_hash = get_profile_data(data)
+                data_profile, data_hash = get_profile_data(
+                    data=data,
+                    lazo_client=self.application.lazo_client,
+                )
 
         return data, data_profile, data_hash

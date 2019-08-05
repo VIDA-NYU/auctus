@@ -2,6 +2,7 @@ import aio_pika
 import asyncio
 import contextlib
 import elasticsearch
+import lazo_index_service
 import logging
 import json
 import os
@@ -245,6 +246,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
             return self.send_json(
                 get_augmentation_search_results(
                     self.application.elasticsearch,
+                    self.application.lazo_client,
                     data_profile,
                     query_args_main,
                     query_args_sup,
@@ -399,6 +401,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
+                lazo_client=self.application.lazo_client,
                 data_profile=data_profile,
                 query_args_main=None,
                 query_args_sup=None,
@@ -520,6 +523,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             logger.info("No task, searching for augmentations")
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
+                lazo_client=self.application.lazo_client,
                 data_profile=data_profile,
                 query_args_main=None,
                 query_args_sup=None,
@@ -592,12 +596,13 @@ class Health(BaseHandler):
 
 
 class Application(GracefulApplication):
-    def __init__(self, *args, es, **kwargs):
+    def __init__(self, *args, es, lazo, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
         self.is_closing = False
 
         self.elasticsearch = es
+        self.lazo_client = lazo
         self.channel = None
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()), logger)
@@ -621,6 +626,10 @@ def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
+    lazo_client = lazo_index_service.LazoIndexClient(
+        host=os.environ['LAZO_SERVER_HOST'],
+        port=int(os.environ['LAZO_SERVER_PORT'])
+    )
 
     return Application(
         [
@@ -635,6 +644,7 @@ def make_app(debug=False):
         debug=debug,
         serve_traceback=True,
         es=es,
+        lazo=lazo_client
     )
 
 
