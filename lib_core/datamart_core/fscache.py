@@ -204,7 +204,10 @@ def cache_get_or_set(path, create_function):
                     create_function()
                 except:
                     # Creation failed, clean up before unlocking!
-                    shutil.rmtree(path)
+                    if os.path.isdir(path):
+                        shutil.rmtree(path)
+                    elif os.path.isfile(path):
+                        os.remove(path)
                     raise
 
                 # We can't downgrade to a shared lock, so restart
@@ -241,7 +244,10 @@ def clear_cache(cache_root, should_delete=None):
                 continue
             if os.path.exists(path):
                 logger.info("Deleting entry: %r", fname)
-                shutil.rmtree(path)
+                if os.path.isfile(path):
+                    os.remove(path)
+                else:
+                    shutil.rmtree(path)
                 os.remove(lock_path)
             else:
                 logger.error("Concurrent deletion?! Entry is gone: %r", fname)
