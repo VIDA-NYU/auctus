@@ -12,6 +12,7 @@ import uuid
 
 from .common import block_run, log_future, json2msg, msg2json, \
     encode_dataset_id, delete_dataset_from_index
+from .fscache import FSLockExclusive
 
 
 logger = logging.getLogger(__name__)
@@ -239,6 +240,32 @@ class Discoverer(object):
             full_id,
             self.lazo_client,
         )
+
+        # Also delete it from the cache
+        prefix = encode_dataset_id(full_id) + '_'
+        for name in os.listdir('/dataset_cache'):
+            if name.startswith(prefix):
+                path = os.path.join('/dataset_cache', name)
+                lock_path = path + '.lock'
+                with contextlib.ExitStack() as lock:
+                    try:
+                        lock.enter_context(FSLockExclusive(lock_path,
+                                                           timeout=300))
+                    except FileNotFoundError:
+                        pass
+                    except TimeoutError:
+                        logger.error(
+                            "Couldn't lock cached dataset for deletion: %r",
+                            name,
+                        )
+                    else:
+                        if os.path.exists(path):
+                            logger.info("Removing cached dataset: %r", name)
+                            if os.path.isfile(path):
+                                os.remove(path)
+                            else:
+                                shutil.rmtree(path)
+                            os.remove(lock_path)
 
 
 class AsyncDiscoverer(Discoverer):
