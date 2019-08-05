@@ -27,16 +27,6 @@ class TestDiscoverer(Discoverer):
             dataset_id='geo',
         )
 
-        # Use URL for this one
-        self.record_dataset(
-            dict(direct_url='http://test_discoverer:7000/basic.csv'),
-            {
-                'name': "basic",
-                'description': "This is a very simple CSV with people",
-            },
-            dataset_id='basic',  # Needs to be last, CI waits for it to test
-        )
-
         # Put this one on disk
         with self.write_to_shared_storage('basic_agg') as dirname:
             shutil.copy2('basic_agg.csv', os.path.join(dirname, 'main.csv'))
@@ -50,17 +40,27 @@ class TestDiscoverer(Discoverer):
             dataset_id='basic_agg',
         )
 
-        # Put this one on disk
-        with self.write_to_shared_storage('lazo') as dirname:
-            shutil.copy2('lazo.csv', os.path.join(dirname, 'main.csv'))
+        # Use URL for this one
         self.record_dataset(
-            dict(),
+            dict(direct_url='http://test_discoverer:7000/lazo.csv'),
             {
                 # Omit name, should be set to 'lazo' automatically
                 'description': "Simple CSV with states and years"
                                " to test the Lazo index service",
             },
             dataset_id='lazo',
+        )
+
+        # Needs to be last, CI waits for it to test
+
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test_discoverer:7000/basic.csv'),
+            {
+                'name': "basic",
+                'description': "This is a very simple CSV with people",
+            },
+            dataset_id='basic',
         )
 
 
