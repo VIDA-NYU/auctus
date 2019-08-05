@@ -50,6 +50,19 @@ class TestDiscoverer(Discoverer):
             dataset_id='basic_agg',
         )
 
+        # Put this one on disk
+        with self.write_to_shared_storage('lazo') as dirname:
+            shutil.copy2('lazo.csv', os.path.join(dirname, 'main.csv'))
+        self.record_dataset(
+            dict(),
+            {
+                # Omit name, should be set to 'lazo' automatically
+                'description': "Simple CSV with states and years"
+                               " to test the Lazo index service",
+            },
+            dataset_id='lazo',
+        )
+
 
 def server():
     with HTTPServer(('0.0.0.0', 7000), SimpleHTTPRequestHandler) as httpd:

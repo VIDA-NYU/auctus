@@ -91,7 +91,8 @@ class TestProfiler(unittest.TestCase):
             {
                 'datamart.test.basic': basic_metadata,
                 'datamart.test.geo': geo_metadata,
-                'datamart.test.basic_agg': basic_agg_metadata
+                'datamart.test.basic_agg': basic_agg_metadata,
+                'datamart.test.lazo': lazo_metadata
             },
         )
 
@@ -278,6 +279,35 @@ class TestDataSearch(DatamartTest):
                         'left_columns_names': [['number']],
                         'right_columns': [[2]],
                         'right_columns_names': [['number']],
+                        'type': 'join'
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
+                }
+            ]
+        )
+
+    def test_basic_join_lazo(self):
+        response = self.datamart_post(
+            '/search',
+            files={
+                'data': lazo_data.encode('utf-8'),
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        assert_json(
+            results,
+            [
+                {
+                    'id': 'datamart.test.lazo',
+                    'metadata': lazo_metadata,
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['home_address']],
+                        'right_columns': [[0]],
+                        'right_columns_names': [['state']],
                         'type': 'join'
                     },
                     'supplied_id': None,
@@ -593,6 +623,76 @@ class TestAugment(DatamartTest):
                 '100,france,250,500,300,200\n',
             )
 
+    def test_basic_lazo(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.lazo'
+        )
+        meta = meta.json()
+
+        task = {
+            'id': 'datamart.test.lazo',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['home_address']],
+                'right_columns': [[0]],
+                'right_columns_names': [['state']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        response = self.datamart_post(
+            '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': lazo_data.encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip = zipfile.ZipFile(io.BytesIO(response.content))
+        zip.testzip()
+        self.assertEqual(
+            set(zip.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip.open('tables/learningData.csv') as table:
+            self.assertEqual(
+                table.read().decode('utf-8'),
+                'home_address,year\n'
+                'AZ,1990.0\n'
+                'PA,1990.0\n'
+                'SD,\n'
+                'NJ,1990.0\n'
+                'NH,\n'
+                'TX,1990.0\n'
+                'MS,1990.0\n'
+                'TN,1990.0\n'
+                'WA,1990.0\n'
+                'VA,1990.0\n'
+                'NY,1990.0\n'
+                'OH,1990.0\n'
+                'OR,1990.0\n'
+                'IL,1990.0\n'
+                'MT,\n'
+                'GA,1990.0\n'
+                'FL,\n'
+                'HI,\n'
+                'CA,1990.0\n'
+                'NC,1990.0\n'
+                'UT,1991.0\n'
+                'SC,1991.0\n'
+                'LA,1990.0\n'
+                'RI,\n'
+                'PR,1990.0\n'
+                'DE,\n'
+            )
+
 
 def check_ranges(min_long, min_lat, max_long, max_lat):
     def check(ranges):
@@ -809,6 +909,50 @@ geo_metadata = {
 }
 
 
+lazo_metadata = {
+    "name": "lazo",
+    "description": "Simple CSV with states and years to test the Lazo index service",
+    "size": 297,
+    "nb_rows": 36,
+    "columns": [
+        {
+            "name": "state",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": []
+        },
+        {
+            "name": "year",
+            "structural_type": "http://schema.org/Integer",
+            "semantic_types": [],
+            "mean": lambda n: round(n, 2) == 1990.11,
+            "stddev": lambda n: round(n, 4) == 0.3143,
+            "coverage": (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {
+                        "range": {
+                            "gte": 1990.0,
+                            "lte": 1990.0
+                        }
+                    },
+                    {
+                        "range": {
+                            "gte": 1991.0,
+                            "lte": 1991.0
+                        }
+                    }
+                ]
+            )
+        }
+    ],
+    "materialize": {
+        "identifier": "datamart.test",
+        "date": lambda d: isinstance(d, str)
+    },
+    "date": lambda d: isinstance(d, str),
+    "version": version
+}
+
+
 basic_aug_data = (
     'number,desk_faces\n'
     '4,west\n'
@@ -841,4 +985,35 @@ geo_aug_data = (
     '40.692157,-73.989549,place107\n'
     '40.695933,-73.986665,place108\n'
     '40.692827,-73.988438,place109\n'
+)
+
+
+lazo_data = (
+    'home_address\n'
+    'AZ\n'
+    'PA\n'
+    'SD\n'
+    'NJ\n'
+    'NH\n'
+    'TX\n'
+    'MS\n'
+    'TN\n'
+    'WA\n'
+    'VA\n'
+    'NY\n'
+    'OH\n'
+    'OR\n'
+    'IL\n'
+    'MT\n'
+    'GA\n'
+    'FL\n'
+    'HI\n'
+    'CA\n'
+    'NC\n'
+    'UT\n'
+    'SC\n'
+    'LA\n'
+    'RI\n'
+    'PR\n'
+    'DE\n'
 )

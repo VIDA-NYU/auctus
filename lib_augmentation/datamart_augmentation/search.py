@@ -514,6 +514,8 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
             hash_values,
             cardinality
         )
+        if not query_results:
+            continue
         dataset_ids = list()
         column_names = list()
         scores = list()
