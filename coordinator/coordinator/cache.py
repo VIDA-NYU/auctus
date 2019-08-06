@@ -51,7 +51,9 @@ def check_cache():
         augmentations_bytes = 0
         for name in os.listdir('/dataset_cache'):
             path = os.path.join('/dataset_cache', name)
-            if name.startswith('aug_'):
+            if name.endswith('.lock') and os.path.exists(path[:-5]):
+                pass
+            elif name.startswith('aug_'):
                 augmentations += 1
                 augmentations_bytes += get_tree_size(path)
             else:
