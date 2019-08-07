@@ -208,6 +208,7 @@ def cache_get_or_set(path, create_function):
                         shutil.rmtree(path)
                     elif os.path.isfile(path):
                         os.remove(path)
+                    os.remove(lock_path)
                     raise
 
                 # We can't downgrade to a shared lock, so restart
