@@ -21,6 +21,7 @@ from datamart_core.common import hash_json, log_future
 from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
 
+from .enhance_metadata import enhance_metadata
 from .graceful_shutdown import GracefulApplication, GracefulHandler
 from .search import ClientError, parse_query, \
     get_augmentation_search_results, ProfilePostedData
@@ -241,19 +242,18 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     supplied_id=None,
                     supplied_resource_id=None
                 ))
-            return self.send_json(results)
         else:
-            return self.send_json(
-                get_augmentation_search_results(
-                    self.application.elasticsearch,
-                    self.application.lazo_client,
-                    data_profile,
-                    query_args_main,
-                    query_args_sup,
-                    tabular_variables,
-                    SCORE_THRESHOLD
-                )
+            results =  get_augmentation_search_results(
+                self.application.elasticsearch,
+                self.application.lazo_client,
+                data_profile,
+                query_args_main,
+                query_args_sup,
+                tabular_variables,
+                SCORE_THRESHOLD
             )
+        results = [enhance_metadata(result) for result in results]
+        return self.send_json(results)
 
 
 class RecursiveZipWriter(object):
@@ -454,7 +454,9 @@ class Metadata(BaseHandler, GracefulHandler):
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
 
-        return self.send_json(metadata)
+        result = {'id': dataset_id, 'metadata': metadata}
+        result = enhance_metadata(result)
+        return self.send_json(result)
 
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):

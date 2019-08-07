@@ -184,6 +184,7 @@ class TestSearch(DatamartTest):
                 },
                 'score': lambda n: isinstance(n, float),
                 'metadata': basic_metadata,
+                'd3m_dataset_description': basic_metadata_d3m,
                 'supplied_id': None,
                 'supplied_resource_id': None
             },
@@ -209,6 +210,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
+                    'd3m_dataset_description': basic_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -238,6 +240,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
+                    'd3m_dataset_description': basic_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -273,6 +276,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
+                    'd3m_dataset_description': basic_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -287,7 +291,7 @@ class TestDataSearch(DatamartTest):
             ]
         )
 
-    def test_basic_join_lazo(self):
+    def test_lazo_join(self):
         response = self.datamart_post(
             '/search',
             files={
@@ -302,6 +306,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.lazo',
                     'metadata': lazo_metadata,
+                    'd3m_dataset_description': lambda d: isinstance(d, dict),
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -335,6 +340,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.geo',
                     'metadata': geo_metadata,
+                    'd3m_dataset_description': geo_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0], [1], [2]],
@@ -365,6 +371,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.geo',
                     'metadata': geo_metadata,
+                    'd3m_dataset_description': geo_metadata_d3m,
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0], [1], [2]],
@@ -431,7 +438,7 @@ class TestDownload(DatamartTest):
         basic_meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic'
         )
-        basic_meta = basic_meta.json()
+        basic_meta = basic_meta.json()['metadata']
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
@@ -467,7 +474,7 @@ class TestDownload(DatamartTest):
         geo_meta = self.datamart_get(
             '/metadata/' + 'datamart.test.geo'
         )
-        geo_meta = geo_meta.json()
+        geo_meta = geo_meta.json()['metadata']
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
@@ -529,7 +536,7 @@ class TestAugment(DatamartTest):
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic'
         )
-        meta = meta.json()
+        meta = meta.json()['metadata']
 
         task = {
             'id': 'datamart.test.basic',
@@ -578,7 +585,7 @@ class TestAugment(DatamartTest):
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic_agg'
         )
-        meta = meta.json()
+        meta = meta.json()['metadata']
 
         task = {
             'id': 'datamart.test.basic_agg',
@@ -627,7 +634,7 @@ class TestAugment(DatamartTest):
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.lazo'
         )
-        meta = meta.json()
+        meta = meta.json()['metadata']
 
         task = {
             'id': 'datamart.test.lazo',
@@ -783,6 +790,54 @@ basic_metadata = {
 }
 
 
+basic_metadata_d3m = {
+    'about': {
+        'datasetID': 'datamart.test.basic',
+        'datasetName': 'basic',
+        'license': 'unknown',
+        'approximateSize': '126 B',
+        'datasetSchemaVersion': '3.2.0',
+        'redacted': False,
+        'datasetVersion': '0.0',
+    },
+    'dataResources': [
+        {
+            'resID': 'learningData',
+            'resPath': 'tables/learningData.csv',
+            'resType': 'table',
+            'resFormat': ['text/csv'],
+            'isCollection': False,
+            'columns': [
+                {
+                    'colIndex': 0,
+                    'colName': 'name',
+                    'colType': 'string',
+                    'role': ['attribute'],
+                },
+                {
+                    'colIndex': 1,
+                    'colName': 'country',
+                    'colType': 'string',
+                    'role': ['attribute'],
+                },
+                {
+                    'colIndex': 2,
+                    'colName': 'number',
+                    'colType': 'integer',
+                    'role': ['attribute'],
+                },
+                {
+                    'colIndex': 3,
+                    'colName': 'what',
+                    'colType': 'string',
+                    'role': ['attribute'],
+                },
+            ],
+        },
+    ],
+}
+
+
 basic_agg_metadata = {
     "name": "basic_agg",
     "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
@@ -906,6 +961,48 @@ geo_metadata = {
     },
     "date": lambda d: isinstance(d, str),
     "version": version
+}
+
+
+geo_metadata_d3m = {
+    'about': {
+        'datasetID': 'datamart.test.geo',
+        'datasetName': 'geo',
+        'license': 'unknown',
+        'approximateSize': '2912 B',
+        'datasetSchemaVersion': '3.2.0',
+        'redacted': False,
+        'datasetVersion': '0.0',
+    },
+    'dataResources': [
+        {
+            'resID': 'learningData',
+            'resPath': 'tables/learningData.csv',
+            'resType': 'table',
+            'resFormat': ['text/csv'],
+            'isCollection': False,
+            'columns': [
+                {
+                    'colIndex': 0,
+                    'colName': 'id',
+                    'colType': 'string',
+                    'role': ['attribute'],
+                },
+                {
+                    'colIndex': 1,
+                    'colName': 'lat',
+                    'colType': 'real',
+                    'role': ['attribute'],
+                },
+                {
+                    'colIndex': 2,
+                    'colName': 'long',
+                    'colType': 'real',
+                    'role': ['attribute'],
+                },
+            ],
+        },
+    ],
 }
 
 
