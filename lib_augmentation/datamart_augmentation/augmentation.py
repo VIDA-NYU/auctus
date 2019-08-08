@@ -175,7 +175,7 @@ def perform_aggregations(data, groupby_columns,
                     # getting the first non-null element
                     # since it is a join column, we expect all the values
                     # to be exactly the same
-                    agg_functions[column] = lambda x: x.iloc[0]
+                    agg_functions[column] = [lambda x: x.iloc[0]]
                     # agg_functions[column] = \
                     #     lambda x: x.loc[x.first_valid_index()].iloc[0]
         if not agg_functions:
