@@ -436,58 +436,51 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     # only converting data types for columns involved in augmentation
     aug_columns_input_data = []
     aug_columns_companion_data = []
-    for i in range(len(task['augmentation']['left_columns'])):
-        if (len(task['augmentation']['left_columns'][i]) > 1 or
-                len(task['augmentation']['right_columns'][i]) > 1):
+    for left_columns, right_columns in zip(
+                task['augmentation']['left_columns'],
+                task['augmentation']['right_columns'],
+            ):
+        if len(left_columns) > 1 or len(right_columns) > 1:
             raise AugmentationError("DataMart currently does not support "
                                     "combination of columns for augmentation.")
-        aug_columns_input_data.append(task['augmentation']['left_columns'][i][0])
-        aug_columns_companion_data.append(task['augmentation']['right_columns'][i][0])
+        aug_columns_input_data.append(left_columns[0])
+        aug_columns_companion_data.append(right_columns[0])
 
-    try:
-        if task['augmentation']['type'] == 'join':
-            logger.info("Performing join...")
-            join_, qualities = join(
-                convert_data_types(
-                    pd.read_csv(io.BytesIO(data), error_bad_lines=False),
-                    aug_columns_input_data,
-                    metadata['columns']
-                ),
-                convert_data_types(
-                    pd.read_csv(newdata, error_bad_lines=False),
-                    aug_columns_companion_data,
-                    task['metadata']['columns']
-                ),
-                task['augmentation']['left_columns'],
-                task['augmentation']['right_columns'],
-                columns=columns,
-                qualities=True,
-                return_only_datamart_data=return_only_datamart_data
-            )
-            return generate_d3m_dataset(
-                join_,
-                metadata['columns'],
-                task['metadata']['columns'],
-                destination,
-                qualities
-            )
-        elif task['augmentation']['type'] == 'union':
-            logger.info("Performing union...")
-            union_, qualities = union(
+    if task['augmentation']['type'] == 'join':
+        logger.info("Performing join...")
+        result, qualities = join(
+            convert_data_types(
                 pd.read_csv(io.BytesIO(data), error_bad_lines=False),
-                pd.read_csv(newdata, error_bad_lines=False),
-                task['augmentation']['left_columns'],
-                task['augmentation']['right_columns'],
-                qualities=True
-            )
-            return generate_d3m_dataset(
-                union_,
+                aug_columns_input_data,
                 metadata['columns'],
+            ),
+            convert_data_types(
+                pd.read_csv(newdata, error_bad_lines=False),
+                aug_columns_companion_data,
                 task['metadata']['columns'],
-                destination,
-                qualities
-            )
-        else:
-            raise AugmentationError("Augmentation task not provided")
-    except AugmentationError:
-        raise
+            ),
+            task['augmentation']['left_columns'],
+            task['augmentation']['right_columns'],
+            columns=columns,
+            qualities=True,
+            return_only_datamart_data=return_only_datamart_data,
+        )
+    elif task['augmentation']['type'] == 'union':
+        logger.info("Performing union...")
+        result, qualities = union(
+            pd.read_csv(io.BytesIO(data), error_bad_lines=False),
+            pd.read_csv(newdata, error_bad_lines=False),
+            task['augmentation']['left_columns'],
+            task['augmentation']['right_columns'],
+            qualities=True,
+        )
+    else:
+        raise AugmentationError("Augmentation task not provided")
+
+    return generate_d3m_dataset(
+        result,
+        metadata['columns'],
+        task['metadata']['columns'],
+        destination,
+        qualities,
+    )
