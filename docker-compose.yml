@@ -34,12 +34,12 @@ services:
       - 8080:15672
       - 5672:5672
   lazo_server:
-    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.4
+    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.5
     environment:
-      - db=elasticsearch
-      - p=50051
-      - eh=elasticsearch
-      - ep=9200
+      - DATABASE=elasticsearch
+      - PORT=50051
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
     ports:
       - 50051:50051
     volumes:
