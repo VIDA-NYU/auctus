@@ -443,7 +443,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
                 metadata['columns'],
             ),
             convert_data_types(
-                pd.read_csv(newdata, error_bad_lines=False),
+                pd.read_csv(newdata, error_bad_lines=False),  # TODO: STREAM
                 aug_columns_companion_data,
                 task['metadata']['columns'],
             ),
@@ -456,7 +456,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         logger.info("Performing union...")
         result, qualities = union(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
-            pd.read_csv(newdata, error_bad_lines=False),
+            pd.read_csv(newdata, error_bad_lines=False),  # TODO: STREAM
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
         )
