@@ -585,11 +585,11 @@ class TestAugment(DatamartTest):
             self.assertEqual(
                 table.read().decode('utf-8'),
                 'number,desk_faces,name,country,what\n'
-                '4,west,remi,france,False\n'
-                '3,south,aecio,brazil,True\n'
-                '7,west,sonia,peru,True\n'
-                '8,east,roque,peru,True\n'
-                '10,west,fernando,brazil,False\n',
+                '4,west,remi,france,false\n'
+                '3,south,aecio,brazil,true\n'
+                '7,west,sonia,peru,true\n'
+                '8,east,roque,peru,true\n'
+                '10,west,fernando,brazil,false\n',
             )
 
     def test_geo_union(self):
