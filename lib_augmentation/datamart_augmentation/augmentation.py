@@ -364,7 +364,7 @@ def generate_d3m_dataset(data, input_metadata, companion_metadata,
     """
 
     if destination is None:
-        destination = tempfile.mkdtemp()
+        destination = os.path.join(tempfile.mkdtemp(), 'dataset')
 
     # collecting information about all the original columns
     # from input (supplied) and companion datasets
