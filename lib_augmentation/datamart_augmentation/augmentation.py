@@ -415,8 +415,8 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     """
     Augments original data based on the task.
 
-    :param data: the data to be augmented.
-    :param newdata: the data to augment with.
+    :param data: the data to be augmented, as bytes.
+    :param newdata: the path to the CSV file to augment with.
     :param metadata: the metadata of the data to be augmented.
     :param task: the augmentation task.
     :param columns: a list of column indices from newdata that will be added to data
