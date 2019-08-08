@@ -364,7 +364,10 @@ def generate_d3m_dataset(data, input_metadata, companion_metadata,
     """
 
     if destination is None:
-        destination = os.path.join(tempfile.mkdtemp(), 'dataset')
+        destination = os.path.join(
+            tempfile.mkdtemp(prefix='datamart_aug_'),
+            'dataset',
+        )
 
     # collecting information about all the original columns
     # from input (supplied) and companion datasets
