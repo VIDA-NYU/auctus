@@ -26,3 +26,15 @@ def compute_levenshtein_sim(str1, str2):
         str2_set = [str2[i:i + 3] for i in range(len(str2) - 2)]
 
     return 1 - distance.nlevenshtein(str1_set, str2_set, method=2)
+
+
+# https://stackoverflow.com/a/55622490
+class StringConverter(dict):
+    def __contains__(self, item):
+        return True
+
+    def __getitem__(self, item):
+        return str
+
+    def get(self, default=None):
+        return str

@@ -4,14 +4,13 @@ import logging
 import numpy as np
 import os
 import pandas as pd
-import shutil
 import tempfile
 import time
 import uuid
 
 from datamart_core.common import Type
 from datamart_materialize.d3m import D3mWriter
-from .utils import AugmentationError
+from .utils import AugmentationError, StringConverter
 
 
 logger = logging.getLogger(__name__)
@@ -453,12 +452,14 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         logger.info("Performing join...")
         result, qualities = join(
             convert_data_types(
-                pd.read_csv(io.BytesIO(data), error_bad_lines=False),
+                pd.read_csv(io.BytesIO(data), error_bad_lines=False,
+                            converters=StringConverter()),
                 aug_columns_input_data,
                 metadata['columns'],
             ),
             convert_data_types(
-                pd.read_csv(newdata, error_bad_lines=False),
+                pd.read_csv(newdata, error_bad_lines=False,
+                            converters=StringConverter()),
                 aug_columns_companion_data,
                 task['metadata']['columns'],
             ),
@@ -471,8 +472,10 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     elif task['augmentation']['type'] == 'union':
         logger.info("Performing union...")
         result, qualities = union(
-            pd.read_csv(io.BytesIO(data), error_bad_lines=False),
-            pd.read_csv(newdata, error_bad_lines=False),
+            pd.read_csv(io.BytesIO(data), error_bad_lines=False,
+                        converters=StringConverter()),
+            pd.read_csv(newdata, error_bad_lines=False,
+                        converters=StringConverter()),
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             qualities=True,
