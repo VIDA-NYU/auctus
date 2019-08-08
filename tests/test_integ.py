@@ -91,7 +91,7 @@ class TestProfiler(unittest.TestCase):
             {
                 'datamart.test.basic': basic_metadata,
                 'datamart.test.geo': geo_metadata,
-                'datamart.test.basic_agg': basic_agg_metadata,
+                'datamart.test.agg': agg_metadata,
                 'datamart.test.lazo': lazo_metadata
             },
         )
@@ -581,14 +581,14 @@ class TestAugment(DatamartTest):
                 '10,west,fernando,brazil,False\n',
             )
 
-    def test_basic_join_aggregation(self):
+    def test_agg_join(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.basic_agg'
+            '/metadata/' + 'datamart.test.agg'
         )
         meta = meta.json()['metadata']
 
         task = {
-            'id': 'datamart.test.basic_agg',
+            'id': 'datamart.test.agg',
             'metadata': meta,
             'score': 1.0,
             'augmentation': {
@@ -606,7 +606,7 @@ class TestAugment(DatamartTest):
             '/augment',
             files={
                 'task': json.dumps(task).encode('utf-8'),
-                'data': basic_aug_agg_data.encode('utf-8'),
+                'data': agg_aug_data.encode('utf-8'),
             },
         )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
@@ -630,7 +630,7 @@ class TestAugment(DatamartTest):
                 '100,france,250,500,300,200\n',
             )
 
-    def test_basic_lazo(self):
+    def test_lazo_join(self):
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.lazo'
         )
@@ -838,8 +838,8 @@ basic_metadata_d3m = {
 }
 
 
-basic_agg_metadata = {
-    "name": "basic_agg",
+agg_metadata = {
+    "name": "agg",
     "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
     "size": 116,
     "nb_rows": 8,
@@ -1061,7 +1061,7 @@ basic_aug_data = (
 )
 
 
-basic_aug_agg_data = (
+agg_aug_data = (
     'id,location\n'
     '40,brazil\n'
     '30,korea\n'

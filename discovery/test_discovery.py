@@ -28,8 +28,8 @@ class TestDiscoverer(Discoverer):
         )
 
         # Put this one on disk
-        with self.write_to_shared_storage('basic_agg') as dirname:
-            shutil.copy2('basic_agg.csv', os.path.join(dirname, 'main.csv'))
+        with self.write_to_shared_storage('agg') as dirname:
+            shutil.copy2('agg.csv', os.path.join(dirname, 'main.csv'))
         self.record_dataset(
             dict(),
             {
@@ -37,7 +37,7 @@ class TestDiscoverer(Discoverer):
                 'description': "Simple CSV with ids and salaries to test"
                                " aggregation for numerical attributes",
             },
-            dataset_id='basic_agg',
+            dataset_id='agg',
         )
 
         # Use URL for this one
