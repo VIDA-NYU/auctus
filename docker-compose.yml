@@ -21,9 +21,9 @@ services:
     image: justwatch/elasticsearch_exporter:1.1.0
     restart: on-failure
     command:
-      - '-es.uri=http://elasticsearch:9200'
+      - '--es.uri=http://elasticsearch:9200'
     ports:
-      - 9108
+      - 9114
   rabbitmq:
     image: remram/rabbitmq:3.7.17
     build:

@@ -9,7 +9,7 @@ scrape_configs:
     scrape_interval: 30s
     scrape_timeout: 10s
     static_configs:
-      - targets: ["elasticsearch_exporter:9108"]
+      - targets: ["elasticsearch_exporter:9114"]
   - job_name: rabbitmq
     scrape_timeout: 5s
     metrics_path: /api/metrics
