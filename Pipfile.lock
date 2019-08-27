@@ -18,17 +18,17 @@
     "default": {
         "aio-pika": {
             "hashes": [
-                "sha256:3ba3c26bea35c531c15eb1923b753d83b8f21bb759f97e6af4b1a05dae81225f",
-                "sha256:5ba0cd2a939e4fa1d6be10520bfc88642ce251f012c0b8474d2c7012a3e9f0ea"
+                "sha256:5ee4b2c967c3532964036c00afc61bf43d489447b75a0abf99aa6af986e06bca",
+                "sha256:6e1abbb0b3ca369070c0e09aa17197fd5cf18f3c12dd27fb20bc7656c9b30e6e"
             ],
-            "version": "==5.6.0"
+            "version": "==6.0.1"
         },
         "aiormq": {
             "hashes": [
-                "sha256:cb1fa37d13ff8cad71ff7eef3618b6f75afe7a1988608d731ba8cb495174bd1e",
-                "sha256:eab19c590a8b497572944da362a44bc6496476b39a5b3f3f1483a88805b90975"
+                "sha256:25cecfa561485ac47e538e4ffe8b4d35b2b1406e5863264331a07cd24ac6fb44",
+                "sha256:f9da4bb894bef1b7cce97da9b9565ab41f01eae340674981ed87ed3b0229565d"
             ],
-            "version": "==2.6.0"
+            "version": "==2.7.3"
         },
         "certifi": {
             "hashes": [
