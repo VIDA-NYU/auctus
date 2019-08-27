@@ -9,7 +9,7 @@ req = [
     'datamart_core',
     'datamart_materialize',
     'Distance',
-    'elasticsearch~=6.3',
+    'elasticsearch~=7.0',
     'pandas',
     'numpy'
 ]

@@ -421,7 +421,7 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
-        columns = es.get('datamart', '_doc', id=dataset_id)['_source']['columns']
+        columns = es.get('datamart', dataset_id)['_source']['columns']
     else:
         columns = data_profile['columns']
     for i in range(len(columns)):
@@ -437,7 +437,7 @@ def get_dataset_metadata(es, dataset_id):
 
     """
 
-    hit = es.get('datamart', '_doc', id=dataset_id)
+    hit = es.get('datamart', dataset_id)
 
     return hit
 
