@@ -142,7 +142,7 @@ class SocrataDiscoverer(Discoverer):
         # Get record from Elasticsearch
         try:
             hit = self.elasticsearch.get(
-                'datamart', '_doc',
+                'datamart',
                 '%s.%s' % (self.identifier, dataset_id),
                 _source=['materialize.socrata_updated'])
         except elasticsearch.NotFoundError:

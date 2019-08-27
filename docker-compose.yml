@@ -1,9 +1,11 @@
 version: '3.2'
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.4.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.3.1
     restart: on-failure
     environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Des.enforce.bootstrap.checks=true
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - ES_HEAP_SIZE=4g
@@ -16,14 +18,14 @@ services:
     volumes:
       - elasticsearch:/usr/share/elasticsearch/data
   elasticsearch_exporter:
-    image: justwatch/elasticsearch_exporter:1.0.2
+    image: justwatch/elasticsearch_exporter:1.1.0
     restart: on-failure
     command:
       - '-es.uri=http://elasticsearch:9200'
     ports:
       - 9108
   rabbitmq:
-    image: remram/rabbitmq:3.7.8
+    image: remram/rabbitmq:3.7.17
     build:
       context: ./docker
       dockerfile: rabbitmq.dockerfile
@@ -34,7 +36,7 @@ services:
       - 8080:15672
       - 5672:5672
   lazo_server:
-    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.5
+    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.6
     environment:
       - DATABASE=elasticsearch
       - PORT=50051

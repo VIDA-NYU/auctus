@@ -338,7 +338,7 @@ class DownloadId(BaseDownload, GracefulHandler):
         # Get materialization data from Elasticsearch
         try:
             metadata = self.application.elasticsearch.get(
-                'datamart', '_doc', id=dataset_id
+                'datamart', dataset_id
             )['_source']
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
@@ -450,7 +450,7 @@ class Metadata(BaseHandler, GracefulHandler):
 
         es = self.application.elasticsearch
         try:
-            metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+            metadata = es.get('datamart', dataset_id)['_source']
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
 

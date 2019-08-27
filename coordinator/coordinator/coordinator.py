@@ -67,7 +67,6 @@ class Coordinator(object):
         try:
             recent = self.elasticsearch.search(
                 index='datamart',
-                doc_type='_doc',
                 body={
                     'query': {
                         'match_all': {},

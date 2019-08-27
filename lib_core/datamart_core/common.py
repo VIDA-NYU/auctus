@@ -147,9 +147,8 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
                 column_metadata['coverage'][i]['lte'] = \
                     column_metadata['coverage'][i]['range']['lte']
         es.index(
-            index='datamart_columns',
-            doc_type='_doc',
-            body=column_metadata
+            'datamart_columns',
+            column_metadata
         )
 
     # 'datamart_spatial_coverage' index
@@ -176,9 +175,8 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
                 spatial_coverage_metadata['ranges'][i]['min_lat'] = \
                     spatial_coverage_metadata['ranges'][i]['range']['coordinates'][1][1]
             es.index(
-                index='datamart_spatial_coverage',
-                doc_type='_doc',
-                body=spatial_coverage_metadata
+                'datamart_spatial_coverage',
+                spatial_coverage_metadata,
             )
 
 
@@ -189,9 +187,8 @@ def add_dataset_to_index(es, dataset_id, metadata):
 
     # 'datamart' index
     es.index(
-        index='datamart',
-        doc_type='_doc',
-        body=metadata,
+        'datamart',
+        metadata,
         id=dataset_id,
     )
 
@@ -208,9 +205,8 @@ def add_dataset_to_lazo_storage(es, id, metadata):
     """
 
     es.index(
-        index='lazo',
-        doc_type='_doc',
-        body=metadata,
+        'lazo',
+        metadata,
         id=id,
     )
 
@@ -263,7 +259,7 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
 
     # deleting from 'datamart'
     try:
-        es.delete('datamart', '_doc', dataset_id)
+        es.delete('datamart', dataset_id)
     except elasticsearch.NotFoundError:
         return
 
@@ -277,6 +273,5 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
         nb = es.delete_by_query(
             index=index,
             body=body,
-            doc_type='_doc',
         )['deleted']
         logger.info("Deleted %d documents from %s", nb, index)
