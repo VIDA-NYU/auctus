@@ -140,7 +140,7 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
 
     should_query = list()
     coverage = sum([range_[1] - range_[0] + 1 for range_ in ranges])
-    for range_ in ranges:
+    for i, range_ in enumerate(ranges):
         should_query.append({
             'nested': {
                 'path': 'coverage',
@@ -173,7 +173,8 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
                 },
                 'inner_hits': {
                     '_source': False,
-                    'size': 100
+                    'size': 100,
+                    'name': 'range-{0}'.format(i)
                 },
                 'score_mode': 'sum'
             }
@@ -233,7 +234,7 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
     coverage = sum([
         (range_[1][0] - range_[0][0]) * (range_[0][1] - range_[1][1])
         for range_ in ranges])
-    for range_ in ranges:
+    for i, range_ in enumerate(ranges):
         should_query.append({
             'nested': {
                 'path': 'ranges',
@@ -275,7 +276,8 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
                 },
                 'inner_hits': {
                     '_source': False,
-                    'size': 100
+                    'size': 100,
+                    'name': 'range-{0}'.format(i)
                 },
                 'score_mode': 'sum'
             }
