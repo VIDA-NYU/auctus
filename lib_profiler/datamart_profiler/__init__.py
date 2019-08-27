@@ -96,6 +96,10 @@ def get_numerical_ranges(values):
     return ranges
 
 
+SPATIAL_RANGE_DELTA_LONG = 0.0001
+SPATIAL_RANGE_DELTA_LAT = 0.0001
+
+
 def get_spatial_ranges(values):
     """
     Retrieve the spatial ranges (i.e. bounding boxes) given the input gps points.
@@ -132,6 +136,15 @@ def get_spatial_ranges(values):
         sizes.append(len(cluster))
     logger.info("Ranges: %r", ranges)
     logger.info("Sizes: %r", sizes)
+
+    # Lucene needs shapes to have an area for tessellation (no point or line)
+    for rg in ranges:
+        if rg[0][0] == rg[1][0]:
+            rg[0][0] -= SPATIAL_RANGE_DELTA_LONG
+            rg[1][0] += SPATIAL_RANGE_DELTA_LONG
+        if rg[0][1] == rg[1][1]:
+            rg[0][1] += SPATIAL_RANGE_DELTA_LAT
+            rg[1][1] -= SPATIAL_RANGE_DELTA_LAT
 
     # TODO: Deal with clusters made of outliers
 
