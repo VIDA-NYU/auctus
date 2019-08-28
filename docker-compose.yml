@@ -179,6 +179,8 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - LAZO_SERVER_HOST=lazo_server
       - LAZO_SERVER_PORT=50051
+    volumes:
+      - dataset-cache:/dataset_cache
   noaa:
     build:
       context: .
