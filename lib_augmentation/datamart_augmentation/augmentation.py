@@ -4,13 +4,13 @@ import logging
 import numpy as np
 import os
 import pandas as pd
-import shutil
 import tempfile
 import time
 import uuid
 
 from datamart_core.common import Type
 from datamart_materialize.d3m import D3mWriter
+
 from .utils import AugmentationError
 
 

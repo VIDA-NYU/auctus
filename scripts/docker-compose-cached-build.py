@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """Builder for docker-compose
 
 This essentially replicates the exact functionality of `docker-compose build`

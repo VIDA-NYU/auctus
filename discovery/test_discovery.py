@@ -1,8 +1,8 @@
 import asyncio
-import shutil
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import logging
 import os
+import shutil
 import threading
 
 from datamart_core import Discoverer

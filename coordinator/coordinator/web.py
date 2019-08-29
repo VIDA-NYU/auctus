@@ -18,6 +18,7 @@ from .cache import check_cache
 from .coordinator import Coordinator
 from datamart_core.common import Type, json2msg
 
+
 logger = logging.getLogger(__name__)
 
 

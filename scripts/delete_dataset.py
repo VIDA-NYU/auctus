@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import elasticsearch
 import lazo_index_service
 import logging

@@ -243,7 +243,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     supplied_resource_id=None
                 ))
         else:
-            results =  get_augmentation_search_results(
+            results = get_augmentation_search_results(
                 self.application.elasticsearch,
                 self.application.lazo_client,
                 data_profile,

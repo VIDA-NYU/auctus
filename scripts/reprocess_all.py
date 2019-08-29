@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-import logging
 
 import aio_pika
 import asyncio
 import json
+import logging
 import os
 import sys
 

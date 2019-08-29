@@ -3,7 +3,9 @@ import logging
 from datamart_core.common import Type
 from .utils import compute_levenshtein_sim
 
+
 logger = logging.getLogger(__name__)
+
 
 PAGINATION_SIZE = 200
 TOP_K_SIZE = 50
