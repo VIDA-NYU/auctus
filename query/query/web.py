@@ -68,6 +68,9 @@ class BaseHandler(RequestHandler):
     """Base class for all request handlers.
     """
 
+    def set_default_headers(self):
+        self.set_header('Server', 'Auctus/%s' % os.environ['DATAMART_VERSION'])
+
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
         if not type_.startswith('application/json'):

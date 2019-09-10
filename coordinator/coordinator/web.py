@@ -86,6 +86,9 @@ class BaseHandler(RequestHandler):
         return lines[:-1]
     template_env.globals['json_table'] = _tpl_json_table
 
+    def set_default_headers(self):
+        self.set_header('Server', 'Auctus/%s' % os.environ['DATAMART_VERSION'])
+
     def render_string(self, template_name, **kwargs):
         template = self.template_env.get_template(template_name)
         return template.render(
