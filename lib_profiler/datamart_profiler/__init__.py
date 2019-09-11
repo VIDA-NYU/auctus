@@ -9,6 +9,7 @@ import pandas
 import pkg_resources
 import prometheus_client
 import random
+from raven_preprocess.preprocess_runner import PreprocessRunner
 from sklearn.cluster import KMeans
 import subprocess
 
@@ -177,6 +178,17 @@ def run_scdp(data):
             return {}
 
 
+def run_tworavens(data):
+    runner = PreprocessRunner(data)
+    if runner.has_error:
+        logger.error(
+            "Error from TwoRavens' profiler: %s",
+            runner.error_message,
+        )
+        return {}
+    return runner.get_final_dict()
+
+
 def normalize_latlong_column_name(name, *substrings):
     name = name.lower()
     for substr in substrings:
@@ -283,6 +295,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # FIXME: SCDP currently disabled
     # scdp_out = run_scdp(data)
     scdp_out = {}
+
+    # Run TwoRavens' profiler
+    metadata['tworavens'] = run_tworavens(data)
 
     # Get column dictionary
     columns = metadata.setdefault('columns', [])

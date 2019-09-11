@@ -25,6 +25,8 @@ RUN echo x${DATAMART_VERSION}x && test -n "${DATAMART_VERSION}"
 
 #RUN apt-get update && apt-get install -y default-jre && \
 #    rm -rf /var/lib/apt/lists/*
+COPY lib_profiler/tworavens/preprocess /usr/src/app/tworavens_preprocess
+RUN pip install --no-deps -e /usr/src/app/tworavens_preprocess
 COPY lib_core lib_core
 RUN pip install --no-deps -e /usr/src/app/lib_core
 COPY lib_materialize lib_materialize
