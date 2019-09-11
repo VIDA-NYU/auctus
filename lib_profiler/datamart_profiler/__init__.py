@@ -161,21 +161,11 @@ def run_scdp(data):
     # Run SCDP
     logger.info("Running SCDP...")
     scdp = pkg_resources.resource_filename('datamart_profiler', 'scdp.jar')
-    if isinstance(data, (str, bytes)):
-        if os.path.isdir(data):
-            data = os.path.join(data, 'main.csv')
-        if not os.path.exists(data):
-            raise ValueError("data file does not exist")
-        proc = subprocess.Popen(['java', '-jar', scdp, data],
-                                stdout=subprocess.PIPE,
-                                stdin=subprocess.PIPE)
-        stdout, _ = proc.communicate()
-    else:
-        proc = subprocess.Popen(['java', '-jar', scdp, '/dev/stdin'],
-                                stdout=subprocess.PIPE,
-                                stdin=subprocess.PIPE)
-        data.to_csv(codecs.getwriter('utf-8')(proc.stdin))
-        stdout, _ = proc.communicate()
+    proc = subprocess.Popen(['java', '-jar', scdp, '/dev/stdin'],
+                            stdout=subprocess.PIPE,
+                            stdin=subprocess.PIPE)
+    data.to_csv(codecs.getwriter('utf-8')(proc.stdin))
+    stdout, _ = proc.communicate()
     if proc.wait() != 0:
         logger.error("Error running SCDP: returned %d", proc.returncode)
         return {}
@@ -241,10 +231,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
     if metadata is None:
         metadata = {}
 
-    # FIXME: SCDP currently disabled
-    # scdp_out = run_scdp(data)
-    scdp_out = {}
-
     data_path = None
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
@@ -293,6 +279,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
+
+    # FIXME: SCDP currently disabled
+    # scdp_out = run_scdp(data)
+    scdp_out = {}
 
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
