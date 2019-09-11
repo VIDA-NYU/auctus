@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+tworavens_preprocess = {editable = true, path = "./lib_profiler/tworavens/preprocess"}
 datamart_profiler = {editable = true, path = "./lib_profiler"}
 datamart_materialize = {editable = true, path = "./lib_materialize"}
 datamart_augmentation = {editable = true, path = "./lib_augmentation"}

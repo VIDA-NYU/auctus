@@ -12,6 +12,7 @@ req = [
     'prometheus_client',
     'python-dateutil',
     'scikit-learn',
+    'tworavens_preprocess',
 ]
 setup(name='datamart_profiler',
       version='0.0',
