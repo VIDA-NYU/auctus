@@ -14,7 +14,7 @@ import subprocess
 
 from datamart_core.common import Type
 
-from .identify_types import identify_types
+from .types import identify_types
 
 
 logger = logging.getLogger(__name__)

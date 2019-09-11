@@ -1,4 +1,4 @@
-from datamart_profiler import identify_types
+import datamart_profiler.types
 from datetime import datetime
 from dateutil.tz import UTC
 import unittest
@@ -6,7 +6,7 @@ from unittest.mock import call, patch
 
 from datamart_profiler import pair_latlong_columns, \
     normalize_latlong_column_name
-from datamart_profiler.identify_types import parse_date
+from datamart_profiler.types import parse_date
 
 
 class TestLatlongSelection(unittest.TestCase):
@@ -115,8 +115,11 @@ class TestTypes(unittest.TestCase):
         +145
         -
         '''
-        self.do_test(identify_types._re_phone.match, positive, negative)
-        self.assertFalse(identify_types._re_phone.match(''))
+        self.do_test(
+            datamart_profiler.types._re_phone.match,
+            positive, negative,
+        )
+        self.assertFalse(datamart_profiler.types._re_phone.match(''))
 
     def test_ints(self):
         positive = '''\
@@ -133,8 +136,11 @@ class TestTypes(unittest.TestCase):
         +-7
         -+18
         '''
-        self.do_test(identify_types._re_int.match, positive, negative)
-        self.assertFalse(identify_types._re_int.match(''))
+        self.do_test(
+            datamart_profiler.types._re_int.match,
+            positive, negative,
+        )
+        self.assertFalse(datamart_profiler.types._re_int.match(''))
 
     def test_floats(self):
         positive = '''\
@@ -162,5 +168,8 @@ class TestTypes(unittest.TestCase):
         8e17
         1.3e
         '''
-        self.do_test(identify_types._re_float.match, positive, negative)
-        self.assertFalse(identify_types._re_float.match(''))
+        self.do_test(
+            datamart_profiler.types._re_float.match,
+            positive, negative,
+        )
+        self.assertFalse(datamart_profiler.types._re_float.match(''))
