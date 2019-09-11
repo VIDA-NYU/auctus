@@ -186,7 +186,11 @@ def run_tworavens(data):
             runner.error_message,
         )
         return {}
-    return runner.get_final_dict()
+
+    # TwoRavens' profiler uses Decimal and OrderedDict if we ask for a dict
+    # So we have to ask for JSON and load it back
+    metadata = json.loads(runner.get_final_json())
+    return metadata
 
 
 def normalize_latlong_column_name(name, *substrings):
