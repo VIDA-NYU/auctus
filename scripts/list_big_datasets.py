@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+"""This script lists datasets with a big size.
+"""
+
 import elasticsearch
 import os
 

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+"""This script gives a summary of the dataset sources.
+"""
+
 import elasticsearch
 import os
 

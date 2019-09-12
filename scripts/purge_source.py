@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+"""This script deletes all the datasets in the index from a specific source.
+"""
+
 import elasticsearch
 import lazo_index_service
 import logging

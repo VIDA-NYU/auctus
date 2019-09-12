@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+"""This script exports the index to JSON files.
+
+It is useful as backup, and to provide snapshots to users so they don't have to
+profile everything to get a system going.
+
+The exported folder can be loaded in using `import_all.py` (which will simply
+load the JSON files) or `reprocess_all.py` (which will only read some fields,
+and get the metadata by reprocessing the datasets).
+"""
+
 import elasticsearch
 import logging
 import json

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This script profiles a dataset and adds it to the index
+
 set -eu
 
 if [ "$#" != 3 ]; then

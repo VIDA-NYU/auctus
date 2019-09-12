@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# This script loads images from the local Docker daemon into the Minikube VM
+# It is useful when you want to try locally-built images without pushing them to a registry
+
 set -eu
 set -o pipefail
 

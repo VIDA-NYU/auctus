@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""This script imports an exported index, but reprocesses the datasets.
+
+The name, description, and date are loaded from the old JSON, but the rest will
+be reprofiled instead.
+"""
+
 import aio_pika
 import asyncio
 import json

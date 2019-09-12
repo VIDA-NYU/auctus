@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""This script clears the cache folders safely.
+
+This should not result in any data being lost or affect any running process.
+"""
+
 import logging
 import os
 import sys

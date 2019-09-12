@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+"""This script imports an exported index.
+
+It simply loads the data from the JSON files. If you want to reprocess them
+instead, use `reprocess_all.py`, which will only read name, description, and
+date, and obtain the rest of the metadata via profiling.
+"""
+
 import aio_pika
 import asyncio
 import elasticsearch
