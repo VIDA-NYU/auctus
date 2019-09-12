@@ -744,14 +744,16 @@ basic_metadata = {
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
                 "https://schema.org/Enumeration"
-            ]
+            ],
+            "num_distinct_values": 5
         },
         {
             "name": "country",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
                 "https://schema.org/Enumeration"
-            ]
+            ],
+            "num_distinct_values": 3
         },
         {
             "name": "number",
@@ -788,7 +790,9 @@ basic_metadata = {
             "semantic_types": [
                 "http://schema.org/Boolean",
                 "https://schema.org/Enumeration"
-            ]
+            ],
+            "unclean_values_ratio": 0.0,
+            "num_distinct_values": 2
         }
     ],
     "materialize": {
@@ -892,7 +896,9 @@ agg_metadata = {
             "semantic_types": [
                 "http://schema.org/Boolean",
                 "https://schema.org/Enumeration"
-            ]
+            ],
+            "unclean_values_ratio": 0.0,
+            "num_distinct_values": 2
         },
         {
             "name": "salary",
@@ -936,13 +942,14 @@ agg_metadata = {
 geo_metadata = {
     "name": "geo",
     "description": "Another simple CSV with places",
-    "size": 2912,
+    "size": 2905,
     "nb_rows": 100,
     "columns": [
         {
             "name": "id",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": []
+            "semantic_types": [],
+            "missing_values_ratio": 0.01
         },
         {
             "name": "lat",
@@ -980,7 +987,7 @@ geo_metadata_d3m = {
         'datasetID': 'datamart.test.geo',
         'datasetName': 'geo',
         'license': 'unknown',
-        'approximateSize': '2912 B',
+        'approximateSize': '2905 B',
         'datasetSchemaVersion': '3.2.0',
         'redacted': False,
         'datasetVersion': '0.0',
@@ -1026,7 +1033,8 @@ lazo_metadata = {
         {
             "name": "state",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": []
+            "semantic_types": [],
+            "missing_values_ratio": lambda n: round(n, 4) == 0.0278
         },
         {
             "name": "year",

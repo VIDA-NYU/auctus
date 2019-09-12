@@ -82,10 +82,16 @@ def identify_types(array, name):
         structural_type = Type.TEXT
 
     semantic_types_dict = {}
+    column_meta = {}
+
+    if structural_type != Type.MISSING_DATA and num_empty > 0:
+        column_meta['missing_values_ratio'] = num_empty / num_total
 
     # Identify booleans
     if num_bool >= threshold:
         semantic_types_dict[Type.BOOLEAN] = None
+        column_meta['unclean_values_ratio'] = \
+            (num_total - num_empty - num_bool) / num_total
 
     if structural_type == Type.TEXT:
         if num_text >= threshold:
@@ -101,6 +107,7 @@ def identify_types(array, name):
                         break
             else:
                 semantic_types_dict[Type.CATEGORICAL] = values
+                column_meta['num_distinct_values'] = len(values)
     elif structural_type == Type.INTEGER:
         # Identify ids
         # TODO: is this enough?
@@ -114,8 +121,8 @@ def identify_types(array, name):
             semantic_types_dict[Type.ID] = None
 
     # Identify lat/long
-    num_lat = num_long = 0
     if structural_type == Type.FLOAT:
+        num_lat = num_long = 0
         for elem in array:
             try:
                 elem = float(elem)
@@ -152,4 +159,4 @@ def identify_types(array, name):
     if num_phones >= threshold:
         semantic_types_dict[Type.PHONE_NUMBER] = None
 
-    return structural_type, semantic_types_dict
+    return structural_type, semantic_types_dict, column_meta

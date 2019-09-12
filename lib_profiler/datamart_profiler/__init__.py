@@ -325,7 +325,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
             logger.info("Processing column %d...", i)
             array = data.iloc[:, i]
             # Identify types
-            structural_type, semantic_types_dict = \
+            structural_type, semantic_types_dict, additional_meta = \
                 identify_types(array, column_meta['name'])
             # Set structural type
             column_meta['structural_type'] = structural_type
@@ -334,6 +334,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
             for sem_type in semantic_types_dict:
                 if sem_type not in sem_types:
                     sem_types.append(sem_type)
+            # Insert additional metadata
+            column_meta.update(additional_meta)
 
             # Compute ranges for numerical/spatial data
             if structural_type in (Type.INTEGER, Type.FLOAT):
