@@ -27,7 +27,7 @@ class ClientError(ValueError):
 
 
 def parse_keyword_query_main_index(query_json):
-    """Parses a DataMart keyword query, turning it into an
+    """Parses a Datamart keyword query, turning it into an
     Elasticsearch query over 'datamart' index.
     """
 
@@ -85,7 +85,7 @@ def parse_keyword_query_main_index(query_json):
 
 
 def parse_keyword_query_sup_index(query_json):
-    """Parses a DataMart keyword query, turning it into an
+    """Parses a Datamart keyword query, turning it into an
     Elasticsearch query over 'datamart_column' and
     'datamart_spatial_coverage' indices.
     """
@@ -136,7 +136,7 @@ def parse_keyword_query_sup_index(query_json):
 
 
 def parse_query(query_json):
-    """Parses a DataMart query, turning it into an Elasticsearch query
+    """Parses a Datamart query, turning it into an Elasticsearch query
     over 'datamart' index as well as the supplementary indices
     ('datamart_columns' and 'datamart_spatial_coverage').
     """
@@ -171,7 +171,7 @@ def parse_query(query_json):
 
 
 def parse_query_variables(data, tabular_variables=None):
-    """Parses the variables of a DataMart query, turning it into an
+    """Parses the variables of a Datamart query, turning it into an
     Elasticsearch query over 'datamart' index
     """
 

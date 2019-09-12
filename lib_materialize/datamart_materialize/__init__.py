@@ -38,14 +38,14 @@ def _direct_download(url, writer):
 
 
 def _proxy_download(dataset_id, writer, proxy):
-    """Use a DataMart query service to materialize for us.
+    """Use a Datamart query service to materialize for us.
 
     This is used when the materializer is not available locally. We request
-    that the DataMart handle materialization, and then we download from there.
+    that the Datamart handle materialization, and then we download from there.
 
     :param dataset_id: Dataset ID from search index.
     :param writer: Output writer used to write the dataset.
-    :param proxy: URL of a DataMart server to use as a proxy.
+    :param proxy: URL of a Datamart server to use as a proxy.
     """
     response = requests.get(proxy + '/download/' + dataset_id,
                             allow_redirects=True, stream=True)
@@ -119,7 +119,7 @@ def download(dataset, destination, proxy, format='csv'):
 
     :param dataset: Dataset description from search index.
     :param destination: Path where the dataset will be written.
-    :param proxy: URL of a DataMart server to use as a proxy if we can't
+    :param proxy: URL of a Datamart server to use as a proxy if we can't
         materialize locally. If ``None``, ``KeyError`` will be raised if this
         materializer is unavailable.
     :param format: Output format.

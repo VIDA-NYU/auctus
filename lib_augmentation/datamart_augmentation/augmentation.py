@@ -433,7 +433,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
 
     # TODO: add support for combining multiple columns before an augmentation
     #   e.g.: [['street number', 'street', 'city']] and [['address']]
-    #   currently, DataMart does not support such cases
+    #   currently, Datamart does not support such cases
     #   this means that spatial joins (with GPS) are not supported for now
 
     # only converting data types for columns involved in augmentation
@@ -444,7 +444,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
                 task['augmentation']['right_columns'],
             ):
         if len(left_columns) > 1 or len(right_columns) > 1:
-            raise AugmentationError("DataMart currently does not support "
+            raise AugmentationError("Datamart currently does not support "
                                     "combination of columns for augmentation.")
         aug_columns_input_data.append(left_columns[0])
         aug_columns_companion_data.append(right_columns[0])

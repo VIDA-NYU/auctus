@@ -111,7 +111,7 @@ class BaseHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
 
-    http_client = AsyncHTTPClient(defaults=dict(user_agent="DataMart"))
+    http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
     @property
     def coordinator(self):

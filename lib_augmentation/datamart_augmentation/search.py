@@ -31,7 +31,7 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
     """
     Get coverage for each column of the input dataset.
 
-    :param data_profile: Profiled input dataset, if dataset is not in DataMart index.
+    :param data_profile: Profiled input dataset, if dataset is not in Datamart index.
     :param column_index_mapping: mapping from column name to column index
     :param filter_: list of column indices to return. If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a dict as follows:
@@ -454,7 +454,7 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
     :param es: Elasticsearch client.
     :param lazo_client: client for the Lazo Index Server
     :param data_profile: Profiled input dataset.
-    :param dataset_id: The identifier of the desired DataMart dataset for augmentation.
+    :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
     :param query_args: list of query arguments (optional).
     :param tabular_variables: specifies which columns to focus on for the search.
     """
@@ -633,7 +633,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
 
     :param es: Elasticsearch client.
     :param data_profile: Profiled input dataset.
-    :param dataset_id: The identifier of the desired DataMart dataset for augmentation.
+    :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
     :param query_args: list of query arguments (optional).
     :param tabular_variables: specifies which columns to focus on for the search.
     """

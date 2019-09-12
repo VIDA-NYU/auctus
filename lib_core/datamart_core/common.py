@@ -119,7 +119,7 @@ def hash_json(*args, **kwargs):
 
 def add_dataset_to_sup_index(es, dataset_id, metadata):
     """
-    Adds dataset to the supplementary DataMart indices:
+    Adds dataset to the supplementary Datamart indices:
     'datamart_columns' and 'datamart_spatial_coverage'.
     """
 
@@ -182,7 +182,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
 
 def add_dataset_to_index(es, dataset_id, metadata):
     """
-    Safely adds a dataset to all the DataMart indices.
+    Safely adds a dataset to all the Datamart indices.
     """
 
     # 'datamart' index

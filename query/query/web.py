@@ -417,7 +417,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             if not search_results:
                 return self.send_error_json(
                     400,
-                    "The DataMart dataset referenced by 'task' cannot augment "
+                    "The Datamart dataset referenced by 'task' cannot augment "
                     "'data'",
                 )
 
@@ -545,7 +545,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                             len(search_results), task['id'])
             else:
                 return self.send_error_json(400,
-                                            "The DataMart dataset referenced "
+                                            "The Datamart dataset referenced "
                                             "by 'task' cannot augment 'data'")
 
         hash_ = hash_json(
