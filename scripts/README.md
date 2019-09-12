@@ -8,6 +8,7 @@ This folder contains scripts that make it easy to perform certain tasks. Those s
 * docker_import_all.sh / import_all.py: This can be used to load a dump of Elasticsearch as JSON files. Useful to restore a backup
 * import.py: Import a single dataset from a JSON file
 * reprocess_all.py: This loads a dump of Elasticsearch as JSON files, but reprocesses the datasets
+* freshen_old_index.py: This reprocesses datasets that were profiled by old versions
 * docker_export_all.sh / export_all.py: This can be used to do a backup of the index. It creates a dump of Elasticsearch as JSON files
 * docker-save_uploads.sh: This can be used to save the datasets that have been manually uploaded into Datamart (the data itself, not the indexed JSON documents)
 * delete_dataset.py: Removes a single dataset from the index
