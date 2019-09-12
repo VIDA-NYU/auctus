@@ -454,8 +454,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     ))
                 metadata['lazo'] = metadata_lazo
             except Exception as e:
-                logger.warning('Error getting Lazo sketches textual attributes from %s', dataset_id)
-                logger.warning(str(e))
+                logger.warning('Error getting Lazo sketches textual attributes from %s', dataset_id, exc_info=True)
 
     # Lat / Lon
     logger.info("Computing spatial coverage...")

@@ -151,7 +151,8 @@ class Profiler(object):
                     # Delete dataset if already exists in index
                     delete_dataset_from_index(
                         self.es,
-                        dataset_id
+                        dataset_id,
+                        self.lazo_client,
                     )
                     # Insert results in Elasticsearch
                     body = dict(metadata,
