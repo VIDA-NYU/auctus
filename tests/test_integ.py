@@ -743,7 +743,7 @@ basic_metadata = {
             "name": "name",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
-                "https://schema.org/Enumeration"
+                "http://schema.org/Enumeration"
             ],
             "num_distinct_values": 5
         },
@@ -751,7 +751,7 @@ basic_metadata = {
             "name": "country",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
-                "https://schema.org/Enumeration"
+                "http://schema.org/Enumeration"
             ],
             "num_distinct_values": 3
         },
@@ -789,7 +789,7 @@ basic_metadata = {
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
                 "http://schema.org/Boolean",
-                "https://schema.org/Enumeration"
+                "http://schema.org/Enumeration"
             ],
             "unclean_values_ratio": 0.0,
             "num_distinct_values": 2
@@ -895,7 +895,7 @@ agg_metadata = {
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
                 "http://schema.org/Boolean",
-                "https://schema.org/Enumeration"
+                "http://schema.org/Enumeration"
             ],
             "unclean_values_ratio": 0.0,
             "num_distinct_values": 2

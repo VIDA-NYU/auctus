@@ -25,7 +25,7 @@ class Type:
     PHONE_NUMBER = 'https://metadata.datadrivendiscovery.org/types/' +\
                    'PhoneNumber'
     ID = 'http://schema.org/identifier'
-    CATEGORICAL = 'https://schema.org/Enumeration'
+    CATEGORICAL = 'http://schema.org/Enumeration'
 
 
 def block_wait_future(future):
