@@ -659,9 +659,26 @@ class TestAugment(DatamartTest):
             )
 
     def test_basic_join_auto(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic'
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.basic',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'type': 'none'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
         response = self.datamart_post(
             '/augment',
             files={
+                'task': json.dumps(task).encode('utf-8'),
                 'data': basic_aug_data.encode('utf-8'),
             },
         )
