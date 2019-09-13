@@ -265,6 +265,35 @@ class TestDataSearch(DatamartTest):
             ]
         )
 
+    def test_basic_join_only_data_csv(self):
+        response = self.datamart_post(
+            '/search',
+            data=basic_aug_data.encode('utf-8'),
+            headers={'Content-type': 'text/csv'},
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        assert_json(
+            results,
+            [
+                {
+                    'id': 'datamart.test.basic',
+                    'metadata': basic_metadata,
+                    'd3m_dataset_description': basic_metadata_d3m,
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['number']],
+                        'right_columns': [[2]],
+                        'right_columns_names': [['number']],
+                        'type': 'join'
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
+                }
+            ]
+        )
+
     def test_basic_join_only_profile(self):
         response = self.datamart_post(
             '/profile',
@@ -300,6 +329,23 @@ class TestDataSearch(DatamartTest):
                 }
             ]
         )
+
+    def test_both_data_profile(self):
+        response = self.datamart_post(
+            '/profile',
+            files={'data': basic_aug_data.encode('utf-8')},
+        )
+        profile = response.json()
+
+        response = self.datamart_post(
+            '/search',
+            files={
+                'data': basic_aug_data.encode('utf-8'),
+                'data_profile': json.dumps(profile).encode('utf-8'),
+            },
+            check_status=False,
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_lazo_join(self):
         response = self.datamart_post(
@@ -541,6 +587,26 @@ class TestDownload(DatamartTest):
             {'error': "Materializer reports failure"},
         )
 
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
+            files={},
+            check_status=False,
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_id_invalid(self):
+        response = self.datamart_get(
+            '/download/datamart.nonexistent',
+            check_status=False,
+        )
+        self.assertEqual(response.status_code, 404)
+
+        response = self.datamart_get(
+            '/metadata/datamart.nonexistent',
+            check_status=False,
+        )
+        self.assertEqual(response.status_code, 404)
+
 
 class TestAugment(DatamartTest):
     def test_basic_join(self):
@@ -568,6 +634,34 @@ class TestAugment(DatamartTest):
             '/augment',
             files={
                 'task': json.dumps(task).encode('utf-8'),
+                'data': basic_aug_data.encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip = zipfile.ZipFile(io.BytesIO(response.content))
+        zip.testzip()
+        self.assertEqual(
+            set(zip.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip.open('tables/learningData.csv') as table:
+            self.assertEqual(
+                table.read().decode('utf-8'),
+                'number,desk_faces,name,country,what\n'
+                '4,west,remi,france,False\n'
+                '3,south,aecio,brazil,True\n'
+                '7,west,sonia,peru,True\n'
+                '8,east,roque,peru,True\n'
+                '10,west,fernando,brazil,False\n',
+            )
+
+    def test_basic_join_auto(self):
+        response = self.datamart_post(
+            '/augment',
+            files={
                 'data': basic_aug_data.encode('utf-8'),
             },
         )
