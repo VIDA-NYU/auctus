@@ -14,7 +14,7 @@ req = [
     'datamart_materialize',
     'datamart_profiler',
 ]
-setup(name='profiler',
+setup(name='datamart-profiler-service',
       version='0.0',
       py_modules=['profiler'],
       entry_points={

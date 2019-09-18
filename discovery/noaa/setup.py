@@ -10,7 +10,7 @@ req = [
     'requests',
     'datamart_core',
 ]
-setup(name='noaa_discovery',
+setup(name='datamart-noaa_discovery-service',
       version='0.0',
       packages=['noaa_discovery'],
       package_data={'noaa_discovery': [

@@ -10,7 +10,7 @@ req = [
     'sodapy',
     'datamart_core',
 ]
-setup(name='socrata_discovery',
+setup(name='datamart-socrata_discovery-service',
       version='0.0',
       py_modules=['socrata_discovery'],
       install_requires=req,

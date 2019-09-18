@@ -6,12 +6,12 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'datamart_core',
-    'datamart_materialize',
     'Distance',
     'elasticsearch~=7.0',
     'pandas',
-    'numpy'
+    'numpy',
+    'datamart_core',
+    'datamart_materialize',
 ]
 setup(name='datamart_augmentation',
       version='0.1',

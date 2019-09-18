@@ -18,7 +18,7 @@ req = [
     'datamart_materialize',
     'datamart_profiler',
 ]
-setup(name='query',
+setup(name='datamart-query-service',
       version='0.0',
       packages=['query'],
       entry_points={
