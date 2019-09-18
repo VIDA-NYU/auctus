@@ -13,6 +13,7 @@ req = [
     'PyYaml',
     'jinja2',
     'tornado>=5.0',
+    'datamart_core',
 ]
 setup(name='datamart-coordinator-service',
       version='0.0',

@@ -10,6 +10,8 @@ import prometheus_client
 import time
 import yaml
 
+from datamart_core.common import log_future
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,20 +19,6 @@ logger = logging.getLogger(__name__)
 PROM_DATASETS = prometheus_client.Gauge('source_count',
                                         "Count of datasets per source",
                                         ['source'])
-
-
-def log_future(future, message="Exception in background task",
-               should_never_exit=False):
-    def log(future):
-        try:
-            future.result()
-        except Exception:
-            logger.exception(message)
-        if should_never_exit:
-            logger.critical("Critical task died, exiting")
-            asyncio.get_event_loop().stop()
-            sys.exit(1)
-    future.add_done_callback(log)
 
 
 class Coordinator(object):
