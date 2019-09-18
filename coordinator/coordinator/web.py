@@ -14,9 +14,10 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import uuid
 
+from datamart_core.common import Type, json2msg
+
 from .cache import check_cache
 from .coordinator import Coordinator
-from datamart_core.common import Type, json2msg
 
 
 logger = logging.getLogger(__name__)

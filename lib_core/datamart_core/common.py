@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class Type:
-    MISSING_DATA = 'https://metadata.datadrivendiscovery.org/types/' +\
+    MISSING_DATA = 'https://metadata.datadrivendiscovery.org/types/' + \
                    'MissingData'
     INTEGER = 'http://schema.org/Integer'
     FLOAT = 'http://schema.org/Float'
@@ -22,7 +22,7 @@ class Type:
     LATITUDE = 'http://schema.org/latitude'
     LONGITUDE = 'http://schema.org/longitude'
     DATE_TIME = 'http://schema.org/DateTime'
-    PHONE_NUMBER = 'https://metadata.datadrivendiscovery.org/types/' +\
+    PHONE_NUMBER = 'https://metadata.datadrivendiscovery.org/types/' + \
                    'PhoneNumber'
     ID = 'http://schema.org/identifier'
     CATEGORICAL = 'http://schema.org/Enumeration'
@@ -141,11 +141,9 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
         column_metadata['index'] = column_index
         column_name_to_index[column_metadata['name']] = column_index
         if 'coverage' in column_metadata:
-            for i in range(len(column_metadata['coverage'])):
-                column_metadata['coverage'][i]['gte'] = \
-                    column_metadata['coverage'][i]['range']['gte']
-                column_metadata['coverage'][i]['lte'] = \
-                    column_metadata['coverage'][i]['range']['lte']
+            for num_range in column_metadata['coverage']:
+                num_range['gte'] = num_range['range']['gte']
+                num_range['lte'] = num_range['range']['lte']
         es.index(
             'datamart_columns',
             column_metadata
@@ -165,15 +163,12 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
                 column_name_to_index[spatial_coverage_metadata['lat']]
             spatial_coverage_metadata['lon_index'] = \
                 column_name_to_index[spatial_coverage_metadata['lon']]
-            for i in range(len(spatial_coverage_metadata['ranges'])):
-                spatial_coverage_metadata['ranges'][i]['min_lon'] = \
-                    spatial_coverage_metadata['ranges'][i]['range']['coordinates'][0][0]
-                spatial_coverage_metadata['ranges'][i]['max_lat'] = \
-                    spatial_coverage_metadata['ranges'][i]['range']['coordinates'][0][1]
-                spatial_coverage_metadata['ranges'][i]['max_lon'] = \
-                    spatial_coverage_metadata['ranges'][i]['range']['coordinates'][1][0]
-                spatial_coverage_metadata['ranges'][i]['min_lat'] = \
-                    spatial_coverage_metadata['ranges'][i]['range']['coordinates'][1][1]
+            for spatial_range in spatial_coverage_metadata['ranges']:
+                coordinates = spatial_range['range']['coordinates']
+                spatial_range['min_lon'] = coordinates[0][0]
+                spatial_range['max_lat'] = coordinates[0][1]
+                spatial_range['max_lon'] = coordinates[1][0]
+                spatial_range['min_lat'] = coordinates[1][1]
             es.index(
                 'datamart_spatial_coverage',
                 spatial_coverage_metadata,
@@ -200,8 +195,7 @@ def add_dataset_to_index(es, dataset_id, metadata):
 
 
 def add_dataset_to_lazo_storage(es, id, metadata):
-    """
-    Adds a dataset to the Lazo storage.
+    """Adds a dataset to Lazo.
     """
 
     es.index(
@@ -251,11 +245,11 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
             ack = lazo_client.remove_sketches(dataset_id, textual_columns)
             if ack:
                 logger.info(
-                    "Deleted %d documents from the lazo storage",
+                    "Deleted %d documents from Lazo",
                     len(textual_columns)
                 )
             else:
-                logger.info("Error while deleting documents from the lazo storage")
+                logger.info("Error while deleting documents from Lazo")
 
     # deleting from 'datamart'
     try:

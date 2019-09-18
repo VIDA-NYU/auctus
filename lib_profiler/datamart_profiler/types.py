@@ -2,7 +2,6 @@ from datetime import datetime
 import dateutil.parser
 import dateutil.tz
 import re
-import unittest
 
 from datamart_core.common import Type
 

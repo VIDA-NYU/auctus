@@ -7,7 +7,6 @@ import logging
 import os
 import pkg_resources
 import prometheus_client
-import sys
 import time
 import yaml
 
@@ -136,8 +135,8 @@ class Coordinator(object):
             metadata = obj.get('metadata', {})
             materialize = metadata.get('materialize', {})
             logger.info("Got profile message: %r", dataset_id)
-            for i in range(len(self.recent_discoveries)):
-                if self.recent_discoveries[i]['id'] == dataset_id:
+            for discovery in self.recent_discoveries:
+                if discovery['id'] == dataset_id:
                     break
             else:
                 self.recent_discoveries.insert(
@@ -156,11 +155,10 @@ class Coordinator(object):
             dataset_id = obj['id']
             materialize = obj.get('materialize', {})
             logger.info("Got dataset message: %r", dataset_id)
-            for i in range(len(self.recent_discoveries)):
-                if self.recent_discoveries[i]['id'] == dataset_id:
-                    self.recent_discoveries[i]['profiled'] = obj.get('date',
-                                                                     '???')
-                    self.recent_discoveries[i]['name'] = obj.get('name')
+            for discovery in self.recent_discoveries:
+                if discovery['id'] == dataset_id:
+                    discovery['profiled'] = obj.get('date', '???')
+                    discovery['name'] = obj.get('name')
                     break
             else:
                 self.recent_discoveries.insert(

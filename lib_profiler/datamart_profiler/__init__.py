@@ -299,7 +299,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Fix size if wrong
     if len(columns) != len(data.columns):
         logger.info("Setting column names from header")
-        columns[:] = [{} for _ in range(len(data.columns))]
+        columns[:] = [{} for _ in data.columns]
     else:
         logger.info("Keeping columns from discoverer")
 
@@ -453,7 +453,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         cardinality=cardinality
                     ))
                 metadata['lazo'] = metadata_lazo
-            except Exception as e:
+            except Exception:
                 logger.warning('Error getting Lazo sketches textual attributes from %s', dataset_id, exc_info=True)
 
     # Lat / Lon

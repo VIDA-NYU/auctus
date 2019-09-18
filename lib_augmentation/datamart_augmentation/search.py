@@ -328,12 +328,12 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
 
     scores_per_dataset = dict()
     column_per_dataset = dict()
-    for i in range(len(dataset_ids)):
-        if dataset_ids[i] not in column_per_dataset:
-            column_per_dataset[dataset_ids[i]] = list()
-            scores_per_dataset[dataset_ids[i]] = dict()
-        column_per_dataset[dataset_ids[i]].append(column_names[i])
-        scores_per_dataset[dataset_ids[i]][column_names[i]] = lazo_scores[i]
+    for d_id, name, lazo_score in zip(dataset_ids, column_names, lazo_scores):
+        if d_id not in column_per_dataset:
+            column_per_dataset[d_id] = list()
+            scores_per_dataset[d_id] = dict()
+        column_per_dataset[d_id].append(name)
+        scores_per_dataset[d_id][name] = lazo_score
 
     # if there is no keyword query
     if not query_args:
@@ -360,7 +360,7 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
 
     # if there is a keyword query
     should_query = list()
-    for i in range(len(dataset_ids)):
+    for d_id, name, lazo_score in zip(dataset_ids, column_names, lazo_scores):
         should_query.append(
             {
                 'constant_score': {
@@ -369,18 +369,18 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
                             'must': [
                                 {
                                     'term': {
-                                        'dataset_id': dataset_ids[i]
+                                        'dataset_id': d_id
                                     }
                                 },
                                 {
                                     'term': {
-                                        'name.raw': column_names[i]
+                                        'name.raw': name
                                     }
                                 }
                             ]
                         }
                     },
-                    'boost': lazo_scores[i]
+                    'boost': lazo_score
                 }
             }
         )
@@ -777,10 +777,10 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
         scores[dataset] = 0
         es_score = 0
 
-        for i in range(len(column_pairs[dataset])):
-            sim = column_pairs[dataset][i][2]
+        for pair in column_pairs[dataset]:
+            sim = pair[2]
             scores[dataset] += sim
-            es_score = max(es_score, column_pairs[dataset][i][3])
+            es_score = max(es_score, pair[3])
 
         scores[dataset] = (scores[dataset] / n_columns) * es_score
 

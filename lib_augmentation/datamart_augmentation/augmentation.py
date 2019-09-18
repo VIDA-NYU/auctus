@@ -316,9 +316,8 @@ def union(original_data, augment_data, left_columns, right_columns,
     )
 
     rename = dict()
-    for i in range(len(left_columns)):
-        rename[augment_data.columns[right_columns[i][0]]] = \
-            original_data.columns[left_columns[i][0]]
+    for left, right in zip(left_columns, right_columns):
+        rename[augment_data.columns[right[0]]] = original_data.columns[left[0]]
     augment_data = augment_data.rename(columns=rename)
 
     # union
