@@ -20,6 +20,7 @@ PyYaml = "*"
 requests = "*"
 coverage = "*"
 jsonschema = ">=3.0,<4"
+readme_renderer = "*"
 
 [requires]
 python_version = "3.6"

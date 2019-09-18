@@ -22,6 +22,11 @@ test:
     - diff -u lib_core/datamart_core/types.py lib_profiler/datamart_profiler/types.py && diff -u lib_core/datamart_core/types.py lib_materialize/datamart_materialize/types.py
     - pip install pipenv
     - pipenv install --deploy --system --dev
+    - |
+      # Check READMEs
+      find . -name README.rst | while read i; do
+        python -m readme_renderer "$i" >/dev/null
+      done
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     - |
       # Pull the base image so we don't have to build from scratch
