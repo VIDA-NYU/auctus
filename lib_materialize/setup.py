@@ -1,3 +1,4 @@
+import io
 import os
 from setuptools import setup
 
@@ -10,8 +11,10 @@ req = [
     'sodapy',
     'xlrd',
 ]
+with io.open('README.rst', encoding='utf-8') as fp:
+    description = fp.read()
 setup(name='datamart_materialize',
-      version='0.1',
+      version='0.5.1',
       packages=['datamart_materialize'],
       entry_points={
           'datamart_materialize': [
@@ -27,6 +30,7 @@ setup(name='datamart_materialize',
       },
       install_requires=req,
       description="Materialization library for Datamart",
+      long_description=description,
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -37,11 +41,10 @@ setup(name='datamart_materialize',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Materialization library for Datamart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
-          'Development Status :: 2 - Pre-Alpha',
+          'Development Status :: 4 - Beta',
           'Intended Audience :: Science/Research',
           'Natural Language :: English',
           'Operating System :: OS Independent',

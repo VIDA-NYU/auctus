@@ -1,3 +1,4 @@
+import io
 import os
 from setuptools import setup
 
@@ -8,10 +9,12 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'pandas',
     'numpy',
-    'datamart_materialize',
+    'datamart_materialize==0.5.1',
 ]
+with io.open('README.rst', encoding='utf-8') as fp:
+    description = fp.read()
 setup(name='datamart_augmentation',
-      version='0.1',
+      version='0.5.1',
       packages=['datamart_augmentation'],
       install_requires=req,
       description="Augmentation functions for Datamart services",
@@ -25,11 +28,11 @@ setup(name='datamart_augmentation',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Augmentation functions for Datamart services",
+      long_description=description,
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
-          'Development Status :: 2 - Pre-Alpha',
+          'Development Status :: 3 - Alpha',
           'Intended Audience :: Science/Research',
           'Natural Language :: English',
           'Operating System :: OS Independent',

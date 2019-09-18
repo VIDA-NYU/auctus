@@ -1,3 +1,4 @@
+import io
 import os
 from setuptools import setup
 
@@ -13,8 +14,10 @@ req = [
     'python-dateutil',
     'scikit-learn',
 ]
+with io.open('README.rst', encoding='utf-8') as fp:
+    description = fp.read()
 setup(name='datamart_profiler',
-      version='0.0',
+      version='0.5.1',
       packages=['datamart_profiler'],
       #package_data={'datamart_profiler': ['scdp.jar']},
       install_requires=req,
@@ -33,7 +36,7 @@ setup(name='datamart_profiler',
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
-          'Development Status :: 2 - Pre-Alpha',
+          'Development Status :: 4 - Beta',
           'Intended Audience :: Science/Research',
           'Natural Language :: English',
           'Operating System :: OS Independent',
