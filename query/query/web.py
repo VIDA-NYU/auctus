@@ -19,6 +19,7 @@ from datamart_augmentation.augmentation import AugmentationError, augment
 from datamart_core.common import hash_json, log_future
 from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
+import datamart_profiler
 
 from .enhance_metadata import enhance_metadata
 from .graceful_shutdown import GracefulApplication, GracefulHandler
@@ -591,6 +592,14 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         return self.finish()
 
 
+class Version(BaseHandler):
+    def get(self):
+        return self.send_json({
+            'version': os.environ['DATAMART_VERSION'].lstrip('v'),
+            'min_profiler_version': datamart_profiler.__version__,
+        })
+
+
 class Health(BaseHandler):
     def get(self):
         if self.application.is_closing:
@@ -644,6 +653,7 @@ def make_app(debug=False):
             URLSpec('/download', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
+            URLSpec('/version', Version, name='version'),
             URLSpec('/health', Health, name='health'),
         ],
         debug=debug,
