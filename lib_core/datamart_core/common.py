@@ -8,24 +8,10 @@ import re
 import sys
 import threading
 
+from . import types
+
 
 logger = logging.getLogger(__name__)
-
-
-class Type:
-    MISSING_DATA = 'https://metadata.datadrivendiscovery.org/types/' + \
-                   'MissingData'
-    INTEGER = 'http://schema.org/Integer'
-    FLOAT = 'http://schema.org/Float'
-    TEXT = 'http://schema.org/Text'
-    BOOLEAN = 'http://schema.org/Boolean'
-    LATITUDE = 'http://schema.org/latitude'
-    LONGITUDE = 'http://schema.org/longitude'
-    DATE_TIME = 'http://schema.org/DateTime'
-    PHONE_NUMBER = 'https://metadata.datadrivendiscovery.org/types/' + \
-                   'PhoneNumber'
-    ID = 'http://schema.org/identifier'
-    CATEGORICAL = 'http://schema.org/Enumeration'
 
 
 def block_wait_future(future):
@@ -222,10 +208,10 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
                 'bool': {
                     'must': [
                         {'term': {'dataset_id': dataset_id}},
-                        {'term': {'structural_type': Type.TEXT}}
+                        {'term': {'structural_type': types.TEXT}}
                     ],
                     'must_not': {
-                        'term': {'semantic_types': Type.DATE_TIME}
+                        'term': {'semantic_types': types.DATE_TIME}
                     }
                 }
             }

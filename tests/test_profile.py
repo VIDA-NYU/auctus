@@ -1,4 +1,3 @@
-import datamart_profiler.types
 from datetime import datetime
 from dateutil.tz import UTC
 import unittest
@@ -6,7 +5,7 @@ from unittest.mock import call, patch
 
 from datamart_profiler import pair_latlong_columns, \
     normalize_latlong_column_name
-from datamart_profiler.types import parse_date
+from datamart_profiler import profile_types
 
 
 class TestLatlongSelection(unittest.TestCase):
@@ -63,14 +62,14 @@ class TestDates(unittest.TestCase):
     def test_parse(self):
         """Test parsing dates."""
         self.assertEqual(
-            parse_date('Monday July 1, 2019'),
+            profile_types.parse_date('Monday July 1, 2019'),
             datetime(2019, 7, 1, tzinfo=UTC),
         )
         self.assertEqual(
-            parse_date('20190702T211319Z'),
+            profile_types.parse_date('20190702T211319Z'),
             datetime(2019, 7, 2, 21, 13, 19, tzinfo=UTC),
         )
-        dt = parse_date('2019-07-02T21:13:19-04:00')
+        dt = profile_types.parse_date('2019-07-02T21:13:19-04:00')
         self.assertEqual(
             dt.replace(tzinfo=None),
             datetime(2019, 7, 2, 21, 13, 19),
@@ -116,10 +115,10 @@ class TestTypes(unittest.TestCase):
         -
         '''
         self.do_test(
-            datamart_profiler.types._re_phone.match,
+            profile_types._re_phone.match,
             positive, negative,
         )
-        self.assertFalse(datamart_profiler.types._re_phone.match(''))
+        self.assertFalse(profile_types._re_phone.match(''))
 
     def test_ints(self):
         positive = '''\
@@ -137,10 +136,10 @@ class TestTypes(unittest.TestCase):
         -+18
         '''
         self.do_test(
-            datamart_profiler.types._re_int.match,
+            profile_types._re_int.match,
             positive, negative,
         )
-        self.assertFalse(datamart_profiler.types._re_int.match(''))
+        self.assertFalse(profile_types._re_int.match(''))
 
     def test_floats(self):
         positive = '''\
@@ -169,7 +168,7 @@ class TestTypes(unittest.TestCase):
         1.3e
         '''
         self.do_test(
-            datamart_profiler.types._re_float.match,
+            profile_types._re_float.match,
             positive, negative,
         )
-        self.assertFalse(datamart_profiler.types._re_float.match(''))
+        self.assertFalse(profile_types._re_float.match(''))

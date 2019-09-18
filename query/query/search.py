@@ -10,7 +10,7 @@ import tornado.web
 
 from datamart_augmentation.search import \
     get_joinable_datasets, get_unionable_datasets
-from datamart_core.common import Type
+from datamart_core import types
 from datamart_core.fscache import cache_get_or_set
 from datamart_profiler import process_dataset
 
@@ -192,7 +192,7 @@ def parse_query_variables(data, tabular_variables=None):
                 'nested': {
                     'path': 'columns',
                     'query': {
-                        'term': {'columns.semantic_types': Type.DATE_TIME},
+                        'term': {'columns.semantic_types': types.DATE_TIME},
                     },
                 },
             })

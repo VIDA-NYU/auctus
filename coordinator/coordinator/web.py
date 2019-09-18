@@ -14,7 +14,8 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import uuid
 
-from datamart_core.common import Type, json2msg
+from datamart_core.common import json2msg
+from datamart_core import types
 
 from .cache import check_cache
 from .coordinator import Coordinator
@@ -226,7 +227,7 @@ class Dataset(BaseHandler):
         # readable format for temporal and numerical coverage
         for column in metadata['columns']:
             if 'coverage' in column:
-                if Type.DATE_TIME in column['semantic_types']:
+                if types.DATE_TIME in column['semantic_types']:
                     column['temporal coverage'] = []
                     for range_ in column['coverage']:
                         from_ = \
@@ -239,7 +240,7 @@ class Dataset(BaseHandler):
                             'from': from_,
                             'to': to_
                         })
-                elif Type.INTEGER in column['structural_type']:
+                elif types.INTEGER in column['structural_type']:
                     column['numerical coverage'] = [
                         {'from': int(range_['range']['gte']),
                          'to': int(range_['range']['lte'])

@@ -12,9 +12,8 @@ import random
 from sklearn.cluster import KMeans
 import subprocess
 
-from datamart_core.common import Type
-
-from .types import identify_types
+from .profile_types import identify_types
+from . import types
 
 
 logger = logging.getLogger(__name__)
@@ -338,7 +337,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
             column_meta.update(additional_meta)
 
             # Compute ranges for numerical/spatial data
-            if structural_type in (Type.INTEGER, Type.FLOAT):
+            if structural_type in (types.INTEGER, types.FLOAT):
                 # Get numerical ranges
                 numerical_values = []
                 for e in array:
@@ -355,11 +354,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     mean_stddev(numerical_values)
 
                 # Get lat/long columns
-                if Type.LATITUDE in semantic_types_dict:
+                if types.LATITUDE in semantic_types_dict:
                     columns_lat.append(
                         (column_meta['name'], numerical_values)
                     )
-                elif Type.LONGITUDE in semantic_types_dict:
+                elif types.LONGITUDE in semantic_types_dict:
                     columns_long.append(
                         (column_meta['name'], numerical_values)
                     )
@@ -371,14 +370,14 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         column_meta['coverage'] = ranges
 
             # Compute ranges for temporal data
-            if Type.DATE_TIME in semantic_types_dict:
+            if types.DATE_TIME in semantic_types_dict:
                 timestamps = numpy.empty(
-                    len(semantic_types_dict[Type.DATE_TIME]),
+                    len(semantic_types_dict[types.DATE_TIME]),
                     dtype='float32',
                 )
                 timestamps_for_range = []
                 for j, dt in enumerate(
-                        semantic_types_dict[Type.DATE_TIME]):
+                        semantic_types_dict[types.DATE_TIME]):
                     timestamps[j] = dt.timestamp()
                     timestamps_for_range.append(
                         dt.replace(minute=0, second=0).timestamp()
@@ -391,8 +390,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 if ranges:
                     column_meta['coverage'] = ranges
 
-            if structural_type == Type.TEXT and \
-                    Type.DATE_TIME not in semantic_types_dict:
+            if structural_type == types.TEXT and \
+                    types.DATE_TIME not in semantic_types_dict:
                 column_textual.append(column_meta['name'])
 
     # Textual columns

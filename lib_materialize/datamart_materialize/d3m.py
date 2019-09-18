@@ -1,12 +1,14 @@
 import json
 import os
 
+from . import types
+
 
 STRUCTURAL_TYPE_MAP = {
-    'http://schema.org/Boolean': 'boolean',
-    'http://schema.org/Integer': 'integer',
-    'http://schema.org/Float': 'real',
-    'http://schema.org/Text': 'string',
+    types.BOOLEAN: 'boolean',
+    types.INTEGER: 'integer',
+    types.FLOAT: 'real',
+    types.TEXT: 'string',
 }
 
 
@@ -14,7 +16,7 @@ def d3m_metadata(dataset_id, metadata):
     columns = []
     for i, column in enumerate(metadata['columns']):
         # D3M has a 'dateTime' structural type but we use string
-        if 'http://schema.org/DateTime' in column['semantic_types']:
+        if types.DATE_TIME in column['semantic_types']:
             col_type = 'dateTime'
         else:
             col_type = STRUCTURAL_TYPE_MAP.get(

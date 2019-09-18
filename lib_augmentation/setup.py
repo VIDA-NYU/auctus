@@ -10,7 +10,6 @@ req = [
     'elasticsearch~=7.0',
     'pandas',
     'numpy',
-    'datamart_core',
     'datamart_materialize',
 ]
 setup(name='datamart_augmentation',

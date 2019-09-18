@@ -8,8 +8,8 @@ import tempfile
 import time
 import uuid
 
-from datamart_core.common import Type
 from datamart_materialize.d3m import D3mWriter
+from datamart_materialize import types
 
 from .utils import AugmentationError
 
@@ -49,7 +49,7 @@ def convert_data_types(data, columns, columns_metadata):
         index = columns[i]
         column = columns_metadata[index]
         name = column['name']
-        if Type.DATE_TIME in column['semantic_types']:
+        if types.DATE_TIME in column['semantic_types']:
             start = time.perf_counter()
             if isinstance(data.index, pd.MultiIndex):
                 data.index = data.index.set_levels(
@@ -61,7 +61,7 @@ def convert_data_types(data, columns, columns_metadata):
                 data.index = pd.to_datetime(data.index, errors='coerce')
             logger.info("Column %s converted to datetime in %.4fs" %
                         (name, (time.perf_counter() - start)))
-        elif column['structural_type'] == Type.INTEGER:
+        elif column['structural_type'] == types.INTEGER:
             start = time.perf_counter()
             if isinstance(data.index, pd.MultiIndex):
                 data.index = data.index.set_levels(
@@ -73,7 +73,7 @@ def convert_data_types(data, columns, columns_metadata):
                 data.index = pd.to_numeric(data.index, errors='coerce', downcast='integer')
             logger.info("Column %s converted to numeric (int) in %.4fs" %
                         (name, (time.perf_counter() - start)))
-        elif column['structural_type'] == Type.FLOAT:
+        elif column['structural_type'] == types.FLOAT:
             start = time.perf_counter()
             if isinstance(data.index, pd.MultiIndex):
                 data.index = data.index.set_levels(
@@ -389,7 +389,7 @@ def generate_d3m_dataset(data, input_metadata, companion_metadata,
             column_metadata['name'] = name
             if ('sum' in name or 'mean' in name
                     or 'amax' in name or 'amin' in name):
-                column_metadata['structural_type'] = Type.FLOAT
+                column_metadata['structural_type'] = types.FLOAT
             original_columns_metadata[name] = column_metadata
 
     # column metadata for the new, augmented dataset

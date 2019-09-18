@@ -1,6 +1,6 @@
 import logging
 
-from datamart_core.common import Type
+from datamart_materialize import types
 from .utils import compute_levenshtein_sim
 
 
@@ -55,15 +55,15 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
         # ignoring 'd3mIndex'
         if 'd3mIndex' in column_name:
             continue
-        if Type.ID in column['semantic_types']:
+        if types.ID in column['semantic_types']:
             type_ = 'semantic_types'
-            type_value = Type.ID
-        elif column['structural_type'] == Type.INTEGER:
+            type_value = types.ID
+        elif column['structural_type'] == types.INTEGER:
             type_ = 'structural_type'
             type_value = column['structural_type']
-        elif Type.DATE_TIME in column['semantic_types']:
+        elif types.DATE_TIME in column['semantic_types']:
             type_ = 'semantic_types'
-            type_value = Type.DATE_TIME
+            type_value = types.DATE_TIME
         else:
             continue
         column_coverage[str(column_index)] = {
@@ -86,7 +86,7 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
                      str(column_index_mapping[spatial['lon']]))
             column_coverage[names] = {
                 'type':      'spatial',
-                'type_value': Type.LATITUDE + ',' + Type.LONGITUDE,
+                'type_value': types.LATITUDE + ',' + types.LONGITUDE,
                 'ranges':     []
             }
             for range_ in spatial['ranges']:
@@ -135,7 +135,7 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
         filter_query.append(
             {'term': {'dataset_id': dataset_id}}
         )
-    if type_value != Type.DATE_TIME:
+    if type_value != types.DATE_TIME:
         filter_query.append(
             {'fuzzy': {'name.raw': pivot_column}}
         )
@@ -612,7 +612,7 @@ def get_column_information(data_profile, filter_=()):
         # ignoring phone numbers
         semantic_types = [
             sem for sem in column['semantic_types']
-            if Type.PHONE_NUMBER not in sem
+            if types.PHONE_NUMBER not in sem
         ]
         for semantic_type in semantic_types:
             if semantic_type not in output:
