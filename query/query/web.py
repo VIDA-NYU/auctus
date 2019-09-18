@@ -15,8 +15,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import zipfile
 
-from datamart_augmentation.augmentation import augment
-from datamart_augmentation.utils import AugmentationError
+from datamart_augmentation.augmentation import AugmentationError, augment
 from datamart_core.common import hash_json, log_future
 from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset

@@ -6,8 +6,6 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'Distance',
-    'elasticsearch~=7.0',
     'pandas',
     'numpy',
     'datamart_materialize',

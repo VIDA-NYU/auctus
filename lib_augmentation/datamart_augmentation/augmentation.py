@@ -11,10 +11,13 @@ import uuid
 from datamart_materialize.d3m import D3mWriter
 from datamart_materialize import types
 
-from .utils import AugmentationError
-
 
 logger = logging.getLogger(__name__)
+
+
+class AugmentationError(ValueError):
+    """Error during augmentation.
+    """
 
 
 temporal_resolutions = [
