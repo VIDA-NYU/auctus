@@ -81,6 +81,7 @@ class Coordinator(object):
 
         # Start AMQP coroutine
         log_future(asyncio.get_event_loop().create_task(self._amqp()),
+                   logger,
                    should_never_exit=True)
         # Start source count coroutine
         self.sources_counts = {}
