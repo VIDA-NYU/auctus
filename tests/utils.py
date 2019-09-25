@@ -4,11 +4,18 @@ import itertools
 def assert_json(actual, expected, pos='@'):
     if callable(expected):
         # The reason this function exists
-        if not expected(actual):
+        try:
+            ret = expected(actual)
+        except AssertionError as e:
             raise AssertionError(
                 "Validation failed for %r at %s" % (actual, pos)
-            )
-        return
+            ) from e
+        else:
+            if not ret:
+                raise AssertionError(
+                    "Validation failed for %r at %s" % (actual, pos)
+                )
+            return
 
     if type(actual) != type(expected):
         raise AssertionError(
