@@ -870,12 +870,12 @@ class TestAugment(DatamartTest):
             ]
             self.assertEqual(
                 '\n'.join(table_lines[0:6]),
-                'lat,long,id\n'
-                '40.73279,-73.9985,place100\n'
-                '40.72970,-73.9978,place101\n'
-                '40.73266,-73.9975,place102\n'
-                '40.73117,-74.0018,place103\n'
-                '40.69427,-73.9898,place104'
+                'lat,long,id,letter\n'
+                '40.73279,-73.9985,place100,a\n'
+                '40.72970,-73.9978,place101,b\n'
+                '40.73266,-73.9975,place102,c\n'
+                '40.73117,-74.0018,place103,d\n'
+                '40.69427,-73.9898,place104,e'
             )
 
 

@@ -306,13 +306,7 @@ def union(original_data, augment_data, left_columns, right_columns,
     original_data_cols = original_data.columns
 
     # dropping columns not in union
-    original_columns = [original_data.columns[c[0]] for c in left_columns]
-    original_columns.append('d3mIndex')
     augment_data_columns = [augment_data.columns[c[0]] for c in right_columns]
-    original_data = original_data.drop(
-        [c for c in original_data.columns if c not in original_columns],
-        axis=1
-    )
     augment_data = augment_data.drop(
         [c for c in augment_data.columns if c not in augment_data_columns],
         axis=1
