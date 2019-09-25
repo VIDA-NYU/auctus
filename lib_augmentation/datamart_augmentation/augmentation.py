@@ -210,6 +210,8 @@ def join(original_data, augment_data, left_columns, right_columns,
     Returns the new pandas.DataFrame object.
     """
 
+    logger.info("Performing join...")
+
     # join columns
     original_join_columns = list()
     augment_join_columns = list()
@@ -324,7 +326,6 @@ def union(original_data, augment_data_path, left_columns, right_columns,
     )
 
     # Column renaming
-    augment_data_columns = [augment_data_columns[c[0]] for c in right_columns]
     rename = dict()
     for left, right in zip(left_columns, right_columns):
         rename[augment_data_columns[right[0]]] = original_data.columns[left[0]]
@@ -344,9 +345,9 @@ def union(original_data, augment_data_path, left_columns, right_columns,
 
     # Streaming union
     start = time.perf_counter()
-    with open(destination_csv, 'wb') as fout:
+    with open(destination_csv, 'w', newline='') as fout:
         # Write original data
-        original_data.to_csv(fout, headers=True)
+        original_data.to_csv(fout, index=False, header=True)
         total_rows = len(original_data)
 
         # Iterate on chunks of augment data
@@ -375,7 +376,7 @@ def union(original_data, augment_data_path, left_columns, right_columns,
             augment_data = augment_data[original_data.columns]
 
             # Add to CSV output
-            augment_data.to_csv(fout, headers=False)
+            augment_data.to_csv(fout, index=False, header=False)
             total_rows += len(augment_data)
     logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
 
@@ -490,7 +491,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
 
     # Perform augmentation
     if task['augmentation']['type'] == 'join':
-        logger.info("Performing join...")
         result, qualities = join(
             convert_data_types(
                 pd.read_csv(io.BytesIO(data), error_bad_lines=False),
@@ -516,7 +516,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             qualities,
         )
     elif task['augmentation']['type'] == 'union':
-        logger.info("Performing union...")
         output_metadata = union(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
             newdata,
@@ -533,3 +532,5 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     d3m_meta = d3m_metadata(uuid.uuid4().hex, output_metadata)
     with open(destination_metadata, 'w') as fp:
         json.dump(d3m_meta, fp, sort_keys=True, indent=2)
+
+    return destination
