@@ -197,7 +197,7 @@ def perform_aggregations(data, groupby_columns,
 
 
 def join(original_data, augment_data, left_columns, right_columns,
-         columns=None, how='left', qualities=False,
+         columns=None, how='left',
          return_only_datamart_data=False):
     """
     Performs a join between original_data (pandas.DataFrame)
@@ -274,28 +274,26 @@ def join(original_data, augment_data, left_columns, right_columns,
             axis=1
         )
 
-        if qualities:
-            original_columns_set = set(original_data.columns)
-            new_columns = [
-                col for col in join_.columns if col not in original_columns_set
-            ]
-            qualities_list.append(dict(
-                qualName='augmentation_info',
-                qualValue=dict(
-                    new_columns=new_columns,
-                    removed_columns=[],
-                    nb_rows_before=original_data.shape[0],
-                    nb_rows_after=join_.shape[0],
-                    augmentation_type='join'
-                ),
-                qualValueType='dict'
-            ))
+        original_columns_set = set(original_data.columns)
+        new_columns = [
+            col for col in join_.columns if col not in original_columns_set
+        ]
+        qualities_list.append(dict(
+            qualName='augmentation_info',
+            qualValue=dict(
+                new_columns=new_columns,
+                removed_columns=[],
+                nb_rows_before=original_data.shape[0],
+                nb_rows_after=join_.shape[0],
+                augmentation_type='join'
+            ),
+            qualValueType='dict'
+        ))
 
     return join_, qualities_list
 
 
-def union(original_data, augment_data, left_columns, right_columns,
-          qualities=False):
+def union(original_data, augment_data, left_columns, right_columns):
     """
     Performs a union between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using columns.
@@ -331,23 +329,22 @@ def union(original_data, augment_data, left_columns, right_columns,
 
     # qualities
     qualities_list = list()
-    if qualities:
-        removed_columns = list(
-            set([c for c in original_data_cols]).difference(
-                union_.columns
-            )
+    removed_columns = list(
+        set([c for c in original_data_cols]).difference(
+            union_.columns
         )
-        qualities_list.append(dict(
-            qualName='augmentation_info',
-            qualValue=dict(
-                new_columns=[],
-                removed_columns=removed_columns,
-                nb_rows_before=original_data.shape[0],
-                nb_rows_after=union_.shape[0],
-                augmentation_type='union'
-            ),
-            qualValueType='dict'
-        ))
+    )
+    qualities_list.append(dict(
+        qualName='augmentation_info',
+        qualValue=dict(
+            new_columns=[],
+            removed_columns=removed_columns,
+            nb_rows_before=original_data.shape[0],
+            nb_rows_after=union_.shape[0],
+            augmentation_type='union'
+        ),
+        qualValueType='dict'
+    ))
 
     return union_, qualities_list
 
@@ -462,7 +459,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             columns=columns,
-            qualities=True,
             return_only_datamart_data=return_only_datamart_data,
         )
     elif task['augmentation']['type'] == 'union':
@@ -472,7 +468,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             pd.read_csv(newdata, error_bad_lines=False),
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
-            qualities=True,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
