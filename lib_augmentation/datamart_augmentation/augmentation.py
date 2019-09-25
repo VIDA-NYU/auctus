@@ -1,5 +1,6 @@
 import copy
 import io
+import json
 import logging
 import numpy as np
 import os
@@ -8,7 +9,7 @@ import tempfile
 import time
 import uuid
 
-from datamart_materialize.d3m import D3mWriter
+from datamart_materialize.d3m import d3m_metadata
 from datamart_materialize import types
 
 
@@ -196,6 +197,9 @@ def perform_aggregations(data, groupby_columns,
     return data
 
 
+CHUNK_SIZE_ROWS = 10_000
+
+
 def join(original_data, augment_data, left_columns, right_columns,
          columns=None, how='left', qualities=False,
          return_only_datamart_data=False):
@@ -295,6 +299,7 @@ def join(original_data, augment_data, left_columns, right_columns,
 
 
 def union(original_data, augment_data_path, left_columns, right_columns,
+          destination_csv,
           qualities=False):
     """
     Performs a union between original_data (pandas.DataFrame)
@@ -303,27 +308,30 @@ def union(original_data, augment_data_path, left_columns, right_columns,
     Returns the new pandas.DataFrame object.
     """
 
-    # Load in the data
-    augment_data = pd.read_csv(augment_data_path, error_bad_lines=False)
+    # Load data header
+    # FIXME: This could be done from metadata?
+    augment_data_head = pd.read_csv(augment_data_path, error_bad_lines=False, nrows=1)
 
     # saving all columns from original data to report in augmentation_info
     original_data_cols = original_data.columns
 
-    # dropping columns not in union
-    augment_data_columns = [augment_data.columns[c[0]] for c in right_columns]
-    augment_data = augment_data.drop(
-        [c for c in augment_data.columns if c not in augment_data_columns],
-        axis=1
-    )
-
+    # rename columns
+    augment_data_columns = [augment_data_head.columns[c[0]] for c in right_columns]
     rename = dict()
     for left, right in zip(left_columns, right_columns):
-        rename[augment_data.columns[right[0]]] = original_data.columns[left[0]]
-    augment_data = augment_data.rename(columns=rename)
+        rename[augment_data_head.columns[right[0]]] = original_data.columns[left[0]]
 
     # union
     start = time.perf_counter()
-    union_ = pd.concat([original_data, augment_data], sort=False)
+    TODO_WRITE(original_data)
+    augment_data_chunks = pd.read_csv(augment_data_path, error_bad_lines=False, chunksize=CHUNK_SIZE_ROWS)
+    for augment_data in augment_data_chunks:
+        augment_data = augment_data.drop(
+            [c for c in augment_data.columns if c not in augment_data_columns],
+            axis=1
+        )
+        augment_data = augment_data.rename(columns=rename)
+        TODO_WRITE(augment_data)
     logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
 
     # special treatment for 'd3mIndex' column
@@ -352,22 +360,16 @@ def union(original_data, augment_data_path, left_columns, right_columns,
             qualValueType='dict'
         ))
 
-    return union_, qualities_list
+    return output_metadata
 
 
-def generate_d3m_dataset(data, input_metadata, companion_metadata,
-                         destination=None, qualities=None):
+# TODO: Temporary
+def generate_d3m_dataset(data, input_metadata, companion_metadata, qualities):
     """
     Generates a D3M dataset from data (pandas.DataFrame).
 
     Returns the path to the D3M-style directory.
     """
-
-    if destination is None:
-        destination = os.path.join(
-            tempfile.mkdtemp(prefix='datamart_aug_'),
-            'dataset',
-        )
 
     # collecting information about all the original columns
     # from input (supplied) and companion datasets
@@ -406,11 +408,7 @@ def generate_d3m_dataset(data, input_metadata, companion_metadata,
     if qualities:
         metadata['qualities'] = qualities
 
-    writer = D3mWriter(uuid.uuid4().hex, destination, metadata)
-    with writer.open_file('w') as fp:
-        data.to_csv(fp, index=False)
-
-    return destination
+    return metadata
 
 
 def augment(data, newdata, metadata, task, columns=None, destination=None,
@@ -449,6 +447,15 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         aug_columns_input_data.append(left_columns[0])
         aug_columns_companion_data.append(right_columns[0])
 
+    # Prepare output D3M structure
+    if destination is None:
+        destination = tempfile.mkdtemp(prefix='datamart_aug_')
+    os.mkdir(destination)
+    os.mkdir(os.path.join(destination, 'tables'))
+    destination_csv = os.path.join(destination, 'tables', 'learningData.csv')
+    destination_metadata = os.path.join(destination, 'datasetDoc.json')
+
+    # Perform augmentation
     if task['augmentation']['type'] == 'join':
         logger.info("Performing join...")
         result, qualities = join(
@@ -468,22 +475,27 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             qualities=True,
             return_only_datamart_data=return_only_datamart_data,
         )
+        # TODO: Temporary
+        output_metadata = generate_d3m_dataset(
+            result,
+            metadata['columns'],
+            task['metadata']['columns'],
+            qualities,
+        )
     elif task['augmentation']['type'] == 'union':
         logger.info("Performing union...")
-        result, qualities = union(
+        output_metadata = union(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
             newdata,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
+            destination_csv,
             qualities=True,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
 
-    return generate_d3m_dataset(
-        result,
-        metadata['columns'],
-        task['metadata']['columns'],
-        destination,
-        qualities,
-    )
+    # Write out the D3M metadata
+    d3m_meta = d3m_metadata(uuid.uuid4().hex, output_metadata)
+    with open(destination_metadata, 'w') as fp:
+        json.dump(d3m_meta, fp, sort_keys=True, indent=2)
