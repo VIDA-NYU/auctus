@@ -509,6 +509,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             return_only_datamart_data=return_only_datamart_data,
         )
         # TODO: Temporary
+        result.to_csv(destination_csv, index=False)
         output_metadata = generate_d3m_dataset(
             result,
             metadata['columns'],
