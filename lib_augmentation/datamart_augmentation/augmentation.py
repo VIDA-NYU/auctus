@@ -294,16 +294,19 @@ def join(original_data, augment_data, left_columns, right_columns,
     return join_, qualities_list
 
 
-def union(original_data, augment_data, left_columns, right_columns,
+def union(original_data, augment_data_path, left_columns, right_columns,
           qualities=False):
     """
     Performs a union between original_data (pandas.DataFrame)
-    and augment_data (pandas.DataFrame) using columns.
+    and augment_data_path (path to CSV file) using columns.
 
     Returns the new pandas.DataFrame object.
     """
 
-    # saving all columns from original data
+    # Load in the data
+    augment_data = pd.read_csv(augment_data_path, error_bad_lines=False)
+
+    # saving all columns from original data to report in augmentation_info
     original_data_cols = original_data.columns
 
     # dropping columns not in union
@@ -469,7 +472,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         logger.info("Performing union...")
         result, qualities = union(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
-            pd.read_csv(newdata, error_bad_lines=False),
+            newdata,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             qualities=True,
