@@ -486,7 +486,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
                          'application/octet-stream')
-        self.assertTrue(response.content.startswith(b'id,lat,long\n'))
+        self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
     def test_post(self):
         """Download datasets via POST /download"""
@@ -546,7 +546,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
                          'application/octet-stream')
-        self.assertTrue(response.content.startswith(b'id,lat,long\n'))
+        self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
@@ -822,8 +822,79 @@ class TestAugment(DatamartTest):
                 'DE,\n'
             )
 
+    def test_geo_union(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.geo'
+        )
+        meta = meta.json()['metadata']
 
-def check_ranges(min_long, min_lat, max_long, max_lat):
+        task = {
+            'id': 'datamart.test.geo',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0], [1], [2]],
+                'left_columns_names': [['lat'], ['long'], ['id']],
+                'right_columns': [[1], [2], [0]],
+                'right_columns_names': [['lat'], ['long'], ['id']],
+                'type': 'union'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        response = self.datamart_post(
+            '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': geo_aug_data.encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip = zipfile.ZipFile(io.BytesIO(response.content))
+        zip.testzip()
+        self.assertEqual(
+            set(zip.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip.open('tables/learningData.csv') as table:
+            table_lines = table.read().decode('utf-8').splitlines(False)
+            # Truncate fields to work around rounding errors
+            # FIXME: Deal with rounding errors
+            table_lines = [
+                ','.join(e[:8] for e in l.split(','))
+                for l in table_lines
+            ]
+            self.assertEqual(
+                '\n'.join(table_lines[0:6]),
+                'lat,long,id,letter\n'
+                '40.73279,-73.9985,place100,a\n'
+                '40.72970,-73.9978,place101,b\n'
+                '40.73266,-73.9975,place102,c\n'
+                '40.73117,-74.0018,place103,d\n'
+                '40.69427,-73.9898,place104,e'
+            )
+
+
+def check_ranges(min, max):
+    def check(ranges):
+        assert len(ranges) == 3
+        for rg in ranges:
+            assert rg.keys() == {'range'}
+            rg = rg ['range']
+            assert rg.keys() == {'gte', 'lte'}
+            gte, lte = rg['gte'], rg['lte']
+            assert min <= gte <= lte <= max
+
+        return True
+
+    return check
+
+
+def check_geo_ranges(min_long, min_lat, max_long, max_lat):
     def check(ranges):
         assert len(ranges) == 3
         for rg in ranges:
@@ -1053,7 +1124,7 @@ agg_metadata = {
 geo_metadata = {
     "name": "geo",
     "description": "Another simple CSV with places",
-    "size": 2905,
+    "size": 3910,
     "nb_rows": 100,
     "columns": [
         {
@@ -1066,22 +1137,30 @@ geo_metadata = {
             "name": "lat",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/latitude" in l,
-            "mean": lambda n: round(n, 3) == 40.712,
-            "stddev": lambda n: round(n, 4) == 0.0187
+            "mean": lambda n: round(n, 3) == 40.711,
+            "stddev": lambda n: round(n, 4) == 0.0186
         },
         {
             "name": "long",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/longitude" in l,
             "mean": lambda n: round(n, 3) == -73.993,
-            "stddev": lambda n: round(n, 5) == 0.00654
+            "stddev": lambda n: round(n, 5) == 0.00684
+        },
+        {
+            "name": "height",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: isinstance(l, list),
+            "mean": lambda n: round(n, 3) == 47.827,
+            "stddev": lambda n: round(n, 2) == 21.28,
+            "coverage": check_ranges(1.0, 90.0)
         }
     ],
     "spatial_coverage": [
         {
             "lat": "lat",
             "lon": "long",
-            "ranges": check_ranges(-74.005, 40.6885, -73.9808, 40.7374)
+            "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
         }
     ],
     "materialize": {
@@ -1098,7 +1177,7 @@ geo_metadata_d3m = {
         'datasetID': 'datamart.test.geo',
         'datasetName': 'geo',
         'license': 'unknown',
-        'approximateSize': '2905 B',
+        'approximateSize': '3910 B',
         'datasetSchemaVersion': '3.2.0',
         'redacted': False,
         'datasetVersion': '0.0',
@@ -1126,6 +1205,12 @@ geo_metadata_d3m = {
                 {
                     'colIndex': 2,
                     'colName': 'long',
+                    'colType': 'real',
+                    'role': ['attribute'],
+                },
+                {
+                    'colIndex': 3,
+                    'colName': 'height',
                     'colType': 'real',
                     'role': ['attribute'],
                 },
@@ -1202,17 +1287,17 @@ agg_aug_data = (
 
 
 geo_aug_data = (
-    'lat,long,id\n'
-    '40.732792,-73.998516,place100\n'
-    '40.729707,-73.997885,place101\n'
-    '40.732666,-73.997576,place102\n'
-    '40.731173,-74.001817,place103\n'
-    '40.694272,-73.989852,place104\n'
-    '40.694424,-73.987888,place105\n'
-    '40.693446,-73.988829,place106\n'
-    '40.692157,-73.989549,place107\n'
-    '40.695933,-73.986665,place108\n'
-    '40.692827,-73.988438,place109\n'
+    'lat,long,id,letter\n'
+    '40.732792,-73.998516,place100,a\n'
+    '40.729707,-73.997885,place101,b\n'
+    '40.732666,-73.997576,place102,c\n'
+    '40.731173,-74.001817,place103,d\n'
+    '40.694272,-73.989852,place104,e\n'
+    '40.694424,-73.987888,place105,f\n'
+    '40.693446,-73.988829,place106,g\n'
+    '40.692157,-73.989549,place107,h\n'
+    '40.695933,-73.986665,place108,i\n'
+    '40.692827,-73.988438,place109,j\n'
 )
 
 
