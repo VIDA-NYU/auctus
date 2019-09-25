@@ -486,7 +486,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
                          'application/octet-stream')
-        self.assertTrue(response.content.startswith(b'id,lat,long\n'))
+        self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
     def test_post(self):
         """Download datasets via POST /download"""
@@ -546,7 +546,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
                          'application/octet-stream')
-        self.assertTrue(response.content.startswith(b'id,lat,long\n'))
+        self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
@@ -823,7 +823,22 @@ class TestAugment(DatamartTest):
             )
 
 
-def check_ranges(min_long, min_lat, max_long, max_lat):
+def check_ranges(min, max):
+    def check(ranges):
+        assert len(ranges) == 3
+        for rg in ranges:
+            assert rg.keys() == {'range'}
+            rg = rg ['range']
+            assert rg.keys() == {'gte', 'lte'}
+            gte, lte = rg['gte'], rg['lte']
+            assert min <= gte <= lte <= max
+
+        return True
+
+    return check
+
+
+def check_geo_ranges(min_long, min_lat, max_long, max_lat):
     def check(ranges):
         assert len(ranges) == 3
         for rg in ranges:
@@ -1053,7 +1068,7 @@ agg_metadata = {
 geo_metadata = {
     "name": "geo",
     "description": "Another simple CSV with places",
-    "size": 2905,
+    "size": 3910,
     "nb_rows": 100,
     "columns": [
         {
@@ -1066,22 +1081,30 @@ geo_metadata = {
             "name": "lat",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/latitude" in l,
-            "mean": lambda n: round(n, 3) == 40.712,
-            "stddev": lambda n: round(n, 4) == 0.0187
+            "mean": lambda n: round(n, 3) == 40.711,
+            "stddev": lambda n: round(n, 4) == 0.0186
         },
         {
             "name": "long",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/longitude" in l,
             "mean": lambda n: round(n, 3) == -73.993,
-            "stddev": lambda n: round(n, 5) == 0.00654
+            "stddev": lambda n: round(n, 5) == 0.00684
+        },
+        {
+            "name": "height",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: isinstance(l, list),
+            "mean": lambda n: round(n, 3) == 47.827,
+            "stddev": lambda n: round(n, 2) == 21.28,
+            "coverage": check_ranges(1.0, 90.0)
         }
     ],
     "spatial_coverage": [
         {
             "lat": "lat",
             "lon": "long",
-            "ranges": check_ranges(-74.005, 40.6885, -73.9808, 40.7374)
+            "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
         }
     ],
     "materialize": {
@@ -1098,7 +1121,7 @@ geo_metadata_d3m = {
         'datasetID': 'datamart.test.geo',
         'datasetName': 'geo',
         'license': 'unknown',
-        'approximateSize': '2905 B',
+        'approximateSize': '3910 B',
         'datasetSchemaVersion': '3.2.0',
         'redacted': False,
         'datasetVersion': '0.0',
@@ -1126,6 +1149,12 @@ geo_metadata_d3m = {
                 {
                     'colIndex': 2,
                     'colName': 'long',
+                    'colType': 'real',
+                    'role': ['attribute'],
+                },
+                {
+                    'colIndex': 3,
+                    'colName': 'height',
                     'colType': 'real',
                     'role': ['attribute'],
                 },
