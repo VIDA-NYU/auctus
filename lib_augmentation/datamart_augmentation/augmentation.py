@@ -201,7 +201,7 @@ CHUNK_SIZE_ROWS = 10_000
 
 
 def join(original_data, augment_data, left_columns, right_columns,
-         columns=None, how='left', qualities=False,
+         columns=None, how='left',
          return_only_datamart_data=False):
     """
     Performs a join between original_data (pandas.DataFrame)
@@ -280,29 +280,27 @@ def join(original_data, augment_data, left_columns, right_columns,
             axis=1
         )
 
-        if qualities:
-            original_columns_set = set(original_data.columns)
-            new_columns = [
-                col for col in join_.columns if col not in original_columns_set
-            ]
-            qualities_list.append(dict(
-                qualName='augmentation_info',
-                qualValue=dict(
-                    new_columns=new_columns,
-                    removed_columns=[],
-                    nb_rows_before=original_data.shape[0],
-                    nb_rows_after=join_.shape[0],
-                    augmentation_type='join'
-                ),
-                qualValueType='dict'
-            ))
+        original_columns_set = set(original_data.columns)
+        new_columns = [
+            col for col in join_.columns if col not in original_columns_set
+        ]
+        qualities_list.append(dict(
+            qualName='augmentation_info',
+            qualValue=dict(
+                new_columns=new_columns,
+                removed_columns=[],
+                nb_rows_before=original_data.shape[0],
+                nb_rows_after=join_.shape[0],
+                augmentation_type='join'
+            ),
+            qualValueType='dict'
+        ))
 
     return join_, qualities_list
 
 
 def union(original_data, augment_data_path, left_columns, right_columns,
-          original_metadata, destination_csv,
-          qualities=False):
+          original_metadata, destination_csv):
     """
     Performs a union between original_data (pandas.DataFrame)
     and augment_data_path (path to CSV file) using columns.
@@ -505,7 +503,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             columns=columns,
-            qualities=True,
             return_only_datamart_data=return_only_datamart_data,
         )
         # TODO: Temporary
@@ -524,7 +521,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             task['augmentation']['right_columns'],
             metadata,
             destination_csv,
-            qualities=True,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
