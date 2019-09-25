@@ -1,6 +1,5 @@
 import copy
 import io
-import itertools
 import json
 import logging
 import numpy as np
@@ -300,7 +299,7 @@ def join(original_data, augment_data, left_columns, right_columns,
 
 
 def union(original_data, augment_data_path, left_columns, right_columns,
-          destination_csv,
+          original_metadata, destination_csv,
           qualities=False):
     """
     Performs a union between original_data (pandas.DataFrame)
@@ -317,20 +316,38 @@ def union(original_data, augment_data_path, left_columns, right_columns,
         nrows=1,
     ).columns
 
-    # rename columns
+    logger.info(
+        "Performing union, original_data: %r, augment_data: %r, "
+        "left_columns: %r, right_columns: %r",
+        original_data.columns, augment_data_columns,
+        left_columns, right_columns,
+    )
+
+    # Column renaming
     augment_data_columns = [augment_data_columns[c[0]] for c in right_columns]
     rename = dict()
     for left, right in zip(left_columns, right_columns):
         rename[augment_data_columns[right[0]]] = original_data.columns[left[0]]
 
+    # Missing columns will be created as NaN
+    missing_columns = list(
+        set(original_data.columns) - set(augment_data_columns)
+    )
+
+    # Sequential d3mIndex if needed, picking up from the last value
+    # FIXME: Generated d3mIndex might collide with other splits?
+    d3mIndex = None
     if 'd3mIndex' in original_data.columns:
-        d3mIndex = itertools.count(int(original_data['d3mIndex'].max() + 1))
+        d3mIndex = int(original_data['d3mIndex'].max() + 1)
+
+    logger.info("renaming: %r, missing_columns: %r", rename, missing_columns)
 
     # Streaming union
     start = time.perf_counter()
     with open(destination_csv, 'wb') as fout:
         # Write original data
         original_data.to_csv(fout, headers=True)
+        total_rows = len(original_data)
 
         # Iterate on chunks of augment data
         augment_data_chunks = pd.read_csv(
@@ -339,42 +356,44 @@ def union(original_data, augment_data_path, left_columns, right_columns,
             chunksize=CHUNK_SIZE_ROWS,
         )
         for augment_data in augment_data_chunks:
-            # Drop additional columns
-            # FIXME: Maybe don't?
-            augment_data = augment_data.drop(
-                [c for c in augment_data.columns if c not in augment_data_columns],
-                axis=1
-            )
-
             # Rename columns to match
-            # TODO: Also need to reorder
             augment_data = augment_data.rename(columns=rename)
-            # TODO: Add d3mIndex
-            # TODO: Add all columns to augment_data with NaN values
+
+            # Add d3mIndex if needed
+            if d3mIndex is not None:
+                augment_data['d3mIndex'] = np.arange(
+                    d3mIndex,
+                    d3mIndex + len(augment_data),
+                )
+                d3mIndex += len(augment_data)
+
+            # Add empty column for the missing ones
+            for name in missing_columns:
+                augment_data[name] = np.nan
+
+            # Reorder columns
+            augment_data = augment_data[original_data.columns]
+
+            # Add to CSV output
             augment_data.to_csv(fout, headers=False)
+            total_rows += len(augment_data)
     logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
 
-    # qualities
-    qualities_list = list()
-    if qualities:
-        removed_columns = list(
-            set([c for c in original_data.columns]).difference(
-                union_.columns
-            )
-        )
-        qualities_list.append(dict(
+    return {
+        'columns': original_metadata['columns'],
+        'size': os.path.getsize(destination_csv),
+        'qualities': [dict(
             qualName='augmentation_info',
             qualValue=dict(
                 new_columns=[],
-                removed_columns=removed_columns,
+                removed_columns=[],
                 nb_rows_before=original_data.shape[0],
-                nb_rows_after=union_.shape[0],
+                nb_rows_after=total_rows,
                 augmentation_type='union'
             ),
             qualValueType='dict'
-        ))
-
-    return output_metadata
+        )],
+    }
 
 
 # TODO: Temporary
@@ -503,6 +522,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             newdata,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
+            metadata,
             destination_csv,
             qualities=True,
         )
