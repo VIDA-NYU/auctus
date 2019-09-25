@@ -1,5 +1,6 @@
 import copy
 import io
+import itertools
 import json
 import logging
 import numpy as np
@@ -310,41 +311,54 @@ def union(original_data, augment_data_path, left_columns, right_columns,
 
     # Load data header
     # FIXME: This could be done from metadata?
-    augment_data_head = pd.read_csv(augment_data_path, error_bad_lines=False, nrows=1)
-
-    # saving all columns from original data to report in augmentation_info
-    original_data_cols = original_data.columns
+    augment_data_columns = pd.read_csv(
+        augment_data_path,
+        error_bad_lines=False,
+        nrows=1,
+    ).columns
 
     # rename columns
-    augment_data_columns = [augment_data_head.columns[c[0]] for c in right_columns]
+    augment_data_columns = [augment_data_columns[c[0]] for c in right_columns]
     rename = dict()
     for left, right in zip(left_columns, right_columns):
-        rename[augment_data_head.columns[right[0]]] = original_data.columns[left[0]]
+        rename[augment_data_columns[right[0]]] = original_data.columns[left[0]]
 
-    # union
+    if 'd3mIndex' in original_data.columns:
+        d3mIndex = itertools.count(int(original_data['d3mIndex'].max() + 1))
+
+    # Streaming union
     start = time.perf_counter()
-    TODO_WRITE(original_data)
-    augment_data_chunks = pd.read_csv(augment_data_path, error_bad_lines=False, chunksize=CHUNK_SIZE_ROWS)
-    for augment_data in augment_data_chunks:
-        augment_data = augment_data.drop(
-            [c for c in augment_data.columns if c not in augment_data_columns],
-            axis=1
-        )
-        augment_data = augment_data.rename(columns=rename)
-        TODO_WRITE(augment_data)
-    logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
+    with open(destination_csv, 'wb') as fout:
+        # Write original data
+        original_data.to_csv(fout, headers=True)
 
-    # special treatment for 'd3mIndex' column
-    if 'd3mIndex' in union_.columns:
-        filler = [i for i in range(int(union_['d3mIndex'].max() + 1), union_.shape[0])]
-        union_.loc[union_['d3mIndex'].isnull(), 'd3mIndex'] = filler
-        union_['d3mIndex'] = pd.to_numeric(union_['d3mIndex'], downcast='integer')
+        # Iterate on chunks of augment data
+        augment_data_chunks = pd.read_csv(
+            augment_data_path,
+            error_bad_lines=False,
+            chunksize=CHUNK_SIZE_ROWS,
+        )
+        for augment_data in augment_data_chunks:
+            # Drop additional columns
+            # FIXME: Maybe don't?
+            augment_data = augment_data.drop(
+                [c for c in augment_data.columns if c not in augment_data_columns],
+                axis=1
+            )
+
+            # Rename columns to match
+            # TODO: Also need to reorder
+            augment_data = augment_data.rename(columns=rename)
+            # TODO: Add d3mIndex
+            # TODO: Add all columns to augment_data with NaN values
+            augment_data.to_csv(fout, headers=False)
+    logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
 
     # qualities
     qualities_list = list()
     if qualities:
         removed_columns = list(
-            set([c for c in original_data_cols]).difference(
+            set([c for c in original_data.columns]).difference(
                 union_.columns
             )
         )
