@@ -112,26 +112,15 @@ def match_column_temporal_resolutions(index_1, index_2):
     """Matches the resolutions between the dataset indices.
     """
 
-    start = time.perf_counter()
     resolution_1 = check_temporal_resolution(index_1)
     resolution_2 = check_temporal_resolution(index_2)
-    logger.info("Temporal resolutions checked for %s and %s in %.4fs" %
-                (index_1.name, index_2.name, (time.perf_counter() - start)))
     if (temporal_resolutions.index(resolution_1) >
             temporal_resolutions.index(resolution_2)):
-        start = time.perf_counter()
-        index_name = index_2.name
         index_2 = \
             index_2.strftime(temporal_resolution_format[resolution_1])
-        logger.info("Temporal resolution fixed for %s in %.4fs" %
-                    (index_name, (time.perf_counter() - start)))
     else:
-        start = time.perf_counter()
-        index_name = index_1.name
         index_1 = \
             index_1.strftime(temporal_resolution_format[resolution_2])
-        logger.info("Temporal resolution fixed for %s in %.4fs" %
-                    (index_name, (time.perf_counter() - start)))
 
     return index_1, index_2
 
@@ -200,7 +189,7 @@ def perform_aggregations(data, groupby_columns,
 CHUNK_SIZE_ROWS = 10_000
 
 
-def join(original_data, augment_data, original_metadata, augment_metadata,
+def join(original_data, augment_data_path, original_metadata, augment_metadata,
          left_columns, right_columns,
          how='left', return_only_datamart_data=False):
     """
@@ -209,6 +198,14 @@ def join(original_data, augment_data, original_metadata, augment_metadata,
 
     Returns the new pandas.DataFrame object.
     """
+
+    # Load data header
+    # FIXME: This could be done from metadata?
+    augment_data_columns = pd.read_csv(
+        augment_data_path,
+        error_bad_lines=False,
+        nrows=1,
+    ).columns
 
     # only converting data types for columns involved in augmentation
     aug_columns_input_data = []
@@ -225,11 +222,6 @@ def join(original_data, augment_data, original_metadata, augment_metadata,
         aug_columns_input_data,
         original_metadata['columns'],
     )
-    augment_data = convert_data_types(
-        pd.read_csv(augment_data, error_bad_lines=False),
-        aug_columns_companion_data,
-        augment_metadata['columns'],
-    )
 
     logger.info("Performing join...")
 
@@ -237,12 +229,20 @@ def join(original_data, augment_data, original_metadata, augment_metadata,
     original_join_columns = list()
     augment_join_columns = list()
     for i in range(len(right_columns)):
-        name = augment_data.columns[right_columns[i][0]]
-        if (augment_data.columns[right_columns[i][0]] ==
+        name = augment_data_columns[right_columns[i][0]]
+        if (augment_data_columns[right_columns[i][0]] ==
                 original_data.columns[left_columns[i][0]]):
             name += '_r'
         augment_join_columns.append(name)
         original_join_columns.append(original_data.columns[left_columns[i][0]])
+
+    augment_data = pd.read_csv(augment_data_path, error_bad_lines=False)
+
+    augment_data = convert_data_types(
+        augment_data,
+        aug_columns_companion_data,
+        augment_metadata['columns'],
+    )
 
     # matching temporal resolutions
     original_data, augment_data = \
