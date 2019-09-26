@@ -95,6 +95,10 @@ def convert_data_types(data, columns, columns_metadata):
 
 def match_temporal_resolutions(input_data, companion_data):
     """Matches the resolutions between the datasets.
+
+    This takes in example indexes, and returns a function to update future
+    indexes. This is because we are streaming, and want to decide once how to
+    process multiple batches.
     """
 
     if isinstance(input_data.index, pd.MultiIndex):
@@ -102,10 +106,9 @@ def match_temporal_resolutions(input_data, companion_data):
         pass
     elif (isinstance(input_data.index, pd.DatetimeIndex)
           and isinstance(companion_data.index, pd.DatetimeIndex)):
-        input_data.index, companion_data.index = \
-            match_column_temporal_resolutions(input_data.index, companion_data.index)
+        return match_column_temporal_resolutions(input_data.index, companion_data.index)
 
-    return input_data, companion_data
+    return lambda input_idx, comp_idx: (input_idx, comp_idx)  # no-op
 
 
 def match_column_temporal_resolutions(index_1, index_2):
@@ -116,13 +119,13 @@ def match_column_temporal_resolutions(index_1, index_2):
     resolution_2 = check_temporal_resolution(index_2)
     if (temporal_resolutions.index(resolution_1) >
             temporal_resolutions.index(resolution_2)):
-        index_2 = \
-            index_2.strftime(temporal_resolution_format[resolution_1])
+        # Change resolution of second index to the first's
+        fmt = temporal_resolution_format[resolution_1]
+        return lambda idx1, idx2: (idx1, idx2.strftime(fmt))
     else:
-        index_1 = \
-            index_1.strftime(temporal_resolution_format[resolution_2])
-
-    return index_1, index_2
+        # Change resolution of first index to the second's
+        fmt = temporal_resolution_format[resolution_2]
+        return lambda idx1, idx2: (idx1.strftime(fmt), idx2)
 
 
 def check_temporal_resolution(data):
@@ -238,6 +241,12 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
     augment_data = pd.read_csv(augment_data_path, error_bad_lines=False)
 
+    # Guess temporal resolutions
+    update_idx = match_temporal_resolutions(original_data, augment_data)
+
+    # Streaming join
+    start = time.perf_counter()
+
     augment_data = convert_data_types(
         augment_data,
         aug_columns_companion_data,
@@ -245,11 +254,8 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     )
 
     # matching temporal resolutions
-    original_data, augment_data = \
-        match_temporal_resolutions(original_data, augment_data)
+    original_data, augment_data = update_idx(original_data, augment_data)
 
-    # join
-    start = time.perf_counter()
     join_ = original_data.join(
         augment_data,
         how=how,
