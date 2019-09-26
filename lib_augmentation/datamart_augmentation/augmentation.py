@@ -1,5 +1,6 @@
 import copy
 import io
+import itertools
 import json
 import logging
 import numpy as np
@@ -239,28 +240,39 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         augment_join_columns.append(name)
         original_join_columns.append(original_data.columns[left_columns[i][0]])
 
-    augment_data = pd.read_csv(augment_data_path, error_bad_lines=False)
+    # Stream the data in
+    augment_data_chunks = pd.read_csv(
+        augment_data_path,
+        error_bad_lines=False,
+        chunksize=CHUNK_SIZE_ROWS,
+    )
+    augment_data = next(augment_data_chunks)
 
     # Guess temporal resolutions
     update_idx = match_temporal_resolutions(original_data, augment_data)
 
     # Streaming join
     start = time.perf_counter()
+    join_ = []
+    # Iterate over chunks of augment data
+    for augment_data in itertools.chain([augment_data], augment_data_chunks):
+        # Convert data types
+        augment_data = convert_data_types(
+            augment_data,
+            aug_columns_companion_data,
+            augment_metadata['columns'],
+        )
 
-    augment_data = convert_data_types(
-        augment_data,
-        aug_columns_companion_data,
-        augment_metadata['columns'],
-    )
+        # Match temporal resolutions
+        original_data, augment_data = update_idx(original_data, augment_data)
 
-    # matching temporal resolutions
-    original_data, augment_data = update_idx(original_data, augment_data)
-
-    join_ = original_data.join(
-        augment_data,
-        how=how,
-        rsuffix='_r'
-    )
+        # Join
+        join_.append(original_data.join(
+            augment_data,
+            how=how,
+            rsuffix='_r'
+        ))
+    join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
 
     # qualities
