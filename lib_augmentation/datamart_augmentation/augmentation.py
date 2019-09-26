@@ -200,7 +200,8 @@ def perform_aggregations(data, groupby_columns,
 CHUNK_SIZE_ROWS = 10_000
 
 
-def join(original_data, augment_data, left_columns, right_columns,
+def join(original_data, augment_data, original_metadata, augment_metadata,
+         left_columns, right_columns,
          how='left', return_only_datamart_data=False):
     """
     Performs a join between original_data (pandas.DataFrame)
@@ -208,6 +209,27 @@ def join(original_data, augment_data, left_columns, right_columns,
 
     Returns the new pandas.DataFrame object.
     """
+
+    # only converting data types for columns involved in augmentation
+    aug_columns_input_data = []
+    aug_columns_companion_data = []
+    for left, right in zip(left_columns, right_columns):
+        if len(left) > 1 or len(right) > 1:
+            raise AugmentationError("Datamart currently does not support "
+                                    "combination of columns for augmentation.")
+        aug_columns_input_data.append(left[0])
+        aug_columns_companion_data.append(right[0])
+
+    original_data = convert_data_types(
+        original_data,
+        aug_columns_input_data,
+        original_metadata['columns'],
+    )
+    augment_data = convert_data_types(
+        pd.read_csv(augment_data, error_bad_lines=False),
+        aug_columns_companion_data,
+        augment_metadata['columns'],
+    )
 
     logger.info("Performing join...")
 
@@ -455,19 +477,6 @@ def augment(data, newdata, metadata, task, destination=None,
     #   currently, Datamart does not support such cases
     #   this means that spatial joins (with GPS) are not supported for now
 
-    # only converting data types for columns involved in augmentation
-    aug_columns_input_data = []
-    aug_columns_companion_data = []
-    for left_columns, right_columns in zip(
-                task['augmentation']['left_columns'],
-                task['augmentation']['right_columns'],
-            ):
-        if len(left_columns) > 1 or len(right_columns) > 1:
-            raise AugmentationError("Datamart currently does not support "
-                                    "combination of columns for augmentation.")
-        aug_columns_input_data.append(left_columns[0])
-        aug_columns_companion_data.append(right_columns[0])
-
     # Prepare output D3M structure
     if destination is None:
         destination = tempfile.mkdtemp(prefix='datamart_aug_')
@@ -479,16 +488,10 @@ def augment(data, newdata, metadata, task, destination=None,
     # Perform augmentation
     if task['augmentation']['type'] == 'join':
         result, qualities = join(
-            convert_data_types(
-                pd.read_csv(io.BytesIO(data), error_bad_lines=False),
-                aug_columns_input_data,
-                metadata['columns'],
-            ),
-            convert_data_types(
-                pd.read_csv(newdata, error_bad_lines=False),
-                aug_columns_companion_data,
-                task['metadata']['columns'],
-            ),
+            pd.read_csv(io.BytesIO(data), error_bad_lines=False),
+            newdata,
+            metadata,
+            task['metadata'],
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             return_only_datamart_data=return_only_datamart_data,
