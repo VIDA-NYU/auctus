@@ -47,8 +47,6 @@ services:
     volumes:
       - datasets:/datasets
       - dataset-cache:/dataset_cache
-      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
-      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   coordinator:
     build:
       context: .
@@ -86,8 +84,6 @@ services:
       - datasets:/datasets
       - dataset-cache:/dataset_cache
       - query-cache:/cache
-      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
-      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   querylb:
     image: haproxy:2.0
     ports:
@@ -111,8 +107,6 @@ services:
       # CI: - ./cov:/cov
       - datasets:/datasets
       - dataset-cache:/dataset_cache
-      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
-      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   prometheus:
     image: prom/prometheus
     ports:
@@ -138,22 +132,6 @@ services:
       - LAZO_SERVER_PORT=50051
     volumes:
       - datasets:/datasets
-  d3m_seeds:
-    build:
-      context: .
-      dockerfile: discovery/Dockerfile
-    command: d3m
-    environment:
-      - ELASTICSEARCH_HOSTS=elasticsearch:9200
-      - AMQP_HOST=rabbitmq
-      - AMQP_USER=${AMQP_USER}
-      - AMQP_PASSWORD=${AMQP_PASSWORD}
-      - LAZO_SERVER_HOST=lazo_server
-      - LAZO_SERVER_PORT=50051
-    volumes:
-      - datasets:/datasets
-      - ../data/seed_datasets_current:/d3m_seed_datasets:ro
-      - ../data/seed_datasets_data_augmentation:/d3m_seed_datasets_augmentation:ro
   test_discoverer:
     build:
       context: .
