@@ -201,8 +201,7 @@ CHUNK_SIZE_ROWS = 10_000
 
 
 def join(original_data, augment_data, left_columns, right_columns,
-         columns=None, how='left',
-         return_only_datamart_data=False):
+         how='left', return_only_datamart_data=False):
     """
     Performs a join between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
@@ -222,15 +221,6 @@ def join(original_data, augment_data, left_columns, right_columns,
             name += '_r'
         augment_join_columns.append(name)
         original_join_columns.append(original_data.columns[left_columns[i][0]])
-
-    # remove undesirable columns from augment_data
-    # but first, make sure to keep the join keys
-    if columns:
-        for right_column in right_columns:
-            columns.append(right_column[0])
-        columns = set([augment_data.columns[c] for c in columns])
-        drop_columns = list(set(augment_data.columns).difference(columns))
-        augment_data = augment_data.drop(drop_columns, axis=1)
 
     # matching temporal resolutions
     original_data, augment_data = \
@@ -443,7 +433,7 @@ def generate_d3m_dataset(data, input_metadata, companion_metadata, qualities):
     return metadata
 
 
-def augment(data, newdata, metadata, task, columns=None, destination=None,
+def augment(data, newdata, metadata, task, destination=None,
             return_only_datamart_data=False):
     """
     Augments original data based on the task.
@@ -452,7 +442,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     :param newdata: the path to the CSV file to augment with.
     :param metadata: the metadata of the data to be augmented.
     :param task: the augmentation task.
-    :param columns: a list of column indices from newdata that will be added to data
     :param destination: location to save the files.
     :param return_only_datamart_data: only returns the portion of newdata that matches
       well with data.
@@ -502,7 +491,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             ),
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
-            columns=columns,
             return_only_datamart_data=return_only_datamart_data,
         )
         # TODO: Temporary
