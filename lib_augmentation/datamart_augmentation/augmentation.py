@@ -339,7 +339,8 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
 def union(original_data, augment_data_path, original_metadata,
           destination_csv,
-          left_columns, right_columns):
+          left_columns, right_columns,
+          return_only_datamart_data=False):
     """
     Performs a union between original_data (pandas.DataFrame)
     and augment_data_path (path to CSV file) using columns.
@@ -384,8 +385,11 @@ def union(original_data, augment_data_path, original_metadata,
     start = time.perf_counter()
     with open(destination_csv, 'w', newline='') as fout:
         # Write original data
-        original_data.to_csv(fout, index=False, header=True)
-        total_rows = len(original_data)
+        fout.write(','.join(original_data.columns) + '\n')
+        total_rows = 0
+        if not return_only_datamart_data:
+            original_data.to_csv(fout, index=False, header=False)
+            total_rows += len(original_data)
 
         # Iterate on chunks of augment data
         augment_data_chunks = pd.read_csv(
@@ -532,6 +536,7 @@ def augment(data, newdata, metadata, task, destination=None,
             destination_csv,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
+            return_only_datamart_data=return_only_datamart_data,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
