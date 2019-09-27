@@ -194,6 +194,7 @@ CHUNK_SIZE_ROWS = 10_000
 
 
 def join(original_data, augment_data_path, original_metadata, augment_metadata,
+         destination_csv,
          left_columns, right_columns,
          how='left', return_only_datamart_data=False):
     """
@@ -326,7 +327,14 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             qualValueType='dict'
         ))
 
-    return join_, qualities_list
+    join_.to_csv(destination_csv, index=False)
+
+    return generate_d3m_dataset(
+        join_,
+        original_metadata['columns'],
+        augment_metadata['columns'],
+        qualities_list,
+    )
 
 
 def union(original_data, augment_data_path, left_columns, right_columns,
@@ -505,22 +513,15 @@ def augment(data, newdata, metadata, task, destination=None,
 
     # Perform augmentation
     if task['augmentation']['type'] == 'join':
-        result, qualities = join(
+        output_metadata = join(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
             newdata,
             metadata,
             task['metadata'],
+            destination_csv,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             return_only_datamart_data=return_only_datamart_data,
-        )
-        # TODO: Temporary
-        result.to_csv(destination_csv, index=False)
-        output_metadata = generate_d3m_dataset(
-            result,
-            metadata['columns'],
-            task['metadata']['columns'],
-            qualities,
         )
     elif task['augmentation']['type'] == 'union':
         output_metadata = union(
