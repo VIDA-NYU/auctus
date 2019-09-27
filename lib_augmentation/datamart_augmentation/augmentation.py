@@ -337,8 +337,9 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     )
 
 
-def union(original_data, augment_data_path, left_columns, right_columns,
-          original_metadata, destination_csv):
+def union(original_data, augment_data_path, original_metadata,
+          destination_csv,
+          left_columns, right_columns):
     """
     Performs a union between original_data (pandas.DataFrame)
     and augment_data_path (path to CSV file) using columns.
@@ -527,10 +528,10 @@ def augment(data, newdata, metadata, task, destination=None,
         output_metadata = union(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
             newdata,
-            task['augmentation']['left_columns'],
-            task['augmentation']['right_columns'],
             metadata,
             destination_csv,
+            task['augmentation']['left_columns'],
+            task['augmentation']['right_columns'],
         )
     else:
         raise AugmentationError("Augmentation task not provided")
