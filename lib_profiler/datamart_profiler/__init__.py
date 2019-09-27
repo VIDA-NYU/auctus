@@ -401,6 +401,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     if lazo_client and column_textual:
         # Indexing with lazo
         if not search:
+            # TODO: Remove previous data from lazo
             logger.info("Indexing textual data with Lazo...")
             try:
                 if data_path:

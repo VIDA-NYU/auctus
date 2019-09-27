@@ -152,7 +152,8 @@ class Profiler(object):
                     delete_dataset_from_index(
                         self.es,
                         dataset_id,
-                        self.lazo_client,
+                        # Don't delete from Lazo, we inserted during profile
+                        None,
                     )
                     # Insert results in Elasticsearch
                     body = dict(metadata,
