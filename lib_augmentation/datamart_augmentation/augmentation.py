@@ -293,7 +293,8 @@ def join(original_data, augment_data, left_columns, right_columns,
     return join_, qualities_list
 
 
-def union(original_data, augment_data, left_columns, right_columns):
+def union(original_data, augment_data, left_columns, right_columns,
+          return_only_datamart_data=False):
     """
     Performs a union between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using columns.
@@ -318,7 +319,10 @@ def union(original_data, augment_data, left_columns, right_columns):
 
     # union
     start = time.perf_counter()
-    union_ = pd.concat([original_data, augment_data], sort=False)
+    if return_only_datamart_data:
+        union_ = pd.concat([original_data[0:0], augment_data], sort=False)
+    else:
+        union_ = pd.concat([original_data, augment_data], sort=False)
     logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
 
     # special treatment for 'd3mIndex' column
@@ -468,6 +472,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             pd.read_csv(newdata, error_bad_lines=False),
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
+            return_only_datamart_data=return_only_datamart_data,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
