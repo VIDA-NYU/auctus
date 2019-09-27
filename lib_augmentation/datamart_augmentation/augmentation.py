@@ -323,12 +323,37 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
     join_.to_csv(destination_csv, index=False)
 
-    return generate_d3m_dataset(
-        join_,
-        original_metadata['columns'],
-        augment_metadata['columns'],
-        qualities_list,
-    )
+    # Build a dict of information about all columns
+    columns_metadata = dict()
+    for column in original_metadata['columns']:
+        columns_metadata[column['name']] = column
+    for column in augment_metadata['columns']:
+        names = [
+            column['name'],
+            column['name'] + '_r'
+        ]
+        # agg names
+        all_names = ['sum ' + name for name in names]
+        all_names += ['mean ' + name for name in names]
+        all_names += ['amax ' + name for name in names]
+        all_names += ['amin ' + name for name in names]
+        all_names += names
+        for name in all_names:
+            column_metadata = copy.deepcopy(column)
+            column_metadata['name'] = name
+            if ('sum' in name or 'mean' in name
+                    or 'amax' in name or 'amin' in name):
+                column_metadata['structural_type'] = types.FLOAT
+            columns_metadata[name] = column_metadata
+
+    # Then construct column metadata by looking them up in the dict
+    columns_metadata = [columns_metadata[name] for name in join_.columns]
+
+    return {
+        'columns': columns_metadata,
+        'size': os.path.getsize(destination_csv),
+        'qualities': qualities_list,
+    }
 
 
 def union(original_data, augment_data_path, original_metadata, augment_metadata,
@@ -424,54 +449,6 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             qualValueType='dict'
         )],
     }
-
-
-# TODO: Temporary
-def generate_d3m_dataset(data, input_metadata, companion_metadata, qualities):
-    """
-    Generates a D3M dataset from data (pandas.DataFrame).
-
-    Returns the path to the D3M-style directory.
-    """
-
-    # collecting information about all the original columns
-    # from input (supplied) and companion datasets
-    original_columns_metadata = dict()
-    for column in input_metadata:
-        original_columns_metadata[column['name']] = column
-    for column in companion_metadata:
-        names = [
-            column['name'],
-            column['name'] + '_r'
-        ]
-        # agg names
-        all_names = ['sum ' + name for name in names]
-        all_names += ['mean ' + name for name in names]
-        all_names += ['amax ' + name for name in names]
-        all_names += ['amin ' + name for name in names]
-        all_names += names
-        for name in all_names:
-            column_metadata = copy.deepcopy(column)
-            column_metadata['name'] = name
-            if ('sum' in name or 'mean' in name
-                    or 'amax' in name or 'amin' in name):
-                column_metadata['structural_type'] = types.FLOAT
-            original_columns_metadata[name] = column_metadata
-
-    # column metadata for the new, augmented dataset
-    columns_metadata = list()
-    for column_name in data.columns:
-        columns_metadata.append(
-            original_columns_metadata[column_name]
-        )
-
-    metadata = dict(columns=columns_metadata)
-    metadata['size'] = data.memory_usage(index=True, deep=True).sum()
-
-    if qualities:
-        metadata['qualities'] = qualities
-
-    return metadata
 
 
 def augment(data, newdata, metadata, task, destination=None,
