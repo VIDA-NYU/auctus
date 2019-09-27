@@ -657,6 +657,76 @@ class TestAugment(DatamartTest):
                 '8,east,roque,peru,True\n'
                 '10,west,fernando,brazil,False\n',
             )
+        with zip.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            assert_json(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '1174 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '3.2.0',
+                        'datasetVersion': '0.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'number',
+                                    'colType': 'integer',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'desk_faces',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 2,
+                                    'colName': 'name',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
+                                    'colName': 'country',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 4,
+                                    'colName': 'what',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                            ],
+                            'isCollection': False,
+                            'resFormat': ['text/csv'],
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'join',
+                                'nb_rows_after': 5,
+                                'nb_rows_before': 5,
+                                'new_columns': ['name', 'country', 'what'],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
+            )
 
     def test_basic_join_auto(self):
         meta = self.datamart_get(
@@ -701,6 +771,76 @@ class TestAugment(DatamartTest):
                 '7,west,sonia,peru,True\n'
                 '8,east,roque,peru,True\n'
                 '10,west,fernando,brazil,False\n',
+            )
+        with zip.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            assert_json(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '1174 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '3.2.0',
+                        'datasetVersion': '0.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                            {
+                                'colIndex': 0,
+                                'colName': 'number',
+                                'colType': 'integer',
+                                'role': ['attribute'],
+                            },
+                            {
+                                'colIndex': 1,
+                                'colName': 'desk_faces',
+                                'colType': 'string',
+                                'role': ['attribute'],
+                            },
+                            {
+                                'colIndex': 2,
+                                'colName': 'name',
+                                'colType': 'string',
+                                'role': ['attribute'],
+                            },
+                            {
+                                'colIndex': 3,
+                                'colName': 'country',
+                                'colType': 'string',
+                                'role': ['attribute'],
+                            },
+                            {
+                                'colIndex': 4,
+                                'colName': 'what',
+                                'colType': 'string',
+                                'role': ['attribute'],
+                            },
+                        ],
+                        'isCollection': False,
+                        'resFormat': ['text/csv'],
+                        'resID': 'learningData',
+                        'resPath': 'tables/learningData.csv',
+                        'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'join',
+                                'nb_rows_after': 5,
+                                'nb_rows_before': 5,
+                                'new_columns': ['name', 'country', 'what'],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
             )
 
     def test_agg_join(self):
@@ -750,6 +890,83 @@ class TestAugment(DatamartTest):
                 '70,usa,350,700,600,100\n'
                 '80,canada,200,200,200,200\n'
                 '100,france,250,500,300,200\n',
+            )
+        with zip.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            assert_json(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '639 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '3.2.0',
+                        'datasetVersion': '0.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'id',
+                                    'colType': 'integer',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'location',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 2,
+                                    'colName': 'mean salary',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
+                                    'colName': 'sum salary',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 4,
+                                    'colName': 'amax salary',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 5,
+                                    'colName': 'amin salary',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                            ],
+                            'isCollection': False,
+                            'resFormat': ['text/csv'],
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'join',
+                                'nb_rows_after': 5,
+                                'nb_rows_before': 5,
+                                'new_columns': ['mean salary', 'sum salary',
+                                                'amax salary', 'amin salary'],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
             )
 
     def test_lazo_join(self):
@@ -821,6 +1038,57 @@ class TestAugment(DatamartTest):
                 'PR,1990.0\n'
                 'DE,\n'
             )
+        with zip.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            assert_json(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '4556 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '3.2.0',
+                        'datasetVersion': '0.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'home_address',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'year',
+                                    'colType': 'integer',
+                                    'role': ['attribute'],
+                                },
+                            ],
+                            'isCollection': False,
+                            'resFormat': ['text/csv'],
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'join',
+                                'nb_rows_after': 26, 'nb_rows_before': 26,
+                                'new_columns': ['year'],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
+            )
 
     def test_geo_union(self):
         meta = self.datamart_get(
@@ -876,6 +1144,70 @@ class TestAugment(DatamartTest):
                 '40.73266,-73.9975,place102,c\n'
                 '40.73117,-74.0018,place103,d\n'
                 '40.69427,-73.9898,place104,e'
+            )
+        with zip.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            assert_json(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '13518 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '3.2.0',
+                        'datasetVersion': '0.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'lat',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'long',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 2,
+                                    'colName': 'id',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
+                                    'colName': 'letter',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                            ],
+                            'isCollection': False,
+                            'resFormat': ['text/csv'],
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'union',
+                                'nb_rows_after': 110,
+                                'nb_rows_before': 10,
+                                'new_columns': [],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
             )
 
 

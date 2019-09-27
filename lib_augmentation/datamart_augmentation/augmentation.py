@@ -275,9 +275,10 @@ def join(original_data, augment_data, left_columns, right_columns,
         )
 
         if qualities:
-            new_columns = list(set(join_.columns).difference(
-                set([c for c in original_data.columns])
-            ))
+            original_columns_set = set(original_data.columns)
+            new_columns = [
+                col for col in join_.columns if col not in original_columns_set
+            ]
             qualities_list.append(dict(
                 qualName='augmentation_info',
                 qualValue=dict(
