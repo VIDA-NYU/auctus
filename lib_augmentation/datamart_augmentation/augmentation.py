@@ -204,13 +204,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     Returns the new pandas.DataFrame object.
     """
 
-    # Load data header
-    # FIXME: This could be done from metadata?
-    augment_data_columns = pd.read_csv(
-        augment_data_path,
-        error_bad_lines=False,
-        nrows=1,
-    ).columns
+    augment_data_columns = [col['name'] for col in augment_metadata['columns']]
 
     # only converting data types for columns involved in augmentation
     aug_columns_input_data = []
@@ -337,7 +331,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     )
 
 
-def union(original_data, augment_data_path, original_metadata,
+def union(original_data, augment_data_path, original_metadata, augment_metadata,
           destination_csv,
           left_columns, right_columns,
           return_only_datamart_data=False):
@@ -348,13 +342,7 @@ def union(original_data, augment_data_path, original_metadata,
     Returns the new pandas.DataFrame object.
     """
 
-    # Load data header
-    # FIXME: This could be done from metadata?
-    augment_data_columns = pd.read_csv(
-        augment_data_path,
-        error_bad_lines=False,
-        nrows=1,
-    ).columns
+    augment_data_columns = [col['name'] for col in augment_metadata['columns']]
 
     logger.info(
         "Performing union, original_data: %r, augment_data: %r, "
@@ -533,6 +521,7 @@ def augment(data, newdata, metadata, task, destination=None,
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
             newdata,
             metadata,
+            task['metadata'],
             destination_csv,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
