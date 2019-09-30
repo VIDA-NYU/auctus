@@ -554,9 +554,9 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             version=os.environ['DATAMART_VERSION'],
             columns=columns,
         )
-        cache_path = '/dataset_cache/aug_%s' % hash_
+        cache_key = 'aug_%s' % hash_
 
-        def create_augmentation():
+        def create_aug(cache_temp):
             try:
                 with get_dataset(metadata, task['id'], format='csv') as newdata:
                     # perform augmentation
@@ -567,15 +567,15 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                         data_profile,
                         task,
                         columns=columns,
-                        destination=cache_path,
+                        destination=cache_temp,
                     )
             except AugmentationError as e:
                 return self.send_error_json(400, str(e))
 
-        with cache_get_or_set(cache_path, create_augmentation):
+        with cache_get_or_set('/dataset_cache', cache_key, create_aug) as path:
             if destination:
                 # copy to expected location
-                shutil.copytree(cache_path, destination)
+                shutil.copytree(path, destination)
                 # send the path
                 self.set_header('Content-Type', 'text/plain; charset=utf-8')
                 self.write(destination)
@@ -587,7 +587,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                     'attachment; filename="augmentation.zip"')
                 logger.info("Sending ZIP...")
                 writer = RecursiveZipWriter(self.write)
-                writer.write_recursive(cache_path)
+                writer.write_recursive(path)
                 writer.close()
 
         return self.finish()

@@ -1203,10 +1203,9 @@ def get_profile_data(data, metadata=None, lazo_client=None):
     sha1 = hashlib.sha1(data)
     data_hash = sha1.hexdigest()
 
-    cache_path = os.path.join('/cache', data_hash)
     data_profile = [None]
 
-    def create():
+    def create(cache_temp):
         logger.info("Profiling...")
         start = time.perf_counter()
         data_profile[0] = process_dataset(
@@ -1216,10 +1215,10 @@ def get_profile_data(data, metadata=None, lazo_client=None):
             search=True
         )
         logger.info("Profiled in %.2fs", time.perf_counter() - start)
-        with open(cache_path, 'wb') as fp:
+        with open(cache_temp, 'wb') as fp:
             pickle.dump(data_profile[0], fp)
 
-    with cache_get_or_set(cache_path, create):
+    with cache_get_or_set('/cache', data_hash, create) as cache_path:
         if data_profile[0]:
             # We just profiled it, no need to re-read from disk
             return data_profile[0], data_hash

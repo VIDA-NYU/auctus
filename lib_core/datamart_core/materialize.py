@@ -35,17 +35,15 @@ def get_dataset(metadata, dataset_id, format='csv'):
         yield os.path.join(shared, 'main.csv')
         return
 
-    cache_path = (
-        '/dataset_cache/' + encode_dataset_id(dataset_id) + '_' + format
-    )
+    cache_key = encode_dataset_id(dataset_id) + '_' + format
 
-    def create():
+    def create(cache_temp):
         if os.path.exists(shared):
             # Do format conversion from stored file
             logger.info("Converting stored file to %r", format)
             with open(os.path.join(shared, 'main.csv'), 'rb') as src:
                 writer_cls = datamart_materialize.get_writer(format)
-                writer = writer_cls(dataset_id, cache_path, metadata)
+                writer = writer_cls(dataset_id, cache_temp, metadata)
                 with writer.open_file('wb') as dst:
                     shutil.copyfileobj(src, dst)
         else:
@@ -54,7 +52,7 @@ def get_dataset(metadata, dataset_id, format='csv'):
             with PROM_DOWNLOAD.time():
                 datamart_materialize.download(
                     {'id': dataset_id, 'metadata': metadata},
-                    cache_path, None, format=format)
+                    cache_temp, None, format=format)
 
-    with cache_get_or_set(cache_path, create):
+    with cache_get_or_set('/dataset_cache', cache_key, create) as cache_path:
         yield cache_path
