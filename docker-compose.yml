@@ -125,6 +125,8 @@ services:
     image: grafana/grafana
     ports:
       - 3000:3000
+    volumes:
+      - ./volumes/grafana:/var/lib/grafana
   example_discoverer:
     build:
       context: .
