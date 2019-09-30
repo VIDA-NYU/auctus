@@ -506,6 +506,12 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         else:
             return self.send_error_json(400, "Missing 'data'")
 
+        columns = self.get_body_argument('columns', None)
+        if 'columns' in self.request.files:
+            columns = self.request.files['columns'][0].body.decode('utf-8')
+        if columns is not None:
+            columns = json.loads(columns)
+
         # data
         try:
             data, data_profile, data_hash = self.handle_data_parameter(data)
@@ -546,6 +552,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             task=task,
             supplied_data=data_hash,
             version=os.environ['DATAMART_VERSION'],
+            columns=columns,
         )
         cache_path = '/dataset_cache/aug_%s' % hash_
 
@@ -559,6 +566,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                         newdata,
                         data_profile,
                         task,
+                        columns=columns,
                         destination=cache_path,
                     )
             except AugmentationError as e:

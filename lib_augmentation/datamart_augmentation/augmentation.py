@@ -196,7 +196,7 @@ CHUNK_SIZE_ROWS = 10_000
 def join(original_data, augment_data_path, original_metadata, augment_metadata,
          destination_csv,
          left_columns, right_columns,
-         how='left', return_only_datamart_data=False):
+         how='left', columns=None, return_only_datamart_data=False):
     """
     Performs a join between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
@@ -243,6 +243,21 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     )
     augment_data = next(augment_data_chunks)
 
+    # Columns to drop
+    drop_columns = None
+    if columns:
+        drop_columns = list(
+            # Drop all the columns in augment_data
+            set(augment_data_columns[c] for c in columns)
+            # except
+            - (
+                # the requested columns
+                set(columns)
+                # and the join columns
+                | {col[0] for col in right_columns}
+            )
+        )
+
     # Guess temporal resolutions
     update_idx = match_temporal_resolutions(original_data, augment_data)
 
@@ -260,6 +275,10 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
         # Match temporal resolutions
         original_data, augment_data = update_idx(original_data, augment_data)
+
+        # Filter columns
+        if drop_columns:
+            augment_data = augment_data.drop(drop_columns, axis=1)
 
         # Join
         join_.append(original_data.join(
@@ -359,7 +378,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 def union(original_data, augment_data_path, original_metadata, augment_metadata,
           destination_csv,
           left_columns, right_columns,
-          return_only_datamart_data=False):
+          columns=None, return_only_datamart_data=False):
     """
     Performs a union between original_data (pandas.DataFrame)
     and augment_data_path (path to CSV file) using columns.
@@ -380,6 +399,16 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
     rename = dict()
     for left, right in zip(left_columns, right_columns):
         rename[augment_data_columns[right[0]]] = original_data.columns[left[0]]
+
+    # Columns to drop
+    drop_columns = None
+    if columns:
+        drop_columns = list(
+            # Drop all the columns in augment_data
+            set(augment_data_columns[c] for c in columns)
+            # except the requested columns
+            - set(columns)
+        )
 
     # Missing columns will be created as NaN
     missing_columns = list(
@@ -426,6 +455,10 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             for name in missing_columns:
                 augment_data[name] = np.nan
 
+            # Filter columns
+            if drop_columns:
+                augment_data = augment_data.drop(drop_columns, axis=1)
+
             # Reorder columns
             augment_data = augment_data[original_data.columns]
 
@@ -451,7 +484,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
     }
 
 
-def augment(data, newdata, metadata, task, destination=None,
+def augment(data, newdata, metadata, task, columns=None, destination=None,
             return_only_datamart_data=False):
     """
     Augments original data based on the task.
@@ -460,6 +493,7 @@ def augment(data, newdata, metadata, task, destination=None,
     :param newdata: the path to the CSV file to augment with.
     :param metadata: the metadata of the data to be augmented.
     :param task: the augmentation task.
+    :param columns: a list of column indices from newdata that will be added to data
     :param destination: location to save the files.
     :param return_only_datamart_data: only returns the portion of newdata that matches
       well with data.
@@ -491,6 +525,7 @@ def augment(data, newdata, metadata, task, destination=None,
             destination_csv,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
+            columns=columns,
             return_only_datamart_data=return_only_datamart_data,
         )
     elif task['augmentation']['type'] == 'union':
@@ -502,6 +537,7 @@ def augment(data, newdata, metadata, task, destination=None,
             destination_csv,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
+            columns=columns,
             return_only_datamart_data=return_only_datamart_data,
         )
     else:
