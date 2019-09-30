@@ -552,6 +552,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             task=task,
             supplied_data=data_hash,
             version=os.environ['DATAMART_VERSION'],
+            columns=columns,
         )
         cache_path = '/dataset_cache/aug_%s' % hash_
 
