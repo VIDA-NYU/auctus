@@ -85,12 +85,19 @@ services:
       - ./volumes/dataset-cache:/dataset_cache
       - ./volumes/query-cache:/cache
   querylb:
-    image: haproxy:2.0
+    build:
+      context: ./docker
+      dockerfile: haproxy.dockerfile
+    restart: on-failure
     ports:
       - 8002:80
       - 8081:8000
     volumes:
       - ./docker/haproxy.conf:/usr/local/etc/haproxy/haproxy.cfg:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      retries: 2
   profiler:
     build:
       context: .
