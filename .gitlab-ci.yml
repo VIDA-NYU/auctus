@@ -58,6 +58,7 @@ test:
       +      - ES_HEAP_SIZE=256m
            ulimits:
       END
+    - scripts/setup.sh
     - docker-compose up -d elasticsearch rabbitmq
     - |
       # Wait for Elasticsearch to come up
