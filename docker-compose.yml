@@ -16,7 +16,7 @@ services:
     ports:
       - 9200:9200
     volumes:
-      - elasticsearch:/usr/share/elasticsearch/data
+      - ./volumes/elasticsearch:/usr/share/elasticsearch/data
   elasticsearch_exporter:
     image: justwatch/elasticsearch_exporter:1.1.0
     restart: on-failure
@@ -45,8 +45,8 @@ services:
     ports:
       - 50051:50051
     volumes:
-      - datasets:/datasets
-      - dataset-cache:/dataset_cache
+      - ./volumes/datasets:/datasets
+      - ./volumes/dataset-cache:/dataset_cache
   coordinator:
     build:
       context: .
@@ -62,9 +62,9 @@ services:
       - 8001:8001
     volumes:
       # CI: - ./cov:/cov
-      - datasets:/datasets
-      - dataset-cache:/dataset_cache
-      - query-cache:/cache
+      - ./volumes/datasets:/datasets
+      - ./volumes/dataset-cache:/dataset_cache
+      - ./volumes/query-cache:/cache
   query:
     build:
       context: .
@@ -81,9 +81,9 @@ services:
     # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov
-      - datasets:/datasets
-      - dataset-cache:/dataset_cache
-      - query-cache:/cache
+      - ./volumes/datasets:/datasets
+      - ./volumes/dataset-cache:/dataset_cache
+      - ./volumes/query-cache:/cache
   querylb:
     image: haproxy:2.0
     ports:
@@ -105,14 +105,14 @@ services:
     # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov
-      - datasets:/datasets
-      - dataset-cache:/dataset_cache
+      - ./volumes/datasets:/datasets
+      - ./volumes/dataset-cache:/dataset_cache
   prometheus:
     image: prom/prometheus
     ports:
       - 9090:9090
     volumes:
-      - prometheus:/prometheus
+      - ./volumes/prometheus:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
   grafana:
     image: grafana/grafana
@@ -131,7 +131,7 @@ services:
       - LAZO_SERVER_HOST=lazo_server
       - LAZO_SERVER_PORT=50051
     volumes:
-      - datasets:/datasets
+      - ./volumes/datasets:/datasets
   test_discoverer:
     build:
       context: .
@@ -145,7 +145,7 @@ services:
       - LAZO_SERVER_HOST=lazo_server
       - LAZO_SERVER_PORT=50051
     volumes:
-      - datasets:/datasets
+      - ./volumes/datasets:/datasets
   socrata:
     build:
       context: .
@@ -158,7 +158,7 @@ services:
       - LAZO_SERVER_HOST=lazo_server
       - LAZO_SERVER_PORT=50051
     volumes:
-      - dataset-cache:/dataset_cache
+      - ./volumes/dataset-cache:/dataset_cache
   noaa:
     build:
       context: .
@@ -171,9 +171,3 @@ services:
       - NOAA_TOKEN=${NOAA_TOKEN}
       - LAZO_SERVER_HOST=lazo_server
       - LAZO_SERVER_PORT=50051
-volumes:
-  elasticsearch:
-  datasets:
-  dataset-cache:
-  query-cache:
-  prometheus:
