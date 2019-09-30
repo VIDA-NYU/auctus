@@ -1,5 +1,6 @@
 lib_profiler/datamart_profiler/scdp.jar
 **/.env
+volumes
 
 # Git
 **/.git

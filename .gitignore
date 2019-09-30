@@ -1,5 +1,6 @@
-datamart_profiler/scdp.jar
+/datamart_profiler/scdp.jar
 .env
+/volumes
 
 # Python
 *.py[co]
