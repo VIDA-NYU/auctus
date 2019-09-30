@@ -1,5 +1,7 @@
 import copy
 import io
+import itertools
+import json
 import logging
 import numpy as np
 import os
@@ -8,7 +10,7 @@ import tempfile
 import time
 import uuid
 
-from datamart_materialize.d3m import D3mWriter
+from datamart_materialize.d3m import d3m_metadata
 from datamart_materialize import types
 
 
@@ -94,6 +96,10 @@ def convert_data_types(data, columns, columns_metadata):
 
 def match_temporal_resolutions(input_data, companion_data):
     """Matches the resolutions between the datasets.
+
+    This takes in example indexes, and returns a function to update future
+    indexes. This is because we are streaming, and want to decide once how to
+    process multiple batches.
     """
 
     if isinstance(input_data.index, pd.MultiIndex):
@@ -101,38 +107,26 @@ def match_temporal_resolutions(input_data, companion_data):
         pass
     elif (isinstance(input_data.index, pd.DatetimeIndex)
           and isinstance(companion_data.index, pd.DatetimeIndex)):
-        input_data.index, companion_data.index = \
-            match_column_temporal_resolutions(input_data.index, companion_data.index)
+        return match_column_temporal_resolutions(input_data.index, companion_data.index)
 
-    return input_data, companion_data
+    return lambda input_idx, comp_idx: (input_idx, comp_idx)  # no-op
 
 
 def match_column_temporal_resolutions(index_1, index_2):
     """Matches the resolutions between the dataset indices.
     """
 
-    start = time.perf_counter()
     resolution_1 = check_temporal_resolution(index_1)
     resolution_2 = check_temporal_resolution(index_2)
-    logger.info("Temporal resolutions checked for %s and %s in %.4fs" %
-                (index_1.name, index_2.name, (time.perf_counter() - start)))
     if (temporal_resolutions.index(resolution_1) >
             temporal_resolutions.index(resolution_2)):
-        start = time.perf_counter()
-        index_name = index_2.name
-        index_2 = \
-            index_2.strftime(temporal_resolution_format[resolution_1])
-        logger.info("Temporal resolution fixed for %s in %.4fs" %
-                    (index_name, (time.perf_counter() - start)))
+        # Change resolution of second index to the first's
+        fmt = temporal_resolution_format[resolution_1]
+        return lambda idx1, idx2: (idx1, idx2.strftime(fmt))
     else:
-        start = time.perf_counter()
-        index_name = index_1.name
-        index_1 = \
-            index_1.strftime(temporal_resolution_format[resolution_2])
-        logger.info("Temporal resolution fixed for %s in %.4fs" %
-                    (index_name, (time.perf_counter() - start)))
-
-    return index_1, index_2
+        # Change resolution of first index to the second's
+        fmt = temporal_resolution_format[resolution_2]
+        return lambda idx1, idx2: (idx1.strftime(fmt), idx2)
 
 
 def check_temporal_resolution(data):
@@ -196,9 +190,13 @@ def perform_aggregations(data, groupby_columns,
     return data
 
 
-def join(original_data, augment_data, left_columns, right_columns,
-         columns=None, how='left', qualities=False,
-         return_only_datamart_data=False):
+CHUNK_SIZE_ROWS = 10_000
+
+
+def join(original_data, augment_data_path, original_metadata, augment_metadata,
+         destination_csv,
+         left_columns, right_columns,
+         how='left', columns=None, return_only_datamart_data=False):
     """
     Performs a join between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
@@ -206,37 +204,89 @@ def join(original_data, augment_data, left_columns, right_columns,
     Returns the new pandas.DataFrame object.
     """
 
+    augment_data_columns = [col['name'] for col in augment_metadata['columns']]
+
+    # only converting data types for columns involved in augmentation
+    aug_columns_input_data = []
+    aug_columns_companion_data = []
+    for left, right in zip(left_columns, right_columns):
+        if len(left) > 1 or len(right) > 1:
+            raise AugmentationError("Datamart currently does not support "
+                                    "combination of columns for augmentation.")
+        aug_columns_input_data.append(left[0])
+        aug_columns_companion_data.append(right[0])
+
+    original_data = convert_data_types(
+        original_data,
+        aug_columns_input_data,
+        original_metadata['columns'],
+    )
+
+    logger.info("Performing join...")
+
     # join columns
     original_join_columns = list()
     augment_join_columns = list()
     for i in range(len(right_columns)):
-        name = augment_data.columns[right_columns[i][0]]
-        if (augment_data.columns[right_columns[i][0]] ==
+        name = augment_data_columns[right_columns[i][0]]
+        if (augment_data_columns[right_columns[i][0]] ==
                 original_data.columns[left_columns[i][0]]):
             name += '_r'
         augment_join_columns.append(name)
         original_join_columns.append(original_data.columns[left_columns[i][0]])
 
-    # remove undesirable columns from augment_data
-    # but first, make sure to keep the join keys
-    if columns:
-        for right_column in right_columns:
-            columns.append(right_column[0])
-        columns = set([augment_data.columns[c] for c in columns])
-        drop_columns = list(set(augment_data.columns).difference(columns))
-        augment_data = augment_data.drop(drop_columns, axis=1)
-
-    # matching temporal resolutions
-    original_data, augment_data = \
-        match_temporal_resolutions(original_data, augment_data)
-
-    # join
-    start = time.perf_counter()
-    join_ = original_data.join(
-        augment_data,
-        how=how,
-        rsuffix='_r'
+    # Stream the data in
+    augment_data_chunks = pd.read_csv(
+        augment_data_path,
+        error_bad_lines=False,
+        chunksize=CHUNK_SIZE_ROWS,
     )
+    augment_data = next(augment_data_chunks)
+
+    # Columns to drop
+    drop_columns = None
+    if columns:
+        drop_columns = list(
+            # Drop all the columns in augment_data
+            set(augment_data_columns[c] for c in columns)
+            # except
+            - (
+                # the requested columns
+                set(columns)
+                # and the join columns
+                | {col[0] for col in right_columns}
+            )
+        )
+
+    # Guess temporal resolutions
+    update_idx = match_temporal_resolutions(original_data, augment_data)
+
+    # Streaming join
+    start = time.perf_counter()
+    join_ = []
+    # Iterate over chunks of augment data
+    for augment_data in itertools.chain([augment_data], augment_data_chunks):
+        # Convert data types
+        augment_data = convert_data_types(
+            augment_data,
+            aug_columns_companion_data,
+            augment_metadata['columns'],
+        )
+
+        # Match temporal resolutions
+        original_data, augment_data = update_idx(original_data, augment_data)
+
+        # Filter columns
+        if drop_columns:
+            augment_data = augment_data.drop(drop_columns, axis=1)
+
+        # Join
+        join_.append(original_data.join(
+            augment_data,
+            how=how,
+            rsuffix='_r'
+        ))
+    join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
 
     # qualities
@@ -274,104 +324,29 @@ def join(original_data, augment_data, left_columns, right_columns,
             axis=1
         )
 
-        if qualities:
-            original_columns_set = set(original_data.columns)
-            new_columns = [
-                col for col in join_.columns if col not in original_columns_set
-            ]
-            qualities_list.append(dict(
-                qualName='augmentation_info',
-                qualValue=dict(
-                    new_columns=new_columns,
-                    removed_columns=[],
-                    nb_rows_before=original_data.shape[0],
-                    nb_rows_after=join_.shape[0],
-                    augmentation_type='join'
-                ),
-                qualValueType='dict'
-            ))
-
-    return join_, qualities_list
-
-
-def union(original_data, augment_data, left_columns, right_columns,
-          qualities=False):
-    """
-    Performs a union between original_data (pandas.DataFrame)
-    and augment_data (pandas.DataFrame) using columns.
-
-    Returns the new pandas.DataFrame object.
-    """
-
-    # saving all columns from original data
-    original_data_cols = original_data.columns
-
-    # dropping columns not in union
-    augment_data_columns = [augment_data.columns[c[0]] for c in right_columns]
-    augment_data = augment_data.drop(
-        [c for c in augment_data.columns if c not in augment_data_columns],
-        axis=1
-    )
-
-    rename = dict()
-    for left, right in zip(left_columns, right_columns):
-        rename[augment_data.columns[right[0]]] = original_data.columns[left[0]]
-    augment_data = augment_data.rename(columns=rename)
-
-    # union
-    start = time.perf_counter()
-    union_ = pd.concat([original_data, augment_data], sort=False)
-    logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
-
-    # special treatment for 'd3mIndex' column
-    if 'd3mIndex' in union_.columns:
-        filler = [i for i in range(int(union_['d3mIndex'].max() + 1), union_.shape[0])]
-        union_.loc[union_['d3mIndex'].isnull(), 'd3mIndex'] = filler
-        union_['d3mIndex'] = pd.to_numeric(union_['d3mIndex'], downcast='integer')
-
-    # qualities
-    qualities_list = list()
-    if qualities:
-        removed_columns = list(
-            set([c for c in original_data_cols]).difference(
-                union_.columns
-            )
-        )
+        original_columns_set = set(original_data.columns)
+        new_columns = [
+            col for col in join_.columns if col not in original_columns_set
+        ]
         qualities_list.append(dict(
             qualName='augmentation_info',
             qualValue=dict(
-                new_columns=[],
-                removed_columns=removed_columns,
+                new_columns=new_columns,
+                removed_columns=[],
                 nb_rows_before=original_data.shape[0],
-                nb_rows_after=union_.shape[0],
-                augmentation_type='union'
+                nb_rows_after=join_.shape[0],
+                augmentation_type='join'
             ),
             qualValueType='dict'
         ))
 
-    return union_, qualities_list
+    join_.to_csv(destination_csv, index=False)
 
-
-def generate_d3m_dataset(data, input_metadata, companion_metadata,
-                         destination=None, qualities=None):
-    """
-    Generates a D3M dataset from data (pandas.DataFrame).
-
-    Returns the path to the D3M-style directory.
-    """
-
-    if destination is None:
-        destination = os.path.join(
-            tempfile.mkdtemp(prefix='datamart_aug_'),
-            'dataset',
-        )
-
-    # collecting information about all the original columns
-    # from input (supplied) and companion datasets
-    original_columns_metadata = dict()
-    for column in input_metadata:
-        original_columns_metadata[column['name']] = column
-    for column in companion_metadata:
+    # Build a dict of information about all columns
+    columns_metadata = dict()
+    for column in original_metadata['columns']:
+        columns_metadata[column['name']] = column
+    for column in augment_metadata['columns']:
         names = [
             column['name'],
             column['name'] + '_r'
@@ -388,26 +363,111 @@ def generate_d3m_dataset(data, input_metadata, companion_metadata,
             if ('sum' in name or 'mean' in name
                     or 'amax' in name or 'amin' in name):
                 column_metadata['structural_type'] = types.FLOAT
-            original_columns_metadata[name] = column_metadata
+            columns_metadata[name] = column_metadata
 
-    # column metadata for the new, augmented dataset
-    columns_metadata = list()
-    for column_name in data.columns:
-        columns_metadata.append(
-            original_columns_metadata[column_name]
+    # Then construct column metadata by looking them up in the dict
+    columns_metadata = [columns_metadata[name] for name in join_.columns]
+
+    return {
+        'columns': columns_metadata,
+        'size': os.path.getsize(destination_csv),
+        'qualities': qualities_list,
+    }
+
+
+def union(original_data, augment_data_path, original_metadata, augment_metadata,
+          destination_csv,
+          left_columns, right_columns,
+          return_only_datamart_data=False):
+    """
+    Performs a union between original_data (pandas.DataFrame)
+    and augment_data_path (path to CSV file) using columns.
+
+    Returns the new pandas.DataFrame object.
+    """
+
+    augment_data_columns = [col['name'] for col in augment_metadata['columns']]
+
+    logger.info(
+        "Performing union, original_data: %r, augment_data: %r, "
+        "left_columns: %r, right_columns: %r",
+        original_data.columns, augment_data_columns,
+        left_columns, right_columns,
+    )
+
+    # Column renaming
+    rename = dict()
+    for left, right in zip(left_columns, right_columns):
+        rename[augment_data_columns[right[0]]] = original_data.columns[left[0]]
+
+    # Missing columns will be created as NaN
+    missing_columns = list(
+        set(original_data.columns) - set(augment_data_columns)
+    )
+
+    # Sequential d3mIndex if needed, picking up from the last value
+    # FIXME: Generated d3mIndex might collide with other splits?
+    d3mIndex = None
+    if 'd3mIndex' in original_data.columns:
+        d3mIndex = int(original_data['d3mIndex'].max() + 1)
+
+    logger.info("renaming: %r, missing_columns: %r", rename, missing_columns)
+
+    # Streaming union
+    start = time.perf_counter()
+    with open(destination_csv, 'w', newline='') as fout:
+        # Write original data
+        fout.write(','.join(original_data.columns) + '\n')
+        total_rows = 0
+        if not return_only_datamart_data:
+            original_data.to_csv(fout, index=False, header=False)
+            total_rows += len(original_data)
+
+        # Iterate on chunks of augment data
+        augment_data_chunks = pd.read_csv(
+            augment_data_path,
+            error_bad_lines=False,
+            chunksize=CHUNK_SIZE_ROWS,
         )
+        for augment_data in augment_data_chunks:
+            # Rename columns to match
+            augment_data = augment_data.rename(columns=rename)
 
-    metadata = dict(columns=columns_metadata)
-    metadata['size'] = data.memory_usage(index=True, deep=True).sum()
+            # Add d3mIndex if needed
+            if d3mIndex is not None:
+                augment_data['d3mIndex'] = np.arange(
+                    d3mIndex,
+                    d3mIndex + len(augment_data),
+                )
+                d3mIndex += len(augment_data)
 
-    if qualities:
-        metadata['qualities'] = qualities
+            # Add empty column for the missing ones
+            for name in missing_columns:
+                augment_data[name] = np.nan
 
-    writer = D3mWriter(uuid.uuid4().hex, destination, metadata)
-    with writer.open_file('w') as fp:
-        data.to_csv(fp, index=False)
+            # Reorder columns
+            augment_data = augment_data[original_data.columns]
 
-    return destination
+            # Add to CSV output
+            augment_data.to_csv(fout, index=False, header=False)
+            total_rows += len(augment_data)
+    logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
+
+    return {
+        'columns': original_metadata['columns'],
+        'size': os.path.getsize(destination_csv),
+        'qualities': [dict(
+            qualName='augmentation_info',
+            qualValue=dict(
+                new_columns=[],
+                removed_columns=[],
+                nb_rows_before=original_data.shape[0],
+                nb_rows_after=total_rows,
+                augmentation_type='union'
+            ),
+            qualValueType='dict'
+        )],
+    }
 
 
 def augment(data, newdata, metadata, task, columns=None, destination=None,
@@ -433,54 +493,44 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     #   currently, Datamart does not support such cases
     #   this means that spatial joins (with GPS) are not supported for now
 
-    # only converting data types for columns involved in augmentation
-    aug_columns_input_data = []
-    aug_columns_companion_data = []
-    for left_columns, right_columns in zip(
-                task['augmentation']['left_columns'],
-                task['augmentation']['right_columns'],
-            ):
-        if len(left_columns) > 1 or len(right_columns) > 1:
-            raise AugmentationError("Datamart currently does not support "
-                                    "combination of columns for augmentation.")
-        aug_columns_input_data.append(left_columns[0])
-        aug_columns_companion_data.append(right_columns[0])
+    # Prepare output D3M structure
+    if destination is None:
+        destination = tempfile.mkdtemp(prefix='datamart_aug_')
+    os.mkdir(destination)
+    os.mkdir(os.path.join(destination, 'tables'))
+    destination_csv = os.path.join(destination, 'tables', 'learningData.csv')
+    destination_metadata = os.path.join(destination, 'datasetDoc.json')
 
+    # Perform augmentation
     if task['augmentation']['type'] == 'join':
-        logger.info("Performing join...")
-        result, qualities = join(
-            convert_data_types(
-                pd.read_csv(io.BytesIO(data), error_bad_lines=False),
-                aug_columns_input_data,
-                metadata['columns'],
-            ),
-            convert_data_types(
-                pd.read_csv(newdata, error_bad_lines=False),
-                aug_columns_companion_data,
-                task['metadata']['columns'],
-            ),
+        output_metadata = join(
+            pd.read_csv(io.BytesIO(data), error_bad_lines=False),
+            newdata,
+            metadata,
+            task['metadata'],
+            destination_csv,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             columns=columns,
-            qualities=True,
             return_only_datamart_data=return_only_datamart_data,
         )
     elif task['augmentation']['type'] == 'union':
-        logger.info("Performing union...")
-        result, qualities = union(
+        output_metadata = union(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
-            pd.read_csv(newdata, error_bad_lines=False),
+            newdata,
+            metadata,
+            task['metadata'],
+            destination_csv,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
-            qualities=True,
+            return_only_datamart_data=return_only_datamart_data,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
 
-    return generate_d3m_dataset(
-        result,
-        metadata['columns'],
-        task['metadata']['columns'],
-        destination,
-        qualities,
-    )
+    # Write out the D3M metadata
+    d3m_meta = d3m_metadata(uuid.uuid4().hex, output_metadata)
+    with open(destination_metadata, 'w') as fp:
+        json.dump(d3m_meta, fp, sort_keys=True, indent=2)
+
+    return destination
