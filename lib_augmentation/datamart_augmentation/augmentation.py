@@ -378,7 +378,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 def union(original_data, augment_data_path, original_metadata, augment_metadata,
           destination_csv,
           left_columns, right_columns,
-          return_only_datamart_data=False):
+          columns=None, return_only_datamart_data=False):
     """
     Performs a union between original_data (pandas.DataFrame)
     and augment_data_path (path to CSV file) using columns.
@@ -399,6 +399,16 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
     rename = dict()
     for left, right in zip(left_columns, right_columns):
         rename[augment_data_columns[right[0]]] = original_data.columns[left[0]]
+
+    # Columns to drop
+    drop_columns = None
+    if columns:
+        drop_columns = list(
+            # Drop all the columns in augment_data
+            set(augment_data_columns[c] for c in columns)
+            # except the requested columns
+            - set(columns)
+        )
 
     # Missing columns will be created as NaN
     missing_columns = list(
@@ -444,6 +454,10 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             # Add empty column for the missing ones
             for name in missing_columns:
                 augment_data[name] = np.nan
+
+            # Filter columns
+            if drop_columns:
+                augment_data = augment_data.drop(drop_columns, axis=1)
 
             # Reorder columns
             augment_data = augment_data[original_data.columns]
@@ -523,6 +537,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             destination_csv,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
+            columns=columns,
             return_only_datamart_data=return_only_datamart_data,
         )
     else:
