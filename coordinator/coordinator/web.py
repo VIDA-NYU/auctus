@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import elasticsearch
 import logging
 import jinja2
@@ -148,7 +148,8 @@ class Upload(BaseHandler):
             metadata = dict(
                 filename=file.filename,
                 name=self.get_body_argument('name', None),
-                materialize=dict(identifier='datamart.upload'),
+                materialize=dict(identifier='datamart.upload',
+                                 date=datetime.utcnow().isoformat() + 'Z'),
             )
             description = self.get_body_argument('description', None)
             if description:
@@ -178,7 +179,8 @@ class Upload(BaseHandler):
             metadata = dict(
                 name=self.get_body_argument('name', None),
                 materialize=dict(identifier='datamart.url',
-                                 direct_url=address),
+                                 direct_url=address,
+                                 date=datetime.utcnow().isoformat() + 'Z'),
             )
             description = self.get_body_argument('description', None)
             if description:
@@ -231,10 +233,10 @@ class Dataset(BaseHandler):
                     column['temporal coverage'] = []
                     for range_ in column['coverage']:
                         from_ = \
-                            datetime.datetime.utcfromtimestamp(int(range_['range']['gte'])).\
+                            datetime.utcfromtimestamp(int(range_['range']['gte'])).\
                             strftime('%Y-%m-%d %H:%M')
                         to_ = \
-                            datetime.datetime.utcfromtimestamp(int(range_['range']['lte'])).\
+                            datetime.utcfromtimestamp(int(range_['range']['lte'])).\
                             strftime('%Y-%m-%d %H:%M')
                         column['temporal coverage'].append({
                             'from': from_,
