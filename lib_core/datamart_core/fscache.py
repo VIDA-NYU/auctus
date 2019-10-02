@@ -24,6 +24,17 @@ PROM_LOCKS_HELD = prometheus_client.Gauge(
     ['type'],
 )
 
+PROM_CACHE_HITS = prometheus_client.Counter(
+    'cache_hits',
+    "Number of cache lookups that hit, per cache directory",
+    ['cache_dir'],
+)
+PROM_CACHE_MISSES = prometheus_client.Counter(
+    'cache_misses',
+    "Number of cache lookups that miss, per cache directory",
+    ['cache_dir'],
+)
+
 
 @contextlib.contextmanager
 def timeout_syscall(seconds):
@@ -190,6 +201,7 @@ def cache_get_or_set(cache_dir, key, create_function):
             else:
                 if os.path.exists(entry_path):
                     # Entry exists and we have it locked, return it
+                    PROM_CACHE_HITS.labels(cache_dir).inc(1)
                     yield entry_path
                     return
                 # Entry was removed while we waited -- we'll try creating
@@ -208,6 +220,7 @@ def cache_get_or_set(cache_dir, key, create_function):
 
                 try:
                     # Cache doesn't exist and we have it locked -- create
+                    PROM_CACHE_MISSES.labels(cache_dir).inc(1)
                     create_function(temp_path)
                 except:
                     # Creation failed, clean up before unlocking!
