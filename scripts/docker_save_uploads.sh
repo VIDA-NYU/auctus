@@ -1,2 +1,2 @@
 #!/bin/sh
-docker exec -i datamart_profiler_1 sh -c 'tar zc /datasets/datamart.upload.*' >uploads.tar.gz
+docker run -ti --rm --network datamart_default -v $PWD/volumes/datasets:/datasets datamart_coordinator sh -c 'tar zc /datasets/datamart.upload.*' >uploads.tar.gz
