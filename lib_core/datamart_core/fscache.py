@@ -263,7 +263,7 @@ def clear_cache(cache_dir, should_delete=None):
         logger.info("Locking entry: %r", key)
         with contextlib.ExitStack() as lock:
             try:
-                lock.enter_context(FSLockExclusive(lock_path, timeout=300))
+                lock.enter_context(FSLockExclusive(lock_path, timeout=0))
             except TimeoutError:
                 logger.warning("Entry is locked: %r", key)
                 continue
