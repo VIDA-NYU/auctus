@@ -22,6 +22,9 @@ services:
     restart: on-failure
     command:
       - '--es.uri=http://elasticsearch:9200'
+      - '--es.cluster_settings'
+      - '--es.indices'
+      - '--es.indices_settings'
     ports:
       - 9114
   rabbitmq:
