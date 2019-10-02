@@ -1,2 +1,4 @@
 #!/bin/sh
-docker run -ti --rm --network datamart_default -v $PWD/scripts:/scripts -v $PWD/volumes/dataset-cache:/dataset_cache -v $PWD/volumes/query-cache:/cache datamart_coordinator python /scripts/clear_caches.py
+cd "$(dirname "$(dirname "$0")")"
+PROJ="$(basename "$(pwd)")"
+docker run -ti --rm --network ${PROJ}_default -v $PWD/scripts:/scripts -v $PWD/volumes/dataset-cache:/dataset_cache -v $PWD/volumes/query-cache:/cache ${PROJ}_coordinator python /scripts/clear_caches.py

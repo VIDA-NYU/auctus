@@ -1,2 +1,4 @@
 #!/bin/sh
-docker run -ti --rm --network datamart_default -v $PWD/volumes/datasets:/datasets datamart_coordinator sh -c 'tar zc /datasets/datamart.upload.*' >uploads.tar.gz
+cd "$(dirname "$(dirname "$0")")"
+PROJ="$(basename "$(pwd)")"
+docker run -ti --rm --network ${PROJ}_default -v $PWD/volumes/datasets:/datasets ${PROJ}_coordinator sh -c 'tar zc /datasets/datamart.upload.*' >uploads.tar.gz
