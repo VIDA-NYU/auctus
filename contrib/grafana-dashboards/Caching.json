@@ -426,9 +426,9 @@
     {
       "aliasColors": {
         "Hits": "blue",
-        "Hits /dataset_cache": "blue",
+        "Hits /cache/datasets": "blue",
         "Misses": "red",
-        "Misses /dataset_cache": "red"
+        "Misses /cache/datasets": "red"
       },
       "bars": false,
       "dashLength": 10,
@@ -467,12 +467,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(cache_hits_total{cache_dir=\"/dataset_cache\"}[10m])) * 600",
+          "expr": "sum(rate(cache_hits_total{cache_dir=\"/cache/datasets\"}[10m])) * 600",
           "legendFormat": "Hits",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(cache_misses_total{cache_dir=\"/dataset_cache\"}[10m])) * 600",
+          "expr": "sum(rate(cache_misses_total{cache_dir=\"/cache/datasets\"}[10m])) * 600",
           "legendFormat": "Misses",
           "refId": "B"
         }
@@ -523,9 +523,9 @@
     {
       "aliasColors": {
         "Hits": "blue",
-        "Hits /dataset_cache": "blue",
+        "Hits /cache/datasets": "blue",
         "Misses": "red",
-        "Misses /dataset_cache": "red"
+        "Misses /cache/datasets": "red"
       },
       "bars": false,
       "dashLength": 10,
@@ -564,12 +564,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(cache_hits_total{cache_dir=\"/cache\"}[10m])) * 600",
+          "expr": "sum(rate(cache_hits_total{cache_dir=\"/cache/queries\"}[10m])) * 600",
           "legendFormat": "Hits",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(cache_misses_total{cache_dir=\"/cache\"}[10m])) * 600",
+          "expr": "sum(rate(cache_misses_total{cache_dir=\"/cache/queries\"}[10m])) * 600",
           "legendFormat": "Misses",
           "refId": "B"
         }

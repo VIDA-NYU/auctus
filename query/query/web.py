@@ -552,7 +552,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             version=os.environ['DATAMART_VERSION'],
             columns=columns,
         )
-        cache_key = 'aug_%s' % hash_
+        key = 'aug_%s' % hash_
 
         def create_aug(cache_temp):
             try:
@@ -570,7 +570,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             except AugmentationError as e:
                 return self.send_error_json(400, str(e))
 
-        with cache_get_or_set('/dataset_cache', cache_key, create_aug) as path:
+        with cache_get_or_set('/cache/datasets', key, create_aug) as path:
             if destination:
                 # copy to expected location
                 shutil.copytree(path, destination)

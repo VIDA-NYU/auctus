@@ -73,9 +73,9 @@ def get_dataset(metadata, dataset_id, format='csv'):
                         format='csv',
                     )
 
-            csv_cache_key = encode_dataset_id(dataset_id) + '_' + 'csv'
+            csv_key = encode_dataset_id(dataset_id) + '_' + 'csv'
             csv_path = csv_lock.enter_context(
-                cache_get_or_set('/dataset_cache', csv_cache_key, create_csv)
+                cache_get_or_set('/cache/datasets', csv_key, create_csv)
             )
 
         # If CSV was requested, send it
@@ -84,7 +84,7 @@ def get_dataset(metadata, dataset_id, format='csv'):
             return
 
         # Otherwise, do format conversion
-        cache_key = encode_dataset_id(dataset_id) + '_' + format
+        key = encode_dataset_id(dataset_id) + '_' + format
 
         def create(cache_temp):
             # Do format conversion from CSV file
@@ -105,5 +105,5 @@ def get_dataset(metadata, dataset_id, format='csv'):
                     shutil.rmtree(cache_temp)
                     os.rename(zip_name, cache_temp)
 
-        with cache_get_or_set('/dataset_cache', cache_key, create) as cache_path:
+        with cache_get_or_set('/cache/datasets', key, create) as cache_path:
             yield cache_path

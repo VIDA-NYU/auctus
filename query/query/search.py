@@ -1218,7 +1218,7 @@ def get_profile_data(data, metadata=None, lazo_client=None):
         with open(cache_temp, 'wb') as fp:
             pickle.dump(data_profile[0], fp)
 
-    with cache_get_or_set('/cache', data_hash, create) as cache_path:
+    with cache_get_or_set('/cache/queries', data_hash, create) as cache_path:
         if data_profile[0]:
             # We just profiled it, no need to re-read from disk
             return data_profile[0], data_hash

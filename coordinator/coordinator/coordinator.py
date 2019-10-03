@@ -50,6 +50,10 @@ class Coordinator(object):
             else:
                 break
 
+        # Create cache directories
+        os.makedirs('/cache/datasets', exist_ok=True)
+        os.makedirs('/cache/queries', exist_ok=True)
+
         # Load recent datasets from Elasticsearch
         try:
             recent = self.elasticsearch.search(

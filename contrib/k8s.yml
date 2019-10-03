@@ -69,29 +69,29 @@ spec:
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: query-cache-pv
+  name: cache-pv
   labels:
     type: local
     app: datamart
-    what: query-cache
+    what: cache
 spec:
   capacity:
     storage: 5Gi
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/var/lib/datamart/prod/query-cache"
+    path: "/var/lib/datamart/prod/cache"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: query-cache-pvc
+  name: cache-pvc
 spec:
   storageClassName: ""
   selector:
     matchLabels:
       app: datamart
-      what: query-cache
+      what: cache
   accessModes:
     - ReadWriteMany
   resources:
@@ -338,14 +338,14 @@ spec:
         - mountPath: /datasets
           name: datasets
         - mountPath: /cache
-          name: query-cache
+          name: cache
       volumes:
       - name: datasets
         persistentVolumeClaim:
           claimName: datasets-pvc
-      - name: query-cache
+      - name: cache
         persistentVolumeClaim:
-          claimName: query-cache-pvc
+          claimName: cache-pvc
       terminationGracePeriodSeconds: 300
 ---
 apiVersion: extensions/v1beta1

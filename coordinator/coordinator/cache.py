@@ -49,8 +49,8 @@ def check_cache():
         datasets_bytes = 0
         augmentations = 0
         augmentations_bytes = 0
-        for name in os.listdir('/dataset_cache'):
-            path = os.path.join('/dataset_cache', name)
+        for name in os.listdir('/cache/datasets'):
+            path = os.path.join('/cache/datasets', name)
             if name.endswith('.lock') and os.path.exists(path[:-5]):
                 pass
             elif name.startswith('aug_'):
@@ -71,7 +71,7 @@ def check_cache():
         # TODO: Remove some datasets from the cache
 
         # Count profiles in cache
-        PROM_CACHE_PROFILES.set(len(os.listdir('/cache')))
+        PROM_CACHE_PROFILES.set(len(os.listdir('/cache/queries')))
     finally:
         asyncio.get_event_loop().call_later(
             5 * 60,

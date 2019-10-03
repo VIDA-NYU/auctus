@@ -11,7 +11,7 @@ docker-compose build --build-arg version=v0.0 coordinator profiler query test_di
 docker-compose up -d coordinator profiler query querylb
 
 # Clear cache
-docker exec -ti $(basename "$(pwd)")_coordinator_1 sh -c 'rm -rf /dataset_cache/*'
+docker exec -ti $(basename "$(pwd)")_coordinator_1 sh -c 'rm -rf /cache/*/*'
 
 # Clear index
 scripts/docker_purge_source.sh datamart.test

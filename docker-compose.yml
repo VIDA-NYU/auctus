@@ -49,7 +49,7 @@ services:
       - 50051:50051
     volumes:
       - ./volumes/datasets:/datasets
-      - ./volumes/dataset-cache:/dataset_cache
+      - ./volumes/cache:/cache
   coordinator:
     build:
       context: .
@@ -66,8 +66,7 @@ services:
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
-      - ./volumes/dataset-cache:/dataset_cache
-      - ./volumes/query-cache:/cache
+      - ./volumes/cache:/cache
   query:
     build:
       context: .
@@ -85,8 +84,7 @@ services:
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
-      - ./volumes/dataset-cache:/dataset_cache
-      - ./volumes/query-cache:/cache
+      - ./volumes/cache:/cache
   querylb:
     build:
       context: ./docker
@@ -116,7 +114,7 @@ services:
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
-      - ./volumes/dataset-cache:/dataset_cache
+      - ./volumes/cache:/cache
   prometheus:
     image: prom/prometheus
     ports:
@@ -176,7 +174,7 @@ services:
       - LAZO_SERVER_HOST=lazo_server
       - LAZO_SERVER_PORT=50051
     volumes:
-      - ./volumes/dataset-cache:/dataset_cache
+      - ./volumes/cache:/cache
   noaa:
     build:
       context: .
