@@ -35,6 +35,11 @@ PROM_CACHE_MISSES = prometheus_client.Counter(
     ['cache_dir'],
 )
 
+PROM_CACHE_HITS.labels('/cache/datasets').inc(0)
+PROM_CACHE_HITS.labels('/cache/queries').inc(0)
+PROM_CACHE_MISSES.labels('/cache/datasets').inc(0)
+PROM_CACHE_MISSES.labels('/cache/queries').inc(0)
+
 
 @contextlib.contextmanager
 def timeout_syscall(seconds):
