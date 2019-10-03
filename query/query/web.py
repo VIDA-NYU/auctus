@@ -585,6 +585,8 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                     'attachment; filename="augmentation.zip"')
                 logger.info("Sending ZIP...")
                 writer = RecursiveZipWriter(self.write)
+                # FIXME: This will write the whole thing to Tornado's buffer
+                # Maybe compressing to disk and streaming that file is better?
                 writer.write_recursive(path)
                 writer.close()
 
