@@ -31,31 +31,50 @@ def get_dataset(metadata, dataset_id, format='csv'):
         dataset_id, metadata.get('size', 'unknown'),
     )
 
-    shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
-    if format == 'csv' and os.path.exists(shared):
-        # Read directly from stored file
-        logger.info("Reading from /datasets")
-        yield os.path.join(shared, 'main.csv')
-        return
+    # To limit the number of downloads, we always materialize the CSV file, and
+    # convert it to the requested format if necessary. This avoids downloading
+    # the CSV again just because we want a different format
 
-    cache_key = encode_dataset_id(dataset_id) + '_' + format
-
-    def create(cache_temp):
+    # Context to lock the CSV
+    csv_lock = contextlib.ExitStack()
+    with csv_lock:
+        # Try to read from persistent storage
+        shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
         if os.path.exists(shared):
-            # Do format conversion from stored file
-            logger.info("Converting stored file to %r", format)
-            with open(os.path.join(shared, 'main.csv'), 'rb') as src:
+            logger.info("Reading from /datasets")
+            csv_path = os.path.join(shared, 'main.csv')
+        else:
+            # Otherwise, materialize the CSV
+            def create_csv(cache_temp):
+                logger.info("Materializing CSV...")
+                with PROM_DOWNLOAD.time():
+                    datamart_materialize.download(
+                        {'id': dataset_id, 'metadata': metadata},
+                        cache_temp, None,
+                        format='csv',
+                    )
+
+            csv_cache_key = encode_dataset_id(dataset_id) + '_' + 'csv'
+            csv_path = csv_lock.enter_context(
+                cache_get_or_set('/dataset_cache', csv_cache_key, create_csv)
+            )
+
+        # If CSV was requested, send it
+        if format == 'csv':
+            yield csv_path
+            return
+
+        # Otherwise, do format conversion
+        cache_key = encode_dataset_id(dataset_id) + '_' + format
+
+        def create(cache_temp):
+            # Do format conversion from CSV file
+            logger.info("Converting CSV to %r", format)
+            with open(csv_path, 'rb') as src:
                 writer_cls = datamart_materialize.get_writer(format)
                 writer = writer_cls(dataset_id, cache_temp, metadata)
                 with writer.open_file('wb') as dst:
                     shutil.copyfileobj(src, dst)
-        else:
-            # Materialize
-            logger.info("Materializing...")
-            with PROM_DOWNLOAD.time():
-                datamart_materialize.download(
-                    {'id': dataset_id, 'metadata': metadata},
-                    cache_temp, None, format=format)
 
-    with cache_get_or_set('/dataset_cache', cache_key, create) as cache_path:
-        yield cache_path
+        with cache_get_or_set('/dataset_cache', cache_key, create) as cache_path:
+            yield cache_path
