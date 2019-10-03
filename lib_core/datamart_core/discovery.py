@@ -245,8 +245,9 @@ class Discoverer(object):
         prefix = encode_dataset_id(full_id) + '_'
         for name in os.listdir('/dataset_cache'):
             if name.startswith(prefix):
-                path = os.path.join('/dataset_cache', name)
-                lock_path = path + '.lock'
+                entry_path = os.path.join('/dataset_cache', name + '.cache')
+                lock_path = os.path.join('/dataset_cache', name + '.lock')
+                temp_path = os.path.join('/dataset_cache', name + '.temp')
                 with contextlib.ExitStack() as lock:
                     try:
                         lock.enter_context(FSLockExclusive(lock_path,
@@ -259,13 +260,17 @@ class Discoverer(object):
                             name,
                         )
                     else:
-                        if os.path.exists(path):
+                        if os.path.exists(entry_path):
                             logger.info("Removing cached dataset: %r", name)
-                            if os.path.isfile(path):
-                                os.remove(path)
+                            if os.path.isfile(entry_path):
+                                os.remove(entry_path)
                             else:
-                                shutil.rmtree(path)
-                            os.remove(lock_path)
+                                shutil.rmtree(entry_path)
+                        if os.path.isfile(temp_path):
+                            os.remove(temp_path)
+                        elif os.path.isdir(temp_path):
+                            shutil.rmtree(temp_path)
+                        os.remove(lock_path)
 
 
 class AsyncDiscoverer(Discoverer):
