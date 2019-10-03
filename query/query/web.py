@@ -284,7 +284,7 @@ class RecursiveZipWriter(object):
 
 
 class BaseDownload(BaseHandler):
-    def send_dataset(self, dataset_id, metadata, output_format='csv'):
+    async def send_dataset(self, dataset_id, metadata, output_format='csv'):
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
@@ -319,12 +319,13 @@ class BaseDownload(BaseHandler):
                                     'attachment; filename="%s"' % dataset_id)
                     logger.info("Sending file...")
                 with open(dataset_path, 'rb') as fp:
-                    buf = fp.read(4096)
+                    buf = fp.read(40960)
                     while buf:
                         self.write(buf)
-                        if len(buf) != 4096:
+                        if len(buf) != 40960:
                             break
-                        buf = fp.read(4096)
+                        buf = fp.read(40960)
+                    await self.flush()
                 return self.finish()
 
 
