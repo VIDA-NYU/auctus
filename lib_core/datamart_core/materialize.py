@@ -26,7 +26,10 @@ def get_dataset(metadata, dataset_id, format='csv'):
     if not format:
         raise ValueError
 
-    logger.info("Getting dataset %r", dataset_id)
+    logger.info(
+        "Getting dataset %r, size %s",
+        dataset_id, metadata.get('size', 'unknown'),
+    )
 
     shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
     if format == 'csv' and os.path.exists(shared):
