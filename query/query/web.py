@@ -546,13 +546,12 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                                             "The Datamart dataset referenced "
                                             "by 'task' cannot augment 'data'")
 
-        hash_ = hash_json(
+        key = hash_json(
             task=task,
             supplied_data=data_hash,
             version=os.environ['DATAMART_VERSION'],
             columns=columns,
         )
-        key = 'aug_%s' % hash_
 
         def create_aug(cache_temp):
             try:
@@ -570,7 +569,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             except AugmentationError as e:
                 return self.send_error_json(400, str(e))
 
-        with cache_get_or_set('/cache/datasets', key, create_aug) as path:
+        with cache_get_or_set('/cache/aug', key, create_aug) as path:
             if destination:
                 # copy to expected location
                 shutil.copytree(path, destination)

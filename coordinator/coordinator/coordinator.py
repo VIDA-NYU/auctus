@@ -52,6 +52,7 @@ class Coordinator(object):
 
         # Create cache directories
         os.makedirs('/cache/datasets', exist_ok=True)
+        os.makedirs('/cache/aug', exist_ok=True)
         os.makedirs('/cache/queries', exist_ok=True)
 
         # Load recent datasets from Elasticsearch

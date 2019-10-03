@@ -47,22 +47,26 @@ def check_cache():
         # Count datasets in cache
         datasets = 0
         datasets_bytes = 0
-        augmentations = 0
-        augmentations_bytes = 0
         for name in os.listdir('/cache/datasets'):
             path = os.path.join('/cache/datasets', name)
             if not name.endswith('.cache'):
-                pass
-            elif name.startswith('aug_'):
-                augmentations += 1
-                augmentations_bytes += get_tree_size(path)
-            else:
-                datasets += 1
-                datasets_bytes += get_tree_size(path)
+                continue
+            datasets += 1
+            datasets_bytes += get_tree_size(path)
         PROM_CACHE_DATASETS.set(datasets)
         PROM_CACHE_DATASETS_BYTES.set(datasets_bytes)
         logger.info("%d datasets in cache, %d bytes",
                     datasets, datasets_bytes)
+
+        # Count augmentations in cache
+        augmentations = 0
+        augmentations_bytes = 0
+        for name in os.listdir('/cache/aug'):
+            path = os.path.join('/cache/aug', name)
+            if not name.endswith('.cache'):
+                continue
+            augmentations += 1
+            augmentations_bytes += get_tree_size(path)
         PROM_CACHE_AUGMENTATIONS.set(augmentations)
         PROM_CACHE_AUGMENTATIONS_BYTES.set(augmentations_bytes)
         logger.info("%d augmentations in cache, %d bytes",
