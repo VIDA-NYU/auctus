@@ -306,28 +306,25 @@ class BaseDownload(BaseHandler):
                 self.send_error_json(500, "Materializer reports failure")
                 raise
             with stack:
-                if os.path.isfile(dataset_path):
-                    self.set_header('Content-Type', 'application/octet-stream')
-                    self.set_header('X-Content-Type-Options', 'nosniff')
-                    self.set_header('Content-Disposition',
-                                    'attachment; filename="%s"' % dataset_id)
-                    logger.info("Sending file...")
-                    with open(dataset_path, 'rb') as fp:
-                        buf = fp.read(4096)
-                        while buf:
-                            self.write(buf)
-                            if len(buf) != 4096:
-                                break
-                            buf = fp.read(4096)
-                else:  # Directory
+                if zipfile.is_zipfile(dataset_path):
                     self.set_header('Content-Type', 'application/zip')
                     self.set_header(
                         'Content-Disposition',
                         'attachment; filename="%s.zip"' % dataset_id)
                     logger.info("Sending ZIP...")
-                    writer = RecursiveZipWriter(self.write)
-                    writer.write_recursive(dataset_path)
-                    writer.close()
+                else:
+                    self.set_header('Content-Type', 'application/octet-stream')
+                    self.set_header('X-Content-Type-Options', 'nosniff')
+                    self.set_header('Content-Disposition',
+                                    'attachment; filename="%s"' % dataset_id)
+                    logger.info("Sending file...")
+                with open(dataset_path, 'rb') as fp:
+                    buf = fp.read(4096)
+                    while buf:
+                        self.write(buf)
+                        if len(buf) != 4096:
+                            break
+                        buf = fp.read(4096)
                 return self.finish()
 
 

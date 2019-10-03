@@ -4,6 +4,7 @@ import logging
 import os
 import prometheus_client
 import shutil
+import zipfile
 
 from datamart_core.fscache import cache_get_or_set
 
@@ -19,6 +20,18 @@ PROM_DOWNLOAD = prometheus_client.Histogram(
     buckets=[1.0, 10.0, 60.0, 120.0, 300.0, 600.0, 1800.0, 3600.0, 7200.0,
              float('inf')],
 )
+
+
+def make_zip_recursive(zip_, src, dst=''):
+    if os.path.isdir(src):
+        for name in os.listdir(src):
+            make_zip_recursive(
+                zip_,
+                os.path.join(src, name),
+                dst + '/' + name if dst else name,
+            )
+    else:
+        zip_.write(src, dst)
 
 
 @contextlib.contextmanager
@@ -75,6 +88,15 @@ def get_dataset(metadata, dataset_id, format='csv'):
                 writer = writer_cls(dataset_id, cache_temp, metadata)
                 with writer.open_file('wb') as dst:
                     shutil.copyfileobj(src, dst)
+
+            # Make a ZIP if it's a folder
+            if os.path.isdir(cache_temp):
+                logger.info("Result is a directory, creating ZIP file")
+                zip_name = cache_temp + '.zip'
+                with zipfile.ZipFile(zip_name, 'w') as zip_:
+                    make_zip_recursive(zip_, cache_temp)
+                shutil.rmtree(cache_temp)
+                os.rename(zip_name, cache_temp)
 
         with cache_get_or_set('/dataset_cache', cache_key, create) as cache_path:
             yield cache_path
