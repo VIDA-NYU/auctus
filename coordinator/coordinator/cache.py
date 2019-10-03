@@ -51,7 +51,7 @@ def check_cache():
         augmentations_bytes = 0
         for name in os.listdir('/cache/datasets'):
             path = os.path.join('/cache/datasets', name)
-            if name.endswith('.lock') and os.path.exists(path[:-5]):
+            if not name.endswith('.cache'):
                 pass
             elif name.startswith('aug_'):
                 augmentations += 1

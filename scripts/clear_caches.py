@@ -17,6 +17,7 @@ if __name__ == '__main__':
 
     if (
             not os.path.isdir('/cache/datasets') or
+            not os.path.isdir('/cache/aug') or
             not os.path.isdir('/cache/queries')):
         print(
             "Cache directories don't exist; are you not running this script "
@@ -25,4 +26,5 @@ if __name__ == '__main__':
         )
         sys.exit(1)
     clear_cache('/cache/datasets')
+    clear_cache('/cache/aug')
     clear_cache('/cache/queries')

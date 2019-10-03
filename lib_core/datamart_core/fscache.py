@@ -259,7 +259,7 @@ def clear_cache(cache_dir, should_delete=None):
 
     for fname in files:
         key = fname[:-6]
-        entry_path = os.path.join(cache_dir, fname)
+        entry_path = os.path.join(cache_dir, key + '.cache')
         temp_path = os.path.join(cache_dir, key + '.temp')
         if not should_delete(key=key):
             logger.info("Skipping entry: %r", key)
