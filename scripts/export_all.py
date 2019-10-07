@@ -10,6 +10,7 @@ load the JSON files) or `reprocess_all.py` (which will only read some fields,
 and get the metadata by reprocessing the datasets).
 """
 import elasticsearch
+import elasticsearch.helpers
 from functools import lru_cache
 import logging
 import json
@@ -44,57 +45,45 @@ def export():
     )
 
     print("Dumping datasets", end='', flush=True)
-    from_ = 0
-    while True:
-        hits = es.search(
-            index='datamart',
-            body={
-                'query': {
-                    'match_all': {},
-                },
+    hits = elasticsearch.helpers.scan(
+        es,
+        index='datamart',
+        query={
+            'query': {
+                'match_all': {},
             },
-            from_=from_,
-            size=SIZE,
-        )['hits']['hits']
-        from_ += len(hits)
-        for h in hits:
-            # Use dataset ID as file name
-            with open(encode_dataset_id(h['_id']), 'w') as fp:
-                json.dump(h['_source'], fp, sort_keys=True, indent=2)
-        print('.', end='', flush=True)
-        if len(hits) != SIZE:
-            break
+        },
+        size=SIZE,
+    )
+    for h in hits:
+        # Use dataset ID as file name
+        with open(encode_dataset_id(h['_id']), 'w') as fp:
+            json.dump(h['_source'], fp, sort_keys=True, indent=2)
 
     print("Dumping Lazo data", end='', flush=True)
-    from_ = 0
-    while True:
-        hits = es.search(
-            index='lazo',
-            body={
-                'query': {
-                    'match_all': {},
-                },
+    hits = elasticsearch.helpers.scan(
+        es,
+        index='lazo',
+        query={
+            'query': {
+                'match_all': {},
             },
-            from_=from_,
-            size=SIZE,
-        )['hits']['hits']
-        from_ += len(hits)
-        for h in hits:
-            # Use "lazo." dataset_id ".NB" as file name
-            dataset_id = h['_id'].split('__.__')[0]
-            fname = unique_filename(
-                'lazo.{0}.{{0}}'.format(encode_dataset_id(dataset_id))
+        },
+        size=SIZE,
+    )
+    for h in hits:
+        # Use "lazo." dataset_id ".NB" as file name
+        dataset_id = h['_id'].split('__.__')[0]
+        fname = unique_filename(
+            'lazo.{0}.{{0}}'.format(encode_dataset_id(dataset_id))
+        )
+        with open(fname, 'w') as fp:
+            json.dump(
+                dict(h['_source'], _id=h['_id']),
+                fp,
+                sort_keys=True,
+                indent=2,
             )
-            with open(fname, 'w') as fp:
-                json.dump(
-                    dict(h['_source'], _id=h['_id']),
-                    fp,
-                    sort_keys=True,
-                    indent=2,
-                )
-        print('.', end='', flush=True)
-        if len(hits) != SIZE:
-            break
 
 
 if __name__ == '__main__':

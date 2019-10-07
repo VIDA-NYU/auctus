@@ -203,7 +203,7 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
     if lazo_client:
         # checking if there are any textual columns in the dataset
         # remove them from the Lazo index service
-        body = {
+        query = {
             'query': {
                 'bool': {
                     'must': [
@@ -217,11 +217,12 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
             }
         }
         textual_columns = list()
+        # FIXME: Use search-after API here?
         from_ = 0
         while True:
             hits = es.search(
                 index='datamart_columns',
-                body=body,
+                body=query,
                 from_=from_,
                 size=10000,
             )['hits']['hits']
@@ -230,6 +231,7 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
                 textual_columns.append(h['_source']['name'])
             if len(hits) != 10000:
                 break
+
         if textual_columns:
             ack = lazo_client.remove_sketches(dataset_id, textual_columns)
             if ack:
@@ -247,7 +249,7 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
         return
 
     # deleting from 'datamart_columns' and 'datamart_spatial_coverage'
-    body = {
+    query = {
         'query': {
             'term': {'dataset_id': dataset_id}
         }
@@ -255,6 +257,6 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
     for index in ('datamart_columns', 'datamart_spatial_coverage'):
         nb = es.delete_by_query(
             index=index,
-            body=body,
+            body=query,
         )['deleted']
         logger.info("Deleted %d documents from %s", nb, index)

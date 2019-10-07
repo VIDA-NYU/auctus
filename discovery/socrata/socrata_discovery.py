@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 import elasticsearch
+import elasticsearch.helpers
 import json
 import logging
 import os
@@ -85,7 +86,6 @@ class SocrataDiscoverer(Discoverer):
 
         # Clean up the datasets we didn't see
         deleted = 0
-        from_ = 0
         size = 10000
         query = {
             'query': {
@@ -105,22 +105,18 @@ class SocrataDiscoverer(Discoverer):
                 },
             }
         }
-        while True:
-            hits = self.elasticsearch.search(
-                index='datamart',
-                body=query,
-                size=size,
+        hits = elasticsearch.helpers.scan(
+            self.elasticsearch,
+            index='datamart',
+            query=query,
+            size=size,
                 _source=['materialize.socrata_id'],
-                from_=from_,
-            )['hits']['hits']
-            from_ += size
-            for h in hits:
-                if h['_source']['materialize']['socrata_id'] not in seen:
-                    self.delete_dataset(full_id=h['_id'])
-                    deleted += 1
-                    from_ -= 1
-            if len(hits) != size:
-                break
+        )
+        for h in hits:
+            if h['_source']['materialize']['socrata_id'] not in seen:
+                self.delete_dataset(full_id=h['_id'])
+                deleted += 1
+
         if deleted:
             logger.info("Deleted %d missing datasets", deleted)
 

@@ -253,7 +253,6 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
     return es.search(
         index='datamart_columns',
         body=body,
-        from_=0,
         size=TOP_K_SIZE
     )['hits']['hits']
 
@@ -353,7 +352,6 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
     return es.search(
         index='datamart_spatial_coverage',
         body=body,
-        from_=0,
         size=TOP_K_SIZE
     )['hits']['hits']
 
@@ -455,7 +453,6 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
     return es.search(
         index='datamart_columns',
         body=body,
-        from_=0,
         size=TOP_K_SIZE
     )['hits']['hits']
 
@@ -752,6 +749,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
 
             # logger.info("Query (union-fuzzy): %r", query_obj)
 
+            # FIXME: Use search-after API here?
             from_ = 0
             while True:
                 hits = es.search(

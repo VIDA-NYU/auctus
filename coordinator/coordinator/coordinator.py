@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 import elasticsearch
+import elasticsearch.helpers
 import itertools
 import json
 import logging
@@ -167,37 +168,39 @@ class Coordinator(object):
 
     def update_sources_counts(self):
         try:
-            from_ = 0
             SIZE = 10000
+            sleep_in = SIZE
             sources = {}
-            while True:
-                # TODO: Aggregation query?
-                hits = self.elasticsearch.search(
-                    index='datamart',
-                    body={
-                        'query': {
-                            'match_all': {},
-                        },
+            # TODO: Aggregation query?
+            hits = elasticsearch.helpers.scan(
+                self.elasticsearch,
+                index='datamart',
+                query={
+                    'query': {
+                        'match_all': {},
                     },
-                    from_=from_,
-                    size=SIZE,
-                )['hits']['hits']
-                from_ += len(hits)
-                for h in hits:
-                    identifier = h['_source']['materialize']['identifier']
+                },
+                size=SIZE,
+                scroll='30m',
+            )
+            for h in hits:
+                identifier = h['_source']['materialize']['identifier']
 
-                    # Special case for Socrata
-                    if identifier == 'datamart.socrata':
-                        end = h['_id'].find('.', 17)
-                        identifier = h['_id'][:end]
+                # Special case for Socrata
+                if identifier == 'datamart.socrata':
+                    end = h['_id'].find('.', 17)
+                    identifier = h['_id'][:end]
 
-                    try:
-                        sources[identifier] += 1
-                    except KeyError:
-                        sources[identifier] = 1
-                if len(hits) != SIZE:
-                    break
-                time.sleep(5)
+                try:
+                    sources[identifier] += 1
+                except KeyError:
+                    sources[identifier] = 1
+
+                sleep_in -= 1
+                if sleep_in <= 0:
+                    sleep_in = SIZE
+                    time.sleep(5)
+
             # Update prometheus
             for source, count in sources.items():
                 PROM_DATASETS.labels(source).set(count)
