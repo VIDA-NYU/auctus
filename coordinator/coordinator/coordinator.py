@@ -167,6 +167,7 @@ class Coordinator(object):
 
     def update_sources_counts(self):
         try:
+            from_ = 0
             SIZE = 10000
             sources = {}
             while True:
@@ -178,8 +179,10 @@ class Coordinator(object):
                             'match_all': {},
                         },
                     },
+                    from_=from_,
                     size=SIZE,
                 )['hits']['hits']
+                from_ += len(hits)
                 for h in hits:
                     identifier = h['_source']['materialize']['identifier']
 

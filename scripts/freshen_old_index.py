@@ -70,6 +70,7 @@ async def freshen(version):
         aio_pika.ExchangeType.FANOUT,
     )
 
+    from_ = 0
     while True:
         hits = es.search(
             index='datamart',
@@ -78,8 +79,10 @@ async def freshen(version):
                     'match_all': {},
                 },
             },
+            from_=from_,
             size=SIZE,
         )['hits']['hits']
+        from_ += len(hits)
         for h in hits:
             obj = h['_source']
             dataset_version = obj['version']

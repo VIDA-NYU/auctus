@@ -23,6 +23,7 @@ def clear(identifier):
         host=os.environ['LAZO_SERVER_HOST'],
         port=int(os.environ['LAZO_SERVER_PORT'])
     )
+    from_ = 0
     while True:
         hits = es.search(
             index='datamart',
@@ -34,8 +35,10 @@ def clear(identifier):
                 },
             },
             _source=False,
+            from_=from_,
             size=SIZE,
         )['hits']['hits']
+        from_ += len(hits)
         for h in hits:
             delete_dataset_from_index(es, h['_id'], lazo_client)
         if len(hits) != SIZE:

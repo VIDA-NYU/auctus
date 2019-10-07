@@ -753,18 +753,17 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
             # logger.info("Query (union-fuzzy): %r", query_obj)
 
             from_ = 0
-            result = es.search(
-                index='datamart',
-                body=query_obj,
-                from_=from_,
-                size=PAGINATION_SIZE,
-                request_timeout=30
-            )
+            while True:
+                hits = es.search(
+                    index='datamart',
+                    body=query_obj,
+                    from_=from_,
+                    size=PAGINATION_SIZE,
+                    request_timeout=30
+                )['hits']['hits']
+                from_ += len(hits)
 
-            size = len(result['hits']['hits'])
-
-            while size > 0:
-                for hit in result['hits']['hits']:
+                for hit in hits:
 
                     dataset_name = hit['_id']
                     es_score = hit['_score'] if query_args else 1
@@ -780,16 +779,8 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                         sim = compute_levenshtein_sim(att.lower(), column_name.lower())
                         column_pairs[dataset_name].append((att, column_name, sim, es_score))
 
-                # pagination
-                from_ += size
-                result = es.search(
-                    index='datamart',
-                    body=query_obj,
-                    from_=from_,
-                    size=PAGINATION_SIZE,
-                    request_timeout=30
-                )
-                size = len(result['hits']['hits'])
+                if len(hits) != PAGINATION_SIZE:
+                    break
 
     scores = dict()
     for dataset in list(column_pairs.keys()):

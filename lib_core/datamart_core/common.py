@@ -217,12 +217,15 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
             }
         }
         textual_columns = list()
+        from_ = 0
         while True:
             hits = es.search(
                 index='datamart_columns',
                 body=body,
+                from_=from_,
                 size=10000,
             )['hits']['hits']
+            from_ += len(hits)
             for h in hits:
                 textual_columns.append(h['_source']['name'])
             if len(hits) != 10000:

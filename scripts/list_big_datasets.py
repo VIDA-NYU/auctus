@@ -14,6 +14,7 @@ def search():
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
+    from_ = 0
     while True:
         hits = es.search(
             index='datamart',
@@ -27,8 +28,10 @@ def search():
                 },
             },
             _source=False,
+            from_=from_,
             size=SIZE,
         )['hits']['hits']
+        from_ += len(hits)
         for h in hits:
             print(h['_id'])
         if len(hits) != SIZE:

@@ -15,6 +15,7 @@ def count():
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
     sources = {}
+    from_ = 0
     while True:
         hits = es.search(
             index='datamart',
@@ -24,8 +25,10 @@ def count():
                 },
             },
             _source='materialize.identifier',
+            from_=from_,
             size=SIZE,
         )['hits']['hits']
+        from_ += len(hits)
         for h in hits:
             identifier = h['_source']['materialize']['identifier']
 

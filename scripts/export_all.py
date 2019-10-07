@@ -27,6 +27,7 @@ def export():
     )
     for index in ('datamart', 'lazo'):
         prefix = 'lazo.' if index == 'lazo' else ''
+        from_ = 0
         while True:
             hits = es.search(
                 index=index,
@@ -35,8 +36,10 @@ def export():
                         'match_all': {},
                     },
                 },
+                from_=from_,
                 size=SIZE,
             )['hits']['hits']
+            from_ += len(hits)
             for h in hits:
                 with open(encode_dataset_id(prefix + h['_id']), 'w') as fp:
                     json.dump(h['_source'], fp, sort_keys=True, indent=2)
