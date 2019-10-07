@@ -44,7 +44,7 @@ async def import_all(folder):
     else:
         lazo_client = None
 
-    print("Importing Elasticsearch data")
+    print("Importing Elasticsearch data", end='', flush=True)
     for name in os.listdir(folder):
         if name.startswith('lazo.'):
             continue
@@ -67,7 +67,7 @@ async def import_all(folder):
         )
         print('.', end='', flush=True)
 
-    print("Importing Lazo data")
+    print("Importing Lazo data", end='', flush=True)
     for name in os.listdir(folder):
         if not name.startswith('lazo.'):
             continue
@@ -75,13 +75,15 @@ async def import_all(folder):
         with open(path, 'r') as fp:
             obj = json.load(fp)
 
-        id = decode_dataset_id(name[5:])
+        dataset_id = decode_dataset_id(name[5:]).rsplit('.', 1)[0]
+        lazo_es_id = obj.pop('_id')
+        assert lazo_es_id.split('__.__')[0] == dataset_id
         try:
-            add_dataset_to_lazo_storage(es, id, obj)
+            add_dataset_to_lazo_storage(es, lazo_es_id, obj)
         except elasticsearch.TransportError:
             print('X', end='', flush=True)
             time.sleep(10)  # If writing can't keep up, needs a real break
-            add_dataset_to_lazo_storage(es, id, obj)
+            add_dataset_to_lazo_storage(es, lazo_es_id, obj)
         print('.', end='', flush=True)
 
 
