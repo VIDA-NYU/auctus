@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import elasticsearch
+import elasticsearch.helpers
 import logging
 import os
 
@@ -12,36 +13,20 @@ def create_indices():
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
 
-    body = {
+    query = {
         'query': {
             'match_all': {}
         }
     }
 
-    from_ = 0
-    result = es.search(
+    hits = elasticsearch.helpers.scan(
+        es,
         index='datamart',
-        body=body,
-        from_=from_,
+        query=query,
         size=100,
-        request_timeout=30
     )
-
-    size = len(result['hits']['hits'])
-
-    while size > 0:
-        for hit in result['hits']['hits']:
-            add_dataset_to_sup_index(es, hit['_id'], hit['_source'])
-
-        from_ += size
-        result = es.search(
-            index='datamart',
-            body=body,
-            from_=from_,
-            size=100,
-            request_timeout=30
-        )
-        size = len(result['hits']['hits'])
+    for hit in hits:
+        add_dataset_to_sup_index(es, hit['_id'], hit['_source'])
 
 
 if __name__ == '__main__':

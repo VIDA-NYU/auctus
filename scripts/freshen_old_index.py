@@ -12,6 +12,7 @@ import subprocess
 import aio_pika
 import asyncio
 import elasticsearch
+import elasticsearch.helpers
 import logging
 import os
 import sys
@@ -70,38 +71,36 @@ async def freshen(version):
         aio_pika.ExchangeType.FANOUT,
     )
 
-    while True:
-        hits = es.search(
-            index='datamart',
-            body={
-                'query': {
-                    'match_all': {},
-                },
+    hits = elasticsearch.helpers.scan(
+        es,
+        index='datamart',
+        query={
+            'query': {
+                'match_all': {},
             },
-            size=SIZE,
-        )['hits']['hits']
-        for h in hits:
-            obj = h['_source']
-            dataset_version = obj['version']
-            if is_version_more_recent(version, dataset_version):
-                logger.debug("%s is recent enough (version=%r)",
-                             h['_id'], dataset_version)
-                continue
+        },
+        size=SIZE,
+    )
+    for h in hits:
+        obj = h['_source']
+        dataset_version = obj['version']
+        if is_version_more_recent(version, dataset_version):
+            logger.debug("%s is recent enough (version=%r)",
+                         h['_id'], dataset_version)
+            continue
 
-            logger.info("Reprocessing %s, version=%r",
-                        h['_id'], dataset_version)
-            metadata = dict(name=obj['name'],
-                            materialize=obj['materialize'])
-            if obj.get('description'):
-                metadata['description'] = obj['description']
-            if obj.get('date'):
-                metadata['date'] = obj['date']
-            await amqp_profile_exchange.publish(
-                json2msg(dict(id=h['_id'], metadata=metadata)),
-                '',
-            )
-        if len(hits) != SIZE:
-            break
+        logger.info("Reprocessing %s, version=%r",
+                    h['_id'], dataset_version)
+        metadata = dict(name=obj['name'],
+                        materialize=obj['materialize'])
+        if obj.get('description'):
+            metadata['description'] = obj['description']
+        if obj.get('date'):
+            metadata['date'] = obj['date']
+        await amqp_profile_exchange.publish(
+            json2msg(dict(id=h['_id'], metadata=metadata)),
+            '',
+        )
 
 
 if __name__ == '__main__':

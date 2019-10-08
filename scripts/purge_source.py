@@ -4,6 +4,7 @@
 """
 
 import elasticsearch
+import elasticsearch.helpers
 import lazo_index_service
 import logging
 import os
@@ -23,23 +24,21 @@ def clear(identifier):
         host=os.environ['LAZO_SERVER_HOST'],
         port=int(os.environ['LAZO_SERVER_PORT'])
     )
-    while True:
-        hits = es.search(
-            index='datamart',
-            body={
-                'query': {
-                    'term': {
-                        'materialize.identifier': identifier,
-                    },
+    hits = elasticsearch.helpers.scan(
+        es,
+        index='datamart',
+        query={
+            'query': {
+                'term': {
+                    'materialize.identifier': identifier,
                 },
             },
-            _source=False,
-            size=SIZE,
-        )['hits']['hits']
-        for h in hits:
-            delete_dataset_from_index(es, h['_id'], lazo_client)
-        if len(hits) != SIZE:
-            break
+        },
+        _source=False,
+        size=SIZE,
+    )
+    for h in hits:
+        delete_dataset_from_index(es, h['_id'], lazo_client)
 
 
 if __name__ == '__main__':
