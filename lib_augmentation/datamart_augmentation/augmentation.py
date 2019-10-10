@@ -155,11 +155,8 @@ class Aggregator(object):
         self.groupby_columns = groupby_columns
         self.original_data_join_columns = original_data_join_columns
         self.augment_data_join_columns = augment_data_join_columns
-        self.agg_functions = {}
-
-        if not data.duplicated(groupby_columns).any():
-            # Nothing to do
-            return
+        self.running_agg = {}
+        self.final_funcs = []
 
         groupby_set = set(groupby_columns)
         agg_columns = [col for col in data.columns if col not in groupby_set]
@@ -168,9 +165,10 @@ class Aggregator(object):
                 # column is not a join column
                 if ('int' in str(data.dtypes[column]) or
                         'float' in str(data.dtypes[column])):
-                    self.agg_functions[column] = [
+                    self.running_agg[column] = [
                         np.mean, np.sum, np.max, np.min
                     ]
+                    self.final_funcs.append(self._mean(column))
                 else:
                     # Just pick the first value
                     self.agg_functions[column] = first
@@ -183,34 +181,47 @@ class Aggregator(object):
                     # getting the first non-null element
                     # since it is a join column, we expect all the values
                     # to be exactly the same
-                    self.agg_functions[column] = [first]
-                    # agg_functions[column] = \
-                    #     lambda x: x.loc[x.first_valid_index()].iloc[0]
-        if not self.agg_functions:
+                    self.running_agg[column] = [first]
+        if not self.running_agg:
             raise AugmentationError("No numerical columns to perform aggregation.")
 
+    @staticmethod
+    def _mean(column):
+        """Returns a function that computes the mean from sum and size.
+        """
+        def inner(df):
+            df['mean %s' % column] = df['sum %s' % column] / len(df)
+            return df
+
+        return inner
+
     def running_aggregation(self, data):
+        if not self.running_agg:
+            return
+
+        data.index.name = None  # avoiding warnings
+        data = data.groupby(by=self.groupby_columns).agg(self.running_agg)
+        data = data.reset_index(drop=False)
+        data.columns = [
+            col[0].strip()
+            if (
+                # keep same name for join column
+                col[0] in (self.original_data_join_columns +
+                           self.augment_data_join_columns) or
+                # and also for columns aggregated with 'first' method
+                col[1] == 'first'
+            )
+            else ' '.join(col[::-1]).strip()
+            for col in data.columns.values
+        ]
+
         return data
 
     def final_aggregation(self, data):
-        if not self.agg_functions:
-            return data
-        
-        start = time.perf_counter()
-        data.index.name = None  # avoiding warnings
-        data = data.groupby(by=self.groupby_columns).agg(self.agg_functions)
-        data = data.reset_index(drop=False)
-        data.columns = [col[0].strip()
-                        if (
-                            # keep same name for join column
-                            col[0] in (self.original_data_join_columns +
-                                       self.augment_data_join_columns) or
-                            # and also for columns aggregated with 'first' method
-                            col[1] == 'first'
-                        )
-                        else ' '.join(col[::-1]).strip()
-                        for col in data.columns.values]
-        logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
+        data = self.running_aggregation(data)
+
+        for func in self.final_funcs:
+            data = data.apply(func)
 
         return data
 
