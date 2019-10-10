@@ -39,7 +39,7 @@
 
 <h2 id="sample">Sample</h2>
 {% if sample %}
-<table class="table table-bordered table-hover">
+<div style="overflow: auto; max-height: 40rem;"><table class="table table-bordered table-hover">
   {% for row in sample %}
     {% if loop.first %}
   <thead>
@@ -59,7 +59,7 @@
     {% endif %}
   {% endfor %}
   </tbody>
-</table>
+</table></div>
 {% else %}
 <p>No sample available for this dataset.</p>
 {% endif %}
