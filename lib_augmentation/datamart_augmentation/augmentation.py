@@ -141,32 +141,39 @@ def check_temporal_resolution(data):
     return 'date'
 
 
-def perform_aggregations(data, groupby_columns,
-                         original_data_join_columns,
-                         augment_data_join_columns):
+class Aggregator(object):
     """Performs group by on dataset after join, to keep the shape of the
     new, augmented dataset the same as the original, input data.
     """
 
-    def first(series):
-        return series.iloc[0]
+    def __init__(self, data, groupby_columns,
+                 original_data_join_columns,
+                 augment_data_join_columns):
+        def first(series):
+            return series.iloc[0]
 
-    if data.duplicated(groupby_columns).any():
-        start = time.perf_counter()
+        self.groupby_columns = groupby_columns
+        self.original_data_join_columns = original_data_join_columns
+        self.augment_data_join_columns = augment_data_join_columns
+        self.agg_functions = {}
+
+        if not data.duplicated(groupby_columns).any():
+            # Nothing to do
+            return
+
         groupby_set = set(groupby_columns)
         agg_columns = [col for col in data.columns if col not in groupby_set]
-        agg_functions = dict()
         for column in agg_columns:
             if column not in augment_data_join_columns:
                 # column is not a join column
                 if ('int' in str(data.dtypes[column]) or
                         'float' in str(data.dtypes[column])):
-                    agg_functions[column] = [
+                    self.agg_functions[column] = [
                         np.mean, np.sum, np.max, np.min
                     ]
                 else:
                     # Just pick the first value
-                    agg_functions[column] = first
+                    self.agg_functions[column] = first
             else:
                 # column is a join column
                 if 'datetime' in str(data.dtypes[column]):
@@ -176,26 +183,36 @@ def perform_aggregations(data, groupby_columns,
                     # getting the first non-null element
                     # since it is a join column, we expect all the values
                     # to be exactly the same
-                    agg_functions[column] = [first]
+                    self.agg_functions[column] = [first]
                     # agg_functions[column] = \
                     #     lambda x: x.loc[x.first_valid_index()].iloc[0]
-        if not agg_functions:
+        if not self.agg_functions:
             raise AugmentationError("No numerical columns to perform aggregation.")
+
+    def running_aggregation(self, data):
+        return data
+
+    def final_aggregation(self, data):
+        if not self.agg_functions:
+            return data
+        
+        start = time.perf_counter()
         data.index.name = None  # avoiding warnings
-        data = data.groupby(by=groupby_columns).agg(agg_functions)
+        data = data.groupby(by=self.groupby_columns).agg(self.agg_functions)
         data = data.reset_index(drop=False)
         data.columns = [col[0].strip()
                         if (
                             # keep same name for join column
-                            col[0] in (original_data_join_columns +
-                                           augment_data_join_columns) or
+                            col[0] in (self.original_data_join_columns +
+                                       self.augment_data_join_columns) or
                             # and also for columns aggregated with 'first' method
                             col[1] == 'first'
                         )
                         else ' '.join(col[::-1]).strip()
                         for col in data.columns.values]
         logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
-    return data
+
+        return data
 
 
 CHUNK_SIZE_ROWS = 10_000
@@ -319,12 +336,13 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
     else:
         # aggregations
-        join_ = perform_aggregations(
+        aggregator = Aggregator(
             join_,
             list(original_data.columns),
             original_join_columns,
             augment_join_columns
         )
+        join_ = aggregator.final_aggregation(join_)
 
         # removing duplicated join columns
         join_ = join_.drop(
