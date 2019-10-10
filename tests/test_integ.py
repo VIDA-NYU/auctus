@@ -1314,6 +1314,9 @@ basic_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
+    "sample": "name,country,number,what\nremi,france,4,false\n" +
+              "aecio,brazil,3,true\nsonia,peru,7,true\nroque,peru,8,true\n" +
+              "fernando,brazil,10,false\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -1448,6 +1451,9 @@ agg_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
+    "sample": "id,work,salary\n40,false,100\n30,true,200\n70,true,100\n80,tr" +
+              "ue,200\n100,false,300\n100,true,200\n30,false,100\n70,false,6" +
+              "00\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -1499,6 +1505,20 @@ geo_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
+    "sample": "id,lat,long,height\nplace05,40.722948,-74.001501,42.904820\np" +
+              "lace06,40.735108,-73.996996,48.345170\nplace14,40.733272,-73." +
+              "996875,51.000673\nplace21,40.733305,-73.999205,45.887002\npla" +
+              "ce25,40.727810,-73.999472,35.740136\nplace39,40.732095,-73.99" +
+              "6864,47.361715\nplace41,40.727197,-73.996098,62.933509\nplace" +
+              "44,40.730017,-73.993764,38.067007\nplace46,40.730439,-73.9966" +
+              "33,32.522354\nplace47,40.736176,-73.998520,50.594276\nplace48" +
+              ",40.730226,-74.001459,5.034845\nplace51,40.692165,-73.987300," +
+              "67.055957\nplace55,40.693658,-73.984096,27.633986\nplace60,40" +
+              ".691525,-73.987374,70.962950\nplace65,40.692605,-73.986475,53" +
+              ".012337\nplace72,40.692980,-73.987301,46.909863\nplace74,40.6" +
+              "93227,-73.988686,59.675767\nplace85,40.692914,-73.989237,73.3" +
+              "57646\nplace87,40.693326,-73.984213,32.226852\nplace97,40.692" +
+              "794,-73.986984,32.891257\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -1593,6 +1613,10 @@ lazo_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
+    "sample": "state,year\nVA,1990\nKY,1990\nCA,1990\nWV,1990\nPR,1990\n" +
+              "NC,1990\nAL,1990\nNJ,1990\nCT,1990\nCO,1990\n,1990\nMN,1990\n" +
+              "OR,1990\nND,1990\nTN,1990\nGA,1990\nNM,1990\nAR,1990\n" +
+              "UT,1991\nSC,1991\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
