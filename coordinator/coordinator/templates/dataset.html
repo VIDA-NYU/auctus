@@ -7,7 +7,7 @@
 <p><a href="{{ query_host }}/download/{{ dataset_id }}">Download: CSV</a>, <a href="{{ query_host }}/download/{{ dataset_id }}?format=d3m">D3M</a> ({{ size }})</p>
 
 {% macro meta_table(m) -%}
-  <table class="table json">
+  <table class="table table-bordered">
     <tbody>
       {%- for row in json_table(m) %}
       <tr>

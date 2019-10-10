@@ -3,10 +3,6 @@
   padding-top: 1em;
 }
 
-table.json th, table.json td {
-  border: 1px solid #dee2e6;
-}
-
 .tab-content {
   border-style: solid;
   border-width: 1px;
