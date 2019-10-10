@@ -24,6 +24,13 @@ logger = logging.getLogger(__name__)
 
 MAX_SIZE = 50_000_000
 
+N_RANGES = 3
+
+RANDOM_SEED = 89
+
+SPATIAL_RANGE_DELTA_LONG = 0.0001
+SPATIAL_RANGE_DELTA_LAT = 0.0001
+
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
 
@@ -52,9 +59,6 @@ def mean_stddev(array):
     stddev = math.sqrt(total / len(array)) if len(array) > 0 else 0
 
     return mean, stddev
-
-
-N_RANGES = 3
 
 
 def get_numerical_ranges(values):
@@ -98,10 +102,6 @@ def get_numerical_ranges(values):
     ranges = [{'range': {'gte': rg[0], 'lte': rg[1]}}
               for rg in ranges]
     return ranges
-
-
-SPATIAL_RANGE_DELTA_LONG = 0.0001
-SPATIAL_RANGE_DELTA_LAT = 0.0001
 
 
 def get_spatial_ranges(values):
@@ -282,10 +282,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
                 ratio = MAX_SIZE / metadata['size']
                 logger.info("Loading dataframe, sample ratio=%r...", ratio)
+                rand = random.Random(RANDOM_SEED)
                 data = pandas.read_csv(
                     data,
                     dtype=str, na_filter=False,
-                    skiprows=lambda i: i != 0 and random.random() > ratio)
+                    skiprows=lambda i: i != 0 and rand.random() > ratio)
             else:
                 logger.info("Loading dataframe...")
                 data = pandas.read_csv(data,
