@@ -1,5 +1,7 @@
+import csv
 from datetime import datetime
 import elasticsearch
+import io
 import logging
 import jinja2
 import json
@@ -258,10 +260,13 @@ class Dataset(BaseHandler):
         materialize = metadata.pop('materialize', {})
         discoverer = materialize.pop('identifier', '(unknown)')
         spatial_coverage = metadata.pop('spatial_coverage', [])
+        sample = metadata.pop('sample', None)
+        if sample:
+            sample = list(csv.reader(io.StringIO(sample)))
         self.render('dataset.html',
                     dataset_id=dataset_id, discoverer=discoverer,
                     metadata=metadata, materialize=materialize,
-                    spatial_coverage=spatial_coverage,
+                    spatial_coverage=spatial_coverage, sample=sample,
                     size=format_size(metadata['size']))
 
 
