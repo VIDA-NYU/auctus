@@ -277,7 +277,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         error_bad_lines=False,
         chunksize=CHUNK_SIZE_ROWS,
     )
-    augment_data = next(augment_data_chunks)
+    first_augment_data = next(augment_data_chunks)
 
     # Columns to drop
     drop_columns = None
@@ -295,13 +295,14 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         )
 
     # Guess temporal resolutions
-    update_idx = match_temporal_resolutions(original_data, augment_data)
+    update_idx = match_temporal_resolutions(original_data, first_augment_data)
 
     # Streaming join
     start = time.perf_counter()
     join_ = []
+    aggregator = None
     # Iterate over chunks of augment data
-    for augment_data in itertools.chain([augment_data], augment_data_chunks):
+    for augment_data in itertools.chain([first_augment_data], augment_data_chunks):
         # Convert data types
         augment_data = convert_data_types(
             augment_data,
@@ -317,11 +318,23 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             augment_data = augment_data.drop(drop_columns, axis=1)
 
         # Join
-        join_.append(original_data.join(
+        joined_chunk =  original_data.join(
             augment_data,
             how=how,
             rsuffix='_r'
-        ))
+        )
+
+        # Aggregations
+        if augment_data is first_augment_data:
+            aggregator = Aggregator(
+                joined_chunk,
+                list(original_data.columns),
+                original_join_columns,
+                augment_join_columns
+            )
+        joined_chunk = aggregator.running_aggregation(joined_chunk)
+
+        join_.append(joined_chunk)
     join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
 
@@ -346,13 +359,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
-        # aggregations
-        aggregator = Aggregator(
-            join_,
-            list(original_data.columns),
-            original_join_columns,
-            augment_join_columns
-        )
+        # perform aggregations
         join_ = aggregator.final_aggregation(join_)
 
         # removing duplicated join columns
