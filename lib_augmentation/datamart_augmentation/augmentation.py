@@ -153,10 +153,8 @@ def perform_aggregations(data, groupby_columns,
 
     if data[data.duplicated(groupby_columns)].shape[0] > 0:
         start = time.perf_counter()
-        agg_columns = list(
-            set(data.columns).difference(
-                set(groupby_columns))
-        )
+        groupby_set = set(groupby_columns)
+        agg_columns = [col for col in data.columns if col not in groupby_set]
         agg_functions = dict()
         for column in agg_columns:
             if column not in augment_data_join_columns:
