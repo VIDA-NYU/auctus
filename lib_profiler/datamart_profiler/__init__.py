@@ -321,7 +321,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     column_textual = []
 
     # Identify types
-    logger.info("Identifying types...")
+    logger.info("Identifying types, %d columns...", len(columns))
     with PROM_TYPES.time():
         for i, column_meta in enumerate(columns):
             logger.info("Processing column %d...", i)
