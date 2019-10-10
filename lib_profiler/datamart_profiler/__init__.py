@@ -1,5 +1,6 @@
 import codecs
 import contextlib
+import io
 import json
 import logging
 import math
@@ -30,6 +31,8 @@ RANDOM_SEED = 89
 
 SPATIAL_RANGE_DELTA_LONG = 0.0001
 SPATIAL_RANGE_DELTA_LAT = 0.0001
+
+SAMPLE_ROWS = 20
 
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
@@ -483,6 +486,16 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     if spatial_coverage:
         metadata['spatial_coverage'] = spatial_coverage
+
+    # Sample data
+    rand = numpy.random.RandomState(RANDOM_SEED)
+    choose_rows = rand.choice(
+        len(data),
+        min(SAMPLE_ROWS, len(data)),
+        replace=False,
+    )
+    choose_rows.sort()
+    metadata['sample'] = data.iloc[choose_rows].to_csv(index=False)
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches

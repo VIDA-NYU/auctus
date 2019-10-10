@@ -1,6 +1,9 @@
 datamart:
   mappings:
     properties:
+      sample:
+        type: text
+        index: false
       # 'columns' is a nested field, we want
       # to query individual columns
       columns:
