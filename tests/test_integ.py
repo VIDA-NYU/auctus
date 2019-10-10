@@ -884,12 +884,12 @@ class TestAugment(DatamartTest):
         with zip.open('tables/learningData.csv') as table:
             self.assertEqual(
                 table.read().decode('utf-8'),
-                'id,location,mean salary,sum salary,amax salary,amin salary\n'
-                '30,korea,150,300,200,100\n'
-                '40,brazil,100,100,100,100\n'
-                '70,usa,350,700,600,100\n'
-                '80,canada,200,200,200,200\n'
-                '100,france,250,500,300,200\n',
+                'id,location,work,mean salary,sum salary,amax salary,amin salary\n'
+                '30,korea,True,150,300,200,100\n'
+                '40,brazil,False,100,100,100,100\n'
+                '70,usa,True,350,700,600,100\n'
+                '80,canada,True,200,200,200,200\n'
+                '100,france,False,250,500,300,200\n',
             )
         with zip.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
@@ -897,7 +897,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '186 B',
+                        'approximateSize': '218 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '3.2.0',
@@ -922,24 +922,30 @@ class TestAugment(DatamartTest):
                                 },
                                 {
                                     'colIndex': 2,
+                                    'colName': 'work',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
                                     'colName': 'mean salary',
                                     'colType': 'real',
                                     'role': ['attribute'],
                                 },
                                 {
-                                    'colIndex': 3,
+                                    'colIndex': 4,
                                     'colName': 'sum salary',
                                     'colType': 'real',
                                     'role': ['attribute'],
                                 },
                                 {
-                                    'colIndex': 4,
+                                    'colIndex': 5,
                                     'colName': 'amax salary',
                                     'colType': 'real',
                                     'role': ['attribute'],
                                 },
                                 {
-                                    'colIndex': 5,
+                                    'colIndex': 6,
                                     'colName': 'amin salary',
                                     'colType': 'real',
                                     'role': ['attribute'],
@@ -959,8 +965,10 @@ class TestAugment(DatamartTest):
                                 'augmentation_type': 'join',
                                 'nb_rows_after': 5,
                                 'nb_rows_before': 5,
-                                'new_columns': ['mean salary', 'sum salary',
-                                                'amax salary', 'amin salary'],
+                                'new_columns': [
+                                    'work', 'mean salary', 'sum salary',
+                                    'amax salary', 'amin salary',
+                                ],
                                 'removed_columns': [],
                             },
                             'qualValueType': 'dict',

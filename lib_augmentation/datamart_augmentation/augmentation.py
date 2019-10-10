@@ -148,6 +148,9 @@ def perform_aggregations(data, groupby_columns,
     new, augmented dataset the same as the original, input data.
     """
 
+    def first(series):
+        return series.iloc[0]
+
     if data[data.duplicated(groupby_columns)].shape[0] > 0:
         start = time.perf_counter()
         agg_columns = list(
@@ -163,6 +166,9 @@ def perform_aggregations(data, groupby_columns,
                     agg_functions[column] = [
                         np.mean, np.sum, np.max, np.min
                     ]
+                else:
+                    # Just pick the first value
+                    agg_functions[column] = first
             else:
                 # column is a join column
                 if 'datetime' in str(data.dtypes[column]):
@@ -172,7 +178,7 @@ def perform_aggregations(data, groupby_columns,
                     # getting the first non-null element
                     # since it is a join column, we expect all the values
                     # to be exactly the same
-                    agg_functions[column] = [lambda x: x.iloc[0]]
+                    agg_functions[column] = [first]
                     # agg_functions[column] = \
                     #     lambda x: x.loc[x.first_valid_index()].iloc[0]
         if not agg_functions:
@@ -180,11 +186,15 @@ def perform_aggregations(data, groupby_columns,
         data.index.name = None  # avoiding warnings
         data = data.groupby(by=groupby_columns).agg(agg_functions)
         data = data.reset_index(drop=False)
-        data.columns = [' '.join(col[::-1]).strip()
-                        # keep same name for join column
-                        if col[0] not in (original_data_join_columns +
-                                          augment_data_join_columns)
-                        else col[0].strip()
+        data.columns = [col[0].strip()
+                        if (
+                            # keep same name for join column
+                            col[0] in (original_data_join_columns +
+                                           augment_data_join_columns) or
+                            # and also for columns aggregated with 'first' method
+                            col[1] == 'first'
+                        )
+                        else ' '.join(col[::-1]).strip()
                         for col in data.columns.values]
         logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
     return data
@@ -356,6 +366,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         all_names += ['mean ' + name for name in names]
         all_names += ['amax ' + name for name in names]
         all_names += ['amin ' + name for name in names]
+        all_names += ['first ' + name for name in names]
         all_names += names
         for name in all_names:
             column_metadata = copy.deepcopy(column)
