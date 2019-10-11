@@ -151,7 +151,7 @@ def perform_aggregations(data, groupby_columns,
     def first(series):
         return series.iloc[0]
 
-    if data[data.duplicated(groupby_columns)].shape[0] > 0:
+    if data.duplicated(groupby_columns).any():
         start = time.perf_counter()
         groupby_set = set(groupby_columns)
         agg_columns = [col for col in data.columns if col not in groupby_set]
