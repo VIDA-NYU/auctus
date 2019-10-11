@@ -349,7 +349,13 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     else:
         join_ = [joined_chunk for joined_chunk, is_agg in join_]
 
+    # Concatenate all chunks
     join_ = pd.concat(join_)
+
+    if aggregated:
+        # final aggregation step (for example, compute mean from sum & size)
+        join_ = aggregator.final_aggregation(join_)
+
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
 
     # qualities
@@ -373,10 +379,6 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
-        if aggregated:
-            # final aggregation step (for example, compute mean from sum & size)
-            join_ = aggregator.final_aggregation(join_)
-
         # removing duplicated join columns
         join_ = join_.drop(
             list(set(augment_join_columns).intersection(set(join_.columns))),
