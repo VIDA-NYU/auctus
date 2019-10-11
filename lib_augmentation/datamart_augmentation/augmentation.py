@@ -171,7 +171,7 @@ class Aggregator(object):
                     self.final_funcs.append(self._mean(column))
                 else:
                     # Just pick the first value
-                    self.agg_functions[column] = first
+                    self.running_agg[column] = first
             else:
                 # column is a join column
                 if 'datetime' in str(data.dtypes[column]):
@@ -195,9 +195,10 @@ class Aggregator(object):
 
         return inner
 
-    def running_aggregation(self, data):
-        if not self.running_agg:
-            return
+    def running_aggregation(self, data, force=False):
+        if not force and not data.duplicated(self.groupby_columns).any():
+            # Nothing to do
+            return data, False
 
         data.index.name = None  # avoiding warnings
         data = data.groupby(by=self.groupby_columns).agg(self.running_agg)
@@ -215,7 +216,7 @@ class Aggregator(object):
             for col in data.columns.values
         ]
 
-        return data
+        return data, True
 
     def final_aggregation(self, data):
         data = self.running_aggregation(data)
@@ -301,6 +302,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     start = time.perf_counter()
     join_ = []
     aggregator = None
+    aggregated = False
     # Iterate over chunks of augment data
     for augment_data in itertools.chain([first_augment_data], augment_data_chunks):
         # Convert data types
@@ -332,9 +334,19 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
                 original_join_columns,
                 augment_join_columns
             )
-        joined_chunk = aggregator.running_aggregation(joined_chunk)
+        joined_chunk, is_agg = aggregator.running_aggregation(joined_chunk)
+        aggregated = aggregated or is_agg
+        join_.append((joined_chunk, is_agg))
 
-        join_.append(joined_chunk)
+    if aggregated:
+        # If any chunk was aggregated, run aggregation on all of them, so
+        # aggregated columns exist for concatenation
+        join_ = [
+            joined_chunk if is_agg
+            else aggregator.running_aggregation(joined_chunk, force=True)
+            for joined_chunk, is_agg in join_
+        ]
+
     join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
 
@@ -359,7 +371,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
-        # perform aggregations
+        # final aggregation step (for example, compute mean from sum & size)
         join_ = aggregator.final_aggregation(join_)
 
         # removing duplicated join columns
