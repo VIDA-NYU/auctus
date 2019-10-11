@@ -343,9 +343,11 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         # aggregated columns exist for concatenation
         join_ = [
             joined_chunk if is_agg
-            else aggregator.running_aggregation(joined_chunk, force=True)
+            else aggregator.running_aggregation(joined_chunk, force=True)[0]
             for joined_chunk, is_agg in join_
         ]
+    else:
+        join_ = [joined_chunk for joined_chunk, is_agg in join_]
 
     join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
