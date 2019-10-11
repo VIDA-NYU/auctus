@@ -219,7 +219,7 @@ class Aggregator(object):
         return data, True
 
     def final_aggregation(self, data):
-        data = self.running_aggregation(data)
+        data, _ = self.running_aggregation(data, force=True)
 
         for func in self.final_funcs:
             data = data.apply(func)
@@ -373,8 +373,9 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
-        # final aggregation step (for example, compute mean from sum & size)
-        join_ = aggregator.final_aggregation(join_)
+        if aggregated:
+            # final aggregation step (for example, compute mean from sum & size)
+            join_ = aggregator.final_aggregation(join_)
 
         # removing duplicated join columns
         join_ = join_.drop(
