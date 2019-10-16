@@ -510,6 +510,8 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         if columns is not None:
             columns = json.loads(columns)
 
+        logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
+
         # data
         try:
             data, data_profile, data_hash = self.handle_data_parameter(data)
@@ -518,8 +520,6 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # materialize augmentation data
         metadata = task['metadata']
-
-        logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
 
         # no augmentation task provided -- will first look for possible augmentation
         if task['augmentation']['type'] == 'none':
