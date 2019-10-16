@@ -121,6 +121,7 @@ def _lock_process(pipe, filepath, exclusive, timeout=None):
 def _lock(filepath, exclusive, timeout=None):
     type_ = "exclusive" if exclusive else "shared"
 
+    started = False
     locked = False
     pipe, pipe2 = multiprocessing.Pipe()
     proc = multiprocessing.Process(
@@ -130,6 +131,7 @@ def _lock(filepath, exclusive, timeout=None):
     try:
         with PROM_LOCK_ACQUIRE.labels(type_).time():
             proc.start()
+            started = True
 
             out = pipe.recv()
             if out == 'LOCKED':
@@ -147,6 +149,8 @@ def _lock(filepath, exclusive, timeout=None):
 
         yield
     finally:
+        if not started:
+            return
         logger.debug("Releasing %s lock: %r", type_, filepath)
         pipe.send('UNLOCK')
         proc.join(10)
