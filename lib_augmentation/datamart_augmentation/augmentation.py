@@ -193,7 +193,7 @@ def perform_aggregations(data, groupby_columns,
                             col[1] == 'first'
                         )
                         else ' '.join(col[::-1]).strip()
-                        for col in data.columns.values]
+                        for col in data.columns]
         logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
     return data
 
@@ -236,12 +236,12 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     original_join_columns = list()
     augment_join_columns = list()
     for i in range(len(right_columns)):
-        name = augment_data_columns[right_columns[i][0]]
-        if (augment_data_columns[right_columns[i][0]] ==
-                original_data.columns[left_columns[i][0]]):
-            name += '_r'
-        augment_join_columns.append(name)
-        original_join_columns.append(original_data.columns[left_columns[i][0]])
+        left_name = original_data.columns[left_columns[i][0]]
+        right_name = augment_data_columns[right_columns[i][0]]
+        if right_name == left_name:
+            right_name += '_r'
+        original_join_columns.append(left_name)
+        augment_join_columns.append(right_name)
 
     # Stream the data in
     augment_data_chunks = pd.read_csv(
@@ -249,7 +249,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         error_bad_lines=False,
         chunksize=CHUNK_SIZE_ROWS,
     )
-    augment_data = next(augment_data_chunks)
+    first_augment_data = next(augment_data_chunks)
 
     # Columns to drop
     drop_columns = None
@@ -267,13 +267,13 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         )
 
     # Guess temporal resolutions
-    update_idx = match_temporal_resolutions(original_data, augment_data)
+    update_idx = match_temporal_resolutions(original_data, first_augment_data)
 
     # Streaming join
     start = time.perf_counter()
     join_ = []
     # Iterate over chunks of augment data
-    for augment_data in itertools.chain([augment_data], augment_data_chunks):
+    for augment_data in itertools.chain([first_augment_data], augment_data_chunks):
         # Convert data types
         augment_data = convert_data_types(
             augment_data,
@@ -303,7 +303,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     if return_only_datamart_data:
         # dropping columns from original data
         drop_columns = list()
-        intersection = set(original_data.columns).intersection(set(augment_data.columns))
+        intersection = set(original_data.columns).intersection(set(first_augment_data.columns))
         if len(intersection) > 0:
             drop_columns = list(intersection)
         drop_columns += list(set(original_data.columns).difference(intersection))
