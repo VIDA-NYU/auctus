@@ -38,7 +38,7 @@ temporal_resolution_format = {
 }
 
 
-def convert_data_types(data, columns, columns_metadata):
+def convert_data_types(data, columns, columns_metadata, drop=False):
     """
     Converts columns in a dataset (pandas.DataFrame) to their corresponding
     data types, based on the provided metadata.
@@ -46,7 +46,7 @@ def convert_data_types(data, columns, columns_metadata):
 
     data.set_index(
         [columns_metadata[column]['name'] for column in columns],
-        drop=False,
+        drop=drop,
         inplace=True
     )
 
@@ -166,7 +166,7 @@ def perform_aggregations(data, groupby_columns,
                     ]
                 else:
                     # Just pick the first value
-                    agg_functions[column] = first
+                    agg_functions[column] = [first]
             else:
                 # column is a join column
                 if 'datetime' in str(data.dtypes[column]):
@@ -181,9 +181,11 @@ def perform_aggregations(data, groupby_columns,
                     #     lambda x: x.loc[x.first_valid_index()].iloc[0]
         if not agg_functions:
             raise AugmentationError("No numerical columns to perform aggregation.")
-        data.index.name = None  # avoiding warnings
+
+        # Perform group-by
         data = data.groupby(by=groupby_columns).agg(agg_functions)
-        data = data.reset_index(drop=False)
+
+        # Rename aggregated columns
         data.columns = [col[0].strip()
                         if (
                             # keep same name for join column
@@ -194,6 +196,10 @@ def perform_aggregations(data, groupby_columns,
                         )
                         else ' '.join(col[::-1]).strip()
                         for col in data.columns]
+
+        # Put the group-by columns back in
+        data = data.reset_index(drop=False)
+
         logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
     return data
 
@@ -228,6 +234,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         original_data,
         aug_columns_input_data,
         original_metadata['columns'],
+        drop=False,  # Keep the values of join columns from this side
     )
 
     logger.info("Performing join...")
@@ -279,6 +286,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             augment_data,
             aug_columns_companion_data,
             augment_metadata['columns'],
+            drop=True,  # Drop the join columns on that side (avoid duplicates)
         )
 
         # Match temporal resolutions
@@ -294,6 +302,10 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             how=how,
             rsuffix='_r'
         ))
+
+        # Drop the join columns we set as index
+        join_[-1] = join_[-1].reset_index(drop=True)
+
     join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
 
