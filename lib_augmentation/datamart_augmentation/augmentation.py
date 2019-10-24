@@ -141,7 +141,7 @@ def check_temporal_resolution(data):
     return 'date'
 
 
-def perform_aggregations(data, groupby_columns):
+def perform_aggregations(data, groupby_columns, original_columns):
     """Performs group by on dataset after join, to keep the shape of the
     new, augmented dataset the same as the original, input data.
     """
@@ -155,14 +155,17 @@ def perform_aggregations(data, groupby_columns):
         agg_columns = [col for col in data.columns if col not in groupby_set]
         agg_functions = dict()
         for column in agg_columns:
-            if ('int' in str(data.dtypes[column]) or
-                    'float' in str(data.dtypes[column])):
-                agg_functions[column] = [
-                    np.mean, np.sum, np.max, np.min
-                ]
-            else:
-                # Just pick the first value
+            if column in original_columns:
                 agg_functions[column] = [first]
+            else:
+                if ('int' in str(data.dtypes[column]) or
+                        'float' in str(data.dtypes[column])):
+                    agg_functions[column] = [
+                        np.mean, np.sum, np.max, np.min
+                    ]
+                else:
+                    # Just pick the first value
+                    agg_functions[column] = [first]
         if not agg_functions:
             raise AugmentationError("No numerical columns to perform aggregation.")
 
@@ -311,6 +314,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         join_ = perform_aggregations(
             join_,
             original_join_columns,
+            original_data.columns,
         )
 
         # removing duplicated join columns
