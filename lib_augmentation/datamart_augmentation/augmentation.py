@@ -141,9 +141,7 @@ def check_temporal_resolution(data):
     return 'date'
 
 
-def perform_aggregations(data, groupby_columns,
-                         original_data_join_columns,
-                         augment_data_join_columns):
+def perform_aggregations(data, groupby_columns):
     """Performs group by on dataset after join, to keep the shape of the
     new, augmented dataset the same as the original, input data.
     """
@@ -157,28 +155,14 @@ def perform_aggregations(data, groupby_columns,
         agg_columns = [col for col in data.columns if col not in groupby_set]
         agg_functions = dict()
         for column in agg_columns:
-            if column not in augment_data_join_columns:
-                # column is not a join column
-                if ('int' in str(data.dtypes[column]) or
-                        'float' in str(data.dtypes[column])):
-                    agg_functions[column] = [
-                        np.mean, np.sum, np.max, np.min
-                    ]
-                else:
-                    # Just pick the first value
-                    agg_functions[column] = [first]
+            if ('int' in str(data.dtypes[column]) or
+                    'float' in str(data.dtypes[column])):
+                agg_functions[column] = [
+                    np.mean, np.sum, np.max, np.min
+                ]
             else:
-                # column is a join column
-                if 'datetime' in str(data.dtypes[column]):
-                    # TODO: handle datetime
-                    pass
-                else:
-                    # getting the first non-null element
-                    # since it is a join column, we expect all the values
-                    # to be exactly the same
-                    agg_functions[column] = [first]
-                    # agg_functions[column] = \
-                    #     lambda x: x.loc[x.first_valid_index()].iloc[0]
+                # Just pick the first value
+                agg_functions[column] = [first]
         if not agg_functions:
             raise AugmentationError("No numerical columns to perform aggregation.")
 
@@ -186,14 +170,7 @@ def perform_aggregations(data, groupby_columns,
         data = data.groupby(by=groupby_columns).agg(agg_functions)
 
         # Rename aggregated columns
-        data.columns = [col[0].strip()
-                        if (
-                            # keep same name for join column
-                            col[0] in (original_data_join_columns +
-                                           augment_data_join_columns) or
-                            # and also for columns aggregated with 'first' method
-                            col[1] == 'first'
-                        )
+        data.columns = [col[0].strip() if col[1] == 'first'
                         else ' '.join(col[::-1]).strip()
                         for col in data.columns]
 
@@ -333,9 +310,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         # aggregations
         join_ = perform_aggregations(
             join_,
-            list(original_data.columns),
             original_join_columns,
-            augment_join_columns
         )
 
         # removing duplicated join columns
