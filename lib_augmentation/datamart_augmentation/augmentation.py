@@ -221,18 +221,18 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     augment_data_columns = [col['name'] for col in augment_metadata['columns']]
 
     # only converting data types for columns involved in augmentation
-    aug_columns_input_data = []
-    aug_columns_companion_data = []
+    original_join_columns_idx = []
+    augment_join_columns_idx = []
     for left, right in zip(left_columns, right_columns):
         if len(left) > 1 or len(right) > 1:
             raise AugmentationError("Datamart currently does not support "
                                     "combination of columns for augmentation.")
-        aug_columns_input_data.append(left[0])
-        aug_columns_companion_data.append(right[0])
+        original_join_columns_idx.append(left[0])
+        augment_join_columns_idx.append(right[0])
 
     original_data = convert_data_types(
         original_data,
-        aug_columns_input_data,
+        original_join_columns_idx,
         original_metadata['columns'],
         drop=False,  # Keep the values of join columns from this side
     )
@@ -242,9 +242,9 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     # join columns
     original_join_columns = list()
     augment_join_columns = list()
-    for i in range(len(right_columns)):
-        left_name = original_data.columns[left_columns[i][0]]
-        right_name = augment_data_columns[right_columns[i][0]]
+    for left, right in zip(left_columns, right_columns):
+        left_name = original_data.columns[left[0]]
+        right_name = augment_data_columns[right[0]]
         if right_name == left_name:
             right_name += '_r'
         original_join_columns.append(left_name)
@@ -284,7 +284,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         # Convert data types
         augment_data = convert_data_types(
             augment_data,
-            aug_columns_companion_data,
+            augment_join_columns_idx,
             augment_metadata['columns'],
             drop=True,  # Drop the join columns on that side (avoid duplicates)
         )
