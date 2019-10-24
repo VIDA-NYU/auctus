@@ -146,6 +146,10 @@ def perform_aggregations(data, groupby_columns, original_columns):
     new, augmented dataset the same as the original, input data.
     """
 
+    col_indices = {
+        col: idx for idx, col in enumerate(data.columns)
+    }
+
     def first(series):
         return series.iloc[0]
 
@@ -172,13 +176,25 @@ def perform_aggregations(data, groupby_columns, original_columns):
         # Perform group-by
         data = data.groupby(by=groupby_columns).agg(agg_functions)
 
-        # Rename aggregated columns
-        data.columns = [col[0].strip() if col[1] == 'first'
-                        else ' '.join(col[::-1]).strip()
-                        for col in data.columns]
-
         # Put the group-by columns back in
         data = data.reset_index(drop=False)
+
+        # Reorder columns
+        data = data[sorted(
+            data.columns,
+            key=lambda col: col_indices.get(col[0], 999999999)
+        )]
+
+        # Rename columns
+        data.columns = [
+            col if not isinstance(col, tuple)  # Group-by column
+            else (
+                # Aggregated columns
+                col[0].strip() if col[1] == 'first'
+                else ' '.join(col[::-1]).strip()
+            )
+            for col in data.columns
+        ]
 
         logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
     return data
