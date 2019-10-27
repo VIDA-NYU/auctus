@@ -207,6 +207,7 @@ def cache_get_or_set(cache_dir, key, create_function):
     entry_path = os.path.join(cache_dir, key + '.cache')
     lock_path = os.path.join(cache_dir, key + '.lock')
     temp_path = os.path.join(cache_dir, key + '.temp')
+    metric_set = False
     while True:
         with contextlib.ExitStack() as lock:
             try:
@@ -215,8 +216,11 @@ def cache_get_or_set(cache_dir, key, create_function):
                 pass
             else:
                 if os.path.exists(entry_path):
+                    if not metric_set:
+                        metric_set = True
+                        PROM_CACHE_HITS.labels(cache_dir).inc(1)
+
                     # Entry exists and we have it locked, return it
-                    PROM_CACHE_HITS.labels(cache_dir).inc(1)
                     yield entry_path
                     return
                 # Entry was removed while we waited -- we'll try creating
@@ -234,8 +238,10 @@ def cache_get_or_set(cache_dir, key, create_function):
                     os.remove(temp_path)
 
                 try:
+                    if not metric_set:
+                        metric_set = True
+                        PROM_CACHE_MISSES.labels(cache_dir).inc(1)
                     # Cache doesn't exist and we have it locked -- create
-                    PROM_CACHE_MISSES.labels(cache_dir).inc(1)
                     create_function(temp_path)
                 except:
                     # Creation failed, clean up before unlocking!
