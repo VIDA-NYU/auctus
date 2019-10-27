@@ -98,7 +98,11 @@ def _lock_process(pipe, filepath, exclusive, timeout=None):
         if timeout is None:
             fcntl.flock(fd, op)
         elif timeout == 0:
-            fcntl.flock(fd, op | fcntl.LOCK_NB)
+            try:
+                fcntl.flock(fd, op | fcntl.LOCK_NB)
+            except BlockingIOError:
+                pipe.send('TIMEOUT')
+                return
         else:
             with timeout_syscall(timeout):
                 try:
