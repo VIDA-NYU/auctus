@@ -3,6 +3,8 @@ import logging
 import os
 import prometheus_client
 
+from datamart_core.fscache import clear_cache
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,9 @@ PROM_CACHE_PROFILES = prometheus_client.Gauge(
     'cache_profiles_count',
     "Number of data profiles in cache",
 )
+
+
+CACHE_MAX = os.environ.get('MAX_CACHE_BYTES', 100_000_000_000)  # 100 GB
 
 
 def get_tree_size(path):
@@ -72,10 +77,15 @@ def check_cache():
         logger.info("%d augmentations in cache, %d bytes",
                     augmentations, augmentations_bytes)
 
-        # TODO: Remove some datasets from the cache
-
         # Count profiles in cache
         PROM_CACHE_PROFILES.set(len(os.listdir('/cache/queries')))
+
+        # Remove from caches if max is reached
+        if datasets_bytes + augmentations_bytes > CACHE_MAX:
+            logger.warning("Cache size over limit, clearing")
+            clear_cache('/cache/datasets')
+            if augmentations_bytes > CACHE_MAX:
+                clear_cache('/cache/aug')
     finally:
         asyncio.get_event_loop().call_later(
             5 * 60,
