@@ -4,7 +4,7 @@ import os
 import requests
 import time
 
-from . import UnconfiguredMaterializer
+from . import UnconfiguredMaterializer, DatasetTooBig
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ def get_all(endpoint, token, delay=0.5, **params):
 class NoaaMaterializer(object):
     DELAY = 0.5
 
-    def download(self, materialize, writer):
+    def download(self, materialize, writer, size_limit=None):
         try:
             token = os.environ['NOAA_TOKEN']
         except KeyError:
@@ -78,6 +78,8 @@ class NoaaMaterializer(object):
                 if row['date'] != time:
                     if time is not None:
                         writer.writerow([time, sum(values) / len(values)])
+                        if size_limit is not None and fp.tell() > size_limit:
+                            raise DatasetTooBig
                     time = row['date']
                     values = []
                 values.append(row['value'])

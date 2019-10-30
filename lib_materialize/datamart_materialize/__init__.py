@@ -17,16 +17,28 @@ class UnconfiguredMaterializer(Exception):
     """
 
 
-def _write_file(response, writer):
+class DatasetTooBig(Exception):
+    """Raised when the size limit is reached during materialization.
+
+    Some materializers can't tell the size of a dataset before they download
+    it, so the only solution is to raise this error when it is reached.
+    """
+
+
+def _write_file(response, writer, size_limit=None):
     """Write download results to disk.
     """
+    size = 0
     with writer.open_file('wb') as fp:
         for chunk in response.iter_content(chunk_size=4096):
             if chunk:  # filter out keep-alive chunks
                 fp.write(chunk)
+                size += len(chunk)
+                if size_limit is not None and size > size_limit:
+                    raise DatasetTooBig
 
 
-def _direct_download(url, writer):
+def _direct_download(url, writer, size_limit=None):
     """Direct download of a file from a URL.
 
     This is used when the materialization info contains a ``direct_url`` key,
@@ -37,10 +49,10 @@ def _direct_download(url, writer):
     """
     response = requests.get(url, allow_redirects=True, stream=True)
     response.raise_for_status()
-    _write_file(response, writer)
+    _write_file(response, writer, size_limit=size_limit)
 
 
-def _proxy_download(dataset_id, writer, proxy):
+def _proxy_download(dataset_id, writer, proxy, size_limit=None):
     """Use a Datamart query service to materialize for us.
 
     This is used when the materializer is not available locally. We request
@@ -53,7 +65,10 @@ def _proxy_download(dataset_id, writer, proxy):
     response = requests.get(proxy + '/download/' + dataset_id,
                             allow_redirects=True, stream=True)
     response.raise_for_status()
-    _write_file(response, writer)
+    if ('Content-Length' in response.headers and
+            int(response.headers['Content-Length']) > size_limit):
+        raise DatasetTooBig
+    _write_file(response, writer, size_limit=size_limit)
 
 
 materializers = {}
@@ -117,7 +132,7 @@ class CsvWriter(object):
         return None
 
 
-def download(dataset, destination, proxy, format='csv'):
+def download(dataset, destination, proxy, format='csv', size_limit=None):
     """Materialize a dataset on disk.
 
     :param dataset: Dataset description from search index.
@@ -126,6 +141,8 @@ def download(dataset, destination, proxy, format='csv'):
         materialize locally. If ``None``, ``KeyError`` will be raised if this
         materializer is unavailable.
     :param format: Output format.
+    :param size_limit: Maximum size of the dataset to download, in bytes. If
+        the limit is reached, `DatasetTooBig` will be raised.
     """
     if not _materializers_loaded:
         load_materializers()
@@ -145,7 +162,7 @@ def download(dataset, destination, proxy, format='csv'):
                 response.raise_for_status()
                 metadata = response.json()['metadata']
             writer = writer_cls(dataset, destination, metadata)
-            _proxy_download(dataset, writer, proxy)
+            _proxy_download(dataset, writer, proxy, size_limit=size_limit)
             return writer.finish()
         else:
             raise ValueError("A proxy must be specified to download a dataset "
@@ -175,7 +192,10 @@ def download(dataset, destination, proxy, format='csv'):
     if 'direct_url' in materialize:
         logger.info("Direct download: %s", materialize['direct_url'])
         start = time.perf_counter()
-        _direct_download(materialize['direct_url'], writer)
+        _direct_download(
+            materialize['direct_url'], writer,
+            size_limit=size_limit,
+        )
         logger.info("Download successful, %.2fs", time.perf_counter() - start)
         return writer.finish()
     elif 'identifier' in materialize:
@@ -188,7 +208,10 @@ def download(dataset, destination, proxy, format='csv'):
             try:
                 logger.info("Calling materializer...")
                 start = time.perf_counter()
-                materializer.download(materialize, writer)
+                materializer.download(
+                    materialize, writer,
+                    size_limit=size_limit,
+                )
                 logger.info("Materializer successful, %.2fs",
                             time.perf_counter() - start)
                 return writer.finish()
@@ -198,7 +221,7 @@ def download(dataset, destination, proxy, format='csv'):
         if proxy and dataset_id:
             logger.info("Calling materialization proxy...")
             start = time.perf_counter()
-            _proxy_download(dataset_id, writer, proxy)
+            _proxy_download(dataset_id, writer, proxy, size_limit=size_limit)
             logger.info("Materialization through proxy successful, %.2fs",
                         time.perf_counter() - start)
             return writer.finish()
