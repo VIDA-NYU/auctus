@@ -38,7 +38,7 @@ temporal_resolution_format = {
 }
 
 
-def convert_data_types(data, columns, columns_metadata):
+def convert_data_types(data, columns, columns_metadata, drop=False):
     """
     Converts columns in a dataset (pandas.DataFrame) to their corresponding
     data types, based on the provided metadata.
@@ -46,7 +46,7 @@ def convert_data_types(data, columns, columns_metadata):
 
     data.set_index(
         [columns_metadata[column]['name'] for column in columns],
-        drop=False,
+        drop=drop,
         inplace=True
     )
 
@@ -141,12 +141,14 @@ def check_temporal_resolution(data):
     return 'date'
 
 
-def perform_aggregations(data, groupby_columns,
-                         original_data_join_columns,
-                         augment_data_join_columns):
+def perform_aggregations(data, groupby_columns, original_columns):
     """Performs group by on dataset after join, to keep the shape of the
     new, augmented dataset the same as the original, input data.
     """
+
+    col_indices = {
+        col: idx for idx, col in enumerate(data.columns)
+    }
 
     def first(series):
         return series.iloc[0]
@@ -157,8 +159,9 @@ def perform_aggregations(data, groupby_columns,
         agg_columns = [col for col in data.columns if col not in groupby_set]
         agg_functions = dict()
         for column in agg_columns:
-            if column not in augment_data_join_columns:
-                # column is not a join column
+            if column in original_columns:
+                agg_functions[column] = [first]
+            else:
                 if ('int' in str(data.dtypes[column]) or
                         'float' in str(data.dtypes[column])):
                     agg_functions[column] = [
@@ -166,34 +169,33 @@ def perform_aggregations(data, groupby_columns,
                     ]
                 else:
                     # Just pick the first value
-                    agg_functions[column] = first
-            else:
-                # column is a join column
-                if 'datetime' in str(data.dtypes[column]):
-                    # TODO: handle datetime
-                    pass
-                else:
-                    # getting the first non-null element
-                    # since it is a join column, we expect all the values
-                    # to be exactly the same
                     agg_functions[column] = [first]
-                    # agg_functions[column] = \
-                    #     lambda x: x.loc[x.first_valid_index()].iloc[0]
         if not agg_functions:
             raise AugmentationError("No numerical columns to perform aggregation.")
-        data.index.name = None  # avoiding warnings
+
+        # Perform group-by
         data = data.groupby(by=groupby_columns).agg(agg_functions)
+
+        # Put the group-by columns back in
         data = data.reset_index(drop=False)
-        data.columns = [col[0].strip()
-                        if (
-                            # keep same name for join column
-                            col[0] in (original_data_join_columns +
-                                           augment_data_join_columns) or
-                            # and also for columns aggregated with 'first' method
-                            col[1] == 'first'
-                        )
-                        else ' '.join(col[::-1]).strip()
-                        for col in data.columns.values]
+
+        # Reorder columns
+        data = data[sorted(
+            data.columns,
+            key=lambda col: col_indices.get(col[0], 999999999)
+        )]
+
+        # Rename columns
+        data.columns = [
+            col if not isinstance(col, tuple)  # Group-by column
+            else (
+                # Aggregated columns
+                col[0].strip() if col[1] == 'first'
+                else ' '.join(col[::-1]).strip()
+            )
+            for col in data.columns
+        ]
+
         logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
     return data
 
@@ -215,19 +217,20 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     augment_data_columns = [col['name'] for col in augment_metadata['columns']]
 
     # only converting data types for columns involved in augmentation
-    aug_columns_input_data = []
-    aug_columns_companion_data = []
+    original_join_columns_idx = []
+    augment_join_columns_idx = []
     for left, right in zip(left_columns, right_columns):
         if len(left) > 1 or len(right) > 1:
             raise AugmentationError("Datamart currently does not support "
                                     "combination of columns for augmentation.")
-        aug_columns_input_data.append(left[0])
-        aug_columns_companion_data.append(right[0])
+        original_join_columns_idx.append(left[0])
+        augment_join_columns_idx.append(right[0])
 
     original_data = convert_data_types(
         original_data,
-        aug_columns_input_data,
+        original_join_columns_idx,
         original_metadata['columns'],
+        drop=False,  # Keep the values of join columns from this side
     )
 
     logger.info("Performing join...")
@@ -235,13 +238,13 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     # join columns
     original_join_columns = list()
     augment_join_columns = list()
-    for i in range(len(right_columns)):
-        name = augment_data_columns[right_columns[i][0]]
-        if (augment_data_columns[right_columns[i][0]] ==
-                original_data.columns[left_columns[i][0]]):
-            name += '_r'
-        augment_join_columns.append(name)
-        original_join_columns.append(original_data.columns[left_columns[i][0]])
+    for left, right in zip(left_columns, right_columns):
+        left_name = original_data.columns[left[0]]
+        right_name = augment_data_columns[right[0]]
+        if right_name == left_name:
+            right_name += '_r'
+        original_join_columns.append(left_name)
+        augment_join_columns.append(right_name)
 
     # Stream the data in
     augment_data_chunks = pd.read_csv(
@@ -249,7 +252,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         error_bad_lines=False,
         chunksize=CHUNK_SIZE_ROWS,
     )
-    augment_data = next(augment_data_chunks)
+    first_augment_data = next(augment_data_chunks)
 
     # Columns to drop
     drop_columns = None
@@ -267,18 +270,19 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         )
 
     # Guess temporal resolutions
-    update_idx = match_temporal_resolutions(original_data, augment_data)
+    update_idx = match_temporal_resolutions(original_data, first_augment_data)
 
     # Streaming join
     start = time.perf_counter()
     join_ = []
     # Iterate over chunks of augment data
-    for augment_data in itertools.chain([augment_data], augment_data_chunks):
+    for augment_data in itertools.chain([first_augment_data], augment_data_chunks):
         # Convert data types
         augment_data = convert_data_types(
             augment_data,
-            aug_columns_companion_data,
+            augment_join_columns_idx,
             augment_metadata['columns'],
+            drop=True,  # Drop the join columns on that side (avoid duplicates)
         )
 
         # Match temporal resolutions
@@ -294,6 +298,10 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             how=how,
             rsuffix='_r'
         ))
+
+        # Drop the join columns we set as index
+        join_[-1] = join_[-1].reset_index(drop=True)
+
     join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
 
@@ -303,7 +311,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     if return_only_datamart_data:
         # dropping columns from original data
         drop_columns = list()
-        intersection = set(original_data.columns).intersection(set(augment_data.columns))
+        intersection = set(original_data.columns).intersection(set(first_augment_data.columns))
         if len(intersection) > 0:
             drop_columns = list(intersection)
         drop_columns += list(set(original_data.columns).difference(intersection))
@@ -321,9 +329,8 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         # aggregations
         join_ = perform_aggregations(
             join_,
-            list(original_data.columns),
             original_join_columns,
-            augment_join_columns
+            original_data.columns,
         )
 
         # removing duplicated join columns
