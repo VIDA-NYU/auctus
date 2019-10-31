@@ -19,10 +19,14 @@ def d3m_metadata(dataset_id, metadata):
         if types.DATE_TIME in column['semantic_types']:
             col_type = 'dateTime'
         else:
-            col_type = STRUCTURAL_TYPE_MAP.get(
-                column['structural_type'],
-                'string',
-            )
+            # FIXME: We don't use 'categorical' type because uncertain
+            if types.DATE_TIME in column['semantic_types']:
+                col_type = 'dateTime'
+            else:
+                col_type = STRUCTURAL_TYPE_MAP.get(
+                    column['structural_type'],
+                    'string',
+                )
         role = 'index' if column['name'] == 'd3mIndex' else 'attribute'
         columns.append({
             'colIndex': i,
@@ -37,21 +41,23 @@ def d3m_metadata(dataset_id, metadata):
             'datasetName': metadata.get('name', dataset_id),
             'license': metadata.get('license', 'unknown'),
             'approximateSize': '%d B' % metadata['size'],
-            'datasetSchemaVersion': '3.2.0',
+            'datasetSchemaVersion': '4.0.0',
             'redacted': False,
-            'datasetVersion': '0.0',
+            'datasetVersion': '1.0',
         },
         'dataResources': [
             {
                 'resID': 'learningData',
                 'resPath': 'tables/learningData.csv',
                 'resType': 'table',
-                'resFormat': ['text/csv'],
+                'resFormat': {'text/csv': ["csv"]},
                 'isCollection': False,
                 'columns': columns,
             },
         ],
     }
+    if 'description' in metadata:
+        d3m_meta['about']['description'] = metadata['description']
     if 'qualities' in metadata:
         d3m_meta['qualities'] = metadata.get('qualities')
 
