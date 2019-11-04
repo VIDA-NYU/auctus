@@ -204,6 +204,39 @@ def perform_aggregations(data, groupby_columns, original_columns):
 CHUNK_SIZE_ROWS = 10_000
 
 
+def _join_chunk(
+        augment_data, how,
+        augment_join_columns_idx, augment_metadata,
+        drop_columns, update_idx, original_data,
+):
+    # Convert data types
+    augment_data = convert_data_types(
+        augment_data,
+        augment_join_columns_idx,
+        augment_metadata['columns'],
+        drop=True,  # Drop the join columns on that side (avoid duplicates)
+    )
+
+    # Match temporal resolutions
+    original_data_res, augment_data = update_idx(original_data, augment_data)
+
+    # Filter columns
+    if drop_columns:
+        augment_data = augment_data.drop(drop_columns, axis=1)
+
+    # Join
+    joined_chunk = original_data_res.join(
+        augment_data,
+        how=how,
+        rsuffix='_r'
+    )
+
+    # Drop the join columns we set as index
+    joined_chunk.reset_index(drop=True, inplace=True)
+
+    return joined_chunk
+
+
 def join(original_data, augment_data_path, original_metadata, augment_metadata,
          destination_csv,
          left_columns, right_columns,
@@ -278,35 +311,12 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     join_ = []
     # Iterate over chunks of augment data
     for augment_data in itertools.chain([first_augment_data], augment_data_chunks):
-        # Convert data types
-        augment_data = convert_data_types(
-            augment_data,
-            augment_join_columns_idx,
-            augment_metadata['columns'],
-            drop=True,  # Drop the join columns on that side (avoid duplicates)
-        )
 
-        # Match temporal resolutions
-        original_data_res, augment_data = update_idx(
-            original_data,
-            augment_data,
-        )
-
-        # Filter columns
-        if drop_columns:
-            augment_data = augment_data.drop(drop_columns, axis=1)
-
-        # Join
-        joined_chunk = original_data_res.join(
-            augment_data,
-            how=how,
-            rsuffix='_r'
-        )
-
-        # Drop the join columns we set as index
-        joined_chunk.reset_index(drop=True, inplace=True)
-
-        join_.append(joined_chunk)
+        join_.append(_join_chunk(
+            augment_data, how,
+            augment_join_columns_idx, augment_metadata,
+            drop_columns, update_idx, original_data,
+        ))
 
     join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
