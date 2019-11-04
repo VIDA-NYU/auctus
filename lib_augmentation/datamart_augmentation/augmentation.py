@@ -1,6 +1,8 @@
+import dask.dataframe
+from dask import delayed
+from distributed import Client
 import copy
 import io
-import itertools
 import json
 import logging
 import numpy as np
@@ -10,6 +12,7 @@ import tempfile
 import time
 import uuid
 
+from datamart_augmentation.dask import local_dask_cluster
 from datamart_materialize.d3m import d3m_metadata
 from datamart_materialize import types
 
@@ -240,13 +243,17 @@ def _join_chunk(
 def join(original_data, augment_data_path, original_metadata, augment_metadata,
          destination_csv,
          left_columns, right_columns,
-         how='left', columns=None, return_only_datamart_data=False):
+         how='left', columns=None, return_only_datamart_data=False,
+         dask_client=None):
     """
     Performs a join between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
 
     Returns the new pandas.DataFrame object.
     """
+
+    if dask_client is None:
+        dask_client = Client(local_dask_cluster())
 
     augment_data_columns = [col['name'] for col in augment_metadata['columns']]
 
@@ -280,13 +287,12 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         original_join_columns.append(left_name)
         augment_join_columns.append(right_name)
 
-    # Stream the data in
-    augment_data_chunks = pd.read_csv(
+    # Read a sample
+    first_augment_data = pd.read_csv(
         augment_data_path,
         error_bad_lines=False,
-        chunksize=CHUNK_SIZE_ROWS,
+        nrows=CHUNK_SIZE_ROWS,
     )
-    first_augment_data = next(augment_data_chunks)
 
     # Columns to drop
     drop_columns = None
@@ -306,20 +312,22 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     # Guess temporal resolutions
     update_idx = match_temporal_resolutions(original_data, first_augment_data)
 
-    # Streaming join
-    start = time.perf_counter()
-    join_ = []
-    # Iterate over chunks of augment data
-    for augment_data in itertools.chain([first_augment_data], augment_data_chunks):
-
-        join_.append(_join_chunk(
-            augment_data, how,
+    # Parallel join
+    augment_data = dask.dataframe.read_csv(
+        augment_data_path,
+        error_bad_lines=False,
+    ).to_delayed()
+    _join_delayed = delayed(_join_chunk)
+    join_ = [
+        _join_delayed(
+            df, how,
             augment_join_columns_idx, augment_metadata,
             drop_columns, update_idx, original_data,
-        ))
-
-    join_ = pd.concat(join_)
-    logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
+        )
+        for df in augment_data
+    ]
+    join_ = dask.dataframe.from_delayed(join_)
+    join_ = dask_client.gather(dask_client.compute(join_))
 
     # qualities
     qualities_list = list()
@@ -503,7 +511,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
 
 
 def augment(data, newdata, metadata, task, columns=None, destination=None,
-            return_only_datamart_data=False):
+            return_only_datamart_data=False, dask_client=None):
     """
     Augments original data based on the task.
 
@@ -515,6 +523,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     :param destination: location to save the files.
     :param return_only_datamart_data: only returns the portion of newdata that matches
       well with data.
+    :param dask_client: the dask client that will be used to run computations
     """
 
     if 'id' not in task:
@@ -545,6 +554,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             task['augmentation']['right_columns'],
             columns=columns,
             return_only_datamart_data=return_only_datamart_data,
+            dask_client=dask_client,
         )
     elif task['augmentation']['type'] == 'union':
         output_metadata = union(
