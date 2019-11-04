@@ -9,6 +9,8 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'pandas',
     'numpy',
+    'dask[dataframe]>=2.4,<3.0',
+    'distributed',
     'datamart_materialize==0.5.1',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
