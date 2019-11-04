@@ -126,7 +126,8 @@ def match_column_temporal_resolutions(index_1, index_2):
     else:
         # Change resolution of first index to the second's
         fmt = temporal_resolution_format[resolution_2]
-        return lambda idx1, idx2: (idx1.strftime(fmt), idx2)
+        _idx1 = index_1.strftime(fmt)  # Cache it for speed
+        return lambda idx1, idx2: (_idx1, idx2)
 
 
 def check_temporal_resolution(data):
@@ -286,14 +287,17 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         )
 
         # Match temporal resolutions
-        original_data, augment_data = update_idx(original_data, augment_data)
+        original_data_res, augment_data = update_idx(
+            original_data,
+            augment_data,
+        )
 
         # Filter columns
         if drop_columns:
             augment_data = augment_data.drop(drop_columns, axis=1)
 
         # Join
-        joined_chunk = original_data.join(
+        joined_chunk = original_data_res.join(
             augment_data,
             how=how,
             rsuffix='_r'
