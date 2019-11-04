@@ -8,7 +8,8 @@ set -eux
 
 # Re-build and re-start services
 docker-compose build --build-arg version=v0.0 coordinator profiler query test_discoverer
-docker-compose up -d coordinator profiler query querylb
+docker-compose up -d coordinator
+docker-compose up -d --force-recreate profiler query querylb
 
 # Clear cache
 docker exec -ti $(basename "$(pwd)")_coordinator_1 sh -c 'rm -rf /cache/*/*'
