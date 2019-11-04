@@ -293,14 +293,16 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             augment_data = augment_data.drop(drop_columns, axis=1)
 
         # Join
-        join_.append(original_data.join(
+        joined_chunk = original_data.join(
             augment_data,
             how=how,
             rsuffix='_r'
-        ))
+        )
 
         # Drop the join columns we set as index
-        join_[-1] = join_[-1].reset_index(drop=True)
+        joined_chunk.reset_index(drop=True, inplace=True)
+
+        join_.append(joined_chunk)
 
     join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
