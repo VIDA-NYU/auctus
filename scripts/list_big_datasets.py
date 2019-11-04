@@ -22,16 +22,16 @@ def search():
             'query': {
                 'range': {
                     "size": {
-                        "gt": 50_000_000,
+                        "gt": 10_000_000_000,
                     },
                 },
             },
         },
-        _source=False,
+        _source='size',
         size=SIZE,
     )
     for h in hits:
-        print(h['_id'])
+        print("%s %.1f GB" % (h['_id'], h['_source']['size'] / 1_000_000_000.0))
 
 
 if __name__ == '__main__':
