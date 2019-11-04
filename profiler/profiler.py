@@ -13,6 +13,7 @@ import xlrd
 from datamart_core.common import add_dataset_to_index, \
     delete_dataset_from_index, log_future, json2msg, msg2json
 from datamart_core.materialize import get_dataset
+from datamart_materialize import DatasetTooBig
 from datamart_materialize.excel import xls_to_csv
 from datamart_profiler import process_dataset
 
@@ -160,6 +161,10 @@ class Profiler(object):
                                 date=datetime.utcnow().isoformat() + 'Z',
                                 version=os.environ['DATAMART_VERSION'])
                     add_dataset_to_index(self.es, dataset_id, body)
+                except DatasetTooBig:
+                    # Materializer reached size limit
+                    logger.info("Dataset over size limit: %r", dataset_id)
+                    message.ack()
                 except Exception as e:
                     if isinstance(e, elasticsearch.RequestError):
                         # This is a problem with our computed metadata

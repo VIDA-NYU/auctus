@@ -71,6 +71,7 @@ def get_dataset(metadata, dataset_id, format='csv'):
                         {'id': dataset_id, 'metadata': metadata},
                         cache_temp, None,
                         format='csv',
+                        size_limit=10_000_000_000,  # 10 GB
                     )
 
             csv_key = encode_dataset_id(dataset_id) + '_' + 'csv'
