@@ -157,7 +157,7 @@ def perform_aggregations(data, groupby_columns, original_columns):
     def first(series):
         return series.iloc[0]
 
-    if data.duplicated(groupby_columns).any():
+    if True:  # data.duplicated(groupby_columns).any():
         start = time.perf_counter()
         groupby_set = set(groupby_columns)
         agg_columns = [col for col in data.columns if col not in groupby_set]
@@ -327,7 +327,6 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         for df in augment_data
     ]
     join_ = dask.dataframe.from_delayed(join_)
-    join_ = dask_client.gather(dask_client.compute(join_))
 
     # qualities
     qualities_list = list()
@@ -349,6 +348,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         # dropping rows with all null values
         join_.dropna(axis=0, how='all', inplace=True)
 
+        join_ = dask_client.gather(dask_client.compute(join_))
     else:
         # aggregations
         join_ = perform_aggregations(
@@ -362,6 +362,8 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             list(set(augment_join_columns).intersection(set(join_.columns))),
             axis=1
         )
+
+        join_ = dask_client.gather(dask_client.compute(join_))
 
         original_columns_set = set(original_data.columns)
         new_columns = [
