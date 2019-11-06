@@ -641,13 +641,13 @@ class TestAugment(DatamartTest):
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
         )
-        zip = zipfile.ZipFile(io.BytesIO(response.content))
-        zip.testzip()
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
         self.assertEqual(
-            set(zip.namelist()),
+            set(zip_.namelist()),
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
-        with zip.open('tables/learningData.csv') as table:
+        with zip_.open('tables/learningData.csv') as table:
             self.assertEqual(
                 table.read().decode('utf-8'),
                 'number,desk_faces,name,country,what\n'
@@ -657,7 +657,7 @@ class TestAugment(DatamartTest):
                 '8,east,roque,peru,True\n'
                 '10,west,fernando,brazil,False\n',
             )
-        with zip.open('datasetDoc.json') as meta_fp:
+        with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
             self.assertJson(
                 meta,
@@ -756,13 +756,13 @@ class TestAugment(DatamartTest):
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
         )
-        zip = zipfile.ZipFile(io.BytesIO(response.content))
-        zip.testzip()
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
         self.assertEqual(
-            set(zip.namelist()),
+            set(zip_.namelist()),
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
-        with zip.open('tables/learningData.csv') as table:
+        with zip_.open('tables/learningData.csv') as table:
             self.assertEqual(
                 table.read().decode('utf-8'),
                 'number,desk_faces,name,country,what\n'
@@ -772,7 +772,7 @@ class TestAugment(DatamartTest):
                 '8,east,roque,peru,True\n'
                 '10,west,fernando,brazil,False\n',
             )
-        with zip.open('datasetDoc.json') as meta_fp:
+        with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
             self.assertJson(
                 meta,
@@ -789,42 +789,42 @@ class TestAugment(DatamartTest):
                     'dataResources': [
                         {
                             'columns': [
-                            {
-                                'colIndex': 0,
-                                'colName': 'number',
-                                'colType': 'integer',
-                                'role': ['attribute'],
-                            },
-                            {
-                                'colIndex': 1,
-                                'colName': 'desk_faces',
-                                'colType': 'string',
-                                'role': ['attribute'],
-                            },
-                            {
-                                'colIndex': 2,
-                                'colName': 'name',
-                                'colType': 'string',
-                                'role': ['attribute'],
-                            },
-                            {
-                                'colIndex': 3,
-                                'colName': 'country',
-                                'colType': 'string',
-                                'role': ['attribute'],
-                            },
-                            {
-                                'colIndex': 4,
-                                'colName': 'what',
-                                'colType': 'string',
-                                'role': ['attribute'],
-                            },
-                        ],
-                        'isCollection': False,
-                        'resFormat': ['text/csv'],
-                        'resID': 'learningData',
-                        'resPath': 'tables/learningData.csv',
-                        'resType': 'table',
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'number',
+                                    'colType': 'integer',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'desk_faces',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 2,
+                                    'colName': 'name',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
+                                    'colName': 'country',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 4,
+                                    'colName': 'what',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                            ],
+                            'isCollection': False,
+                            'resFormat': ['text/csv'],
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
                         },
                     ],
                     'qualities': [
@@ -875,13 +875,13 @@ class TestAugment(DatamartTest):
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
         )
-        zip = zipfile.ZipFile(io.BytesIO(response.content))
-        zip.testzip()
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
         self.assertEqual(
-            set(zip.namelist()),
+            set(zip_.namelist()),
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
-        with zip.open('tables/learningData.csv') as table:
+        with zip_.open('tables/learningData.csv') as table:
             self.assertEqual(
                 table.read().decode('utf-8'),
                 'id,location,work,mean salary,sum salary,amax salary,amin salary\n'
@@ -891,7 +891,7 @@ class TestAugment(DatamartTest):
                 '80,canada,True,200,200,200,200\n'
                 '100,france,False,250,500,300,200\n',
             )
-        with zip.open('datasetDoc.json') as meta_fp:
+        with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
             self.assertJson(
                 meta,
@@ -1009,13 +1009,13 @@ class TestAugment(DatamartTest):
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
         )
-        zip = zipfile.ZipFile(io.BytesIO(response.content))
-        zip.testzip()
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
         self.assertEqual(
-            set(zip.namelist()),
+            set(zip_.namelist()),
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
-        with zip.open('tables/learningData.csv') as table:
+        with zip_.open('tables/learningData.csv') as table:
             self.assertEqual(
                 table.read().decode('utf-8'),
                 'home_address,year\n'
@@ -1046,7 +1046,7 @@ class TestAugment(DatamartTest):
                 'PR,1990.0\n'
                 'DE,\n'
             )
-        with zip.open('datasetDoc.json') as meta_fp:
+        with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
             self.assertJson(
                 meta,
@@ -1130,13 +1130,13 @@ class TestAugment(DatamartTest):
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
         )
-        zip = zipfile.ZipFile(io.BytesIO(response.content))
-        zip.testzip()
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
         self.assertEqual(
-            set(zip.namelist()),
+            set(zip_.namelist()),
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
-        with zip.open('tables/learningData.csv') as table:
+        with zip_.open('tables/learningData.csv') as table:
             table_lines = table.read().decode('utf-8').splitlines(False)
             # Truncate fields to work around rounding errors
             # FIXME: Deal with rounding errors
@@ -1153,7 +1153,7 @@ class TestAugment(DatamartTest):
                 '40.73117,-74.0018,place103,d\n'
                 '40.69427,-73.9898,place104,e'
             )
-        with zip.open('datasetDoc.json') as meta_fp:
+        with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
             self.assertJson(
                 meta,
@@ -1219,15 +1219,15 @@ class TestAugment(DatamartTest):
             )
 
 
-def check_ranges(min, max):
+def check_ranges(min_, max_):
     def check(ranges):
         assert len(ranges) == 3
         for rg in ranges:
             assert rg.keys() == {'range'}
-            rg = rg ['range']
+            rg = rg['range']
             assert rg.keys() == {'gte', 'lte'}
             gte, lte = rg['gte'], rg['lte']
-            assert min <= gte <= lte <= max
+            assert min_ <= gte <= lte <= max_
 
         return True
 
