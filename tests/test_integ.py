@@ -9,7 +9,7 @@ import time
 import unittest
 import zipfile
 
-from .utils import assert_json
+from .utils import DataTestCase
 
 
 schemas = os.path.join(os.path.dirname(__file__), '..', 'doc', 'schemas')
@@ -41,7 +41,7 @@ result_list_schema = {
 }
 
 
-class DatamartTest(unittest.TestCase):
+class DatamartTest(DataTestCase):
     def datamart_get(self, url, **kwargs):
         return self._request('get', url, **kwargs)
 
@@ -81,7 +81,7 @@ class DatamartTest(unittest.TestCase):
         response.raise_for_status()
 
 
-class TestProfiler(unittest.TestCase):
+class TestProfiler(DataTestCase):
     def test_basic(self):
         es = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
@@ -96,7 +96,7 @@ class TestProfiler(unittest.TestCase):
         )['hits']['hits']
         hits = {h['_id']: h['_source'] for h in hits}
 
-        assert_json(
+        self.assertJson(
             hits,
             {
                 'datamart.test.basic': basic_metadata,
@@ -130,7 +130,7 @@ class TestProfileQuery(DatamartTest):
                 {e['name'] for e in lazo} == {'name', 'country', 'what'}
             ),
         )
-        assert_json(response.json(), metadata)
+        self.assertJson(response.json(), metadata)
 
 
 class TestSearch(DatamartTest):
@@ -181,7 +181,7 @@ class TestSearch(DatamartTest):
         results = response.json()['results']
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['id'], 'datamart.test.basic')
-        assert_json(
+        self.assertJson(
             results[0],
             {
                 'id': 'datamart.test.basic',
@@ -214,7 +214,7 @@ class TestDataSearch(DatamartTest):
             schema=result_list_schema,
         )
         results = response.json()['results']
-        assert_json(
+        self.assertJson(
             results,
             [
                 {
@@ -244,7 +244,7 @@ class TestDataSearch(DatamartTest):
             schema=result_list_schema,
         )
         results = response.json()['results']
-        assert_json(
+        self.assertJson(
             results,
             [
                 {
@@ -273,7 +273,7 @@ class TestDataSearch(DatamartTest):
             schema=result_list_schema,
         )
         results = response.json()['results']
-        assert_json(
+        self.assertJson(
             results,
             [
                 {
@@ -309,7 +309,7 @@ class TestDataSearch(DatamartTest):
             schema=result_list_schema,
         )
         results = response.json()['results']
-        assert_json(
+        self.assertJson(
             results,
             [
                 {
@@ -356,7 +356,7 @@ class TestDataSearch(DatamartTest):
             schema=result_list_schema,
         )
         results = response.json()['results']
-        assert_json(
+        self.assertJson(
             results,
             [
                 {
@@ -390,7 +390,7 @@ class TestDataSearch(DatamartTest):
         )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
-        assert_json(
+        self.assertJson(
             results,
             [
                 {
@@ -421,7 +421,7 @@ class TestDataSearch(DatamartTest):
         )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
-        assert_json(
+        self.assertJson(
             results,
             [
                 {
@@ -659,7 +659,7 @@ class TestAugment(DatamartTest):
             )
         with zip.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
-            assert_json(
+            self.assertJson(
                 meta,
                 {
                     'about': {
@@ -774,7 +774,7 @@ class TestAugment(DatamartTest):
             )
         with zip.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
-            assert_json(
+            self.assertJson(
                 meta,
                 {
                     'about': {
@@ -893,7 +893,7 @@ class TestAugment(DatamartTest):
             )
         with zip.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
-            assert_json(
+            self.assertJson(
                 meta,
                 {
                     'about': {
@@ -1048,7 +1048,7 @@ class TestAugment(DatamartTest):
             )
         with zip.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
-            assert_json(
+            self.assertJson(
                 meta,
                 {
                     'about': {
@@ -1155,7 +1155,7 @@ class TestAugment(DatamartTest):
             )
         with zip.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
-            assert_json(
+            self.assertJson(
                 meta,
                 {
                     'about': {
