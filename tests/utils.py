@@ -60,3 +60,9 @@ class DataTestCase(unittest.TestCase):
                 self.assertJson(a, e, '%s.%r' % (pos, k))
         else:
             self.assertEqual(actual, expected, msg="at %s" % pos)
+
+    def assertCsvEqualNoOrder(self, actual, expected_header, expected_data):
+        lines = actual.splitlines(False)
+        self.assertEqual(lines[0], expected_header)
+        self.maxDiff = None
+        self.assertEqual(sorted(lines[1:]), sorted(expected_data))

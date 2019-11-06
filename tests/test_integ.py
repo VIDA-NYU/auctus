@@ -648,14 +648,16 @@ class TestAugment(DatamartTest):
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
         with zip_.open('tables/learningData.csv') as table:
-            self.assertEqual(
+            self.assertCsvEqualNoOrder(
                 table.read().decode('utf-8'),
-                'number,desk_faces,name,country,what\n'
-                '4,west,remi,france,False\n'
-                '3,south,aecio,brazil,True\n'
-                '7,west,sonia,peru,True\n'
-                '8,east,roque,peru,True\n'
-                '10,west,fernando,brazil,False\n',
+                'number,desk_faces,name,country,what',
+                [
+                    '4,west,remi,france,False',
+                    '3,south,aecio,brazil,True',
+                    '7,west,sonia,peru,True',
+                    '8,east,roque,peru,True',
+                    '10,west,fernando,brazil,False',
+                ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
@@ -763,14 +765,16 @@ class TestAugment(DatamartTest):
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
         with zip_.open('tables/learningData.csv') as table:
-            self.assertEqual(
+            self.assertCsvEqualNoOrder(
                 table.read().decode('utf-8'),
-                'number,desk_faces,name,country,what\n'
-                '4,west,remi,france,False\n'
-                '3,south,aecio,brazil,True\n'
-                '7,west,sonia,peru,True\n'
-                '8,east,roque,peru,True\n'
-                '10,west,fernando,brazil,False\n',
+                'number,desk_faces,name,country,what',
+                [
+                    '4,west,remi,france,False',
+                    '3,south,aecio,brazil,True',
+                    '7,west,sonia,peru,True',
+                    '8,east,roque,peru,True',
+                    '10,west,fernando,brazil,False',
+                ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
@@ -882,14 +886,16 @@ class TestAugment(DatamartTest):
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
         with zip_.open('tables/learningData.csv') as table:
-            self.assertEqual(
+            self.assertCsvEqualNoOrder(
                 table.read().decode('utf-8'),
-                'id,location,work,mean salary,sum salary,amax salary,amin salary\n'
-                '30,korea,True,150,300,200,100\n'
-                '40,brazil,False,100,100,100,100\n'
-                '70,usa,True,350,700,600,100\n'
-                '80,canada,True,200,200,200,200\n'
-                '100,france,False,250,500,300,200\n',
+                'id,location,work,mean salary,sum salary,amax salary,amin salary',
+                [
+                    '30,korea,True,150,300,200,100',
+                    '40,brazil,False,100,100,100,100',
+                    '70,usa,True,350,700,600,100',
+                    '80,canada,True,200,200,200,200',
+                    '100,france,False,250,500,300,200',
+                ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
@@ -1016,35 +1022,37 @@ class TestAugment(DatamartTest):
             {'datasetDoc.json', 'tables/learningData.csv'},
         )
         with zip_.open('tables/learningData.csv') as table:
-            self.assertEqual(
+            self.assertCsvEqualNoOrder(
                 table.read().decode('utf-8'),
-                'home_address,year\n'
-                'AZ,1990.0\n'
-                'PA,1990.0\n'
-                'SD,\n'
-                'NJ,1990.0\n'
-                'NH,\n'
-                'TX,1990.0\n'
-                'MS,1990.0\n'
-                'TN,1990.0\n'
-                'WA,1990.0\n'
-                'VA,1990.0\n'
-                'NY,1990.0\n'
-                'OH,1990.0\n'
-                'OR,1990.0\n'
-                'IL,1990.0\n'
-                'MT,\n'
-                'GA,1990.0\n'
-                'FL,\n'
-                'HI,\n'
-                'CA,1990.0\n'
-                'NC,1990.0\n'
-                'UT,1991.0\n'
-                'SC,1991.0\n'
-                'LA,1990.0\n'
-                'RI,\n'
-                'PR,1990.0\n'
-                'DE,\n'
+                'home_address,year',
+                [
+                    'AZ,1990.0',
+                    'PA,1990.0',
+                    'SD,',
+                    'NJ,1990.0',
+                    'NH,',
+                    'TX,1990.0',
+                    'MS,1990.0',
+                    'TN,1990.0',
+                    'WA,1990.0',
+                    'VA,1990.0',
+                    'NY,1990.0',
+                    'OH,1990.0',
+                    'OR,1990.0',
+                    'IL,1990.0',
+                    'MT,',
+                    'GA,1990.0',
+                    'FL,',
+                    'HI,',
+                    'CA,1990.0',
+                    'NC,1990.0',
+                    'UT,1991.0',
+                    'SC,1991.0',
+                    'LA,1990.0',
+                    'RI,',
+                    'PR,1990.0',
+                    'DE,',
+                ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
@@ -1144,14 +1152,16 @@ class TestAugment(DatamartTest):
                 ','.join(e[:8] for e in l.split(','))
                 for l in table_lines
             ]
-            self.assertEqual(
+            self.assertCsvEqualNoOrder(
                 '\n'.join(table_lines[0:6]),
-                'lat,long,id,letter\n'
-                '40.73279,-73.9985,place100,a\n'
-                '40.72970,-73.9978,place101,b\n'
-                '40.73266,-73.9975,place102,c\n'
-                '40.73117,-74.0018,place103,d\n'
-                '40.69427,-73.9898,place104,e'
+                'lat,long,id,letter',
+                [
+                    '40.73279,-73.9985,place100,a',
+                    '40.72970,-73.9978,place101,b',
+                    '40.73266,-73.9975,place102,c',
+                    '40.73117,-74.0018,place103,d',
+                    '40.69427,-73.9898,place104,e',
+                ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
