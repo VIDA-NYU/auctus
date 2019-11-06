@@ -929,11 +929,11 @@ class TestAugment(DatamartTest):
                 table.read().decode('utf-8'),
                 'id,location,work,mean salary,sum salary,max salary,min salary',
                 [
-                    '30,korea,True,150,300,200,100',
-                    '40,brazil,False,100,100,100,100',
-                    '70,usa,True,350,700,600,100',
-                    '80,canada,True,200,200,200,200',
-                    '100,france,False,250,500,300,200',
+                    '30,korea,True,150.0,300,200,100',
+                    '40,brazil,False,100.0,100,100,100',
+                    '70,usa,True,350.0,700,600,100',
+                    '80,canada,True,200.0,200,200,200',
+                    '100,france,False,250.0,500,300,200',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -942,7 +942,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '216 B',
+                        'approximateSize': '226 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
