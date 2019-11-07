@@ -983,6 +983,20 @@ def parse_query(query_json):
     if keywords_query_main:
         query_args_main.append(keywords_query_main)
 
+    # sources
+    if 'source' in query_json:
+        query_args_main.append({
+            'bool': {
+                'filter': [
+                    {
+                        'terms': {
+                            'materialize.identifier': query_json['source'],
+                        }
+                    }
+                ]
+            }
+        })
+
     # tabular_variables
     tabular_variables = []
 
