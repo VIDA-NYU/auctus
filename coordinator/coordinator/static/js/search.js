@@ -313,6 +313,16 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
       search.query.keywords = keywords;
     }
 
+    var source =
+      [].filter.call(
+        document.getElementsByClassName('source-checkbox'),
+        function(cb) { return cb.checked; }
+      ).map(function(cb) { return cb.value; });
+    console.log("source:", search.query.source);
+    if(source.length > 0) {
+      search.query.source = source;
+    }
+
     search.query.variables = []
 
     for(key in indices) {

@@ -137,7 +137,10 @@ class Status(BaseHandler):
 
 class Search(BaseHandler):
     def get(self):
-        self.render('search.html')
+        self.render(
+            'search.html',
+            sources=sorted(self.coordinator.sources_counts),
+        )
 
 
 class Upload(BaseHandler):
