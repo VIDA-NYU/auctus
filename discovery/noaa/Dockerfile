@@ -7,13 +7,13 @@ RUN python3 install_deps.py Pipfile.lock
 ENV TINI_VERSION v0.18.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
-ARG version
-ENV DATAMART_VERSION ${version}
-RUN echo x${DATAMART_VERSION}x && test -n "${DATAMART_VERSION}"
 
 COPY lib_core lib_core
 RUN pip install --no-deps -e /usr/src/app/lib_core
 COPY discovery/noaa /usr/src/app/noaa
 RUN pip install --no-deps -e noaa
+ARG version
+ENV DATAMART_VERSION ${version}
+RUN test -n "${DATAMART_VERSION}"
 ENTRYPOINT ["/tini", "--"]
 CMD ["python", "-m", "noaa_discovery.noaa_discovery"]

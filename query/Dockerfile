@@ -19,9 +19,6 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 # CI: RUN pip install coverage
 # CI: COPY .coveragerc /usr/src/app/
-ARG version
-ENV DATAMART_VERSION ${version}
-RUN echo x${DATAMART_VERSION}x && test -n "${DATAMART_VERSION}"
 
 #RUN apt-get update && apt-get install -y default-jre && \
 #    rm -rf /var/lib/apt/lists/*
@@ -37,5 +34,8 @@ RUN pip install --no-deps -e /usr/src/app/lib_profiler
 #    lib_profiler/datamart_profiler/scdp.jar
 COPY query query
 RUN pip install --no-deps -e /usr/src/app/query
+ARG version
+ENV DATAMART_VERSION ${version}
+RUN test -n "${DATAMART_VERSION}"
 ENTRYPOINT ["/tini", "--"]
 CMD ["query"]
