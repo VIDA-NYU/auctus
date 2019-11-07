@@ -32,7 +32,10 @@ PROM_CACHE_PROFILES = prometheus_client.Gauge(
 )
 
 
-CACHE_MAX = os.environ.get('MAX_CACHE_BYTES', 100_000_000_000)  # 100 GB
+CACHE_HIGH = os.environ.get('MAX_CACHE_BYTES', 100_000_000_000)  # 100 GB
+CACHE_LOW = CACHE_HIGH * 0.33
+
+CACHES = ('/cache/datasets', '/cache/aug')
 
 
 def get_tree_size(path):
@@ -48,11 +51,36 @@ def get_tree_size(path):
     return size
 
 
-def clear_caches(aug):
+def clear_caches():
     logger.warning("Cache size over limit, clearing")
-    clear_cache('/cache/datasets')
-    if aug:
-        clear_cache('/cache/aug')
+
+    # Build list of all entries
+    entries = []
+    for cache in CACHES:
+        for name in os.listdir(cache):
+            if not name.endswith('.cache'):
+                continue
+            key = name[:-6]
+            path = os.path.join(cache, name)
+            stat = os.stat(path)
+            entries.append((cache, key, get_tree_size(path), stat.st_mtime))
+
+    # Sort it by date
+    entries = sorted(entries, key=lambda e: e[3])
+
+    # Select entries to keep while staying under threshold
+    keep = {cache: set() for cache in CACHES}
+    total_size = 0
+    for cache, key, size, mtime in entries:
+        if total_size + size <= CACHE_LOW:
+            keep[cache].add(key)
+            total_size += size
+
+    for cache in CACHES:
+        clear_cache(
+            cache,
+            should_delete=lambda key, keep_set=keep[cache]: key not in keep_set,
+        )
 
 
 def check_cache():
@@ -89,11 +117,10 @@ def check_cache():
         PROM_CACHE_PROFILES.set(len(os.listdir('/cache/queries')))
 
         # Remove from caches if max is reached
-        if datasets_bytes + augmentations_bytes > CACHE_MAX:
+        if datasets_bytes + augmentations_bytes > CACHE_HIGH:
             fut = asyncio.get_event_loop().run_in_executor(
                 None,
                 clear_caches,
-                augmentations_bytes > CACHE_MAX,
             )
             log_future(fut, logger)
     finally:

@@ -1,3 +1,6 @@
+# This whole module exists as stand-alone, without the Prometheus metrics
+# https://pypi.org/project/fslock/
+
 import contextlib
 import fcntl
 import logging
@@ -219,6 +222,10 @@ def cache_get_or_set(cache_dir, key, create_function):
                     if not metric_set:
                         metric_set = True
                         PROM_CACHE_HITS.labels(cache_dir).inc(1)
+
+                    # Update time on the file
+                    with open(lock_path, 'a'):
+                        pass
 
                     # Entry exists and we have it locked, return it
                     yield entry_path
