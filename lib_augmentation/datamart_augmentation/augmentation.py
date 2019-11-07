@@ -154,50 +154,49 @@ def perform_aggregations(data, groupby_columns, original_columns):
     def first(series):
         return series.iloc[0]
 
-    if data.duplicated(groupby_columns).any():
-        start = time.perf_counter()
-        groupby_set = set(groupby_columns)
-        agg_columns = [col for col in data.columns if col not in groupby_set]
-        agg_functions = dict()
-        for column in agg_columns:
-            if column in original_columns:
-                agg_functions[column] = [first]
+    start = time.perf_counter()
+    groupby_set = set(groupby_columns)
+    agg_columns = [col for col in data.columns if col not in groupby_set]
+    agg_functions = dict()
+    for column in agg_columns:
+        if column in original_columns:
+            agg_functions[column] = [first]
+        else:
+            if ('int' in str(data.dtypes[column]) or
+                    'float' in str(data.dtypes[column])):
+                agg_functions[column] = [
+                    np.mean, np.sum, np.max, np.min
+                ]
             else:
-                if ('int' in str(data.dtypes[column]) or
-                        'float' in str(data.dtypes[column])):
-                    agg_functions[column] = [
-                        np.mean, np.sum, np.max, np.min
-                    ]
-                else:
-                    # Just pick the first value
-                    agg_functions[column] = [first]
-        if not agg_functions:
-            raise AugmentationError("No numerical columns to perform aggregation.")
+                # Just pick the first value
+                agg_functions[column] = [first]
+    if not agg_functions:
+        raise AugmentationError("No numerical columns to perform aggregation.")
 
-        # Perform group-by
-        data = data.groupby(by=groupby_columns).agg(agg_functions)
+    # Perform group-by
+    data = data.groupby(by=groupby_columns).agg(agg_functions)
 
-        # Put the group-by columns back in
-        data = data.reset_index(drop=False)
+    # Put the group-by columns back in
+    data = data.reset_index(drop=False)
 
-        # Reorder columns
-        data = data[sorted(
-            data.columns,
-            key=lambda col: col_indices.get(col[0], 999999999)
-        )]
+    # Reorder columns
+    data = data[sorted(
+        data.columns,
+        key=lambda col: col_indices.get(col[0], 999999999)
+    )]
 
-        # Rename columns
-        data.columns = [
-            col if not isinstance(col, tuple)  # Group-by column
-            else (
-                # Aggregated columns
-                col[0].strip() if col[1] == 'first'
-                else ' '.join(col[::-1]).strip()
-            )
-            for col in data.columns
-        ]
+    # Rename columns
+    data.columns = [
+        col if not isinstance(col, tuple)  # Group-by column
+        else (
+            # Aggregated columns
+            col[0].strip() if col[1] == 'first'
+            else ' '.join(col[::-1]).strip()
+        )
+        for col in data.columns
+    ]
 
-        logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
+    logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
     return data
 
 
