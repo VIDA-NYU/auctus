@@ -3,7 +3,7 @@ import logging
 import os
 import prometheus_client
 
-from datamart_core.common import log_future
+from datamart_core.objectstore import get_object_store
 
 
 logger = logging.getLogger(__name__)
@@ -42,19 +42,6 @@ CACHES = ('/cache/datasets', '/cache/aug')
 # Does S3 have access dates? Can objects expire based on it directly? -- no
 
 
-def get_tree_size(path):
-    if os.path.isfile(path):
-        return os.path.getsize(path)
-    size = 0
-    for dirpath, _, filenames in os.walk(path):
-        for filename in filenames:
-            try:
-                size += os.path.getsize(os.path.join(dirpath, filename))
-            except OSError:
-                pass
-    return size
-
-
 def clear_caches():
     logger.warning("Cache size over limit, clearing")
 
@@ -89,15 +76,14 @@ def clear_caches():
 
 def check_cache():
     try:
+        object_store = get_object_store()
+
         # Count datasets in cache
         datasets = 0
         datasets_bytes = 0
-        for name in os.listdir('/cache/datasets'):
-            path = os.path.join('/cache/datasets', name)
-            if not name.endswith('.cache'):
-                continue
+        for obj in object_store.list_bucket('datasets'):
             datasets += 1
-            datasets_bytes += get_tree_size(path)
+            datasets_bytes += obj['size']
         PROM_CACHE_DATASETS.set(datasets)
         PROM_CACHE_DATASETS_BYTES.set(datasets_bytes)
         logger.info("%d datasets in cache, %d bytes",
@@ -106,30 +92,26 @@ def check_cache():
         # Count augmentations in cache
         augmentations = 0
         augmentations_bytes = 0
-        for name in os.listdir('/cache/aug'):
-            path = os.path.join('/cache/aug', name)
-            if not name.endswith('.cache'):
-                continue
+        for obj in object_store.list_bucket('augmentations'):
             augmentations += 1
-            augmentations_bytes += get_tree_size(path)
+            augmentations_bytes += obj['size']
         PROM_CACHE_AUGMENTATIONS.set(augmentations)
         PROM_CACHE_AUGMENTATIONS_BYTES.set(augmentations_bytes)
         logger.info("%d augmentations in cache, %d bytes",
                     augmentations, augmentations_bytes)
 
         # Count profiles in cache
-        PROM_CACHE_PROFILES.set(sum(
-            1 for name in os.listdir('/cache/queries')
-            if name.endswith('.cache')
-        ))
+        PROM_CACHE_PROFILES.set(
+            sum(1 for _ in object_store.list_bucket('queries'))
+        )
 
         # Remove from caches if max is reached
-        if datasets_bytes + augmentations_bytes > CACHE_HIGH:
-            fut = asyncio.get_event_loop().run_in_executor(
-                None,
-                clear_caches,
-            )
-            log_future(fut, logger)
+        #if datasets_bytes + augmentations_bytes > CACHE_HIGH:
+        #    fut = asyncio.get_event_loop().run_in_executor(
+        #        None,
+        #        clear_caches,
+        #    )
+        #    log_future(fut, logger)
     finally:
         asyncio.get_event_loop().call_later(
             5 * 60,

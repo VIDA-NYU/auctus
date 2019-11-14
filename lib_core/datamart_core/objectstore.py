@@ -105,6 +105,12 @@ class ObjectStore(object):
     def bucket(self, name):
         return self.s3.Bucket(self.bucket_name(name))
 
+    def list_bucket(self, bucket):
+        return (
+            {'name': obj.key, 'size': obj.size}
+            for obj in self.bucket(bucket).objects.all()
+        )
+
     def download_file(self, bucket, objectname, filename):
         try:
             self.bucket(bucket).download_file(objectname, filename)
