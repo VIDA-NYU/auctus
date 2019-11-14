@@ -122,7 +122,7 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         logger.info("Got profile")
 
         try:
-            _, data_profile, _ = self.handle_data_parameter(data)
+            data_profile, _ = self.handle_data_parameter(data)
         except ClientError as e:
             return self.send_error_json(400, str(e))
 
@@ -191,7 +191,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         # parameter: data
         if data:
             try:
-                _, data_profile, _ = self.handle_data_parameter(data)
+                data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
 
@@ -395,7 +395,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         else:
             # data
             try:
-                data, data_profile, _ = self.handle_data_parameter(data)
+                data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
 
@@ -477,25 +477,6 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             return self.send_error_json(400, "Missing 'task' JSON")
         task = json.loads(task)
 
-        destination = self.get_argument('destination', None)
-        if destination is not None:
-            try:
-                shared_storage = os.environ['DATAMART_SHARED_STORAGE']
-            except KeyError:
-                return self.send_error_json(
-                    403,
-                    "Writing augmentation result to a file is disabled; set "
-                    "$DATAMART_SHARED_STORAGE to enable",
-                )
-            else:
-                shared_storage = shared_storage.rstrip('/') + '/'
-                if not destination.startswith(shared_storage):
-                    return self.send_error_json(
-                        403,
-                        "Requested destination does not lie under "
-                        "$DATAMART_SHARED_STORAGE",
-                    )
-
         data = self.get_body_argument('data', None)
         if data is not None:
             data = data.encode('utf-8')
@@ -514,7 +495,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # data
         try:
-            data, data_profile, data_hash = self.handle_data_parameter(data)
+            data_profile, data_hash = self.handle_data_parameter(data)
         except ClientError as e:
             return self.send_error_json(400, str(e))
 
@@ -570,24 +551,17 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 return self.send_error_json(400, str(e))
 
         with cache_get_or_set('/cache/aug', key, create_aug) as path:
-            if destination:
-                # copy to expected location
-                shutil.copytree(path, destination)
-                # send the path
-                self.set_header('Content-Type', 'text/plain; charset=utf-8')
-                self.write(destination)
-            else:
-                # send a zip file
-                self.set_header('Content-Type', 'application/zip')
-                self.set_header(
-                    'Content-Disposition',
-                    'attachment; filename="augmentation.zip"')
-                logger.info("Sending ZIP...")
-                writer = RecursiveZipWriter(self.write)
-                # FIXME: This will write the whole thing to Tornado's buffer
-                # Maybe compressing to disk and streaming that file is better?
-                writer.write_recursive(path)
-                writer.close()
+            # send a zip file
+            self.set_header('Content-Type', 'application/zip')
+            self.set_header(
+                'Content-Disposition',
+                'attachment; filename="augmentation.zip"')
+            logger.info("Sending ZIP...")
+            writer = RecursiveZipWriter(self.write)
+            # FIXME: This will write the whole thing to Tornado's buffer
+            # Maybe compressing to disk and streaming that file is better?
+            writer.write_recursive(path)
+            writer.close()
 
         return self.finish()
 

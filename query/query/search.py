@@ -1187,36 +1187,6 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
     return results[:50]  # top-50
 
 
-def get_profile_data(data, metadata=None, lazo_client=None):
-    # Use SHA1 of file as cache key
-    sha1 = hashlib.sha1(data)
-    data_hash = sha1.hexdigest()
-
-    data_profile = [None]
-
-    def create(cache_temp):
-        logger.info("Profiling...")
-        start = time.perf_counter()
-        data_profile[0] = process_dataset(
-            data=io.BytesIO(data),
-            metadata=metadata,
-            lazo_client=lazo_client,
-            search=True
-        )
-        logger.info("Profiled in %.2fs", time.perf_counter() - start)
-        with open(cache_temp, 'wb') as fp:
-            pickle.dump(data_profile[0], fp)
-
-    with cache_get_or_set('/cache/queries', data_hash, create) as cache_path:
-        if data_profile[0]:
-            # We just profiled it, no need to re-read from disk
-            return data_profile[0], data_hash
-        else:
-            logger.info("Found cached profile_data")
-            with open(cache_path, 'rb') as fp:
-                return pickle.load(fp), data_hash
-
-
 class ProfilePostedData(tornado.web.RequestHandler):
     def handle_data_parameter(self, data):
         """
@@ -1232,41 +1202,29 @@ class ProfilePostedData(tornado.web.RequestHandler):
         if not isinstance(data, bytes):
             raise ValueError
 
-        try:
-            is_path = os.path.exists(data)
-        except (OSError, ValueError):
-            is_path = False
+        # Use SHA1 of file as cache key
+        sha1 = hashlib.sha1(data)
+        data_hash = sha1.hexdigest()
 
-        if not is_path:
-            # data represents the entire file
-            logger.info("Data is not a path")
+        data_profile = [None]
 
-            data_profile, data_hash = get_profile_data(
-                data=data,
+        def create(cache_temp):
+            logger.info("Profiling...")
+            start = time.perf_counter()
+            data_profile[0] = process_dataset(
+                data=io.BytesIO(data),
                 lazo_client=self.application.lazo_client,
+                search=True,
             )
-        else:
-            # data represents a file path
-            logger.info("Data is a path")
-            if os.path.isdir(data):
-                # path to a D3M dataset
-                data_file = os.path.join(data, 'tables', 'learningData.csv')
-                if not os.path.exists(data_file):
-                    raise ClientError("%s does not exist" % data_file)
-                else:
-                    with open(data_file, 'rb') as fp:
-                        data = fp.read()
-                    data_profile, data_hash = get_profile_data(
-                        data=data,
-                        lazo_client=self.application.lazo_client,
-                    )
-            else:
-                # path to a CSV file
-                with open(data, 'rb') as fp:
-                    data = fp.read()
-                data_profile, data_hash = get_profile_data(
-                    data=data,
-                    lazo_client=self.application.lazo_client,
-                )
+            logger.info("Profiled in %.2fs", time.perf_counter() - start)
+            with open(cache_temp, 'wb') as fp:
+                pickle.dump(data_profile[0], fp)
 
-        return data, data_profile, data_hash
+        with cache_get_or_set('/cache/queries', data_hash, create) as cache_path:
+            if data_profile[0]:
+                # We just profiled it, no need to re-read from disk
+                return data_profile[0], data_hash
+            else:
+                logger.info("Found cached profile_data")
+                with open(cache_path, 'rb') as fp:
+                    return pickle.load(fp), data_hash
