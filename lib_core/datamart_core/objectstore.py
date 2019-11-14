@@ -78,6 +78,15 @@ class StreamUpload(object):
             UploadId=self.upload_id,
         )
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.abort()
+        else:
+            self.complete()
+
 
 class ObjectStore(object):
     # FIXME: boto has 3 different interfaces for everything, this uses a mix
