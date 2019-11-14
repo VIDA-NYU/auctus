@@ -1,3 +1,4 @@
+import io
 import logging
 from pkg_resources import iter_entry_points
 import requests
@@ -107,6 +108,13 @@ def load_materializers():
     writers = load('writer', 'datamart_materialize.writer')
     converters = load('converter', 'datamart_materialize.converter')
 
+    try:
+        import pandas
+    except ImportError:
+        pass
+    else:
+        writers['pandas'] = PandasWriter
+
 
 def get_writer(format):
     if not _materializers_loaded:
@@ -130,6 +138,57 @@ class CsvWriter(object):
 
     def finish(self):
         return None
+
+
+class PandasWriter(object):
+    needs_metadata = False
+
+    class _PandasFile(object):
+        def __init__(self, mode='wb'):
+            if mode == 'wb':
+                self._data = io.BytesIO()
+            elif mode == 'w':
+                self._data = io.StringIO()
+            else:
+                raise ValueError("Invalid mode %r", mode)
+
+        def close(self):
+            pass  # DON'T close the underlying file, we'll need to read it
+
+        def write(self, buffer):
+            return self._data.write(buffer)
+
+        def flush(self):
+            self._data.flush()
+
+        def __enter__(self):
+            self._data.__enter__()
+            return self
+
+        def __exit__(self, exc, value, tb):
+            pass
+
+    def __init__(self, dataset_id, destination, metadata):
+        if destination is not None:
+            raise ValueError("Pandas format expects destination=None")
+        self._data = None
+
+    def open_file(self, mode='wb', name=None, **kwargs):
+        if name is not None:
+            raise ValueError(
+                "PandasWriter can only write single-table datasets"
+            )
+        self._data = self._PandasFile(mode)
+        return self._data
+
+    def finish(self):
+        import pandas
+
+        data = self._data._data  # unwrap the underlying BytesIO/StringIO
+
+        # Feed it to pandas
+        data.seek(0, 0)
+        return pandas.read_csv(data)
 
 
 def download(dataset, destination, proxy, format='csv', size_limit=None):

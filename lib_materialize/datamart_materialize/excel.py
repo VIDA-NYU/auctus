@@ -44,9 +44,8 @@ class _ExcelProxy(object):
         return self
 
     def __exit__(self, exc, value, tb):
-        result = self._fp.__exit__(exc, value, tb)
+        self._fp.__exit__(exc, value, tb)
         self.close()
-        return result
 
 
 class ExcelConverter(object):
