@@ -10,6 +10,7 @@ import time
 import tornado.web
 
 from datamart_core import types
+from datamart_core.objectstore import NoSuchObject, get_object_store
 from datamart_profiler import process_dataset
 
 
@@ -1188,19 +1189,31 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
 
 def get_profile_data(data, metadata=None, lazo_client=None):
     # Use SHA1 of file as cache key
-    # TODO: Cache profile data somewhere? Redis?
     sha1 = hashlib.sha1(data)
     data_hash = sha1.hexdigest()
 
-    logger.info("Profiling...")
-    start = time.perf_counter()
-    data_profile = process_dataset(
-        data=io.BytesIO(data),
-        metadata=metadata,
-        lazo_client=lazo_client,
-        search=True
-    )
-    logger.info("Profiled in %.2fs", time.perf_counter() - start)
+    object_store = get_object_store()
+
+    try:
+        data_profile = object_store.download_bytes('queries', data_hash)
+    except NoSuchObject:
+        logger.info("Profiling...")
+        start = time.perf_counter()
+        data_profile = process_dataset(
+            data=io.BytesIO(data),
+            metadata=metadata,
+            lazo_client=lazo_client,
+            search=True
+        )
+        logger.info("Profiled in %.2fs", time.perf_counter() - start)
+        object_store.upload_bytes(
+            'queries', data_hash,
+            pickle.dumps(data_profile),
+        )
+    else:
+        logger.info("Found cached profile_data")
+        data_profile = pickle.loads(data_profile)
+
     return data_profile, data_hash
 
 

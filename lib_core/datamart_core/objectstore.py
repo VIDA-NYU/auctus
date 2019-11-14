@@ -10,12 +10,15 @@ logger = logging.getLogger(__name__)
 
 
 def get_object_store():
-    logger.info("Logging in to S3")
     return ObjectStore(
         os.environ['S3_URL'],
         os.environ['S3_CLIENT_URL'],
         os.environ['S3_BUCKET_PREFIX'],
     )
+
+
+class NoSuchObject(KeyError):
+    pass
 
 
 class StreamUpload(object):
@@ -103,7 +106,17 @@ class ObjectStore(object):
         return self.s3.Bucket(self.bucket_name(name))
 
     def download_file(self, bucket, objectname, filename):
-        self.bucket(bucket).download_file(objectname, filename)
+        try:
+            self.bucket(bucket).download_file(objectname, filename)
+        except self.s3.meta.client.exceptions.NoSuchKey:
+            raise NoSuchObject
+
+    def download_bytes(self, bucket, objectname):
+        try:
+            obj = self.s3.Object(self.bucket_name(bucket), objectname)
+            return obj.get()['Body'].read()
+        except self.s3.meta.client.exceptions.NoSuchKey:
+            raise NoSuchObject
 
     def upload_fileobj(self, bucket, objectname, fileobj):
         self.s3.Object(self.bucket_name(bucket), objectname).put(Body=fileobj)
