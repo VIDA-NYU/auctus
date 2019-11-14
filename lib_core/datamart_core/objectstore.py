@@ -80,6 +80,9 @@ class StreamUpload(object):
 
 
 class ObjectStore(object):
+    # FIXME: boto has 3 different interfaces for everything, this uses a mix
+    # (Bucket/Object objects, client directly, low-level client.meta.client)
+
     def __init__(self, endpoint_url, client_endpoint_url, bucket_prefix):
         self.s3 = boto3.resource(
             's3', endpoint_url=endpoint_url,
@@ -111,9 +114,26 @@ class ObjectStore(object):
             for obj in self.bucket(bucket).objects.all()
         )
 
+    def get(self, bucket, objectname):
+        try:
+            res = self.s3.meta.client.head_object(
+                Bucket=self.bucket_name(bucket),
+                Key=objectname,
+            )
+            return {'key': objectname, 'size': res['ContentLength']}
+        except self.s3.meta.client.exceptions.NoSuchKey:
+            raise NoSuchObject
+
     def download_file(self, bucket, objectname, filename):
         try:
             self.bucket(bucket).download_file(objectname, filename)
+        except self.s3.meta.client.exceptions.NoSuchKey:
+            raise NoSuchObject
+
+    def download_fileobj(self, bucket, objectname):
+        try:
+            obj = self.s3.Object(self.bucket_name(bucket), objectname)
+            return obj.get()['Body']
         except self.s3.meta.client.exceptions.NoSuchKey:
             raise NoSuchObject
 
