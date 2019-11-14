@@ -4,6 +4,7 @@ from botocore.client import Config
 import io
 import logging
 import os
+import weakref
 
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,8 @@ class StreamUpload(object):
 
         # "Each part must be at least 5 MB in size, except the last part"
         self.current_data = io.BytesIO()
+
+        self._finalizer = weakref.finalize(self, self.abort)
 
     def _write_part(self):
         self.current_data.seek(0, 0)
