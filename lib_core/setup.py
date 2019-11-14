@@ -10,6 +10,7 @@ req = [
     'elasticsearch~=7.0',
     'lazo-index-service==0.4',
     'prometheus_client',
+    'boto3>=1,<2',
 ]
 setup(name='datamart_core',
       version='0.0',
