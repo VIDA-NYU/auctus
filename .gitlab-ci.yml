@@ -58,7 +58,7 @@ test:
            ulimits:
       END
     - scripts/setup.sh
-    - docker-compose up -d elasticsearch rabbitmq redis
+    - docker-compose up -d elasticsearch rabbitmq minio redis
     - |
       # Wait for Elasticsearch to come up
       slept=0; while [ $slept -le 120 -a $(curl -s -o /dev/null -w "%{http_code}" http://docker:9200/) != 200 ]; do sleep 5; slept=$((slept + 5)); done
