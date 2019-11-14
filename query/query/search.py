@@ -1187,36 +1187,6 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
     return results[:50]  # top-50
 
 
-def get_profile_data(data, metadata=None, lazo_client=None):
-    # Use SHA1 of file as cache key
-    sha1 = hashlib.sha1(data)
-    data_hash = sha1.hexdigest()
-
-    data_profile = [None]
-
-    def create(cache_temp):
-        logger.info("Profiling...")
-        start = time.perf_counter()
-        data_profile[0] = process_dataset(
-            data=io.BytesIO(data),
-            metadata=metadata,
-            lazo_client=lazo_client,
-            search=True
-        )
-        logger.info("Profiled in %.2fs", time.perf_counter() - start)
-        with open(cache_temp, 'wb') as fp:
-            pickle.dump(data_profile[0], fp)
-
-    with cache_get_or_set('/cache/queries', data_hash, create) as cache_path:
-        if data_profile[0]:
-            # We just profiled it, no need to re-read from disk
-            return data_profile[0], data_hash
-        else:
-            logger.info("Found cached profile_data")
-            with open(cache_path, 'rb') as fp:
-                return pickle.load(fp), data_hash
-
-
 class ProfilePostedData(tornado.web.RequestHandler):
     def handle_data_parameter(self, data):
         """
@@ -1232,9 +1202,29 @@ class ProfilePostedData(tornado.web.RequestHandler):
         if not isinstance(data, bytes):
             raise ValueError
 
-        data_profile, data_hash = get_profile_data(
-            data=data,
-            lazo_client=self.application.lazo_client,
-        )
+        # Use SHA1 of file as cache key
+        sha1 = hashlib.sha1(data)
+        data_hash = sha1.hexdigest()
 
-        return data, data_profile, data_hash
+        data_profile = [None]
+
+        def create(cache_temp):
+            logger.info("Profiling...")
+            start = time.perf_counter()
+            data_profile[0] = process_dataset(
+                data=io.BytesIO(data),
+                lazo_client=self.application.lazo_client,
+                search=True,
+            )
+            logger.info("Profiled in %.2fs", time.perf_counter() - start)
+            with open(cache_temp, 'wb') as fp:
+                pickle.dump(data_profile[0], fp)
+
+        with cache_get_or_set('/cache/queries', data_hash, create) as cache_path:
+            if data_profile[0]:
+                # We just profiled it, no need to re-read from disk
+                return data_profile[0], data_hash
+            else:
+                logger.info("Found cached profile_data")
+                with open(cache_path, 'rb') as fp:
+                    return pickle.load(fp), data_hash
