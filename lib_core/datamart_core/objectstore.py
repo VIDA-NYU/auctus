@@ -152,6 +152,9 @@ class ObjectStore(object):
             bucket, objectname, bytestr,
         )
 
+    def delete(self, bucket, objectname):
+        self.s3.Object(self.bucket_name(bucket), objectname).delete()
+
     def create_buckets(self):
         buckets = set(bucket.name for bucket in self.s3.buckets.all())
         missing = []
@@ -167,7 +170,24 @@ class ObjectStore(object):
                 self.s3.create_bucket(Bucket=name)
 
     def clear_bucket(self, bucket):
-        self.bucket(bucket).delete()
+        keys = []
+        for obj in self.bucket(bucket).objects.all():
+            keys.append(obj.key)
+            if len(keys) >= 990:
+                self.s3.meta.client.delete_objects(
+                    Bucket=self.bucket_name(bucket),
+                    Delete={
+                        'Objects': [{'Key': key} for key in keys],
+                    },
+                )
+                keys = []
+        if keys:
+            self.s3.meta.client.delete_objects(
+                Bucket=self.bucket_name(bucket),
+                Delete={
+                    'Objects': [{'Key': key} for key in keys],
+                },
+            )
 
     def presigned_serve_url(self, bucket, objectname, filename, mime=None):
         return self.s3_client.meta.client.generate_presigned_url(

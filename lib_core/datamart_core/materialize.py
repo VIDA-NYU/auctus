@@ -54,6 +54,7 @@ def get_dataset(metadata, dataset_id, format='csv'):
 
     # TODO: Rewrite this, get from S3
     # If not in S3, download while streaming to S3
+    # Check for CSV before requested format (if CSV is absent, other format is out of date)
 
     # Context to lock the CSV
     csv_lock = contextlib.ExitStack()

@@ -12,6 +12,7 @@ import uuid
 
 from .common import block_run, log_future, json2msg, msg2json, \
     encode_dataset_id, delete_dataset_from_index
+from .objectstore import get_object_store
 
 
 logger = logging.getLogger(__name__)
@@ -241,36 +242,8 @@ class Discoverer(object):
         )
 
         # Also delete it from the cache
-        prefix = encode_dataset_id(full_id) + '_'
-        for name in os.listdir('/cache/datasets'):
-            if name.startswith(prefix) and name.endswith('.lock'):
-                name = name[:-5]
-                entry_path = os.path.join('/cache/datasets', name + '.cache')
-                lock_path = os.path.join('/cache/datasets', name + '.lock')
-                temp_path = os.path.join('/cache/datasets', name + '.temp')
-                with contextlib.ExitStack() as lock:
-                    try:
-                        lock.enter_context(FSLockExclusive(lock_path,
-                                                           timeout=300))
-                    except FileNotFoundError:
-                        pass
-                    except TimeoutError:
-                        logger.error(
-                            "Couldn't lock cached dataset for deletion: %r",
-                            name,
-                        )
-                    else:
-                        if os.path.exists(entry_path):
-                            logger.info("Removing cached dataset: %r", name)
-                            if os.path.isfile(entry_path):
-                                os.remove(entry_path)
-                            else:
-                                shutil.rmtree(entry_path)
-                        if os.path.isfile(temp_path):
-                            os.remove(temp_path)
-                        elif os.path.isdir(temp_path):
-                            shutil.rmtree(temp_path)
-                        os.remove(lock_path)
+        object_store = get_object_store()
+        object_store.delete('datasets', encode_dataset_id(full_id) + '_csv')
 
 
 class AsyncDiscoverer(Discoverer):
