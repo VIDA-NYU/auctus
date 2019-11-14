@@ -6,8 +6,6 @@ import prometheus_client
 import shutil
 import zipfile
 
-from datamart_core.fscache import cache_get_or_set
-
 from .discovery import encode_dataset_id
 
 
@@ -53,6 +51,9 @@ def get_dataset(metadata, dataset_id, format='csv'):
     # To limit the number of downloads, we always materialize the CSV file, and
     # convert it to the requested format if necessary. This avoids downloading
     # the CSV again just because we want a different format
+
+    # TODO: Rewrite this, get from S3
+    # If not in S3, download while streaming to S3
 
     # Context to lock the CSV
     csv_lock = contextlib.ExitStack()

@@ -4,7 +4,6 @@ import os
 import prometheus_client
 
 from datamart_core.common import log_future
-from datamart_core.fscache import clear_cache
 
 
 logger = logging.getLogger(__name__)
@@ -37,6 +36,10 @@ CACHE_HIGH = int(CACHE_HIGH, 10) if CACHE_HIGH else 100_000_000_000  # 100 GB
 CACHE_LOW = CACHE_HIGH * 0.33
 
 CACHES = ('/cache/datasets', '/cache/aug')
+
+
+# TODO: Rewrite this for S3
+# Does S3 have access dates? Can objects expire based on it directly? -- no
 
 
 def get_tree_size(path):

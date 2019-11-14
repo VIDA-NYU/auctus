@@ -12,7 +12,6 @@ import uuid
 
 from .common import block_run, log_future, json2msg, msg2json, \
     encode_dataset_id, delete_dataset_from_index
-from .fscache import FSLockExclusive
 
 
 logger = logging.getLogger(__name__)

@@ -17,7 +17,6 @@ import zipfile
 
 from datamart_augmentation.augmentation import AugmentationError, augment
 from datamart_core.common import hash_json, log_future
-from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
 import datamart_profiler
 
@@ -552,6 +551,8 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             version=os.environ['DATAMART_VERSION'],
             columns=columns,
         )
+
+        # TODO: Do augmentation, write result to both the client and S3 cache
 
         def create_aug(cache_temp):
             try:

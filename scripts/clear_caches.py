@@ -6,25 +6,14 @@ This should not result in any data being lost or affect any running process.
 """
 
 import logging
-import os
-import sys
 
-from datamart_core.fscache import clear_cache
+from datamart_core.objectstore import get_object_store
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
-    if (
-            not os.path.isdir('/cache/datasets') or
-            not os.path.isdir('/cache/aug') or
-            not os.path.isdir('/cache/queries')):
-        print(
-            "Cache directories don't exist; are you not running this script "
-            "inside Docker?",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    clear_cache('/cache/datasets')
-    clear_cache('/cache/aug')
-    clear_cache('/cache/queries')
+    store = get_object_store()
+    store.clear_bucket('datasets')
+    store.clear_bucket('augmentations')
+    store.clear_bucket('queries')

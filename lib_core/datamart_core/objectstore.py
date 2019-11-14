@@ -147,6 +147,9 @@ class ObjectStore(object):
             for name in missing:
                 self.s3.create_bucket(Bucket=name)
 
+    def clear_bucket(self, bucket):
+        self.bucket(bucket).delete()
+
     def presigned_serve_url(self, bucket, objectname, filename, mime=None):
         return self.s3_client.meta.client.generate_presigned_url(
             ClientMethod='get_object',
