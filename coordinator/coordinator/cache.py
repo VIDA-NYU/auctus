@@ -115,7 +115,10 @@ def check_cache():
                     augmentations, augmentations_bytes)
 
         # Count profiles in cache
-        PROM_CACHE_PROFILES.set(len(os.listdir('/cache/queries')))
+        PROM_CACHE_PROFILES.set(sum(
+            1 for name in os.listdir('/cache/queries')
+            if name.endswith('.cache')
+        ))
 
         # Remove from caches if max is reached
         if datasets_bytes + augmentations_bytes > CACHE_HIGH:
