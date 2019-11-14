@@ -5,9 +5,11 @@ import jsonschema
 import os
 import re
 import requests
+import tempfile
 import time
-import unittest
 import zipfile
+
+import datamart_materialize
 
 from .utils import DataTestCase
 
@@ -606,6 +608,43 @@ class TestDownload(DatamartTest):
             check_status=False,
         )
         self.assertEqual(response.status_code, 404)
+
+    def test_materialize(self):
+        """Test datamart_materialize."""
+        def assert_same_files(a, b):
+            with open(a, 'r') as f_a:
+                with open(b, 'r') as f_b:
+                    self.assertEqual(f_a.read(), f_b.read())
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            df = datamart_materialize.download(
+                'datamart.test.agg',
+                None,
+                os.environ['QUERY_HOST'],
+                'pandas',
+            )
+            self.assertEqual(df.shape, (8, 3))
+
+            datamart_materialize.download(
+                'datamart.test.geo',
+                os.path.join(tempdir, 'geo.csv'),
+                os.environ['QUERY_HOST'],
+            )
+            assert_same_files(
+                os.path.join(tempdir, 'geo.csv'),
+                os.path.join(os.path.dirname(__file__), 'data/geo.csv'),
+            )
+
+            datamart_materialize.download(
+                'datamart.test.agg',
+                os.path.join(tempdir, 'agg'),
+                os.environ['QUERY_HOST'],
+                'd3m',
+            )
+            assert_same_files(
+                os.path.join(tempdir, 'agg/tables/learningData.csv'),
+                os.path.join(os.path.dirname(__file__), 'data/agg.csv'),
+            )
 
 
 class TestAugment(DatamartTest):

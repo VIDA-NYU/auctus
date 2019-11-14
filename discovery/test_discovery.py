@@ -33,7 +33,7 @@ class TestDiscoverer(Discoverer):
         self.record_dataset(
             dict(),
             {
-                # Omit name, should be set to 'basic_agg' automatically
+                # Omit name, should be set to 'agg' automatically
                 'description': "Simple CSV with ids and salaries to test"
                                " aggregation for numerical attributes",
             },
