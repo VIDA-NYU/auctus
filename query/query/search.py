@@ -1232,41 +1232,9 @@ class ProfilePostedData(tornado.web.RequestHandler):
         if not isinstance(data, bytes):
             raise ValueError
 
-        try:
-            is_path = os.path.exists(data)
-        except (OSError, ValueError):
-            is_path = False
-
-        if not is_path:
-            # data represents the entire file
-            logger.info("Data is not a path")
-
-            data_profile, data_hash = get_profile_data(
-                data=data,
-                lazo_client=self.application.lazo_client,
-            )
-        else:
-            # data represents a file path
-            logger.info("Data is a path")
-            if os.path.isdir(data):
-                # path to a D3M dataset
-                data_file = os.path.join(data, 'tables', 'learningData.csv')
-                if not os.path.exists(data_file):
-                    raise ClientError("%s does not exist" % data_file)
-                else:
-                    with open(data_file, 'rb') as fp:
-                        data = fp.read()
-                    data_profile, data_hash = get_profile_data(
-                        data=data,
-                        lazo_client=self.application.lazo_client,
-                    )
-            else:
-                # path to a CSV file
-                with open(data, 'rb') as fp:
-                    data = fp.read()
-                data_profile, data_hash = get_profile_data(
-                    data=data,
-                    lazo_client=self.application.lazo_client,
-                )
+        data_profile, data_hash = get_profile_data(
+            data=data,
+            lazo_client=self.application.lazo_client,
+        )
 
         return data, data_profile, data_hash
