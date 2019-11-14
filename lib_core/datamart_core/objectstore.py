@@ -18,6 +18,64 @@ def get_object_store():
     )
 
 
+class StreamUpload(object):
+    def __init__(self, s3_core, bucket, objectname):
+        self.s3_core = s3_core
+        self.bucket = bucket
+        self.objectname = objectname
+
+        res = self.s3_core.create_multipart_upload(
+            Bucket=self.bucket,
+            Key=self.objectname,
+        )
+        self.upload_id = res['UploadId']
+        self.partnumber = 1
+        self.parts = []
+
+        # "Each part must be at least 5 MB in size, except the last part"
+        self.current_data = io.BytesIO()
+
+    def _write_part(self):
+        self.current_data.seek(0, 0)
+        res = self.s3_core.upload_part(
+            Bucket=self.bucket,
+            Key=self.objectname,
+            UploadId=self.upload_id,
+            Body=self.current_data,
+            PartNumber=self.partnumber,
+        )
+        self.parts.append({'PartNumber': self.partnumber, 'ETag': res['ETag']})
+        self.partnumber += 1
+        self.current_data.seek(0, 0)
+        self.current_data.truncate()
+
+    def write(self, bytes):
+        self.current_data.write(bytes)
+
+        if self.current_data.tell() >= 5242880:
+            self._write_part()
+
+    def complete(self):
+        if self.current_data.tell() > 0:
+            self._write_part()
+
+        self.s3_core.complete_multipart_upload(
+            Bucket=self.bucket,
+            Key=self.objectname,
+            UploadId=self.upload_id,
+            MultipartUpload={
+                'Parts': self.parts,
+            },
+        )
+
+    def abort(self):
+        self.s3_core.abort_multipart_upload(
+            Bucket=self.bucket,
+            Key=self.objectname,
+            UploadId=self.upload_id,
+        )
+
+
 class ObjectStore(object):
     def __init__(self, endpoint_url, client_endpoint_url, bucket_prefix):
         self.s3 = boto3.resource(
@@ -63,6 +121,10 @@ class ObjectStore(object):
 
     def upload_bytes(self, bucket, objectname, bytestr):
         self.upload_fileobj(bucket, objectname, io.BytesIO(bytestr))
+
+    def multipart_upload(self, bucket, objectname):
+        return StreamUpload(self.s3.meta.client,
+                            self.bucket_name(bucket), objectname)
 
     def upload_bytes_async(self, bucket, objectname, bytestr):
         return asyncio.get_event_loop().run_in_executor(
