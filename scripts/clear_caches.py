@@ -15,6 +15,14 @@ from datamart_core.fscache import clear_cache
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
+    if sys.argv[1:] == []:
+        only_if_possible = False
+    elif sys.argv[1:] == ['--if-possible']:
+        only_if_possible = True
+    else:
+        print("Usage: clear_caches.py [--if-possible]", file=sys.stderr)
+        sys.exit(2)
+
     if (
             not os.path.isdir('/cache/datasets') or
             not os.path.isdir('/cache/aug') or
@@ -25,6 +33,6 @@ if __name__ == '__main__':
             file=sys.stderr,
         )
         sys.exit(1)
-    clear_cache('/cache/datasets')
-    clear_cache('/cache/aug')
-    clear_cache('/cache/queries')
+    clear_cache('/cache/datasets', only_if_possible=only_if_possible)
+    clear_cache('/cache/aug', only_if_possible=only_if_possible)
+    clear_cache('/cache/queries', only_if_possible=only_if_possible)
