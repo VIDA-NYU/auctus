@@ -164,9 +164,9 @@ def perform_aggregations(data, groupby_columns, original_columns):
         else:
             if ('int' in str(data.dtypes[column]) or
                     'float' in str(data.dtypes[column])):
-                agg_functions[column] = [
-                    np.mean, np.sum, np.max, np.min
-                ]
+                agg_functions[column] = dict(
+                    mean=np.mean, sum=np.sum, amax=np.max, amin=np.min,
+                )
             else:
                 # Just pick the first value
                 agg_functions[column] = [first]
@@ -182,7 +182,7 @@ def perform_aggregations(data, groupby_columns, original_columns):
     # Reorder columns
     data = data[sorted(
         data.columns,
-        key=lambda col: col_indices.get(col[0], 999999999)
+        key=lambda col: (col_indices.get(col[0], 999999999), col[1])
     )]
 
     # Rename columns
