@@ -544,6 +544,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     destination_metadata = os.path.join(destination, 'datasetDoc.json')
 
     # Perform augmentation
+    start = time.perf_counter()
     if task['augmentation']['type'] == 'join':
         output_metadata = join(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
@@ -570,6 +571,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
+    logger.info("Total augmentation: %.4fs", time.perf_counter() - start)
 
     # Write out the D3M metadata
     d3m_meta = d3m_metadata(uuid.uuid4().hex, output_metadata)
