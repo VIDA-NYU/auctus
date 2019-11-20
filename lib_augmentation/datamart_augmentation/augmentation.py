@@ -311,7 +311,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         join_.append(joined_chunk)
 
     join_ = pd.concat(join_)
-    logger.info("Join completed in %.4fs" % (time.perf_counter() - start))
+    logger.info("Join completed in %.4fs", time.perf_counter() - start)
 
     # qualities
     qualities_list = list()
@@ -526,6 +526,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     destination_metadata = os.path.join(destination, 'datasetDoc.json')
 
     # Perform augmentation
+    start = time.perf_counter()
     if task['augmentation']['type'] == 'join':
         output_metadata = join(
             pd.read_csv(io.BytesIO(data), error_bad_lines=False),
@@ -551,6 +552,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
+    logger.info("Total augmentation: %.4fs", time.perf_counter() - start)
 
     # Write out the D3M metadata
     d3m_meta = d3m_metadata(uuid.uuid4().hex, output_metadata)
