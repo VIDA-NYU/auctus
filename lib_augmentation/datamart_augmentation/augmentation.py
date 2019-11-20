@@ -67,8 +67,6 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
                 )
             else:
                 data.index = pd.to_datetime(data.index, errors='coerce')
-            logger.info("Column %s converted to datetime in %.4fs" %
-                        (name, (time.perf_counter() - start)))
         elif column['structural_type'] == types.INTEGER:
             start = time.perf_counter()
             if isinstance(data.index, pd.MultiIndex):
@@ -79,8 +77,6 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
                 )
             else:
                 data.index = pd.to_numeric(data.index, errors='coerce', downcast='integer')
-            logger.info("Column %s converted to numeric (int) in %.4fs" %
-                        (name, (time.perf_counter() - start)))
         elif column['structural_type'] == types.FLOAT:
             start = time.perf_counter()
             if isinstance(data.index, pd.MultiIndex):
@@ -91,8 +87,6 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
                 )
             else:
                 data.index = pd.to_numeric(data.index, errors='coerce', downcast='float')
-            logger.info("Column %s converted to numeric (float) in %.4fs" %
-                        (name, (time.perf_counter() - start)))
 
     return data
 
