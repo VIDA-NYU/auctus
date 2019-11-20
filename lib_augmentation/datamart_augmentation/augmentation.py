@@ -1,3 +1,4 @@
+import collections
 import copy
 import io
 import itertools
@@ -164,9 +165,10 @@ def perform_aggregations(data, groupby_columns, original_columns):
         else:
             if ('int' in str(data.dtypes[column]) or
                     'float' in str(data.dtypes[column])):
-                agg_functions[column] = dict(
-                    mean=np.mean, sum=np.sum, amax=np.max, amin=np.min,
-                )
+                agg_functions[column] = collections.OrderedDict([
+                    ('mean', np.mean), ('sum', np.sum),
+                    ('max', np.max), ('min', np.min),
+                ])
             else:
                 # Just pick the first value
                 agg_functions[column] = [first]
@@ -180,9 +182,10 @@ def perform_aggregations(data, groupby_columns, original_columns):
     data = data.reset_index(drop=False)
 
     # Reorder columns
+    # sorted() is a stable sort, so we'll keep the order of agg_functions above
     data = data[sorted(
         data.columns,
-        key=lambda col: (col_indices.get(col[0], 999999999), col[1])
+        key=lambda col: col_indices.get(col[0], 999999999)
     )]
 
     # Rename columns
@@ -374,15 +377,15 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         # agg names
         all_names = ['sum ' + name for name in names]
         all_names += ['mean ' + name for name in names]
-        all_names += ['amax ' + name for name in names]
-        all_names += ['amin ' + name for name in names]
+        all_names += ['max ' + name for name in names]
+        all_names += ['min ' + name for name in names]
         all_names += ['first ' + name for name in names]
         all_names += names
         for name in all_names:
             column_metadata = copy.deepcopy(column)
             column_metadata['name'] = name
             if ('sum' in name or 'mean' in name
-                    or 'amax' in name or 'amin' in name):
+                    or 'max' in name or 'min' in name):
                 column_metadata['structural_type'] = types.FLOAT
             columns_metadata[name] = column_metadata
 

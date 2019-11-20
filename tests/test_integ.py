@@ -927,7 +927,7 @@ class TestAugment(DatamartTest):
         with zip_.open('tables/learningData.csv') as table:
             self.assertCsvEqualNoOrder(
                 table.read().decode('utf-8'),
-                'id,location,work,mean salary,sum salary,amax salary,amin salary',
+                'id,location,work,mean salary,sum salary,max salary,min salary',
                 [
                     '30,korea,True,150,300,200,100',
                     '40,brazil,False,100,100,100,100',
@@ -942,7 +942,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '218 B',
+                        'approximateSize': '216 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -985,13 +985,13 @@ class TestAugment(DatamartTest):
                                 },
                                 {
                                     'colIndex': 5,
-                                    'colName': 'amax salary',
+                                    'colName': 'max salary',
                                     'colType': 'real',
                                     'role': ['attribute'],
                                 },
                                 {
                                     'colIndex': 6,
-                                    'colName': 'amin salary',
+                                    'colName': 'min salary',
                                     'colType': 'real',
                                     'role': ['attribute'],
                                 },
@@ -1012,7 +1012,7 @@ class TestAugment(DatamartTest):
                                 'nb_rows_before': 5,
                                 'new_columns': [
                                     'work', 'mean salary', 'sum salary',
-                                    'amax salary', 'amin salary',
+                                    'max salary', 'min salary',
                                 ],
                                 'removed_columns': [],
                             },
@@ -1063,7 +1063,7 @@ class TestAugment(DatamartTest):
         with zip_.open('tables/learningData.csv') as table:
             self.assertCsvEqualNoOrder(
                 table.read().decode('utf-8'),
-                'home_address,mean year,sum year,amax year,amin year',
+                'home_address,mean year,sum year,max year,min year',
                 [
                     'AZ,1990.0,1990.0,1990.0,1990.0',
                     'PA,1990.0,1990.0,1990.0,1990.0',
@@ -1100,7 +1100,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '711 B',
+                        'approximateSize': '709 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1131,13 +1131,13 @@ class TestAugment(DatamartTest):
                                 },
                                 {
                                     'colIndex': 3,
-                                    'colName': 'amax year',
+                                    'colName': 'max year',
                                     'colType': 'real',
                                     'role': ['attribute'],
                                 },
                                 {
                                     'colIndex': 4,
-                                    'colName': 'amin year',
+                                    'colName': 'min year',
                                     'colType': 'real',
                                     'role': ['attribute'],
                                 },
@@ -1157,7 +1157,7 @@ class TestAugment(DatamartTest):
                                 'nb_rows_after': 26, 'nb_rows_before': 26,
                                 'new_columns': [
                                     'mean year', 'sum year',
-                                    'amax year', 'amin year',
+                                    'max year', 'min year',
                                 ],
                                 'removed_columns': [],
                             },
