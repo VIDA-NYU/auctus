@@ -7,6 +7,7 @@ scratch, or by importing the JSON files.
 * Fix semantic type for enumeration (`http:` not `https:`)
 * `docker-compose.yml` now uses local mounts for volumes (create them with `scripts/setup.sh`)
 * Aggregation now always happens, even if there are no duplicate rows (so you'll always get the min/max/mean columns)
+* Aggregated columns renamed (`amin` -> `min`, `amax` -> `max`)
 
 Enhancements:
 * Compute additional metadata `missing_values_ratio`, `unclean_values_ratio`, `num_distinct_values`
