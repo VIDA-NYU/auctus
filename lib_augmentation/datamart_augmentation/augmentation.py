@@ -158,7 +158,7 @@ def perform_aggregations(data, groupby_columns, original_columns):
         if column in original_columns:
             agg_functions[column] = [first]
         else:
-            if ('int' in str(data.dtypes[column]) or
+            if ('int' in str(data.dtypes[column]) or  # TODO: use column metadata instead? and to_numeric()
                     'float' in str(data.dtypes[column])):
                 agg_functions[column] = [
                     np.mean, np.sum, np.max, np.min
