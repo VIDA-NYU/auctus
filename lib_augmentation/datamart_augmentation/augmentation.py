@@ -376,6 +376,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         ))
 
     join_.to_csv(destination_csv, index=False)
+    logger.info("Wrote CSV, %d bytes", os.stat(destination_csv).st_size)
 
     # Build a dict of information about all columns
     columns_metadata = dict()
