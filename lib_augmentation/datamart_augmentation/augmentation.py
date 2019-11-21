@@ -151,7 +151,6 @@ def perform_aggregations(data, groupby_columns, original_columns):
     def first(series):
         return series.iloc[0]
 
-    start = time.perf_counter()
     groupby_set = set(groupby_columns)
     agg_columns = [col for col in data.columns if col not in groupby_set]
     agg_functions = dict()
