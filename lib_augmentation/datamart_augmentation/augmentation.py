@@ -307,6 +307,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         augment_data_path,
         error_bad_lines=False,
     ).to_delayed()
+    logger.info("Doing parallel join with %d chunks", len(augment_data))
     _join_delayed = delayed(_join_chunk)
     join_ = [
         _join_delayed(
