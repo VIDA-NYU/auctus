@@ -193,7 +193,6 @@ def perform_aggregations(data, groupby_columns, original_columns):
         for col in data.columns
     ]
 
-    logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
     return data
 
 
