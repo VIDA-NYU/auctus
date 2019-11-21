@@ -162,8 +162,6 @@ def perform_aggregations(data, groupby_columns, original_columns):
             else:
                 # Just pick the first value
                 agg_functions[column] = [first]
-    if not agg_functions:
-        raise AugmentationError("No numerical columns to perform aggregation.")
 
     # Perform group-by
     data = data.groupby(by=groupby_columns).agg(agg_functions)
