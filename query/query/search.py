@@ -4,7 +4,6 @@ import distance
 import hashlib
 import io
 import logging
-import os
 import pickle
 import time
 import tornado.web

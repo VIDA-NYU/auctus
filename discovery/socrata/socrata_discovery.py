@@ -110,7 +110,7 @@ class SocrataDiscoverer(Discoverer):
             index='datamart',
             query=query,
             size=size,
-                _source=['materialize.socrata_id'],
+            _source=['materialize.socrata_id'],
         )
         for h in hits:
             if h['_source']['materialize']['socrata_id'] not in seen:

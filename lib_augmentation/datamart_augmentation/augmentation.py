@@ -54,9 +54,7 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
     for i in range(len(columns)):
         index = columns[i]
         column = columns_metadata[index]
-        name = column['name']
         if types.DATE_TIME in column['semantic_types']:
-            start = time.perf_counter()
             if isinstance(data.index, pd.MultiIndex):
                 data.index = data.index.set_levels(
                     [data.index.levels[j] if j != i
@@ -66,7 +64,6 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
             else:
                 data.index = pd.to_datetime(data.index, errors='coerce')
         elif column['structural_type'] == types.INTEGER:
-            start = time.perf_counter()
             if isinstance(data.index, pd.MultiIndex):
                 data.index = data.index.set_levels(
                     [data.index.levels[j] if j != i
@@ -76,7 +73,6 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
             else:
                 data.index = pd.to_numeric(data.index, errors='coerce', downcast='integer')
         elif column['structural_type'] == types.FLOAT:
-            start = time.perf_counter()
             if isinstance(data.index, pd.MultiIndex):
                 data.index = data.index.set_levels(
                     [data.index.levels[j] if j != i
@@ -193,7 +189,7 @@ def perform_aggregations(data, groupby_columns, original_columns):
         for col in data.columns
     ]
 
-    logger.info("Aggregations completed in %.4fs" % (time.perf_counter() - start))
+    logger.info("Aggregations completed in %.4fs", time.perf_counter() - start)
     return data
 
 
@@ -469,7 +465,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             # Add to CSV output
             augment_data.to_csv(fout, index=False, header=False)
             total_rows += len(augment_data)
-    logger.info("Union completed in %.4fs" % (time.perf_counter() - start))
+    logger.info("Union completed in %.4fs", time.perf_counter() - start)
 
     return {
         'columns': original_metadata['columns'],
