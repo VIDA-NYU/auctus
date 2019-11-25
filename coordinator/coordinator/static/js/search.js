@@ -470,11 +470,20 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
            );
         }
 
+        var badges = '';
+        if(data.metadata.spatial_coverage) {
+          badges += ' <span class="badge badge-primary badge-pill">spatial</span>';
+        }
+        if(data.metadata.columns.some(function(c) { return c['semantic_types'].indexOf('http://schema.org/DateTime') != -1; })) {
+          badges += ' <span class="badge badge-secondary badge-pill">temporal</span>';
+        }
+
         elem.innerHTML = (
           '<div class="card mb-4 shadow-sm">' +
           '  <div class="card-body">' +
           '    <p class="card-text">' + (data.metadata.name || data.id) + '</p>' +
-          '    <p class="card-text">' + description + '</p>' +
+          '    <p class="card-text mb-0">' + description + '</p>' +
+          '    <div class="mb-2">' + badges + '</div>' +
           '    <div class="d-flex justify-content-between align-items-center mb-3">' +
           '      <div class="btn-group">' +
           '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
