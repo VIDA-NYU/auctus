@@ -12,6 +12,7 @@ import time
 import yaml
 
 from datamart_core.common import log_future
+from datamart_core import types
 
 
 logger = logging.getLogger(__name__)
@@ -74,16 +75,7 @@ class Coordinator(object):
             logging.warning("Couldn't get recent datasets from Elasticsearch")
         else:
             for h in recent:
-                dataset_id = h['_id']
-                obj = h['_source']
-                materialize = obj.get('materialize', {})
-                self.recent_discoveries.append(
-                    dict(id=dataset_id,
-                         discoverer=materialize.get('identifier', '(unknown)'),
-                         discovered=materialize.get('date', '???'),
-                         profiled=obj.get('date', '???'),
-                         name=obj.get('name'))
-                )
+                self.recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
 
         # Start AMQP coroutine
         log_future(asyncio.get_event_loop().create_task(self._amqp()),
@@ -92,6 +84,25 @@ class Coordinator(object):
         # Start source count coroutine
         self.sources_counts = {}
         self.update_sources_counts()
+
+    @staticmethod
+    def build_discovery(dataset_id, metadata, discovery=None):
+        if discovery is None:
+            discovery = {}
+        materialize = metadata.get('materialize', {})
+        discovery['id'] = dataset_id
+        discovery['discoverer'] = materialize.get('identifier', '(unknown)')
+        discovery['discovered'] = materialize.get('date', '???')
+        discovery['profiled'] = metadata.get('date', '???')
+        discovery['name'] = metadata.get('name')
+        if metadata.get('spatial_coverage', None):
+            discovery['spatial'] = True
+        if any(
+            types.DATE_TIME in c['semantic_types']
+            for c in metadata['columns']
+        ):
+            discovery['temporal'] = True
+        return discovery
 
     async def _amqp(self):
         connection = await aio_pika.connect_robust(
@@ -148,21 +159,15 @@ class Coordinator(object):
         async for message in self.datasets_queue.iterator(no_ack=True):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
-            materialize = obj.get('materialize', {})
             logger.info("Got dataset message: %r", dataset_id)
             for discovery in self.recent_discoveries:
                 if discovery['id'] == dataset_id:
-                    discovery['profiled'] = obj.get('date', '???')
-                    discovery['name'] = obj.get('name')
+                    self.build_discovery(dataset_id, obj, discovery=discovery)
                     break
             else:
                 self.recent_discoveries.insert(
                     0,
-                    dict(id=dataset_id,
-                         discoverer=materialize.get('identifier', '(unknown)'),
-                         discovered=materialize.get('date', '???'),
-                         profiled=obj.get('date', '???'),
-                         name=obj.get('name')),
+                    self.build_discovery(dataset_id, obj),
                 )
                 del self.recent_discoveries[15:]
 

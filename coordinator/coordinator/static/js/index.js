@@ -36,11 +36,6 @@ function getJSON(url='', args) {
   });
 }
 
-function linkDataset(dataset_id) {
-  dataset_id = escape(dataset_id);
-  return '<a class="dataset" href="/dataset/' + dataset_id + '">' + dataset_id + '</a>';
-}
-
 function loadStatus() {
   getJSON('/status')
   .then(function(result) {
@@ -56,10 +51,17 @@ function loadStatus() {
         elem.innerHTML =
           '<div class="d-flex w-100 justify-content-between">' +
           '  <h5 class="mb-1">' + (record.name || record.id) + '</h5>' +
-          '  <small>' + record.profiled + '</small>' +
-          '</div>' +
-          //'<p class="mb-1">More info?</p>' +
-          '<small>' + record.discoverer + '</small>';
+          '  <div>' +
+          '    <span class="badge badge-light badge-pill">' + record.discoverer + '</span>' +
+          '    <span class="badge badge-light badge-pill">' + record.profiled + '</span>' +
+          '  </div>' +
+          '</div>';
+        if(record.spatial) {
+          elem.innerHTML += ' <span class="badge badge-primary badge-pill">spatial</span>';
+        }
+        if(record.temporal) {
+          elem.innerHTML += ' <span class="badge badge-secondary badge-pill">temporal</span>';
+        }
       } else {
         elem = document.createElement('div');
         elem.className = 'list-group-item flex-column align-items-start list-group-item-secondary';
