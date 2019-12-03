@@ -696,7 +696,7 @@ class TestAugment(DatamartTest):
                     '3,south,aecio,brazil,True',
                     '7,west,sonia,peru,True',
                     '8,east,roque,peru,True',
-                    '10,west,fernando,brazil,False',
+                    '10,,fernando,brazil,False',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -705,7 +705,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '189 B',
+                        'approximateSize': '185 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -814,7 +814,7 @@ class TestAugment(DatamartTest):
                     '3,south,aecio,brazil,True',
                     '7,west,sonia,peru,True',
                     '8,east,roque,peru,True',
-                    '10,west,fernando,brazil,False',
+                    '10,,fernando,brazil,False',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -823,7 +823,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '189 B',
+                        'approximateSize': '185 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1712,7 +1712,7 @@ basic_aug_data = (
     '7,west\n'
     '8,east\n'
     '3,north\n'
-    '10,west\n'
+    '10,\n'
 )
 
 
