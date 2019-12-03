@@ -329,12 +329,6 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             original_data.columns,
         )
 
-        # removing duplicated join columns
-        join_ = join_.drop(
-            list(set(augment_join_columns).intersection(set(join_.columns))),
-            axis=1
-        )
-
         original_columns_set = set(original_data.columns)
         new_columns = [
             col for col in join_.columns if col not in original_columns_set
