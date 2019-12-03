@@ -1,6 +1,5 @@
 import csv
 import os
-import shutil
 import tempfile
 import xlrd
 
@@ -51,16 +50,15 @@ class _ExcelProxy(object):
 class ExcelConverter(object):
     def __init__(self, writer):
         self.writer = writer
-        self.dir = tempfile.mkdtemp(prefix='datamart_excel_')
+        self.dir = tempfile.TemporaryDirectory(prefix='datamart_excel_')
 
     def open_file(self, mode='wb', name=None, **kwargs):
-        temp_dir = tempfile.mkdtemp(prefix='datamart_excel_')
-        temp_file = os.path.join(temp_dir, 'file.xls')
+        temp_file = os.path.join(self.dir.name, 'file.xls')
 
         # Return a proxy that will write to the destination when closed
         fp = open(temp_file, mode, **kwargs)
         return _ExcelProxy(self.writer, name, temp_file, fp)
 
     def finish(self):
-        shutil.rmtree(self.dir)
+        self.dir.cleanup()
         self.dir = None
