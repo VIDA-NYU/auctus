@@ -51,8 +51,7 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
         inplace=True
     )
 
-    for i in range(len(columns)):
-        index = columns[i]
+    for i, index in enumerate(columns):
         column = columns_metadata[index]
         if types.DATE_TIME in column['semantic_types']:
             if isinstance(data.index, pd.MultiIndex):
