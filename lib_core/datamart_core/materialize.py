@@ -41,7 +41,7 @@ def make_zip_recursive(zip_, src, dst=''):
 
 
 @contextlib.contextmanager
-def get_dataset(metadata, dataset_id, format='csv'):
+def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     if not format:
         raise ValueError
 
@@ -81,6 +81,8 @@ def get_dataset(metadata, dataset_id, format='csv'):
 
         # If CSV was requested, send it
         if format == 'csv':
+            if format_options:
+                raise ValueError("Invalid output options")
             yield csv_path
             return
 
@@ -89,11 +91,18 @@ def get_dataset(metadata, dataset_id, format='csv'):
 
         def create(cache_temp):
             # Do format conversion from CSV file
-            logger.info("Converting CSV to %r", format)
+            logger.info("Converting CSV to %r opts=%r", format, format_options)
             with PROM_CONVERT.time():
                 with open(csv_path, 'rb') as src:
                     writer_cls = datamart_materialize.get_writer(format)
-                    writer = writer_cls(dataset_id, cache_temp, metadata)
+                    if format_options:
+                        kwargs = dict(format_options=format_options)
+                    else:
+                        kwargs = {}
+                    writer = writer_cls(
+                        dataset_id, cache_temp, metadata,
+                        **kwargs,
+                    )
                     with writer.open_file('wb') as dst:
                         shutil.copyfileobj(src, dst)
 

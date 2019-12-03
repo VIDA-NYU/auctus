@@ -125,7 +125,7 @@ def get_writer(format):
 class CsvWriter(object):
     needs_metadata = False
 
-    def __init__(self, dataset_id, destination, metadata):
+    def __init__(self, dataset_id, destination, metadata, format_options=None):
         self.destination = destination
 
     def open_file(self, mode='wb', name=None, **kwargs):
