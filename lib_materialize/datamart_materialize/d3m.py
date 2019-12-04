@@ -77,10 +77,17 @@ def d3m_metadata(dataset_id, metadata, *, version=None):
 
 class D3mWriter(object):
     needs_metadata = True
+    default_options = {'version': DEFAULT_VERSION}
+
+    @classmethod
+    def _get_opt(cls, options, key):
+        if options and key in options:
+            return options.pop(key)
+        else:
+            return cls.default_options[key]
 
     def __init__(self, dataset_id, destination, metadata, format_options=None):
-        format_options = format_options or {}
-        version = format_options.pop('version', DEFAULT_VERSION)
+        version = self._get_opt(format_options, 'version')
         if format_options:
             raise ValueError(
                 "Invalid format option %r" % (next(iter(format_options)),)

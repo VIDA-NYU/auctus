@@ -6,6 +6,7 @@ import prometheus_client
 import shutil
 import zipfile
 
+from datamart_core.common import hash_json
 from datamart_core.fscache import cache_get_or_set
 
 from .discovery import encode_dataset_id
@@ -87,14 +88,19 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
             return
 
         # Otherwise, do format conversion
-        key = encode_dataset_id(dataset_id) + '_' + format
+        writer_cls = datamart_materialize.get_writer(format)
+        all_format_options = dict(getattr(writer_cls, 'default_options', ()))
+        all_format_options.update(format_options)
+        key = '%s_%s_%s' % (
+            encode_dataset_id(dataset_id), format,
+            hash_json(all_format_options),
+        )
 
         def create(cache_temp):
             # Do format conversion from CSV file
             logger.info("Converting CSV to %r opts=%r", format, format_options)
             with PROM_CONVERT.time():
                 with open(csv_path, 'rb') as src:
-                    writer_cls = datamart_materialize.get_writer(format)
                     if format_options:
                         kwargs = dict(format_options=format_options)
                     else:
