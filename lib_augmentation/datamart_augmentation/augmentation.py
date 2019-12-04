@@ -166,7 +166,7 @@ def perform_aggregations(data, groupby_columns, original_columns):
     data = data.groupby(by=groupby_columns).agg(agg_functions)
 
     # Put the group-by columns back in
-    data = data.reset_index(drop=False)
+    data.reset_index(drop=False, inplace=True)
 
     # Reorder columns
     # sorted() is a stable sort, so we'll keep the order of agg_functions above
@@ -304,20 +304,20 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     qualities_list = list()
 
     if return_only_datamart_data:
-        # dropping columns from original data
+        # drop columns from original data
         drop_columns = list()
         intersection = set(original_data.columns).intersection(set(first_augment_data.columns))
         if len(intersection) > 0:
             drop_columns = list(intersection)
         drop_columns += list(set(original_data.columns).difference(intersection))
-        join_ = join_.drop(drop_columns, axis=1)
+        join_.drop(drop_columns, axis=1, inplace=True)
         if len(intersection) > 0:
             rename = dict()
             for column in intersection:
                 rename[column + '_r'] = column
-            join_ = join_.rename(columns=rename)
+            join_.rename(columns=rename, inplace=True)
 
-        # dropping rows with all null values
+        # drop rows with all null values
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
