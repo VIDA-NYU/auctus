@@ -12,7 +12,15 @@ STRUCTURAL_TYPE_MAP = {
 }
 
 
-def d3m_metadata(dataset_id, metadata):
+DEFAULT_VERSION = '4.0.0'
+
+
+def d3m_metadata(dataset_id, metadata, *, version=None):
+    if not version:
+        version = DEFAULT_VERSION
+    elif version not in ('3.2.0', '4.0.0'):
+        raise ValueError("Unknown D3M schema version %r" % (version,))
+
     columns = []
     for i, column in enumerate(metadata['columns']):
         # D3M has a 'dateTime' structural type but we use string
@@ -41,7 +49,7 @@ def d3m_metadata(dataset_id, metadata):
             'datasetName': metadata.get('name', dataset_id),
             'license': metadata.get('license', 'unknown'),
             'approximateSize': '%d B' % metadata['size'],
-            'datasetSchemaVersion': '4.0.0',
+            'datasetSchemaVersion': version,
             'redacted': False,
             'datasetVersion': '1.0',
         },
@@ -50,7 +58,10 @@ def d3m_metadata(dataset_id, metadata):
                 'resID': 'learningData',
                 'resPath': 'tables/learningData.csv',
                 'resType': 'table',
-                'resFormat': {'text/csv': ["csv"]},
+                'resFormat': (
+                    {'text/csv': ["csv"]} if version == '4.0.0'
+                    else ['text/csv']
+                ),
                 'isCollection': False,
                 'columns': columns,
             },
@@ -66,13 +77,27 @@ def d3m_metadata(dataset_id, metadata):
 
 class D3mWriter(object):
     needs_metadata = True
+    default_options = {'version': DEFAULT_VERSION}
 
-    def __init__(self, dataset_id, destination, metadata):
+    @classmethod
+    def _get_opt(cls, options, key):
+        if options and key in options:
+            return options.pop(key)
+        else:
+            return cls.default_options[key]
+
+    def __init__(self, dataset_id, destination, metadata, format_options=None):
+        version = self._get_opt(format_options, 'version')
+        if format_options:
+            raise ValueError(
+                "Invalid format option %r" % (next(iter(format_options)),)
+            )
+
         self.destination = destination
         os.mkdir(destination)
         os.mkdir(os.path.join(destination, 'tables'))
 
-        d3m_meta = d3m_metadata(dataset_id, metadata)
+        d3m_meta = d3m_metadata(dataset_id, metadata, version=version)
 
         with open(os.path.join(destination, 'datasetDoc.json'), 'w') as fp:
             json.dump(d3m_meta, fp, sort_keys=True, indent=2)

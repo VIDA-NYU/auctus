@@ -196,7 +196,7 @@ class TestSearch(DatamartTest):
                 },
                 'score': lambda n: isinstance(n, float),
                 'metadata': basic_metadata,
-                'd3m_dataset_description': basic_metadata_d3m,
+                'd3m_dataset_description': basic_metadata_d3m('4.0.0'),
                 'supplied_id': None,
                 'supplied_resource_id': None
             },
@@ -222,7 +222,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
-                    'd3m_dataset_description': basic_metadata_d3m,
+                    'd3m_dataset_description': basic_metadata_d3m('4.0.0'),
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -252,7 +252,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
-                    'd3m_dataset_description': basic_metadata_d3m,
+                    'd3m_dataset_description': basic_metadata_d3m('4.0.0'),
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -281,7 +281,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
-                    'd3m_dataset_description': basic_metadata_d3m,
+                    'd3m_dataset_description': basic_metadata_d3m('4.0.0'),
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -317,7 +317,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.basic',
                     'metadata': basic_metadata,
-                    'd3m_dataset_description': basic_metadata_d3m,
+                    'd3m_dataset_description': basic_metadata_d3m('4.0.0'),
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -398,7 +398,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.geo',
                     'metadata': geo_metadata,
-                    'd3m_dataset_description': geo_metadata_d3m,
+                    'd3m_dataset_description': geo_metadata_d3m('4.0.0'),
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0], [1], [2]],
@@ -429,7 +429,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.geo',
                     'metadata': geo_metadata,
-                    'd3m_dataset_description': geo_metadata_d3m,
+                    'd3m_dataset_description': geo_metadata_d3m('4.0.0'),
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0], [1], [2]],
@@ -446,6 +446,8 @@ class TestDataSearch(DatamartTest):
 
 
 class TestDownload(DatamartTest):
+    maxDiff = None
+
     def test_get_id(self):
         """Download datasets via GET /download/{dataset_id}"""
         # Basic dataset, materialized via direct_url
@@ -457,6 +459,7 @@ class TestDownload(DatamartTest):
                          'http://test_discoverer:7000/basic.csv')
 
         response = self.datamart_get('/download/' + 'datamart.test.basic',
+                                     # explicit format
                                      params={'format': 'csv'},
                                      allow_redirects=False)
         self.assertEqual(response.status_code, 302)
@@ -471,17 +474,27 @@ class TestDownload(DatamartTest):
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
+        self.assertEqual(
+            json.load(zip_.open('datasetDoc.json')),
+            basic_metadata_d3m('4.0.0'),
+        )
 
-        # Geo dataset, materialized via /datasets storage
-        response = self.datamart_get('/download/' + 'datamart.test.basic',
-                                     params={'format': 'd3m'},
-                                     allow_redirects=False)
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.basic',
+            params={'format': 'd3m', 'format_version': '3.2.0'},
+            allow_redirects=False,
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
+        self.assertEqual(
+            json.load(zip_.open('datasetDoc.json')),
+            basic_metadata_d3m('3.2.0'),
+        )
 
+        # Geo dataset, materialized via /datasets storage
         response = self.datamart_get('/download/' + 'datamart.test.geo',
                                      # format defaults to csv
                                      allow_redirects=False)
@@ -500,7 +513,7 @@ class TestDownload(DatamartTest):
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
-            params={'format': 'd3m'},
+            params={'format': 'd3m', 'format_version': '3.2.0'},
             files={'task': json.dumps(
                 {
                     'id': 'datamart.test.basic',
@@ -514,6 +527,10 @@ class TestDownload(DatamartTest):
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
+        self.assertEqual(
+            json.load(zip_.open('datasetDoc.json')),
+            basic_metadata_d3m('3.2.0'),
+        )
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
@@ -564,6 +581,10 @@ class TestDownload(DatamartTest):
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
+        self.assertEqual(
+            json.load(zip_.open('datasetDoc.json')),
+            geo_metadata_d3m('4.0.0'),
+        )
 
     def test_post_invalid(self):
         """Post invalid materialization information."""
@@ -1403,14 +1424,14 @@ basic_metadata = {
 }
 
 
-basic_metadata_d3m = {
+basic_metadata_d3m = lambda v: {
     'about': {
         'datasetID': 'datamart.test.basic',
         'datasetName': 'basic',
         'description': 'This is a very simple CSV with people',
         'license': 'unknown',
         'approximateSize': '126 B',
-        'datasetSchemaVersion': '4.0.0',
+        'datasetSchemaVersion': v,
         'redacted': False,
         'datasetVersion': '1.0',
     },
@@ -1419,7 +1440,8 @@ basic_metadata_d3m = {
             'resID': 'learningData',
             'resPath': 'tables/learningData.csv',
             'resType': 'table',
-            'resFormat': {'text/csv': ["csv"]},
+            'resFormat': ({'text/csv': ["csv"]} if v == '4.0.0'
+                          else ['text/csv']),
             'isCollection': False,
             'columns': [
                 {
@@ -1606,14 +1628,14 @@ geo_metadata = {
 }
 
 
-geo_metadata_d3m = {
+geo_metadata_d3m = lambda v: {
     'about': {
         'datasetID': 'datamart.test.geo',
         'datasetName': 'geo',
         'description': 'Another simple CSV with places',
         'license': 'unknown',
         'approximateSize': '3910 B',
-        'datasetSchemaVersion': '4.0.0',
+        'datasetSchemaVersion': v,
         'redacted': False,
         'datasetVersion': '1.0',
     },
@@ -1622,7 +1644,8 @@ geo_metadata_d3m = {
             'resID': 'learningData',
             'resPath': 'tables/learningData.csv',
             'resType': 'table',
-            'resFormat': {'text/csv': ["csv"]},
+            'resFormat': ({'text/csv': ["csv"]} if v == '4.0.0'
+                          else ['text/csv']),
             'isCollection': False,
             'columns': [
                 {

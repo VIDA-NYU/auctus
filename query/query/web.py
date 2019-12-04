@@ -284,12 +284,29 @@ class RecursiveZipWriter(object):
 
 
 class BaseDownload(BaseHandler):
-    async def send_dataset(self, dataset_id, metadata, output_format='csv'):
+    def read_format(self):
+        format = self.get_query_argument('format', 'csv')
+        format_options = {}
+        for n, v in self.request.query_arguments.items():
+            if n.startswith('format_'):
+                if len(v) != 1:
+                    self.send_error_json(
+                        400,
+                        "Multiple occurrences of format option %r" % n[7:],
+                    )
+                    raise HTTPError(400)
+                format_options[n[7:]] = self.decode_argument(v[0])
+        return format, format_options
+
+    async def send_dataset(self, dataset_id, metadata,
+                           format='csv', format_options=None):
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
         if ('direct_url' in materialize and
-                output_format == 'csv' and not materialize.get('convert')):
+                format == 'csv' and not materialize.get('convert')):
+            if format_options:
+                return self.send_error_json(400, "Invalid output options")
             # Redirect the client to it
             logger.info("Sending redirect to direct_url")
             return self.redirect(materialize['direct_url'])
@@ -300,7 +317,8 @@ class BaseDownload(BaseHandler):
             stack = contextlib.ExitStack()
             try:
                 dataset_path = stack.enter_context(
-                    get_dataset(metadata, dataset_id, format=output_format)
+                    get_dataset(metadata, dataset_id,
+                                format=format, format_options=format_options)
                 )
             except Exception:
                 self.send_error_json(500, "Materializer reports failure")
@@ -334,7 +352,7 @@ class DownloadId(BaseDownload, GracefulHandler):
     def get(self, dataset_id):
         PROM_DOWNLOAD_ID.inc()
 
-        output_format = self.get_query_argument('format', 'csv')
+        format, format_options = self.read_format()
 
         # Get materialization data from Elasticsearch
         try:
@@ -344,7 +362,7 @@ class DownloadId(BaseDownload, GracefulHandler):
         except elasticsearch.NotFoundError:
             raise HTTPError(404)
 
-        return self.send_dataset(dataset_id, metadata, output_format)
+        return self.send_dataset(dataset_id, metadata, format, format_options)
 
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
@@ -356,7 +374,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
 
         task = None
         data = None
-        output_format = self.get_query_argument('format', 'csv')
+        format, format_options = self.read_format()
         if type_.startswith('application/json'):
             task = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -371,12 +389,12 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 data = self.request.files['data'][0].body
             elif data is not None:
                 data = data.encode('utf-8')
-            output_format = self.get_argument('format', None)
-            if output_format is None and 'format' in self.request.files:
-                output_format = (
-                    self.request.files['format'][0].body.decode('utf-8'))
-            if output_format is None:
-                output_format = 'csv'
+            if 'format' in self.request.files:
+                return self.send_error_json(
+                    400,
+                    "Sending 'format' in the POST data is no longer "
+                    "supported, please use query parameters",
+                )
         if task is None:
             return self.send_error_json(
                 400,
@@ -391,7 +409,9 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         metadata = task['metadata']
 
         if not data:
-            return self.send_dataset(task['id'], metadata, output_format)
+            return self.send_dataset(
+                task['id'], metadata, format, format_options,
+            )
         else:
             # data
             try:
@@ -431,6 +451,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                     task,
                     return_only_datamart_data=True
                 )
+                # FIXME: This always sends in D3M format
 
             # send a zip file
             self.set_header('Content-Type', 'application/zip')
