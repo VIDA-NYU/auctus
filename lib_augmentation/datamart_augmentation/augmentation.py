@@ -23,6 +23,14 @@ class AugmentationError(ValueError):
     """
 
 
+class _UniqueIndexKey(object):
+    def __repr__(self):
+        return "UNIQUE_INDEX_KEY"
+
+
+UNIQUE_INDEX_KEY = _UniqueIndexKey()
+
+
 temporal_resolutions = [
     'second',
     'minute',
@@ -51,8 +59,7 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
         inplace=True
     )
 
-    for i in range(len(columns)):
-        index = columns[i]
+    for i, index in enumerate(columns):
         column = columns_metadata[index]
         if types.DATE_TIME in column['semantic_types']:
             if isinstance(data.index, pd.MultiIndex):
@@ -133,7 +140,7 @@ def check_temporal_resolution(data):
     return 'date'
 
 
-def perform_aggregations(data, groupby_columns, original_columns):
+def perform_aggregations(data, original_columns):
     """Performs group by on dataset after join, to keep the shape of the
     new, augmented dataset the same as the original, input data.
     """
@@ -146,11 +153,12 @@ def perform_aggregations(data, groupby_columns, original_columns):
         return series.iloc[0]
 
     start = time.perf_counter()
-    groupby_set = set(groupby_columns)
-    agg_columns = [col for col in data.columns if col not in groupby_set]
+    original_columns_set = set(original_columns)
     agg_functions = dict()
-    for column in agg_columns:
-        if column in original_columns:
+    for column in data.columns:
+        if column == UNIQUE_INDEX_KEY or column in original_columns_set:
+            # Just pick the first value
+            # (they are all the same, from a single row in the original data)
             agg_functions[column] = [first]
         else:
             if ('int' in str(data.dtypes[column]) or
@@ -164,10 +172,10 @@ def perform_aggregations(data, groupby_columns, original_columns):
                 agg_functions[column] = [first]
 
     # Perform group-by
-    data = data.groupby(by=groupby_columns).agg(agg_functions)
+    data = data.groupby(by=[UNIQUE_INDEX_KEY]).agg(agg_functions)
 
-    # Put the group-by columns back in
-    data = data.reset_index(drop=False)
+    # Drop group-by column
+    data.reset_index(drop=True, inplace=True)
 
     # Reorder columns
     # sorted() is a stable sort, so we'll keep the order of agg_functions above
@@ -178,12 +186,8 @@ def perform_aggregations(data, groupby_columns, original_columns):
 
     # Rename columns
     data.columns = [
-        col if not isinstance(col, tuple)  # Group-by column
-        else (
-            # Aggregated columns
-            col[0].strip() if col[1] == 'first'
-            else ' '.join(col[::-1]).strip()
-        )
+        col[0] if col[1] == 'first'
+        else ' '.join(col[::-1]).strip()
         for col in data.columns
     ]
 
@@ -224,17 +228,18 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         drop=False,  # Keep the values of join columns from this side
     )
 
+    # Add a column of unique indices which will be used to aggregate
+    original_data[UNIQUE_INDEX_KEY] = pd.RangeIndex(len(original_data))
+
     logger.info("Performing join...")
 
     # join columns
-    original_join_columns = list()
     augment_join_columns = list()
     for left, right in zip(left_columns, right_columns):
         left_name = original_data.columns[left[0]]
         right_name = augment_data_columns[right[0]]
         if right_name == left_name:
             right_name += '_r'
-        original_join_columns.append(left_name)
         augment_join_columns.append(right_name)
 
     # Stream the data in
@@ -267,7 +272,9 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     start = time.perf_counter()
     join_ = []
     # Iterate over chunks of augment data
-    for augment_data in itertools.chain([first_augment_data], augment_data_chunks):
+    for i, augment_data in enumerate(
+            itertools.chain([first_augment_data], augment_data_chunks)
+    ):
         # Convert data types
         augment_data = convert_data_types(
             augment_data,
@@ -305,35 +312,34 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     qualities_list = list()
 
     if return_only_datamart_data:
-        # dropping columns from original data
+        # drop unique index
+        join_.drop([UNIQUE_INDEX_KEY], axis=1, inplace=True)
+
+        # drop columns from original data
         drop_columns = list()
         intersection = set(original_data.columns).intersection(set(first_augment_data.columns))
         if len(intersection) > 0:
             drop_columns = list(intersection)
         drop_columns += list(set(original_data.columns).difference(intersection))
-        join_ = join_.drop(drop_columns, axis=1)
+        join_.drop(drop_columns, axis=1, inplace=True)
         if len(intersection) > 0:
             rename = dict()
             for column in intersection:
                 rename[column + '_r'] = column
-            join_ = join_.rename(columns=rename)
+            join_.rename(columns=rename, inplace=True)
 
-        # dropping rows with all null values
+        # drop rows with all null values
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
         # aggregations
         join_ = perform_aggregations(
             join_,
-            original_join_columns,
-            original_data.columns,
+            list(original_data.columns),
         )
 
-        # removing duplicated join columns
-        join_ = join_.drop(
-            list(set(augment_join_columns).intersection(set(join_.columns))),
-            axis=1
-        )
+        # drop unique index
+        join_.drop([UNIQUE_INDEX_KEY], axis=1, inplace=True)
 
         original_columns_set = set(original_data.columns)
         new_columns = [

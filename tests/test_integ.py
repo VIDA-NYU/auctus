@@ -692,10 +692,11 @@ class TestAugment(DatamartTest):
                 'number,desk_faces,name,country,what',
                 [
                     '4,west,remi,france,False',
+                    '3,north,aecio,brazil,True',
                     '3,south,aecio,brazil,True',
                     '7,west,sonia,peru,True',
                     '8,east,roque,peru,True',
-                    '10,west,fernando,brazil,False',
+                    '10,,fernando,brazil,False',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -704,7 +705,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '163 B',
+                        'approximateSize': '185 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -758,8 +759,8 @@ class TestAugment(DatamartTest):
                             'qualName': 'augmentation_info',
                             'qualValue': {
                                 'augmentation_type': 'join',
-                                'nb_rows_after': 5,
-                                'nb_rows_before': 5,
+                                'nb_rows_after': 6,
+                                'nb_rows_before': 6,
                                 'new_columns': ['name', 'country', 'what'],
                                 'removed_columns': [],
                             },
@@ -809,10 +810,11 @@ class TestAugment(DatamartTest):
                 'number,desk_faces,name,country,what',
                 [
                     '4,west,remi,france,False',
+                    '3,north,aecio,brazil,True',
                     '3,south,aecio,brazil,True',
                     '7,west,sonia,peru,True',
                     '8,east,roque,peru,True',
-                    '10,west,fernando,brazil,False',
+                    '10,,fernando,brazil,False',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -821,7 +823,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '163 B',
+                        'approximateSize': '185 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -875,8 +877,8 @@ class TestAugment(DatamartTest):
                             'qualName': 'augmentation_info',
                             'qualValue': {
                                 'augmentation_type': 'join',
-                                'nb_rows_after': 5,
-                                'nb_rows_before': 5,
+                                'nb_rows_after': 6,
+                                'nb_rows_before': 6,
                                 'new_columns': ['name', 'country', 'what'],
                                 'removed_columns': [],
                             },
@@ -1709,7 +1711,8 @@ basic_aug_data = (
     '3,south\n'
     '7,west\n'
     '8,east\n'
-    '10,west\n'
+    '3,north\n'
+    '10,\n'
 )
 
 
