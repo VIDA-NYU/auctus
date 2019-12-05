@@ -1,5 +1,6 @@
 import numpy
 import numpy.random
+import os
 
 
 SIZE = 50
@@ -24,13 +25,15 @@ def main():
     random = numpy.random.RandomState(3)
     heights = random.normal(50.0, 20.0, 2 * SIZE)
 
-    print("id,lat,long,height")
-    for i, (lat, long, h) in enumerate(zip(latitudes, longitudes, heights)):
-        if i == 42:
-            i = ''
-        else:
-            i = 'place%02d' % i
-        print("%s,%f,%f,%f" % (i, lat, long, h))
+    data_dir = os.path.dirname(__file__)
+    with open(os.path.join(data_dir, 'geo.csv'), 'w') as f_data:
+        print("id,lat,long,height", file=f_data)
+        for i, (lat, long, h) in enumerate(zip(latitudes, longitudes, heights)):
+            if i == 42:
+                i = ''
+            else:
+                i = 'place%02d' % i
+            print("%s,%f,%f,%f" % (i, lat, long, h), file=f_data)
 
 
 if __name__ == '__main__':
