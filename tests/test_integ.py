@@ -353,7 +353,7 @@ class TestDataSearch(DatamartTest):
         response = self.datamart_post(
             '/search',
             files={
-                'data': lazo_data.encode('utf-8'),
+                'data': lazo_aug_data.encode('utf-8'),
             },
             schema=result_list_schema,
         )
@@ -1070,7 +1070,7 @@ class TestAugment(DatamartTest):
             '/augment',
             files={
                 'task': json.dumps(task).encode('utf-8'),
-                'data': lazo_data.encode('utf-8'),
+                'data': lazo_aug_data.encode('utf-8'),
             },
         )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
@@ -1764,7 +1764,7 @@ geo_aug_data = (
 )
 
 
-lazo_data = (
+lazo_aug_data = (
     'home_address\n'
     'AZ\n'
     'PA\n'
