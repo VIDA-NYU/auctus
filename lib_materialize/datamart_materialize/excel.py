@@ -48,6 +48,8 @@ class _ExcelProxy(object):
 
 
 class ExcelConverter(object):
+    """Adapter converting Excel files to CSV.
+    """
     def __init__(self, writer):
         self.writer = writer
         self.dir = tempfile.TemporaryDirectory(prefix='datamart_excel_')

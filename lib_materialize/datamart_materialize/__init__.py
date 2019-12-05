@@ -123,6 +123,8 @@ def get_writer(format):
 
 
 class CsvWriter(object):
+    """Writer for a single CSV file.
+    """
     needs_metadata = False
 
     def __init__(self, dataset_id, destination, metadata, format_options=None):
