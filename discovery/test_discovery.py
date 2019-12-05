@@ -51,6 +51,28 @@ class TestDiscoverer(Discoverer):
             dataset_id='lazo',
         )
 
+        # Put this one on disk
+        with self.write_to_shared_storage('daily') as dirname:
+            shutil.copy2('daily.csv', os.path.join(dirname, 'main.csv'))
+        self.record_dataset(
+            dict(),
+            {
+                'name': 'daily',
+                'description': "Temporal dataset with daily resolution",
+            },
+            dataset_id='daily',
+        )
+
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test_discoverer:7000/hourly.csv'),
+            {
+                # Omit name, should be set to 'hourly' automatically
+                'description': "Temporal dataset with hourly resolution",
+            },
+            dataset_id='hourly',
+        )
+
         # Needs to be last, CI waits for it to test
 
         # Use URL for this one

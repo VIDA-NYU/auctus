@@ -104,7 +104,9 @@ class TestProfiler(DataTestCase):
                 'datamart.test.basic': basic_metadata,
                 'datamart.test.geo': geo_metadata,
                 'datamart.test.agg': agg_metadata,
-                'datamart.test.lazo': lazo_metadata
+                'datamart.test.lazo': lazo_metadata,
+                'datamart.test.daily': daily_metadata,
+                'datamart.test.hourly': hourly_metadata,
             },
         )
 
@@ -442,6 +444,96 @@ class TestDataSearch(DatamartTest):
                     'supplied_resource_id': None
                 }
             ]
+        )
+
+    def test_temporal_daily_join(self):
+        response = self.datamart_post(
+            '/search',
+            files={
+                'data': daily_aug_data.encode('utf-8'),
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertJson(
+            results,
+            [
+                {
+                    'id': 'datamart.test.daily',
+                    'metadata': daily_metadata,
+                    'd3m_dataset_description':  lambda d: isinstance(d, dict),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['orig_date']],
+                        'right_columns': [[0]],
+                        'right_columns_names':[['aug_date']],
+                        'type':'join',
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None,
+                },
+            ],
+        )
+
+    def test_temporal_hourly_join(self):
+        response = self.datamart_post(
+            '/search',
+            files={
+                'data': hourly_aug_data.encode('utf-8'),
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertJson(
+            results,
+            [
+                {
+                    'id': 'datamart.test.hourly',
+                    'metadata': hourly_metadata,
+                    'd3m_dataset_description':  lambda d: isinstance(d, dict),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['orig_date']],
+                        'right_columns': [[0]],
+                        'right_columns_names':[['aug_date']],
+                        'type':'join',
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None,
+                },
+            ],
+        )
+
+    def test_temporal_hourly_daily_join(self):
+        response = self.datamart_post(
+            '/search',
+            files={
+                'data': hourly_aug_data_days.encode('utf-8'),
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertJson(
+            results,
+            [
+                {
+                    'id': 'datamart.test.hourly',
+                    'metadata': hourly_metadata,
+                    'd3m_dataset_description':  lambda d: isinstance(d, dict),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['orig_date']],
+                        'right_columns': [[0]],
+                        'right_columns_names':[['aug_date']],
+                        'type':'join',
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None,
+                },
+            ],
         )
 
 
@@ -1312,6 +1404,157 @@ class TestAugment(DatamartTest):
                 },
             )
 
+    def test_temporal_daily_join(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.daily'
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.daily',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['orig_date']],
+                'right_columns': [[0]],
+                'right_columns_names': [['aug_date']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        response = self.datamart_post(
+            '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': daily_aug_data.encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
+        self.assertEqual(
+            set(zip_.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip_.open('tables/learningData.csv') as table:
+            self.assertCsvEqualNoOrder(
+                table.read().decode('utf-8'),
+                'orig_date,n_people,rain',
+                [
+                    '2019-04-28,3,yes',
+                    '2019-04-29,5,yes',
+                    '2019-04-30,0,yes',
+                    '2019-05-01,1,no',
+                    '2019-05-02,3,no',
+                    '2019-05-03,2,yes',
+                ],
+            )
+
+    def test_temporal_hourly_join(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.hourly'
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.hourly',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['orig_date']],
+                'right_columns': [[0]],
+                'right_columns_names': [['aug_date']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        response = self.datamart_post(
+            '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': hourly_aug_data.encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
+        self.assertEqual(
+            set(zip_.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip_.open('tables/learningData.csv') as table:
+            self.assertCsvEqualNoOrder(
+                table.read().decode('utf-8'),
+                'orig_date,color,rain',
+                [
+                    '2019-06-13T01:00:00,blue,no',
+                    '2019-06-13T02:00:00,blue,no',
+                    '2019-06-13T03:00:00,green,no',
+                    '2019-06-13T04:00:00,green,yes',
+                    '2019-06-13T05:00:00,blue,no',
+                ],
+            )
+
+    def test_temporal_hourly_days_join(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.hourly'
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.hourly',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['orig_date']],
+                'right_columns': [[0]],
+                'right_columns_names': [['aug_date']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        response = self.datamart_post(
+            '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': hourly_aug_data_days.encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
+        self.assertEqual(
+            set(zip_.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip_.open('tables/learningData.csv') as table:
+            self.assertCsvEqualNoOrder(
+                table.read().decode('utf-8'),
+                'orig_date,color,rain',
+                [
+                    '2019-06-12,blue,no',
+                    '2019-06-13,green,no',
+                ],
+            )
+
 
 def check_ranges(min_, max_):
     def check(ranges):
@@ -1728,6 +1971,137 @@ lazo_metadata = {
 }
 
 
+daily_metadata = {
+    'name': 'daily',
+    'description': 'Temporal dataset with daily resolution',
+    'size': 448,
+    'nb_rows': 30,
+    'columns': [
+        {
+            'name': 'aug_date',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': [
+                'http://schema.org/DateTime',
+                'https://metadata.datadrivendiscovery.org/types/PhoneNumber',
+            ],
+            'mean': lambda n: round(n) == 1557230400.0,
+            'stddev': lambda n: round(n, 2) == 747830.14,
+            'coverage': (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {
+                        'range': {
+                            'gte': 1555977600.0,
+                            'lte': 1556668800.0,
+                        },
+                    },
+                    {
+                        'range': {
+                            'gte': 1556755200.0,
+                            'lte': 1557532800.0,
+                        },
+                    },
+                    {
+                        'range': {
+                            'gte': 1557619200.0,
+                            'lte': 1558483200.0,
+                        },
+                    },
+                ]
+            ),
+        },
+        {
+            'name': 'rain',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': [
+                'http://schema.org/Boolean',
+                'http://schema.org/Enumeration',
+            ],
+            'unclean_values_ratio': 0.0,
+            'num_distinct_values': 2,
+        },
+    ],
+    'materialize': {
+        'identifier': 'datamart.test',
+        'date': lambda d: isinstance(d, str),
+    },
+    'sample': "aug_date,rain\n2019-04-23,no\n2019-04-25,yes\n2019-04-26,no\n" +
+              "2019-04-29,yes\n2019-05-02,no\n2019-05-03,yes\n2019-05-05,yes" +
+              "\n2019-05-07,no\n2019-05-08,yes\n2019-05-09,yes\n2019-05-10,n" +
+              "o\n2019-05-13,no\n2019-05-14,no\n2019-05-16,no\n2019-05-17,ye" +
+              "s\n2019-05-18,no\n2019-05-19,yes\n2019-05-20,no\n2019-05-21,n" +
+              "o\n2019-05-22,yes\n",
+    'date': lambda d: isinstance(d, str),
+    'version': version,
+}
+
+
+hourly_metadata = {
+    'name': 'hourly',
+    'description': 'Temporal dataset with hourly resolution',
+    'size': 1242,
+    'nb_rows': 52,
+    'columns': [
+        {
+            'name': 'aug_date',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': [
+                'http://schema.org/DateTime',
+            ],
+            'mean': lambda n: round(n) == 1560389398.0,
+            'stddev': lambda n: round(n, 2) == 54027.44,
+            'coverage': (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {
+                        'range': {
+                            'gte': 1560297600.0,
+                            'lte': 1560355200.0,
+                        },
+                    },
+                    {
+                        'range': {
+                            'gte': 1560358800.0,
+                            'lte': 1560420000.0,
+                        },
+                    },
+                    {
+                        'range': {
+                            'gte': 1560423600.0,
+                            'lte': 1560481200.0,
+                        },
+                    },
+                ]
+            ),
+        },
+        {
+            'name': 'rain',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': [
+                'http://schema.org/Boolean',
+                'http://schema.org/Enumeration',
+            ],
+            'unclean_values_ratio': 0.0,
+            'num_distinct_values': 2,
+        },
+    ],
+    'materialize': {
+        'direct_url': 'http://test_discoverer:7000/hourly.csv',
+        'identifier': 'datamart.test',
+        'date': lambda d: isinstance(d, str),
+    },
+    'sample': "aug_date,rain\n2019-06-12T01:00:00,no\n2019-06-12T02:00:00,no" +
+              "\n2019-06-12T03:00:00,yes\n2019-06-12T09:00:00,no\n2019-06-12" +
+              "T10:00:00,yes\n2019-06-12T11:00:00,yes\n2019-06-12T12:00:00,y" +
+              "es\n2019-06-12T14:00:00,yes\n2019-06-12T15:00:00,no\n2019-06-" +
+              "12T20:00:00,yes\n2019-06-12T21:00:00,yes\n2019-06-13T01:00:00" +
+              ",no\n2019-06-13T03:00:00,no\n2019-06-13T05:00:00,no\n2019-06-" +
+              "13T07:00:00,yes\n2019-06-13T10:00:00,yes\n2019-06-13T14:00:00" +
+              ",yes\n2019-06-13T17:00:00,yes\n2019-06-14T00:00:00,yes\n2019-" +
+              "06-14T01:00:00,yes\n",
+    'date': lambda d: isinstance(d, str),
+    'version': version,
+}
+
+
 basic_aug_data = (
     'number,desk_faces\n'
     '4,west\n'
@@ -1792,4 +2166,29 @@ lazo_aug_data = (
     'RI\n'
     'PR\n'
     'DE\n'
+)
+
+daily_aug_data = (
+    'orig_date,n_people\n'
+    '2019-04-28,3\n'
+    '2019-04-29,5\n'
+    '2019-04-30,0\n'
+    '2019-05-01,1\n'
+    '2019-05-02,3\n'
+    '2019-05-03,2\n'
+)
+
+hourly_aug_data_days = (
+    'orig_date,color\n'
+    '2019-06-12,blue\n'
+    '2019-06-13,green\n'
+)
+
+hourly_aug_data = (
+    'orig_date,color\n'
+    '2019-06-13T01:00:00,blue\n'
+    '2019-06-13T02:00:00,blue\n'
+    '2019-06-13T03:00:00,green\n'
+    '2019-06-13T04:00:00,green\n'
+    '2019-06-13T05:00:00,blue\n'
 )
