@@ -36,7 +36,9 @@ class DataTestCase(unittest.TestCase):
                 self.assertJson(a, e, '%s[%d]' % (pos, i))
         elif isinstance(actual, dict):
             if actual.keys() != expected.keys():
-                msg = "Dict lengths don't match; expected %d, got %d at %s" % (
+                msg = "Dict keys don't match"
+                if len(actual) != len(expected):
+                    msg += "; expected %d, got %d at %s" % (
                     len(expected), len(actual), pos,
                 )
                 if len(actual) > len(expected):
