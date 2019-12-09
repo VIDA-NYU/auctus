@@ -7,7 +7,6 @@ their metadata in the index might have been extracted with an old version of
 the profiler. This script reprocesses the datasets that are from a version
 older than a specified commit.
 """
-import subprocess
 
 import aio_pika
 import asyncio
@@ -15,6 +14,7 @@ import elasticsearch
 import elasticsearch.helpers
 import logging
 import os
+import subprocess
 import sys
 
 from datamart_core.common import json2msg
