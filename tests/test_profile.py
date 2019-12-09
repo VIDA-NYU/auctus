@@ -172,3 +172,29 @@ class TestTypes(unittest.TestCase):
             positive, negative,
         )
         self.assertFalse(profile_types._re_float.match(''))
+
+
+class TestTruncate(unittest.TestCase):
+    def test_simple(self):
+        from datamart_profiler import truncate_string
+
+        self.assertEqual(truncate_string("abc", 10), "abc")
+        self.assertEqual(truncate_string("abcdefghij", 10), "abcdefghij")
+        self.assertEqual(truncate_string("abcdefghijk", 10), "abcdefg...")
+        self.assertEqual(truncate_string("abcdefghijklmnop", 10), "abcdefg...")
+
+    def test_words(self):
+        from datamart_profiler import truncate_string
+
+        self.assertEqual(
+            truncate_string("abcde fghijklmnopqrs tuvwxyzABCD EF", 30),
+            "abcde fghijklmnopqrs...",
+        )
+        self.assertEqual(
+            truncate_string("abcde fghijklmnopqrs tu vwxyzABCD EF", 30),
+            "abcde fghijklmnopqrs tu...",
+        )
+        self.assertEqual(
+            truncate_string("abc defghijklmnopqrstuvwxyzABCDEFGHI", 30),
+            "abc defghijklmnopqrstuvwxyz...",
+        )
