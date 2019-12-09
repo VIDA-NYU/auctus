@@ -1,13 +1,3 @@
-# FIXME: SCDP currently disabled
-#FROM python:3.6 as java
-#
-#WORKDIR /usr/src
-#RUN apt-get update && apt-get install -y maven default-jdk git && \
-#    rm -rf /var/lib/apt/lists/*
-#RUN git clone https://gitlab.com/ViDA-NYU/datamart/scdp.git
-#RUN cd scdp && mvn package
-
-
 FROM python:3.6
 
 RUN mkdir -p /usr/src/app
@@ -29,8 +19,6 @@ RUN pip install --no-deps -e /usr/src/app/lib_materialize
 COPY lib_profiler lib_profiler
 RUN pip install --no-deps -e /usr/src/app/lib_profiler
 COPY profiler profiler
-#COPY --from=java /usr/src/scdp/target/SCDP-0.1-jar-with-dependencies.jar \
-#    lib_profiler/datamart_profiler/scdp.jar
 RUN pip install --no-deps -e /usr/src/app/profiler
 ARG version
 ENV DATAMART_VERSION ${version}

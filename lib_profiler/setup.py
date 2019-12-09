@@ -19,7 +19,6 @@ with io.open('README.rst', encoding='utf-8') as fp:
 setup(name='datamart_profiler',
       version='0.5.1',
       packages=['datamart_profiler'],
-      #package_data={'datamart_profiler': ['scdp.jar']},
       install_requires=req,
       description="Data profiling library for Datamart",
       author="Remi Rampin",

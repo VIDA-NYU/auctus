@@ -3,7 +3,7 @@ Scripts
 
 This folder contains scripts that make it easy to perform certain tasks. Those scripts are meant to be run inside the Datamart environment; some of them are prefixed with `docker_`, those will run the corresponding script inside a datamart container (provided the images have been built using the default docker-compose names).
 
-* setup.sh: Run this once to setup your local checkout. This currently just builds the SCDP JAR so that you can package datamart_profiler correctly for PyPI
+* setup.sh: Run this once to setup your local checkout. This sets up the permissions on the volumes for docker-compose.
 * docker_import_snapshot.sh: This downloads a dump of Elasticsearch from https://datamart.d3m.vida-nyu.org/snapshot/ and imports it using import_all.py
 * docker_import_all.sh / import_all.py: This can be used to load a dump of Elasticsearch as JSON files. Useful to restore a backup
 * import.py: Import a single dataset from a JSON file

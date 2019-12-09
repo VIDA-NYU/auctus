@@ -161,36 +161,6 @@ def get_spatial_ranges(values):
     return ranges
 
 
-def run_scdp(data):
-    # Run SCDP
-    logger.info("Running SCDP...")
-    scdp = pkg_resources.resource_filename('datamart_profiler', 'scdp.jar')
-    if isinstance(data, (str, bytes)):
-        if os.path.isdir(data):
-            data = os.path.join(data, 'main.csv')
-        if not os.path.exists(data):
-            raise ValueError("data file does not exist")
-        proc = subprocess.Popen(['java', '-jar', scdp, data],
-                                stdout=subprocess.PIPE,
-                                stdin=subprocess.PIPE)
-        stdout, _ = proc.communicate()
-    else:
-        proc = subprocess.Popen(['java', '-jar', scdp, '/dev/stdin'],
-                                stdout=subprocess.PIPE,
-                                stdin=subprocess.PIPE)
-        data.to_csv(codecs.getwriter('utf-8')(proc.stdin))
-        stdout, _ = proc.communicate()
-    if proc.wait() != 0:
-        logger.error("Error running SCDP: returned %d", proc.returncode)
-        return {}
-    else:
-        try:
-            return json.loads(stdout)
-        except json.JSONDecodeError:
-            logger.exception("Invalid output from SCDP")
-            return {}
-
-
 def normalize_latlong_column_name(name, *substrings):
     name = name.lower()
     for substr in substrings:
@@ -259,10 +229,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
     if metadata is None:
         metadata = {}
 
-    # FIXME: SCDP currently disabled
-    # scdp_out = run_scdp(data)
-    scdp_out = {}
-
     data_path = None
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
@@ -325,10 +291,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Set column names
     for column_meta, name in zip(columns, data.columns):
         column_meta['name'] = name
-
-    # Copy info from SCDP
-    for column_meta, name in zip(columns, data.columns):
-        column_meta.update(scdp_out.get(name, {}))
 
     # Lat / Long
     columns_lat = []
