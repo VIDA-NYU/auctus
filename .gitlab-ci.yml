@@ -88,6 +88,8 @@ test:
     - |
       # Run tests
       if ! python -Wd -m coverage run --branch tests/__main__.py; then docker-compose logs query; docker-compose logs lazo; exit 1; fi
+    - docker-compose logs query
+    - docker-compose logs lazo
     - docker-compose down -t 30
     - coverage combine -a cov/
     - coverage html
