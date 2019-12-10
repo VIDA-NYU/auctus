@@ -229,7 +229,7 @@ class Discoverer(object):
                 pass  # Dataset was written concurrently
 
     def delete_dataset(self, *, full_id=None, dataset_id=None):
-        if (full_id is not None) == (id is not None):
+        if (full_id is not None) == (dataset_id is not None):
             raise TypeError("Pass only one of 'id' and 'full_id'")
 
         if full_id is None:
