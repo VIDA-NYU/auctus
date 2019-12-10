@@ -81,6 +81,7 @@ async def freshen(version):
         },
         size=SIZE,
     )
+    reprocessed = 0
     for h in hits:
         obj = h['_source']
         dataset_version = obj['version']
@@ -89,6 +90,7 @@ async def freshen(version):
                          h['_id'], dataset_version)
             continue
 
+        reprocessed += 1
         logger.info("Reprocessing %s, version=%r",
                     h['_id'], dataset_version)
         metadata = dict(name=obj['name'],
@@ -101,6 +103,7 @@ async def freshen(version):
             json2msg(dict(id=h['_id'], metadata=metadata)),
             '',
         )
+    logger.info("Reprocessed %d datasets", reprocessed)
 
 
 if __name__ == '__main__':
