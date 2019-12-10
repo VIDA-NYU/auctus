@@ -1,4 +1,4 @@
-0.6 (TBD 2019-11-??)
+0.6 (TBD 2020-01-??)
 ====================
 
 Incompatible changes:
@@ -8,6 +8,8 @@ scratch, or by importing the JSON files.
 * `docker-compose.yml` now uses local mounts for volumes (create them with `scripts/setup.sh`)
 * Aggregation now always happens, even if there are no duplicate rows (so you'll always get the min/max/mean columns)
 * Aggregated columns renamed (`amin` -> `min`, `amax` -> `max`)
+* Renamed `lazo_server` container to `lazo`
+* Updated to MIT-LL D3M schema version 4.0.0
 
 Enhancements:
 * Compute additional metadata `missing_values_ratio`, `unclean_values_ratio`, `num_distinct_values`
@@ -19,6 +21,8 @@ Enhancements:
 * Don't drop non-numeric columns in aggregation
 * Clear old entries from caches when a limit is reached (`MAX_CACHE_BYTES`)
 * Datasets too big to be joined will no longer be profiled into the index
+* Add 'temporal' and 'spatial' badges on datasets
+* Fix aggregation breaking with missing data in join column
 
 0.5 (2019-08-28)
 ================
