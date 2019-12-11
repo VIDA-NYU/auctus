@@ -61,7 +61,7 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - QUERY_HOST=${QUERY_HOST}
       - MAX_CACHE_BYTES=100000000000
-    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     ports:
       - 8001:8001
     volumes:
@@ -81,7 +81,7 @@ services:
       - LAZO_SERVER_PORT=50051
     ports:
       - 8002
-    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
@@ -111,7 +111,7 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
-    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
@@ -154,7 +154,7 @@ services:
       context: .
       dockerfile: discovery/Dockerfile
     command: testsuite  # NOTCI
-    # CI: command: ["bash", "-c", "set -m; coverage run --branch -p discovery/test_discovery.py & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p discovery/test_discovery.py & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
