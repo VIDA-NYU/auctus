@@ -149,18 +149,31 @@ class Profiler(object):
             try:
                 try:
                     metadata = future.result()
-                    # Delete dataset if already exists in index
-                    delete_dataset_from_index(
-                        self.es,
-                        dataset_id,
-                        # Don't delete from Lazo, we inserted during profile
-                        None,
-                    )
-                    # Insert results in Elasticsearch
-                    body = dict(metadata,
-                                date=datetime.utcnow().isoformat() + 'Z',
-                                version=os.environ['DATAMART_VERSION'])
-                    add_dataset_to_index(self.es, dataset_id, body)
+                    if metadata['nb_rows'] == 0:
+                        logger.info(
+                            "Dataset has no rows, not inserting into index: " +
+                            "%r",
+                            dataset_id,
+                        )
+                        delete_dataset_from_index(
+                            self.es,
+                            dataset_id,
+                            # DO delete from Lazo
+                            self.lazo_client,
+                        )
+                    else:
+                        # Delete dataset if already exists in index
+                        delete_dataset_from_index(
+                            self.es,
+                            dataset_id,
+                            # Don't delete from Lazo, we inserted during profile
+                            None,
+                        )
+                        # Insert results in Elasticsearch
+                        body = dict(metadata,
+                                    date=datetime.utcnow().isoformat() + 'Z',
+                                    version=os.environ['DATAMART_VERSION'])
+                        add_dataset_to_index(self.es, dataset_id, body)
                 except DatasetTooBig:
                     # Materializer reached size limit
                     logger.info("Dataset over size limit: %r", dataset_id)

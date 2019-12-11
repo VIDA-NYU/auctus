@@ -218,7 +218,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client=None, search=False):
     """Compute all metafeatures from a dataset.
 
-    :param data: path to dataset
+    :param data: path to dataset, or file object, or DataFrame
     :param dataset_id: id of the dataset
     :param metadata: The metadata provided by the discovery plugin (might be
         very limited).
@@ -291,6 +291,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Set column names
     for column_meta, name in zip(columns, data.columns):
         column_meta['name'] = name
+
+    if data.shape[0] == 0:
+        logger.info("0 rows, returning early")
+        return metadata
 
     # Lat / Long
     columns_lat = []
