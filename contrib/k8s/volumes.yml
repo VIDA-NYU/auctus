@@ -2,22 +2,6 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: elasticsearch
-spec:
-  storageClassName: ""
-  selector:
-    matchLabels:
-      app: datamart
-      what: elasticsearch
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
   name: datasets
 spec:
   storageClassName: ""

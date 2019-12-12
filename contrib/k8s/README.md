@@ -31,6 +31,11 @@ Build images locally and load them up in minikube:
 ../scripts/minikube-load-images.sh
 ```
 
+Set up Elasticsearch:
+```
+kubectl apply -f elasticsearch-minikube.yml
+```
+
 Set up the deployments:
 ```
 kubectl apply -f deployments.yml
