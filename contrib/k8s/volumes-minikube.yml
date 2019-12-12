@@ -43,7 +43,7 @@ spec:
   capacity:
     storage: 5Gi
   accessModes:
-  - ReadWriteOnce
+  - ReadWriteMany
   hostPath:
     path: "/var/lib/datamart/prod/datasets"
 ---
@@ -58,7 +58,7 @@ spec:
       app: datamart
       what: datasets
   accessModes:
-  - ReadWriteOnce
+  - ReadWriteMany
   resources:
     requests:
       storage: 5Gi

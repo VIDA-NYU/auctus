@@ -20,8 +20,6 @@ spec:
       - name: fix-permissions
         image: busybox
         command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"]
-        securityContext:
-          privileged: true
         volumeMounts:
         - name: data
           mountPath: /usr/share/elasticsearch/data
@@ -32,13 +30,18 @@ spec:
           privileged: true
       containers:
       - name: elasticsearch
-        image: docker.elastic.co/elasticsearch/elasticsearch:6.4.3
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.3.1
         env:
         - name: cluster.name
-          valueFrom:
-            configMapKeyRef:
-              name: config
-              key: elasticsearch.cluster_name
+          value: datamart-cluster
+        - name: ES_JAVA_OPTS
+          value: -Des.enforce.bootstrap.checks=true
+        - name: discovery.type
+          value: single-node
+        #- name: discovery.zen.ping.unicast.hosts
+        #  value: elasticsearch
+        #- name: discovery.zen.minimum_master_nodes
+        #  value: "1"
         # This needs special permissions that I don't know how to grant
         # - name: bootstrap.memory_lock
         #   value: "true"
@@ -52,6 +55,12 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/elasticsearch/data
           name: data
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /_cluster/health?local=true
+            port: 9200
+          initialDelaySeconds: 5
       volumes:
       - name: data
         persistentVolumeClaim:
@@ -77,7 +86,6 @@ spec:
       containers:
       - name: rabbitmq
         image: remram/rabbitmq:3.7.8
-        imagePullPolicy: Never
         env:
         - name: RABBITMQ_DEFAULT_USER
           valueFrom:
@@ -96,6 +104,53 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
+  name: lazo
+  labels:
+    app: datamart
+    what: lazo
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: lazo
+    spec:
+      containers:
+      - name: lazo
+        image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.6
+        env:
+        - name: DATABASE
+          value: elasticsearch
+        - name: PORT
+          value: "50051"
+        - name: ELASTICSEARCH_HOST
+          value: elasticsearch
+        - name: ELASTICSEARCH_PORT
+          value: "9200"
+        ports:
+        - containerPort: 50051
+        volumeMounts:
+        - mountPath: /datasets
+          name: datasets
+        - mountPath: /cache
+          name: cache
+      volumes:
+      - name: datasets
+        persistentVolumeClaim:
+          claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
   name: coordinator
   labels:
     app: datamart
@@ -103,7 +158,10 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -113,7 +171,7 @@ spec:
       containers:
       - name: web
         image: datamart_coordinator
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
@@ -134,16 +192,22 @@ spec:
             configMapKeyRef:
               name: config
               key: query_host
+        - name: MAX_CACHE_BYTES
+          value: "100000000000"  # 100 GB
         ports:
         - containerPort: 8001
-          hostPort: 8001
         volumeMounts:
         - mountPath: /datasets
           name: datasets
+        - mountPath: /cache
+          name: cache
       volumes:
       - name: datasets
         persistentVolumeClaim:
           claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -168,7 +232,7 @@ spec:
       containers:
       - name: web
         image: datamart_query
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
@@ -184,6 +248,10 @@ spec:
             secretKeyRef:
               name: secrets
               key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
         ports:
         - containerPort: 8002
         volumeMounts:
@@ -191,6 +259,12 @@ spec:
           name: datasets
         - mountPath: /cache
           name: cache
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          periodSeconds: 1
+          failureThreshold: 2
       volumes:
       - name: datasets
         persistentVolumeClaim:
@@ -198,7 +272,7 @@ spec:
       - name: cache
         persistentVolumeClaim:
           claimName: cache
-      terminationGracePeriodSeconds: 300
+      terminationGracePeriodSeconds: 600
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -212,8 +286,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 2
-      maxUnavailable: 0
+      maxSurge: 0
+      maxUnavailable: 2
   template:
     metadata:
       labels:
@@ -223,7 +297,7 @@ spec:
       containers:
       - name: web
         image: datamart_profiler
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
@@ -239,13 +313,22 @@ spec:
             secretKeyRef:
               name: secrets
               key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
         volumeMounts:
         - mountPath: /datasets
           name: datasets
+        - mountPath: /cache
+          name: cache
       volumes:
       - name: datasets
         persistentVolumeClaim:
           claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -258,10 +341,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
   template:
     metadata:
       labels:
@@ -271,7 +351,7 @@ spec:
       containers:
       - name: discoverer
         image: datamart_example_discoverer
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
@@ -287,6 +367,10 @@ spec:
             secretKeyRef:
               name: secrets
               key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
         volumeMounts:
         - mountPath: /datasets
           name: datasets

@@ -1,20 +1,4 @@
 ---
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: elasticsearch
-  labels:
-    type: local
-    app: datamart
-    what: elasticsearch
-spec:
-  capacity:
-    storage: 5Gi
-  accessModes:
-  - ReadWriteOnce
-  hostPath:
-    path: "/data/datamart/elasticsearch"
----
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -31,22 +15,6 @@ spec:
     requests:
       storage: 5Gi
 ---
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: datasets
-  labels:
-    type: local
-    app: datamart
-    what: datasets
-spec:
-  capacity:
-    storage: 5Gi
-  accessModes:
-  - ReadWriteOnce
-  hostPath:
-    path: "/data/datamart/datasets"
----
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -58,26 +26,10 @@ spec:
       app: datamart
       what: datasets
   accessModes:
-  - ReadWriteOnce
+  - ReadWriteMany
   resources:
     requests:
       storage: 5Gi
----
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: cache
-  labels:
-    type: local
-    app: datamart
-    what: cache
-spec:
-  capacity:
-    storage: 5Gi
-  accessModes:
-  - ReadWriteMany
-  hostPath:
-    path: "/data/datamart/cache"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1

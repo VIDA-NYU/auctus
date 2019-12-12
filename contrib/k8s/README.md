@@ -28,7 +28,7 @@ kubectl apply -f secrets
 Build images locally and load them up in minikube:
 ```
 (cd .. && docker-compose build && docker-compose pull)
-(eval $(minikube docker-env) && ../scripts/minikube-load-images.sh)
+../scripts/minikube-load-images.sh
 ```
 
 Set up the deployments:

@@ -60,7 +60,7 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - QUERY_HOST=${QUERY_HOST}
-      - MAX_CACHE_BYTES=100000000000
+      - MAX_CACHE_BYTES=100000000000  # 100 GB
     # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     ports:
       - 8001:8001
