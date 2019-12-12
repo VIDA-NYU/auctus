@@ -2,7 +2,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: dm-elasticsearch
+  name: elasticsearch
   labels:
     app: datamart
     what: elasticsearch
@@ -37,7 +37,7 @@ spec:
         - name: cluster.name
           valueFrom:
             configMapKeyRef:
-              name: dm-config
+              name: config
               key: elasticsearch.cluster_name
         # This needs special permissions that I don't know how to grant
         # - name: bootstrap.memory_lock
@@ -45,7 +45,7 @@ spec:
         - name: ES_HEAP_SIZE
           valueFrom:
             configMapKeyRef:
-              name: dm-config
+              name: config
               key: elasticsearch.heap_size
         ports:
         - containerPort: 9200
@@ -55,12 +55,12 @@ spec:
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: elasticsearch-pvc
+          claimName: elasticsearch
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: dm-rabbitmq
+  name: rabbitmq
   labels:
     app: datamart
     what: rabbitmq
@@ -82,12 +82,12 @@ spec:
         - name: RABBITMQ_DEFAULT_USER
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.user
         - name: RABBITMQ_DEFAULT_PASS
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.password
         ports:
         - containerPort: 5672
@@ -96,7 +96,7 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: dm-coordinator
+  name: coordinator
   labels:
     app: datamart
     what: coordinator
@@ -122,17 +122,17 @@ spec:
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.user
         - name: AMQP_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.password
         - name: QUERY_HOST
           valueFrom:
             configMapKeyRef:
-              name: dm-config
+              name: config
               key: query_host
         ports:
         - containerPort: 8001
@@ -143,12 +143,12 @@ spec:
       volumes:
       - name: datasets
         persistentVolumeClaim:
-          claimName: datasets-pvc
+          claimName: datasets
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: dm-query
+  name: query
   labels:
     app: datamart
     what: query
@@ -177,12 +177,12 @@ spec:
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.user
         - name: AMQP_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.password
         ports:
         - containerPort: 8002
@@ -194,16 +194,16 @@ spec:
       volumes:
       - name: datasets
         persistentVolumeClaim:
-          claimName: datasets-pvc
+          claimName: datasets
       - name: cache
         persistentVolumeClaim:
-          claimName: cache-pvc
+          claimName: cache
       terminationGracePeriodSeconds: 300
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: dm-profiler
+  name: profiler
   labels:
     app: datamart
     what: profiler
@@ -232,12 +232,12 @@ spec:
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.user
         - name: AMQP_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.password
         volumeMounts:
         - mountPath: /datasets
@@ -245,12 +245,12 @@ spec:
       volumes:
       - name: datasets
         persistentVolumeClaim:
-          claimName: datasets-pvc
+          claimName: datasets
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: dm-example-discoverer
+  name: example-discoverer
   labels:
     app: datamart
     what: example-discoverer
@@ -280,12 +280,12 @@ spec:
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.user
         - name: AMQP_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: dm-secrets
+              name: secrets
               key: amqp.password
         volumeMounts:
         - mountPath: /datasets
@@ -293,4 +293,4 @@ spec:
       volumes:
       - name: datasets
         persistentVolumeClaim:
-          claimName: datasets-pvc
+          claimName: datasets
