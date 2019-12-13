@@ -174,6 +174,12 @@ class Profiler(object):
                                     date=datetime.utcnow().isoformat() + 'Z',
                                     version=os.environ['DATAMART_VERSION'])
                         add_dataset_to_index(self.es, dataset_id, body)
+
+                        # Publish to RabbitMQ
+                        await self.datasets_exchange.publish(
+                            json2msg(dict(body, id=dataset_id)),
+                            dataset_id,
+                        )
                 except DatasetTooBig:
                     # Materializer reached size limit
                     logger.info("Dataset over size limit: %r", dataset_id)
@@ -200,12 +206,6 @@ class Profiler(object):
                     # Ack anyway, retrying would probably fail again
                     message.ack()
                 else:
-                    # Publish to RabbitMQ
-                    await self.datasets_exchange.publish(
-                        json2msg(dict(body, id=dataset_id)),
-                        dataset_id,
-                    )
-
                     message.ack()
                     logger.info("Dataset %r processed successfully",
                                 dataset_id)
