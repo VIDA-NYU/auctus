@@ -1,0 +1,32 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: datasets
+spec:
+  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: datasets
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: cache
+spec:
+  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: cache
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

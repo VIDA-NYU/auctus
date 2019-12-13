@@ -1,0 +1,313 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  labels:
+    app: datamart
+    what: rabbitmq
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: remram/rabbitmq:3.7.8
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: lazo
+  labels:
+    app: datamart
+    what: lazo
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: lazo
+    spec:
+      containers:
+      - name: lazo
+        image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.6
+        env:
+        - name: DATABASE
+          value: elasticsearch
+        - name: PORT
+          value: "50051"
+        - name: ELASTICSEARCH_HOST
+          value: elasticsearch
+        - name: ELASTICSEARCH_PORT
+          value: "9200"
+        ports:
+        - containerPort: 50051
+        volumeMounts:
+        - mountPath: /datasets
+          name: datasets
+        - mountPath: /cache
+          name: cache
+      volumes:
+      - name: datasets
+        persistentVolumeClaim:
+          claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: coordinator
+  labels:
+    app: datamart
+    what: coordinator
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: coordinator
+    spec:
+      containers:
+      - name: web
+        image: datamart_coordinator
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: elasticsearch:9200
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: AMQP_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: AMQP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        - name: QUERY_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: query_host
+        - name: MAX_CACHE_BYTES
+          value: "100000000000"  # 100 GB
+        ports:
+        - containerPort: 8001
+        volumeMounts:
+        - mountPath: /datasets
+          name: datasets
+        - mountPath: /cache
+          name: cache
+      volumes:
+      - name: datasets
+        persistentVolumeClaim:
+          claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: query
+  labels:
+    app: datamart
+    what: query
+spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: query
+    spec:
+      containers:
+      - name: web
+        image: datamart_query
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: elasticsearch:9200
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: AMQP_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: AMQP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
+        ports:
+        - containerPort: 8002
+        volumeMounts:
+        - mountPath: /datasets
+          name: datasets
+        - mountPath: /cache
+          name: cache
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          periodSeconds: 1
+          failureThreshold: 2
+      volumes:
+      - name: datasets
+        persistentVolumeClaim:
+          claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
+      terminationGracePeriodSeconds: 600
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: profiler
+  labels:
+    app: datamart
+    what: profiler
+spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 2
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: profiler
+    spec:
+      containers:
+      - name: web
+        image: datamart_profiler
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: elasticsearch:9200
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: AMQP_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: AMQP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
+        volumeMounts:
+        - mountPath: /datasets
+          name: datasets
+        - mountPath: /cache
+          name: cache
+      volumes:
+      - name: datasets
+        persistentVolumeClaim:
+          claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: example-discoverer
+  labels:
+    app: datamart
+    what: example-discoverer
+    example: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: example-discoverer
+    spec:
+      containers:
+      - name: discoverer
+        image: datamart_example_discoverer
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: elasticsearch:9200
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: AMQP_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: AMQP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
+        volumeMounts:
+        - mountPath: /datasets
+          name: datasets
+      volumes:
+      - name: datasets
+        persistentVolumeClaim:
+          claimName: datasets
