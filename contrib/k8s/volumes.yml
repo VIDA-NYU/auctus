@@ -5,10 +5,6 @@ metadata:
   name: datasets
 spec:
   storageClassName: ""
-  selector:
-    matchLabels:
-      app: datamart
-      what: datasets
   accessModes:
   - ReadWriteMany
   resources:
@@ -21,10 +17,6 @@ metadata:
   name: cache
 spec:
   storageClassName: ""
-  selector:
-    matchLabels:
-      app: datamart
-      what: cache
   accessModes:
   - ReadWriteMany
   resources:
