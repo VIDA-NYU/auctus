@@ -244,8 +244,8 @@ class Discoverer(object):
         # Also delete it from the cache
         prefix = encode_dataset_id(full_id) + '_'
         for name in os.listdir('/cache/datasets'):
-            if name.startswith(prefix) and name.endswith('.lock'):
-                name = name[:-5]
+            if name.startswith(prefix) and name.endswith('.cache'):
+                name = name[:-6]
                 entry_path = os.path.join('/cache/datasets', name + '.cache')
                 lock_path = os.path.join('/cache/datasets', name + '.lock')
                 temp_path = os.path.join('/cache/datasets', name + '.temp')
