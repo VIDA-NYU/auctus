@@ -7,7 +7,7 @@ RUN python3 install_deps.py Pipfile.lock
 ENV TINI_VERSION v0.18.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
-# CI: RUN pip install coverage
+# CI: RUN pip install coverage==4.5.4
 # CI: COPY .coveragerc /usr/src/app/
 
 COPY lib_core lib_core
