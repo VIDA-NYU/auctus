@@ -18,7 +18,7 @@ socrata = {editable = true, path = "./discovery/socrata"}
 flake8 = "*"
 PyYaml = "*"
 requests = "*"
-coverage = "*"
+coverage = "*" # Keep it in sync with Dockerfiles for CI
 jsonschema = ">=3.0,<4"
 readme_renderer = "*"
 
