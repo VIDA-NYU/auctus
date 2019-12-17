@@ -10,8 +10,6 @@ RUN chmod +x /tini
 # CI: RUN pip install coverage==4.5.4
 # CI: COPY .coveragerc /usr/src/app/
 
-#RUN apt-get update && apt-get install -y default-jre && \
-#    rm -rf /var/lib/apt/lists/*
 COPY lib_core lib_core
 RUN pip install --no-deps -e /usr/src/app/lib_core
 COPY lib_materialize lib_materialize
