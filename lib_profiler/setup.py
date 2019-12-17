@@ -31,7 +31,7 @@ setup(name='datamart_profiler',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Data profiling library for Datamart",
+      long_description=description,
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
