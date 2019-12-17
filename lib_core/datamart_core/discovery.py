@@ -254,6 +254,11 @@ class Discoverer(object):
                         name,
                     )
 
+        # And the stored datasets
+        dirname = os.path.join('/datasets', encode_dataset_id(full_id))
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+
 
 class AsyncDiscoverer(Discoverer):
     _async = True
