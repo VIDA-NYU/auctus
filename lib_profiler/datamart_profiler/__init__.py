@@ -7,6 +7,7 @@ import pandas
 import prometheus_client
 import random
 from sklearn.cluster import KMeans
+import time
 
 from .profile_types import identify_types
 from . import types
@@ -209,6 +210,105 @@ def truncate_string(s, limit=140):
             return s[:space] + "..."
 
 
+_sato_type_map = {
+    'address': 'http://schema.org/address',
+    'affiliate': '',
+    'affiliation': '',
+    'age': '',
+    'album': 'http://schema.org/album',
+    'area': 'http://schema.org/AdministrativeArea',
+    'artist': 'http://schema.org/artist',
+    'birthDate': 'http://schema.org/birthPlace',
+    'birthPlace': 'http://schema.org/birthDate',
+    'brand': 'http://schema.org/brand',
+    'capacity': 'http://schema.org/fuelCapacity',
+    'category': 'http://schema.org/category',
+    'city': 'http://schema.org/City',
+    'class': '',
+    'classification': '',
+    'club': 'http://schema.org/SportsTeam',
+    'code': '',
+    'collection': '',
+    'command': '',
+    'company': 'http://schema.org/Corporation',
+    'component': '',
+    'continent': 'http://schema.org/Continent',
+    'country': 'http://schema.org/Country',
+    'county': 'http://schema.org/AdministrativeArea',
+    'creator': 'http://schema.org/creator',
+    'credit': '',
+    'currency': 'http://schema.org/currency',
+    'day': '',
+    'depth': '',
+    'description': 'http://schema.org/description',
+    'director': 'http://schema.org/director',
+    'duration': 'http://schema.org/Duration',
+    'education': '',
+    'elevation': 'http://schema.org/elevation',
+    'family': '',
+    'fileSize': 'http://schema.org/fileSize',
+    'format': '',
+    'gender': 'http://schema.org/gender',
+    'genre': 'http://schema.org/genre',
+    'grades': '',
+    'isbn': 'http://schema.org/isbn',
+    'industry': 'http://schema.org/industry',
+    'jockey': '',
+    'language': 'http://schema.org/Language',
+    'location': 'http://schema.org/location',
+    'manufacturer': 'http://schema.org/manufacturer',
+    'name': 'http://schema.org/name',
+    'nationality': 'http://schema.org/nationality',
+    'notes': '',
+    'operator': '',
+    'order': 'http://schema.org/Order',
+    'organisation': 'http://schema.org/Organization',
+    'origin': '',
+    'owner': '',
+    'person': 'http://schema.org/Person',
+    'plays': '',
+    'position': '',
+    'product': 'http://schema.org/Product',
+    'publisher': 'http://schema.org/publisher',
+    'range': '',
+    'rank': '',
+    'ranking': '',
+    'region': '',
+    'religion': '',
+    'requirement': '',
+    'result': '',
+    'sales': '',
+    'service': 'http://schema.org/Service',
+    'sex': '',
+    'species': '',
+    'state': 'http://schema.org/State',
+    'status': '',
+    'symbol': '',
+    'team': 'http://schema.org/SportsTeam',
+    'teamName': 'http://schema.org/SportsTeam',
+    'type': '',
+    'weight': 'http://schema.org/weight',
+    'year': '',
+}
+
+
+def run_semantic_profiler(data):
+    """Guess more semantic types using Sato.
+    """
+    try:
+        from sato.predict import evaluate
+    except ImportError:
+        logger.info("Sato not available, skipping...")
+        return None
+
+    logger.info("Running Sato...")
+    start = time.perf_counter()
+    labels = evaluate(data)
+    logger.info("Sato done in %.2fs", time.perf_counter() - start)
+
+    return [_sato_type_map[label] for label in labels]
+
+
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client=None, search=False):
@@ -375,6 +475,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
             if structural_type == types.TEXT and \
                     types.DATE_TIME not in semantic_types_dict:
                 column_textual.append(column_meta['name'])
+
+    # Use the whole-table semantic profiler
+    more_semantic_types = run_semantic_profiler(data)
+    if more_semantic_types:
+        for (column_meta, type_) in zip(columns, more_semantic_types):
+            if type_ and type_ not in column_meta['semantic_types']:
+                column_meta['semantic_types'].append(type_)
 
     # Textual columns
     if lazo_client and column_textual:
