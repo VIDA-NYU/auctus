@@ -13,6 +13,7 @@ profiler = {editable = true, path = "./profiler"}
 query = {editable = true, path = "./query"}
 noaa = {editable = true, path = "./discovery/noaa"}
 socrata = {editable = true, path = "./discovery/socrata"}
+sato = {editable = true, git = "https://gitlab.com/ViDA-NYU/datamart/sato.git"}
 
 [dev-packages]
 flake8 = "*"
