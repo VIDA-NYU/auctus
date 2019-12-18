@@ -25,7 +25,13 @@ def main():
     for name, dep in lockfile['default'].items():
         if 'path' in dep:
             continue
-        packages.append('%s=%s' % (name, dep['version']))
+        elif 'git' in dep:
+            packages.extend([
+                '-e',
+                'git+%s@%s#egg=%s' % (dep['git'], dep['ref'], name),
+            ])
+        else:
+            packages.append('%s=%s' % (name, dep['version']))
 
     subprocess.check_call(['pip3', 'install'] + packages)
 
