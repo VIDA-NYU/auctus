@@ -1,16 +1,12 @@
-import codecs
 import contextlib
-import json
 import logging
 import math
 import numpy
 import os
 import pandas
-import pkg_resources
 import prometheus_client
 import random
 from sklearn.cluster import KMeans
-import subprocess
 
 from .profile_types import identify_types
 from . import types
