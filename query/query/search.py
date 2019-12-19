@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 BUF_SIZE = 128000
 PAGINATION_SIZE = 200
-TOP_K_SIZE = 50
+TOP_K_SIZE = 150
 
 
 def compute_levenshtein_sim(str1, str2):
