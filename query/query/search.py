@@ -1183,7 +1183,7 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
         result['supplied_id'] = None
         result['supplied_resource_id'] = None
 
-    return results[:50]  # top-50
+    return results[:TOP_K_SIZE]  # top-50
 
 
 class ProfilePostedData(tornado.web.RequestHandler):
