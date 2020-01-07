@@ -39,7 +39,7 @@ services:
       - 8080:15672
       - 5672:5672
   lazo:
-    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.6
+    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.0.6-lower-threshold
     environment:
       - DATABASE=elasticsearch
       - PORT=50051
