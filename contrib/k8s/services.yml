@@ -32,6 +32,21 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: lazo
+  labels:
+    app: datamart
+    what: lazo
+spec:
+  selector:
+    app: datamart
+    what: lazo
+  ports:
+  - protocol: TCP
+    port: 50051
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: coordinator
   labels:
     app: datamart
