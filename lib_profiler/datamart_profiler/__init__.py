@@ -402,9 +402,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                             dataset_id,
                             column_name
                         )
-            except Exception as e:
-                logger.warning('Error indexing textual attributes from %s', dataset_id)
-                logger.warning(str(e))
+            except Exception:
+                logger.error('Error indexing textual attributes from %s', dataset_id)
+                raise
         # Generating Lazo sketches for the search
         else:
             logger.info("Generating Lazo sketches...")
@@ -440,7 +440,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     ))
                 metadata['lazo'] = metadata_lazo
             except Exception:
-                logger.warning('Error getting Lazo sketches textual attributes from %s', dataset_id, exc_info=True)
+                logger.warning('Error getting Lazo sketches textual attributes from %s', dataset_id)
+                raise
 
     # Lat / Lon
     logger.info("Computing spatial coverage...")
