@@ -12,6 +12,7 @@ before_script:
   - docker info
   - curl -Lo /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)"
   - chmod +x /usr/local/bin/docker-compose
+  - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python && /root/.poetry/bin/poetry config virtualenvs.create false
 
 test:
   stage: test
@@ -20,8 +21,7 @@ test:
   # Docker containers can't reach the local runner!
   script:
     - diff -u lib_core/datamart_core/types.py lib_profiler/datamart_profiler/types.py && diff -u lib_core/datamart_core/types.py lib_materialize/datamart_materialize/types.py
-    - pip install pipenv
-    - pipenv install --deploy --system --dev
+    - /root/.poetry/bin/poetry install
     - |
       # Check READMEs
       find . -name README.rst | while read i; do
@@ -32,9 +32,9 @@ test:
       # Pull the base image so we don't have to build from scratch
       docker pull $CI_REGISTRY_IMAGE/base || true
       # Update the base image (maybe)
-      chmod 644 Pipfile.lock docker/install_deps.py
-      touch -t 200001010000.00 Pipfile.lock docker/install_deps.py
-      ls -l Pipfile.lock docker/install_deps.py && shasum -a 1 Pipfile.lock docker/install_deps.py
+      chmod 644 poetry.lock docker/install_deps.py
+      touch -t 200001010000.00 poetry.lock docker/install_deps.py
+      ls -l poetry.lock docker/install_deps.py && shasum -a 1 poetry.lock docker/install_deps.py
       docker build -t datamart_base . \
         --cache-from=$CI_REGISTRY_IMAGE/base \
         -f base.Dockerfile
