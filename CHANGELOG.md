@@ -23,6 +23,8 @@ Enhancements:
 * Datasets too big to be joined will no longer be profiled into the index
 * Add 'temporal' and 'spatial' badges on datasets
 * Fix aggregation breaking with missing data in join column
+* Added Kubernetes config (`contrib/k8s/`)
+* Don't ignore Lazo errors on profiling (you will now see errors if using Lazo and it's not responding). Have it re-try on Elasticsearch errors
 
 0.5 (2019-08-28)
 ================
