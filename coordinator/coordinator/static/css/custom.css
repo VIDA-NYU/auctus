@@ -14,6 +14,16 @@
   cursor: default;
   font-size: 130%;
 }
+
+#search {
+  background-color: #e9ecef;
+  border-radius: .3rem;
+  padding: 1.5rem 1.5rem;
+}
+
+#search h1 {
+  text-align: center;
+  font-size: 3rem;
 }
 
 .map {
