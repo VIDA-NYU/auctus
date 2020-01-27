@@ -46,6 +46,31 @@
                 onclick="variableChange('select-required');">Add</button>
       </div>
 
+      <script type="text/x-template" id="variable-temporal-template">
+<h5>Temporal Information</h5>
+<div class="form-row">
+  <div class="form-group col-md-8">
+    <label for="start-__index__">From:</label>
+    <input class="form-control" id="start-__index__">
+  </div>
+</div>
+<div class="form-row">
+  <div class="form-group col-md-8">
+    <label for="end-__index__">To:</label>
+    <input class="form-control" id="end-__index__">
+  </div>
+</div>
+      </script>
+
+      <script type="text/x-template" id="variable-geospatial-template">
+<h5>Geospatial Bounds</h5>
+<div class="d-flex align-items-center">
+  <p id="bounds-__index__" class="ml-auto mb-2 text-right" style="font-size: 11px;"> </p>
+</div>
+<div id="map-__index__" class="map mb-1"></div>
+<p class="mb-3" style="font-size: 11px;">Right-click to clear selection.</p>
+      </script>
+
       <p></p>
 
       <div class="form-group row justify-content-center mt-4">

@@ -90,80 +90,40 @@ function addInteraction(index) {
   maps[index-1].addInteraction(draws[index-1]);
 }
 
+var _temporal_template = (function() {
+  var tpl = document.getElementById('variable-temporal-template').innerHTML;
+  return (function(index) {
+    var new_div = document.createElement('div');
+    new_div.innerHTML = tpl.replace(/__index__/g, '' + index);
+    return new_div;
+  });
+})();
 function add_temporal() {
   n_temporal += 1;
   indices['temporal'].push(n_temporal)
   var index = n_temporal;
 
+  var new_div = _temporal_template(index);
+
   var variables_div = document.getElementById('variables');
-
-  var _title = document.createElement('h5')
-  _title.innerHTML = 'Temporal Information'
-  variables_div.appendChild(_title)
-
-  var _div_start_1 = document.createElement('div')
-  _div_start_1.setAttribute('class', 'form-row')
-  var _div_start_2 = document.createElement('div')
-  _div_start_2.setAttribute('class', 'form-group col-md-8')
-  var _label_start = document.createElement('label')
-  _label_start.setAttribute('for', 'start-' + index)
-  _label_start.innerHTML = 'From:'
-  _div_start_2.appendChild(_label_start)
-  var _input_start = document.createElement('input')
-  _input_start.setAttribute('class', 'form-control')
-  _input_start.setAttribute('id', 'start-' + index)
-  _div_start_2.appendChild(_input_start)
-  _div_start_1.appendChild(_div_start_2)
-  variables_div.appendChild(_div_start_1)
-
-  var _div_end_1 = document.createElement('div')
-  _div_end_1.setAttribute('class', 'form-row')
-  var _div_end_2 = document.createElement('div')
-  _div_end_2.setAttribute('class', 'form-group col-md-8')
-  var _label_end = document.createElement('label')
-  _label_end.setAttribute('for', 'end-' + index)
-  _label_end.innerHTML = 'To:'
-  _div_end_2.appendChild(_label_end)
-  var _input_end = document.createElement('input')
-  _input_end.setAttribute('class', 'form-control')
-  _input_end.setAttribute('id', 'end-' + index)
-  _div_end_2.appendChild(_input_end)
-  _div_end_1.appendChild(_div_end_2)
-  variables_div.appendChild(_div_end_1)
+  variables_div.appendChild(new_div);
 }
 
+var _geospatial_template = (function() {
+  var tpl = document.getElementById('variable-geospatial-template').innerHTML;
+  return (function(index) {
+    var new_div = document.createElement('div');
+    new_div.innerHTML = tpl.replace(/__index__/g, '' + index);
+    return new_div;
+  });
+})();
 function add_geospatial() {
   n_geospatial += 1;
   indices['geospatial'].push(n_geospatial);
   var index = n_geospatial;
 
   var variables_div = document.getElementById('variables');
-
-  var _title = document.createElement('h5');
-  _title.innerHTML = 'Geospatial Bounds';
-  variables_div.appendChild(_title);
-
-  var shape_div = document.createElement('div');
-  shape_div.setAttribute('class', 'd-flex align-items-center');
-
-  var bounds = document.createElement('p');
-  bounds.setAttribute('id', 'bounds-' + index);
-  bounds.setAttribute('class', 'ml-auto mb-2 text-right');
-  bounds.setAttribute('style', 'font-size: 11px;');
-  shape_div.appendChild(bounds);
-
-  variables_div.appendChild(shape_div);
-
-  var map_div = document.createElement('div');
-  map_div.setAttribute('id', 'map-' + index);
-  map_div.setAttribute('class', 'map mb-1');
-  variables_div.appendChild(map_div);
-
-  var info = document.createElement('p');
-  info.setAttribute('class', 'mb-3');
-  info.setAttribute('style', 'font-size: 11px;');
-  info.innerHTML = 'Right-click to clear selection.';
-  variables_div.appendChild(info);
+  variables_div.appendChild(_geospatial_template(index));
 
   var raster = new ol.layer.Tile({
     source: new ol.source.OSM()
