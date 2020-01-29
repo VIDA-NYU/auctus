@@ -1597,6 +1597,7 @@ basic_metadata = {
     "description": "This is a very simple CSV with people",
     "size": 126,
     "nb_rows": 5,
+    "nb_profiled_rows": 5,
     "columns": [
         {
             "name": "name",
@@ -1722,6 +1723,7 @@ agg_metadata = {
     "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
     "size": 116,
     "nb_rows": 8,
+    "nb_profiled_rows": 8,
     "columns": [
         {
             "name": "id",
@@ -1811,6 +1813,7 @@ geo_metadata = {
     "description": "Another simple CSV with places",
     "size": 3910,
     "nb_rows": 100,
+    "nb_profiled_rows": 100,
     "columns": [
         {
             "name": "id",
@@ -1926,6 +1929,7 @@ lazo_metadata = {
     "description": "Simple CSV with states and years to test the Lazo index service",
     "size": 297,
     "nb_rows": 36,
+    "nb_profiled_rows": 36,
     "columns": [
         {
             "name": "state",
@@ -1976,6 +1980,7 @@ daily_metadata = {
     'description': 'Temporal dataset with daily resolution',
     'size': 448,
     'nb_rows': 30,
+    "nb_profiled_rows": 30,
     'columns': [
         {
             'name': 'aug_date',
@@ -2041,6 +2046,7 @@ hourly_metadata = {
     'description': 'Temporal dataset with hourly resolution',
     'size': 1242,
     'nb_rows': 52,
+    "nb_profiled_rows": 52,
     'columns': [
         {
             'name': 'aug_date',

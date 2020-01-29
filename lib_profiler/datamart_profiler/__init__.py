@@ -279,6 +279,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
 
+    metadata['nb_profiled_rows'] = data.shape[0]
+
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
     # Fix size if wrong
