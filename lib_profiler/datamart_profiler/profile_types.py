@@ -30,7 +30,7 @@ MAX_UNCLEAN = 0.02  # 2%
 
 
 # Maximum number of different values for categorical columns
-MAX_CATEGORICAL = 6
+MAX_CATEGORICAL_RATIO = 0.10  # 10%
 
 
 _defaults = datetime(1985, 1, 1), datetime(2005, 6, 15)
@@ -103,15 +103,11 @@ def identify_types(array, name):
             semantic_types_dict[types.TEXT] = None
         else:
             # Count distinct values
-            values = set()
-            for elem in array:
-                if elem not in values:
-                    values.add(elem)
-                    if len(values) > MAX_CATEGORICAL:
-                        break
-            else:
+            values = set(e for e in array if e)
+            column_meta['num_distinct_values'] = len(values)
+            max_categorical = MAX_CATEGORICAL_RATIO * (len(array) - num_empty)
+            if len(values) <= max_categorical:
                 semantic_types_dict[types.CATEGORICAL] = values
-                column_meta['num_distinct_values'] = len(values)
     elif structural_type == types.INTEGER:
         # Identify ids
         # TODO: is this enough?
