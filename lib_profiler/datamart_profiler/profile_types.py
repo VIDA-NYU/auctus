@@ -6,7 +6,9 @@ import re
 from . import types
 
 
-_re_int = re.compile(r'^[+-]?[0-9]+$')
+_re_int = re.compile(r'^[+-]?[0-9]+'
+                     r'(?:\.0*)?'  # 4.0 and 7.000 are integers
+                     r'$')
 _re_float = re.compile(r'^[+-]?'
                        r'(?:'
                        r'(?:[0-9]+\.[0-9]*)|'
