@@ -1210,7 +1210,6 @@ class TestAugment(DatamartTest):
             )
         with zip_.open('datasetDoc.json') as meta_fp:
             meta = json.load(meta_fp)
-            print(meta['dataResources'])
             self.assertJson(
                 meta,
                 {
@@ -1602,17 +1601,13 @@ basic_metadata = {
         {
             "name": "name",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": [
-                "http://schema.org/Enumeration"
-            ],
+            "semantic_types": [],
             "num_distinct_values": 5
         },
         {
             "name": "country",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": [
-                "http://schema.org/Enumeration"
-            ],
+            "semantic_types": [],
             "num_distinct_values": 3
         },
         {
@@ -1648,8 +1643,7 @@ basic_metadata = {
             "name": "what",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
-                "http://schema.org/Boolean",
-                "http://schema.org/Enumeration"
+                "http://schema.org/Boolean"
             ],
             "unclean_values_ratio": 0.0,
             "num_distinct_values": 2
@@ -1760,8 +1754,7 @@ agg_metadata = {
             "name": "work",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
-                "http://schema.org/Boolean",
-                "http://schema.org/Enumeration"
+                "http://schema.org/Boolean"
             ],
             "unclean_values_ratio": 0.0,
             "num_distinct_values": 2
@@ -1819,7 +1812,8 @@ geo_metadata = {
             "name": "id",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [],
-            "missing_values_ratio": 0.01
+            "missing_values_ratio": 0.01,
+            "num_distinct_values": 99
         },
         {
             "name": "lat",
@@ -1935,7 +1929,8 @@ lazo_metadata = {
             "name": "state",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [],
-            "missing_values_ratio": lambda n: round(n, 4) == 0.0278
+            "missing_values_ratio": lambda n: round(n, 4) == 0.0278,
+            "num_distinct_values": 35
         },
         {
             "name": "year",
@@ -1990,6 +1985,7 @@ daily_metadata = {
                 # FIXME: This is correct by our rules, but not a great outcome
                 'https://metadata.datadrivendiscovery.org/types/PhoneNumber',
             ],
+            'num_distinct_values': 30,
             'mean': lambda n: round(n) == 1557230400.0,
             'stddev': lambda n: round(n, 2) == 747830.14,
             'coverage': (
@@ -2054,6 +2050,7 @@ hourly_metadata = {
             'semantic_types': [
                 'http://schema.org/DateTime',
             ],
+            'num_distinct_values': 52,
             'mean': lambda n: round(n) == 1560389398.0,
             'stddev': lambda n: round(n, 2) == 54027.44,
             'coverage': (
