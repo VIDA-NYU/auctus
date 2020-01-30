@@ -90,7 +90,7 @@ def identify_types(array, name):
         column_meta['missing_values_ratio'] = num_empty / num_total
 
     # Identify booleans
-    if num_bool >= threshold:
+    if structural_type != types.MISSING_DATA and num_bool >= threshold:
         semantic_types_dict[types.BOOLEAN] = None
         column_meta['unclean_values_ratio'] = \
             (num_total - num_empty - num_bool) / num_total
@@ -158,7 +158,7 @@ def identify_types(array, name):
         if _re_phone.match(elem) is not None:
             num_phones += 1
 
-    if num_phones >= threshold:
+    if structural_type != types.MISSING_DATA and num_phones >= threshold:
         semantic_types_dict[types.PHONE_NUMBER] = None
 
     return structural_type, semantic_types_dict, column_meta
