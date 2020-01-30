@@ -16,7 +16,7 @@ from .profile_types import identify_types
 from . import types
 
 
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 
 
 logger = logging.getLogger(__name__)
