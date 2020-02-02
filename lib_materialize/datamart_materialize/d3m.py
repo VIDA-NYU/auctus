@@ -27,7 +27,9 @@ def d3m_metadata(dataset_id, metadata, *, version=None):
         if types.DATE_TIME in column['semantic_types']:
             col_type = 'dateTime'
         else:
-            if types.CATEGORICAL in column['semantic_types']:
+            if types.BOOLEAN in column['semantic_types']:
+                col_type = 'boolean'
+            elif types.CATEGORICAL in column['semantic_types']:
                 col_type = 'categorical'
             elif types.DATE_TIME in column['semantic_types']:
                 col_type = 'dateTime'
