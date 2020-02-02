@@ -27,8 +27,9 @@ def d3m_metadata(dataset_id, metadata, *, version=None):
         if types.DATE_TIME in column['semantic_types']:
             col_type = 'dateTime'
         else:
-            # FIXME: We don't use 'categorical' type because uncertain
-            if types.DATE_TIME in column['semantic_types']:
+            if types.CATEGORICAL in column['semantic_types']:
+                col_type = 'categorical'
+            elif types.DATE_TIME in column['semantic_types']:
                 col_type = 'dateTime'
             else:
                 col_type = STRUCTURAL_TYPE_MAP.get(
