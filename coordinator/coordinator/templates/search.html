@@ -2,58 +2,90 @@
 {% set active_page = "search" %}
 
 {% block contents %}
-<section class="jumbotron">
-  <div class="container">
-    <form id="search-form">
-      {{ xsrf_form_html() }}
+<div id="search" class="container">
+  <form id="search-form">
+    {{ xsrf_form_html() }}
+    <h1>Search Auctus</h1>
 
-      <h1>Search Auctus</h1>
-
-      <hr align="left">
-      <h3>Data (CSV file)</h3>
-
-      <div class="form-row">
-        <div class="form-group col-md-8">
-         <input type="file" class="form-control-file" name="file" id="file" />
+    <div class="row align-items-center">
+      <div class="col-sm-3">
+        <label>Match with data:</label>
+      </div>
+      <div class="col-sm-9 row pr-0">
+        <div class="form-group col-sm-5">
+          <label for="file">CSV file</label>
+          <input type="file" class="form-control-file" name="file" id="file" />
+        </div>
+        <div class="form-group col-sm-7 pr-0">
+          <label for="search_columns">Columns for Join or Union</label>
+          <input class="form-control" id="search_columns" placeholder="(all columns)" />
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group col-md-8">
-          <label for="search_columns">Columns for Join or Union:</label>
-          <input class="form-control" id="search_columns" />
-        </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-3 align-items-center">
+        <label for="keywords">Keywords:</label>
       </div>
-
-      <hr align="left">
-      <h3>Query</h3>
-
-      <div class="form-row">
-        <div class="form-group col-md-8">
-          <label for="keywords">Keywords:</label>
-          <input class="form-control" id="keywords" autofocus />
-        </div>
+      <div class="form-group col-sm-9">
+        <input class="form-control" id="keywords" autofocus />
       </div>
+    </div>
 
-      <h4>Variables</h4>
+    <div id="variables"></div>
 
-      <div id="variables"></div>
-      <div class="form-row">
-        <select id="select-required">
+    <div class="row align-items-center">
+      <div class="col-sm-3">
+        <label>Add constraint:</label>
+      </div>
+      <div class="form-group col-sm-9 row mx-0">
+        <select id="select-required" class="form-control col-sm-9">
           <option value="temporal">Temporal</option>
           <option value="geospatial">Geospatial</option>
         </select>
-        <button class="btn btn-secondary btn-sm ml-3" type="button"
+        <button class="btn btn-secondary btn-sm col-sm-3" type="button"
                 onclick="variableChange('select-required');">Add</button>
       </div>
+    </div>
 
-      <p></p>
-
-      <div class="form-group row justify-content-center mt-4">
-        <button class="btn btn-lg btn-primary btn-block col-md-8" type="submit">Go</button>
+    <script type="text/x-template" id="variable-temporal-template">
+      <div class="row align-items-center">
+        <div class="col-sm-3">Temporal constraint:</div>
+        <div class="col-sm-9 form-group row align-items-center">
+          <div class="col-auto">
+            <label for="start-__index__">From</label>
+          </div>
+          <div class="col-auto">
+            <input class="form-control" id="start-__index__">
+          </div>
+          <div class="col-auto">
+            <label for="end-__index__">To</label>
+          </div>
+          <div class="col-auto">
+            <input class="form-control" id="end-__index__">
+          </div>
+        </div>
       </div>
-    </form>
-  </div>
-</section>
+    </script>
+
+    <script type="text/x-template" id="variable-geospatial-template">
+      <div class="row align-items-center">
+        <div class="col-sm-3">Geospatial bounds:</div>
+        <div class="col-sm-9 form-group">
+          <div class="d-flex align-items-center">
+            <p id="bounds-__index__" class="ml-auto mb-2 text-right" style="font-size: 11px;"> </p>
+          </div>
+          <div id="map-__index__" class="map mb-1"></div>
+          <p class="mb-3" style="font-size: 11px;">Right-click to clear selection.</p>
+        </div>
+      </div>
+    </script>
+
+    <div class="form-group row justify-content-center px-2">
+      <button class="btn btn-lg btn-primary btn-block col-md-8" type="submit">Go</button>
+    </div>
+  </form>
+</div>
 
 <div style="display: none;" class="alert alert-danger" role="alert" id="search-error">
   No results
