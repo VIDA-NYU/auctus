@@ -1,6 +1,6 @@
 FROM python:3.7 AS json
 
-RUN pip install toml
+RUN pip --disable-pip-version-check install toml
 COPY poetry.lock /root/poetry.lock
 RUN python -c "import json, toml; json.dump(toml.load(open('/root/poetry.lock')), open('/root/poetry.lock.json', 'w'))"
 
@@ -16,7 +16,7 @@ RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poet
 COPY docker/install_deps.py /usr/src/app/
 COPY --from=json /root/poetry.lock.json /usr/src/app/
 RUN python3 install_deps.py poetry.lock.json
-# CI: RUN pip install coverage==4.5.4
+# CI: RUN pip --disable-pip-version-check install coverage==4.5.4
 # CI: COPY .coveragerc /usr/src/app/
 
 # This is the common part of the Dockerfiles

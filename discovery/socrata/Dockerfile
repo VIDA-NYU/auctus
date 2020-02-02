@@ -1,6 +1,6 @@
 FROM python:3.7 AS json
 
-RUN pip install toml
+RUN pip --disable-pip-version-check install toml
 COPY poetry.lock /root/poetry.lock
 RUN python -c "import json, toml; json.dump(toml.load(open('/root/poetry.lock')), open('/root/poetry.lock.json', 'w'))"
 
@@ -18,9 +18,9 @@ COPY --from=json /root/poetry.lock.json /usr/src/app/
 RUN python3 install_deps.py poetry.lock.json
 
 COPY lib_core lib_core
-RUN pip install --no-deps -e /usr/src/app/lib_core
+RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_core
 COPY discovery/socrata /usr/src/app/socrata
-RUN pip install --no-deps -e /usr/src/app/socrata
+RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/socrata
 ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
