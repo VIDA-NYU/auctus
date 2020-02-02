@@ -9,12 +9,12 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'pandas',
     'numpy',
-    'datamart_materialize==0.5.2',
+    'datamart_materialize==0.5.4',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
 setup(name='datamart_augmentation',
-      version='0.5.2',
+      version='0.5.4',
       packages=['datamart_augmentation'],
       install_requires=req,
       description="Augmentation functions for Datamart services",
