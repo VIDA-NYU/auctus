@@ -804,12 +804,11 @@ class TestAugment(DatamartTest):
                 table.read().decode('utf-8'),
                 'number,desk_faces,name,country,what',
                 [
-                    '4,west,remi,france,False',
-                    '3,north,aecio,brazil,True',
-                    '3,south,aecio,brazil,True',
-                    '7,west,sonia,peru,True',
-                    '8,east,roque,peru,True',
-                    '10,,fernando,brazil,False',
+                    '5,west,james,canada,False',
+                    '4,south,john,usa,False',
+                    '7,west,michael,usa,True',
+                    '6,east,robert,usa,False',
+                    '11,,christopher,canada,True',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -818,7 +817,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '185 B',
+                        'approximateSize': '161 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -850,13 +849,13 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 3,
                                     'colName': 'country',
-                                    'colType': 'string',
+                                    'colType': 'categorical',
                                     'role': ['attribute'],
                                 },
                                 {
                                     'colIndex': 4,
                                     'colName': 'what',
-                                    'colType': 'string',
+                                    'colType': 'boolean',
                                     'role': ['attribute'],
                                 },
                             ],
@@ -872,8 +871,8 @@ class TestAugment(DatamartTest):
                             'qualName': 'augmentation_info',
                             'qualValue': {
                                 'augmentation_type': 'join',
-                                'nb_rows_after': 6,
-                                'nb_rows_before': 6,
+                                'nb_rows_after': 5,
+                                'nb_rows_before': 5,
                                 'new_columns': ['name', 'country', 'what'],
                                 'removed_columns': [],
                             },
@@ -922,12 +921,11 @@ class TestAugment(DatamartTest):
                 table.read().decode('utf-8'),
                 'number,desk_faces,name,country,what',
                 [
-                    '4,west,remi,france,False',
-                    '3,north,aecio,brazil,True',
-                    '3,south,aecio,brazil,True',
-                    '7,west,sonia,peru,True',
-                    '8,east,roque,peru,True',
-                    '10,,fernando,brazil,False',
+                    '5,west,james,canada,False',
+                    '4,south,john,usa,False',
+                    '7,west,michael,usa,True',
+                    '6,east,robert,usa,False',
+                    '11,,christopher,canada,True',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -936,7 +934,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '185 B',
+                        'approximateSize': '161 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -968,13 +966,13 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 3,
                                     'colName': 'country',
-                                    'colType': 'string',
+                                    'colType': 'categorical',
                                     'role': ['attribute'],
                                 },
                                 {
                                     'colIndex': 4,
                                     'colName': 'what',
-                                    'colType': 'string',
+                                    'colType': 'boolean',
                                     'role': ['attribute'],
                                 },
                             ],
@@ -990,8 +988,8 @@ class TestAugment(DatamartTest):
                             'qualName': 'augmentation_info',
                             'qualValue': {
                                 'augmentation_type': 'join',
-                                'nb_rows_after': 6,
-                                'nb_rows_before': 6,
+                                'nb_rows_after': 5,
+                                'nb_rows_before': 5,
                                 'new_columns': ['name', 'country', 'what'],
                                 'removed_columns': [],
                             },
@@ -1083,7 +1081,7 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 2,
                                     'colName': 'work',
-                                    'colType': 'string',
+                                    'colType': 'boolean',
                                     'role': ['attribute'],
                                 },
                                 {
@@ -1594,46 +1592,46 @@ assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 basic_metadata = {
     "name": "basic",
     "description": "This is a very simple CSV with people",
-    "size": 126,
-    "nb_rows": 5,
-    "nb_profiled_rows": 5,
+    "size": 425,
+    "nb_rows": 20,
+    "nb_profiled_rows": 20,
     "columns": [
         {
             "name": "name",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [],
-            "num_distinct_values": 5
+            "num_distinct_values": 20
         },
         {
             "name": "country",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": [],
-            "num_distinct_values": 3
+            "semantic_types": ["http://schema.org/Enumeration"],
+            "num_distinct_values": 2
         },
         {
             "name": "number",
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
-            "mean": 6.4,
-            "stddev": lambda n: round(n, 3) == 2.577,
+            "mean": lambda n: round(n, 3) == 6.150,
+            "stddev": lambda n: round(n, 3) == 1.526,
             "coverage": (
                 lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
                     {
                         "range": {
-                            "gte": 3.0,
-                            "lte": 4.0
+                            "gte": 4.0,
+                            "lte": 5.0
                         }
                     },
                     {
                         "range": {
-                            "gte": 7.0,
-                            "lte": 8.0
+                            "gte": 6.0,
+                            "lte": 7.0
                         }
                     },
                     {
                         "range": {
-                            "gte": 10.0,
-                            "lte": 10.0
+                            "gte": 11.0,
+                            "lte": 11.0
                         }
                     }
                 ]
@@ -1643,7 +1641,8 @@ basic_metadata = {
             "name": "what",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
-                "http://schema.org/Boolean"
+                "http://schema.org/Boolean",
+                "http://schema.org/Enumeration"
             ],
             "unclean_values_ratio": 0.0,
             "num_distinct_values": 2
@@ -1654,9 +1653,16 @@ basic_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
-    "sample": "name,country,number,what\nremi,france,4,false\n" +
-              "aecio,brazil,3,true\nsonia,peru,7,true\nroque,peru,8,true\n" +
-              "fernando,brazil,10,false\n",
+    "sample": "name,country,number,what\njames,canada,5,false\n" +
+              "john,usa,4,false\nrobert,usa,6,false\nmichael,usa,7,true\n" +
+              "william,usa,7,true\ndavid,canada,5,false\n" +
+              "richard,canada,7,true\njoseph,usa,6,true\n" +
+              "thomas,usa,6,false\ncharles,usa,7,false\n" +
+              "christopher,canada,11,true\ndaniel,usa,5,false\n"
+              "matthew,canada,7,true\nanthony,canada,7,true\n" +
+              "donald,usa,6,true\nmark,usa,4,false\npaul,usa,4,false\n" +
+              "steven,usa,6,false\nandrew,canada,6,false\n" +
+              "kenneth,canada,7,true\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -1668,7 +1674,7 @@ basic_metadata_d3m = lambda v: {
         'datasetName': 'basic',
         'description': 'This is a very simple CSV with people',
         'license': 'unknown',
-        'approximateSize': '126 B',
+        'approximateSize': '425 B',
         'datasetSchemaVersion': v,
         'redacted': False,
         'datasetVersion': '1.0',
@@ -1691,7 +1697,7 @@ basic_metadata_d3m = lambda v: {
                 {
                     'colIndex': 1,
                     'colName': 'country',
-                    'colType': 'string',
+                    'colType': 'categorical',
                     'role': ['attribute'],
                 },
                 {
@@ -1703,7 +1709,7 @@ basic_metadata_d3m = lambda v: {
                 {
                     'colIndex': 3,
                     'colName': 'what',
-                    'colType': 'string',
+                    'colType': 'boolean',
                     'role': ['attribute'],
                 },
             ],
@@ -2108,12 +2114,11 @@ hourly_metadata = {
 
 basic_aug_data = (
     'number,desk_faces\n'
-    '4,west\n'
-    '3,south\n'
+    '5,west\n'
+    '4,south\n'
     '7,west\n'
-    '8,east\n'
-    '3,north\n'
-    '10,\n'
+    '6,east\n'
+    '11,\n'
 )
 
 
