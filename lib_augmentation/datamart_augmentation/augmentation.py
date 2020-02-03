@@ -195,7 +195,7 @@ def perform_aggregations(data, original_columns):
     return data
 
 
-CHUNK_SIZE_ROWS = 10_000
+CHUNK_SIZE_ROWS = 10000
 
 
 def join(original_data, augment_data_path, original_metadata, augment_metadata,

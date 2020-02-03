@@ -22,7 +22,7 @@ def search():
             'query': {
                 'range': {
                     "size": {
-                        "gt": 10_000_000_000,
+                        "gt": 10000000000,  # 10 GB
                     },
                 },
             },
@@ -31,7 +31,7 @@ def search():
         size=SIZE,
     )
     for h in hits:
-        print("%s %.1f GB" % (h['_id'], h['_source']['size'] / 1_000_000_000.0))
+        print("%s %.1f GB" % (h['_id'], h['_source']['size'] / 1000000000.0))
 
 
 if __name__ == '__main__':

@@ -33,7 +33,7 @@ PROM_CACHE_PROFILES = prometheus_client.Gauge(
 
 
 CACHE_HIGH = os.environ.get('MAX_CACHE_BYTES')
-CACHE_HIGH = int(CACHE_HIGH, 10) if CACHE_HIGH else 100_000_000_000  # 100 GB
+CACHE_HIGH = int(CACHE_HIGH, 10) if CACHE_HIGH else 100000000000  # 100 GB
 CACHE_LOW = CACHE_HIGH * 0.33
 
 CACHES = ('/cache/datasets', '/cache/aug')
