@@ -22,7 +22,7 @@ __version__ = '0.5.3'
 logger = logging.getLogger(__name__)
 
 
-MAX_SIZE = 50_000_000
+MAX_SIZE = 50000000  # 50 MB
 
 N_RANGES = 3
 
