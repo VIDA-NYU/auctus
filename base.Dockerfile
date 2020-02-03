@@ -1,10 +1,10 @@
-FROM python:3.7 AS json
+FROM python:3.5 AS json
 
 RUN pip --disable-pip-version-check install toml
 COPY poetry.lock /root/poetry.lock
 RUN python -c "import json, toml; json.dump(toml.load(open('/root/poetry.lock')), open('/root/poetry.lock.json', 'w'))"
 
-FROM python:3.7
+FROM python:3.5
 
 ENV TINI_VERSION v0.18.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
