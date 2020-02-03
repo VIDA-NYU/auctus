@@ -8,7 +8,6 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'requests',
-    'sodapy',
     'xlrd',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
