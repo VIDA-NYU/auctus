@@ -394,6 +394,7 @@ class TestDataSearch(DatamartTest):
         )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
+        order_results_union_columns(results)
         self.assertJson(
             results,
             [
@@ -425,6 +426,10 @@ class TestDataSearch(DatamartTest):
         )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
+
+        # Order the augmentation columns in a deterministic way for comparison
+        order_results_union_columns(results)
+
         self.assertJson(
             results,
             [
@@ -1551,6 +1556,29 @@ class TestAugment(DatamartTest):
                     '2019-06-13,green,no',
                 ],
             )
+
+
+def order_results_union_columns(results):
+    """Order the augmentation columns in a deterministic way for comparison
+    """
+    for res in results:
+        if (
+                'augmentation' in res and
+                res['augmentation'].get('type') == 'union'
+        ):
+            aug = res['augmentation']
+            cols = list(zip(
+                aug['left_columns'],
+                aug['left_columns_names'],
+                aug['right_columns'],
+                aug['right_columns_names'],
+            ))
+            cols.sort()
+            cols = list(zip(*cols))
+            aug['left_columns'] = list(cols[0])
+            aug['left_columns_names'] = list(cols[1])
+            aug['right_columns'] = list(cols[2])
+            aug['right_columns_names'] = list(cols[3])
 
 
 def check_ranges(min_, max_):
