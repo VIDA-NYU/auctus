@@ -1,3 +1,4 @@
+import codecs
 import elasticsearch
 import io
 import json
@@ -12,6 +13,9 @@ import zipfile
 import datamart_materialize
 
 from .utils import DataTestCase
+
+
+utf8_reader = codecs.getreader('utf-8')
 
 
 schemas = os.path.join(os.path.dirname(__file__), '..', 'doc', 'schemas')
@@ -572,7 +576,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
         self.assertEqual(
-            json.load(zip_.open('datasetDoc.json')),
+            json.load(utf8_reader(zip_.open('datasetDoc.json'))),
             basic_metadata_d3m('4.0.0'),
         )
 
@@ -587,7 +591,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
         self.assertEqual(
-            json.load(zip_.open('datasetDoc.json')),
+            json.load(utf8_reader(zip_.open('datasetDoc.json'))),
             basic_metadata_d3m('3.2.0'),
         )
 
@@ -625,7 +629,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
         self.assertEqual(
-            json.load(zip_.open('datasetDoc.json')),
+            json.load(utf8_reader(zip_.open('datasetDoc.json'))),
             basic_metadata_d3m('3.2.0'),
         )
 
@@ -679,7 +683,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
         self.assertEqual(
-            json.load(zip_.open('datasetDoc.json')),
+            json.load(utf8_reader(zip_.open('datasetDoc.json'))),
             geo_metadata_d3m('4.0.0'),
         )
 
@@ -817,7 +821,7 @@ class TestAugment(DatamartTest):
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
+            meta = json.load(utf8_reader(meta_fp))
             self.assertJson(
                 meta,
                 {
@@ -934,7 +938,7 @@ class TestAugment(DatamartTest):
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
+            meta = json.load(utf8_reader(meta_fp))
             self.assertJson(
                 meta,
                 {
@@ -1055,7 +1059,7 @@ class TestAugment(DatamartTest):
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
+            meta = json.load(utf8_reader(meta_fp))
             self.assertJson(
                 meta,
                 {
@@ -1212,7 +1216,7 @@ class TestAugment(DatamartTest):
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
+            meta = json.load(utf8_reader(meta_fp))
             self.assertJson(
                 meta,
                 {
@@ -1342,7 +1346,7 @@ class TestAugment(DatamartTest):
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
+            meta = json.load(utf8_reader(meta_fp))
             self.assertJson(
                 meta,
                 {
