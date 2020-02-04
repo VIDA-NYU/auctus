@@ -1585,6 +1585,13 @@ def check_geo_ranges(min_long, min_lat, max_long, max_lat):
     return check
 
 
+def unordered(*args):
+    def check(l):
+        return set(args) == set(l)
+
+    return check
+
+
 version = os.environ['DATAMART_VERSION']
 assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 
@@ -1605,7 +1612,7 @@ basic_metadata = {
         {
             "name": "country",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": ["http://schema.org/Enumeration"],
+            "semantic_types": unordered("http://schema.org/Enumeration"),
             "num_distinct_values": 2
         },
         {
@@ -1640,10 +1647,10 @@ basic_metadata = {
         {
             "name": "what",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": [
+            "semantic_types": unordered(
                 "http://schema.org/Boolean",
                 "http://schema.org/Enumeration"
-            ],
+            ),
             "unclean_values_ratio": 0.0,
             "num_distinct_values": 2
         }
@@ -1728,9 +1735,9 @@ agg_metadata = {
         {
             "name": "id",
             "structural_type": "http://schema.org/Integer",
-            "semantic_types": [
+            "semantic_types": unordered(
                 "http://schema.org/identifier"
-            ],
+            ),
             "mean": 65.0,
             "stddev": lambda n: round(n, 3) == 26.926,
             "coverage": (
@@ -1759,9 +1766,9 @@ agg_metadata = {
         {
             "name": "work",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": [
+            "semantic_types": unordered(
                 "http://schema.org/Boolean"
-            ],
+            ),
             "unclean_values_ratio": 0.0,
             "num_distinct_values": 2
         },
@@ -1986,11 +1993,11 @@ daily_metadata = {
         {
             'name': 'aug_date',
             'structural_type': 'http://schema.org/Text',
-            'semantic_types': [
+            'semantic_types': unordered(
                 'http://schema.org/DateTime',
                 # FIXME: This is correct by our rules, but not a great outcome
                 'https://metadata.datadrivendiscovery.org/types/PhoneNumber',
-            ],
+            ),
             'num_distinct_values': 30,
             'mean': lambda n: round(n) == 1557230400.0,
             'stddev': lambda n: round(n, 2) == 747830.14,
@@ -2020,10 +2027,10 @@ daily_metadata = {
         {
             'name': 'rain',
             'structural_type': 'http://schema.org/Text',
-            'semantic_types': [
+            'semantic_types': unordered(
                 'http://schema.org/Boolean',
                 'http://schema.org/Enumeration',
-            ],
+            ),
             'unclean_values_ratio': 0.0,
             'num_distinct_values': 2,
         },
@@ -2053,9 +2060,9 @@ hourly_metadata = {
         {
             'name': 'aug_date',
             'structural_type': 'http://schema.org/Text',
-            'semantic_types': [
+            'semantic_types': unordered(
                 'http://schema.org/DateTime',
-            ],
+            ),
             'num_distinct_values': 52,
             'mean': lambda n: round(n) == 1560389398.0,
             'stddev': lambda n: round(n, 2) == 54027.44,
@@ -2085,10 +2092,10 @@ hourly_metadata = {
         {
             'name': 'rain',
             'structural_type': 'http://schema.org/Text',
-            'semantic_types': [
+            'semantic_types': unordered(
                 'http://schema.org/Boolean',
                 'http://schema.org/Enumeration',
-            ],
+            ),
             'unclean_values_ratio': 0.0,
             'num_distinct_values': 2,
         },
