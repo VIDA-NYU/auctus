@@ -87,8 +87,11 @@ class TestDiscoverer(Discoverer):
 
 
 def server():
-    with HTTPServer(('0.0.0.0', 7000), SimpleHTTPRequestHandler) as httpd:
+    httpd = HTTPServer(('0.0.0.0', 7000), SimpleHTTPRequestHandler)
+    try:
         httpd.serve_forever()
+    finally:
+        httpd.server_close()
 
 
 if __name__ == '__main__':
