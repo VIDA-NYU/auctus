@@ -215,7 +215,8 @@ def truncate_string(s, limit=140):
 
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
-                    lazo_client=None, search=False):
+                    lazo_client=None, search=False,
+                    coverage=True):
     """Compute all metafeatures from a dataset.
 
     :param data: path to dataset, or file object, or DataFrame
@@ -225,6 +226,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     :param lazo_client: client for the Lazo Index Server
     :param search: True if this method is being called during the search
         operation (and not for indexing).
+    :param coverage: Whether to compute data ranges (using k-means)
     """
     if metadata is None:
         metadata = {}
@@ -350,7 +352,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     columns_long.append(
                         (column_meta['name'], numerical_values)
                     )
-                else:
+                elif coverage:
                     ranges = get_numerical_ranges(
                         [x for x in numerical_values if x is not None]
                     )
@@ -358,7 +360,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         column_meta['coverage'] = ranges
 
             # Compute ranges for temporal data
-            if types.DATE_TIME in semantic_types_dict:
+            if coverage and types.DATE_TIME in semantic_types_dict:
                 timestamps = numpy.empty(
                     len(semantic_types_dict[types.DATE_TIME]),
                     dtype='float32',
@@ -446,28 +448,29 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 raise
 
     # Lat / Lon
-    logger.info("Computing spatial coverage...")
-    with PROM_SPATIAL.time():
-        spatial_coverage = []
-        pairs = pair_latlong_columns(columns_lat, columns_long)
-        for (name_lat, values_lat), (name_long, values_long) in pairs:
-            values = []
-            for lat, long in zip(values_lat, values_long):
-                if (lat and long and  # Ignore None and 0
-                        -90 < lat < 90 and -180 < long < 180):
-                    values.append((lat, long))
+    if coverage:
+        logger.info("Computing spatial coverage...")
+        with PROM_SPATIAL.time():
+            spatial_coverage = []
+            pairs = pair_latlong_columns(columns_lat, columns_long)
+            for (name_lat, values_lat), (name_long, values_long) in pairs:
+                values = []
+                for lat, long in zip(values_lat, values_long):
+                    if (lat and long and  # Ignore None and 0
+                            -90 < lat < 90 and -180 < long < 180):
+                        values.append((lat, long))
 
-            if len(values) > 1:
-                logger.info("Computing spatial ranges %r,%r (%d rows)",
-                            name_lat, name_long, len(values))
-                spatial_ranges = get_spatial_ranges(values)
-                if spatial_ranges:
-                    spatial_coverage.append({"lat": name_lat,
-                                             "lon": name_long,
-                                             "ranges": spatial_ranges})
+                if len(values) > 1:
+                    logger.info("Computing spatial ranges %r,%r (%d rows)",
+                                name_lat, name_long, len(values))
+                    spatial_ranges = get_spatial_ranges(values)
+                    if spatial_ranges:
+                        spatial_coverage.append({"lat": name_lat,
+                                                 "lon": name_long,
+                                                 "ranges": spatial_ranges})
 
-    if spatial_coverage:
-        metadata['spatial_coverage'] = spatial_coverage
+        if spatial_coverage:
+            metadata['spatial_coverage'] = spatial_coverage
 
     # Sample data
     rand = numpy.random.RandomState(RANDOM_SEED)
