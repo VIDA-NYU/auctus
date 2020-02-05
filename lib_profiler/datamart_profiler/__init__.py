@@ -216,7 +216,7 @@ def truncate_string(s, limit=140):
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client=None, search=False,
-                    coverage=True):
+                    coverage=True, sample_size=None):
     """Compute all metafeatures from a dataset.
 
     :param data: path to dataset, or file object, or DataFrame
@@ -227,7 +227,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
     :param search: True if this method is being called during the search
         operation (and not for indexing).
     :param coverage: Whether to compute data ranges (using k-means)
+    :param sample_size: Target sample size. The data will be randomly sampled
+        if it is bigger. Defaults to `MAX_SIZE`, currently 50 MB.
     """
+    if not sample_size:
+        sample_size = MAX_SIZE
+
     if metadata is None:
         metadata = {}
 
@@ -259,12 +264,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                                 "a pandas.DataFrame")
 
             # Sub-sample
-            if metadata['size'] > MAX_SIZE:
+            if metadata['size'] > sample_size:
                 logger.info("Counting rows...")
                 metadata['nb_rows'] = sum(1 for _ in data)
                 data.seek(0, 0)
 
-                ratio = MAX_SIZE / metadata['size']
+                ratio = sample_size / metadata['size']
                 logger.info("Loading dataframe, sample ratio=%r...", ratio)
                 rand = random.Random(RANDOM_SEED)
                 data = pandas.read_csv(
