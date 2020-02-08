@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 BUF_SIZE = 128000
 PAGINATION_SIZE = 200
-TOP_K_SIZE = 50
+TOP_K_SIZE = 5000
 
 
 def compute_levenshtein_sim(str1, str2):
@@ -1157,18 +1157,18 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
         )
         logger.info("Found %d join results in %.2fs",
                     len(join_results), time.perf_counter() - start)
-    if union:
-        logger.info("Looking for unions...")
-        start = time.perf_counter()
-        union_results = get_unionable_datasets(
-            es=es,
-            data_profile=data_profile,
-            dataset_id=dataset_id,
-            query_args=query_args_main,
-            tabular_variables=tabular_variables
-        )
-        logger.info("Found %d union results in %.2fs",
-                    len(union_results), time.perf_counter() - start)
+    # if union:
+    #     logger.info("Looking for unions...")
+    #     start = time.perf_counter()
+    #     union_results = get_unionable_datasets(
+    #         es=es,
+    #         data_profile=data_profile,
+    #         dataset_id=dataset_id,
+    #         query_args=query_args_main,
+    #         tabular_variables=tabular_variables
+    #     )
+    #     logger.info("Found %d union results in %.2fs",
+    #                 len(union_results), time.perf_counter() - start)
 
     min_size = min(len(join_results), len(union_results))
     results = list(zip(join_results[:min_size], union_results[:min_size]))
@@ -1183,7 +1183,8 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
         result['supplied_id'] = None
         result['supplied_resource_id'] = None
 
-    return results[:TOP_K_SIZE]  # top-50
+    # eturn results[:TOP_K_SIZE]  # top-50
+    return results
 
 
 class ProfilePostedData(tornado.web.RequestHandler):
