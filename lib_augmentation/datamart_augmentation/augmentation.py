@@ -333,10 +333,10 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
     else:
         # aggregations
-        join_ = perform_aggregations(
-            join_,
-            list(original_data.columns),
-        )
+        # join_ = perform_aggregations(
+        #     join_,
+        #     list(original_data.columns),
+        # )
 
         # drop unique index
         join_.drop([UNIQUE_INDEX_KEY], axis=1, inplace=True)
