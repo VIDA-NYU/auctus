@@ -97,6 +97,7 @@ def identify_types(array, name):
         column_meta['unclean_values_ratio'] = \
             (num_total - num_empty - num_bool) / num_total
 
+    # TODO: Can integers be categorical?
     if structural_type == types.TEXT:
         if num_text >= threshold:
             # Free text

@@ -9,6 +9,7 @@ STRUCTURAL_TYPE_MAP = {
     types.INTEGER: 'integer',
     types.FLOAT: 'real',
     types.TEXT: 'string',
+    types.MISSING_DATA: 'float',  # TODO: Does that make sense?
 }
 
 
@@ -29,6 +30,7 @@ def d3m_metadata(dataset_id, metadata, *, version=None):
         else:
             if types.BOOLEAN in column['semantic_types']:
                 col_type = 'boolean'
+            # TODO: What if both CATEGORICAL and DATE_TIME?
             elif types.CATEGORICAL in column['semantic_types']:
                 col_type = 'categorical'
             elif types.DATE_TIME in column['semantic_types']:
