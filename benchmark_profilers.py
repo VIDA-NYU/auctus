@@ -9,18 +9,18 @@ logger = logging.getLogger('benchmark_profilers')
 
 DATASETS_LABELED = os.path.join(
     os.path.dirname(__file__),
-    '../data/training_datasets/seed_datasets_archive',
+    '/data/training_datasets/seed_datasets_archive',
 )
 DATASETS_UNLABELED = os.path.join(
     os.path.dirname(__file__),
-    '../data/seed_datasets_current',
+    '/data/seed_datasets_current',
 )
 OUTPUT = os.path.join(
     os.path.dirname(__file__),
     'profiled_datasets',
 )
 # http://public.datadrivendiscovery.org/simon_models_1.tar.gz
-SIMON_MODELS = '/media/remram/datamart/simon_models'
+SIMON_MODELS = '/simon_models'
 
 
 def main():
