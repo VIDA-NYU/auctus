@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+import time
 
 
 logger = logging.getLogger('benchmark_profilers')
@@ -67,22 +68,26 @@ def main():
         # Simon
         out = os.path.join(outputs, 'simon')
         if not os.path.exists(out):
+            start = time.perf_counter()
             try:
                 types = get_simon_types(path)
             except Exception:
                 logger.exception("Error running Simon")
             else:
+                logger.info("SIMON TIME: %s", time.perf_counter() - start)
                 with open(out, 'w') as fp:
                     json.dump(types, fp)
 
         # Datamart
         out = os.path.join(outputs, 'datamart')
         if not os.path.exists(out):
+            start = time.perf_counter()
             try:
                 types = get_datamart_types(path)
             except Exception:
                 logger.exception("Error running Datamart")
             else:
+                logger.info("DATAMART TIME: %s", time.perf_counter() - start)
                 with open(out, 'w') as fp:
                     json.dump(types, fp)
 
@@ -151,7 +156,10 @@ def d3m_metadata_to_types(metadata):
 def get_datamart_types(path):
     from datamart_profiler import process_dataset
 
-    metadata = process_dataset(os.path.join(path, 'tables/learningData.csv'))
+    metadata = process_dataset(
+        os.path.join(path, 'tables/learningData.csv'),
+        coverage=False,
+    )
 
     return metadata['columns']
 
