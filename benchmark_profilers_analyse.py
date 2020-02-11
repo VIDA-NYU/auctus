@@ -3,7 +3,7 @@ import json
 import os
 
 
-PROFILERS = ['mitll', 'simon', 'datamart']
+PROFILERS = ['mitll', 'simon', 'dsbox', 'datamart']
 
 
 not_types = {
@@ -21,7 +21,7 @@ not_types = {
 }
 
 
-def simon_type(types):
+def d3m_type(types):
     types = [
         t for t in types
         if t not in not_types
@@ -58,9 +58,9 @@ def main():
                             datamart_type(p)
                             for p in obj
                         ]
-                    elif prof == 'simon':
+                    elif prof in ('simon', 'dsbox'):
                         profiles[prof] = [
-                            simon_type(p)
+                            d3m_type(p)
                             for p in obj
                         ]
                     else:

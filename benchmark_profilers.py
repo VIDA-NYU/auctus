@@ -78,6 +78,19 @@ def main():
                 with open(out, 'w') as fp:
                     json.dump(types, fp)
 
+        # DSBOX
+        out = os.path.join(outputs, 'dsbox')
+        if not os.path.exists(out):
+            start = time.perf_counter()
+            try:
+                types = get_dsbox_types(path)
+            except Exception:
+                logger.exception("Error running DSBOX")
+            else:
+                logger.info("DSBOX TIME: %s", time.perf_counter() - start)
+                with open(out, 'w') as fp:
+                    json.dump(types, fp)
+
         # Datamart
         out = os.path.join(outputs, 'datamart')
         if not os.path.exists(out):
@@ -137,6 +150,38 @@ def get_simon_types(path):
     res = simon.fit()
     assert res.has_finished and res.value is None
     res = simon.produce(inputs=dfU)
+    assert res.has_finished
+    dfM = res.value
+
+    return d3m_metadata_to_types(dfM.metadata)
+
+
+def get_dsbox_types(path):
+    from d3m.container import Dataset
+    ds = Dataset.load('file://%s/datasetDoc.json' % os.path.abspath(path))
+
+    def hyperparams(cls, **kwargs):
+        hp_cls = cls.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+        return hp_cls(hp_cls.defaults(), **kwargs)
+
+    from d3m.primitives.data_transformation.dataset_to_dataframe import Common as DatasetToDataframe
+    to_dataframe = DatasetToDataframe(
+        hyperparams=hyperparams(DatasetToDataframe)
+    )
+    res = to_dataframe.fit()
+    assert res.has_finished and res.value is None
+    res = to_dataframe.produce(inputs=ds)
+    assert res.has_finished
+    dfU = res.value
+
+    from d3m.primitives.schema_discovery.profiler import DSBOX
+    profiler = DSBOX(
+        hyperparams=hyperparams(DSBOX),
+    )
+    profiler.set_training_data(inputs=dfU)
+    res = profiler.fit()
+    assert res.has_finished and res.value is None
+    res = profiler.produce(inputs=dfU)
     assert res.has_finished
     dfM = res.value
 
