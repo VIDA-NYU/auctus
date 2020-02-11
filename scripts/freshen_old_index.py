@@ -28,6 +28,7 @@ SIZE = 10000
 
 _more_recent_cache = {}
 
+
 def is_version_more_recent(old, new):
     cache = _more_recent_cache.setdefault(old, {})
     if new in cache:

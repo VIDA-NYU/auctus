@@ -39,8 +39,8 @@ class DataTestCase(unittest.TestCase):
                 msg = "Dict keys don't match"
                 if len(actual) != len(expected):
                     msg += "; expected %d, got %d at %s" % (
-                    len(expected), len(actual), pos,
-                )
+                        len(expected), len(actual), pos,
+                    )
                 if len(actual) > len(expected):
                     unexpected = set(actual) - set(expected)
                     msg += "\nUnexpected keys: "
