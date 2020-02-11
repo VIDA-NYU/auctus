@@ -10,7 +10,6 @@ req = [
     'lazo-index-service==0.4',
     'numpy',
     'pandas',
-    'prometheus_client',
     'python-dateutil',
     'scikit-learn',
 ]
@@ -20,6 +19,9 @@ setup(name='datamart_profiler',
       version='0.5.5',
       packages=['datamart_profiler'],
       install_requires=req,
+      extras_require={
+          'prometheus': ['prometheus_client'],
+      },
       description="Data profiling library for Datamart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',

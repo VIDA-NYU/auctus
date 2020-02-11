@@ -12,7 +12,7 @@ req = [
     'prometheus_client',
     'datamart_core',
     'datamart_materialize',
-    'datamart_profiler',
+    'datamart_profiler[prometheus]',
 ]
 setup(name='datamart-profiler-service',
       version='0.0',

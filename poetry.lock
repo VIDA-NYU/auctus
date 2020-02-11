@@ -190,9 +190,11 @@ version = "0.5.5"
 lazo-index-service = "0.4"
 numpy = "*"
 pandas = "*"
-prometheus_client = "*"
 python-dateutil = "*"
 scikit-learn = "*"
+
+[package.extras]
+prometheus = ["prometheus-client"]
 
 [package.source]
 reference = ""
