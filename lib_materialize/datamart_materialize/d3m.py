@@ -1,7 +1,7 @@
 import json
-import os
 
 from . import types
+from .adaptors import FsWriter
 
 
 STRUCTURAL_TYPE_MAP = {
@@ -96,29 +96,33 @@ class D3mWriter(object):
         else:
             return cls.default_options[key]
 
-    def __init__(self, dataset_id, destination, metadata, format_options=None):
-        version = self._get_opt(format_options, 'version')
+    def __init__(self, destination, format_options=None):
+        self.version = self._get_opt(format_options, 'version')
         if format_options:
             raise ValueError(
                 "Invalid format option %r" % (next(iter(format_options)),)
             )
 
-        self.destination = destination
-        os.mkdir(destination)
-        os.mkdir(os.path.join(destination, 'tables'))
-
-        d3m_meta = d3m_metadata(dataset_id, metadata, version=version)
-
-        with open(os.path.join(destination, 'datasetDoc.json'), 'w') as fp:
-            json.dump(d3m_meta, fp, sort_keys=True, indent=2)
+        if hasattr(destination, 'open_file'):
+            self.destination = destination
+        else:
+            self.destination = FsWriter(destination)
 
     def open_file(self, mode='wb', name=None, **kwargs):
         if name is not None:
             raise ValueError("D3mWriter can only write single-table datasets "
                              "for now")
-        return open(os.path.join(self.destination,
-                                 'tables', 'learningData.csv'),
-                    mode, **kwargs)
+        return self.destination.open_file(
+            mode,
+            'tables/learningData.csv',
+            **kwargs,
+        )
+
+    def set_metadata(self, dataset_id, metadata):
+        d3m_meta = d3m_metadata(dataset_id, metadata, version=self.version)
+
+        with self.destination.open_file('w', 'datasetDoc.json') as fp:
+            json.dump(d3m_meta, fp, sort_keys=True, indent=2)
 
     def finish(self):
-        return None
+        return self.destination.finish()

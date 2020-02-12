@@ -7,6 +7,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
+    'fsspec',
     'requests',
     'xlrd',
 ]

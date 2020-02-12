@@ -1,3 +1,5 @@
+import codecs
+import fsspec
 import io
 import logging
 from pkg_resources import iter_entry_points
@@ -123,18 +125,29 @@ class CsvWriter(object):
     """
     needs_metadata = False
 
-    def __init__(self, dataset_id, destination, metadata, format_options=None):
-        self.destination = destination
+    def __init__(self, destination, format_options=None):
+        if hasattr(destination, 'write'):
+            self.destination = destination
+        else:
+            self.destination = fsspec.open(destination, 'wb')
 
-    def open_file(self, mode='wb', name=None, **kwargs):
+    def open_file(self, mode='wb', name=None, encoding='utf-8'):
         if name is not None:
             raise ValueError("CsvWriter can only write single-table datasets")
         if hasattr(self.destination, 'write'):
-            return self.destination
+            fileobj = self.destination
         else:
-            return open(self.destination, mode, **kwargs)
+            fileobj = self.destination.open()
+        if mode == 'wb':
+            return fileobj
+        else:
+            return codecs.getwriter(encoding)(fileobj)
+
+    def set_metadata(self, dataset_id, metadata):
+        pass
 
     def finish(self):
+        self.destination.close()
         return None
 
 
@@ -169,7 +182,7 @@ class PandasWriter(object):
         def __exit__(self, exc, value, tb):
             pass
 
-    def __init__(self, dataset_id, destination, metadata):
+    def __init__(self, destination):
         if destination is not None:
             raise ValueError("Pandas format expects destination=None")
         self._data = None
@@ -181,6 +194,9 @@ class PandasWriter(object):
             )
         self._data = self._PandasFile(mode)
         return self._data
+
+    def set_metadata(self, dataset_id, metadata):
+        pass
 
     def finish(self):
         import pandas
@@ -221,7 +237,9 @@ def download(dataset, destination, proxy, format='csv', size_limit=None):
                 response = requests.get(proxy + '/metadata/' + dataset)
                 response.raise_for_status()
                 metadata = response.json()['metadata']
-            writer = writer_cls(dataset, destination, metadata)
+            writer = writer_cls(destination)
+            if metadata is not None:
+                writer.set_metadata(dataset, metadata)
             _proxy_download(dataset, writer, proxy, size_limit=size_limit)
             return writer.finish()
         else:
@@ -241,7 +259,9 @@ def download(dataset, destination, proxy, format='csv', size_limit=None):
             materialize = materialize['materialize']
             dataset_id = dataset.get('id')
 
-    writer = writer_cls(dataset_id, destination, metadata)
+    writer = writer_cls(destination)
+    if metadata is not None:
+        writer.set_metadata(dataset_id, metadata)
 
     for converter in reversed(materialize.get('convert', [])):
         converter_args = dict(converter)
