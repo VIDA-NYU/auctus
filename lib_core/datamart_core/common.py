@@ -199,7 +199,7 @@ def add_dataset_to_index(es, dataset_id, metadata):
     # 'datamart' index
     es.index(
         'datamart',
-        metadata,
+        dict(metadata, id=dataset_id),
         id=dataset_id,
     )
 
