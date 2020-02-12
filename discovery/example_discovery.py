@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 class ExampleDiscoverer(Discoverer):
     """Example discovery plugin.
     """
-    data = ('name,country\n'
-            'Remi,France\n'
-            'Heiko,Australia\n'
-            'Fernando,Brazil\n'
-            'Juliana,USA\n')
+    data = (b'name,country\n'
+            b'Remi,France\n'
+            b'Heiko,Australia\n'
+            b'Fernando,Brazil\n'
+            b'Juliana,USA\n')
     metadata = {
         'is_example': True,
         'name': "Example CSV",
@@ -29,9 +29,8 @@ class ExampleDiscoverer(Discoverer):
         time.sleep(5)
 
         # Write file to shared storage
-        with self.write_to_shared_storage(self.dataset_id) as dirname:
-            with open(os.path.join(dirname, 'main.csv'), 'w') as fp:
-                fp.write(self.data)
+        with self.write_to_shared_storage(self.dataset_id) as f_dst:
+            f_dst.write(self.data)
 
         # We found a dataset
         self.record_dataset(

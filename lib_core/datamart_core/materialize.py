@@ -1,15 +1,13 @@
-import contextlib
 import datamart_materialize
+from datamart_materialize.adaptors import ZipWriter
 import logging
 import os
 import prometheus_client
 import shutil
-import zipfile
 
-from datamart_core.common import hash_json
-from datamart_core.fscache import cache_get_or_set
-
+from .common import hash_json
 from .discovery import encode_dataset_id
+from .objectstore import get_object_store
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +39,6 @@ def make_zip_recursive(zip_, src, dst=''):
         zip_.write(src, dst)
 
 
-@contextlib.contextmanager
 def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     if not format:
         raise ValueError
@@ -51,75 +48,76 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
         dataset_id, metadata.get('size', 'unknown'),
     )
 
+    object_store = get_object_store()
+
     # To limit the number of downloads, we always materialize the CSV file, and
     # convert it to the requested format if necessary. This avoids downloading
     # the CSV again just because we want a different format
 
-    # Context to lock the CSV
-    csv_lock = contextlib.ExitStack()
-    with csv_lock:
-        # Try to read from persistent storage
-        shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
-        if os.path.exists(shared):
-            logger.info("Reading from /datasets")
-            csv_path = os.path.join(shared, 'main.csv')
-        else:
-            # Otherwise, materialize the CSV
-            def create_csv(cache_temp):
+    # Try to read from persistent storage
+    csv_file = None
+    try:
+        csv_file = object_store.open('datasets', encode_dataset_id(dataset_id))
+        logger.info("Reading from datasets bucket")
+    except FileNotFoundError:
+        pass
+
+    # Try the cache
+    if csv_file is None:
+        key = encode_dataset_id(dataset_id) + '_' + 'csv'
+        try:
+            csv_file = object_store.open('cached-datasets', key)
+        except FileNotFoundError:
+            pass
+
+        # Otherwise, materialize the CSV
+        if csv_file is None:
+            with object_store.open('cached-datasets', key, 'wb') as cache_csv:
                 logger.info("Materializing CSV...")
                 with PROM_DOWNLOAD.time():
                     datamart_materialize.download(
                         {'id': dataset_id, 'metadata': metadata},
-                        cache_temp, None,
+                        cache_csv, None,
                         format='csv',
                         size_limit=10000000000,  # 10 GB
                     )
 
-            csv_key = encode_dataset_id(dataset_id) + '_' + 'csv'
-            csv_path = csv_lock.enter_context(
-                cache_get_or_set('/cache/datasets', csv_key, create_csv)
-            )
+            csv_file = object_store.open('cached-datasets', key)
 
-        # If CSV was requested, send it
-        if format == 'csv':
+    # If CSV was requested, send it
+    if format == 'csv':
+        if format_options:
+            raise ValueError("Invalid output options")
+        return csv_file
+
+    # Otherwise, do format conversion
+    writer_cls = datamart_materialize.get_writer(format)
+    all_format_options = dict(getattr(writer_cls, 'default_options', ()))
+    all_format_options.update(format_options)
+    key = '%s_%s_%s' % (
+        encode_dataset_id(dataset_id), format,
+        hash_json(all_format_options),
+    )
+
+    try:
+        return object_store.open('cached-datasets', key)
+    except FileNotFoundError:
+        pass
+
+    # Do format conversion from CSV file
+    logger.info("Converting CSV to %r opts=%r", format, format_options)
+    with object_store.open('cached-datasets', key, 'wb') as cache_out:
+        with PROM_CONVERT.time():
             if format_options:
-                raise ValueError("Invalid output options")
-            yield csv_path
-            return
+                kwargs = dict(format_options=format_options)
+            else:
+                kwargs = {}
+            if getattr(writer_cls, 'should_zip', False):
+                cache_out = ZipWriter(cache_out)
+            writer = writer_cls(cache_out, **kwargs)
+            writer.set_metadata(dataset_id, metadata)
+            with writer.open_file('wb') as dst:
+                shutil.copyfileobj(csv_file, dst)
+            writer.finish()
 
-        # Otherwise, do format conversion
-        writer_cls = datamart_materialize.get_writer(format)
-        all_format_options = dict(getattr(writer_cls, 'default_options', ()))
-        all_format_options.update(format_options)
-        key = '%s_%s_%s' % (
-            encode_dataset_id(dataset_id), format,
-            hash_json(all_format_options),
-        )
-
-        def create(cache_temp):
-            # Do format conversion from CSV file
-            logger.info("Converting CSV to %r opts=%r", format, format_options)
-            with PROM_CONVERT.time():
-                with open(csv_path, 'rb') as src:
-                    if format_options:
-                        kwargs = dict(format_options=format_options)
-                    else:
-                        kwargs = {}
-                    writer = writer_cls(
-                        dataset_id, cache_temp, metadata,
-                        **kwargs,
-                    )
-                    with writer.open_file('wb') as dst:
-                        shutil.copyfileobj(src, dst)
-
-                # Make a ZIP if it's a folder
-                if os.path.isdir(cache_temp):
-                    logger.info("Result is a directory, creating ZIP file")
-                    zip_name = cache_temp + '.zip'
-                    with zipfile.ZipFile(zip_name, 'w') as zip_:
-                        make_zip_recursive(zip_, cache_temp)
-                    shutil.rmtree(cache_temp)
-                    os.rename(zip_name, cache_temp)
-
-        with cache_get_or_set('/cache/datasets', key, create) as cache_path:
-            yield cache_path
+    return object_store.open('cached-datasets', key)

@@ -1,18 +1,15 @@
 import aio_pika
 import asyncio
-import contextlib
 from datetime import datetime
 import elasticsearch
 import lazo_index_service
 import logging
 import os
-import shutil
-import tempfile
 import uuid
 
 from .common import block_run, log_future, json2msg, msg2json, \
     encode_dataset_id, delete_dataset_from_index
-from .fscache import delete_cache_entry
+from .objectstore import get_object_store
 
 
 logger = logging.getLogger(__name__)
@@ -223,7 +220,6 @@ class Discoverer(object):
         """
         return self._record_dataset(materialize, metadata, dataset_id)
 
-    @contextlib.contextmanager
     def write_to_shared_storage(self, dataset_id):
         """Write a file to persistent storage.
 
@@ -232,20 +228,9 @@ class Discoverer(object):
         won't occur for datasets that are in shared storage already.
         """
         # TODO: Add a mechanism to clean datasets from storage
-        dir_name = encode_dataset_id(self.identifier + '.' + dataset_id)
-        dataset_dir = os.path.join('/datasets', dir_name)
-        if os.path.exists(dataset_dir):
-            shutil.rmtree(dataset_dir)
-        temp_dir = tempfile.mkdtemp(prefix=dir_name, dir='/datasets')
-        try:
-            yield temp_dir
-        except Exception:
-            shutil.rmtree(temp_dir)
-        else:
-            try:
-                os.rename(temp_dir, dataset_dir)
-            except OSError:
-                pass  # Dataset was written concurrently
+        object_store = get_object_store()
+        key = encode_dataset_id(self.identifier + '.' + dataset_id)
+        return object_store.open('datasets', key, 'wb')
 
     def delete_dataset(self, *, full_id=None, dataset_id=None):
         """Delete a dataset that is no longer present in the source.
@@ -263,22 +248,17 @@ class Discoverer(object):
         )
 
         # Also delete it from the cache
-        prefix = encode_dataset_id(full_id) + '_'
-        for name in os.listdir('/cache/datasets'):
-            if name.startswith(prefix) and name.endswith('.cache'):
-                key = name[:-6]
-                try:
-                    delete_cache_entry('/cache/datasets', key, timeout=300)
-                except TimeoutError:
-                    logger.error(
-                        "Couldn't lock cached dataset for deletion: %r",
-                        name,
-                    )
+        object_store = get_object_store()
+        object_store.delete_prefix(
+            'cached-datasets',
+            encode_dataset_id(full_id) + '_',
+        )
 
         # And the stored datasets
-        dirname = os.path.join('/datasets', encode_dataset_id(full_id))
-        if os.path.exists(dirname):
-            shutil.rmtree(dirname)
+        object_store.delete(
+            'datasets',
+            encode_dataset_id(full_id),
+        )
 
 
 class AsyncDiscoverer(Discoverer):

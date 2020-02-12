@@ -25,25 +25,29 @@ MAX_CONCURRENT = 2
 
 
 def materialize_and_process_dataset(dataset_id, metadata, lazo_client):
-    with get_dataset(metadata, dataset_id) as dataset_path:
+    with get_dataset(metadata, dataset_id) as dataset:
         materialize = metadata.pop('materialize')
 
-        # Check for Excel file format
-        try:
-            xlrd.open_workbook(dataset_path)
-        except xlrd.XLRDError:
-            pass
-        else:
-            logger.info("This is an Excel file")
-            materialize.setdefault('convert', []).append({'identifier': 'xls'})
-            os.rename(dataset_path, dataset_path + '.xls')
-            with open(dataset_path, 'w', newline='') as dst:
-                xls_to_csv(dataset_path + '.xls', dst)
+        # TODO: Check for Excel file format
+        if False:
+            try:
+                # XXX: Doesn't work with file object, only file name
+                xlrd.open_workbook(dataset_path)
+            except xlrd.XLRDError:
+                pass
+            else:
+                logger.info("This is an Excel file")
+                materialize.setdefault('convert', []).append(
+                    {'identifier': 'xls'},
+                )
+                os.rename(dataset_path, dataset_path + '.xls')
+                with open(dataset_path, 'w', newline='') as dst:
+                    xls_to_csv(dataset_path + '.xls', dst)
 
         # Profile
         start = time.perf_counter()
         metadata = process_dataset(
-            data=dataset_path,
+            data=dataset,
             dataset_id=dataset_id,
             metadata=metadata,
             lazo_client=lazo_client,

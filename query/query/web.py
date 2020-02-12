@@ -10,7 +10,7 @@ import json
 import os
 import prometheus_client
 import redis
-import shutil
+import tempfile
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.httputil
@@ -20,9 +20,11 @@ import zipfile
 
 from datamart_augmentation.augmentation import AugmentationError, augment
 from datamart_core.common import hash_json, log_future
-from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
 import datamart_profiler
+from datamart_core.objectstore import get_object_store
+from datamart_materialize.adaptors import ZipWriter
+from datamart_materialize.d3m import D3mWriter
 
 from .enhance_metadata import enhance_metadata
 from .graceful_shutdown import GracefulApplication, GracefulHandler
@@ -309,7 +311,7 @@ class BaseDownload(BaseHandler):
                 format_options[n[7:]] = self.decode_argument(v[0])
         return format, format_options
 
-    async def send_dataset(self, dataset_id, metadata,
+    def send_dataset(self, dataset_id, metadata,
                            format='csv', format_options=None):
         materialize = metadata.get('materialize', {})
 
@@ -327,38 +329,18 @@ class BaseDownload(BaseHandler):
             # https://docs.python.org/3/library/contextlib.html#catching-exceptions-from-enter-methods
             stack = contextlib.ExitStack()
             try:
-                dataset_path = stack.enter_context(
+                dataset = stack.enter_context(
                     get_dataset(
                         metadata, dataset_id,
-                        format=format, format_options=format_options,
+                        format=format, format_options=format_options
                     )
                 )
             except Exception:
-                await self.send_error_json(500, "Materializer reports failure")
+                self.send_error_json(500, "Materializer reports failure")
                 raise
             with stack:
-                if zipfile.is_zipfile(dataset_path):
-                    self.set_header('Content-Type', 'application/zip')
-                    self.set_header(
-                        'Content-Disposition',
-                        'attachment; filename="%s.zip"' % dataset_id)
-                    logger.info("Sending ZIP...")
-                else:
-                    self.set_header('Content-Type', 'application/octet-stream')
-                    self.set_header('X-Content-Type-Options', 'nosniff')
-                    self.set_header('Content-Disposition',
-                                    'attachment; filename="%s"' % dataset_id)
-                    logger.info("Sending file...")
-                with open(dataset_path, 'rb') as fp:
-                    BUFSIZE = 40960
-                    buf = fp.read(BUFSIZE)
-                    while buf:
-                        self.write(buf)
-                        if len(buf) != BUFSIZE:
-                            break
-                        buf = fp.read(BUFSIZE)
-                    await self.flush()
-                return self.finish()
+                object_store = get_object_store()
+                return self.redirect(object_store.file_url(dataset))
 
 
 class DownloadId(BaseDownload, GracefulHandler):
@@ -381,7 +363,7 @@ class DownloadId(BaseDownload, GracefulHandler):
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
     @PROM_DOWNLOAD_TIME.time()
-    def post(self):
+    async def post(self):
         PROM_DOWNLOAD.inc()
 
         type_ = self.request.headers.get('Content-type', '')
@@ -455,28 +437,34 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
 
             task = search_results[0]
 
-            with get_dataset(metadata, task['id'], format='csv') as newdata:
-                # perform augmentation
-                logger.info("Performing half-augmentation with supplied data")
-                new_path = augment(
-                    data,
-                    newdata,
-                    data_profile,
-                    task,
-                    return_only_datamart_data=True
-                )
-                # FIXME: This always sends in D3M format
+            with tempfile.NamedTemporaryFile(prefix='datamart_aug_') as tmp:
+                with get_dataset(metadata, task['id'], format='csv') as newdata:
+                    # perform augmentation
+                    logger.info("Performing half-augmentation with supplied data")
+                    writer = D3mWriter(ZipWriter(tmp.name))
+                    augment(
+                        data,
+                        newdata,
+                        data_profile,
+                        task,
+                        writer,  # Now needs a writer
+                        return_only_datamart_data=True
+                    )
+                    # FIXME: This always sends in D3M format
 
-            # send a zip file
-            self.set_header('Content-Type', 'application/zip')
-            self.set_header(
-                'Content-Disposition',
-                'attachment; filename="augmentation.zip"')
-            logger.info("Sending ZIP...")
-            writer = RecursiveZipWriter(self.write)
-            writer.write_recursive(new_path)
-            writer.close()
-            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+                # send a zip file
+                self.set_header('Content-Type', 'application/octet-stream')
+                self.set_header('Content-Disposition', 'attachment')
+                with open(tmp.name, 'rb') as fp:
+                    BUFSIZE = 40960
+                    buf = fp.read(BUFSIZE)
+                    while buf:
+                        self.write(buf)
+                        if len(buf) != BUFSIZE:
+                            break
+                        buf = fp.read(BUFSIZE)
+                    await self.flush()
+                return self.finish()
 
 
 class Metadata(BaseHandler, GracefulHandler):
@@ -569,7 +557,11 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             columns=columns,
         )
 
-        def create_aug(cache_temp):
+        object_store = get_object_store()
+
+        with object_store.open('cached-augmentations', key, 'wb') as cache_out:
+            writer = D3mWriter(ZipWriter(cache_out))
+
             try:
                 with get_dataset(metadata, task['id'], format='csv') as newdata:
                     # perform augmentation
@@ -579,26 +571,13 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                         newdata,
                         data_profile,
                         task,
+                        writer,
                         columns=columns,
-                        destination=cache_temp,
                     )
             except AugmentationError as e:
                 return self.send_error_json(400, str(e))
 
-        with cache_get_or_set('/cache/aug', key, create_aug) as path:
-            # send a zip file
-            self.set_header('Content-Type', 'application/zip')
-            self.set_header(
-                'Content-Disposition',
-                'attachment; filename="augmentation.zip"')
-            logger.info("Sending ZIP...")
-            writer = RecursiveZipWriter(self.write)
-            # FIXME: This will write the whole thing to Tornado's buffer
-            # Maybe compressing to disk and streaming that file is better?
-            writer.write_recursive(path)
-            writer.close()
-
-        return self.finish()
+        return self.redirect(object_store.url('cached-augmentations', key))
 
 
 class Version(BaseHandler):

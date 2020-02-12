@@ -1233,7 +1233,6 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 coverage=True,
             )
             logger.info("Profiled in %.2fs", time.perf_counter() - start)
-
             self.application.redis.set(
                 'profile_' + data_hash,
                 pickle.dumps(data_profile),

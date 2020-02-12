@@ -16,8 +16,9 @@ class TestDiscoverer(Discoverer):
     """
     def main_loop(self):
         # Put this one on disk
-        with self.write_to_shared_storage('geo') as dirname:
-            shutil.copy2('geo.csv', os.path.join(dirname, 'main.csv'))
+        with self.write_to_shared_storage('geo') as f_dst:
+            with open('geo.csv', 'rb') as f_src:
+                shutil.copyfileobj(f_src, f_dst)
         self.record_dataset(
             dict(),
             {
@@ -29,8 +30,9 @@ class TestDiscoverer(Discoverer):
         )
 
         # Put this one on disk
-        with self.write_to_shared_storage('agg') as dirname:
-            shutil.copy2('agg.csv', os.path.join(dirname, 'main.csv'))
+        with self.write_to_shared_storage('agg') as f_dst:
+            with open('agg.csv', 'rb') as f_src:
+                shutil.copyfileobj(f_src, f_dst)
         self.record_dataset(
             dict(),
             {
@@ -54,11 +56,9 @@ class TestDiscoverer(Discoverer):
             dataset_id='lazo',
         )
 
-        # Put this one on disk
-        with self.write_to_shared_storage('daily') as dirname:
-            shutil.copy2('daily.csv', os.path.join(dirname, 'main.csv'))
+        # Use URL for this one
         self.record_dataset(
-            dict(),
+            dict(direct_url='http://test_discoverer:7000/daily.csv'),
             {
                 'name': 'daily',
                 'description': "Temporal dataset with daily resolution",

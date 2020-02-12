@@ -88,6 +88,7 @@ class D3mWriter(object):
     """
     needs_metadata = True
     default_options = {'version': DEFAULT_VERSION}
+    should_zip = True
 
     @classmethod
     def _get_opt(cls, options, key):

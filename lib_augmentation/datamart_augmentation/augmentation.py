@@ -1,16 +1,12 @@
 import copy
 import io
 import itertools
-import json
 import logging
 import numpy as np
-import os
 import pandas as pd
-import tempfile
 import time
 import uuid
 
-from datamart_materialize.d3m import d3m_metadata
 from datamart_materialize import types
 
 
@@ -20,6 +16,30 @@ logger = logging.getLogger(__name__)
 class AugmentationError(ValueError):
     """Error during augmentation.
     """
+
+
+class WriteCounter(object):
+    """File wrapper that counts the number of bytes written.
+    """
+    def __init__(self, inner):
+        self.inner = inner
+        self.size = 0
+
+    def write(self, buf):
+        self.size += len(buf)
+        return self.inner.write(buf)
+
+    def flush(self):
+        return self.inner.flush()
+
+    def close(self):
+        self.inner.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return self.inner.__exit__(exc_type, exc_val, exc_tb)
 
 
 class _UniqueIndexKey(object):
@@ -197,8 +217,8 @@ def perform_aggregations(data, original_columns):
 CHUNK_SIZE_ROWS = 10000
 
 
-def join(original_data, augment_data_path, original_metadata, augment_metadata,
-         destination_csv,
+def join(original_data, augment_data_file, original_metadata, augment_metadata,
+         writer,
          left_columns, right_columns,
          how='left', columns=None, return_only_datamart_data=False):
     """
@@ -243,7 +263,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
     # Stream the data in
     augment_data_chunks = pd.read_csv(
-        augment_data_path,
+        augment_data_file,
         error_bad_lines=False,
         chunksize=CHUNK_SIZE_ROWS,
     )
@@ -356,7 +376,9 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             qualValueType='dict'
         ))
 
-    join_.to_csv(destination_csv, index=False)
+    with WriteCounter(writer.open_file('w')) as fout:
+        join_.to_csv(fout, index=False)
+        size = fout.size
 
     # Build a dict of information about all columns
     columns_metadata = dict()
@@ -387,13 +409,13 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
     return {
         'columns': columns_metadata,
-        'size': os.path.getsize(destination_csv),
+        'size': size,
         'qualities': qualities_list,
     }
 
 
-def union(original_data, augment_data_path, original_metadata, augment_metadata,
-          destination_csv,
+def union(original_data, augment_data_file, original_metadata, augment_metadata,
+          writer,
           left_columns, right_columns,
           return_only_datamart_data=False):
     """
@@ -432,7 +454,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
 
     # Streaming union
     start = time.perf_counter()
-    with open(destination_csv, 'w', newline='') as fout:
+    with WriteCounter(writer.open_file('w')) as fout:
         # Write original data
         fout.write(','.join(original_data.columns) + '\n')
         total_rows = 0
@@ -442,7 +464,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
 
         # Iterate on chunks of augment data
         augment_data_chunks = pd.read_csv(
-            augment_data_path,
+            augment_data_file,
             error_bad_lines=False,
             chunksize=CHUNK_SIZE_ROWS,
         )
@@ -468,11 +490,13 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             # Add to CSV output
             augment_data.to_csv(fout, index=False, header=False)
             total_rows += len(augment_data)
+
+        size = fout.size
     logger.info("Union completed in %.4fs", time.perf_counter() - start)
 
     return {
         'columns': original_metadata['columns'],
-        'size': os.path.getsize(destination_csv),
+        'size': size,
         'qualities': [dict(
             qualName='augmentation_info',
             qualValue=dict(
@@ -487,17 +511,17 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
     }
 
 
-def augment(data, newdata, metadata, task, columns=None, destination=None,
-            return_only_datamart_data=False):
+def augment(data, newdata, metadata, task, writer,
+            columns=None, return_only_datamart_data=False):
     """
     Augments original data based on the task.
 
     :param data: the data to be augmented, as bytes.
-    :param newdata: the path to the CSV file to augment with.
+    :param newdata: the CSV file object to augment with.
     :param metadata: the metadata of the data to be augmented.
     :param task: the augmentation task.
     :param columns: a list of column indices from newdata that will be added to data
-    :param destination: location to save the files.
+    :param writer: Writer on which to save the files.
     :param return_only_datamart_data: only returns the portion of newdata that matches
       well with data.
     """
@@ -510,14 +534,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     #   currently, Datamart does not support such cases
     #   this means that spatial joins (with GPS) are not supported for now
 
-    # Prepare output D3M structure
-    if destination is None:
-        destination = tempfile.mkdtemp(prefix='datamart_aug_')
-    os.mkdir(destination)
-    os.mkdir(os.path.join(destination, 'tables'))
-    destination_csv = os.path.join(destination, 'tables', 'learningData.csv')
-    destination_metadata = os.path.join(destination, 'datasetDoc.json')
-
     # Perform augmentation
     start = time.perf_counter()
     if task['augmentation']['type'] == 'join':
@@ -526,7 +542,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             newdata,
             metadata,
             task['metadata'],
-            destination_csv,
+            writer,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             columns=columns,
@@ -538,7 +554,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             newdata,
             metadata,
             task['metadata'],
-            destination_csv,
+            writer,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             return_only_datamart_data=return_only_datamart_data,
@@ -547,9 +563,6 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         raise AugmentationError("Augmentation task not provided")
     logger.info("Total augmentation: %.4fs", time.perf_counter() - start)
 
-    # Write out the D3M metadata
-    d3m_meta = d3m_metadata(uuid.uuid4().hex, output_metadata)
-    with open(destination_metadata, 'w') as fp:
-        json.dump(d3m_meta, fp, sort_keys=True, indent=2)
-
-    return destination
+    # Write out the metadata
+    writer.set_metadata(uuid.uuid4().hex, output_metadata)
+    return writer.finish()
