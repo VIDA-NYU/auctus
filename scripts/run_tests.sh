@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export PATH="$HOME/bin:$PATH"
 
@@ -28,5 +28,10 @@ sleep 2
 docker-compose up -d --force-recreate test_discoverer
 sleep 10
 
+# Load .env
+set +x
+cat .env | while read l; do [ -z "$l" ] || [ "${l:0:1}" = \# ] || echo "export $l"; done >.env.sh && . .env.sh && rm .env.sh
+set -x
+
 # Run tests
-DATAMART_VERSION=v0.0 pipenv run python tests
+DATAMART_VERSION=v0.0 poetry run python tests
