@@ -129,7 +129,8 @@ class TestD3m(unittest.TestCase):
         """Test writing with default parameters."""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
-            writer = D3mWriter('test1', target, basic_metadata)
+            writer = D3mWriter(target)
+            writer.set_metadata('test1', basic_metadata)
             with data('basic.csv') as f_in, writer.open_file() as f_out:
                 shutil.copyfileobj(f_in, f_out)
             writer.finish()
@@ -140,8 +141,8 @@ class TestD3m(unittest.TestCase):
         """Test writing in 4.0.0 format explicitely."""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
-            writer = D3mWriter('test1', target, basic_metadata,
-                               format_options={'version': '4.0.0'})
+            writer = D3mWriter(target, format_options={'version': '4.0.0'})
+            writer.set_metadata('test1', basic_metadata)
             with data('basic.csv') as f_in, writer.open_file() as f_out:
                 shutil.copyfileobj(f_in, f_out)
             writer.finish()
@@ -152,8 +153,8 @@ class TestD3m(unittest.TestCase):
         """Test writing in 3.2.0 format."""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
-            writer = D3mWriter('test1', target, basic_metadata,
-                               format_options={'version': '3.2.0'})
+            writer = D3mWriter(target, format_options={'version': '3.2.0'})
+            writer.set_metadata('test1', basic_metadata)
             with data('basic.csv') as f_in, writer.open_file() as f_out:
                 shutil.copyfileobj(f_in, f_out)
             writer.finish()
@@ -167,8 +168,8 @@ class TestD3m(unittest.TestCase):
         """Test adding the index to data that doesn't have it."""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
-            writer = D3mWriter('test1', target, basic_metadata,
-                               format_options={'need_d3mindex': True})
+            writer = D3mWriter(target, format_options={'need_d3mindex': True})
+            writer.set_metadata('test1', basic_metadata)
             with data('basic.csv') as f_in, writer.open_file() as f_out:
                 shutil.copyfileobj(f_in, f_out)
             writer.finish()
@@ -183,8 +184,8 @@ class TestD3m(unittest.TestCase):
         """Test that requiring an index doesn't add one if already there."""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
-            writer = D3mWriter('test1', target, basic_metadata,
-                               format_options={'need_d3mindex': True})
+            writer = D3mWriter(target, format_options={'need_d3mindex': True})
+            writer.set_metadata('test1', basic_metadata)
             with data('basic.d3m.csv') as f_in, writer.open_file() as f_out:
                 shutil.copyfileobj(f_in, f_out)
             writer.finish()

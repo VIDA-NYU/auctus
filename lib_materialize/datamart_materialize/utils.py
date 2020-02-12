@@ -44,6 +44,9 @@ class SimpleConverter(object):
         self.writer = writer
         self.dir = tempfile.TemporaryDirectory(prefix='datamart_excel_')
 
+    def set_metadata(self, dataset_id, metadata):
+        self.writer.set_metadata(dataset_id, metadata)
+
     def open_file(self, mode='wb', name=None, **kwargs):
         temp_file = os.path.join(self.dir.name, 'file.xls')
 
