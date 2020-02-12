@@ -108,13 +108,6 @@ def load_materializers():
     writers = load('writer', 'datamart_materialize.writer')
     converters = load('converter', 'datamart_materialize.converter')
 
-    try:
-        import pandas
-    except ImportError:
-        pass
-    else:
-        writers['pandas'] = PandasWriter
-
 
 def get_writer(format):
     if not _materializers_loaded:

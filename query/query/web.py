@@ -317,8 +317,10 @@ class BaseDownload(BaseHandler):
             stack = contextlib.ExitStack()
             try:
                 dataset_path = stack.enter_context(
-                    get_dataset(metadata, dataset_id,
-                                format=format, format_options=format_options)
+                    get_dataset(
+                        metadata, dataset_id,
+                        format=format, format_options=format_options,
+                    )
                 )
             except Exception:
                 self.send_error_json(500, "Materializer reports failure")
@@ -337,12 +339,13 @@ class BaseDownload(BaseHandler):
                                     'attachment; filename="%s"' % dataset_id)
                     logger.info("Sending file...")
                 with open(dataset_path, 'rb') as fp:
-                    buf = fp.read(40960)
+                    BUFSIZE = 40960
+                    buf = fp.read(BUFSIZE)
                     while buf:
                         self.write(buf)
-                        if len(buf) != 40960:
+                        if len(buf) != BUFSIZE:
                             break
-                        buf = fp.read(40960)
+                        buf = fp.read(BUFSIZE)
                     await self.flush()
                 return self.finish()
 

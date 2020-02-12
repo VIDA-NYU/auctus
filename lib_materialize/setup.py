@@ -22,6 +22,7 @@ setup(name='datamart_materialize',
           'datamart_materialize.writer': [
               'csv = datamart_materialize:CsvWriter',
               'd3m = datamart_materialize.d3m:D3mWriter',
+              'pandas = datamart_materialize:PandasWriter',
           ],
           'datamart_materialize.converter': [
               'xls = datamart_materialize.excel:ExcelConverter',
