@@ -1,4 +1,5 @@
 from base64 import b64decode
+import contextlib
 import json
 import logging
 import os
@@ -39,7 +40,13 @@ class ObjectStore(object):
         return '%s%s' % (self.prefix, name)
 
     def open(self, bucket, name, mode='rb'):
-        return self.fs.open('%s/%s' % (self.bucket(bucket), name), mode)
+        full_name = '%s/%s' % (self.bucket(bucket), name)
+        if 'w' in mode:
+            # Manually commit if __exit__ without error
+            fp = self.fs.open(full_name, mode, autocommit=False)
+            return _commit_discard_context(fp, full_name)
+        else:
+            return self.fs.open(full_name, mode)
 
     def delete(self, bucket, name):
         self.fs.rm(
@@ -89,6 +96,44 @@ class ObjectStore(object):
 
     def file_url(self, fileobj):
         return self._build_client_url(fileobj.url())
+
+
+class _ObjecStoreFileWrapper(object):
+    def __init__(self, fp):
+        self._fileobj = fp
+
+    def write(self, buf):
+        return self._fileobj.write(buf)
+
+    def flush(self):
+        self._fileobj.flush()
+
+    def close(self):
+        raise TypeError("Attempted to close ObjecStoreFileWrapper")
+
+    def __enter__(self):
+        raise TypeError("Attempted to enter ObjecStoreFileWrapper")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        raise TypeError("Attempted to exit ObjecStoreFileWrapper")
+
+    def __iter__(self):
+        raise TypeError("Attempted to iter ObjecStoreFileWrapper")
+
+
+@contextlib.contextmanager
+def _commit_discard_context(fp, filename):
+    try:
+        with fp:
+            logger.info("opened file %s", filename)
+            yield _ObjecStoreFileWrapper(fp)
+    except:
+        logger.info("exception, discarding file %s", filename)
+        fp.discard()
+        raise
+    else:
+        logger.info("committing file %s", filename)
+        fp.commit()
 
 
 class GCSObjectStore(ObjectStore):
