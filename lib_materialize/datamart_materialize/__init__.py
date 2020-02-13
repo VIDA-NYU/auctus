@@ -120,6 +120,32 @@ def get_writer(format):
     return writers[format]
 
 
+class _DontCloseWrapper(object):
+    def __init__(self, fileobj):
+        self._fileobj = fileobj
+        self.closed = False
+
+    def write(self, buf):
+        if self.closed:
+            raise ValueError("Write on closed file")
+        return self._fileobj.write(buf)
+
+    def flush(self):
+        if self.closed:
+            raise ValueError("Flush on closed file")
+        self._fileobj.flush()
+
+    def close(self):
+        self.flush()
+        self.closed = True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 class CsvWriter(object):
     """Writer for the ``csv`` format. Writes a CSV file at the provided path.
     """
@@ -135,7 +161,7 @@ class CsvWriter(object):
         if name is not None:
             raise ValueError("CsvWriter can only write single-table datasets")
         if hasattr(self.destination, 'write'):
-            fileobj = self.destination
+            fileobj = _DontCloseWrapper(self.destination)
         else:
             fileobj = self.destination.open()
         if mode == 'wb':
@@ -147,7 +173,6 @@ class CsvWriter(object):
         pass
 
     def finish(self):
-        self.destination.close()
         return None
 
 

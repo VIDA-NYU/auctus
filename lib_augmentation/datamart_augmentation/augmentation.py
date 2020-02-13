@@ -36,9 +36,6 @@ class WriteCounter(object):
     def flush(self):
         return self.inner.flush()
 
-    def close(self):
-        self.inner.close()
-
     def __enter__(self):
         return self
 

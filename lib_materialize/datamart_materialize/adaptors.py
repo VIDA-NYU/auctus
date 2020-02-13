@@ -45,9 +45,6 @@ class _UnseekableFile(object):
     def flush(self):
         self._fileobj.flush()
 
-    def close(self):
-        self._fileobj.close()
-
     def __enter__(self):
         return self
 
