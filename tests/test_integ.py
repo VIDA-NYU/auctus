@@ -50,10 +50,12 @@ class DatamartTest(DataTestCase):
     def datamart_post(self, url, **kwargs):
         return self._request('post', url, **kwargs)
 
-    def _request(self, method, url, schema=None, check_status=True, **kwargs):
+    def _request(self, method, url, schema=None, check_status=True,
+                 allow_redirects=False, **kwargs):
         response = requests.request(
             method,
             os.environ['QUERY_HOST'] + url,
+            allow_redirects=allow_redirects,
             **kwargs
         )
         for _ in range(5):
@@ -63,6 +65,7 @@ class DatamartTest(DataTestCase):
             response = requests.request(
                 method,
                 os.environ['QUERY_HOST'] + url,
+                allow_redirects=allow_redirects,
                 **kwargs
             )
         else:
