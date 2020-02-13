@@ -35,10 +35,34 @@ class FsWriter(object):
         return None
 
 
+class _UnseekableFile(object):
+    def __init__(self, fileobj):
+        self._fileobj = fileobj
+
+    def write(self, buf):
+        return self._fileobj.write(buf)
+
+    def flush(self):
+        self._fileobj.flush()
+
+    def close(self):
+        self._fileobj.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._fileobj.__exit__(exc_type, exc_val, exc_tb)
+
+
 class ZipWriter(object):
     """Backend writer putting files in a ZIP.
     """
     def __init__(self, zip_file):
+        if hasattr(zip_file, 'write'):
+            # fsspec raises ValueError when calling seek(), and ZipFile only
+            # catches AttributeError and OSError when checking for seek()
+            zip_file = _UnseekableFile(zip_file)
         self.zip = zipfile.ZipFile(zip_file, 'w')
 
     def open_file(self, mode='wb', name=None, encoding='utf-8'):
