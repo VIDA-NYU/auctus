@@ -26,9 +26,14 @@ def main():
     packages = []
 
     for package in lockfile['package']:
-        if 'source' in package and 'url' in package['source']:
-            continue
-        packages.append('%s==%s' % (package['name'], package['version']))
+        if 'source' in package:
+            if package['source']['type'] != 'directory':
+                raise ValueError(
+                    "Unknown package source %s" % package['source']['type']
+                )
+            # Ignore 'directory' dependencies
+        else:
+            packages.append('%s==%s' % (package['name'], package['version']))
 
     subprocess.check_call(['pip3', 'install'] + packages)
 
