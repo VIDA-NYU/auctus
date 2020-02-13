@@ -25,6 +25,10 @@ class WriteCounter(object):
         self.inner = inner
         self.size = 0
 
+    def __iter__(self):
+        # Pandas needs file objects to have __iter__
+        return self
+
     def write(self, buf):
         self.size += len(buf)
         return self.inner.write(buf)
