@@ -66,8 +66,11 @@ def _proxy_download(dataset_id, writer, proxy, size_limit=None):
     response = requests.get(proxy + '/download/' + dataset_id,
                             allow_redirects=True, stream=True)
     response.raise_for_status()
-    if ('Content-Length' in response.headers and
-            int(response.headers['Content-Length']) > size_limit):
+    if (
+        size_limit is not None and
+        'Content-Length' in response.headers and
+        int(response.headers['Content-Length']) > size_limit
+    ):
         raise DatasetTooBig
     _write_file(response, writer, size_limit=size_limit)
 
