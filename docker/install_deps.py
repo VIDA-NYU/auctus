@@ -27,7 +27,12 @@ def main():
 
     for package in lockfile['package']:
         if 'source' in package:
-            if package['source']['type'] != 'directory':
+            if package['source']['type'] == 'git':
+                packages.append('git+%s@%s' % (
+                    package['source']['url'],
+                    package['source']['reference'],
+                ))
+            elif package['source']['type'] != 'directory':
                 raise ValueError(
                     "Unknown package source %s" % package['source']['type']
                 )
