@@ -22,7 +22,8 @@ schemas = os.path.abspath(schemas)
 def _fix_refs(obj, name):
     if isinstance(obj, dict):
         return {
-            k: _fix_refs(v, name) if k != '$ref' else 'file://%s/%s%s' % (schemas, name, v)
+            k: _fix_refs(v, name) if k != '$ref'
+            else 'file://%s/%s%s' % (schemas, name, v)
             for k, v in obj.items()
         }
     elif isinstance(obj, list):
@@ -83,7 +84,13 @@ class DatamartTest(DataTestCase):
             except (KeyError, ValueError):
                 error = "(not JSON)"
             self.fail("Error 400 from server: %s" % error)
-        response.raise_for_status()
+        # raise_for_status() accepts 3xx statuses, we don't
+        if response.status_code != 200:
+            raise requests.HTTPError("%s Error: %s for url: %s" % (
+                response.status_code,
+                response.reason,
+                response.url,
+            ))
 
 
 class TestProfiler(DataTestCase):
@@ -586,7 +593,7 @@ class TestDownload(DatamartTest):
         # Basic dataset, materialized via direct_url
         response = self.datamart_get('/download/' + 'datamart.test.basic',
                                      # format defaults to csv
-                                     allow_redirects=False)
+                                     check_status=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
                          'http://test_discoverer:7000/basic.csv')
@@ -594,16 +601,28 @@ class TestDownload(DatamartTest):
         response = self.datamart_get('/download/' + 'datamart.test.basic',
                                      # explicit format
                                      params={'format': 'csv'},
-                                     allow_redirects=False)
+                                     check_status=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
                          'http://test_discoverer:7000/basic.csv')
 
         response = self.datamart_get('/download/' + 'datamart.test.basic',
                                      params={'format': 'd3m'},
-                                     allow_redirects=False)
+                                     allow_redirects=True)
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
+        self.assertTrue(
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-datasets/' +
+                'datamart.test.basic_d3m_07a7f4cc1b271431abd0dab14a573db7b9b3d9e6'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
+        )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
@@ -615,10 +634,22 @@ class TestDownload(DatamartTest):
         response = self.datamart_get(
             '/download/' + 'datamart.test.basic',
             params={'format': 'd3m', 'format_version': '3.2.0'},
-            allow_redirects=False,
+            allow_redirects=True,
+        )
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
+        self.assertTrue(
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-datasets/' +
+                'datamart.test.basic_d3m_90b51b94bbe93e4360630f734141f542cc22da8a'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
+        )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
@@ -630,7 +661,16 @@ class TestDownload(DatamartTest):
         # Geo dataset, materialized via /datasets storage
         response = self.datamart_get('/download/' + 'datamart.test.geo',
                                      # format defaults to csv
-                                     allow_redirects=False)
+                                     allow_redirects=True)
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
+        self.assertTrue(
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] +
+                '/dev-datasets/datamart.test.geo'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
                          'application/octet-stream')
@@ -645,7 +685,7 @@ class TestDownload(DatamartTest):
         basic_meta = basic_meta.json()['metadata']
 
         response = self.datamart_post(
-            '/download', allow_redirects=False,
+            '/download', allow_redirects=True,
             params={'format': 'd3m', 'format_version': '3.2.0'},
             files={'task': json.dumps(
                 {
@@ -655,8 +695,20 @@ class TestDownload(DatamartTest):
                 }
             ).encode('utf-8')},
         )
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
+        self.assertTrue(
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-datasets/' +
+                'datamart.test.basic_d3m_90b51b94bbe93e4360630f734141f542cc22da8a'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
+        )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
@@ -666,7 +718,7 @@ class TestDownload(DatamartTest):
         )
 
         response = self.datamart_post(
-            '/download', allow_redirects=False,
+            '/download', allow_redirects=False, check_status=False,
             params={'format': 'csv'},
             json={
                 'id': 'datamart.test.basic',
@@ -685,7 +737,7 @@ class TestDownload(DatamartTest):
         geo_meta = geo_meta.json()['metadata']
 
         response = self.datamart_post(
-            '/download', allow_redirects=False,
+            '/download', allow_redirects=True,
             # format defaults to csv
             files={'task': json.dumps(
                 {
@@ -695,13 +747,22 @@ class TestDownload(DatamartTest):
                 }
             ).encode('utf-8')},
         )
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
+        self.assertTrue(
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] +
+                '/dev-datasets/datamart.test.geo'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
                          'application/octet-stream')
         self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
         response = self.datamart_post(
-            '/download', allow_redirects=False,
+            '/download', allow_redirects=True,
             params={'format': 'd3m'},
             json={
                 'id': 'datamart.test.geo',
@@ -709,8 +770,20 @@ class TestDownload(DatamartTest):
                 'metadata': geo_meta
             },
         )
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
+        self.assertTrue(
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-datasets/' +
+                'datamart.test.geo_d3m_07a7f4cc1b271431abd0dab14a573db7b9b3d9e6'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
+        )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
@@ -722,7 +795,7 @@ class TestDownload(DatamartTest):
     def test_post_invalid(self):
         """Post invalid materialization information."""
         response = self.datamart_post(
-            '/download', allow_redirects=False,
+            '/download',
             files={'task': json.dumps(
                 {
                     'id': 'datamart.nonexistent',
@@ -744,7 +817,7 @@ class TestDownload(DatamartTest):
         )
 
         response = self.datamart_post(
-            '/download', allow_redirects=False,
+            '/download',
             files={},
             check_status=False,
         )
@@ -829,10 +902,19 @@ class TestAugment(DatamartTest):
                 'task': json.dumps(task).encode('utf-8'),
                 'data': basic_aug_data.encode('utf-8'),
             },
+            allow_redirects=True,
         )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
         self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-augmentations/'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
         )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         zip_.testzip()
@@ -946,10 +1028,19 @@ class TestAugment(DatamartTest):
                 'task': json.dumps(task).encode('utf-8'),
                 'data': basic_aug_data.encode('utf-8'),
             },
+            allow_redirects=True,
         )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
         self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-augmentations/'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
         )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         zip_.testzip()
@@ -1067,10 +1158,19 @@ class TestAugment(DatamartTest):
                 'task': json.dumps(task).encode('utf-8'),
                 'data': agg_aug_data.encode('utf-8'),
             },
+            allow_redirects=True,
         )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
         self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-augmentations/'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
         )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         zip_.testzip()
@@ -1203,10 +1303,19 @@ class TestAugment(DatamartTest):
                 'task': json.dumps(task).encode('utf-8'),
                 'data': lazo_aug_data.encode('utf-8'),
             },
+            allow_redirects=True,
         )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
         self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-augmentations/'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
         )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         zip_.testzip()
@@ -1347,10 +1456,19 @@ class TestAugment(DatamartTest):
                 'task': json.dumps(task).encode('utf-8'),
                 'data': geo_aug_data.encode('utf-8'),
             },
+            allow_redirects=True,
         )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
         self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-augmentations/'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
         )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         zip_.testzip()
@@ -1469,10 +1587,19 @@ class TestAugment(DatamartTest):
                 'task': json.dumps(task).encode('utf-8'),
                 'data': daily_aug_data.encode('utf-8'),
             },
+            allow_redirects=True,
         )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
         self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-augmentations/'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
         )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         zip_.testzip()
@@ -1521,10 +1648,19 @@ class TestAugment(DatamartTest):
                 'task': json.dumps(task).encode('utf-8'),
                 'data': hourly_aug_data.encode('utf-8'),
             },
+            allow_redirects=True,
         )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
         self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-augmentations/'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
         )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         zip_.testzip()
@@ -1572,10 +1708,19 @@ class TestAugment(DatamartTest):
                 'task': json.dumps(task).encode('utf-8'),
                 'data': hourly_aug_data_days.encode('utf-8'),
             },
+            allow_redirects=True,
         )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertEqual(len(response.history), 1)
+        self.assertEqual(response.history[0].status_code, 302)
         self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+            response.history[0].headers['Location'].startswith(
+                os.environ['S3_CLIENT_URL'] + '/dev-cached-augmentations/'
+            ),
+            "URL is %s" % response.history[0].headers['Location'],
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
         )
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         zip_.testzip()
@@ -2075,6 +2220,7 @@ daily_metadata = {
         },
     ],
     'materialize': {
+        "direct_url": "http://test_discoverer:7000/daily.csv",
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
     },
