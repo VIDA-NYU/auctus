@@ -23,6 +23,7 @@ class TestDiscoverer(Discoverer):
             {
                 # Omit name, should be set to 'geo' automatically
                 'description': "Another simple CSV with places",
+                'source': 'remi',
             },
             dataset_id='geo',
         )
@@ -36,6 +37,7 @@ class TestDiscoverer(Discoverer):
                 # Omit name, should be set to 'agg' automatically
                 'description': "Simple CSV with ids and salaries to test"
                                " aggregation for numerical attributes",
+                'source': 'fernando',
             },
             dataset_id='agg',
         )
@@ -47,6 +49,7 @@ class TestDiscoverer(Discoverer):
                 # Omit name, should be set to 'lazo' automatically
                 'description': "Simple CSV with states and years"
                                " to test the Lazo index service",
+                'source': 'fernando',
             },
             dataset_id='lazo',
         )
@@ -59,6 +62,7 @@ class TestDiscoverer(Discoverer):
             {
                 'name': 'daily',
                 'description': "Temporal dataset with daily resolution",
+                'source': 'remi',
             },
             dataset_id='daily',
         )
@@ -69,6 +73,7 @@ class TestDiscoverer(Discoverer):
             {
                 # Omit name, should be set to 'hourly' automatically
                 'description': "Temporal dataset with hourly resolution",
+                'source': 'remi',
             },
             dataset_id='hourly',
         )
@@ -81,6 +86,7 @@ class TestDiscoverer(Discoverer):
             {
                 'name': "basic",
                 'description': "This is a very simple CSV with people",
+                'source': 'remi',
             },
             dataset_id='basic',
         )
