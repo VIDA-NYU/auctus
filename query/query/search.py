@@ -990,7 +990,7 @@ def parse_query(query_json):
                 'filter': [
                     {
                         'terms': {
-                            'materialize.identifier': query_json['source'],
+                            'source': query_json['source'],
                         }
                     }
                 ]

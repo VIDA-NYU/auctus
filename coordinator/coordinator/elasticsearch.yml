@@ -4,6 +4,9 @@ datamart:
       sample:
         type: text
         index: false
+      source:
+        type: keyword
+        index: true
       # 'columns' is a nested field, we want
       # to query individual columns
       columns:
