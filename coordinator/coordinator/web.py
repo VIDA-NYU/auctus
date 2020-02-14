@@ -153,6 +153,7 @@ class Upload(BaseHandler):
             metadata = dict(
                 filename=file.filename,
                 name=self.get_body_argument('name', None),
+                source='upload',
                 materialize=dict(identifier='datamart.upload',
                                  date=datetime.utcnow().isoformat() + 'Z'),
             )
@@ -183,6 +184,7 @@ class Upload(BaseHandler):
             # Metadata with 'direct_url' in materialization info
             metadata = dict(
                 name=self.get_body_argument('name', None),
+                source='upload',
                 materialize=dict(identifier='datamart.url',
                                  direct_url=address,
                                  date=datetime.utcnow().isoformat() + 'Z'),
