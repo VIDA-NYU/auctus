@@ -172,10 +172,10 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
         filter_query.append(
             {'term': {'dataset_id': dataset_id}}
         )
-    if type_value != types.DATE_TIME:
-        filter_query.append(
-            {'fuzzy': {'name.raw': pivot_column}}
-        )
+    # if type_value != types.DATE_TIME:
+    #     filter_query.append(
+    #         {'fuzzy': {'name.raw': pivot_column}}
+    #     )
 
     should_query = list()
     coverage = sum([range_[1] - range_[0] + 1 for range_ in ranges])
@@ -252,7 +252,8 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
     return es.search(
         index='datamart_columns',
         body=body,
-        size=TOP_K_SIZE
+        size=TOP_K_SIZE,
+        request_timeout=100
     )['hits']['hits']
 
 
