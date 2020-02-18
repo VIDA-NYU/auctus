@@ -204,6 +204,8 @@ class Discoverer(object):
                        dataset_id=None, bind=None):
         if 'name' not in metadata:
             metadata['name'] = dataset_id
+        if 'source' not in metadata:
+            metadata['source'] = self.identifier
         coro = self._record_dataset(materialize, metadata,
                                     dataset_id=dataset_id, bind=bind)
         if self._async:

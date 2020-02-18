@@ -152,6 +152,7 @@ class SocrataDiscoverer(Discoverer):
         # Read metadata
         metadata = dict(
             name=resource.get('name', id),
+            source=domain['url'],
         )
         if resource.get('description'):
             metadata['description'] = resource['description']

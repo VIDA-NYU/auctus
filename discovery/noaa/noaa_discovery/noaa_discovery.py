@@ -159,6 +159,7 @@ class NoaaDiscoverer(Discoverer):
                 dict(
                     name=description,
                     description=description,
+                    source='noaa',
                     latitude=city_dict['latitude'],
                     longitude=city_dict['longitude'],
                 ),

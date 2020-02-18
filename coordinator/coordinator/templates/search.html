@@ -23,12 +23,26 @@
       </div>
     </div>
 
-    <div class="row">
+    <div class="row align-items-center">
       <div class="col-sm-3 align-items-center">
         <label for="keywords">Keywords:</label>
       </div>
       <div class="form-group col-sm-9">
         <input class="form-control" id="keywords" autofocus />
+      </div>
+    </div>
+
+    <div class="row align-items-center">
+      <div class="col-sm-3 align-items-center">
+        <label for="keywords">Sources:</label>
+      </div>
+      <div class="form-group col-sm-9">
+        {% for source in sources %}
+        <div class="form-check form-check-inline">
+          <input type="checkbox" class="form-check-input source-checkbox" name="source" value="{{ source }}" id="source-{{ source }}" checked>
+          <label class="form-check-label" for="source-{{ source }}">{{ source }}</label>
+        </div>
+        {% endfor %}
       </div>
     </div>
 

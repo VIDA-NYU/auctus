@@ -123,7 +123,8 @@ class TestProfileQuery(DatamartTest):
                 files={'data': basic_fp}
             )
         metadata = {k: v for k, v in basic_metadata.items()
-                    if k not in {'name', 'description', 'date', 'materialize'}}
+                    if k not in {'name', 'description', 'source',
+                                 'date', 'materialize'}}
         metadata = dict(
             metadata,
             lazo=lambda lazo: (
@@ -202,6 +203,43 @@ class TestSearch(DatamartTest):
                 'supplied_id': None,
                 'supplied_resource_id': None
             },
+        )
+
+    def test_search_with_source(self):
+        """Search restricted by source."""
+        response = self.datamart_post(
+            '/search',
+            json={'keywords': ['people'], 'source': ['remi']},
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertEqual(
+            {r['id'] for r in results},
+            {'datamart.test.basic'},
+        )
+
+        # Wrong source
+        response = self.datamart_post(
+            '/search',
+            json={'keywords': ['people'], 'source': ['fernando']},
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertEqual(
+            {r['id'] for r in results},
+            set(),
+        )
+
+        # All datasets from given source
+        response = self.datamart_post(
+            '/search',
+            json={'source': ['fernando']},
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertEqual(
+            {r['id'] for r in results},
+            {'datamart.test.agg', 'datamart.test.lazo'},
         )
 
 
@@ -1592,6 +1630,7 @@ assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 basic_metadata = {
     "name": "basic",
     "description": "This is a very simple CSV with people",
+    'source': 'remi',
     "size": 425,
     "nb_rows": 20,
     "nb_profiled_rows": 20,
@@ -1721,6 +1760,7 @@ basic_metadata_d3m = lambda v: {
 agg_metadata = {
     "name": "agg",
     "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
+    'source': 'fernando',
     "size": 116,
     "nb_rows": 8,
     "nb_profiled_rows": 8,
@@ -1810,6 +1850,7 @@ agg_metadata = {
 geo_metadata = {
     "name": "geo",
     "description": "Another simple CSV with places",
+    'source': 'remi',
     "size": 3910,
     "nb_rows": 100,
     "nb_profiled_rows": 100,
@@ -1927,6 +1968,7 @@ geo_metadata_d3m = lambda v: {
 lazo_metadata = {
     "name": "lazo",
     "description": "Simple CSV with states and years to test the Lazo index service",
+    'source': 'fernando',
     "size": 297,
     "nb_rows": 36,
     "nb_profiled_rows": 36,
@@ -1979,6 +2021,7 @@ lazo_metadata = {
 daily_metadata = {
     'name': 'daily',
     'description': 'Temporal dataset with daily resolution',
+    'source': 'remi',
     'size': 448,
     'nb_rows': 30,
     "nb_profiled_rows": 30,
@@ -2046,6 +2089,7 @@ daily_metadata = {
 hourly_metadata = {
     'name': 'hourly',
     'description': 'Temporal dataset with hourly resolution',
+    'source': 'remi',
     'size': 1242,
     'nb_rows': 52,
     "nb_profiled_rows": 52,

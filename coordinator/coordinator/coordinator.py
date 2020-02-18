@@ -189,17 +189,12 @@ class Coordinator(object):
                 scroll='30m',
             )
             for h in hits:
-                identifier = h['_source']['materialize']['identifier']
-
-                # Special case for Socrata
-                if identifier == 'datamart.socrata':
-                    end = h['_id'].find('.', 17)
-                    identifier = h['_id'][:end]
+                source = h['_source']['source']
 
                 try:
-                    sources[identifier] += 1
+                    sources[source] += 1
                 except KeyError:
-                    sources[identifier] = 1
+                    sources[source] = 1
 
                 sleep_in -= 1
                 if sleep_in <= 0:
