@@ -29,9 +29,9 @@ class _HandleQueryPublisher(object):
         self.reply_to = reply_to
 
     def __call__(self, materialize, metadata, dataset_id=None):
-        self.discoverer.record_dataset(materialize, metadata,
-                                       dataset_id=dataset_id,
-                                       bind=self.reply_to)
+        self.discoverer._record_dataset(materialize, metadata,
+                                        dataset_id=dataset_id,
+                                        bind=self.reply_to)
 
 
 class Discoverer(object):
@@ -167,8 +167,8 @@ class Discoverer(object):
 
     # def handle_query(self, query, publisher)
 
-    async def _record_dataset(self, materialize, metadata,
-                              dataset_id=None, bind=None):
+    async def _a_record_dataset(self, materialize, metadata,
+                                dataset_id=None, bind=None):
         if dataset_id is None:
             dataset_id = uuid.uuid4().hex
         dataset_id = self.identifier + '.' + dataset_id
@@ -200,18 +200,22 @@ class Discoverer(object):
         logger.info("Discovered %s", dataset_id)
         return dataset_id
 
-    def record_dataset(self, materialize, metadata,
-                       dataset_id=None, bind=None):
+    def _record_dataset(self, materialize, metadata,
+                        dataset_id=None, bind=None):
         if 'name' not in metadata:
             metadata['name'] = dataset_id
         if 'source' not in metadata:
             metadata['source'] = self.identifier
-        coro = self._record_dataset(materialize, metadata,
-                                    dataset_id=dataset_id, bind=bind)
+        coro = self._a_record_dataset(materialize, metadata,
+                                      dataset_id=dataset_id, bind=bind)
         if self._async:
             return self.loop.create_task(coro)
         else:
             return block_run(self.loop, coro)
+
+    def record_dataset(self, materialize, metadata,
+                       dataset_id=None):
+        return self._record_dataset(materialize, metadata, dataset_id)
 
     @contextlib.contextmanager
     def write_to_shared_storage(self, dataset_id):
