@@ -85,3 +85,6 @@ class NoaaMaterializer(object):
                 values.append(row['value'])
             if time is not None:
                 writer.writerow([time, sum(values) / len(values)])
+
+
+noaa_materializer = NoaaMaterializer()

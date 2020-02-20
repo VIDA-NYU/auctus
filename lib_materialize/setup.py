@@ -17,7 +17,7 @@ setup(name='datamart_materialize',
       packages=['datamart_materialize'],
       entry_points={
           'datamart_materialize': [
-              'datamart.noaa = datamart_materialize.noaa:NoaaMaterializer',
+              'datamart.noaa = datamart_materialize.noaa:noaa_materializer',
           ],
           'datamart_materialize.writer': [
               'csv = datamart_materialize:CsvWriter',
