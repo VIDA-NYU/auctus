@@ -46,6 +46,7 @@ requests = "*"
 coverage = "*" # Keep it in sync with Dockerfiles for CI
 jsonschema = ">=3.0,<4"
 readme_renderer = "*"
+Sphinx = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]
