@@ -15,4 +15,4 @@ You can get it directly from the Python Package Index using PIP::
 API
 ---
 
-TODO
+The REST client is currently maintained as part of the D3M project, with `documentation available here <https://datadrivendiscovery.gitlab.io/datamart-api/>`__.

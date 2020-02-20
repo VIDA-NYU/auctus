@@ -13,4 +13,6 @@ You can get it directly from the Python Package Index using PIP::
 API
 ---
 
-TODO
+The :py:func:`datamart_profiler.process_dataset` function is the entrypoint for the library. It returns a dict following Datamart's JSON result schema.
+
+..  autofunction:: datamart_profiler.process_dataset

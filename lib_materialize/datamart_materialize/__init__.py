@@ -119,7 +119,7 @@ def get_writer(format):
 
 
 class CsvWriter(object):
-    """Writer for a single CSV file.
+    """Writer for the ``csv`` format. Writes a CSV file at the provided path.
     """
     needs_metadata = False
 
@@ -139,6 +139,8 @@ class CsvWriter(object):
 
 
 class PandasWriter(object):
+    """Writer for the ``pandas`` format. Buffers a CSV file in memory, and returns a :class:`pandas.DataFrame` object at the end.
+    """
     needs_metadata = False
 
     class _PandasFile(object):
@@ -195,11 +197,11 @@ def download(dataset, destination, proxy, format='csv', size_limit=None):
     :param dataset: Dataset description from search index.
     :param destination: Path where the dataset will be written.
     :param proxy: URL of a Datamart server to use as a proxy if we can't
-        materialize locally. If ``None``, ``KeyError`` will be raised if this
+        materialize locally. If ``None``, :class:`KeyError` will be raised if this
         materializer is unavailable.
     :param format: Output format.
     :param size_limit: Maximum size of the dataset to download, in bytes. If
-        the limit is reached, `DatasetTooBig` will be raised.
+        the limit is reached, :class:`DatasetTooBig` will be raised.
     """
     if not _materializers_loaded:
         load_materializers()
