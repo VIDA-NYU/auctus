@@ -16,6 +16,7 @@ servers:
 tags:
 - name: "query"
   description: "Searching the index for datasets"
+- name: "query (only NYU)"
 - name: "augment"
   description: "Using the Datamart to perform server-side augmentation"
 - name: "ingest"
@@ -134,9 +135,48 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Results"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Result"
         400:
           description: "Invalid query"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /profile:
+    post:
+      tags:
+      - "query (only NYU)"
+      summary: Profile a dataset for future use in search (as 'data_profile')
+      description: |
+        The JSON object returned by this endpoint can be passed to /search as the 'data_profile'.
+
+        It replaces the 'data' argument, allowing for lighter searches since the data is only sent once. This is useful in situation where the user will incrementally adjust his query.
+      operationId: "profile"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: Data which you want to profile
+                  format: binary
+            examples:
+              simple:
+                summary: Example CSV file
+                value:
+                  data: "name,country,number,what\nremi,france,4,false\naecio,brazil,3,true\nsonia,peru,7,true\nroque,peru,8,true\nfernando,brazil,10,false\n"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: Invalid query
           content:
             application/json:
               schema:
@@ -284,10 +324,5 @@ components:
         error:
           type: string
           description: "The error message"
-    Results:
-      description: "Array of results returned by /search"
-      type: array
-      items:
-        $ref: "#/components/schemas/Result"
     Result:
       $ref: "query_result_schema.json"
