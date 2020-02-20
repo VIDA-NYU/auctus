@@ -21,7 +21,7 @@ def get_all(endpoint, token, delay=0.5, **params):
     while True:
         try:
             r = requests.get(
-                'https://www.ncdc.noaa_discovery.gov/cdo-web/api/v2' +
+                'https://www.ncdc.noaa.gov/cdo-web/api/v2' +
                 endpoint,
                 headers=headers,
                 params=dict(params, limit='1000', offset=len(results)),
