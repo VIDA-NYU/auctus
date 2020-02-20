@@ -11,6 +11,7 @@ The system can be found at this address: https://auctus.vida-nyu.org/
 
     webui
     restapi
+    schemas
     python/index
     internals
 

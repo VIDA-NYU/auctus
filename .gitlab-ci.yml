@@ -104,6 +104,11 @@ pages:
     - /root/.poetry/bin/poetry install
     - (cd docs/ && make html)
     - cp -r docs/_build/html public
+    - curl -Lo swagger-dist.tar.gz https://github.com/swagger-api/swagger-ui/archive/v3.23.0.tar.gz
+    - (mkdir public/swagger && cd public/swagger && tar xf ../../swagger-dist.tar.gz swagger-ui-3.23.0/dist --strip-components=2)
+    - python3 -c 'import json,yaml; json.dump(yaml.load(open("docs/schemas/restapi.yaml")), open("public/swagger/restapi.json", "w"))'
+    - cp docs/schemas/query_input_schema.json docs/schemas/query_result_schema.json public/swagger/
+    - sed -i 's|https://petstore.swagger.io/v2/swagger.json|./restapi.json|g' public/swagger/index.html
   artifacts:
     paths:
       - public
