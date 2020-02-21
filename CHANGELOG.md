@@ -10,6 +10,7 @@ scratch, or by importing the JSON files.
 * Aggregated columns renamed (`amin` -> `min`, `amax` -> `max`)
 * Renamed `lazo_server` container to `lazo`
 * Updated to MIT-LL D3M schema version 4.0.0
+* Added 'source' key to schema, you will have to manually add this to the indexed documents (or just re-profile)
 
 Enhancements:
 * Compute additional metadata `missing_values_ratio`, `unclean_values_ratio`, `num_distinct_values`
