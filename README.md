@@ -1,7 +1,9 @@
 Datamart
 ========
 
-This project is designed to be a web crawler and search engine for datasets, specifically meant for data augmentation tasks in machine learning. Its goal is to be able to find datasets in different repositories and index them for later retrieval.
+This project is a web crawler and search engine for datasets, specifically meant for data augmentation tasks in machine learning. It is able to find datasets in different repositories and index them for later retrieval.
+
+[Documentation is available here](https://docs.auctus.vida-nyu.org/)
 
 It is divided in multiple components:
 
@@ -29,7 +31,7 @@ The services exchange messages through `RabbitMQ`, allowing us to have complex m
 Deployment
 ==========
 
-The system is currently running at https://datamart.d3m.vida-nyu.org/. You can see the system status at https://grafana.datamart.d3m.vida-nyu.org/.
+The system is currently running at https://auctus.vida-nyu.org/. You can see the system status at https://grafana.auctus.vida-nyu.org/.
 
 Local deployment / development setup
 ====================================
@@ -86,7 +88,7 @@ Import a snapshot of our index (optional)
 $ scripts/docker_import_snapshot.sh
 ```
 
-This will download an Elasticsearch dump from datamart.d3m.vida-nyu.org and import it into your local Elasticsearch container.
+This will download an Elasticsearch dump from auctus.vida-nyu.org and import it into your local Elasticsearch container.
 
 Start discovery plugins (optional)
 ----------------------------------
