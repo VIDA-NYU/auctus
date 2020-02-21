@@ -251,6 +251,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     :param coverage: Whether to compute data ranges (using k-means)
     :param sample_size: Target sample size. The data will be randomly sampled
         if it is bigger. Defaults to `MAX_SIZE`, currently 50 MB.
+    :returns: JSON structure (dict)
     """
     if not sample_size:
         sample_size = MAX_SIZE

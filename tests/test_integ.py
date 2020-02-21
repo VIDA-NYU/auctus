@@ -14,7 +14,7 @@ import datamart_materialize
 from .utils import DataTestCase
 
 
-schemas = os.path.join(os.path.dirname(__file__), '..', 'doc', 'schemas')
+schemas = os.path.join(os.path.dirname(__file__), '..', 'docs', 'schemas')
 schemas = os.path.abspath(schemas)
 
 

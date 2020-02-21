@@ -35,6 +35,8 @@ class _HandleQueryPublisher(object):
 
 
 class Discoverer(object):
+    """Base class for discoverer plugins.
+    """
     _async = False
 
     def __init__(self, identifier, concurrent=4):
@@ -215,10 +217,21 @@ class Discoverer(object):
 
     def record_dataset(self, materialize, metadata,
                        dataset_id=None):
+        """Publish a found dataset.
+
+        The dataset will be profiled if necessary and recorded in the index.
+        """
         return self._record_dataset(materialize, metadata, dataset_id)
 
     @contextlib.contextmanager
     def write_to_shared_storage(self, dataset_id):
+        """Write a file to persistent storage.
+
+        This is useful if there is no way to materialize this dataset again in
+        the future, and you need to store it to refer to it. Materialization
+        won't occur for datasets that are in shared storage already.
+        """
+        # TODO: Add a mechanism to clean datasets from storage
         dir_name = encode_dataset_id(self.identifier + '.' + dataset_id)
         dataset_dir = os.path.join('/datasets', dir_name)
         if os.path.exists(dataset_dir):
@@ -235,6 +248,8 @@ class Discoverer(object):
                 pass  # Dataset was written concurrently
 
     def delete_dataset(self, *, full_id=None, dataset_id=None):
+        """Delete a dataset that is no longer present in the source.
+        """
         if (full_id is not None) == (dataset_id is not None):
             raise TypeError("Pass only one of 'id' and 'full_id'")
 
@@ -267,6 +282,8 @@ class Discoverer(object):
 
 
 class AsyncDiscoverer(Discoverer):
+    """Async variant of `Discoverer`, eg `main_loop()` and `handle_query()`.
+    """
     _async = True
 
     async def main_loop(self):

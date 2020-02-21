@@ -79,9 +79,12 @@ def d3m_metadata(dataset_id, metadata, *, version=None):
 
 
 class D3mWriter(object):
-    """Writer for MIT-LL's schema for D3M datasets.
+    """Writer for the ``d3m`` dataset format, following MIT-LL's schema.
 
     https://gitlab.com/datadrivendiscovery/data-supply
+
+    The key ``version`` can be passed in `format_options` to select the version
+    of the schema to generate, between ``3.2.0`` and ``4.0.0``.
     """
     needs_metadata = True
     default_options = {'version': DEFAULT_VERSION}
