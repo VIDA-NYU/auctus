@@ -47,6 +47,7 @@ coverage = "*" # Keep it in sync with Dockerfiles for CI
 jsonschema = ">=3.0,<4"
 readme_renderer = "*"
 Sphinx = "*"
+gcsfs = { git = "https://github.com/dask/gcsfs.git", rev = "ad576aee0b0613538c6521f2338cffe0b76d1de0" }
 
 [build-system]
 requires = ["poetry>=0.12"]

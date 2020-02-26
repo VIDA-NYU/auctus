@@ -426,7 +426,7 @@ description = "Convenient Filesystem interface over GCS"
 name = "gcsfs"
 optional = false
 python-versions = ">=3.5"
-version = "0.6.0"
+version = "0.6.0+4.gad576ae"
 
 [package.dependencies]
 decorator = "*"
@@ -438,6 +438,10 @@ requests = "*"
 [package.extras]
 gcsfuse = ["fusepy"]
 
+[package.source]
+reference = "ad576aee0b0613538c6521f2338cffe0b76d1de0"
+type = "git"
+url = "https://github.com/dask/gcsfs.git"
 [[package]]
 category = "main"
 description = "Google Authentication Library"
@@ -1114,7 +1118,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "fa38e07f3c7a31c0527ecebfc1d6ceee3919dc9beec8f6925c70b1175a474e23"
+content-hash = "0690f1a6fc80d6d51db6bb0d11278c597546f02545fed718636c451c55c08c19"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -1235,10 +1239,7 @@ fsspec = [
     {file = "fsspec-0.6.2-py3-none-any.whl", hash = "sha256:00ca67c62ae642f3bded2100dd431d151c1c5965c410bf10b12480bc8eb0a9f6"},
     {file = "fsspec-0.6.2.tar.gz", hash = "sha256:ffd7cd5ac32f36698097c3d78c2c433d4c12f7e4bce3a3a4036fd3491188046d"},
 ]
-gcsfs = [
-    {file = "gcsfs-0.6.0-py2.py3-none-any.whl", hash = "sha256:262c29a6959928af9556557833bb05402fcf790b2b2c0c64787cc77c4de95778"},
-    {file = "gcsfs-0.6.0.tar.gz", hash = "sha256:b5c459977059d85e9bdff476cc5f4e3c0725348835c9897478e129031677081b"},
-]
+gcsfs = []
 google-auth = [
     {file = "google-auth-1.11.0.tar.gz", hash = "sha256:44549e69ac39acf41fdf47f3f39a06e4e68378476806760d94a2c6a361b2bb06"},
     {file = "google_auth-1.11.0-py2.py3-none-any.whl", hash = "sha256:b2d83edc02a9deeed9b1b839046671fd9eda223d21bd2dd50051559787032fd8"},
