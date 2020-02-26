@@ -25,7 +25,9 @@ class _ExcelProxy(object):
 
     def close(self):
         self._fp.close()
+        self._convert()
 
+    def _convert(self):
         # Read back the XLS file we wrote, and write CSV via the writer
         with self._writer.open_file('w', self._name, newline='') as dst:
             xls_to_csv(self._temp_file, dst)
@@ -44,7 +46,7 @@ class _ExcelProxy(object):
 
     def __exit__(self, exc, value, tb):
         self._fp.__exit__(exc, value, tb)
-        self.close()
+        self._convert()
 
 
 class ExcelConverter(object):

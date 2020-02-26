@@ -307,9 +307,8 @@ def make_app(debug=False):
     if secret is None:
         secret = os.urandom(30).decode('iso-8859-15')
         try:
-            fp = open(cache, 'w')
-            json.dump({'cookie_secret': secret}, fp)
-            fp.close()
+            with open(cache, 'w') as fp:
+                json.dump({'cookie_secret': secret}, fp)
         except IOError:
             logger.error("Couldn't open cache file, cookie secret won't be "
                          "persisted! Users will be logged out if you restart "
