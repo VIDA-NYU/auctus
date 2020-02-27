@@ -90,40 +90,24 @@ function addInteraction(index) {
   maps[index-1].addInteraction(draws[index-1]);
 }
 
-var _temporal_template = (function() {
-  var tpl = document.getElementById('variable-temporal-template').innerHTML;
-  return (function(index) {
-    var new_div = document.createElement('div');
-    new_div.innerHTML = tpl.replace(/__index__/g, '' + index);
-    return new_div;
-  });
-})();
+var _temporal_template = loadTemplate('variable-temporal-template');
 function add_temporal() {
   n_temporal += 1;
   indices['temporal'].push(n_temporal)
   var index = n_temporal;
 
-  var new_div = _temporal_template(index);
-
   var variables_div = document.getElementById('variables');
-  variables_div.appendChild(new_div);
+  _temporal_template(variables_div, {index});
 }
 
-var _geospatial_template = (function() {
-  var tpl = document.getElementById('variable-geospatial-template').innerHTML;
-  return (function(index) {
-    var new_div = document.createElement('div');
-    new_div.innerHTML = tpl.replace(/__index__/g, '' + index);
-    return new_div;
-  });
-})();
+var _geospatial_template = loadTemplate('variable-geospatial-template');
 function add_geospatial() {
   n_geospatial += 1;
   indices['geospatial'].push(n_geospatial);
   var index = n_geospatial;
 
   var variables_div = document.getElementById('variables');
-  variables_div.appendChild(_geospatial_template(index));
+  _geospatial_template(variables_div, {index});
 
   var raster = new ol.layer.Tile({
     source: new ol.source.OSM()
