@@ -106,4 +106,4 @@ function loadStatus() {
 }
 
 loadStatus();
-setInterval(loadStatus, 2000);
+setInterval(loadStatus, 20000);
