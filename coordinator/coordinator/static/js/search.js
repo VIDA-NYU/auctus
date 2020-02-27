@@ -220,36 +220,35 @@ function toggleAugmentation(id) {
   }
 }
 
-function getAugmentationInfoHTML(left_columns_names, right_metadata, right_columns, score, result_id, type_) {
+var _augmentation_column_template = loadTemplate('augmentation-column-template');
+var _augmentation_template = loadTemplate('augmentation-template');
+function getAugmentationInfoHTML(left_columns_names, right_metadata, right_columns, score, result_id, type) {
   var columns_info = '';
   for(var j = 0; j < left_columns_names.length; j++) {
     var left_column = left_columns_names[j].join(", ");
     var right_column = right_columns[j]
       .map(function(i) { return right_metadata.columns[i].name; })
       .join(", ");
-    columns_info += (
-      '<a href="javascript: changePairStatus(\'' + type_ + '\',' + result_id + ',' + j + ');" class="list-group-item list-group-item-action" ' +
-      '  id="pair-' + type_ + '-' + result_id + '-' + j + '">' +
-      '  <small><em>' + left_column + '</em> and <em>' + right_column + '</em></small>' +
-      '</a>'
+    columns_info += _augmentation_column_template(
+      null,
+      {
+        type,
+        id: result_id,
+        left_column,
+        right_column,
+        j,
+      },
     );
   }
 
-  info = (
-    '    <hr>' +
-    '    <div class="d-flex justify-content-between align-items-center">' +
-    '      <p class="mb-0">Augmentation Information</p>' +
-    '      <button type="button" class="btn btn-outline-secondary" onclick="javascript: toggleAugmentation(' + result_id + ')" id="arrow-aug-' + result_id + '">&#x25BC;</button>' +
-    '    </div>' +
-    '    <div id="aug-info-' + result_id + '" style="display:none;">' +
-    '      <p class="card-text"><small>Type: <em>' + type_.charAt(0).toUpperCase() + type_.substr(1) + '</em></small></p>' +
-    '      <div class="list-group text-muted">' +
-    '        <a class="list-group-item"><small>Score: ' + score + '</small></a>' + columns_info +
-    '      </div>' +
-    //'      <div class="btn-group mt-3">' +
-    //'        <a href="javascript: submitAugmentationForm('+ result_id + ')" class="btn btn-sm btn-outline-secondary">Augment</a>' +
-    //'      </div>' +
-    '    </div>'
+  info = _augmentation_template(
+    null,
+    {
+      type,
+      id: result_id,
+      score,
+      columns_info,
+    },
   );
 
   return info;
@@ -274,6 +273,7 @@ function readFile(files, callback) {
   }
 }
 
+var _search_result_template = loadTemplate('search-result-template');
 document.getElementById('search-form').addEventListener('submit', function(e) {
   e.preventDefault();
 
@@ -396,9 +396,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         results_div.appendChild(div_title);
       }
       for(var i = 0; i < search_results.length; ++i) {
-        var elem = document.createElement('div');
         var data = search_results[i];
-        elem.className = 'col-md-4';
         description = data.metadata.description;
         if(description) {
           description = description
@@ -432,23 +430,17 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
           badges += ' <span class="badge badge-secondary badge-pill">temporal</span>';
         }
 
-        elem.innerHTML = (
-          '<div class="card mb-4 shadow-sm">' +
-          '  <div class="card-body">' +
-          '    <p class="card-text">' + (data.metadata.name || data.id) + '</p>' +
-          '    <p class="card-text mb-0">' + description + '</p>' +
-          '    <div class="mb-2">' + badges + '</div>' +
-          '    <div class="d-flex justify-content-between align-items-center mb-3">' +
-          '      <div class="btn-group">' +
-          '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
-          '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
-          '      </div>' +
-          '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
-          '    </div>' + aug_info +
-          '  </div>' +
-          '</div>'
+        _search_result_template(
+          results_div,
+          {
+            name: data.metadata.name || data.id,
+            description,
+            badges,
+            id: data.id,
+            size: data.metadata.size ? formatSize(data.metadata.size) : 'unknown size',
+            aug_info,
+          },
         );
-        results_div.appendChild(elem);
       }
       if(search_results.length == 0) {
         document.getElementById('search-error').style.display = '';

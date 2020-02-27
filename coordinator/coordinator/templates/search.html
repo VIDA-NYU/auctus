@@ -105,6 +105,58 @@
   No results
 </div>
 
+<script type="text/x-template" id="search-result-template">
+  <div class="col-md-4">
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <p class="card-text">__name__</p>
+        <p class="card-text mb-0">__description__</p>
+        <div class="mb-2">
+          __badges__
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="btn-group">
+            <a href="/dataset/__id__" class="btn btn-sm btn-outline-secondary">View</a>
+            <a href="{{ query_host | safe }}/download/__id__" class="btn btn-sm btn-outline-secondary">Download</a>
+          </div>
+          <small class="text-muted">__size__</small>
+        </div>
+        __aug_info__
+      </div>
+    </div>
+  </div>
+</script>
+
+<script type="text/x-template" id="augmentation-template">
+  <hr>
+  <div class="d-flex justify-content-between align-items-center">
+    <p class="mb-0">Augmentation Information</p>
+    <button type="button" class="btn btn-outline-secondary" onclick="javascript: toggleAugmentation(__id__)" id="arrow-aug-__id__">&#x25BC;</button>
+  </div>
+  <div id="aug-info-__id__" style="display:none;">
+    <p class="card-text"><small>Type: <em>__type__</em></small></p>
+    <div class="list-group text-muted">
+      <a class="list-group-item"><small>Score: __score__</small></a>
+      __columns_info__
+    </div>
+    <!--
+    <div class="btn-group mt-3">
+      <a href="javascript: submitAugmentationForm(__id__)" class="btn btn-sm btn-outline-secondary">Augment</a>
+    </div>
+    -->
+  </div>
+</script>
+
+<script type="text/x-template" id="augmentation-column-template">
+  <a
+    href="javascript: changePairStatus('__type__', __id__, __j__);"
+    class="list-group-item list-group-item-action"
+    id="pair-__type__-__id__-__j__"
+  >
+    <small><em>__left_column__</em> and <em>__right_column__</em></small>
+  </a>
+</script>
+
 <div class="album py-5 bg-light">
   <div class="container">
     <div id="processing" style="display:none;">
