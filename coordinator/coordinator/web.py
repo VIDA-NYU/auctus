@@ -122,12 +122,12 @@ class BaseHandler(RequestHandler):
         return self.application.coordinator
 
 
-class Index(BaseHandler):
-    def get(self):
-        self.render('index.html')
-
-
 class Status(BaseHandler):
+    def get(self):
+        self.render('system_status.html')
+
+
+class StatusJson(BaseHandler):
     def get(self):
         return self.send_json({
             'recent_discoveries': self.coordinator.recent_discoveries,
@@ -320,11 +320,11 @@ def make_app(debug=False):
 
     return Application(
         [
-            URLSpec('/', Index, name='index'),
-            URLSpec('/api/status', Status),
-            URLSpec('/search_form', Search, name='search'),
+            URLSpec('/', Search, name='search'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
+            URLSpec('/status', Status, name='status'),
+            URLSpec('/api/status', StatusJson),
         ],
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
