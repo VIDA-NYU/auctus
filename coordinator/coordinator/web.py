@@ -321,7 +321,7 @@ def make_app(debug=False):
     return Application(
         [
             URLSpec('/', Index, name='index'),
-            URLSpec('/status', Status),
+            URLSpec('/api/status', Status),
             URLSpec('/search_form', Search, name='search'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),

@@ -37,7 +37,7 @@ function getJSON(url='', args) {
 }
 
 function loadStatus() {
-  getJSON('/status')
+  getJSON('/api/status')
   .then(function(result) {
     var recent_discoveries = document.getElementById('recent_discoveries');
     recent_discoveries.innerHTML = '';
