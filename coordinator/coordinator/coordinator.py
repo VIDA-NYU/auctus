@@ -113,14 +113,6 @@ class Coordinator(object):
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
 
-        # Register to profiling exchange
-        self.profile_exchange = await self.channel.declare_exchange(
-            'profile',
-            aio_pika.ExchangeType.FANOUT,
-        )
-        self.profile_queue = await self.channel.declare_queue(exclusive=True)
-        await self.profile_queue.bind(self.profile_exchange)
-
         # Register to datasets exchange
         datasets_exchange = await self.channel.declare_exchange(
             'datasets',
@@ -129,30 +121,8 @@ class Coordinator(object):
         await self.datasets_queue.bind(datasets_exchange, '#')
 
         await asyncio.gather(
-            asyncio.get_event_loop().create_task(self._consume_profile()),
             asyncio.get_event_loop().create_task(self._consume_datasets()),
         )
-
-    async def _consume_profile(self):
-        # Consume profiling messages
-        async for message in self.profile_queue.iterator(no_ack=True):
-            obj = json.loads(message.body.decode('utf-8'))
-            dataset_id = obj['id']
-            metadata = obj.get('metadata', {})
-            materialize = metadata.get('materialize', {})
-            logger.info("Got profile message: %r", dataset_id)
-            for discovery in self.recent_discoveries:
-                if discovery['id'] == dataset_id:
-                    break
-            else:
-                self.recent_discoveries.insert(
-                    0,
-                    dict(id=dataset_id,
-                         discoverer=materialize.get('identifier', '(unknown)'),
-                         discovered=materialize.get('date', '???'),
-                         name=metadata.get('name')),
-                )
-                del self.recent_discoveries[15:]
 
     async def _consume_datasets(self):
         # Consume dataset messages
