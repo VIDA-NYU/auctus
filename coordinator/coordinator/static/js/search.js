@@ -260,12 +260,12 @@ function getAugmentationInfoHTML(left_columns_names, right_metadata, right_colum
     '    <div id="aug-info-' + result_id + '" style="display:none;">' +
     '      <p class="card-text"><small>Type: <em>' + type_.charAt(0).toUpperCase() + type_.substr(1) + '</em></small></p>' +
     '      <div class="list-group text-muted">' +
-    '        <a class="list-group-item"><small>Score: ' + score + '</small></li>' + columns_info +
+    '        <a class="list-group-item"><small>Score: ' + score + '</small></a>' + columns_info +
     '      </div>' +
     //'      <div class="btn-group mt-3">' +
     //'        <a href="javascript: submitAugmentationForm('+ result_id + ')" class="btn btn-sm btn-outline-secondary">Augment</a>' +
     //'      </div>' +
-        '    </div>'
+    '    </div>'
   );
 
   return info;
