@@ -378,7 +378,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     document.getElementById('processing').style.display = 'block';
 
     console.log("Searching:", search);
-    postSearchForm(QUERY_HOST + '/search', search)
+    postSearchForm(QUERY_HOST + '/search?_parse_sample=1', search)
     .then(function(result) {
       console.log("Got " + result.results.length + " results");
       console.log("Results:", result.results);
@@ -430,6 +430,27 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
           badges += ' <span class="badge badge-secondary badge-pill">temporal</span>';
         }
 
+        var table = '<thead><tr>';
+        for(var j = 0; j < data.metadata.columns.length; ++j) {
+          table += '<th>' + data.metadata.columns[j].name + '</th>';
+        }
+        table += '</tr><tr>';
+        for(var j = 0; j < data.metadata.columns.length; ++j) {
+          table += '<th>' + data.metadata.columns[j].structural_type + '</th>';
+        }
+        table += '</tr></thead><tbody>';
+        if(data.sample) {
+          // skip first line, it's the header
+          for(var j = 1; j < Math.min(4, data.sample.length); ++j) {
+            table += '<tr>';
+            for(var k = 0; k < data.sample[j].length; ++k) {
+              table += '<td>' + data.sample[j][k] + '</td>';
+            }
+            table += '</tr>';
+          }
+        }
+        table += '</tbody>';
+
         _search_result_template(
           results_div,
           {
@@ -438,6 +459,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
             badges,
             id: data.id,
             size: data.metadata.size ? formatSize(data.metadata.size) : 'unknown size',
+            table,
             aug_info,
           },
         );
