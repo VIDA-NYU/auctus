@@ -436,17 +436,14 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         }
         table += '</tr><tr>';
         for(var j = 0; j < data.metadata.columns.length; ++j) {
+          table += '<th>';
           var st_type = data.metadata.columns[j].structural_type;
           var pos = st_type.lastIndexOf('/');
           if(pos != -1) {
             st_type = st_type.substring(pos + 1);
           }
-          table += '<th><span class="badge badge-primary badge-pill">' + st_type + '</span></th>';
-        }
-        table += '</tr><tr>';
-        for(var j = 0; j < data.metadata.columns.length; ++j) {
+          table += '<span class="badge badge-primary badge-pill">' + st_type + '</span>\n';
           var sem_types = data.metadata.columns[j].semantic_types;
-          table += '<th>';
           for(var k = 0; k < sem_types.length; ++k) {
             var sem_type = sem_types[k];
             var pos = sem_type.lastIndexOf('/');
