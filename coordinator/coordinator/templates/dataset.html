@@ -15,7 +15,17 @@
     </tr>
     <tr>
       {% for column in metadata.columns %}
-      <th>{{ column.structural_type }}</th>
+      <th><span class="badge badge-primary badge-pill">{{ column.structural_type.rsplit('/', 1)[-1] }}</span></th>
+      {% endfor %}
+    </tr>
+    <tr>
+      <!-- TODO: color-code types -->
+      {% macro semantic_type(type) %}
+        {% set short_type = type.rsplit('/', 1)[-1] %}
+        <span class="badge badge-info badge-pill">{{ short_type }}</span>
+      {% endmacro %}
+      {% for column in metadata.columns %}
+      <th>{% for type in column.semantic_types %}{{ semantic_type(type) }}{% endfor %}</th>
       {% endfor %}
     </tr>
   </thead>
