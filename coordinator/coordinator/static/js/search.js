@@ -450,7 +450,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
             if(pos != -1) {
               sem_type = sem_type.substring(pos + 1);
             }
-            table += '<span class="badge badge-info badge-pill">' + sem_type + '</span>\n';
+            table += '<span class="badge badge-pill semtype semtype-' + sem_type.toLowerCase() + '">' + sem_type + '</span>\n';
           }
           table += '</th>';
         }

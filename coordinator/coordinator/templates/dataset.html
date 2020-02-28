@@ -14,10 +14,9 @@
       {% endfor %}
     </tr>
     <tr>
-      <!-- TODO: color-code types -->
       {% macro semantic_type(type) %}
         {% set short_type = type.rsplit('/', 1)[-1] %}
-        <span class="badge badge-info badge-pill">{{ short_type }}</span>
+        <span class="badge badge-pill semtype semtype-{{ short_type |lower }}">{{ short_type }}</span>
       {% endmacro %}
       {% for column in metadata.columns %}
       <th>
