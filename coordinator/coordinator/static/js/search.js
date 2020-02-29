@@ -90,40 +90,24 @@ function addInteraction(index) {
   maps[index-1].addInteraction(draws[index-1]);
 }
 
-var _temporal_template = (function() {
-  var tpl = document.getElementById('variable-temporal-template').innerHTML;
-  return (function(index) {
-    var new_div = document.createElement('div');
-    new_div.innerHTML = tpl.replace(/__index__/g, '' + index);
-    return new_div;
-  });
-})();
+var _temporal_template = loadTemplate('variable-temporal-template');
 function add_temporal() {
   n_temporal += 1;
   indices['temporal'].push(n_temporal)
   var index = n_temporal;
 
-  var new_div = _temporal_template(index);
-
   var variables_div = document.getElementById('variables');
-  variables_div.appendChild(new_div);
+  _temporal_template(variables_div, {index});
 }
 
-var _geospatial_template = (function() {
-  var tpl = document.getElementById('variable-geospatial-template').innerHTML;
-  return (function(index) {
-    var new_div = document.createElement('div');
-    new_div.innerHTML = tpl.replace(/__index__/g, '' + index);
-    return new_div;
-  });
-})();
+var _geospatial_template = loadTemplate('variable-geospatial-template');
 function add_geospatial() {
   n_geospatial += 1;
   indices['geospatial'].push(n_geospatial);
   var index = n_geospatial;
 
   var variables_div = document.getElementById('variables');
-  variables_div.appendChild(_geospatial_template(index));
+  _geospatial_template(variables_div, {index});
 
   var raster = new ol.layer.Tile({
     source: new ol.source.OSM()
@@ -236,36 +220,35 @@ function toggleAugmentation(id) {
   }
 }
 
-function getAugmentationInfoHTML(left_columns_names, right_metadata, right_columns, score, result_id, type_) {
+var _augmentation_column_template = loadTemplate('augmentation-column-template');
+var _augmentation_template = loadTemplate('augmentation-template');
+function getAugmentationInfoHTML(left_columns_names, right_metadata, right_columns, score, result_id, type) {
   var columns_info = '';
   for(var j = 0; j < left_columns_names.length; j++) {
     var left_column = left_columns_names[j].join(", ");
     var right_column = right_columns[j]
       .map(function(i) { return right_metadata.columns[i].name; })
       .join(", ");
-    columns_info += (
-      '<a href="javascript: changePairStatus(\'' + type_ + '\',' + result_id + ',' + j + ');" class="list-group-item list-group-item-action" ' +
-      '  id="pair-' + type_ + '-' + result_id + '-' + j + '">' +
-      '  <small><em>' + left_column + '</em> and <em>' + right_column + '</em></small>' +
-      '</a>'
+    columns_info += _augmentation_column_template(
+      null,
+      {
+        type,
+        id: result_id,
+        left_column,
+        right_column,
+        j,
+      },
     );
   }
 
-  info = (
-    '    <hr>' +
-    '    <div class="d-flex justify-content-between align-items-center">' +
-    '      <p class="mb-0">Augmentation Information</p>' +
-    '      <button type="button" class="btn btn-outline-secondary" onclick="javascript: toggleAugmentation(' + result_id + ')" id="arrow-aug-' + result_id + '">&#x25BC;</button>' +
-    '    </div>' +
-    '    <div id="aug-info-' + result_id + '" style="display:none;">' +
-    '      <p class="card-text"><small>Type: <em>' + type_.charAt(0).toUpperCase() + type_.substr(1) + '</em></small></p>' +
-    '      <div class="list-group text-muted">' +
-    '        <a class="list-group-item"><small>Score: ' + score + '</small></a>' + columns_info +
-    '      </div>' +
-    //'      <div class="btn-group mt-3">' +
-    //'        <a href="javascript: submitAugmentationForm('+ result_id + ')" class="btn btn-sm btn-outline-secondary">Augment</a>' +
-    //'      </div>' +
-    '    </div>'
+  info = _augmentation_template(
+    null,
+    {
+      type,
+      id: result_id,
+      score,
+      columns_info,
+    },
   );
 
   return info;
@@ -290,6 +273,7 @@ function readFile(files, callback) {
   }
 }
 
+var _search_result_template = loadTemplate('search-result-template');
 document.getElementById('search-form').addEventListener('submit', function(e) {
   e.preventDefault();
 
@@ -394,7 +378,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     document.getElementById('processing').style.display = 'block';
 
     console.log("Searching:", search);
-    postSearchForm(QUERY_HOST + '/search', search)
+    postSearchForm(QUERY_HOST + '/search?_parse_sample=1', search)
     .then(function(result) {
       console.log("Got " + result.results.length + " results");
       console.log("Results:", result.results);
@@ -412,9 +396,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
         results_div.appendChild(div_title);
       }
       for(var i = 0; i < search_results.length; ++i) {
-        var elem = document.createElement('div');
         var data = search_results[i];
-        elem.className = 'col-md-4';
         description = data.metadata.description;
         if(description) {
           description = description
@@ -448,23 +430,55 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
           badges += ' <span class="badge badge-secondary badge-pill">temporal</span>';
         }
 
-        elem.innerHTML = (
-          '<div class="card mb-4 shadow-sm">' +
-          '  <div class="card-body">' +
-          '    <p class="card-text">' + (data.metadata.name || data.id) + '</p>' +
-          '    <p class="card-text mb-0">' + description + '</p>' +
-          '    <div class="mb-2">' + badges + '</div>' +
-          '    <div class="d-flex justify-content-between align-items-center mb-3">' +
-          '      <div class="btn-group">' +
-          '        <a href="/dataset/' + data.id + '" class="btn btn-sm btn-outline-secondary">View</a>' +
-          '        <a href="' + QUERY_HOST + '/download/' + data.id + '" class="btn btn-sm btn-outline-secondary">Download</a>' +
-          '      </div>' +
-          '      <small class="text-muted">' + (data.metadata.size?formatSize(data.metadata.size):'unknown size') + '</small>' +
-          '    </div>' + aug_info +
-          '  </div>' +
-          '</div>'
+        var table = '<thead><tr>';
+        for(var j = 0; j < data.metadata.columns.length; ++j) {
+          table += '<th>' + data.metadata.columns[j].name + '</th>';
+        }
+        table += '</tr><tr>';
+        for(var j = 0; j < data.metadata.columns.length; ++j) {
+          table += '<th>';
+          var st_type = data.metadata.columns[j].structural_type;
+          var pos = st_type.lastIndexOf('/');
+          if(pos != -1) {
+            st_type = st_type.substring(pos + 1);
+          }
+          table += '<span class="badge badge-primary badge-pill">' + st_type + '</span>\n';
+          var sem_types = data.metadata.columns[j].semantic_types;
+          for(var k = 0; k < sem_types.length; ++k) {
+            var sem_type = sem_types[k];
+            var pos = sem_type.lastIndexOf('/');
+            if(pos != -1) {
+              sem_type = sem_type.substring(pos + 1);
+            }
+            table += '<span class="badge badge-pill semtype semtype-' + sem_type.toLowerCase() + '">' + sem_type + '</span>\n';
+          }
+          table += '</th>';
+        }
+        table += '</tr></thead><tbody>';
+        if(data.sample) {
+          // skip first line, it's the header
+          for(var j = 1; j < Math.min(4, data.sample.length); ++j) {
+            table += '<tr>';
+            for(var k = 0; k < data.sample[j].length; ++k) {
+              table += '<td>' + data.sample[j][k] + '</td>';
+            }
+            table += '</tr>';
+          }
+        }
+        table += '</tbody>';
+
+        _search_result_template(
+          results_div,
+          {
+            name: data.metadata.name || data.id,
+            description,
+            badges,
+            id: data.id,
+            size: data.metadata.size ? formatSize(data.metadata.size) : 'unknown size',
+            table,
+            aug_info,
+          },
         );
-        results_div.appendChild(elem);
       }
       if(search_results.length == 0) {
         document.getElementById('search-error').style.display = '';

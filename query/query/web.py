@@ -1,7 +1,9 @@
 import aio_pika
 import asyncio
 import contextlib
+import csv
 import elasticsearch
+import io
 import lazo_index_service
 import logging
 import json
@@ -256,6 +258,14 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 SCORE_THRESHOLD
             )
         results = [enhance_metadata(result) for result in results]
+
+        # Private API for the frontend, don't want clients to rely on it
+        if self.get_query_argument('_parse_sample', ''):
+            for result in results:
+                sample = result['metadata'].get('sample', None)
+                if sample:
+                    result['sample'] = list(csv.reader(io.StringIO(sample)))
+
         return self.send_json(results)
 
 

@@ -6,6 +6,41 @@
 
 <p><a href="{{ query_host }}/download/{{ dataset_id }}">Download: CSV</a>, <a href="{{ query_host }}/download/{{ dataset_id }}?format=d3m">D3M</a> ({{ size }})</p>
 
+<div style="overflow: auto; max-height: 40rem;"><table class="table table-bordered table-hover">
+  <thead>
+    <tr>
+      {% for column in metadata.columns %}
+      <th>{{ column.name }}</th>
+      {% endfor %}
+    </tr>
+    <tr>
+      {% macro semantic_type(type) %}
+        {% set short_type = type.rsplit('/', 1)[-1] %}
+        <span class="badge badge-pill semtype semtype-{{ short_type |lower }}">{{ short_type }}</span>
+      {% endmacro %}
+      {% for column in metadata.columns %}
+      <th>
+        <span class="badge badge-primary badge-pill">{{ column.structural_type.rsplit('/', 1)[-1] }}</span>
+        {% for type in column.semantic_types %}{{ semantic_type(type) }}{% endfor %}
+      </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% if sample %}
+      {% for row in sample[1:] %}
+        <tr>
+        {% for cell in row %}
+          <td>{{ cell }}</td>
+        {% endfor %}
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="{{ metadata.columns |length }}">No sample available for this dataset.</td></tr>
+    {% endif %}
+  </tbody>
+</table></div>
+
 {% macro meta_table(m) -%}
   <table class="table table-bordered">
     <tbody>
@@ -24,45 +59,18 @@
   </table>
 {%- endmacro %}
 
-<h2 id="metadata">Metadata</h2>
-<p>This is the metadata that was recorded during profiling.</p>
-{{ meta_table(metadata) }}
-
 <div id="spatial_coverage" style="display: none;">
 <h2 id="spatial">Spatial Coverage Info</h2>
 <p>This is the approximate spatial coverage of the data.</p>
 </div>
 
+<h2 id="metadata">Metadata</h2>
+<p>This is the metadata that was recorded during profiling.</p>
+{{ meta_table(metadata) }}
+
 <h2 id="materialize">Materialization Info</h2>
 <p>This was recorded by the discovery plugin <span style="font-family: monospace;">{{ discoverer }}</span></p>
 {{ meta_table(materialize) }}
-
-<h2 id="sample">Sample</h2>
-{% if sample %}
-<div style="overflow: auto; max-height: 40rem;"><table class="table table-bordered table-hover">
-  {% for row in sample %}
-    {% if loop.first %}
-  <thead>
-    <tr>
-      {% for cell in row %}
-      <th>{{ cell }}</th>
-      {% endfor %}
-    </tr>
-  </thead>
-  <tbody>
-    {% else %}
-      <tr>
-      {% for cell in row %}
-        <td>{{ cell }}</td>
-      {% endfor %}
-      </tr>
-    {% endif %}
-  {% endfor %}
-  </tbody>
-</table></div>
-{% else %}
-<p>No sample available for this dataset.</p>
-{% endif %}
 
 <script type="text/javascript">
 var spatial_coverage = '{{ spatial_coverage | tojson }}';

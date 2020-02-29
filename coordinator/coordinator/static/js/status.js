@@ -1,16 +1,3 @@
-if(!Object.entries) {
-  Object.entries = function(obj) {
-    var ownProps = Object.keys(obj),
-      i = ownProps.length,
-      resArray = new Array(i); // preallocate the Array
-    while(i--) {
-      resArray[i] = [ownProps[i], obj[ownProps[i]]];
-    }
-
-    return resArray;
-  };
-}
-
 function getCookie(name) {
   var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
   return r ? r[1] : undefined;
@@ -37,7 +24,7 @@ function getJSON(url='', args) {
 }
 
 function loadStatus() {
-  getJSON('/status')
+  getJSON('/api/status')
   .then(function(result) {
     var recent_discoveries = document.getElementById('recent_discoveries');
     recent_discoveries.innerHTML = '';
@@ -106,4 +93,4 @@ function loadStatus() {
 }
 
 loadStatus();
-setInterval(loadStatus, 2000);
+setInterval(loadStatus, 20000);
