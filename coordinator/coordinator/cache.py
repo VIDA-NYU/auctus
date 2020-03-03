@@ -26,10 +26,6 @@ PROM_CACHE_AUGMENTATIONS_BYTES = prometheus_client.Gauge(
     'cache_augmentations_bytes',
     "Total size of augmentation results in cache",
 )
-PROM_CACHE_PROFILES = prometheus_client.Gauge(
-    'cache_profiles_count',
-    "Number of data profiles in cache",
-)
 
 
 CACHE_HIGH = os.environ.get('MAX_CACHE_BYTES')
@@ -113,12 +109,6 @@ def check_cache():
         PROM_CACHE_AUGMENTATIONS_BYTES.set(augmentations_bytes)
         logger.info("%d augmentations in cache, %d bytes",
                     augmentations, augmentations_bytes)
-
-        # Count profiles in cache
-        PROM_CACHE_PROFILES.set(sum(
-            1 for name in os.listdir('/cache/queries')
-            if name.endswith('.cache')
-        ))
 
         # Remove from caches if max is reached
         if datasets_bytes + augmentations_bytes > CACHE_HIGH:

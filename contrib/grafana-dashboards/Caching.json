@@ -245,14 +245,6 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "Profiles",
-          "dashes": true,
-          "spaceLength": 4,
-          "yaxis": 2
-        }
-      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
@@ -270,13 +262,6 @@
           "intervalFactor": 1,
           "legendFormat": "Augmentations",
           "refId": "B"
-        },
-        {
-          "expr": "cache_profiles_count",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Profiles",
-          "refId": "C"
         }
       ],
       "thresholds": [],

@@ -42,8 +42,6 @@ PROM_CACHE_HITS.labels('/cache/datasets').inc(0)
 PROM_CACHE_MISSES.labels('/cache/datasets').inc(0)
 PROM_CACHE_HITS.labels('/cache/aug').inc(0)
 PROM_CACHE_MISSES.labels('/cache/aug').inc(0)
-PROM_CACHE_HITS.labels('/cache/queries').inc(0)
-PROM_CACHE_MISSES.labels('/cache/queries').inc(0)
 
 
 @contextlib.contextmanager
