@@ -13,5 +13,5 @@ else
     echo "DOCKER_HOST is set" >&2
 fi
 
-DOCKER_HOST= sudo -g docker docker save busybox docker.elastic.co/elasticsearch/elasticsearch:7.3.1 remram/rabbitmq:3.7.8 datamart_coordinator datamart_query datamart_profiler datamart_test_discoverer \
+DOCKER_HOST= sudo -g docker docker save busybox docker.elastic.co/elasticsearch/elasticsearch:7.6.0 remram/rabbitmq:3.7.8 datamart_coordinator datamart_query datamart_profiler datamart_test_discoverer \
     | docker load

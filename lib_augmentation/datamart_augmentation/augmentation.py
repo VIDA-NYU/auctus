@@ -159,17 +159,17 @@ def perform_aggregations(data, original_columns):
         if column == UNIQUE_INDEX_KEY or column in original_columns_set:
             # Just pick the first value
             # (they are all the same, from a single row in the original data)
-            agg_functions[column] = [first]
+            agg_functions[column] = [pd.NamedAgg('first', first)]
         else:
             if ('int' in str(data.dtypes[column]) or
                     'float' in str(data.dtypes[column])):
-                agg_functions[column] = collections.OrderedDict([
-                    ('mean', np.mean), ('sum', np.sum),
-                    ('max', np.max), ('min', np.min),
-                ])
+                agg_functions[column] = [
+                    pd.NamedAgg('mean', np.mean), pd.NamedAgg('sum', np.sum),
+                    pd.NamedAgg('max', np.max), pd.NamedAgg('min', np.min),
+                ]
             else:
                 # Just pick the first value
-                agg_functions[column] = [first]
+                agg_functions[column] = [pd.NamedAgg('first', first)]
 
     # Perform group-by
     data = data.groupby(by=[UNIQUE_INDEX_KEY]).agg(agg_functions)
