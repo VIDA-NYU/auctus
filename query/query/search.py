@@ -5,6 +5,7 @@ import hashlib
 import io
 import logging
 import pickle
+import redis
 import time
 import tornado.web
 
@@ -1219,25 +1220,24 @@ class ProfilePostedData(tornado.web.RequestHandler):
         sha1 = hashlib.sha1(data)
         data_hash = sha1.hexdigest()
 
-        data_profile = [None]
+        data_profile = self.application.redis.get('profile_' + data_hash)
 
-        def create(cache_temp):
+        if data_profile is not None:
+            logger.info("Found cached profile_data")
+            data_profile = pickle.loads(data_profile)
+        else:
             logger.info("Profiling...")
             start = time.perf_counter()
-            data_profile[0] = process_dataset(
+            data_profile = process_dataset(
                 data=io.BytesIO(data),
                 lazo_client=self.application.lazo_client,
                 search=True,
             )
             logger.info("Profiled in %.2fs", time.perf_counter() - start)
-            with open(cache_temp, 'wb') as fp:
-                pickle.dump(data_profile[0], fp)
 
-        with cache_get_or_set('/cache/queries', data_hash, create) as cache_path:
-            if data_profile[0]:
-                # We just profiled it, no need to re-read from disk
-                return data_profile[0], data_hash
-            else:
-                logger.info("Found cached profile_data")
-                with open(cache_path, 'rb') as fp:
-                    return pickle.load(fp), data_hash
+            self.application.redis.set(
+                'profile_' + data_hash,
+                pickle.dumps(data_profile),
+            )
+
+        return data_profile, data_hash
