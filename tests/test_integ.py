@@ -1800,7 +1800,8 @@ agg_metadata = {
             "name": "work",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
-                "http://schema.org/Boolean"
+                "http://schema.org/Boolean",
+                'http://schema.org/Enumeration',
             ],
             "unclean_values_ratio": 0.0,
             "num_distinct_values": 2
