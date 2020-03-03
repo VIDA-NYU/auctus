@@ -93,7 +93,7 @@ def get_numerical_ranges(values):
     This performs K-Means clustering, returning a maximum of 3 ranges.
     """
 
-    if not values:
+    if not len(values):
         return []
 
     logger.info("Computing numerical ranges, %d values", len(values))
@@ -124,7 +124,7 @@ def get_numerical_ranges(values):
     logger.info("Sizes: %r", sizes)
 
     # Convert to Elasticsearch syntax
-    ranges = [{'range': {'gte': rg[0], 'lte': rg[1]}}
+    ranges = [{'range': {'gte': float(rg[0]), 'lte': float(rg[1])}}
               for rg in ranges]
     return ranges
 
@@ -409,18 +409,14 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     len(semantic_types_dict[types.DATE_TIME]),
                     dtype='float32',
                 )
-                timestamps_for_range = []
                 for j, dt in enumerate(
                         semantic_types_dict[types.DATE_TIME]):
                     timestamps[j] = dt.timestamp()
-                    timestamps_for_range.append(
-                        dt.replace(minute=0, second=0).timestamp()
-                    )
                 column_meta['mean'], column_meta['stddev'] = \
                     mean_stddev(timestamps)
 
                 # Get temporal ranges
-                ranges = get_numerical_ranges(timestamps_for_range)
+                ranges = get_numerical_ranges(timestamps)
                 if ranges:
                     column_meta['coverage'] = ranges
 
