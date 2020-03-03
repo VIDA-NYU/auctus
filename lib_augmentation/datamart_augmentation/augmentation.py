@@ -7,6 +7,8 @@ import logging
 import numpy as np
 import os
 import pandas as pd
+import random
+import string
 import tempfile
 import time
 import uuid
@@ -23,12 +25,10 @@ class AugmentationError(ValueError):
     """
 
 
-class _UniqueIndexKey(object):
-    def __repr__(self):
-        return "UNIQUE_INDEX_KEY"
-
-
-UNIQUE_INDEX_KEY = _UniqueIndexKey()
+UNIQUE_INDEX_KEY = (
+    '_datamart_index_key_' +
+    ''.join(random.choices(string.ascii_letters, k=6))
+)
 
 
 temporal_resolutions = [
