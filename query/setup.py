@@ -9,6 +9,7 @@ req = [
     'aio-pika',
     'Distance',
     'elasticsearch~=7.0',
+    'redis~=3.4',
     'lazo-index-service==0.4',
     'prometheus_client',
     'prometheus-async',

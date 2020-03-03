@@ -215,6 +215,8 @@ spec:
             secretKeyRef:
               name: secrets
               key: amqp.password
+        - name: REDIS_HOST
+          value: redis
         - name: LAZO_SERVER_HOST
           value: lazo
         - name: LAZO_SERVER_PORT
