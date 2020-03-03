@@ -1,16 +1,11 @@
-function getCookie(name) {
-  var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
-  return r ? r[1] : undefined;
-}
-
 function getJSON(url='', args) {
   if(args) {
-    args = '&' + encodeGetParams(args);
+    args = '?' + encodeGetParams(args);
   } else {
     args = '';
   }
   return fetch(
-    url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')) + args,
+    url + args,
     {
       credentials: 'same-origin',
       mode: 'cors'

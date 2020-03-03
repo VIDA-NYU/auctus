@@ -1,8 +1,3 @@
-function getCookie(name) {
-  var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
-  return r ? r[1] : undefined;
-}
-
 function postSearchForm(url='', data={}) {
   var formData = new FormData();
   if(data.data) {
@@ -10,7 +5,7 @@ function postSearchForm(url='', data={}) {
   }
   formData.append('query', JSON.stringify(data.query));
   return fetch(
-    url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')),
+    url,
     {
       mode: 'cors',
       cache: 'no-cache',
@@ -30,7 +25,7 @@ function postAugmentForm(url='', data={}) {
   formData.append('data', data.data);
   formData.append('task', JSON.stringify(data.task));
   return fetch(
-    url + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')),
+    url,
     {
       mode: 'cors',
       cache: 'no-cache',
