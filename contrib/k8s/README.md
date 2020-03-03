@@ -2,7 +2,7 @@
 
 Start minikube:
 ```
-minikube start --memory 4096
+minikube start --memory 4096 --kubernetes-version=v1.14.10
 ```
 
 Set up volumes:
@@ -22,13 +22,13 @@ kubectl apply -f config.yml
 
 Set up the secrets: (you might want to change the password?)
 ```
-kubectl apply -f secrets
+kubectl apply -f secrets.yml
 ```
 
 Build images locally and load them up in minikube:
 ```
-(cd .. && docker-compose build && docker-compose pull)
-../scripts/minikube-load-images.sh
+(cd ../.. && docker-compose build --build-arg version=$(git describe) && docker-compose pull)
+../../scripts/minikube-load-images.sh
 ```
 
 Set up Elasticsearch:
