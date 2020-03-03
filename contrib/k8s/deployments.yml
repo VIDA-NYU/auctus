@@ -37,6 +37,40 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
+  name: redis
+  labels:
+    app: datamart
+    what: redis
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:5.0
+        args: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/etc/redis
+      volumes:
+      - name: config
+        configMap:
+          name: config
+          items:
+          - key: redis.conf
+            path: redis.conf
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
   name: lazo
   labels:
     app: datamart
