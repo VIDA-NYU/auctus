@@ -43,11 +43,15 @@ class ObjectStore(object):
     def open(self, bucket, name, mode='rb'):
         full_name = '%s/%s' % (self.bucket(bucket), name)
         if 'w' in mode:
+            logger.info("Opening for writing: %s", full_name)
             # Manually commit if __exit__ without error
             fp = self.fs.open(full_name, mode, autocommit=False)
             return _commit_discard_context(fp, full_name)
         else:
-            return BufferedReader(self.fs.open(full_name, mode), 10240000)
+            logger.info("Opening for reading: %s", full_name)
+            fp = BufferedReader(self.fs.open(full_name, mode), 10240000)
+            logger.info("Opened for reading: %s", full_name)
+            return fp
 
     def delete(self, bucket, name):
         self.fs.rm(
@@ -128,15 +132,16 @@ class _ObjecStoreFileWrapper(object):
 def _commit_discard_context(fp, filename):
     try:
         with fp:
-            logger.info("opened file %s", filename)
+            logger.info("Opened for writing: %s", filename)
             yield _ObjecStoreFileWrapper(fp)
     except:
-        logger.info("exception, discarding file %s", filename)
+        logger.info("Exception, discarding file %s", filename)
         fp.discard()
         raise
     else:
-        logger.info("committing file %s", filename)
+        logger.info("Committing file %s", filename)
         fp.commit()
+        logger.info("Committed file %s", filename)
 
 
 class GCSObjectStore(ObjectStore):
