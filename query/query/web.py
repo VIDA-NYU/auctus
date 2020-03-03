@@ -9,6 +9,7 @@ import logging
 import json
 import os
 import prometheus_client
+import redis
 import shutil
 import tornado.ioloop
 from tornado.routing import URLSpec
@@ -618,12 +619,13 @@ class Health(BaseHandler):
 
 
 class Application(GracefulApplication):
-    def __init__(self, *args, es, lazo, **kwargs):
+    def __init__(self, *args, es, redis_client, lazo, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
         self.is_closing = False
 
         self.elasticsearch = es
+        self.redis = redis_client
         self.lazo_client = lazo
         self.channel = None
 
@@ -648,6 +650,7 @@ def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
+    redis_client = redis.Redis(host=os.environ['REDIS_HOST'])
     lazo_client = lazo_index_service.LazoIndexClient(
         host=os.environ['LAZO_SERVER_HOST'],
         port=int(os.environ['LAZO_SERVER_PORT'])
@@ -667,6 +670,7 @@ def make_app(debug=False):
         debug=debug,
         serve_traceback=True,
         es=es,
+        redis_client=redis_client,
         lazo=lazo_client
     )
 
