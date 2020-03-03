@@ -25,7 +25,7 @@ import datamart_profiler
 
 from .enhance_metadata import enhance_metadata
 from .graceful_shutdown import GracefulApplication, GracefulHandler
-from .search import ClientError, parse_query, \
+from .search import TOP_K_SIZE, ClientError, parse_query, \
     get_augmentation_search_results, ProfilePostedData
 
 
@@ -225,7 +225,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                         },
                     },
                 },
-                size=1000
+                size=TOP_K_SIZE,
             )['hits']['hits']
 
             results = []
