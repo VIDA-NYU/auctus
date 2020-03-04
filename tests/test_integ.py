@@ -124,7 +124,7 @@ class TestProfileQuery(DatamartTest):
             )
         metadata = {k: v for k, v in basic_metadata.items()
                     if k not in {'name', 'description', 'source',
-                                 'date', 'materialize'}}
+                                 'date', 'materialize', 'sample'}}
         metadata = dict(
             metadata,
             lazo=lambda lazo: (

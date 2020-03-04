@@ -47,6 +47,7 @@ def materialize_and_process_dataset(dataset_id, metadata, lazo_client):
             dataset_id=dataset_id,
             metadata=metadata,
             lazo_client=lazo_client,
+            include_sample=True,
             coverage=True,
         )
         logger.info("Profiling took %.2fs", time.perf_counter() - start)

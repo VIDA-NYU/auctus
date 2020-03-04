@@ -238,7 +238,7 @@ def truncate_string(s, limit=140):
 
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
-                    lazo_client=None, search=False,
+                    lazo_client=None, search=False, include_sample=False,
                     coverage=True, load_max_size=None, **kwargs):
     """Compute all metafeatures from a dataset.
 
@@ -249,6 +249,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
     :param lazo_client: client for the Lazo Index Server
     :param search: True if this method is being called during the search
         operation (and not for indexing).
+    :param include_sample: Set to True to include a few random rows to the
+        result. Useful to present to a user.
     :param coverage: Whether to compute data ranges (using k-means)
     :param load_max_size: Target size of the data to be analyzed. The data will
         be randomly sampled if it is bigger. Defaults to `MAX_SIZE`, currently
@@ -515,16 +517,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
             metadata['spatial_coverage'] = spatial_coverage
 
     # Sample data
-    rand = numpy.random.RandomState(RANDOM_SEED)
-    choose_rows = rand.choice(
-        len(data),
-        min(SAMPLE_ROWS, len(data)),
-        replace=False,
-    )
-    choose_rows.sort()  # Keep it in order
-    sample = data.iloc[choose_rows]
-    sample = sample.applymap(truncate_string)  # Truncate long values
-    metadata['sample'] = sample.to_csv(index=False)
+    if include_sample:
+        rand = numpy.random.RandomState(RANDOM_SEED)
+        choose_rows = rand.choice(
+            len(data),
+            min(SAMPLE_ROWS, len(data)),
+            replace=False,
+        )
+        choose_rows.sort()  # Keep it in order
+        sample = data.iloc[choose_rows]
+        sample = sample.applymap(truncate_string)  # Truncate long values
+        metadata['sample'] = sample.to_csv(index=False)
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
