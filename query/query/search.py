@@ -1232,6 +1232,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 data=io.BytesIO(data),
                 lazo_client=self.application.lazo_client,
                 search=True,
+                coverage=True,
             )
             logger.info("Profiled in %.2fs", time.perf_counter() - start)
 

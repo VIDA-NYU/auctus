@@ -6,6 +6,7 @@ import os
 import pandas
 import random
 from sklearn.cluster import KMeans
+import warnings
 
 from .profile_types import identify_types
 from . import types
@@ -238,7 +239,7 @@ def truncate_string(s, limit=140):
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client=None, search=False,
-                    coverage=True, sample_size=None):
+                    coverage=True, load_max_size=None, **kwargs):
     """Compute all metafeatures from a dataset.
 
     :param data: path to dataset, or file object, or DataFrame
@@ -249,12 +250,25 @@ def process_dataset(data, dataset_id=None, metadata=None,
     :param search: True if this method is being called during the search
         operation (and not for indexing).
     :param coverage: Whether to compute data ranges (using k-means)
-    :param sample_size: Target sample size. The data will be randomly sampled
-        if it is bigger. Defaults to `MAX_SIZE`, currently 50 MB.
+    :param load_max_size: Target size of the data to be analyzed. The data will
+        be randomly sampled if it is bigger. Defaults to `MAX_SIZE`, currently
+        50 MB. This is different from the sample data included in the result.
     :returns: JSON structure (dict)
     """
-    if not sample_size:
-        sample_size = MAX_SIZE
+    if 'sample_size' in kwargs:
+        warnings.warn(
+            "Argument 'sample_size' is deprecated, use 'load_max_size'",
+            DeprecationWarning,
+        )
+        load_max_size = kwargs.pop('sample_size')
+    if kwargs:
+        raise TypeError(
+            "process_dataset() got unexpected keyword argument %r" %
+            next(iter(kwargs))
+        )
+
+    if not load_max_size:
+        load_max_size = MAX_SIZE
 
     if metadata is None:
         metadata = {}
@@ -287,12 +301,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                                 "a pandas.DataFrame")
 
             # Sub-sample
-            if metadata['size'] > sample_size:
+            if metadata['size'] > load_max_size:
                 logger.info("Counting rows...")
                 metadata['nb_rows'] = sum(1 for _ in data)
                 data.seek(0, 0)
 
-                ratio = sample_size / metadata['size']
+                ratio = load_max_size / metadata['size']
                 logger.info("Loading dataframe, sample ratio=%r...", ratio)
                 rand = random.Random(RANDOM_SEED)
                 data = pandas.read_csv(
