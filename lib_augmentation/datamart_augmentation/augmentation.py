@@ -135,7 +135,7 @@ def check_temporal_resolution(data):
     if not data.is_all_dates:
         return None
     for res in temporal_resolutions[:-1]:
-        if len(set([eval('x.%s' % res) for x in data[data.notnull()]])) > 1:
+        if len(set([getattr(x, res) for x in data[data.notnull()]])) > 1:
             return res
     return 'date'
 
