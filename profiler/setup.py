@@ -10,6 +10,7 @@ req = [
     'elasticsearch~=7.0',
     'lazo-index-service==0.4',
     'prometheus_client',
+    'xlrd',
     'datamart_core',
     'datamart_materialize',
     'datamart_profiler[prometheus]',

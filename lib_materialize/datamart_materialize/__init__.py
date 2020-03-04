@@ -139,7 +139,8 @@ class CsvWriter(object):
 
 
 class PandasWriter(object):
-    """Writer for the ``pandas`` format. Buffers a CSV file in memory, and returns a :class:`pandas.DataFrame` object at the end.
+    """Writer for the ``pandas`` format. Buffers a CSV file in memory, and
+    returns a :class:`pandas.DataFrame` object at the end.
     """
     needs_metadata = False
 

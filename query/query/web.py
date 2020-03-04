@@ -334,7 +334,7 @@ class BaseDownload(BaseHandler):
                     )
                 )
             except Exception:
-                self.send_error_json(500, "Materializer reports failure")
+                await self.send_error_json(500, "Materializer reports failure")
                 raise
             with stack:
                 if zipfile.is_zipfile(dataset_path):

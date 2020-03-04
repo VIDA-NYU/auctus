@@ -1,4 +1,3 @@
-import collections
 import copy
 import io
 import itertools
@@ -425,9 +424,9 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
 
     # Sequential d3mIndex if needed, picking up from the last value
     # FIXME: Generated d3mIndex might collide with other splits?
-    d3mIndex = None
+    d3m_index = None
     if 'd3mIndex' in original_data.columns:
-        d3mIndex = int(original_data['d3mIndex'].max() + 1)
+        d3m_index = int(original_data['d3mIndex'].max() + 1)
 
     logger.info("renaming: %r, missing_columns: %r", rename, missing_columns)
 
@@ -452,12 +451,12 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             augment_data = augment_data.rename(columns=rename)
 
             # Add d3mIndex if needed
-            if d3mIndex is not None:
+            if d3m_index is not None:
                 augment_data['d3mIndex'] = np.arange(
-                    d3mIndex,
-                    d3mIndex + len(augment_data),
+                    d3m_index,
+                    d3m_index + len(augment_data),
                 )
-                d3mIndex += len(augment_data)
+                d3m_index += len(augment_data)
 
             # Add empty column for the missing ones
             for name in missing_columns:

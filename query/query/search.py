@@ -5,12 +5,10 @@ import hashlib
 import io
 import logging
 import pickle
-import redis
 import time
 import tornado.web
 
 from datamart_core import types
-from datamart_core.fscache import cache_get_or_set
 from datamart_profiler import process_dataset
 
 
@@ -134,14 +132,14 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
     return column_coverage
 
 
-def get_lazo_sketches(data_profile, column_index_mapping, filter_=[]):
+def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
     """
     Get Lazo sketches of the input dataset, if available.
 
     :param data_profile: Profiled input dataset.
+    :param column_index_mapping: mapping from column name to column index
     :param filter_: list of column indices to return.
        If an empty list, return all the columns.
-    :param: column_index_mapping: mapping from column name to column index
     :return: dict, where key is the column index, and value is a tuple
         (n_permutations, hash_values, cardinality)
     """
@@ -1207,7 +1205,6 @@ class ProfilePostedData(tornado.web.RequestHandler):
         Handles the 'data' parameter.
 
         :param data: the input parameter
-        :param lazo_client: client for the Lazo Index Server
         :return: (data, data_profile)
           data: data as bytes (either the input or loaded from the input)
           data_profile: the profiling (metadata) of the data
