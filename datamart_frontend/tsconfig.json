@@ -1,4 +1,5 @@
 {
+  "extends": "./node_modules/gts/tsconfig-google.json",
   "compilerOptions": {
     "target": "es5",
     "lib": [
@@ -20,6 +21,6 @@
     "jsx": "react"
   },
   "include": [
-    "src"
+    "src/**/*.ts",
   ]
 }
