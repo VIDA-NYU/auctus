@@ -1,5 +1,6 @@
 from base64 import b64decode
 import contextlib
+from io import BufferedReader
 import json
 import logging
 import os
@@ -46,7 +47,7 @@ class ObjectStore(object):
             fp = self.fs.open(full_name, mode, autocommit=False)
             return _commit_discard_context(fp, full_name)
         else:
-            return self.fs.open(full_name, mode)
+            return BufferedReader(self.fs.open(full_name, mode), 10240000)
 
     def delete(self, bucket, name):
         self.fs.rm(
@@ -95,6 +96,8 @@ class ObjectStore(object):
         return self._build_client_url(url)
 
     def file_url(self, fileobj):
+        if isinstance(fileobj, BufferedReader):
+            fileobj = fileobj.raw
         return self._build_client_url(fileobj.url())
 
 
