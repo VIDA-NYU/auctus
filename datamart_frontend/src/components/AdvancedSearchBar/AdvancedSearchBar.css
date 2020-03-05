@@ -1,0 +1,24 @@
+.AdvancedSearchBar {
+  margin-top: 1rem!important;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.AdvancedSearchBar-title {
+  vertical-align: middle;
+  padding: .375rem 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.AdvancedSearchBar-item {
+  margin-left: .25rem;
+  padding-right: 0;
+  color: #707070;
+  font-size: .9rem;
+  cursor: pointer;
+}
+
+.AdvancedSearchBar-item span {
+  padding-left: .25em;
+  padding-right: .25em;
+}
