@@ -102,18 +102,6 @@ spec:
           value: "9200"
         ports:
         - containerPort: 50051
-        volumeMounts:
-        - mountPath: /datasets
-          name: datasets
-        - mountPath: /cache
-          name: cache
-      volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
-      - name: cache
-        persistentVolumeClaim:
-          claimName: cache
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -159,22 +147,8 @@ spec:
             configMapKeyRef:
               name: config
               key: query_host
-        - name: MAX_CACHE_BYTES
-          value: "100000000000"  # 100 GB
         ports:
         - containerPort: 8001
-        volumeMounts:
-        - mountPath: /datasets
-          name: datasets
-        - mountPath: /cache
-          name: cache
-      volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
-      - name: cache
-        persistentVolumeClaim:
-          claimName: cache
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -223,24 +197,12 @@ spec:
           value: "50051"
         ports:
         - containerPort: 8002
-        volumeMounts:
-        - mountPath: /datasets
-          name: datasets
-        - mountPath: /cache
-          name: cache
         readinessProbe:
           httpGet:
             path: /health
             port: 8002
           periodSeconds: 1
           failureThreshold: 2
-      volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
-      - name: cache
-        persistentVolumeClaim:
-          claimName: cache
       terminationGracePeriodSeconds: 600
 ---
 apiVersion: extensions/v1beta1
@@ -286,15 +248,3 @@ spec:
           value: lazo
         - name: LAZO_SERVER_PORT
           value: "50051"
-        volumeMounts:
-        - mountPath: /datasets
-          name: datasets
-        - mountPath: /cache
-          name: cache
-      volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
-      - name: cache
-        persistentVolumeClaim:
-          claimName: cache

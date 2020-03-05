@@ -5,11 +5,6 @@ Start minikube:
 minikube start --memory 4096 --kubernetes-version=v1.14.10
 ```
 
-Set up volumes:
-```
-kubectl apply -f volumes-minikube.yml
-```
-
 Set up services:
 ```
 kubectl apply -f services.yml
