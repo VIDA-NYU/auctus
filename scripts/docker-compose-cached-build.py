@@ -31,6 +31,7 @@ def main():
                 '-t', image,
                 '-f', os.path.join(build['context'], build['dockerfile']),
                 '--cache-from=datamart_base',
+                '--cache-from=datamart_npm',
                 '--build-arg', 'version=%s' % version,
                 build['context'],
             ]
