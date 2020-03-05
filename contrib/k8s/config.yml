@@ -12,3 +12,7 @@ data:
   redis.conf: |
     maxmemory 500mb
     maxmemory-policy allkeys-lru
+  s3.url: http://minio:9000
+  s3.client_url: http://192.168.99.100:30900
+  s3.bucket_prefix: dev-
+  gcs.bucket_prefix: dev-
