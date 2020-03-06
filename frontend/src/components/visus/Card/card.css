@@ -1,0 +1,29 @@
+.card-title {
+  margin-bottom: .75rem;
+  margin-top: -34px;
+  background: white;
+  padding: 3px 10px 3px 10px;
+  width: fit-content;
+  font-size: 1rem;
+  border-radius: 3px;
+  margin-left: -10px;
+}
+
+.card-attributes {
+  display: flex;
+  width: 100%;
+}
+
+.card-attributes .card-attr-field {
+  font-weight: bold;
+  text-align: right;
+  max-width: 130px;
+}
+
+.card-hover {
+  background-color: #FFFFFF;
+}
+
+.card-hover:hover {
+  background-color: #f8f8f8;
+}

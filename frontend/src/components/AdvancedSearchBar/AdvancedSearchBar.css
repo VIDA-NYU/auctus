@@ -1,8 +1,8 @@
 .AdvancedSearchBar {
-  margin-top: 1rem!important;
   max-width: 1000px;
-  margin: 0 auto;
+  margin: 1rem auto 0 auto!important;
 }
+
 .AdvancedSearchBar-title {
   vertical-align: middle;
   padding: .375rem 0;
