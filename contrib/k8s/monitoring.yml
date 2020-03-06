@@ -176,11 +176,9 @@ spec:
   selector:
     app: datamart
     what: prometheus
-  type: NodePort
   ports:
   - protocol: TCP
     port: 9090
-    nodePort: 30090
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
