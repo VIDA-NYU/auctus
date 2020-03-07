@@ -35,7 +35,7 @@ COPY --from=frontend-build /src/build /usr/src/app/coordinator/coordinator/front
 RUN mv coordinator/coordinator/frontend/static/css/* coordinator/coordinator/static/css/ && \
     mv coordinator/coordinator/frontend/static/js/* coordinator/coordinator/static/js/ && \
     rm -rf coordinator/coordinator/frontend/static && \
-    mv coordinator/coordinator/frontend/index.html coordinator/coordinator/templates/ && \
+    mv coordinator/coordinator/frontend/index.html coordinator/coordinator/templates/search.html && \
     mv coordinator/coordinator/frontend/* coordinator/coordinator/static/ && \
     rmdir coordinator/coordinator/frontend
 ARG version
