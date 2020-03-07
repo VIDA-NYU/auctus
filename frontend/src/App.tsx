@@ -5,6 +5,8 @@ import { SearchBar } from './components/SearchBar/SearchBar';
 import { AdvancedSearchBar } from './components/AdvancedSearchBar/AdvancedSearchBar';
 import { DateFilter } from './components/DateFilter/DateFilter';
 import { RelatedFileFilter } from './components/RelatedFileFilter/RelatedFileFilter';
+import { GeoSpatialFilter } from './components/GeoSpatialFilter/GeoSpatialFilter';
+
 
 class FilterContainer extends React.PureComponent<{ title: string, onClose: () => void }> {
   render() {
@@ -41,6 +43,11 @@ function App() {
     (
       <FilterContainer key="dataset-filter" title="Related Dataset Filter" onClose={() => { }}>
         <RelatedFileFilter />
+      </FilterContainer>
+    ),
+    (
+      <FilterContainer key="spatial-filter" title="Geo-Spatial Filter" onClose={() => { }}>
+        <GeoSpatialFilter />
       </FilterContainer>
     ),
   ]
