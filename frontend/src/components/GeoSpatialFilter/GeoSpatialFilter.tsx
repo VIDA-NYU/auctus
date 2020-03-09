@@ -139,21 +139,26 @@ class GeoSpatialFilter extends React.Component<{}, GeoSpatialFilterState> {
     };
     return (
       <div>
-        <div id={this.mapId} style={style} />
-        <div>
-          {this.state && this.state.selectedCoordinates && (
-            <>
-              <span>
-                Top Left:{' '}
-                <code>{this.state.selectedCoordinates.topLeftText}</code>
-              </span>
-              <span className="ml-3">
-                Bottom Right:{' '}
-                <code>{this.state.selectedCoordinates.topRightText}</code>
-              </span>
-            </>
-          )}
+        <div className="d-block" style={{ fontSize: '.9rem' }}>
+          <span className="d-inline">
+            Left-click to start selection. Right-click to clear selection.
+          </span>
+          <div className="d-inline" style={{ float: 'right' }}>
+            {this.state.selectedCoordinates && (
+              <>
+                <span>
+                  Top Left:{' '}
+                  <code>{this.state.selectedCoordinates.topLeftText}</code>
+                </span>
+                <span className="ml-3">
+                  Bottom Right:{' '}
+                  <code>{this.state.selectedCoordinates.topRightText}</code>
+                </span>
+              </>
+            )}
+          </div>
         </div>
+        <div id={this.mapId} style={style} />
       </div>
     );
   }
