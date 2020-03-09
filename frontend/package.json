@@ -54,7 +54,14 @@
   "devDependencies": {
     "@types/node": "^10.0.3",
     "@types/react-datepicker": "^2.11.0",
+    "canvas": "^2.6.1",
+    "jest-canvas-mock": "^2.2.0",
     "gts": "^1.1.2",
     "typescript": "~3.7.0"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "/node_modules/(?!ol).+\\.js$"
+    ]
   }
 }

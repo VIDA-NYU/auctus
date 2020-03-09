@@ -1,5 +1,5 @@
 import React from 'react';
-import * as ol from 'ol';
+import { Map, View } from 'ol/';
 import { toStringHDMS } from 'ol/coordinate';
 import { Draw } from 'ol/interaction';
 import { createBox } from 'ol/interaction/Draw';
@@ -60,7 +60,7 @@ class GeoSpatialFilter extends React.Component<{}, GeoSpatialFilterState> {
 
     source.on('addfeature', evt => this.onSelectCoordinates(evt));
 
-    const map = new ol.Map({
+    const map = new Map({
       target: this.mapId,
       layers: [openStreetMapTileLayer, vectorLayer],
       // Add in the following map controls
@@ -70,7 +70,7 @@ class GeoSpatialFilter extends React.Component<{}, GeoSpatialFilterState> {
         new ScaleLine(),
         new OverviewMap(),
       ]),
-      view: new ol.View({
+      view: new View({
         projection: 'EPSG:3857',
         center: fromLonLat([-73.986579, 40.6942036], 'EPSG:3857'), // Tandon
         zoom: 12,
@@ -111,7 +111,7 @@ class GeoSpatialFilter extends React.Component<{}, GeoSpatialFilterState> {
     this.setState({ selectedCoordinates: { topLeftText, topRightText } });
   }
 
-  addInteractions(map: ol.Map, mapSource: VectorSource) {
+  addInteractions(map: Map, mapSource: VectorSource) {
     mapSource.clear();
     const draw = new Draw({
       source: mapSource,
