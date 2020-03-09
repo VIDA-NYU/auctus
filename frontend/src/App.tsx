@@ -7,8 +7,10 @@ import { DateFilter } from './components/DateFilter/DateFilter';
 import { RelatedFileFilter } from './components/RelatedFileFilter/RelatedFileFilter';
 import { GeoSpatialFilter } from './components/GeoSpatialFilter/GeoSpatialFilter';
 
-
-class FilterContainer extends React.PureComponent<{ title: string, onClose: () => void }> {
+class FilterContainer extends React.PureComponent<{
+  title: string;
+  onClose: () => void;
+}> {
   render() {
     return (
       <div style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
@@ -22,9 +24,9 @@ class FilterContainer extends React.PureComponent<{ title: string, onClose: () =
             <Icon.X className="feather feather-lg" />
           </span>
         </div>
-        <div className="d-block" >
+        <div className="d-block">
           {/* <div className="d-inline"> */}
-            {this.props.children}
+          {this.props.children}
           {/* </div> */}
         </div>
       </div>
@@ -33,24 +35,29 @@ class FilterContainer extends React.PureComponent<{ title: string, onClose: () =
 }
 
 function App() {
-
   const filters = [
-    (
-      <FilterContainer key="temporal-filter" title="Temporal Filter" onClose={() => { }}>
-        <DateFilter />
-      </FilterContainer>
-    ),
-    (
-      <FilterContainer key="dataset-filter" title="Related Dataset Filter" onClose={() => { }}>
-        <RelatedFileFilter />
-      </FilterContainer>
-    ),
-    (
-      <FilterContainer key="spatial-filter" title="Geo-Spatial Filter" onClose={() => { }}>
-        <GeoSpatialFilter />
-      </FilterContainer>
-    ),
-  ]
+    <FilterContainer
+      key="temporal-filter"
+      title="Temporal Filter"
+      onClose={() => {}}
+    >
+      <DateFilter />
+    </FilterContainer>,
+    <FilterContainer
+      key="dataset-filter"
+      title="Related Dataset Filter"
+      onClose={() => {}}
+    >
+      <RelatedFileFilter />
+    </FilterContainer>,
+    <FilterContainer
+      key="spatial-filter"
+      title="Geo-Spatial Filter"
+      onClose={() => {}}
+    >
+      <GeoSpatialFilter />
+    </FilterContainer>,
+  ];
 
   return (
     <div className="App">
