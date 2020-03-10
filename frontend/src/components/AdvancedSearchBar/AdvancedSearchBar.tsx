@@ -4,7 +4,7 @@ import * as Icon from 'react-feather';
 
 export enum FilterType {
   TEMPORAL,
-  GEOSPACIAL,
+  GEO_SPATIAL,
   RELATED_FILE,
   SOURCE,
 }
@@ -30,7 +30,7 @@ class AdvancedSearchBar extends React.PureComponent<AdvancedSearchBarProps> {
         </div>
         <div
           className="d-inline btn AdvancedSearchBar-item"
-          onClick={() => this.props.onAddFilter(FilterType.GEOSPACIAL)}
+          onClick={() => this.props.onAddFilter(FilterType.GEO_SPATIAL)}
         >
           <Icon.MapPin className="feather" />
           <span>Any Location</span>

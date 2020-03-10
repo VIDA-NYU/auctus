@@ -1,52 +1,34 @@
 import axios, { AxiosResponse } from 'axios';
+import { SearchResponse } from './types';
+import { API_URL } from '../config';
 
-const BASE_API_URL = 'https://auctus.vida-nyu.org';
-
-enum ResponseStatus {
+export enum ResquestResult {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
 }
 
-interface Response<T> {
-  status: ResponseStatus;
+export interface Response<T> {
+  status: ResquestResult;
   data?: T;
 }
 
 export interface QuerySpec {
-  query: string[];
+  keywords: string[];
   source: string[];
   variables: Array<{}>;
-}
-
-export interface SearchResult {
-  results: [
-    {
-      id: string;
-      score: number;
-      metadata: {
-        columns: [
-          {
-            name: string; //"NAME",
-            num_distinct_values: number; // 13626,
-            semantic_types: string[]; // [],
-            structural_type: string; // "http://schema.org/Text"
-          }
-        ];
-      };
-      // ...
-    }
-  ];
 }
 
 function parseQueryString(q?: string): string[] {
   return q ? q.split(' ').filter(t => t.length > 0) : [];
 }
 
-export async function search(query?: string): Promise<Response<SearchResult>> {
-  const url = `${BASE_API_URL}/search?_parse_sample=1`;
+export async function search(
+  query?: string
+): Promise<Response<SearchResponse>> {
+  const url = `${API_URL}/search?_parse_sample=1`;
 
-  const spec = {
-    query: parseQueryString(query),
+  const spec: QuerySpec = {
+    keywords: parseQueryString(query),
     source: [
       'data.baltimorecity.gov',
       'data.cityofchicago.org',
@@ -73,13 +55,13 @@ export async function search(query?: string): Promise<Response<SearchResult>> {
     .post(url, formData, config)
     .then((response: AxiosResponse) => {
       return {
-        status: ResponseStatus.SUCCESS,
+        status: ResquestResult.SUCCESS,
         data: response.data,
       };
     })
     .catch(error => {
       return {
-        status: ResponseStatus.ERROR,
+        status: ResquestResult.ERROR,
       };
     });
 }

@@ -4,15 +4,12 @@ import * as Icon from 'react-feather';
 
 interface SearchBarProps {
   active: boolean;
+  value: string;
   onQueryChange: (query: string) => void;
   onSubmitQuery: () => void;
 }
 
-interface SearchBarState {
-  value: string;
-}
-
-class SearchBar extends React.Component<SearchBarProps, SearchBarState> {
+class SearchBar extends React.Component<SearchBarProps> {
   constructor(props: SearchBarProps) {
     super(props);
     this.state = { value: '' };
@@ -21,12 +18,11 @@ class SearchBar extends React.Component<SearchBarProps, SearchBarState> {
   }
 
   isActive() {
-    return this.props.active || this.state.value !== '';
+    return this.props.active || this.props.value !== '';
   }
 
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const query = event.target.value;
-    this.setState({ value: query });
     this.props.onQueryChange(query);
   }
 
@@ -42,14 +38,17 @@ class SearchBar extends React.Component<SearchBarProps, SearchBarState> {
           <input
             type="text"
             className="form-control SearchBar-input"
-            value={this.state.value}
+            value={this.props.value}
             onChange={this.handleChange}
           />
-          <div className="input-group-append" onClick={() => this.props.onSubmitQuery()}>
+          <div
+            className="input-group-append"
+            onClick={() => this.props.onSubmitQuery()}
+          >
             <span
               className={`input-group-text SearchBar-icon${
                 this.isActive() ? ' SearchBar-icon-active' : ''
-                }`}
+              }`}
             >
               <Icon.Search className="feather" />
             </span>

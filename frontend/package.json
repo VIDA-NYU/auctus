@@ -64,5 +64,6 @@
     "transformIgnorePatterns": [
       "/node_modules/(?!ol).+\\.js$"
     ]
-  }
+  },
+  "proxy": "https://auctus.vida-nyu.org/"
 }
