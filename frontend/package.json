@@ -53,7 +53,7 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^10.0.3",
+    "@types/node": "^12.12.29",
     "@types/react-datepicker": "^2.11.0",
     "canvas": "^2.6.1",
     "jest-canvas-mock": "^2.2.0",
