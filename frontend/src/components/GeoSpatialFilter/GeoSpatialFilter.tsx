@@ -1,4 +1,5 @@
 import React from 'react';
+import { generateRandomId } from '../../utils';
 import { Map, View } from 'ol/';
 import { toStringHDMS } from 'ol/coordinate';
 import { Draw } from 'ol/interaction';
@@ -39,9 +40,7 @@ interface GeoSpatialFilterState {
 }
 
 class GeoSpatialFilter extends React.Component<{}, GeoSpatialFilterState> {
-  mapId = Math.random()
-    .toString(36)
-    .substr(2, 9);
+  mapId = generateRandomId();
 
   constructor(props: {}) {
     super(props);

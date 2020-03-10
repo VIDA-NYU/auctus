@@ -1,8 +1,12 @@
 import React from 'react';
+import { generateRandomId } from './utils';
 import * as Icon from 'react-feather';
 import { VerticalLogo } from './Logo';
 import { SearchBar } from './components/SearchBar/SearchBar';
-import { AdvancedSearchBar } from './components/AdvancedSearchBar/AdvancedSearchBar';
+import {
+  AdvancedSearchBar,
+  FilterType,
+} from './components/AdvancedSearchBar/AdvancedSearchBar';
 import { DateFilter } from './components/DateFilter/DateFilter';
 import { RelatedFileFilter } from './components/RelatedFileFilter/RelatedFileFilter';
 import { GeoSpatialFilter } from './components/GeoSpatialFilter/GeoSpatialFilter';
@@ -24,49 +28,100 @@ class FilterContainer extends React.PureComponent<{
             <Icon.X className="feather feather-lg" />
           </span>
         </div>
-        <div className="d-block">
-          {/* <div className="d-inline"> */}
-          {this.props.children}
-          {/* </div> */}
-        </div>
+        <div className="d-block">{this.props.children}</div>
       </div>
     );
   }
 }
 
-function App() {
-  const filters = [
-    <FilterContainer
-      key="temporal-filter"
-      title="Temporal Filter"
-      onClose={() => {}}
-    >
-      <DateFilter />
-    </FilterContainer>,
-    <FilterContainer
-      key="dataset-filter"
-      title="Related Dataset Filter"
-      onClose={() => {}}
-    >
-      <RelatedFileFilter />
-    </FilterContainer>,
-    <FilterContainer
-      key="spatial-filter"
-      title="Geo-Spatial Filter"
-      onClose={() => {}}
-    >
-      <GeoSpatialFilter />
-    </FilterContainer>,
-  ];
+interface Filter {
+  id: string;
+  component: JSX.Element;
+}
 
-  return (
-    <div className="App">
-      <VerticalLogo />
-      <SearchBar />
-      <AdvancedSearchBar />
-      {filters}
-    </div>
-  );
+interface AppState {
+  query: string;
+  filters: Filter[];
+}
+
+class App extends React.Component<{}, AppState> {
+  constructor(props: AppState) {
+    super(props);
+    this.state = { filters: [], query: '' };
+  }
+
+  removeFilter(filterId: string) {
+    this.setState({
+      filters: this.state.filters.filter(f => f.id !== filterId),
+    });
+  }
+
+  validQuery() {
+    if (this.state.query && this.state.query.length > 0) return true;
+    return this.state.filters.length > 0; // TODO: check for valid values in filters
+  }
+
+  handleAddFilter(filterType: FilterType) {
+    let filterComponent: JSX.Element | undefined = undefined;
+    const filterId = generateRandomId();
+    switch (filterType) {
+      case FilterType.TEMPORAL:
+        filterComponent = (
+          <FilterContainer
+            key={filterId}
+            title="Temporal Filter"
+            onClose={() => this.removeFilter(filterId)}
+          >
+            <DateFilter />
+          </FilterContainer>
+        );
+        break;
+      case FilterType.RELATED_FILE:
+        filterComponent = (
+          <FilterContainer
+            key={filterId}
+            title="Related Dataset Filter"
+            onClose={() => this.removeFilter(filterId)}
+          >
+            <RelatedFileFilter />
+          </FilterContainer>
+        );
+        break;
+      case FilterType.GEOSPACIAL:
+        filterComponent = (
+          <FilterContainer
+            key={filterId}
+            title="Geo-Spatial Filter"
+            onClose={() => this.removeFilter(filterId)}
+          >
+            <GeoSpatialFilter />
+          </FilterContainer>
+        );
+        break;
+      default:
+        console.error(`Received not supported filter type=[${filterType}]`);
+    }
+    if (filterComponent) {
+      const filter = {
+        id: filterId,
+        component: filterComponent,
+      };
+      this.setState({ filters: [...this.state.filters, filter] });
+    }
+  }
+  render() {
+    return (
+      <div className="App">
+        <VerticalLogo />
+        <SearchBar
+          active={this.validQuery()}
+          onQueryChange={q => this.setState({ query: q })}
+        />
+        <AdvancedSearchBar onAddFilter={type => this.handleAddFilter(type)} />
+        {this.state.filters.map(f => f.component)}
+      </div>
+    );
+  }
 }
 
 export { App };
