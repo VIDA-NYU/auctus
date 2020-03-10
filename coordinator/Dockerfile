@@ -33,8 +33,12 @@ COPY coordinator coordinator
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/coordinator
 COPY --from=frontend-build /src/build /usr/src/app/coordinator/coordinator/frontend
 RUN mv coordinator/coordinator/frontend/static/css/* coordinator/coordinator/static/css/ && \
+    rmdir coordinator/coordinator/frontend/static/css && \
     mv coordinator/coordinator/frontend/static/js/* coordinator/coordinator/static/js/ && \
-    rm -rf coordinator/coordinator/frontend/static && \
+    rmdir coordinator/coordinator/frontend/static/js && \
+    ls coordinator/coordinator/frontend/static && \
+    mv coordinator/coordinator/frontend/static/* coordinator/coordinator/static/ && \
+    rmdir coordinator/coordinator/frontend/static && \
     mv coordinator/coordinator/frontend/index.html coordinator/coordinator/templates/search.html && \
     mv coordinator/coordinator/frontend/* coordinator/coordinator/static/ && \
     rmdir coordinator/coordinator/frontend
