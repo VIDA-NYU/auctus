@@ -1,5 +1,6 @@
 import React from 'react';
 import { generateRandomId } from './utils';
+import * as api from './api/rest';
 import * as Icon from 'react-feather';
 import { VerticalLogo } from './Logo';
 import { SearchBar } from './components/SearchBar/SearchBar';
@@ -109,6 +110,17 @@ class App extends React.Component<{}, AppState> {
       this.setState({ filters: [...this.state.filters, filter] });
     }
   }
+
+  async submitQuery() {
+    if (this.validQuery()) {
+      const sr = await api.search(this.state.query);
+      console.log(sr.data);
+      if (sr.data) {
+        sr.data.results.slice(10).map(r => console.log('id: ', r.id));
+      }
+    }
+  }
+
   render() {
     return (
       <div className="App">
@@ -116,6 +128,7 @@ class App extends React.Component<{}, AppState> {
         <SearchBar
           active={this.validQuery()}
           onQueryChange={q => this.setState({ query: q })}
+          onSubmitQuery={() => this.submitQuery()}
         />
         <AdvancedSearchBar onAddFilter={type => this.handleAddFilter(type)} />
         {this.state.filters.map(f => f.component)}
