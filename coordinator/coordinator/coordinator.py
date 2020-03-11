@@ -164,7 +164,7 @@ class Coordinator(object):
                 scroll='30m',
             )
             for h in hits:
-                source = h['_source']['source']
+                source = h['_source'].get('source', 'unknown')
 
                 try:
                     sources[source] += 1
