@@ -46,7 +46,8 @@ async def freshen(datasets):
         logger.info("Reprocessing %s, version=%r",
                     h['_id'], dataset_version)
         metadata = dict(name=obj['name'],
-                        materialize=obj['materialize'])
+                        materialize=obj['materialize'],
+                        source=obj.get('source', 'unknown'))
         if obj.get('description'):
             metadata['description'] = obj['description']
         if obj.get('date'):
