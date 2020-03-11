@@ -32,7 +32,7 @@ class RelatedFileFilter extends PersistentComponent<RelatedFileFilterProps, Rela
       return (
         <div>
           <CardShadow height={'auto'}>
-            <span className="font-weight-bold">Selected file:</span> {file.name} ({formatSize(file.size)});
+            <span className="font-weight-bold">Selected file:</span> {file.name} ({formatSize(file.size)})
           </CardShadow>
         </div>
       );

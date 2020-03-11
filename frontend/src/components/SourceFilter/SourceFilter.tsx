@@ -35,7 +35,7 @@ class SourceFilter extends PersistentComponent<SourceFilterProps, SourceFilterSt
     return (
       <>
         {DEFAULT_SOURCES.map(source => (
-          <div className="form-check mt-2 ml-2" key={`div-${source}`}>
+          <div className="form-check ml-2" key={`div-${source}`}>
             <input
               className="form-check-input"
               type="checkbox"

@@ -154,23 +154,25 @@ class GeoSpatialFilter extends PersistentComponent<
     };
     return (
       <div>
-        <div className="d-block" style={{ fontSize: '.9rem' }}>
-          <span className="d-inline">
-            Left-click to start selection. Right-click to clear selection.
-          </span>
-          <div className="d-inline" style={{ float: 'right' }}>
-            {this.state.selectedCoordinates && (
-              <>
-                <span>
-                  Top Left:{' '}
-                  <code>{this.state.selectedCoordinates.topLeftText}</code>
-                </span>
-                <span className="ml-3">
-                  Bottom Right:{' '}
-                  <code>{this.state.selectedCoordinates.topRightText}</code>
-                </span>
-              </>
-            )}
+        <div className="row">
+          <div className="col-md-12" style={{ fontSize: '.9rem' }}>
+            <span className="d-inline">
+              Left-click to start selection. Right-click to clear selection.
+            </span>
+            <div className="d-inline" style={{ float: 'right' }}>
+              {this.state.selectedCoordinates && (
+                <>
+                  <span>
+                    Top Left:{' '}
+                    <code>{this.state.selectedCoordinates.topLeftText}</code>
+                  </span>
+                  <span className="ml-3">
+                    Bottom Right:{' '}
+                    <code>{this.state.selectedCoordinates.topRightText}</code>
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
         <div id={this.mapId} style={style} />

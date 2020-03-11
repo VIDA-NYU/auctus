@@ -107,7 +107,10 @@ class App extends React.Component<{}, AppState> {
             title="Related Dataset Filter"
             onClose={() => this.removeFilter(filterId)}
           >
-            <RelatedFileFilter onSelectedFileChange={(f) => this.setState({file: f})} />
+            <RelatedFileFilter
+              key={`relatedfilefilter-${filterId}`}
+              onSelectedFileChange={(f) => this.setState({file: f})}
+            />
           </FilterContainer>
         );
       case FilterType.GEO_SPATIAL:
