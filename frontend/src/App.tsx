@@ -1,9 +1,7 @@
 import React from 'react';
 import { generateRandomId } from './utils';
 import * as api from './api/rest';
-import * as Icon from 'react-feather';
 import { VerticalLogo, HorizontalLogo } from './Logo';
-import { SearchBar } from './components/SearchBar/SearchBar';
 import {
   AdvancedSearchBar,
   FilterType,
@@ -15,18 +13,12 @@ import { RelatedFileFilter } from './components/RelatedFileFilter/RelatedFileFil
 import {
   GeoSpatialFilter
 } from './components/GeoSpatialFilter/GeoSpatialFilter';
-import { SearchResponse } from './api/types';
-import { SearchHit } from './components/SearchHit/SearchHit';
 import { FilterContainer } from './components/FilterContainer/FilterContainer';
-import { Loading } from './components/visus/Loading/Loading';
 import { SourceFilter } from './components/SourceFilter/SourceFilter';
-
-enum SearchState {
-  CLEAN,
-  SEARCH_REQUESTING,
-  SEARCH_SUCCESS,
-  SEARCH_FAILED,
-}
+import { SearchBar } from './components/SearchBar/SearchBar';
+import { SearchState } from './components/SearchResults/SearchState';
+import { SearchResults } from './components/SearchResults/SearchResults';
+import { SearchResponse } from './api/types';
 
 interface Filter {
   id: string;
@@ -139,7 +131,7 @@ class App extends React.Component<{}, AppState> {
           >
             <SourceFilter
               key={`sourcefilter-${filterId}`}
-              onSourcesChange={s => this.setState({sources: s}) }
+              onSourcesChange={s => this.setState({ sources: s })}
             />
           </FilterContainer>
         );
@@ -169,55 +161,6 @@ class App extends React.Component<{}, AppState> {
         .catch(() => {
           this.setState({ searchState: SearchState.SEARCH_FAILED });
         });
-    }
-  }
-
-  renderSearchResults() {
-    switch (this.state.searchState) {
-      case SearchState.SEARCH_REQUESTING: {
-        return (
-          <div className="col-md-12">
-            <Loading message="Searching..." />
-          </div>
-        );
-      }
-      case SearchState.SEARCH_FAILED: {
-        return (
-          <div className="col-md-12">
-            <Icon.XCircle className="feather" />
-            &nbsp; Search failed. Please try again later.
-          </div>
-        );
-      }
-      case SearchState.SEARCH_SUCCESS: {
-        const { searchResponse } = this.state;
-        if (!(searchResponse && searchResponse.results.length > 0)) {
-          return (
-            <div className="col-md-12">
-              <Icon.AlertCircle className="feather" />
-              &nbsp; Sorry, no datasets found for you query.
-            </div>
-          );
-        }
-
-        // TODO: Implement proper results pagination
-        const page = 1;
-        const k = 20;
-        const currentHits = searchResponse.results.slice(
-          (page - 1) * k,
-          page * k
-        );
-        return currentHits.map((hit, idx) => (
-          <div className="col-md-12" key={idx}>
-            <SearchHit hit={hit} />
-          </div>
-        ));
-      }
-      default: {
-        // search is triggered automatically when the data augmentation
-        // tag is opened, so this shouldn't show up for long time
-        return <div />;
-      }
     }
   }
 
@@ -254,7 +197,10 @@ class App extends React.Component<{}, AppState> {
               <div className="col-md-12">{this.renderFilters()}</div>
             </div>
             <div className="row" style={{ width: 780 }}>
-              {this.renderSearchResults()}
+              <SearchResults
+                searchState={this.state.searchState}
+                searchResponse={this.state.searchResponse}
+              />
             </div>
           </>
         ) : (
