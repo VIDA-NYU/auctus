@@ -8,7 +8,7 @@
 
 <p><a href="{{ query_host }}/download/{{ dataset_id }}">Download: CSV</a>, <a href="{{ query_host }}/download/{{ dataset_id }}?format=d3m">D3M</a> ({{ size }})</p>
 
-<div style="overflow: auto; max-height: 40rem;"><table class="table table-bordered table-hover">
+<div class="mb-3" style="overflow: auto; max-height: 40rem;"><table class="table table-bordered table-hover">
   <thead>
     <tr>
       {% for column in metadata.columns %}
@@ -61,7 +61,7 @@
   </table>
 {%- endmacro %}
 
-<div id="spatial_coverage" class="mb-3" style="display: none;">
+<div id="spatial_coverage" style="display: none;">
 <h2 id="spatial">Spatial Coverage Info</h2>
 <p>This is the approximate spatial coverage of the data.</p>
 </div>
