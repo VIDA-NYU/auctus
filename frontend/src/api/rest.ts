@@ -56,7 +56,8 @@ function parseQueryString(q?: string): string[] {
 export async function search(
   query?: string,
   filters?: FilterVariables[],
-  sources?: string[]
+  sources?: string[],
+  file?: File,
 ): Promise<Response<SearchResponse>> {
   const url = `${API_URL}/search?_parse_sample=1`;
 
@@ -68,7 +69,9 @@ export async function search(
 
   const formData = new FormData();
   formData.append('query', JSON.stringify(spec));
-
+  if (file) {
+    formData.append('data', file);
+  }
   const config = {
     headers: {
       'content-type': 'multipart/form-data',

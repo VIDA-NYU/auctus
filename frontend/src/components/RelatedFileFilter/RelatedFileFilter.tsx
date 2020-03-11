@@ -1,10 +1,42 @@
 import React from 'react';
 import Dropzone from 'react-dropzone';
 import { CardShadow, CardButton } from '../visus/Card/Card';
+import { formatSize } from '../../utils';
+import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
 
-class RelatedFileFilter extends React.PureComponent {
+interface RelatedFileFilterState {
+  file?: File;
+}
+
+interface RelatedFileFilterProps {
+  onSelectedFileChange: (file: File) => void;
+}
+
+class RelatedFileFilter extends PersistentComponent<RelatedFileFilterProps, RelatedFileFilterState> {
+
+  constructor(props: RelatedFileFilterProps) {
+    super(props);
+    this.state = { file: undefined };
+  }
+
+  handleSelectedFile(acceptedFiles: File[]) {
+    const file = acceptedFiles[0];
+    this.setState({ file });
+    this.props.onSelectedFileChange(file)
+  }
+
   render() {
     const maxSize = 100 * 1024 * 1024; // maximum file size
+    const file = this.state.file;
+    if (file) {
+      return (
+        <div>
+          <CardShadow height={'auto'}>
+            <span className="font-weight-bold">Selected file:</span> {file.name} ({formatSize(file.size)});
+          </CardShadow>
+        </div>
+      );
+    }
     return (
       <div>
         <CardShadow>
@@ -13,10 +45,7 @@ class RelatedFileFilter extends React.PureComponent {
             accept="text/csv"
             minSize={0}
             maxSize={maxSize}
-            onDrop={acceptedFiles => {
-              // TODO: Implement handling of files
-              console.log(acceptedFiles);
-            }}
+            onDrop={acceptedFiles => this.handleSelectedFile(acceptedFiles)}
           >
             {({
               getRootProps,

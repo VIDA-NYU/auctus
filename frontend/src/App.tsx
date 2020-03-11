@@ -30,13 +30,13 @@ interface Filter {
 interface AppState {
   query: string;
   filters: Filter[];
+  file?: File;
+  sources?: string[];
   searchState: SearchState;
   searchResponse?: SearchResponse;
-  sources?: string[];
 }
 
 class App extends React.Component<{}, AppState> {
-
 
   constructor(props: AppState) {
     super(props);
@@ -58,6 +58,7 @@ class App extends React.Component<{}, AppState> {
     if (this.state.query && this.state.query.length > 0) return true;
     if (this.state.filters.filter(f => f.state).length > 0) return true;
     if (this.state.sources && this.state.sources.length > 0) return true;
+    if (this.state.file) return true;
     return false;
   }
 
@@ -106,7 +107,7 @@ class App extends React.Component<{}, AppState> {
             title="Related Dataset Filter"
             onClose={() => this.removeFilter(filterId)}
           >
-            <RelatedFileFilter />
+            <RelatedFileFilter onSelectedFileChange={(f) => this.setState({file: f})} />
           </FilterContainer>
         );
       case FilterType.GEO_SPATIAL:
@@ -147,7 +148,7 @@ class App extends React.Component<{}, AppState> {
         .map(f => f.state)
         .filter((f): f is api.FilterVariables => f !== undefined);
       api
-        .search(this.state.query, validFilters, this.state.sources)
+        .search(this.state.query, validFilters, this.state.sources, this.state.file)
         .then(response => {
           if (response.status === api.ResquestResult.SUCCESS && response.data) {
             this.setState({
