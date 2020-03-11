@@ -18,6 +18,8 @@ import { fromLonLat } from 'ol/proj';
 import { VectorSourceEvent } from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import Geometry from 'ol/geom/Geometry';
+import { GeoSpatialVariable } from '../../api/rest';
+import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
 
 //
 // Following types are a temporary workaround to a bug in typings from the
@@ -39,10 +41,17 @@ interface GeoSpatialFilterState {
   };
 }
 
-class GeoSpatialFilter extends React.Component<{}, GeoSpatialFilterState> {
+interface GeoSpatialFilterProps {
+  onSelectCoordinates: (coordinates: GeoSpatialVariable) => void;
+}
+
+class GeoSpatialFilter extends PersistentComponent<
+  GeoSpatialFilterProps,
+  GeoSpatialFilterState
+> {
   mapId = generateRandomId();
 
-  constructor(props: {}) {
+  constructor(props: GeoSpatialFilterProps) {
     super(props);
     this.state = {
       selectedCoordinates: undefined,
@@ -108,6 +117,13 @@ class GeoSpatialFilter extends React.Component<{}, GeoSpatialFilterState> {
     const topRightText = toStringHDMS([bottomRightLon, bottomRightLat]);
 
     this.setState({ selectedCoordinates: { topLeftText, topRightText } });
+    this.props.onSelectCoordinates({
+      type: 'geospatial_variable',
+      latitude1: topLeftLat.toString(),
+      longitude1: topLeftLon.toString(),
+      latitude2: bottomRightLat.toString(),
+      longitude2: bottomRightLon.toString(),
+    });
   }
 
   addInteractions(map: Map, mapSource: VectorSource) {

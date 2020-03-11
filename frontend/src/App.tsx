@@ -8,9 +8,14 @@ import {
   AdvancedSearchBar,
   FilterType,
 } from './components/AdvancedSearchBar/AdvancedSearchBar';
-import { DateFilter } from './components/DateFilter/DateFilter';
+import {
+  DateFilter,
+  DateFilterState,
+} from './components/DateFilter/DateFilter';
 import { RelatedFileFilter } from './components/RelatedFileFilter/RelatedFileFilter';
-import { GeoSpatialFilter } from './components/GeoSpatialFilter/GeoSpatialFilter';
+import {
+  GeoSpatialFilter
+} from './components/GeoSpatialFilter/GeoSpatialFilter';
 import { SearchResponse } from './api/types';
 import { SearchHit } from './components/SearchHit/SearchHit';
 import { FilterContainer } from './components/FilterContainer/FilterContainer';
@@ -25,7 +30,9 @@ enum SearchState {
 
 interface Filter {
   id: string;
+  type: FilterType;
   component: JSX.Element;
+  state?: api.FilterVariables;
 }
 
 interface AppState {
@@ -54,26 +61,50 @@ class App extends React.Component<{}, AppState> {
 
   validQuery() {
     if (this.state.query && this.state.query.length > 0) return true;
-    return this.state.filters.length > 0; // TODO: check for valid values in filters
+    if (this.state.filters.filter(f => f.state).length > 0) return true;
+    return false;
+  }
+
+  updateFilterState(filterId: string, state: api.TemporalVariable | api.GeoSpatialVariable) {
+    const filter = this.state.filters.find(f => f.id === filterId);
+    if (filter) {
+      filter.state = state;
+      this.setState({ filters: [...this.state.filters] });
+    } else {
+      console.warn(
+        `Requested to update filter state with id=[${filterId} which does not exist.]`
+      );
+    }
   }
 
   handleAddFilter(filterType: FilterType) {
-    let filterComponent: JSX.Element | undefined = undefined;
     const filterId = generateRandomId();
+    const filters = this.state.filters;
+    filters.push({
+      id: filterId,
+      type: filterType,
+      component: this.createFilterComponent(filterId, filterType),
+    });
+    this.setState({ filters: [...filters] });
+  }
+
+  createFilterComponent(filterId: string, filterType: FilterType) {
     switch (filterType) {
       case FilterType.TEMPORAL:
-        filterComponent = (
+        return (
           <FilterContainer
             key={filterId}
             title="Temporal Filter"
             onClose={() => this.removeFilter(filterId)}
           >
-            <DateFilter />
+            <DateFilter
+              key={`datefilter-${filterId}`}
+              onDateFilterChange={d => this.updateFilterState(filterId, d)}
+            />
           </FilterContainer>
         );
-        break;
       case FilterType.RELATED_FILE:
-        filterComponent = (
+        return (
           <FilterContainer
             key={filterId}
             title="Related Dataset Filter"
@@ -82,35 +113,40 @@ class App extends React.Component<{}, AppState> {
             <RelatedFileFilter />
           </FilterContainer>
         );
-        break;
       case FilterType.GEO_SPATIAL:
-        filterComponent = (
+        return (
           <FilterContainer
             key={filterId}
             title="Geo-Spatial Filter"
             onClose={() => this.removeFilter(filterId)}
           >
-            <GeoSpatialFilter />
+            <GeoSpatialFilter
+              key={`geospatialfilter-${filterId}`}
+              onSelectCoordinates={c => this.updateFilterState(filterId, c)}
+            />
           </FilterContainer>
         );
-        break;
+      case FilterType.SOURCE:
+        return (
+          <FilterContainer
+            key={filterId}
+            title="Source Filter"
+            onClose={() => this.removeFilter(filterId)}
+          ></FilterContainer>
+        );
       default:
-        console.error(`Received not supported filter type=[${filterType}]`);
-    }
-    if (filterComponent) {
-      const filter = {
-        id: filterId,
-        component: filterComponent,
-      };
-      this.setState({ filters: [...this.state.filters, filter] });
+        throw new Error(`Received not supported filter type=[${filterType}]`);
     }
   }
 
   async submitQuery() {
     if (this.validQuery()) {
       this.setState({ searchState: SearchState.SEARCH_REQUESTING });
+      const validFilters = this.state.filters
+        .map(f => f.state)
+        .filter((f): f is api.FilterVariables => f !== undefined);
       api
-        .search(this.state.query)
+        .search(this.state.query, validFilters)
         .then(response => {
           if (response.status === api.ResquestResult.SUCCESS && response.data) {
             this.setState({
@@ -176,6 +212,10 @@ class App extends React.Component<{}, AppState> {
     }
   }
 
+  renderFilters() {
+    return this.state.filters.map(f => f.component);
+  }
+
   render() {
     return (
       <div className="container-fluid">
@@ -201,32 +241,30 @@ class App extends React.Component<{}, AppState> {
                 </div>
               </div>
             </div>
-            <div className="row">
-              <div className="col-md-12">
-                {this.state.filters.map(f => f.component)}
-              </div>
+            <div className="row" style={{ width: 780 }}>
+              <div className="col-md-12">{this.renderFilters()}</div>
             </div>
             <div className="row" style={{ width: 780 }}>
               {this.renderSearchResults()}
             </div>
           </>
         ) : (
-          <div>
-            <VerticalLogo />
-            <SearchBar
-              value={this.state.query}
-              active={this.validQuery()}
-              onQueryChange={q => this.setState({ query: q })}
-              onSubmitQuery={() => this.submitQuery()}
-            />
-            <AdvancedSearchBar
-              onAddFilter={type => this.handleAddFilter(type)}
-            />
-            <div className="" style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
-              {this.state.filters.map(f => f.component)}
+            <div>
+              <VerticalLogo />
+              <SearchBar
+                value={this.state.query}
+                active={this.validQuery()}
+                onQueryChange={q => this.setState({ query: q })}
+                onSubmitQuery={() => this.submitQuery()}
+              />
+              <AdvancedSearchBar
+                onAddFilter={type => this.handleAddFilter(type)}
+              />
+              <div className="" style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
+                {this.renderFilters()}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     );
   }

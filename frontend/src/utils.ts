@@ -15,3 +15,24 @@ export function formatSize(size: number) {
   }
   return size;
 }
+
+export function shallowEqual(a: {}, b: {}) {
+  if (a === b) {
+    return true;
+  }
+
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (bKeys.length !== aKeys.length) {
+    return false;
+  }
+
+  for (let i = 0; i < aKeys.length; i++) {
+    const key = aKeys[i];
+    // @ts-ignore
+    if (a[key] !== b[key]) {
+      return false;
+    }
+  }
+  return true;
+}

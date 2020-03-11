@@ -12,10 +12,30 @@ export interface Response<T> {
   data?: T;
 }
 
+export interface Variable {
+  type: string;
+}
+
+export interface TemporalVariable {
+  type: 'temporal_variable';
+  start?: string;
+  end?: string;
+}
+
+export interface GeoSpatialVariable {
+  type: 'geospatial_variable';
+  latitude1: string;
+  longitude1: string;
+  latitude2: string;
+  longitude2: string;
+}
+
+export type FilterVariables = TemporalVariable | GeoSpatialVariable;
+
 export interface QuerySpec {
   keywords: string[];
   source: string[];
-  variables: Array<{}>;
+  variables: FilterVariables[];
 }
 
 function parseQueryString(q?: string): string[] {
@@ -23,7 +43,8 @@ function parseQueryString(q?: string): string[] {
 }
 
 export async function search(
-  query?: string
+  query?: string,
+  filters?: FilterVariables[]
 ): Promise<Response<SearchResponse>> {
   const url = `${API_URL}/search?_parse_sample=1`;
 
@@ -39,7 +60,7 @@ export async function search(
       'finances.worldbank.org',
       'upload',
     ],
-    variables: [],
+    variables: filters ? [...filters] : [],
   };
 
   const formData = new FormData();
