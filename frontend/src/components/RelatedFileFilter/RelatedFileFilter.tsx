@@ -14,7 +14,7 @@ class RelatedFileFilter extends React.PureComponent {
             minSize={0}
             maxSize={maxSize}
             onDrop={acceptedFiles => {
-              // TODO: Implement haddling of files
+              // TODO: Implement handling of files
               console.log(acceptedFiles);
             }}
           >

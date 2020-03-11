@@ -9,8 +9,7 @@ import {
   FilterType,
 } from './components/AdvancedSearchBar/AdvancedSearchBar';
 import {
-  DateFilter,
-  DateFilterState,
+  DateFilter
 } from './components/DateFilter/DateFilter';
 import { RelatedFileFilter } from './components/RelatedFileFilter/RelatedFileFilter';
 import {
@@ -20,6 +19,7 @@ import { SearchResponse } from './api/types';
 import { SearchHit } from './components/SearchHit/SearchHit';
 import { FilterContainer } from './components/FilterContainer/FilterContainer';
 import { Loading } from './components/visus/Loading/Loading';
+import { SourceFilter } from './components/SourceFilter/SourceFilter';
 
 enum SearchState {
   CLEAN,
@@ -40,9 +40,12 @@ interface AppState {
   filters: Filter[];
   searchState: SearchState;
   searchResponse?: SearchResponse;
+  sources?: string[];
 }
 
 class App extends React.Component<{}, AppState> {
+
+
   constructor(props: AppState) {
     super(props);
     this.state = {
@@ -62,6 +65,7 @@ class App extends React.Component<{}, AppState> {
   validQuery() {
     if (this.state.query && this.state.query.length > 0) return true;
     if (this.state.filters.filter(f => f.state).length > 0) return true;
+    if (this.state.sources && this.state.sources.length > 0) return true;
     return false;
   }
 
@@ -132,7 +136,12 @@ class App extends React.Component<{}, AppState> {
             key={filterId}
             title="Source Filter"
             onClose={() => this.removeFilter(filterId)}
-          ></FilterContainer>
+          >
+            <SourceFilter
+              key={`sourcefilter-${filterId}`}
+              onSourcesChange={s => this.setState({sources: s}) }
+            />
+          </FilterContainer>
         );
       default:
         throw new Error(`Received not supported filter type=[${filterType}]`);
@@ -146,7 +155,7 @@ class App extends React.Component<{}, AppState> {
         .map(f => f.state)
         .filter((f): f is api.FilterVariables => f !== undefined);
       api
-        .search(this.state.query, validFilters)
+        .search(this.state.query, validFilters, this.state.sources)
         .then(response => {
           if (response.status === api.ResquestResult.SUCCESS && response.data) {
             this.setState({

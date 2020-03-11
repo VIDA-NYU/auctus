@@ -2,6 +2,17 @@ import axios, { AxiosResponse } from 'axios';
 import { SearchResponse } from './types';
 import { API_URL } from '../config';
 
+export const DEFAULT_SOURCES = [
+  'data.baltimorecity.gov',
+  'data.cityofchicago.org',
+  'data.cityofnewyork.us',
+  'data.ny.gov',
+  'data.sfgov.org',
+  'data.wa.gov',
+  'finances.worldbank.org',
+  'upload',
+];
+
 export enum ResquestResult {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
@@ -44,22 +55,14 @@ function parseQueryString(q?: string): string[] {
 
 export async function search(
   query?: string,
-  filters?: FilterVariables[]
+  filters?: FilterVariables[],
+  sources?: string[]
 ): Promise<Response<SearchResponse>> {
   const url = `${API_URL}/search?_parse_sample=1`;
 
   const spec: QuerySpec = {
     keywords: parseQueryString(query),
-    source: [
-      'data.baltimorecity.gov',
-      'data.cityofchicago.org',
-      'data.cityofnewyork.us',
-      'data.ny.gov',
-      'data.sfgov.org',
-      'data.wa.gov',
-      'finances.worldbank.org',
-      'upload',
-    ],
+    source: sources && sources.length > 0 ? sources : DEFAULT_SOURCES,
     variables: filters ? [...filters] : [],
   };
 
