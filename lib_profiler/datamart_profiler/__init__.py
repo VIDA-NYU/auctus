@@ -527,7 +527,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_sketches = lazo_client.get_lazo_sketch_from_data_path(
                         data_path,
                         "",
-                        column_textual
+                        column_textual,
                     )
                 else:
                     # if path is not available, send the data instead
@@ -537,21 +537,18 @@ def process_dataset(data, dataset_id=None, metadata=None,
                             lazo_client.get_lazo_sketch_from_data(
                                 data[column_name].values.tolist(),
                                 "",
-                                column_name
+                                column_name,
                             )
                         )
                 # saving sketches into metadata
-                metadata_lazo = []
                 for i in range(len(column_textual)):
-                    n_permutations, hash_values, cardinality =\
+                    n_permutations, hash_values, cardinality = \
                         lazo_sketches[i]
-                    metadata_lazo.append(dict(
-                        name=column_textual[i],
+                    columns[i]['lazo'] = dict(
                         n_permutations=n_permutations,
                         hash_values=list(hash_values),
-                        cardinality=cardinality
-                    ))
-                metadata['lazo'] = metadata_lazo
+                        cardinality=cardinality,
+                    )
             except Exception:
                 logger.warning("Error getting Lazo sketches")
                 raise

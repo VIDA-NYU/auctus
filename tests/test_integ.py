@@ -131,16 +131,14 @@ class TestProfileQuery(DatamartTest):
             {k: v for k, v in col.items() if k != 'plot'}
             for col in metadata['columns']
         ]
-        metadata = dict(
-            metadata,
-            lazo=lambda lazo: (
-                isinstance(lazo, list) and
-                all(e.keys() == {'cardinality', 'hash_values',
-                                 'n_permutations', 'name'}
-                    for e in lazo) and
-                {e['name'] for e in lazo} == {'name', 'country', 'what'}
-            ),
+        # Handle lazo data
+        check_lazo = lambda dct: (
+            dct.keys() == {'cardinality', 'hash_values', 'n_permutations'}
         )
+        metadata['columns'][0]['lazo'] = check_lazo
+        metadata['columns'][1]['lazo'] = check_lazo
+        metadata['columns'][2]['lazo'] = check_lazo
+
         self.assertJson(response.json(), metadata)
 
 

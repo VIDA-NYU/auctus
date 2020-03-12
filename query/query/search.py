@@ -130,16 +130,13 @@ def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
 
     lazo_sketches = dict()
 
-    if data_profile.get('lazo'):
-        for column in data_profile['lazo']:
-            column_name = column['name']
-            column_index = column_index_mapping[column_name]
-            if filter_ and column_index not in filter_:
-                continue
+    for column in data_profile['columns']:
+        if 'lazo' in column:
+            column_index = column_index_mapping[column['name']]
             lazo_sketches[str(column_index)] = (
-                column['n_permutations'],
-                column['hash_values'],
-                column['cardinality']
+                column['lazo']['n_permutations'],
+                column['lazo']['hash_values'],
+                column['lazo']['cardinality'],
             )
 
     return lazo_sketches
