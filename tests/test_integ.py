@@ -122,9 +122,15 @@ class TestProfileQuery(DatamartTest):
                 '/profile',
                 files={'data': basic_fp}
             )
+        # Some fields like 'name', 'description' won't be there
         metadata = {k: v for k, v in basic_metadata.items()
                     if k not in {'name', 'description', 'source',
                                  'date', 'materialize', 'sample'}}
+        # Plots are not computed, remove them too
+        metadata['columns'] = [
+            {k: v for k, v in col.items() if k != 'plot'}
+            for col in metadata['columns']
+        ]
         metadata = dict(
             metadata,
             lazo=lambda lazo: (
@@ -559,7 +565,7 @@ class TestDataSearch(DatamartTest):
                 {
                     'id': 'datamart.test.hourly',
                     'metadata': hourly_metadata,
-                    'd3m_dataset_description':  lambda d: isinstance(d, dict),
+                    'd3m_dataset_description': lambda d: isinstance(d, dict),
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
@@ -1623,6 +1629,13 @@ def check_geo_ranges(min_long, min_lat, max_long, max_lat):
     return check
 
 
+def check_plot(kind):
+    def check(plot):
+        return plot['type'] == kind
+
+    return check
+
+
 version = os.environ['DATAMART_VERSION']
 assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 
@@ -1645,7 +1658,8 @@ basic_metadata = {
             "name": "country",
             "structural_type": "http://schema.org/Text",
             "semantic_types": ["http://schema.org/Enumeration"],
-            "num_distinct_values": 2
+            "num_distinct_values": 2,
+            "plot": check_plot('histogram_categorical'),
         },
         {
             "name": "number",
@@ -1674,7 +1688,8 @@ basic_metadata = {
                         }
                     }
                 ]
-            )
+            ),
+            "plot": check_plot('histogram_numerical'),
         },
         {
             "name": "what",
@@ -1684,7 +1699,8 @@ basic_metadata = {
                 "http://schema.org/Enumeration"
             ],
             "unclean_values_ratio": 0.0,
-            "num_distinct_values": 2
+            "num_distinct_values": 2,
+            "plot": check_plot('histogram_categorical'),
         }
     ],
     "materialize": {
@@ -1794,16 +1810,19 @@ agg_metadata = {
                         }
                     }
                 ]
-            )
+            ),
+            "plot": check_plot('histogram_numerical'),
         },
         {
             "name": "work",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [
-                "http://schema.org/Boolean"
+                "http://schema.org/Boolean",
+                'http://schema.org/Enumeration',
             ],
             "unclean_values_ratio": 0.0,
-            "num_distinct_values": 2
+            "num_distinct_values": 2,
+            "plot": check_plot('histogram_categorical'),
         },
         {
             "name": "salary",
@@ -1832,7 +1851,8 @@ agg_metadata = {
                         }
                     }
                 ]
-            )
+            ),
+            "plot": check_plot('histogram_numerical'),
         }
     ],
     "materialize": {
@@ -1867,14 +1887,16 @@ geo_metadata = {
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/latitude" in l,
             "mean": lambda n: round(n, 3) == 40.711,
-            "stddev": lambda n: round(n, 4) == 0.0186
+            "stddev": lambda n: round(n, 4) == 0.0186,
+            "plot": check_plot('histogram_numerical'),
         },
         {
             "name": "long",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/longitude" in l,
             "mean": lambda n: round(n, 3) == -73.993,
-            "stddev": lambda n: round(n, 5) == 0.00684
+            "stddev": lambda n: round(n, 5) == 0.00684,
+            "plot": check_plot('histogram_numerical'),
         },
         {
             "name": "height",
@@ -1882,7 +1904,8 @@ geo_metadata = {
             "semantic_types": lambda l: isinstance(l, list),
             "mean": lambda n: round(n, 3) == 47.827,
             "stddev": lambda n: round(n, 2) == 21.28,
-            "coverage": check_ranges(1.0, 90.0)
+            "coverage": check_ranges(1.0, 90.0),
+            "plot": check_plot('histogram_numerical'),
         }
     ],
     "spatial_coverage": [
@@ -1978,7 +2001,7 @@ lazo_metadata = {
             "structural_type": "http://schema.org/Text",
             "semantic_types": [],
             "missing_values_ratio": lambda n: round(n, 4) == 0.0278,
-            "num_distinct_values": 35
+            "num_distinct_values": 35,
         },
         {
             "name": "year",
@@ -2001,7 +2024,8 @@ lazo_metadata = {
                         }
                     }
                 ]
-            )
+            ),
+            "plot": check_plot('histogram_numerical'),
         }
     ],
     "materialize": {
@@ -2059,6 +2083,7 @@ daily_metadata = {
                     },
                 ]
             ),
+            "plot": check_plot('histogram_temporal'),
         },
         {
             'name': 'rain',
@@ -2069,6 +2094,7 @@ daily_metadata = {
             ],
             'unclean_values_ratio': 0.0,
             'num_distinct_values': 2,
+            "plot": check_plot('histogram_categorical'),
         },
     ],
     'materialize': {
@@ -2108,23 +2134,24 @@ hourly_metadata = {
                     {
                         'range': {
                             'gte': 1560297600.0,
-                            'lte': 1560358800.0,
+                            'lte': 1560358784.0,
                         },
                     },
                     {
                         'range': {
-                            'gte': 1560362400.0,
-                            'lte': 1560420000.0,
+                            'gte': 1560362368.0,
+                            'lte': 1560419968.0,
                         },
                     },
                     {
                         'range': {
-                            'gte': 1560423600.0,
-                            'lte': 1560481200.0,
+                            'gte': 1560423552.0,
+                            'lte': 1560481152.0,
                         },
                     },
                 ]
             ),
+            "plot": check_plot('histogram_temporal'),
         },
         {
             'name': 'rain',
@@ -2135,6 +2162,7 @@ hourly_metadata = {
             ],
             'unclean_values_ratio': 0.0,
             'num_distinct_values': 2,
+            "plot": check_plot('histogram_categorical'),
         },
     ],
     'materialize': {
