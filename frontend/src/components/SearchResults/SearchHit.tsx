@@ -7,6 +7,7 @@ import { ColumnsViewer } from './ColumnsViewer';
 
 interface SearchHitProps {
   hit: SearchResult;
+  onSearchHitExpand: (hit: SearchResult) => void;
 }
 
 interface SearchHitState {
@@ -24,7 +25,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
   render() {
     const { hit } = this.props;
     return (
-      <div className="card mb-4 shadow-sm">
+      <div className="card mb-4 shadow-sm d-flex flex-row align-items-stretch">
         <div className="card-body d-flex flex-column">
           <span
             className="text-primary"
@@ -59,6 +60,12 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
               </div>
             </div>
           </div>
+        </div>
+        <div
+          style={{margin: 'auto 0', cursor: 'pointer'}}
+          onClick={() => this.props.onSearchHitExpand(this.props.hit)}
+        >
+          <Icon.ChevronRight className="feather feather-lg" />
         </div>
       </div>
     );

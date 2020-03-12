@@ -200,11 +200,13 @@ class App extends React.Component<{}, AppState> {
             <div className="row" style={{ width: 780 }}>
               <div className="col-md-12">{this.renderFilters()}</div>
             </div>
-            <div className="row" style={{ width: 780 }}>
-              <SearchResults
-                searchState={this.state.searchState}
-                searchResponse={this.state.searchResponse}
-              />
+            <div className="row">
+              <div className="col-md-12">
+                <SearchResults
+                  searchState={this.state.searchState}
+                  searchResponse={this.state.searchResponse}
+                />
+              </div>
             </div>
           </>
         ) : (

@@ -4,6 +4,7 @@ import { ColumnMetadata } from '../../api/types';
 
 interface ColumnsViewerProps {
   columns: ColumnMetadata[];
+  maxLength?: number;
 }
 
 interface ColumnsViewerState {
@@ -24,7 +25,7 @@ class ColumnsViewer extends React.PureComponent<
   splitColumns(columns: Array<{ name: string }>) {
     const visibleColumns: string[] = [];
     const hiddenColumns: string[] = [];
-    const maxLength = 100;
+    const maxLength = this.props.maxLength ? this.props.maxLength : 100;
     let characters = 0;
     columns.forEach(c => {
       if (characters + c.name.length > maxLength) {
@@ -43,7 +44,6 @@ class ColumnsViewer extends React.PureComponent<
     );
     return (
       <>
-        Columns:&nbsp;
         {visibleColumns.map(cname => (
           <span
             key={`${this.id}-${cname}`}

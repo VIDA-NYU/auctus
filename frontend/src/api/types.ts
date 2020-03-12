@@ -6,6 +6,19 @@ export interface AugmentationInfo {
   right_columns_names: string[][];
 }
 
+export interface SpatialCoverage {
+  lat: string;
+  lon: string;
+  ranges: [
+    {
+      range: {
+        coordinates: [[number, number], [number, number]];
+        type: 'envelope';
+      };
+    }
+  ];
+}
+
 export interface Metadata {
   filename: string;
   name: string;
@@ -19,6 +32,7 @@ export interface Metadata {
   sample: string;
   source: string;
   version: string;
+  spatial_coverage: SpatialCoverage[];
 }
 
 export interface ColumnMetadata {
