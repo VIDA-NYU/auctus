@@ -74,10 +74,10 @@
 <p>This was recorded by the discovery plugin <span style="font-family: monospace;">{{ discoverer }}</span></p>
 {{ meta_table(materialize) }}
 
-<script>
-var spatial_coverage = '{{ spatial_coverage | tojson }}';
-</script>
 <script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
 <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList"></script>
 <script src="{{ static_url('js/spatial.js') }}"></script>
+<script>
+show_spatial_coverage({{ spatial_coverage |tojson }});
+</script>
 {% endblock %}
