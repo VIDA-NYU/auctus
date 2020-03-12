@@ -7,6 +7,7 @@ import {
   DownloadButtons,
   DatasetColumns,
 } from './Metadata';
+import { DatasetSample } from './DatasetSample';
 
 function HitInfoBox(props: { hit: SearchResult }) {
   const { hit } = props;
@@ -31,6 +32,9 @@ function HitInfoBox(props: { hit: SearchResult }) {
             </div>
             <div className="mt-2">
               <DownloadButtons hit={hit} />
+            </div>
+            <div className="mt-2">
+              <DatasetSample data={hit.sample} />
             </div>
           </div>
         </div>

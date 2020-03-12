@@ -51,6 +51,7 @@ export interface SearchResult {
   supplied_id: string;
   supplied_resource_id: string;
   d3m_dataset_description: {};
+  sample: string[][];
 }
 
 export interface SearchResponse {
