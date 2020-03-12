@@ -47,22 +47,6 @@ class ClientError(ValueError):
     """
 
 
-def get_column_index_mapping(data_profile):
-    """
-    Get the mapping between column name and column index.
-
-    :param data_profile: Profiled input dataset.
-    :return: dict, where the key is the column name, and value is the column index
-    """
-
-    column_index = -1
-    column_index_mapping = dict()
-    for column in data_profile['columns']:
-        column_index += 1
-        column_index_mapping[column['name']] = column_index
-    return column_index_mapping
-
-
 def get_column_coverage(data_profile, column_index_mapping, filter_=()):
     """
     Get coverage for each column of the input dataset.
@@ -496,7 +480,10 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
         raise TypeError("Either a dataset id or a data profile "
                         "must be provided for the join")
 
-    column_index_mapping = get_column_index_mapping(data_profile)
+    column_index_mapping = {
+        column['name']: idx
+        for idx, column in enumerate(data_profile['columns'])
+    }
 
     # get the coverage for each column of the input dataset
 
