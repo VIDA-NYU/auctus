@@ -8,6 +8,12 @@
   vertical-align: text-bottom;
 }
 
+.feather-xs {
+  width:  13px;
+  height: 13px;
+  vertical-align: text-bottom;
+}
+
 .feather-lg {
   width:  20px;
   height: 20px;

@@ -11,15 +11,24 @@ interface SearchResultsProps {
   searchResponse?: SearchResponse;
 }
 
-
 interface SearchResultsState {
   selectedHit?: SearchResult;
 }
 
 class SearchResults extends React.PureComponent<SearchResultsProps, SearchResultsState> {
+
+  lastSearchResponse?: SearchResponse;
+
   constructor(props: SearchResultsProps) {
     super(props);
     this.state = {};
+  }
+
+  componentDidUpdate() {
+    if(this.lastSearchResponse !== this.props.searchResponse) {
+      this.setState({ selectedHit: undefined});
+    }
+    this.lastSearchResponse = this.props.searchResponse;
   }
 
   render() {
@@ -34,7 +43,7 @@ class SearchResults extends React.PureComponent<SearchResultsProps, SearchResult
         return (
           <>
             <Icon.XCircle className="feather" />
-            &nbsp; Search failed. Please try again later.
+            &nbsp; An unexpected error occurred. Please try again later.
           </>
         );
       }
