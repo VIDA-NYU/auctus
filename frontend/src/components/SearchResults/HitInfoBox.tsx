@@ -12,8 +12,8 @@ import { DatasetSample } from './DatasetSample';
 function HitInfoBox(props: { hit: SearchResult }) {
   const { hit } = props;
   return (
-    <>
-      <div className="ml-2" style={{ maxWidth: 800 }}>
+    <div className="ml-2" style={{ maxWidth: 800 }}>
+      <div className="sticky-top" style={{top:'1rem'}}>
         <div className="card shadow-sm ml-2">
           <div className="card-body d-flex flex-column">
             <h4>{hit.metadata.name}</h4>
@@ -39,7 +39,7 @@ function HitInfoBox(props: { hit: SearchResult }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
