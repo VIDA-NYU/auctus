@@ -1,5 +1,16 @@
 import itertools
+import os
 import unittest
+
+
+def data(name, mode='rb'):
+    return open(
+        os.path.join(
+            os.path.dirname(__file__),
+            'data', name,
+        ),
+        mode,
+    )
 
 
 class DataTestCase(unittest.TestCase):

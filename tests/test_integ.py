@@ -12,7 +12,7 @@ import zipfile
 import datamart_materialize
 
 from .test_profile import check_ranges, check_geo_ranges, check_plot
-from .utils import DataTestCase
+from .utils import DataTestCase, data
 
 
 schemas = os.path.join(os.path.dirname(__file__), '..', 'docs', 'schemas')
@@ -114,11 +114,7 @@ class TestProfiler(DataTestCase):
 
 class TestProfileQuery(DatamartTest):
     def test_basic(self):
-        basic_path = os.path.join(
-            os.path.dirname(__file__),
-            'data', 'basic.csv',
-        )
-        with open(basic_path, 'rb') as basic_fp:
+        with data('basic.csv') as basic_fp:
             response = self.datamart_post(
                 '/profile',
                 files={'data': basic_fp}
@@ -252,14 +248,15 @@ class TestDataSearch(DatamartTest):
     def test_basic_join(self):
         query = {'keywords': ['people']}
 
-        response = self.datamart_post(
-            '/search',
-            files={
-                'query': json.dumps(query).encode('utf-8'),
-                'data': basic_aug_data.encode('utf-8'),
-            },
-            schema=result_list_schema,
-        )
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'query': json.dumps(query).encode('utf-8'),
+                    'data': basic_aug,
+                },
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         self.assertJson(
             results,
@@ -283,13 +280,14 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_basic_join_only_data(self):
-        response = self.datamart_post(
-            '/search',
-            files={
-                'data': basic_aug_data.encode('utf-8'),
-            },
-            schema=result_list_schema,
-        )
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': basic_aug,
+                },
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         self.assertJson(
             results,
@@ -313,12 +311,13 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_basic_join_only_data_csv(self):
-        response = self.datamart_post(
-            '/search',
-            data=basic_aug_data.encode('utf-8'),
-            headers={'Content-type': 'text/csv'},
-            schema=result_list_schema,
-        )
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/search',
+                data=basic_aug,
+                headers={'Content-type': 'text/csv'},
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         self.assertJson(
             results,
@@ -342,10 +341,11 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_basic_join_only_profile(self):
-        response = self.datamart_post(
-            '/profile',
-            files={'data': basic_aug_data.encode('utf-8')},
-        )
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/profile',
+                files={'data': basic_aug},
+            )
         profile = response.json()
 
         response = self.datamart_post(
@@ -378,30 +378,32 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_both_data_profile(self):
-        response = self.datamart_post(
-            '/profile',
-            files={'data': basic_aug_data.encode('utf-8')},
-        )
-        profile = response.json()
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/profile',
+                files={'data': basic_aug},
+            )
+            profile = response.json()
 
-        response = self.datamart_post(
-            '/search',
-            files={
-                'data': basic_aug_data.encode('utf-8'),
-                'data_profile': json.dumps(profile).encode('utf-8'),
-            },
-            check_status=False,
-        )
-        self.assertEqual(response.status_code, 400)
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': basic_aug,
+                    'data_profile': json.dumps(profile).encode('utf-8'),
+                },
+                check_status=False,
+            )
+            self.assertEqual(response.status_code, 400)
 
     def test_lazo_join(self):
-        response = self.datamart_post(
-            '/search',
-            files={
-                'data': lazo_aug_data.encode('utf-8'),
-            },
-            schema=result_list_schema,
-        )
+        with data('lazo_aug.csv') as lazo_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': lazo_aug,
+                },
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         self.assertJson(
             results,
@@ -427,14 +429,15 @@ class TestDataSearch(DatamartTest):
     def test_geo_union(self):
         query = {'keywords': ['places']}
 
-        response = self.datamart_post(
-            '/search',
-            files={
-                'query': json.dumps(query).encode('utf-8'),
-                'data': geo_aug_data.encode('utf-8'),
-            },
-            schema=result_list_schema,
-        )
+        with data('geo_aug.csv') as geo_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'query': json.dumps(query).encode('utf-8'),
+                    'data': geo_aug,
+                },
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
         self.assertJson(
@@ -459,13 +462,14 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_geo_union_only_data(self):
-        response = self.datamart_post(
-            '/search',
-            files={
-                'data': geo_aug_data.encode('utf-8'),
-            },
-            schema=result_list_schema,
-        )
+        with data('geo_aug.csv') as geo_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': geo_aug,
+                },
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
         self.assertJson(
@@ -490,13 +494,14 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_temporal_daily_join(self):
-        response = self.datamart_post(
-            '/search',
-            files={
-                'data': daily_aug_data.encode('utf-8'),
-            },
-            schema=result_list_schema,
-        )
+        with data('daily_aug.csv') as daily_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': daily_aug,
+                },
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         self.assertJson(
             results,
@@ -520,13 +525,14 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_temporal_hourly_join(self):
-        response = self.datamart_post(
-            '/search',
-            files={
-                'data': hourly_aug_data.encode('utf-8'),
-            },
-            schema=result_list_schema,
-        )
+        with data('hourly_aug.csv') as hourly_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': hourly_aug,
+                },
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         self.assertJson(
             results,
@@ -550,13 +556,14 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_temporal_hourly_daily_join(self):
-        response = self.datamart_post(
-            '/search',
-            files={
-                'data': hourly_aug_data_days.encode('utf-8'),
-            },
-            schema=result_list_schema,
-        )
+        with data('hourly_aug_days.csv') as hourly_aug_days:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': hourly_aug_days,
+                },
+                schema=result_list_schema,
+            )
         results = response.json()['results']
         self.assertJson(
             results,
@@ -825,13 +832,14 @@ class TestAugment(DatamartTest):
             'supplied_resource_id': None
         }
 
-        response = self.datamart_post(
-            '/augment',
-            files={
-                'task': json.dumps(task).encode('utf-8'),
-                'data': basic_aug_data.encode('utf-8'),
-            },
-        )
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': basic_aug,
+                },
+            )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
@@ -942,13 +950,14 @@ class TestAugment(DatamartTest):
             'supplied_resource_id': None
         }
 
-        response = self.datamart_post(
-            '/augment',
-            files={
-                'task': json.dumps(task).encode('utf-8'),
-                'data': basic_aug_data.encode('utf-8'),
-            },
-        )
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': basic_aug,
+                },
+            )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
@@ -1063,13 +1072,14 @@ class TestAugment(DatamartTest):
             'supplied_resource_id': None
         }
 
-        response = self.datamart_post(
-            '/augment',
-            files={
-                'task': json.dumps(task).encode('utf-8'),
-                'data': agg_aug_data.encode('utf-8'),
-            },
-        )
+        with data('agg_aug.csv') as agg_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': agg_aug,
+                },
+            )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
@@ -1199,13 +1209,14 @@ class TestAugment(DatamartTest):
             'supplied_resource_id': None
         }
 
-        response = self.datamart_post(
-            '/augment',
-            files={
-                'task': json.dumps(task).encode('utf-8'),
-                'data': lazo_aug_data.encode('utf-8'),
-            },
-        )
+        with data('lazo_aug.csv') as lazo_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': lazo_aug,
+                },
+            )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
@@ -1343,13 +1354,14 @@ class TestAugment(DatamartTest):
             'supplied_resource_id': None
         }
 
-        response = self.datamart_post(
-            '/augment',
-            files={
-                'task': json.dumps(task).encode('utf-8'),
-                'data': geo_aug_data.encode('utf-8'),
-            },
-        )
+        with data('geo_aug.csv') as geo_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': geo_aug,
+                },
+            )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
@@ -1465,13 +1477,14 @@ class TestAugment(DatamartTest):
             'supplied_resource_id': None
         }
 
-        response = self.datamart_post(
-            '/augment',
-            files={
-                'task': json.dumps(task).encode('utf-8'),
-                'data': daily_aug_data.encode('utf-8'),
-            },
-        )
+        with data('daily_aug.csv') as daily_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': daily_aug,
+                },
+            )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
@@ -1517,13 +1530,14 @@ class TestAugment(DatamartTest):
             'supplied_resource_id': None
         }
 
-        response = self.datamart_post(
-            '/augment',
-            files={
-                'task': json.dumps(task).encode('utf-8'),
-                'data': hourly_aug_data.encode('utf-8'),
-            },
-        )
+        with data('hourly_aug.csv') as hourly_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': hourly_aug,
+                },
+            )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
@@ -1568,13 +1582,14 @@ class TestAugment(DatamartTest):
             'supplied_resource_id': None
         }
 
-        response = self.datamart_post(
-            '/augment',
-            files={
-                'task': json.dumps(task).encode('utf-8'),
-                'data': hourly_aug_data_days.encode('utf-8'),
-            },
-        )
+        with data('hourly_aug_days.csv') as hourly_aug_days:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': hourly_aug_days,
+                },
+            )
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
             response.headers['Content-Disposition'].startswith('attachment')
@@ -2142,94 +2157,3 @@ hourly_metadata = {
     'date': lambda d: isinstance(d, str),
     'version': version,
 }
-
-
-basic_aug_data = (
-    'number,desk_faces\n'
-    '5,west\n'
-    '4,south\n'
-    '7,west\n'
-    '6,east\n'
-    '11,\n'
-)
-
-
-agg_aug_data = (
-    'id,location\n'
-    '40,brazil\n'
-    '30,korea\n'
-    '70,usa\n'
-    '80,canada\n'
-    '100,france\n'
-)
-
-
-geo_aug_data = (
-    'lat,long,id,letter\n'
-    '40.732792,-73.998516,place100,a\n'
-    '40.729707,-73.997885,place101,b\n'
-    '40.732666,-73.997576,place102,c\n'
-    '40.731173,-74.001817,place103,d\n'
-    '40.694272,-73.989852,place104,e\n'
-    '40.694424,-73.987888,place105,f\n'
-    '40.693446,-73.988829,place106,g\n'
-    '40.692157,-73.989549,place107,h\n'
-    '40.695933,-73.986665,place108,i\n'
-    '40.692827,-73.988438,place109,j\n'
-)
-
-
-lazo_aug_data = (
-    'home_address\n'
-    'AZ\n'
-    'PA\n'
-    'SD\n'
-    'NJ\n'
-    'NH\n'
-    'TX\n'
-    'MS\n'
-    'TN\n'
-    'WA\n'
-    'VA\n'
-    'NY\n'
-    'OH\n'
-    'OR\n'
-    'IL\n'
-    'MT\n'
-    'GA\n'
-    'FL\n'
-    'HI\n'
-    'CA\n'
-    'NC\n'
-    'UT\n'
-    'SC\n'
-    'LA\n'
-    'RI\n'
-    'PR\n'
-    'DE\n'
-)
-
-daily_aug_data = (
-    'orig_date,n_people\n'
-    '2019-04-28,3\n'
-    '2019-04-29,5\n'
-    '2019-04-30,0\n'
-    '2019-05-01,1\n'
-    '2019-05-02,3\n'
-    '2019-05-03,2\n'
-)
-
-hourly_aug_data_days = (
-    'orig_date,color\n'
-    '2019-06-12,blue\n'
-    '2019-06-13,green\n'
-)
-
-hourly_aug_data = (
-    'orig_date,color\n'
-    '2019-06-13T01:00:00,blue\n'
-    '2019-06-13T02:00:00,blue\n'
-    '2019-06-13T03:00:00,green\n'
-    '2019-06-13T04:00:00,green\n'
-    '2019-06-13T05:00:00,blue\n'
-)
