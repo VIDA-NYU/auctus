@@ -125,13 +125,14 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         logger.info("Got profile")
 
         try:
-            data_profile, _ = self.handle_data_parameter(data)
+            data_profile, data_hash = self.handle_data_parameter(data)
         except ClientError as e:
             return self.send_error_json(400, str(e))
 
         return self.send_json(dict(
             data_profile,
             version=os.environ['DATAMART_VERSION'],
+            token=data_hash,
         ))
 
 
