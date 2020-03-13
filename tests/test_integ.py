@@ -379,6 +379,42 @@ class TestDataSearch(DatamartTest):
             ]
         )
 
+    def test_basic_join_only_token(self):
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/profile',
+                files={'data': basic_aug},
+            )
+        token = response.json()['token']
+        self.assertEqual(len(token), 40)
+
+        response = self.datamart_post(
+            '/search',
+            data={'data_profile': token},
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertJson(
+            results,
+            [
+                {
+                    'id': 'datamart.test.basic',
+                    'metadata': basic_metadata,
+                    'd3m_dataset_description': basic_metadata_d3m('4.0.0'),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['number']],
+                        'right_columns': [[2]],
+                        'right_columns_names': [['number']],
+                        'type': 'join'
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
+                }
+            ]
+        )
+
     def test_both_data_profile(self):
         with data('basic_aug.csv') as basic_aug:
             response = self.datamart_post(
