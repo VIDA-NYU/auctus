@@ -20,9 +20,10 @@ function VerticalLogo() {
   );
 }
 
-function HorizontalLogo() {
+function HorizontalLogo(props: {onClick: () => void}) {
+  const style = props.onClick ? { cursor: 'pointer' } : undefined;
   return (
-    <div className="d-inline text-center">
+    <div className="d-inline text-center" style={style} onClick={props.onClick}>
       <img
         src={logo}
         className="d-inline"

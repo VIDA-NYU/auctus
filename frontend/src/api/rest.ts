@@ -1,5 +1,5 @@
-import axios, { AxiosResponse } from 'axios';
-import { SearchResponse } from './types';
+import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
+import { SearchResponse, SearchResult, FilterVariables, QuerySpec } from './types';
 import { API_URL } from '../config';
 
 export const DEFAULT_SOURCES = [
@@ -23,54 +23,30 @@ export interface Response<T> {
   data?: T;
 }
 
-export interface Variable {
-  type: string;
-}
-
-export interface TemporalVariable {
-  type: 'temporal_variable';
-  start?: string;
-  end?: string;
-}
-
-export interface GeoSpatialVariable {
-  type: 'geospatial_variable';
-  latitude1: string;
-  longitude1: string;
-  latitude2: string;
-  longitude2: string;
-}
-
-export type FilterVariables = TemporalVariable | GeoSpatialVariable;
-
-export interface QuerySpec {
-  keywords: string[];
-  source: string[];
-  variables: FilterVariables[];
+export interface SearchQuery {
+  query?: string,
+  filters?: FilterVariables[],
+  sources?: string[],
+  file?: File,
 }
 
 function parseQueryString(q?: string): string[] {
   return q ? q.split(' ').filter(t => t.length > 0) : [];
 }
 
-export async function search(
-  query?: string,
-  filters?: FilterVariables[],
-  sources?: string[],
-  file?: File,
-): Promise<Response<SearchResponse>> {
+export async function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   const url = `${API_URL}/search?_parse_sample=1`;
 
   const spec: QuerySpec = {
-    keywords: parseQueryString(query),
-    source: sources && sources.length > 0 ? sources : DEFAULT_SOURCES,
-    variables: filters ? [...filters] : [],
+    keywords: parseQueryString(q.query),
+    source: q.sources && q.sources.length > 0 ? q.sources : DEFAULT_SOURCES,
+    variables: q.filters ? [...q.filters] : [],
   };
 
   const formData = new FormData();
   formData.append('query', JSON.stringify(spec));
-  if (file) {
-    formData.append('data', file);
+  if (q.file) {
+    formData.append('data', q.file);
   }
   const config = {
     headers: {
@@ -81,6 +57,36 @@ export async function search(
   return axios
     .post(url, formData, config)
     .then((response: AxiosResponse) => {
+      return {
+        status: ResquestResult.SUCCESS,
+        data: response.data,
+      };
+    })
+    .catch(error => {
+      return {
+        status: ResquestResult.ERROR,
+      };
+    });
+}
+
+export function augment(data: File, task: SearchResult): Promise<Response<Blob>> {
+  const formData = new FormData();
+  formData.append('data', data);
+  formData.append('task', JSON.stringify(task));
+
+  const url = `${API_URL}/augment`;
+  const config: AxiosRequestConfig = {
+    responseType: 'blob',
+    headers: {
+      'content-type': 'multipart/form-data',
+    },
+  };
+  return axios
+    .post(url, formData, config)
+    .then((response: AxiosResponse) => {
+      if(response.status !== 200) {
+        throw Error("Status " + response.status);
+      }
       return {
         status: ResquestResult.SUCCESS,
         data: response.data,

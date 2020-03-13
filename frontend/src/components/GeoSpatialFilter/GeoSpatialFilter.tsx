@@ -18,7 +18,7 @@ import { fromLonLat } from 'ol/proj';
 import { VectorSourceEvent } from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import Geometry from 'ol/geom/Geometry';
-import { GeoSpatialVariable } from '../../api/rest';
+import { GeoSpatialVariable } from '../../api/types';
 import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
 
 //

@@ -16,6 +16,19 @@ export function formatSize(size: number) {
   return size;
 }
 
+export function triggerFileDownload(file: Blob, filename: string) {
+  const link = document.createElement('a');
+  link.href = window.URL.createObjectURL(file);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+export function cloneObject<T>(object: T): T {
+  return JSON.parse(JSON.stringify(object));
+}
+
 export function shallowEqual(a: {}, b: {}) {
   if (a === b) {
     return true;

@@ -4,8 +4,11 @@ import { BASE_PATH_URL } from '../../config';
 import { formatSize } from '../../utils';
 import { SearchResult } from '../../api/types';
 import { Description, DataTypes, DatasetColumns } from './Metadata';
+import { AugmentationOptions } from './AugmentationOptions';
+import { SearchQuery } from '../../api/rest';
 
 interface SearchHitProps {
+  searchQuery: SearchQuery;
   hit: SearchResult;
   onSearchHitExpand: (hit: SearchResult) => void;
 }
@@ -58,7 +61,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
   }
 
   render() {
-    const { hit } = this.props;
+    const { hit, searchQuery } = this.props;
     return (
       <div className="card mb-4 shadow-sm d-flex flex-row">
         <div className="card-body d-flex flex-column">
@@ -68,6 +71,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
           <DatasetColumns columns={hit.metadata.columns} label={false} />
           <DataTypes hit={hit} label={false} />
           <DownloadViewDetails id={hit.id} />
+          <AugmentationOptions hit={hit} searchQuery={searchQuery} />
         </div>
         <div
           style={{ margin: 'auto 0', cursor: 'pointer' }}

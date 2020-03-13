@@ -6,25 +6,26 @@ import {
   AdvancedSearchBar,
   FilterType,
 } from './components/AdvancedSearchBar/AdvancedSearchBar';
-import {
-  DateFilter
-} from './components/DateFilter/DateFilter';
+import { DateFilter } from './components/DateFilter/DateFilter';
 import { RelatedFileFilter } from './components/RelatedFileFilter/RelatedFileFilter';
-import {
-  GeoSpatialFilter
-} from './components/GeoSpatialFilter/GeoSpatialFilter';
+import { GeoSpatialFilter } from './components/GeoSpatialFilter/GeoSpatialFilter';
 import { FilterContainer } from './components/FilterContainer/FilterContainer';
 import { SourceFilter } from './components/SourceFilter/SourceFilter';
 import { SearchBar } from './components/SearchBar/SearchBar';
 import { SearchState } from './components/SearchResults/SearchState';
 import { SearchResults } from './components/SearchResults/SearchResults';
-import { SearchResponse } from './api/types';
+import {
+  SearchResponse,
+  FilterVariables,
+  TemporalVariable,
+  GeoSpatialVariable,
+} from './api/types';
 
 interface Filter {
   id: string;
   type: FilterType;
   component: JSX.Element;
-  state?: api.FilterVariables;
+  state?: FilterVariables;
 }
 
 interface AppState {
@@ -34,21 +35,39 @@ interface AppState {
   sources?: string[];
   searchState: SearchState;
   searchResponse?: SearchResponse;
+  searchQuery?: api.SearchQuery;
 }
 
 class App extends React.Component<{}, AppState> {
-
   constructor(props: AppState) {
     super(props);
-    this.state = {
-      filters: [],
+    this.state = this.initialState();
+  }
+
+  initialState() {
+    return {
       query: '',
+      searchQuery: undefined,
       searchResponse: undefined,
       searchState: SearchState.CLEAN,
+      filters: [],
     };
   }
 
+  resetQuery() {
+    this.setState(this.initialState());
+  }
+
   removeFilter(filterId: string) {
+    const filter = this.state.filters.find(f => f.id !== filterId);
+    if (filter) {
+      if (filter.type === FilterType.RELATED_FILE) {
+        this.setState({ file: undefined });
+      }
+      if (filter.type === FilterType.SOURCE) {
+        this.setState({ sources: undefined });
+      }
+    }
     this.setState({
       filters: this.state.filters.filter(f => f.id !== filterId),
     });
@@ -62,7 +81,10 @@ class App extends React.Component<{}, AppState> {
     return false;
   }
 
-  updateFilterState(filterId: string, state: api.TemporalVariable | api.GeoSpatialVariable) {
+  updateFilterState(
+    filterId: string,
+    state: TemporalVariable | GeoSpatialVariable
+  ) {
     const filter = this.state.filters.find(f => f.id === filterId);
     if (filter) {
       filter.state = state;
@@ -109,7 +131,7 @@ class App extends React.Component<{}, AppState> {
           >
             <RelatedFileFilter
               key={`relatedfilefilter-${filterId}`}
-              onSelectedFileChange={(f) => this.setState({file: f})}
+              onSelectedFileChange={f => this.setState({ file: f })}
             />
           </FilterContainer>
         );
@@ -146,12 +168,24 @@ class App extends React.Component<{}, AppState> {
 
   async submitQuery() {
     if (this.validQuery()) {
-      this.setState({ searchState: SearchState.SEARCH_REQUESTING });
       const validFilters = this.state.filters
         .map(f => f.state)
-        .filter((f): f is api.FilterVariables => f !== undefined);
+        .filter((f): f is FilterVariables => f !== undefined);
+
+      const query: api.SearchQuery = {
+        query: this.state.query,
+        filters: validFilters,
+        sources: this.state.sources,
+        file: this.state.file,
+      };
+
+      this.setState({
+        searchQuery: query,
+        searchState: SearchState.SEARCH_REQUESTING,
+      });
+
       api
-        .search(this.state.query, validFilters, this.state.sources, this.state.file)
+        .search(query)
         .then(response => {
           if (response.status === api.ResquestResult.SUCCESS && response.data) {
             this.setState({
@@ -175,13 +209,13 @@ class App extends React.Component<{}, AppState> {
   render() {
     return (
       <div className="container-fluid">
-        {this.state.searchState !== SearchState.CLEAN ? (
+        {this.state.searchQuery ? (
           <>
             <div className="row">
               <div className="col-md">
                 <div className="d-flex flex-row mt-4 mb-3">
                   <div>
-                    <HorizontalLogo />
+                    <HorizontalLogo onClick={() => this.resetQuery()} />
                   </div>
                   <div className="ml-4">
                     <SearchBar
@@ -203,6 +237,7 @@ class App extends React.Component<{}, AppState> {
             <div className="row">
               <div className="col-md-12">
                 <SearchResults
+                  searchQuery={this.state.searchQuery}
                   searchState={this.state.searchState}
                   searchResponse={this.state.searchResponse}
                 />
@@ -210,22 +245,22 @@ class App extends React.Component<{}, AppState> {
             </div>
           </>
         ) : (
-            <div>
-              <VerticalLogo />
-              <SearchBar
-                value={this.state.query}
-                active={this.validQuery()}
-                onQueryChange={q => this.setState({ query: q })}
-                onSubmitQuery={() => this.submitQuery()}
-              />
-              <AdvancedSearchBar
-                onAddFilter={type => this.handleAddFilter(type)}
-              />
-              <div className="" style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
-                {this.renderFilters()}
-              </div>
+          <div>
+            <VerticalLogo />
+            <SearchBar
+              value={this.state.query}
+              active={this.validQuery()}
+              onQueryChange={q => this.setState({ query: q })}
+              onSubmitQuery={() => this.submitQuery()}
+            />
+            <AdvancedSearchBar
+              onAddFilter={type => this.handleAddFilter(type)}
+            />
+            <div className="" style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
+              {this.renderFilters()}
             </div>
-          )}
+          </div>
+        )}
       </div>
     );
   }

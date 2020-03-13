@@ -2,7 +2,7 @@ import React from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DateFilter.css';
-import { TemporalVariable } from '../../api/rest';
+import { TemporalVariable } from '../../api/types';
 import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
 
 interface DateFilterProps {

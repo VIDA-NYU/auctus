@@ -1,3 +1,7 @@
+export interface AugmentationTask {
+  data: SearchResult;
+}
+
 export interface AugmentationInfo {
   type: string;
   left_columns: number[][];
@@ -56,4 +60,30 @@ export interface SearchResult {
 
 export interface SearchResponse {
   results: SearchResult[];
+}
+
+export interface Variable {
+  type: string;
+}
+
+export interface TemporalVariable {
+  type: 'temporal_variable';
+  start?: string;
+  end?: string;
+}
+
+export interface GeoSpatialVariable {
+  type: 'geospatial_variable';
+  latitude1: string;
+  longitude1: string;
+  latitude2: string;
+  longitude2: string;
+}
+
+export type FilterVariables = TemporalVariable | GeoSpatialVariable;
+
+export interface QuerySpec {
+  keywords: string[];
+  source: string[];
+  variables: FilterVariables[];
 }
