@@ -35,7 +35,8 @@ async def import_all(folder):
             with open(path, 'r') as fp:
                 obj = json.load(fp)
             metadata = dict(name=obj['name'],
-                            materialize=obj['materialize'])
+                            materialize=obj['materialize'],
+                            source=obj.get('source', 'unknown'))
             if obj.get('description'):
                 metadata['description'] = obj['description']
             if obj.get('date'):

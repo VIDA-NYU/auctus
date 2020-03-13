@@ -24,21 +24,16 @@ def count():
                 'match_all': {},
             },
         },
-        _source='materialize.identifier',
+        _source='source',
         size=SIZE,
     )
     for h in hits:
-        identifier = h['_source']['materialize']['identifier']
-
-        # Special case for Socrata
-        if identifier == 'datamart.socrata':
-            end = h['_id'].find('.', 17)
-            identifier = h['_id'][:end]
+        source = h['_source']['source']
 
         try:
-            sources[identifier] += 1
+            sources[source] += 1
         except KeyError:
-            sources[identifier] = 1
+            sources[source] = 1
 
     for identifier, count in sorted(sources.items(), key=lambda p: -p[1]):
         print('{: 6d} {}'.format(count, identifier))
