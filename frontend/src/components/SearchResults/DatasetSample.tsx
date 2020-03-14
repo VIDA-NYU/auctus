@@ -60,7 +60,7 @@ export function DatasetSample(props: TableSampleProps) {
 
   return (
     <div className="mt-2">
-      <b>Dataset Sample:</b>
+      <h6>Dataset Sample:</h6>
       <div className="mt-2" style={{ overflow: 'auto', maxHeight: '20rem' }}>
         <Table columns={columns} data={rows} />
       </div>

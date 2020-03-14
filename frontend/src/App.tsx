@@ -256,7 +256,7 @@ class App extends React.Component<{}, AppState> {
             <AdvancedSearchBar
               onAddFilter={type => this.handleAddFilter(type)}
             />
-            <div className="" style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
+            <div style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
               {this.renderFilters()}
             </div>
           </div>

@@ -4,6 +4,26 @@ import { BASE_PATH_URL } from '../../config';
 import { SearchResult } from '../../api/types';
 import { ColumnMetadata } from '../../api/types';
 import { generateRandomId } from '../../utils';
+import { GeoSpatialCoverageMap } from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
+
+export function SpatialCoverage(props: { hit: SearchResult }) {
+  const { spatial_coverage } = props.hit.metadata;
+  if (!spatial_coverage) {
+    return <></>;
+  }
+  return (
+    <>
+      <h6>Spatial Coverage</h6>
+      <span> This is the approximate spatial coverage of the data.</span>
+      {spatial_coverage.map((s, i) => (
+        <GeoSpatialCoverageMap
+          key={`spatial-coverage-map-${i}`}
+          coverage={s}
+        />
+      ))}
+    </>
+  );
+}
 
 export function DataTypes(props: {
   hit: SearchResult;

@@ -13,14 +13,12 @@ export interface AugmentationInfo {
 export interface SpatialCoverage {
   lat: string;
   lon: string;
-  ranges: [
-    {
-      range: {
-        coordinates: [[number, number], [number, number]];
-        type: 'envelope';
-      };
-    }
-  ];
+  ranges: Array<{
+    range: {
+      coordinates: [[number, number], [number, number]];
+      type: 'envelope';
+    };
+  }>;
 }
 
 export interface Metadata {

@@ -17,22 +17,9 @@ import {
 import { fromLonLat } from 'ol/proj';
 import { VectorSourceEvent } from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
-import Geometry from 'ol/geom/Geometry';
 import { GeoSpatialVariable } from '../../api/types';
 import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
-
-//
-// Following types are a temporary workaround to a bug in typings from the
-// OpenLayers library (package @types/ol) This may be removed after upgrading
-// this library to a newer version
-//
-interface MyMapBrowserEvent extends MapBrowserEvent {
-  pointerEvent: PointerEvent;
-}
-
-interface MyGeometry extends Geometry {
-  getCoordinates(): number[][][];
-}
+import { transformCoordinates, MyMapBrowserEvent } from '../spatial-utils';
 
 interface GeoSpatialFilterState {
   selectedCoordinates?: {
@@ -80,10 +67,10 @@ class GeoSpatialFilter extends PersistentComponent<
       ]),
       view: new View({
         projection: 'EPSG:3857',
-        center: fromLonLat([-73.986579, 40.6942036], 'EPSG:3857'), // Tandon
-        zoom: 12,
-        // center: fromLonLat([0, 0], 'EPSG:3857'),
-        // zoom: 2
+        // center: fromLonLat([-73.986579, 40.6942036], 'EPSG:3857'), // Tandon
+        // zoom: 12,
+        center: fromLonLat([0, 0], 'EPSG:3857'),
+        zoom: 2,
       }),
     });
 
@@ -100,18 +87,12 @@ class GeoSpatialFilter extends PersistentComponent<
   }
 
   onSelectCoordinates(evt: VectorSourceEvent) {
-    const geometry = evt.feature.getGeometry();
-    if (!geometry) {
-      return;
-    }
-    const transformedGeometry = geometry
-      .clone()
-      .transform('EPSG:3857', 'EPSG:4326') as MyGeometry;
-    const coord = transformedGeometry.getCoordinates()[0];
-    const topLeftLat = coord[3][1];
-    const topLeftLon = coord[3][0];
-    const bottomRightLat = coord[1][1];
-    const bottomRightLon = coord[1][0];
+    const {
+      topLeftLat,
+      topLeftLon,
+      bottomRightLat,
+      bottomRightLon,
+    } = transformCoordinates(evt.feature);
 
     const topLeftText = toStringHDMS([topLeftLon, topLeftLat]);
     const topRightText = toStringHDMS([bottomRightLon, bottomRightLat]);
