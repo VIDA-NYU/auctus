@@ -13,13 +13,13 @@ export const DEFAULT_SOURCES = [
   'upload',
 ];
 
-export enum ResquestResult {
+export enum RequestResult {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
 }
 
 export interface Response<T> {
-  status: ResquestResult;
+  status: RequestResult;
   data?: T;
 }
 
@@ -58,13 +58,13 @@ export async function search(q: SearchQuery): Promise<Response<SearchResponse>> 
     .post(url, formData, config)
     .then((response: AxiosResponse) => {
       return {
-        status: ResquestResult.SUCCESS,
+        status: RequestResult.SUCCESS,
         data: response.data,
       };
     })
     .catch(error => {
       return {
-        status: ResquestResult.ERROR,
+        status: RequestResult.ERROR,
       };
     });
 }
@@ -88,13 +88,13 @@ export function augment(data: File, task: SearchResult): Promise<Response<Blob>>
         throw Error("Status " + response.status);
       }
       return {
-        status: ResquestResult.SUCCESS,
+        status: RequestResult.SUCCESS,
         data: response.data,
       };
     })
     .catch(error => {
       return {
-        status: ResquestResult.ERROR,
+        status: RequestResult.ERROR,
       };
     });
 }

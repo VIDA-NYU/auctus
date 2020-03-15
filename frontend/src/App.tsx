@@ -25,14 +25,12 @@ interface Filter {
   id: string;
   type: FilterType;
   component: JSX.Element;
-  state?: FilterVariables;
+  state?: FilterVariables | File | string[];
 }
 
 interface AppState {
   query: string;
   filters: Filter[];
-  file?: File;
-  sources?: string[];
   searchState: SearchState;
   searchResponse?: SearchResponse;
   searchQuery?: api.SearchQuery;
@@ -59,15 +57,6 @@ class App extends React.Component<{}, AppState> {
   }
 
   removeFilter(filterId: string) {
-    const filter = this.state.filters.find(f => f.id !== filterId);
-    if (filter) {
-      if (filter.type === FilterType.RELATED_FILE) {
-        this.setState({ file: undefined });
-      }
-      if (filter.type === FilterType.SOURCE) {
-        this.setState({ sources: undefined });
-      }
-    }
     this.setState({
       filters: this.state.filters.filter(f => f.id !== filterId),
     });
@@ -76,14 +65,12 @@ class App extends React.Component<{}, AppState> {
   validQuery() {
     if (this.state.query && this.state.query.length > 0) return true;
     if (this.state.filters.filter(f => f.state).length > 0) return true;
-    if (this.state.sources && this.state.sources.length > 0) return true;
-    if (this.state.file) return true;
     return false;
   }
 
   updateFilterState(
     filterId: string,
-    state: TemporalVariable | GeoSpatialVariable
+    state: TemporalVariable | GeoSpatialVariable | File | string[]
   ) {
     const filter = this.state.filters.find(f => f.id === filterId);
     if (filter) {
@@ -97,8 +84,20 @@ class App extends React.Component<{}, AppState> {
   }
 
   handleAddFilter(filterType: FilterType) {
-    const filterId = generateRandomId();
     const filters = this.state.filters;
+    if (
+      filterType === FilterType.RELATED_FILE &&
+      filters.filter(f => f.type === FilterType.RELATED_FILE).length > 0
+    ) {
+      return;
+    }
+    if (
+      filterType === FilterType.SOURCE &&
+      filters.filter(f => f.type === FilterType.SOURCE).length > 0
+    ) {
+      return;
+    }
+    const filterId = generateRandomId();
     filters.push({
       id: filterId,
       type: filterType,
@@ -131,7 +130,7 @@ class App extends React.Component<{}, AppState> {
           >
             <RelatedFileFilter
               key={`relatedfilefilter-${filterId}`}
-              onSelectedFileChange={f => this.setState({ file: f })}
+              onSelectedFileChange={f => this.updateFilterState(filterId, f)}
             />
           </FilterContainer>
         );
@@ -157,7 +156,7 @@ class App extends React.Component<{}, AppState> {
           >
             <SourceFilter
               key={`sourcefilter-${filterId}`}
-              onSourcesChange={s => this.setState({ sources: s })}
+              onSourcesChange={s => this.updateFilterState(filterId, s)}
             />
           </FilterContainer>
         );
@@ -168,15 +167,25 @@ class App extends React.Component<{}, AppState> {
 
   async submitQuery() {
     if (this.validQuery()) {
-      const validFilters = this.state.filters
-        .map(f => f.state)
-        .filter((f): f is FilterVariables => f !== undefined);
+      const filterVariables = this.state.filters
+        .filter(f => f.type !== FilterType.RELATED_FILE)
+        .filter(f => f.type !== FilterType.SOURCE)
+        .filter(f => f && f.state)
+        .map(f => f.state as FilterVariables);
+
+      const files: File[] = this.state.filters
+        .filter(f => f.type === FilterType.RELATED_FILE)
+        .map(f => f.state as File);
+
+      const sources: string[][] = this.state.filters
+        .filter(f => f.type === FilterType.SOURCE)
+        .map(f => f.state as string[]);
 
       const query: api.SearchQuery = {
         query: this.state.query,
-        filters: validFilters,
-        sources: this.state.sources,
-        file: this.state.file,
+        filters: filterVariables,
+        sources: sources[0],
+        file: files[0],
       };
 
       this.setState({
@@ -187,7 +196,7 @@ class App extends React.Component<{}, AppState> {
       api
         .search(query)
         .then(response => {
-          if (response.status === api.ResquestResult.SUCCESS && response.data) {
+          if (response.status === api.RequestResult.SUCCESS && response.data) {
             this.setState({
               searchState: SearchState.SEARCH_SUCCESS,
               searchResponse: {
