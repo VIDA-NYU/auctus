@@ -1,6 +1,6 @@
 import React from 'react';
 import { generateRandomId } from '../../utils';
-import { Map, View } from 'ol/';
+import { Map, View, Feature } from 'ol/';
 import { toStringHDMS } from 'ol/coordinate';
 import { Draw } from 'ol/interaction';
 import { createBox } from 'ol/interaction/Draw';
@@ -26,6 +26,7 @@ interface GeoSpatialFilterState {
     topLeftText: string;
     topRightText: string;
   };
+  feature?: Feature;
 }
 
 interface GeoSpatialFilterProps {
@@ -37,6 +38,7 @@ class GeoSpatialFilter extends PersistentComponent<
   GeoSpatialFilterState
 > {
   mapId = generateRandomId();
+  source?: VectorSource;
 
   constructor(props: GeoSpatialFilterProps) {
     super(props);
@@ -45,16 +47,30 @@ class GeoSpatialFilter extends PersistentComponent<
     };
   }
 
+  componentDidUpdate() {
+    // The OpenLayers map looses its selected state when the react component
+    // is unmounted. Here we re-load the selected feature from the previous
+    // component state.
+    if (
+      this.source &&
+      this.source.getFeatures().length === 0 &&
+      this.state.feature
+    ) {
+      this.source.addFeature(this.state.feature);
+    }
+  }
+
   componentDidMount() {
+    super.componentDidMount();
+
     const openStreetMapTileLayer = new TileLayer({
       source: new OSMSource(),
     });
 
-    const source = new VectorSource({ wrapX: false });
-    const vectorLayer = new VectorLayer({ source });
+    this.source = new VectorSource({ wrapX: false });
+    this.source.on('addfeature', evt => this.onSelectCoordinates(evt));
 
-    source.on('addfeature', evt => this.onSelectCoordinates(evt));
-
+    const vectorLayer = new VectorLayer({ source: this.source });
     const map = new Map({
       target: this.mapId,
       layers: [openStreetMapTileLayer, vectorLayer],
@@ -77,13 +93,13 @@ class GeoSpatialFilter extends PersistentComponent<
     map.getViewport().addEventListener('contextmenu', () => {
       // the 'contextmenu' event is triggered on right-button click
       // we use it to clear the current coordinates selection
-      if (source) {
-        source.clear();
+      if (this.source) {
+        this.source.clear();
       }
       this.setState({ selectedCoordinates: undefined });
     });
 
-    this.addInteractions(map, source);
+    this.addInteractions(map, this.source);
   }
 
   onSelectCoordinates(evt: VectorSourceEvent) {
@@ -97,7 +113,10 @@ class GeoSpatialFilter extends PersistentComponent<
     const topLeftText = toStringHDMS([topLeftLon, topLeftLat]);
     const topRightText = toStringHDMS([bottomRightLon, bottomRightLat]);
 
-    this.setState({ selectedCoordinates: { topLeftText, topRightText } });
+    this.setState({
+      selectedCoordinates: { topLeftText, topRightText },
+      feature: evt.feature,
+    });
     this.props.onSelectCoordinates({
       type: 'geospatial_variable',
       latitude1: topLeftLat.toString(),
@@ -115,7 +134,7 @@ class GeoSpatialFilter extends PersistentComponent<
       geometryFunction: createBox(),
       condition: (evt: MapBrowserEvent) => {
         const e = evt as MyMapBrowserEvent; // workaround for type definition bug
-        // when the point's button is 1 (leftclick), allows drawing
+        // when the point's button is 1 (left-click), allows drawing
         if (e.pointerEvent.buttons === 1) {
           return true;
         } else {
