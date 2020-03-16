@@ -228,6 +228,7 @@ class App extends React.Component<{}, AppState> {
                   </div>
                   <div className="ml-4">
                     <SearchBar
+                      key={'search-bar'}
                       value={this.state.query}
                       active={this.validQuery()}
                       onQueryChange={q => this.setState({ query: q })}
@@ -257,6 +258,7 @@ class App extends React.Component<{}, AppState> {
           <div>
             <VerticalLogo />
             <SearchBar
+              key={'search-bar'}
               value={this.state.query}
               active={this.validQuery()}
               onQueryChange={q => this.setState({ query: q })}

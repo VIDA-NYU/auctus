@@ -16,19 +16,13 @@ export function SpatialCoverage(props: { hit: SearchResult }) {
       <h6>Spatial Coverage</h6>
       <span> This is the approximate spatial coverage of the data.</span>
       {spatial_coverage.map((s, i) => (
-        <GeoSpatialCoverageMap
-          key={`spatial-coverage-map-${i}`}
-          coverage={s}
-        />
+        <GeoSpatialCoverageMap key={`spatial-coverage-map-${i}`} coverage={s} />
       ))}
     </>
   );
 }
 
-export function DataTypes(props: {
-  hit: SearchResult;
-  label?: boolean;
-}) {
+export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
   const { hit, label } = props;
   const isTemporal =
     hit.metadata.columns
@@ -163,15 +157,20 @@ export class DatasetColumns extends React.PureComponent<
             </span>
           ))}
         {hiddenColumns.length > 0 && (
-          <a
+          <button
             className="text-muted small"
-            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+            style={{
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              background: 'transparent',
+              border: 0,
+            }}
             onClick={() => this.setState({ hidden: !this.state.hidden })}
           >
             {this.state.hidden
               ? `Show ${hiddenColumns.length} more...`
               : 'Hide'}
-          </a>
+          </button>
         )}
       </div>
     );
