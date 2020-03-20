@@ -1,0 +1,29 @@
+/* https://www.colorbox.io/#steps=7#hue_start=209#hue_end=172#hue_curve=easeInQuad#sat_start=12#sat_end=90#sat_curve=easeOutCubic#sat_rate=130#lum_start=84#lum_end=53#lum_curve=easeOutQuad#minor_steps_map=0 */
+.badge.semtype {
+  background-color: #b1c4d5;
+  color: white;
+}
+
+.badge.semtype.semtype-text {
+  background-color: #aec2d4;
+}
+
+.badge.semtype.semtype-boolean {
+  background-color: #a1bbce;
+}
+
+.badge.semtype.semtype-enumeration {
+  background-color: #89b1c4;
+}
+
+.badge.semtype.semtype-identifier {
+  background-color: #5fa4b5;
+}
+
+.badge.semtype.semtype-latitude, .badge.semtype.semtype-longitude {
+  background-color: #249ca0;
+}
+
+.badge.semtype.semtype-datetime {
+  background-color: #008775;
+}

@@ -44,7 +44,7 @@ function HitInfoBox(props: { hit: SearchResult }) {
               <SpatialCoverage hit={hit} />
             </div>
             <div className="mt-2">
-              <DatasetSample data={hit.sample} />
+              <DatasetSample hit={hit} />
             </div>
           </div>
         </div>
