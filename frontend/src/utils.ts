@@ -29,7 +29,10 @@ export function cloneObject<T>(object: T): T {
   return JSON.parse(JSON.stringify(object));
 }
 
-export function shallowEqual(a: {}, b: {}) {
+export function shallowEqual(
+  a: { [key: string]: unknown },
+  b: { [key: string]: unknown }
+) {
   if (a === b) {
     return true;
   }
@@ -42,7 +45,6 @@ export function shallowEqual(a: {}, b: {}) {
 
   for (let i = 0; i < aKeys.length; i++) {
     const key = aKeys[i];
-    // @ts-ignore
     if (a[key] !== b[key]) {
       return false;
     }

@@ -1,8 +1,21 @@
 import { PureComponent } from 'react';
-// import NodeCache from 'node-cache';
 import { shallowEqual } from '../../../utils';
 
 const cache = new Map<string, {}>();
+
+// Patch PureComponent type declaration so that we can access React internal variables
+declare module 'react' {
+  interface PureComponent<P = {}, S = {}, SS = any>
+    extends React.Component<P, S, SS> {
+    _reactInternalFiber: {
+      key: string;
+      type: {
+        displayName: string;
+        name: string;
+      };
+    };
+  }
+}
 
 /**
  * This component uses the key provided to a component to generate a cache key for the data.
@@ -14,9 +27,8 @@ const cache = new Map<string, {}>();
  * 3. Since it is an internal from each component, it doesn't pollute the props of components.
  *
  */
-export default class PersistentComponent<TProps = {}, TState = {}> extends PureComponent<TProps, TState> {
+export class PersistentComponent<TProps = {}, TState = {}> extends PureComponent<TProps, TState> {
   componentDidMount() {
-    // @ts-ignore
     if (!this._reactInternalFiber.key) {
       console.warn('When using PersistentComponent please provide the key prop');
     }
@@ -25,15 +37,17 @@ export default class PersistentComponent<TProps = {}, TState = {}> extends PureC
     if (previousState && !shallowEqual(this.state, previousState)) {
       this.setState(previousState);
     }
-  };
+  }
+
   componentWillUnmount() {
     const key = this.getCacheKey();
     cache.set(key, this.state);
-  };
+  }
+
   private getCacheKey() {
-    // @ts-ignore
-    const name = this._reactInternalFiber.type.displayName || this._reactInternalFiber.type.name;
-    // @ts-ignore
+    const name =
+      this._reactInternalFiber.type.displayName ||
+      this._reactInternalFiber.type.name;
     return `${name}-${this._reactInternalFiber.key}`;
   }
 }

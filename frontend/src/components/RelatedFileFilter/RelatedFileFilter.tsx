@@ -2,7 +2,7 @@ import React from 'react';
 import Dropzone from 'react-dropzone';
 import { CardShadow, CardButton } from '../visus/Card/Card';
 import { formatSize } from '../../utils';
-import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
+import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 
 interface RelatedFileFilterState {
   file?: File;

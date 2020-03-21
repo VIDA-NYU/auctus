@@ -1,7 +1,7 @@
 import './SearchBar.css';
 import React from 'react';
 import * as Icon from 'react-feather';
-import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
+import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 
 interface SearchBarProps {
   active: boolean;

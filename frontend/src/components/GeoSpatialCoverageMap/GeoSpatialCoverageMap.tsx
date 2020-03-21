@@ -7,7 +7,7 @@ import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource, OSM as OSMSource } from 'ol/source';
 import { transformExtent, transform } from 'ol/proj';
 import { SpatialCoverage } from '../../api/types';
-import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
+import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 import Polygon from 'ol/geom/Polygon';
 import Style from 'ol/style/Style';
 import Stroke from 'ol/style/Stroke';
@@ -43,40 +43,40 @@ class GeoSpatialCoverageMap extends PersistentComponent<
     // extent (outer bounding box)
     const polygons = [];
 
-    let top_left = element.ranges[0].range.coordinates[0];
-    let bottom_right = element.ranges[0].range.coordinates[1];
-    let min_x = top_left[0];
-    let max_x = bottom_right[0];
-    let min_y = bottom_right[1];
-    let max_y = top_left[1];
+    let topLeft = element.ranges[0].range.coordinates[0];
+    let bottomRight = element.ranges[0].range.coordinates[1];
+    let minX = topLeft[0];
+    let maxX = bottomRight[0];
+    let minY = bottomRight[1];
+    let maxY = topLeft[1];
 
     polygons.push([
-      [top_left[0], top_left[1]],
-      [top_left[0], bottom_right[1]],
-      [bottom_right[0], bottom_right[1]],
-      [bottom_right[0], top_left[1]],
-      [top_left[0], top_left[1]],
+      [topLeft[0], topLeft[1]],
+      [topLeft[0], bottomRight[1]],
+      [bottomRight[0], bottomRight[1]],
+      [bottomRight[0], topLeft[1]],
+      [topLeft[0], topLeft[1]],
     ]);
 
-    for (var j = 1; j < element.ranges.length; j++) {
-      top_left = element.ranges[j].range.coordinates[0];
-      bottom_right = element.ranges[j].range.coordinates[1];
-      min_x = Math.min(top_left[0], min_x);
-      max_x = Math.max(bottom_right[0], max_x);
-      min_y = Math.min(bottom_right[1], min_y);
-      max_y = Math.max(top_left[1], max_y);
+    for (let j = 1; j < element.ranges.length; j++) {
+      topLeft = element.ranges[j].range.coordinates[0];
+      bottomRight = element.ranges[j].range.coordinates[1];
+      minX = Math.min(topLeft[0], minX);
+      maxX = Math.max(bottomRight[0], maxX);
+      minY = Math.min(bottomRight[1], minY);
+      maxY = Math.max(topLeft[1], maxY);
 
       polygons.push([
-        [top_left[0], top_left[1]],
-        [top_left[0], bottom_right[1]],
-        [bottom_right[0], bottom_right[1]],
-        [bottom_right[0], top_left[1]],
-        [top_left[0], top_left[1]],
+        [topLeft[0], topLeft[1]],
+        [topLeft[0], bottomRight[1]],
+        [bottomRight[0], bottomRight[1]],
+        [bottomRight[0], topLeft[1]],
+        [topLeft[0], topLeft[1]],
       ]);
     }
 
     return {
-      extent: [min_x, min_y, max_x, max_y],
+      extent: [minX, minY, maxX, maxY],
       polygons,
     };
   }
@@ -126,8 +126,8 @@ class GeoSpatialCoverageMap extends PersistentComponent<
     });
 
     const vector = new VectorLayer({
-      source: source,
-      style: style,
+      source,
+      style,
       opacity: 0.5,
     });
 
@@ -165,16 +165,16 @@ class GeoSpatialCoverageMap extends PersistentComponent<
   }
 
   setupHoverPopUp(map: Map) {
-    var selectClick = new Select({
+    const selectClick = new Select({
       condition: click,
     });
 
     map.addInteraction(selectClick);
-    const that = this;
-    selectClick.on('select', function(evt) {
-      var feature = map.forEachFeatureAtPixel(
+
+    selectClick.on('select', (evt) => {
+      const feature = map.forEachFeatureAtPixel(
         evt.mapBrowserEvent.pixel,
-        function(feature) {
+        (feature) => {
           return feature;
         }
       );
@@ -186,17 +186,17 @@ class GeoSpatialCoverageMap extends PersistentComponent<
           bottomRightLon,
         } = transformCoordinates(feature);
 
-        var top_left = toStringHDMS([topLeftLon, topLeftLat]);
-        var bottom_right = toStringHDMS([bottomRightLon, bottomRightLat]);
+        const topLeft = toStringHDMS([topLeftLon, topLeftLat]);
+        const bottomRight = toStringHDMS([bottomRightLon, bottomRightLat]);
 
-        const content = that.popupContentRef.current;
+        const content = this.popupContentRef.current;
         if (content) {
           content.innerHTML =
             '<span>Top Left: </span><code>' +
-            top_left +
+            topLeft +
             '</code> </br>' +
             '<span>Bottom Right: </span><code>' +
-            bottom_right +
+            bottomRight +
             '</code>';
           map
             .getOverlayById('overlay')

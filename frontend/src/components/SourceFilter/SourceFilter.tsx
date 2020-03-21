@@ -1,5 +1,5 @@
 import React from 'react';
-import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
+import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 import { DEFAULT_SOURCES } from '../../api/rest';
 
 interface SourceFilterState {

@@ -18,7 +18,7 @@ import { fromLonLat } from 'ol/proj';
 import { VectorSourceEvent } from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import { GeoSpatialVariable } from '../../api/types';
-import PersistentComponent from '../visus/PersistentComponent/PersistentComponent';
+import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 import { transformCoordinates, MyMapBrowserEvent } from '../spatial-utils';
 
 interface GeoSpatialFilterState {

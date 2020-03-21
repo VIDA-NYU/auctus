@@ -43,7 +43,7 @@ function TypeBadges(props: { column: ColumnMetadata }) {
 }
 
 interface TableProps {
-  columns: Column<string[]>[];
+  columns: Array<Column<string[]>>;
   data: string[][];
   hit: SearchResult;
 }
