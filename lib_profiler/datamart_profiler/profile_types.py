@@ -1,7 +1,9 @@
+import contextlib
 from datetime import datetime
 import dateutil.parser
 import dateutil.tz
 import re
+import warnings
 
 from . import types
 
@@ -36,24 +38,48 @@ MAX_CATEGORICAL_RATIO = 0.10  # 10%
 _defaults = datetime(1985, 1, 1), datetime(2005, 6, 15)
 
 
-def parse_date(string):
-    # This is a dirty trick because dateutil returns a datetime for strings
-    # than only contain times. We parse it twice with different defaults, so we
-    # can tell whether the default date is used in the result
+@contextlib.contextmanager
+def record_warnings():
+    warnings_list = []
+    orig_showarning = warnings.showwarning
+
+    def record(message, category, filename, lineno, file=None, line=None):
+        warnings_list.append((message, category))
+        orig_showarning(message, category, filename, lineno, file, line)
+
     try:
-        dt1 = dateutil.parser.parse(string, default=_defaults[0])
-        dt2 = dateutil.parser.parse(string, default=_defaults[1])
-    except Exception:  # ValueError, OverflowError
-        return None
-    else:
-        if dt1 != dt2:
-            # It was not a date, just a time; no good
+        warnings.showwarning = record
+        yield warnings_list
+    finally:
+        warnings.showwarning = orig_showarning
+
+
+def parse_date(string):
+    with record_warnings() as recorded_warnings:
+        # This is a dirty trick because dateutil returns a datetime for strings
+        # than only contain times. We parse it twice with different defaults,
+        # so we can tell whether the default date is used in the result
+        try:
+            dt1 = dateutil.parser.parse(string, default=_defaults[0])
+            dt2 = dateutil.parser.parse(string, default=_defaults[1])
+        except Exception:  # ValueError, OverflowError
             return None
 
-        # If no timezone was read, assume UTC
-        if dt1.tzinfo is None:
-            dt1 = dt1.replace(tzinfo=dateutil.tz.UTC)
-        return dt1
+    if dt1 != dt2:
+        # It was not a date, just a time; no good
+        return None
+
+    # Some warnings are a problem for us
+    if any(
+        issubclass(w_cat, dateutil.parser.UnknownTimezoneWarning)
+        for w_msg, w_cat in recorded_warnings
+    ):
+        return None
+
+    # If no timezone was read, assume UTC
+    if dt1.tzinfo is None:
+        dt1 = dt1.replace(tzinfo=dateutil.tz.UTC)
+    return dt1
 
 
 def identify_types(array, name):
