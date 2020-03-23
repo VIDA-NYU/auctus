@@ -1212,6 +1212,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
             data_profile = process_dataset(
                 data=io.BytesIO(data),
                 lazo_client=self.application.lazo_client,
+                nominatim=self.application.nominatim,
                 search=True,
                 include_sample=False,
                 coverage=True,

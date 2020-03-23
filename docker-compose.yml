@@ -87,6 +87,7 @@ services:
       - REDIS_HOST=redis
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
+      - NOMINATIM_URL=http://35.225.89.238
     ports:
       - 8002
     # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
@@ -120,6 +121,7 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
+      - NOMINATIM_URL=http://35.225.89.238
     # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov

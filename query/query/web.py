@@ -627,6 +627,7 @@ class Application(GracefulApplication):
         self.elasticsearch = es
         self.redis = redis_client
         self.lazo_client = lazo
+        self.nominatim = os.environ['NOMINATIM_URL']
         self.channel = None
 
         log_future(asyncio.get_event_loop().create_task(self._amqp()), logger)

@@ -24,7 +24,10 @@ logger = logging.getLogger(__name__)
 MAX_CONCURRENT = 2
 
 
-def materialize_and_process_dataset(dataset_id, metadata, lazo_client):
+def materialize_and_process_dataset(
+    dataset_id, metadata,
+    lazo_client, nominatim,
+):
     with get_dataset(metadata, dataset_id) as dataset_path:
         materialize = metadata.pop('materialize')
 
@@ -42,11 +45,12 @@ def materialize_and_process_dataset(dataset_id, metadata, lazo_client):
 
         # Profile
         start = time.perf_counter()
-        metadata = process_dataset(
+        metadata = process_dataset(  ###
             data=dataset_path,
             dataset_id=dataset_id,
             metadata=metadata,
             lazo_client=lazo_client,
+            nominatim=nominatim,
             include_sample=True,
             coverage=True,
             plots=True,
@@ -67,6 +71,7 @@ class Profiler(object):
             host=os.environ['LAZO_SERVER_HOST'],
             port=int(os.environ['LAZO_SERVER_PORT'])
         )
+        self.nominatim = os.environ['NOMINATIM_URL']
         self.channel = None
 
         self.loop = asyncio.get_event_loop()
@@ -136,7 +141,8 @@ class Profiler(object):
                 materialize_and_process_dataset,
                 dataset_id,
                 metadata,
-                self.lazo_client
+                self.lazo_client,
+                self.nominatim,
             )
 
             future.add_done_callback(
