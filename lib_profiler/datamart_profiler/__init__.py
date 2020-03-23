@@ -8,8 +8,11 @@ import pandas
 from pandas.errors import EmptyDataError
 import prometheus_client
 import random
+import requests
 from sklearn.cluster import KMeans
 from sklearn.exceptions import ConvergenceWarning
+import time
+from urllib.parse import urlencode
 import warnings
 
 from .profile_types import identify_types
@@ -33,6 +36,8 @@ SPATIAL_RANGE_DELTA_LONG = 0.0001
 SPATIAL_RANGE_DELTA_LAT = 0.0001
 
 SAMPLE_ROWS = 20
+
+MAX_UNCLEAN_ADDRESSES = 0.2  # 15%
 
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
@@ -217,9 +222,67 @@ def truncate_string(s, limit=140):
             return s[:space] + "..."
 
 
+def nominatim_query(url, *, q):
+    if url[-1] == '/':
+        url = url [:-1]
+    start = time.perf_counter()
+    res = requests.get(
+        url +
+        '/search?' +
+        urlencode({'q': q, 'format': 'jsonv2'}),
+    )
+    end = time.perf_counter()
+    res.raise_for_status()
+    if not res.headers['Content-Type'].startswith('application/json'):
+        raise requests.HTTPError(
+            "Response is not JSON for URL: %s" % res.url,
+            response=res,
+        )
+    return res.json() or None
+
+
+def nominatim_resolve_all(url, array):
+    cache = {}
+    locations = []
+    not_found = 0  # Unique locations not found
+    non_empty = 0
+    start = time.perf_counter()
+    for value in array:
+        value = value.strip()
+        if not value:
+            continue
+        non_empty += 1
+
+        if value in cache:
+            if cache[value] is not None:
+                locations.append(cache[value])
+        else:
+            location = nominatim_query(url, q=value)
+            if location:
+                loc = (
+                    float(location[0]['lat']),
+                    float(location[0]['lon']),
+                )
+                cache[value] = loc
+                locations.append(loc)
+            else:
+                cache[value] = None
+                not_found += 1
+    logger.info(
+        "Performed %d Nominatim queries in %fs (%d hits). Found %d/%d",
+        len(cache),
+        time.perf_counter() - start,
+        len(cache) - not_found,
+        len(locations),
+        len(array),
+    )
+    return locations, non_empty
+
+
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
-                    lazo_client=None, search=False, include_sample=False,
+                    lazo_client=None, nominatim=None,
+                    search=False, include_sample=False,
                     coverage=True, plots=False, load_max_size=None, **kwargs):
     """Compute all metafeatures from a dataset.
 
@@ -340,6 +403,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Textual columns
     column_textual = []
+
+    # Addresses
+    resolved_addresses = {}
 
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
@@ -481,6 +547,23 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     types.DATE_TIME not in semantic_types_dict:
                 column_textual.append(column_meta['name'])
 
+            # Resolve addresses into coordinates
+            if (
+                nominatim is not None and
+                structural_type == types.TEXT and
+                types.TEXT in semantic_types_dict
+            ):
+                locations, non_empty = nominatim_resolve_all(
+                    nominatim,
+                    array,
+                )
+                if non_empty > 0:
+                    unclean_ratio = 1.0 - len(locations) / non_empty
+                    if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
+                        resolved_addresses[column_meta['name']] = locations
+                        if types.ADDRESS not in column_meta['semantic_types']:
+                            column_meta['semantic_types'].append(types.ADDRESS)
+
     # Textual columns
     if lazo_client and column_textual:
         # Indexing with lazo
@@ -555,13 +638,25 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         values.append((lat, long))
 
                 if len(values) > 1:
-                    logger.info("Computing spatial ranges %r,%r (%d rows)",
-                                name_lat, name_long, len(values))
+                    logger.info(
+                        "Computing spatial ranges lat=%r long=%r (%d rows)",
+                        name_lat, name_long, len(values),
+                    )
                     spatial_ranges = get_spatial_ranges(values)
                     if spatial_ranges:
                         spatial_coverage.append({"lat": name_lat,
                                                  "lon": name_long,
                                                  "ranges": spatial_ranges})
+
+            for name, values in resolved_addresses.items():
+                logger.info(
+                    "Computing spatial ranges address=%r (%d rows)",
+                    name, len(values),
+                )
+                spatial_ranges = get_spatial_ranges(values)
+                if spatial_ranges:
+                    spatial_coverage.append({"address": name,
+                                             "ranges": spatial_ranges})
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
