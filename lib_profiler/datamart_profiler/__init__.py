@@ -225,13 +225,19 @@ def truncate_string(s, limit=140):
 def nominatim_query(url, *, q):
     if url[-1] == '/':
         url = url [:-1]
-    start = time.perf_counter()
-    res = requests.get(
-        url +
-        '/search?' +
-        urlencode({'q': q, 'format': 'jsonv2'}),
-    )
-    end = time.perf_counter()
+    res = start = end = None  # Avoids warnings
+    for i in range(5):
+        if i > 0:
+            time.sleep(1)
+        start = time.perf_counter()
+        res = requests.get(
+            url +
+            '/search?' +
+            urlencode({'q': q, 'format': 'jsonv2'}),
+        )
+        end = time.perf_counter()
+        if res.status_code not in (502, 503, 504):
+            break
     res.raise_for_status()
     if not res.headers['Content-Type'].startswith('application/json'):
         raise requests.HTTPError(
