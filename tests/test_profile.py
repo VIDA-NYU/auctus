@@ -79,6 +79,16 @@ class TestDates(unittest.TestCase):
             datetime(2019, 7, 3, 1, 13, 19, tzinfo=UTC),
         )
 
+        # Check that unknown timezones are not accepted
+        self.assertEqual(
+            profile_types.parse_date('2019-07-02 18:05 UTC'),
+            datetime(2019, 7, 2, 18, 5, tzinfo=UTC),
+        )
+        self.assertEqual(
+            profile_types.parse_date('2019-07-02 18:05 L'),
+            None,
+        )
+
 
 class TestTypes(unittest.TestCase):
     def do_test(self, match, positive, negative):
