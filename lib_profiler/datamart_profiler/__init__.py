@@ -38,6 +38,7 @@ SPATIAL_RANGE_DELTA_LAT = 0.0001
 SAMPLE_ROWS = 20
 
 MAX_UNCLEAN_ADDRESSES = 0.2  # 15%
+MAX_ADDRESS_LENGTH = 90  # 90 characters
 
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
@@ -259,7 +260,9 @@ def nominatim_resolve_all(url, array):
             continue
         non_empty += 1
 
-        if value in cache:
+        if len(value) > MAX_ADDRESS_LENGTH:
+            continue
+        elif value in cache:
             if cache[value] is not None:
                 locations.append(cache[value])
         else:
