@@ -1,5 +1,10 @@
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
-import { SearchResponse, SearchResult, FilterVariables, QuerySpec } from './types';
+import {
+  SearchResponse,
+  SearchResult,
+  FilterVariables,
+  QuerySpec,
+} from './types';
 import { API_URL } from '../config';
 
 export const DEFAULT_SOURCES = [
@@ -24,17 +29,19 @@ export interface Response<T> {
 }
 
 export interface SearchQuery {
-  query?: string,
-  filters?: FilterVariables[],
-  sources?: string[],
-  file?: File,
+  query?: string;
+  filters?: FilterVariables[];
+  sources?: string[];
+  file?: File;
 }
 
 function parseQueryString(q?: string): string[] {
   return q ? q.split(' ').filter(t => t.length > 0) : [];
 }
 
-export async function search(q: SearchQuery): Promise<Response<SearchResponse>> {
+export async function search(
+  q: SearchQuery
+): Promise<Response<SearchResponse>> {
   const url = `${API_URL}/search?_parse_sample=1`;
 
   const spec: QuerySpec = {
@@ -69,7 +76,10 @@ export async function search(q: SearchQuery): Promise<Response<SearchResponse>> 
     });
 }
 
-export function augment(data: File, task: SearchResult): Promise<Response<Blob>> {
+export function augment(
+  data: File,
+  task: SearchResult
+): Promise<Response<Blob>> {
   const formData = new FormData();
   formData.append('data', data);
   formData.append('task', JSON.stringify(task));
@@ -84,8 +94,8 @@ export function augment(data: File, task: SearchResult): Promise<Response<Blob>>
   return axios
     .post(url, formData, config)
     .then((response: AxiosResponse) => {
-      if(response.status !== 200) {
-        throw Error("Status " + response.status);
+      if (response.status !== 200) {
+        throw Error('Status ' + response.status);
       }
       return {
         status: RequestResult.SUCCESS,

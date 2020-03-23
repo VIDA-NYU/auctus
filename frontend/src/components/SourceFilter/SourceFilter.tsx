@@ -12,7 +12,10 @@ interface SourceFilterProps {
   onSourcesChange: (sources: string[]) => void;
 }
 
-class SourceFilter extends PersistentComponent<SourceFilterProps, SourceFilterState> {
+class SourceFilter extends PersistentComponent<
+  SourceFilterProps,
+  SourceFilterState
+> {
   constructor(props: SourceFilterProps) {
     super(props);
     const initialState: SourceFilterState = { checked: {} };
@@ -25,9 +28,11 @@ class SourceFilter extends PersistentComponent<SourceFilterProps, SourceFilterSt
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     this.state.checked[input.value] = !this.state.checked[input.value];
-    const checked = {...this.state.checked};
+    const checked = { ...this.state.checked };
     this.setState({ checked });
-    const checkedSources = Object.entries(checked).filter(c => c[1]===true).map(c => c[0]) as string[];
+    const checkedSources = Object.entries(checked)
+      .filter(c => c[1] === true)
+      .map(c => c[0]) as string[];
     this.props.onSourcesChange(checkedSources);
   }
 
@@ -42,7 +47,7 @@ class SourceFilter extends PersistentComponent<SourceFilterProps, SourceFilterSt
               value={source}
               checked={this.state.checked[source]}
               id={`check-box-${source}`}
-              onChange={(e)=> this.handleChange(e)}
+              onChange={e => this.handleChange(e)}
             />
             <label className="form-check-label" htmlFor={`check-box-${source}`}>
               {source}

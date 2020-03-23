@@ -171,10 +171,10 @@ class GeoSpatialCoverageMap extends PersistentComponent<
 
     map.addInteraction(selectClick);
 
-    selectClick.on('select', (evt) => {
+    selectClick.on('select', evt => {
       const feature = map.forEachFeatureAtPixel(
         evt.mapBrowserEvent.pixel,
-        (feature) => {
+        feature => {
           return feature;
         }
       );

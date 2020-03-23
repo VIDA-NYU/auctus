@@ -3,8 +3,11 @@ import { shallowEqual } from '../../../utils';
 
 const cache = new Map<string, {}>();
 
-// Patch PureComponent type declaration so that we can access React internal variables
+// Patch PureComponent type declaration so that we can access React internal
+// variables. We disable tslint here because the declaration has to match the
+// the declaration from @types/react package.
 declare module 'react' {
+  // tslint:disable-next-line:no-any
   interface PureComponent<P = {}, S = {}, SS = any>
     extends React.Component<P, S, SS> {
     _reactInternalFiber: {
@@ -27,10 +30,15 @@ declare module 'react' {
  * 3. Since it is an internal from each component, it doesn't pollute the props of components.
  *
  */
-export class PersistentComponent<TProps = {}, TState = {}> extends PureComponent<TProps, TState> {
+export class PersistentComponent<
+  TProps = {},
+  TState = {}
+> extends PureComponent<TProps, TState> {
   componentDidMount() {
     if (!this._reactInternalFiber.key) {
-      console.warn('When using PersistentComponent please provide the key prop');
+      console.warn(
+        'When using PersistentComponent please provide the key prop'
+      );
     }
     const cacheKey = this.getCacheKey();
     const previousState = cache.get(cacheKey);

@@ -12,8 +12,10 @@ interface RelatedFileFilterProps {
   onSelectedFileChange: (file: File) => void;
 }
 
-class RelatedFileFilter extends PersistentComponent<RelatedFileFilterProps, RelatedFileFilterState> {
-
+class RelatedFileFilter extends PersistentComponent<
+  RelatedFileFilterProps,
+  RelatedFileFilterState
+> {
   constructor(props: RelatedFileFilterProps) {
     super(props);
     this.state = { file: undefined };
@@ -22,7 +24,7 @@ class RelatedFileFilter extends PersistentComponent<RelatedFileFilterProps, Rela
   handleSelectedFile(acceptedFiles: File[]) {
     const file = acceptedFiles[0];
     this.setState({ file });
-    this.props.onSelectedFileChange(file)
+    this.props.onSelectedFileChange(file);
   }
 
   render() {
@@ -32,7 +34,8 @@ class RelatedFileFilter extends PersistentComponent<RelatedFileFilterProps, Rela
       return (
         <div>
           <CardShadow height={'auto'}>
-            <span className="font-weight-bold">Selected file:</span> {file.name} ({formatSize(file.size)})
+            <span className="font-weight-bold">Selected file:</span> {file.name}{' '}
+            ({formatSize(file.size)})
           </CardShadow>
         </div>
       );

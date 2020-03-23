@@ -36,7 +36,7 @@ class DateFilter extends PersistentComponent<DateFilterProps, DateFilterState> {
       type: 'temporal_variable',
       start: this.formatDate(this.state.start),
       end: this.formatDate(this.state.end),
-    })
+    });
   }
 
   formatDate(date?: Date) {
@@ -50,7 +50,7 @@ class DateFilter extends PersistentComponent<DateFilterProps, DateFilterState> {
       <div
         className={`input-group${
           this.props.className ? ` ${this.props.className}` : ''
-          }`}
+        }`}
       >
         <div className="d-inline">
           <span className="ml-2 mr-1">Start: </span>
