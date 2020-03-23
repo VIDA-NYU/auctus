@@ -278,7 +278,7 @@ def nominatim_resolve_all(url, array):
             location = nominatim_query(url, q=value)
             if location is not None:
                 location_cache[value] = location
-                locations.append((location[0]['lat'], location[0]['long']))
+                locations.append((location[0]['lat'], location[0]['lon']))
             else:
                 not_found += 1
     logger.info(
