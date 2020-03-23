@@ -251,6 +251,15 @@ def nominatim_query(url, *, q):
         '/search?' +
         urlencode({'q': q, 'format': 'jsonv2'}),
     )
+    for _ in range(5):
+        if res.status_code not in (503, 504):
+            break
+        time.sleep(1)
+        res = requests.get(
+            url +
+            '/search?' +
+            urlencode({'q': q, 'format': 'jsonv2'}),
+        )
     res.raise_for_status()
     if not res.headers['Content-Type'].startswith('application/json'):
         raise requests.HTTPError(
