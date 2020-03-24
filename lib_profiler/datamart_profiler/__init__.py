@@ -5,6 +5,7 @@ import math
 import numpy
 import os
 import pandas
+import prometheus_client
 import random
 from sklearn.cluster import KMeans
 import warnings
@@ -33,42 +34,15 @@ SAMPLE_ROWS = 20
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
 
-try:
-    import prometheus_client
-except ImportError:
-    logger.info("prometheus_client not installed, metrics won't be reported")
-
-    class FakeMetric(object):
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def time(self):
-            return self
-
-        def __call__(self, dec):
-            return dec
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
-    PROM_PROFILE = FakeMetric()
-    PROM_TYPES = FakeMetric()
-    PROM_SPATIAL = FakeMetric()
-else:
-    logger.info("prometheus_client present, enabling metrics")
-
-    PROM_PROFILE = prometheus_client.Histogram('profile_seconds',
-                                               "Profile time",
-                                               buckets=BUCKETS)
-    PROM_TYPES = prometheus_client.Histogram('profile_types_seconds',
-                                             "Profile types time",
-                                             buckets=BUCKETS)
-    PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
-                                               "Profile spatial coverage time",
-                                               buckets=BUCKETS)
+PROM_PROFILE = prometheus_client.Histogram('profile_seconds',
+                                           "Profile time",
+                                           buckets=BUCKETS)
+PROM_TYPES = prometheus_client.Histogram('profile_types_seconds',
+                                         "Profile types time",
+                                         buckets=BUCKETS)
+PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
+                                           "Profile spatial coverage time",
+                                           buckets=BUCKETS)
 
 
 def mean_stddev(array):
