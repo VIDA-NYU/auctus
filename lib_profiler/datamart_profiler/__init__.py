@@ -252,7 +252,7 @@ def nominatim_query(url, *, q):
         urlencode({'q': q, 'format': 'jsonv2'}),
     )
     for _ in range(5):
-        if res.status_code not in (503, 504):
+        if res.status_code not in (502, 503, 504):
             break
         time.sleep(1)
         res = requests.get(
@@ -270,36 +270,39 @@ def nominatim_query(url, *, q):
 
 
 def nominatim_resolve_all(url, array):
-    location_cache = {}
-    queried = 0
+    cache = {}
     locations = []
-    not_found = 0
+    not_found = 0  # Unique locations not found
+    non_empty = 0
     start = time.perf_counter()
     for value in array:
         value = value.strip()
         if not value:
             continue
+        non_empty += 1
 
         if len(value) > MAX_ADDRESS_LENGTH:
-            not_found += 1
-        elif value in location_cache:
-            locations.append(location_cache[value])
+            continue
+        elif value in cache:
+            if cache[value] is not None:
+                locations.append(cache[value])
         else:
             location = nominatim_query(url, q=value)
-            queried += 1
-            if location is not None:
-                location_cache[value] = location
-                locations.append((location[0]['lat'], location[0]['lon']))
+            if location:
+                cache[value] = loc = location[0]['lat'], location[0]['lon']
+                not_found += 1
+                locations.append(loc)
             else:
+                cache[value] = None
                 not_found += 1
     logger.info(
         "Performed %d Nominatim queries in %fs. Found %d/%d (%d/%d)",
-        queried,
+        len(cache),
         time.perf_counter() - start,
         len(locations), len(array),
-        len(location_cache), len(location_cache) + not_found,
+        len(cache) - not_found, len(cache),
     )
-    return locations, not_found
+    return locations, non_empty
 
 
 @PROM_PROFILE.time()
@@ -568,13 +571,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 structural_type == types.TEXT and
                 types.TEXT in semantic_types_dict
             ):
-                locations, locations_not_found = nominatim_resolve_all(
+                locations, non_empty = nominatim_resolve_all(
                     nominatim,
                     array,
                 )
-                total = len(locations) + locations_not_found
-                if total > 0:
-                    unclean_ratio = locations_not_found / total
+                if non_empty > 0:
+                    unclean_ratio = 1.0 - len(locations) / non_empty
                     if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
                         resolved_addresses[column_meta['name']] = locations
                         if types.ADDRESS not in column_meta['semantic_types']:
