@@ -13,7 +13,7 @@ req = [
     'xlrd',
     'datamart_core',
     'datamart_materialize',
-    'datamart_profiler[prometheus]',
+    'datamart_profiler',
 ]
 setup(name='datamart-profiler-service',
       version='0.0',
