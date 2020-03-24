@@ -293,10 +293,11 @@ def nominatim_resolve_all(url, array):
             else:
                 not_found += 1
     logger.info(
-        "Performed %d Nominatim queries in %fs. Found %d/%d",
+        "Performed %d Nominatim queries in %fs. Found %d/%d (%d/%d)",
         queried,
         time.perf_counter() - start,
-        len(locations), not_found,
+        len(locations), len(array),
+        len(location_cache), len(location_cache) + not_found,
     )
     return locations, not_found
 
