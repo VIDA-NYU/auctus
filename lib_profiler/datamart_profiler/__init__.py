@@ -44,15 +44,24 @@ MAX_NOMINATIM_REQUESTS = 200
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
 
-PROM_PROFILE = prometheus_client.Histogram('profile_seconds',
-                                           "Profile time",
-                                           buckets=BUCKETS)
-PROM_TYPES = prometheus_client.Histogram('profile_types_seconds',
-                                         "Profile types time",
-                                         buckets=BUCKETS)
-PROM_SPATIAL = prometheus_client.Histogram('profile_spatial_seconds',
-                                           "Profile spatial coverage time",
-                                           buckets=BUCKETS)
+PROM_PROFILE = prometheus_client.Histogram(
+    'profile_seconds', "Profile time",
+    buckets=BUCKETS,
+)
+PROM_TYPES = prometheus_client.Histogram(
+    'profile_types_seconds', "Profile types time",
+    buckets=BUCKETS,
+)
+PROM_SPATIAL = prometheus_client.Histogram(
+    'profile_spatial_seconds', "Profile spatial coverage time",
+    buckets=BUCKETS,
+)
+PROM_NOMINATIM_REQS = prometheus_client.Counter(
+    'profile_nominatim_reqs', "Queries to Nominatim",
+)
+PROM_NOMINATIM_REQ_TIME = prometheus_client.Histogram(
+    'profile_nominatim_req_seconds', "Time for Nominatim to answer a query",
+)
 
 
 def mean_stddev(array):
@@ -231,6 +240,7 @@ def nominatim_query(url, *, q):
     for i in range(5):
         if i > 0:
             time.sleep(1)
+        PROM_NOMINATIM_REQS.inc()  # Count all requests
         start = time.perf_counter()
         res = requests.get(
             url +
@@ -241,6 +251,8 @@ def nominatim_query(url, *, q):
         if res.status_code not in (502, 503, 504):
             break
     res.raise_for_status()
+    # Record time for successful request
+    PROM_NOMINATIM_REQ_TIME.observe(end - start)
     if not res.headers['Content-Type'].startswith('application/json'):
         raise requests.HTTPError(
             "Response is not JSON for URL: %s" % res.url,
