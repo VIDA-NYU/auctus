@@ -1,5 +1,6 @@
 import aio_pika
 import asyncio
+import contextlib
 from datetime import datetime
 import elasticsearch
 import itertools
@@ -24,8 +25,31 @@ logger = logging.getLogger(__name__)
 MAX_CONCURRENT = 2
 
 
+PROM_DOWNLOADING = prometheus_client.Gauge(
+    'profile_downloading_count', "Number of datasets currently downloading",
+)
+PROM_PROFILING = prometheus_client.Gauge(
+    'profile_profiling_count', "Number of datasets currently profiling",
+)
+
+
+@contextlib.contextmanager
+def prom_incremented(metric, amount=1):
+    """Context manager that increments a metric, then decrements it at the end.
+    """
+    metric.inc(amount)
+    try:
+        yield
+    finally:
+        metric.dec(amount)
+
+
 def materialize_and_process_dataset(dataset_id, metadata, lazo_client):
-    with get_dataset(metadata, dataset_id) as dataset_path:
+    with contextlib.ExitStack() as stack:
+        with prom_incremented(PROM_DOWNLOADING):
+            dataset_path = stack.enter_context(
+                get_dataset(metadata, dataset_id)
+            )
         materialize = metadata.pop('materialize')
 
         # Check for Excel file format
@@ -41,17 +65,18 @@ def materialize_and_process_dataset(dataset_id, metadata, lazo_client):
                 xls_to_csv(dataset_path + '.xls', dst)
 
         # Profile
-        start = time.perf_counter()
-        metadata = process_dataset(
-            data=dataset_path,
-            dataset_id=dataset_id,
-            metadata=metadata,
-            lazo_client=lazo_client,
-            include_sample=True,
-            coverage=True,
-            plots=True,
-        )
-        logger.info("Profiling took %.2fs", time.perf_counter() - start)
+        with prom_incremented(PROM_PROFILING):
+            start = time.perf_counter()
+            metadata = process_dataset(
+                data=dataset_path,
+                dataset_id=dataset_id,
+                metadata=metadata,
+                lazo_client=lazo_client,
+                include_sample=True,
+                coverage=True,
+                plots=True,
+            )
+            logger.info("Profiling took %.2fs", time.perf_counter() - start)
 
         metadata['materialize'] = materialize
         return metadata
