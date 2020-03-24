@@ -271,6 +271,7 @@ def nominatim_query(url, *, q):
 
 def nominatim_resolve_all(url, array):
     location_cache = {}
+    queried = 0
     locations = []
     not_found = 0
     start = time.perf_counter()
@@ -285,6 +286,7 @@ def nominatim_resolve_all(url, array):
             locations.append(location_cache[value])
         else:
             location = nominatim_query(url, q=value)
+            queried += 1
             if location is not None:
                 location_cache[value] = location
                 locations.append((location[0]['lat'], location[0]['lon']))
@@ -292,7 +294,7 @@ def nominatim_resolve_all(url, array):
                 not_found += 1
     logger.info(
         "Performed %d Nominatim queries in %fs. Found %d/%d",
-        len(location_cache),
+        queried,
         time.perf_counter() - start,
         len(locations), not_found,
     )
