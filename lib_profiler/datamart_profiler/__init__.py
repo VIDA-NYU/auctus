@@ -576,6 +576,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     unclean_ratio = locations_not_found / total
                     if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
                         resolved_addresses[column_meta['name']] = locations
+                        if types.ADDRESS not in column_meta['semantic_types']:
+                            column_meta['semantic_types'].append(types.ADDRESS)
 
     # Textual columns
     if lazo_client and column_textual:
