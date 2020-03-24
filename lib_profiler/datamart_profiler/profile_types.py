@@ -39,41 +39,34 @@ _defaults = datetime(1985, 1, 1), datetime(2005, 6, 15)
 
 
 @contextlib.contextmanager
-def record_warnings():
-    warnings_list = []
+def raise_warnings(*categories):
     orig_showarning = warnings.showwarning
 
     def record(message, category, filename, lineno, file=None, line=None):
-        warnings_list.append((message, category))
+        if any(issubclass(category, c) for c in categories):
+            raise category(message)
         orig_showarning(message, category, filename, lineno, file, line)
 
     try:
         warnings.showwarning = record
-        yield warnings_list
+        yield
     finally:
         warnings.showwarning = orig_showarning
 
 
 def parse_date(string):
-    with record_warnings() as recorded_warnings:
+    with raise_warnings(dateutil.parser.UnknownTimezoneWarning):
         # This is a dirty trick because dateutil returns a datetime for strings
         # than only contain times. We parse it twice with different defaults,
         # so we can tell whether the default date is used in the result
         try:
             dt1 = dateutil.parser.parse(string, default=_defaults[0])
             dt2 = dateutil.parser.parse(string, default=_defaults[1])
-        except Exception:  # ValueError, OverflowError
+        except Exception:  # ValueError, OverflowError, UnknownTimezoneWarning
             return None
 
     if dt1 != dt2:
         # It was not a date, just a time; no good
-        return None
-
-    # Some warnings are a problem for us
-    if any(
-        issubclass(w_cat, dateutil.parser.UnknownTimezoneWarning)
-        for w_msg, w_cat in recorded_warnings
-    ):
         return None
 
     # If no timezone was read, assume UTC
