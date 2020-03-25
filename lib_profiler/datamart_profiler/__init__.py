@@ -289,7 +289,7 @@ def nominatim_resolve_all(url, array):
                 cache[value] = None
                 not_found += 1
     logger.info(
-        "Performed %d Nominatim queries in %fs. Found %d/%d (%d/%d)",
+        "Performed %d Nominatim queries in %fs. Found %d/%d (%d/%d unique)",
         len(cache),
         time.perf_counter() - start,
         len(locations), len(array),
