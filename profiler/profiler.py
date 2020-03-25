@@ -11,7 +11,7 @@ import prometheus_client
 import time
 import xlrd
 
-from datamart_core.common import add_dataset_to_index, \
+from datamart_core.common import setup_logging, add_dataset_to_index, \
     delete_dataset_from_index, log_future, json2msg, msg2json
 from datamart_core.materialize import get_dataset
 from datamart_materialize import DatasetTooBig
@@ -249,8 +249,7 @@ class Profiler(object):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s: %(message)s")
+    setup_logging()
     prometheus_client.start_http_server(8000)
     logger.info("Startup: profiler %s", os.environ['DATAMART_VERSION'])
     Profiler()

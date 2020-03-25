@@ -14,6 +14,16 @@ from . import types
 logger = logging.getLogger(__name__)
 
 
+def setup_logging(clear=True):
+    if clear:
+        logging.root.handlers.clear()
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+    logging.getLogger('elasticsearch').setLevel(logging.WARNING)
+
+
 def block_wait_future(future):
     """Block the current thread until the future is done, return result.
 

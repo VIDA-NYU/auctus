@@ -19,7 +19,7 @@ from tornado.web import HTTPError, RequestHandler
 import zipfile
 
 from datamart_augmentation.augmentation import AugmentationError, augment
-from datamart_core.common import hash_json, log_future
+from datamart_core.common import setup_logging, hash_json, log_future
 from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
 import datamart_profiler
@@ -676,9 +676,7 @@ def make_app(debug=False):
 
 
 def main():
-    logging.root.handlers.clear()
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s: %(message)s")
+    setup_logging()
     prometheus_client.start_http_server(8000)
     logger.info("Startup: query %s", os.environ['DATAMART_VERSION'])
 

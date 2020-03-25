@@ -6,6 +6,7 @@ import shutil
 import threading
 
 from datamart_core import Discoverer
+from datamart_core.common import setup_logging
 
 
 logger = logging.getLogger(__name__)
@@ -98,9 +99,8 @@ def server():
 
 
 if __name__ == '__main__':
+    setup_logging()
     os.chdir('tests/data')
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s: %(message)s")
 
     # Start a web server
     server_thread = threading.Thread(target=server)
