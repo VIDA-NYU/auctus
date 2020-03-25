@@ -8,10 +8,12 @@ import pandas
 import prometheus_client
 import random
 from sklearn.cluster import KMeans
+from sklearn.exceptions import ConvergenceWarning
 import warnings
 
 from .profile_types import identify_types
 from . import types
+from .warning_tools import ignore_warnings
 
 
 __version__ = '0.5.5'
@@ -75,7 +77,9 @@ def get_numerical_ranges(values):
 
     clustering = KMeans(n_clusters=min(N_RANGES, len(values)),
                         random_state=0)
-    clustering.fit(numpy.array(values).reshape(-1, 1))
+    values_array = numpy.array(values).reshape(-1, 1)
+    with ignore_warnings(ConvergenceWarning):
+        clustering.fit(values_array)
     logger.info("K-Means clusters: %r", clustering.cluster_centers_)
 
     # Compute confidence intervals for each range
@@ -113,7 +117,8 @@ def get_spatial_ranges(values):
 
     clustering = KMeans(n_clusters=min(N_RANGES, len(values)),
                         random_state=0)
-    clustering.fit(values)
+    with ignore_warnings(ConvergenceWarning):
+        clustering.fit(values)
     logger.info("K-Means clusters: %r", clustering.cluster_centers_)
 
     # Compute confidence intervals for each range
