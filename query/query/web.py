@@ -680,6 +680,7 @@ def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
     prometheus_client.start_http_server(8000)
+    logger.info("Startup: query %s", os.environ['DATAMART_VERSION'])
 
     app = make_app()
     app.listen(8002, xheaders=True, max_buffer_size=2147483648)

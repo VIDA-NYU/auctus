@@ -252,6 +252,7 @@ def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s")
     prometheus_client.start_http_server(8000)
+    logger.info("Startup: profiler %s", os.environ['DATAMART_VERSION'])
     Profiler()
     asyncio.get_event_loop().run_forever()
 
