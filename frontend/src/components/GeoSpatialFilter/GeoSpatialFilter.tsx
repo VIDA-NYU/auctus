@@ -19,7 +19,11 @@ import { VectorSourceEvent } from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import { GeoSpatialVariable } from '../../api/types';
 import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
-import { transformCoordinates, MyMapBrowserEvent } from '../spatial-utils';
+import {
+  transformCoordinates,
+  centralizeMapToFeature,
+  MyMapBrowserEvent,
+} from '../spatial-utils';
 
 interface GeoSpatialFilterState {
   selectedCoordinates?: {
@@ -38,6 +42,7 @@ class GeoSpatialFilter extends PersistentComponent<
   GeoSpatialFilterState
 > {
   mapId = generateRandomId();
+  map?: Map;
   source?: VectorSource;
 
   constructor(props: GeoSpatialFilterProps) {
@@ -51,12 +56,16 @@ class GeoSpatialFilter extends PersistentComponent<
     // The OpenLayers map looses its selected state when the react component
     // is unmounted. Here we re-load the selected feature from the previous
     // component state.
+    if (!this.map) {
+      return;
+    }
     if (
       this.source &&
       this.source.getFeatures().length === 0 &&
       this.state.feature
     ) {
       this.source.addFeature(this.state.feature);
+      centralizeMapToFeature(this.map, this.state.feature);
     }
   }
 
@@ -100,6 +109,7 @@ class GeoSpatialFilter extends PersistentComponent<
     });
 
     this.addInteractions(map, this.source);
+    this.map = map;
   }
 
   onSelectCoordinates(evt: VectorSourceEvent) {

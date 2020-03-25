@@ -1,6 +1,8 @@
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import Geometry from 'ol/geom/Geometry';
 import { FeatureLike } from 'ol/Feature';
+import { Map } from 'ol';
+import { Extent } from 'ol/extent';
 
 //
 // Following types are a temporary workaround to a bug in typings from the
@@ -27,4 +29,14 @@ export function transformCoordinates(feature: FeatureLike) {
     bottomRightLat: coordinates[2][1],
     bottomRightLon: coordinates[2][0],
   };
+}
+
+export function centralizeMapToExtent(map: Map, extent: Extent) {
+  map.getView().fit(extent);
+  map.updateSize();
+}
+
+export function centralizeMapToFeature(map: Map, feature: FeatureLike) {
+  const extent = feature.getGeometry().getExtent();
+  centralizeMapToExtent(map, extent);
 }

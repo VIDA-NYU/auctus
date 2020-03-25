@@ -14,7 +14,7 @@ import Stroke from 'ol/style/Stroke';
 import Fill from 'ol/style/Fill';
 import { click } from 'ol/events/condition';
 import './GeoSpatialCoverageMap.css';
-import { transformCoordinates } from '../spatial-utils';
+import { transformCoordinates, centralizeMapToExtent } from '../spatial-utils';
 
 interface GeoSpatialCoverageMapProps {
   coverage: SpatialCoverage;
@@ -74,11 +74,12 @@ class GeoSpatialCoverageMap extends PersistentComponent<
         [topLeft[0], topLeft[1]],
       ]);
     }
-
-    return {
-      extent: [minX, minY, maxX, maxY],
-      polygons,
-    };
+    const extent = transformExtent(
+      [minX, minY, maxX, maxY],
+      'EPSG:4326',
+      'EPSG:3857'
+    );
+    return { extent, polygons };
   }
 
   componentDidMount() {
@@ -156,10 +157,7 @@ class GeoSpatialCoverageMap extends PersistentComponent<
       }),
     });
 
-    // Centralize map
-    const olExtent = transformExtent(extent, 'EPSG:4326', 'EPSG:3857');
-    map.getView().fit(olExtent);
-    map.updateSize();
+    centralizeMapToExtent(map, extent);
 
     this.setupHoverPopUp(map);
   }
