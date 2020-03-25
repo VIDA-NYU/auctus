@@ -80,7 +80,7 @@ def get_numerical_ranges(values):
     values_array = numpy.array(values).reshape(-1, 1)
     with ignore_warnings(ConvergenceWarning):
         clustering.fit(values_array)
-    logger.info("K-Means clusters: %r", clustering.cluster_centers_)
+    logger.info("K-Means clusters: %r", list(clustering.cluster_centers_))
 
     # Compute confidence intervals for each range
     ranges = []
@@ -119,7 +119,7 @@ def get_spatial_ranges(values):
                         random_state=0)
     with ignore_warnings(ConvergenceWarning):
         clustering.fit(values)
-    logger.info("K-Means clusters: %r", clustering.cluster_centers_)
+    logger.info("K-Means clusters: %r", list(clustering.cluster_centers_))
 
     # Compute confidence intervals for each range
     ranges = []
