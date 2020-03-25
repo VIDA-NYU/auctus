@@ -2,20 +2,20 @@
  * Icon sizes
  */
 
- .feather {
-  width:  15px;
+.feather {
+  width: 15px;
   height: 17px;
   vertical-align: text-bottom;
 }
 
 .feather-xs {
-  width:  13px;
+  width: 13px;
   height: 13px;
   vertical-align: text-bottom;
 }
 
 .feather-lg {
-  width:  20px;
+  width: 20px;
   height: 20px;
   vertical-align: text-bottom;
 }
@@ -28,4 +28,13 @@
 .btn-sm .feather {
   width: 16px;
   height: 18px;
+}
+
+/* to be applied to buttons that should look like a simple link */
+.btn-link {
+  border: none;
+  background: none;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0px;
 }

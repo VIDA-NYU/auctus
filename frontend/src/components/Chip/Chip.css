@@ -1,0 +1,84 @@
+.chip {
+  /* color: rgba(0, 0, 0, 0.87); */
+  border: none;
+  cursor: default;
+  height: 32px;
+  display: inline-flex;
+  outline: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+    box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  align-items: center;
+  /* font-family: "Roboto", "Helvetica", "Arial", sans-serif; */
+  font-family: "Oswald";
+  white-space: nowrap;
+  border-radius: 16px;
+  vertical-align: middle;
+  justify-content: center;
+  text-decoration: none;
+  background-color: #e0e0e0;
+}
+
+.chip-clickable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chip-btn-close {
+  margin-left: .25rem!important;
+  margin-right: .5rem!important;
+  margin-bottom: 0.1rem!important;
+}
+
+.chip-icon {
+  margin-left: .5rem!important;
+  margin-right: .3rem!important;
+  margin-bottom: 0.1rem!important;
+}
+
+.chip .chip-btn-close {
+  color: rgb(0, 0, 0, 0.5);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip .chip-btn-close:hover {
+  color: rgb(0, 0, 0, 1.0);
+}
+
+.chip-outline {
+  border: 1px solid #ced4da;
+  background-color: transparent;
+}
+.chip-outline .chip-icon {
+  color: var(--primary);
+}
+
+
+.chip-primary {
+  border-color: var(--primary);
+}
+.chip-primary .chip-icon {
+  color: var(--primary);
+}
+.chip-primary .chip-btn-close {
+  color: rgb(99, 80, 139, 0.7);
+}
+.chip-primary .chip-btn-close:hover {
+  color: rgb(99, 80, 139);
+}
+
+
+.chip-group > * {
+  display: inline-flex;
+  margin-left: 0.25rem;
+}
+
+.chip-group > *:first-child {
+  margin-left: 0px;
+}
+
+

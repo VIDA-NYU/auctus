@@ -20,10 +20,15 @@ import {
   TemporalVariable,
   GeoSpatialVariable,
 } from './api/types';
+import { Chip, ChipGroup } from './components/Chip/Chip';
+import * as Icon from 'react-feather';
 
 interface Filter {
   id: string;
   type: FilterType;
+  title: string;
+  icon: Icon.Icon;
+  hidden: boolean;
   component: JSX.Element;
   state?: FilterVariables | File | string[];
 }
@@ -101,68 +106,10 @@ class App extends React.Component<{}, AppState> {
     filters.push({
       id: filterId,
       type: filterType,
-      component: this.createFilterComponent(filterId, filterType),
+      hidden: false,
+      ...this.createFilterComponent(filterId, filterType),
     });
     this.setState({ filters: [...filters] });
-  }
-
-  createFilterComponent(filterId: string, filterType: FilterType) {
-    switch (filterType) {
-      case FilterType.TEMPORAL:
-        return (
-          <FilterContainer
-            key={filterId}
-            title="Temporal Filter"
-            onClose={() => this.removeFilter(filterId)}
-          >
-            <DateFilter
-              key={`datefilter-${filterId}`}
-              onDateFilterChange={d => this.updateFilterState(filterId, d)}
-            />
-          </FilterContainer>
-        );
-      case FilterType.RELATED_FILE:
-        return (
-          <FilterContainer
-            key={filterId}
-            title="Related Dataset Filter"
-            onClose={() => this.removeFilter(filterId)}
-          >
-            <RelatedFileFilter
-              key={`relatedfilefilter-${filterId}`}
-              onSelectedFileChange={f => this.updateFilterState(filterId, f)}
-            />
-          </FilterContainer>
-        );
-      case FilterType.GEO_SPATIAL:
-        return (
-          <FilterContainer
-            key={filterId}
-            title="Geo-Spatial Filter"
-            onClose={() => this.removeFilter(filterId)}
-          >
-            <GeoSpatialFilter
-              key={`geospatialfilter-${filterId}`}
-              onSelectCoordinates={c => this.updateFilterState(filterId, c)}
-            />
-          </FilterContainer>
-        );
-      case FilterType.SOURCE:
-        return (
-          <FilterContainer
-            key={filterId}
-            title="Source Filter"
-            onClose={() => this.removeFilter(filterId)}
-          >
-            <SourceFilter
-              key={`sourcefilter-${filterId}`}
-              onSourcesChange={s => this.updateFilterState(filterId, s)}
-            />
-          </FilterContainer>
-        );
-      default:
-        throw new Error(`Received not supported filter type=[${filterType}]`);
-    }
   }
 
   async submitQuery() {
@@ -191,6 +138,11 @@ class App extends React.Component<{}, AppState> {
       this.setState({
         searchQuery: query,
         searchState: SearchState.SEARCH_REQUESTING,
+        filters: this.state.filters.map(f => {
+          f.hidden = true;
+          console.log(f);
+          return f;
+        }),
       });
 
       api
@@ -211,8 +163,96 @@ class App extends React.Component<{}, AppState> {
     }
   }
 
+  createFilterComponent(
+    filterId: string,
+    filterType: FilterType
+  ): { title: string; component: JSX.Element; icon: Icon.Icon } {
+    switch (filterType) {
+      case FilterType.TEMPORAL:
+        return {
+          title: 'Temporal',
+          icon: Icon.Calendar,
+          component: (
+            <DateFilter
+              key={`datefilter-${filterId}`}
+              onDateFilterChange={d => this.updateFilterState(filterId, d)}
+            />
+          ),
+        };
+      case FilterType.RELATED_FILE:
+        return {
+          title: 'Related File',
+          icon: Icon.File,
+          component: (
+            <RelatedFileFilter
+              key={`relatedfilefilter-${filterId}`}
+              onSelectedFileChange={f => this.updateFilterState(filterId, f)}
+            />
+          ),
+        };
+      case FilterType.GEO_SPATIAL:
+        return {
+          title: 'Geo-Spatial',
+          icon: Icon.MapPin,
+          component: (
+            <GeoSpatialFilter
+              key={`geospatialfilter-${filterId}`}
+              onSelectCoordinates={c => this.updateFilterState(filterId, c)}
+            />
+          ),
+        };
+      case FilterType.SOURCE:
+        return {
+          title: 'Sources',
+          icon: Icon.Database,
+          component: (
+            <SourceFilter
+              key={`sourcefilter-${filterId}`}
+              onSourcesChange={s => this.updateFilterState(filterId, s)}
+            />
+          ),
+        };
+      default:
+        throw new Error(`Received not supported filter type=[${filterType}]`);
+    }
+  }
+
+  toggleFilter(itemId: string) {
+    const filter = this.state.filters.find(f => f.id === itemId);
+    if (filter) {
+      filter.hidden = !filter.hidden;
+      this.setState({ filters: [...this.state.filters] });
+    }
+  }
+
   renderFilters() {
-    return this.state.filters.map(f => f.component);
+    return this.state.filters
+      .filter(f => !f.hidden)
+      .map(f => (
+        <FilterContainer
+          key={`filter-container-${f.id}`}
+          title={f.title}
+          onClose={() => this.removeFilter(f.id)}
+        >
+          {f.component}
+        </FilterContainer>
+      ));
+  }
+
+  renderCompactFilters() {
+    return (
+      <ChipGroup>
+        {this.state.filters.map(f => (
+          <Chip
+            key={`filter-chip-${f.id}`}
+            icon={f.icon}
+            label={f.title}
+            onClose={() => this.removeFilter(f.id)}
+            onEdit={() => this.toggleFilter(f.id)}
+          />
+        ))}
+      </ChipGroup>
+    );
   }
 
   render() {
@@ -242,6 +282,9 @@ class App extends React.Component<{}, AppState> {
               </div>
             </div>
             <div className="row" style={{ width: 780 }}>
+              <div className="col-md-12 mb-3">
+                {this.renderCompactFilters()}
+              </div>
               <div className="col-md-12">{this.renderFilters()}</div>
             </div>
             <div className="row">
