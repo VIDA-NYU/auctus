@@ -5,6 +5,7 @@ import math
 import numpy
 import os
 import pandas
+from pandas.errors import EmptyDataError
 import prometheus_client
 import random
 from sklearn.cluster import KMeans
@@ -283,25 +284,33 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 raise TypeError("data should be a filename, a file object, or "
                                 "a pandas.DataFrame")
 
-            # Sub-sample
-            if metadata['size'] > load_max_size:
-                logger.info("Counting rows...")
-                metadata['nb_rows'] = sum(1 for _ in data)
-                data.seek(0, 0)
+            # Load the data
+            try:
+                if metadata['size'] > load_max_size:
+                    # Sub-sample
+                    logger.info("Counting rows...")
+                    metadata['nb_rows'] = sum(1 for _ in data)
+                    data.seek(0, 0)
 
-                ratio = load_max_size / metadata['size']
-                logger.info("Loading dataframe, sample ratio=%r...", ratio)
-                rand = random.Random(RANDOM_SEED)
-                data = pandas.read_csv(
-                    data,
-                    dtype=str, na_filter=False,
-                    skiprows=lambda i: i != 0 and rand.random() > ratio)
-            else:
-                logger.info("Loading dataframe...")
-                data = pandas.read_csv(data,
-                                       dtype=str, na_filter=False)
+                    ratio = load_max_size / metadata['size']
+                    logger.info("Loading dataframe, sample ratio=%r...", ratio)
+                    rand = random.Random(RANDOM_SEED)
+                    data = pandas.read_csv(
+                        data,
+                        dtype=str, na_filter=False,
+                        skiprows=lambda i: i != 0 and rand.random() > ratio)
+                else:
+                    logger.info("Loading dataframe...")
+                    data = pandas.read_csv(data,
+                                           dtype=str, na_filter=False)
 
-                metadata['nb_rows'] = data.shape[0]
+                    metadata['nb_rows'] = data.shape[0]
+            except EmptyDataError:
+                logger.warning("Dataframe is empty!")
+                metadata['nb_rows'] = 0
+                metadata['nb_profiled_rows'] = 0
+                metadata['columns'] = []
+                return metadata
 
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
