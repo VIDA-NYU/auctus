@@ -10,6 +10,7 @@ import sodapy
 import time
 
 from datamart_core import Discoverer
+from datamart_core.common import setup_logging
 
 
 logger = logging.getLogger(__name__)
@@ -172,7 +173,6 @@ class SocrataDiscoverer(Discoverer):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s: %(message)s")
+    setup_logging()
     SocrataDiscoverer('datamart.socrata')
     asyncio.get_event_loop().run_forever()

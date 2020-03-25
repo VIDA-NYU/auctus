@@ -16,7 +16,7 @@ import tornado.web
 from tornado.web import HTTPError, RequestHandler
 import uuid
 
-from datamart_core.common import json2msg
+from datamart_core.common import setup_logging, json2msg
 from datamart_core import types
 
 from .cache import check_cache
@@ -336,9 +336,7 @@ def make_app(debug=False):
 
 
 def main():
-    logging.root.handlers.clear()
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s: %(message)s")
+    setup_logging()
     prometheus_client.start_http_server(8000)
     logger.info("Startup: coordinator %s", os.environ['DATAMART_VERSION'])
 

@@ -1,11 +1,10 @@
-import contextlib
 from datetime import datetime
 import dateutil.parser
 import dateutil.tz
 import re
-import warnings
 
 from . import types
+from .warning_tools import raise_warnings
 
 
 _re_int = re.compile(r'^[+-]?[0-9]+'
@@ -36,22 +35,6 @@ MAX_CATEGORICAL_RATIO = 0.10  # 10%
 
 
 _defaults = datetime(1985, 1, 1), datetime(2005, 6, 15)
-
-
-@contextlib.contextmanager
-def raise_warnings(*categories):
-    orig_showarning = warnings.showwarning
-
-    def record(message, category, filename, lineno, file=None, line=None):
-        if any(issubclass(category, c) for c in categories):
-            raise category(message)
-        orig_showarning(message, category, filename, lineno, file, line)
-
-    try:
-        warnings.showwarning = record
-        yield
-    finally:
-        warnings.showwarning = orig_showarning
 
 
 def parse_date(string):
