@@ -141,14 +141,22 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             spatial_coverage_metadata = dict()
             spatial_coverage_metadata.update(common_dataset_metadata)
             spatial_coverage_metadata.update(spatial_coverage)
-            spatial_coverage_metadata['name'] = ' , '.join([
-                spatial_coverage_metadata['lat'],
-                spatial_coverage_metadata['lon']
-            ])
-            spatial_coverage_metadata['lat_index'] = \
-                column_name_to_index[spatial_coverage_metadata['lat']]
-            spatial_coverage_metadata['lon_index'] = \
-                column_name_to_index[spatial_coverage_metadata['lon']]
+            if 'lat' in spatial_coverage_metadata:
+                spatial_coverage_metadata['name'] = ' , '.join([
+                    spatial_coverage_metadata['lat'],
+                    spatial_coverage_metadata['lon'],
+                ])
+                spatial_coverage_metadata['lat_index'] = \
+                    column_name_to_index[spatial_coverage_metadata['lat']]
+                spatial_coverage_metadata['lon_index'] = \
+                    column_name_to_index[spatial_coverage_metadata['lon']]
+            elif 'address' in spatial_coverage_metadata:
+                spatial_coverage_metadata['name'] = \
+                    spatial_coverage_metadata['address']
+                spatial_coverage_metadata['address_index'] = \
+                    column_name_to_index[spatial_coverage_metadata['address']]
+            else:
+                raise ValueError("Invalid spatial_coverage")
             for spatial_range in spatial_coverage_metadata['ranges']:
                 coordinates = spatial_range['range']['coordinates']
                 spatial_range['min_lon'] = coordinates[0][0]
