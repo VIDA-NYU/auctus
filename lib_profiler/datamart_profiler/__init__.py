@@ -274,7 +274,11 @@ def nominatim_resolve_all(url, array):
         else:
             location = nominatim_query(url, q=value)
             if location:
-                cache[value] = loc = location[0]['lat'], location[0]['lon']
+                loc = (
+                    float(location[0]['lat']),
+                    float(location[0]['lon']),
+                )
+                cache[value] = loc
                 locations.append(loc)
             else:
                 cache[value] = None
