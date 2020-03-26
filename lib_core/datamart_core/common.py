@@ -21,7 +21,17 @@ def setup_logging(clear=True):
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+
+    def filter_delete(record):
+        if (
+            len(record.args) >= 2 and
+            record.args[0] == 'DELETE' and record.args[1].startswith('http')
+        ):
+            return False
+        return True
+
     logging.getLogger('elasticsearch').setLevel(logging.WARNING)
+    logging.getLogger('elasticsearch').addFilter(filter_delete)
 
 
 def block_wait_future(future):
