@@ -162,6 +162,15 @@ class Profiler(object):
             logger.info("Processing dataset %r from %r",
                         dataset_id, materialize.get('identifier'))
 
+            # Compare materialization info with stored to know whether cache
+            # should be ignored
+            try:
+                hit = self.es.get('datamart', dataset_id)
+            except elasticsearch.NotFoundError:
+                cache_invalid = True
+            else:
+                cache_invalid = materialize != hit['_source']['materialize']
+
             future = self.loop.run_in_executor(
                 None,
                 materialize_and_process_dataset,
