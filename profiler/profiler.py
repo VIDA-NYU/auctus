@@ -47,11 +47,12 @@ def prom_incremented(metric, amount=1):
 def materialize_and_process_dataset(
     dataset_id, metadata,
     lazo_client, nominatim,
+    cache_invalid=False,
 ):
     with contextlib.ExitStack() as stack:
         with prom_incremented(PROM_DOWNLOADING):
             dataset_path = stack.enter_context(
-                get_dataset(metadata, dataset_id)
+                get_dataset(metadata, dataset_id, cache_invalid=cache_invalid)
             )
         materialize = metadata.pop('materialize')
 
@@ -168,6 +169,7 @@ class Profiler(object):
                 metadata,
                 self.lazo_client,
                 self.nominatim,
+                cache_invalid,
             )
 
             future.add_done_callback(

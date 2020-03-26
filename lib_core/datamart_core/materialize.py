@@ -42,7 +42,8 @@ def make_zip_recursive(zip_, src, dst=''):
 
 
 @contextlib.contextmanager
-def get_dataset(metadata, dataset_id, format='csv', format_options=None):
+def get_dataset(metadata, dataset_id, format='csv', format_options=None,
+                cache_invalid=False):
     if not format:
         raise ValueError
 
@@ -75,9 +76,14 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                         size_limit=10000000000,  # 10 GB
                     )
 
+                # TODO: Remove other formats from cache, outdated
+
             csv_key = encode_dataset_id(dataset_id) + '_' + 'csv'
             csv_path = csv_lock.enter_context(
-                cache_get_or_set('/cache/datasets', csv_key, create_csv)
+                cache_get_or_set(
+                    '/cache/datasets', csv_key, create_csv,
+                    cache_invalid=cache_invalid,
+                )
             )
 
         # If CSV was requested, send it
@@ -122,5 +128,8 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                     shutil.rmtree(cache_temp)
                     os.rename(zip_name, cache_temp)
 
-        with cache_get_or_set('/cache/datasets', key, create) as cache_path:
+        with cache_get_or_set(
+            '/cache/datasets', key, create,
+            cache_invalid=cache_invalid,
+        ) as cache_path:
             yield cache_path
