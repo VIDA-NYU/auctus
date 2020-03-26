@@ -17,10 +17,16 @@ function show_spatial_coverage(coverage) {
       }
 
       var _title = document.createElement('h5');
-      _title.innerHTML = ('Lat. Variable: ' +
-                          element.lat +
-                          ' &nbsp; &nbsp;| &nbsp; &nbsp; Lon. Variable: ' +
-                          element.lon);
+      if(element.lat && element.lon) {
+        _title.innerHTML = ('Lat. Variable: ' +
+                            element.lat +
+                            ' &nbsp; &nbsp;| &nbsp; &nbsp; Lon. Variable: ' +
+                            element.lon);
+      } else if(element.address) {
+        _title.innerHTML = 'Address Variable: ' + element.address;
+      } else {
+        _title.innerHTML = 'Other Coverage';
+      }
       div.appendChild(_title);
 
       var map_div = document.createElement('div');
