@@ -12,15 +12,15 @@ function show_spatial_coverage(coverage) {
     for(var i = 0; i < coverage.length; i++) {
       var element = coverage[i];
 
-      if(element['ranges'].length == 0) {
+      if(element.ranges.length == 0) {
         continue;
       }
 
       var _title = document.createElement('h5');
       _title.innerHTML = ('Lat. Variable: ' +
-                          element['lat'] +
+                          element.lat +
                           ' &nbsp; &nbsp;| &nbsp; &nbsp; Lon. Variable: ' +
-                          element['lon']);
+                          element.lon);
       div.appendChild(_title);
 
       var map_div = document.createElement('div');
@@ -45,8 +45,8 @@ function show_spatial_coverage(coverage) {
       // finding outer bounding box
       // collecting all the bounding boxes
       polygons.push([]);
-      var top_left = element['ranges'][0]['range']['coordinates'][0];
-      var bottom_right = element['ranges'][0]['range']['coordinates'][1];
+      var top_left = element.ranges[0].range.coordinates[0];
+      var bottom_right = element.ranges[0].range.coordinates[1];
       var min_x = top_left[0];
       var max_x = bottom_right[0];
       var min_y = bottom_right[1];
@@ -58,9 +58,9 @@ function show_spatial_coverage(coverage) {
         [bottom_right[0], top_left[1]],
         [top_left[0], top_left[1]]
       ]);
-      for(var j = 1; j < element['ranges'].length; j++) {
-        top_left = element['ranges'][j]['range']['coordinates'][0];
-        bottom_right = element['ranges'][j]['range']['coordinates'][1];
+      for(var j = 1; j < element.ranges.length; j++) {
+        top_left = element.ranges[j].range.coordinates[0];
+        bottom_right = element.ranges[j].range.coordinates[1];
         min_x = Math.min(top_left[0], min_x);
         max_x = Math.max(bottom_right[0], max_x);
         min_y = Math.min(bottom_right[1], min_y);
