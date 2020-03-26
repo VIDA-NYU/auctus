@@ -39,6 +39,7 @@ SAMPLE_ROWS = 20
 
 MAX_UNCLEAN_ADDRESSES = 0.2  # 15%
 MAX_ADDRESS_LENGTH = 90  # 90 characters
+MAX_NOMINATIM_REQUESTS = 200
 
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
@@ -248,13 +249,14 @@ def nominatim_query(url, *, q):
     return res.json() or None
 
 
-def nominatim_resolve_all(url, array):
+def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
     cache = {}
     locations = []
     not_found = 0  # Unique locations not found
     non_empty = 0
     start = time.perf_counter()
-    for value in array:
+    processed = 0
+    for processed, value in enumerate(array):
         value = value.strip()
         if not value:
             continue
@@ -277,13 +279,15 @@ def nominatim_resolve_all(url, array):
             else:
                 cache[value] = None
                 not_found += 1
+            if len(cache) >= max_requests:
+                break
     logger.info(
         "Performed %d Nominatim queries in %fs (%d hits). Found %d/%d",
         len(cache),
         time.perf_counter() - start,
         len(cache) - not_found,
         len(locations),
-        len(array),
+        processed,
     )
     return locations, non_empty
 
