@@ -37,3 +37,10 @@ scrape_configs:
         type: "A"
         port: 8000
         refresh_interval: 60s
+  - job_name: lazo
+    dns_sd_configs:
+      - names:
+          - lazo
+        type: "A"
+        port: 8000
+        refresh_interval: 60s
