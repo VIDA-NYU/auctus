@@ -11,6 +11,7 @@ import zipfile
 
 import datamart_materialize
 
+from .test_profile import check_ranges, check_geo_ranges, check_plot
 from .utils import DataTestCase
 
 
@@ -1593,45 +1594,6 @@ class TestAugment(DatamartTest):
                     '2019-06-13,green,no',
                 ],
             )
-
-
-def check_ranges(min_, max_):
-    def check(ranges):
-        assert len(ranges) == 3
-        for rg in ranges:
-            assert rg.keys() == {'range'}
-            rg = rg['range']
-            assert rg.keys() == {'gte', 'lte'}
-            gte, lte = rg['gte'], rg['lte']
-            assert min_ <= gte <= lte <= max_
-
-        return True
-
-    return check
-
-
-def check_geo_ranges(min_long, min_lat, max_long, max_lat):
-    def check(ranges):
-        assert len(ranges) == 3
-        for rg in ranges:
-            assert rg.keys() == {'range'}
-            rg = rg['range']
-            assert rg.keys() == {'type', 'coordinates'}
-            assert rg['type'] == 'envelope'
-            [long1, lat1], [long2, lat2] = rg['coordinates']
-            assert min_lat <= lat2 <= lat1 <= max_lat
-            assert min_long <= long1 <= long2 <= max_long
-
-        return True
-
-    return check
-
-
-def check_plot(kind):
-    def check(plot):
-        return plot['type'] == kind
-
-    return check
 
 
 version = os.environ['DATAMART_VERSION']
