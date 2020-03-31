@@ -583,16 +583,29 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
             left_columns.append([int(index_1), int(index_2)])
             left_columns_names.append([data_profile['columns'][int(index_1)]['name'] +
                                        ', ' + data_profile['columns'][int(index_2)]['name']])
-        if 'index' in result['_source']:
-            right_columns.append([result['_source']['index']])
-            right_columns_names.append([result['_source']['name']])
-        else:
+        source = result['_source']
+        if 'index' in source:
+            right_columns.append([source['index']])
+            right_columns_names.append([source['name']])
+        elif 'lat_index' in source and 'lon_index' in source:
             right_columns.append([
-                result['_source']['lat_index'],
-                result['_source']['lon_index']])
+                source['lat_index'],
+                source['lon_index'],
+            ])
             right_columns_names.append([
-                result['_source']['lat'],
-                result['_source']['lon']])
+                source['lat'],
+                source['lon'],
+            ])
+        elif 'address_index' in source:
+            right_columns.append([
+                source['address_index'],
+            ])
+            right_columns_names.append([
+                source['address'],
+            ])
+        else:
+            continue
+
         results.append(dict(
             id=dt,
             score=result['_score'],
@@ -1212,6 +1225,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
             data_profile = process_dataset(
                 data=io.BytesIO(data),
                 lazo_client=self.application.lazo_client,
+                nominatim=self.application.nominatim,
                 search=True,
                 include_sample=False,
                 coverage=True,
