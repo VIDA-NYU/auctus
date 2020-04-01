@@ -77,12 +77,19 @@ class Coordinator(object):
                 self.recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
 
         # Start AMQP coroutine
-        log_future(asyncio.get_event_loop().create_task(self._amqp()),
-                   logger,
-                   should_never_exit=True)
+        log_future(
+            asyncio.get_event_loop().create_task(self._amqp()),
+            logger,
+            should_never_exit=True,
+        )
+
         # Start source count coroutine
         self.sources_counts = {}
-        self.update_sources_counts()
+        log_future(
+            asyncio.get_event_loop().create_task(self.update_sources_counts()),
+            logger,
+            should_never_exit=True,
+        )
 
     @staticmethod
     def build_discovery(dataset_id, metadata, discovery=None):
@@ -146,46 +153,56 @@ class Coordinator(object):
                 )
                 del self.recent_discoveries[15:]
 
-    def update_sources_counts(self):
-        try:
-            SIZE = 10000
-            sleep_in = SIZE
-            sources = {}
-            # TODO: Aggregation query?
-            hits = elasticsearch.helpers.scan(
-                self.elasticsearch,
-                index='datamart',
-                query={
-                    'query': {
-                        'match_all': {},
-                    },
+    def _update_sources_counts(self):
+        SIZE = 10000
+        sleep_in = SIZE
+        sources = {}
+        # TODO: Aggregation query?
+        hits = elasticsearch.helpers.scan(
+            self.elasticsearch,
+            index='datamart',
+            query={
+                'query': {
+                    'match_all': {},
                 },
-                size=SIZE,
-                scroll='30m',
-            )
-            for h in hits:
-                source = h['_source'].get('source', 'unknown')
+            },
+            size=SIZE,
+            scroll='30m',
+        )
+        for h in hits:
+            source = h['_source'].get('source', 'unknown')
 
-                try:
-                    sources[source] += 1
-                except KeyError:
-                    sources[source] = 1
+            try:
+                sources[source] += 1
+            except KeyError:
+                sources[source] = 1
 
-                sleep_in -= 1
-                if sleep_in <= 0:
-                    sleep_in = SIZE
-                    time.sleep(5)
+            sleep_in -= 1
+            if sleep_in <= 0:
+                sleep_in = SIZE
+                time.sleep(5)
 
-            # Update prometheus
-            for source, count in sources.items():
-                PROM_DATASETS.labels(source).set(count)
-            for source in self.sources_counts.keys() - sources.keys():
-                PROM_DATASETS.remove(source)
-            # Update count
-            self.sources_counts = sources
-            logger.info("Now %d datasets", sum(sources.values()))
-        finally:
-            asyncio.get_event_loop().call_later(
-                5 * 60,
-                self.update_sources_counts,
-            )
+        # Update prometheus
+        for source, count in sources.items():
+            PROM_DATASETS.labels(source).set(count)
+        for source in self.sources_counts.keys() - sources.keys():
+            PROM_DATASETS.remove(source)
+
+        return sources
+
+    async def update_sources_counts(self):
+        while True:
+            try:
+                # Count datasets in thread
+                sources = await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    self._update_sources_counts,
+                )
+
+                # Update count
+                self.sources_counts = sources
+                logger.info("Now %d datasets", sum(sources.values()))
+            except Exception:
+                logger.exception("Exception counting sources")
+
+            await asyncio.sleep(5 * 60)
