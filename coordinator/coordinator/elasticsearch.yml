@@ -38,6 +38,8 @@ datamart:
             type: text
           lon:
             type: text
+          address:
+            type: text
           # we want to query individual spatial ranges
           ranges:
             type: nested
