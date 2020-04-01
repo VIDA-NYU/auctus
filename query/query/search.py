@@ -98,12 +98,25 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
 
     if 'spatial_coverage' in data_profile:
         for spatial in data_profile['spatial_coverage']:
-            if filter_ and (
-                    column_index_mapping[spatial['lat']] not in filter_ or
-                    column_index_mapping[spatial['lon']] not in filter_):
-                continue
-            names = (str(column_index_mapping[spatial['lat']]) + ',' +
-                     str(column_index_mapping[spatial['lon']]))
+            if 'lat' in spatial:
+                if (
+                    filter_ and (
+                        column_index_mapping[spatial['lat']] not in filter_ or
+                        column_index_mapping[spatial['lon']] not in filter_
+                    )
+                ):
+                    continue
+                names = (str(column_index_mapping[spatial['lat']]) + ',' +
+                         str(column_index_mapping[spatial['lon']]))
+            elif 'address' in spatial:
+                if (
+                    filter_ and
+                    column_index_mapping[spatial['address']] not in filter_
+                ):
+                    continue
+                names = str(column_index_mapping[spatial['address']])
+            else:
+                raise ValueError("Invalid spatial_coverage")
             column_coverage[names] = {
                 'type':      'spatial',
                 'type_value': types.LATITUDE + ',' + types.LONGITUDE,
