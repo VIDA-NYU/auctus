@@ -169,7 +169,7 @@ class PandasWriter(object):
         def __exit__(self, exc, value, tb):
             pass
 
-    def __init__(self, dataset_id, destination, metadata):
+    def __init__(self, dataset_id, destination, metadata, format_options=None):
         if destination is not None:
             raise ValueError("Pandas format expects destination=None")
         self._data = None
@@ -192,7 +192,8 @@ class PandasWriter(object):
         return pandas.read_csv(data)
 
 
-def download(dataset, destination, proxy, format='csv', size_limit=None):
+def download(dataset, destination, proxy, format='csv', format_options=None,
+             size_limit=None):
     """Materialize a dataset on disk.
 
     :param dataset: Dataset description from search index.
@@ -201,6 +202,7 @@ def download(dataset, destination, proxy, format='csv', size_limit=None):
         materialize locally. If ``None``, :class:`KeyError` will be raised if this
         materializer is unavailable.
     :param format: Output format.
+    :param format_options: Dictionary of options for the writer or None.
     :param size_limit: Maximum size of the dataset to download, in bytes. If
         the limit is reached, :class:`DatasetTooBig` will be raised.
     """
@@ -221,7 +223,7 @@ def download(dataset, destination, proxy, format='csv', size_limit=None):
                 response = requests.get(proxy + '/metadata/' + dataset)
                 response.raise_for_status()
                 metadata = response.json()['metadata']
-            writer = writer_cls(dataset, destination, metadata)
+            writer = writer_cls(dataset, destination, metadata, format_options)
             _proxy_download(dataset, writer, proxy, size_limit=size_limit)
             return writer.finish()
         else:
@@ -241,7 +243,7 @@ def download(dataset, destination, proxy, format='csv', size_limit=None):
             materialize = materialize['materialize']
             dataset_id = dataset.get('id')
 
-    writer = writer_cls(dataset_id, destination, metadata)
+    writer = writer_cls(dataset_id, destination, metadata, format_options)
 
     for converter in reversed(materialize.get('convert', [])):
         converter_args = dict(converter)
