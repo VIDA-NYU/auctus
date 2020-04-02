@@ -279,7 +279,6 @@ class TestNominatim(DataTestCase):
         finally:
             datamart_profiler.nominatim_query = old_query
 
-        self.maxDiff = None
         self.assertJson(
             metadata,
             {

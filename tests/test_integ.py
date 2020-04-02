@@ -588,8 +588,6 @@ class TestDataSearch(DatamartTest):
 
 
 class TestDownload(DatamartTest):
-    maxDiff = None
-
     def test_get_id(self):
         """Download datasets via GET /download/{dataset_id}"""
         # Basic dataset, materialized via direct_url
