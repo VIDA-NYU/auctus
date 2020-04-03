@@ -234,7 +234,7 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
                         'minimum_should_match': 1
                     }
                 },
-                'functions': [] if not query_args else query_args,
+                'functions': query_args or [],
                 'score_mode': 'sum',
                 'boost_mode': 'multiply'
             }
@@ -333,7 +333,7 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
                         'minimum_should_match': 1
                     }
                 },
-                'functions': [] if not query_args else query_args,
+                'functions': query_args or [],
                 'score_mode': 'sum',
                 'boost_mode': 'multiply'
             }
