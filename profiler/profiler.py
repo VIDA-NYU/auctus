@@ -8,6 +8,7 @@ import lazo_index_service
 import logging
 import os
 import prometheus_client
+import threading
 import time
 import xlrd
 
@@ -22,7 +23,8 @@ from datamart_profiler import process_dataset
 logger = logging.getLogger(__name__)
 
 
-MAX_CONCURRENT = 2
+MAX_CONCURRENT_PROFILE = 1
+MAX_CONCURRENT_DOWNLOAD = 2
 
 
 PROM_DOWNLOADING = prometheus_client.Gauge(
@@ -47,6 +49,7 @@ def prom_incremented(metric, amount=1):
 def materialize_and_process_dataset(
     dataset_id, metadata,
     lazo_client, nominatim,
+    profile_semaphore,
     cache_invalid=False,
 ):
     with contextlib.ExitStack() as stack:
@@ -73,19 +76,23 @@ def materialize_and_process_dataset(
                 os.remove(excel_temp_path)
 
         # Profile
-        with prom_incremented(PROM_PROFILING):
-            start = time.perf_counter()
-            metadata = process_dataset(
-                data=dataset_path,
-                dataset_id=dataset_id,
-                metadata=metadata,
-                lazo_client=lazo_client,
-                nominatim=nominatim,
-                include_sample=True,
-                coverage=True,
-                plots=True,
-            )
-            logger.info("Profiling took %.2fs", time.perf_counter() - start)
+        with profile_semaphore:
+            with prom_incremented(PROM_PROFILING):
+                start = time.perf_counter()
+                metadata = process_dataset(
+                    data=dataset_path,
+                    dataset_id=dataset_id,
+                    metadata=metadata,
+                    lazo_client=lazo_client,
+                    nominatim=nominatim,
+                    include_sample=True,
+                    coverage=True,
+                    plots=True,
+                )
+                logger.info(
+                    "Profiling took %.2fs",
+                    time.perf_counter() - start,
+                )
 
         metadata['materialize'] = materialize
         return metadata
@@ -93,7 +100,7 @@ def materialize_and_process_dataset(
 
 class Profiler(object):
     def __init__(self):
-        self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
+        self.profile_semaphore = threading.Semaphore(MAX_CONCURRENT_PROFILE)
         self.es = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
         )
@@ -152,12 +159,11 @@ class Profiler(object):
             password=os.environ['AMQP_PASSWORD'],
         )
         self.channel = await connection.channel()
-        await self.channel.set_qos(prefetch_count=1)
+        await self.channel.set_qos(prefetch_count=MAX_CONCURRENT_DOWNLOAD)
 
         await self._amqp_setup()
 
         # Consume profiling queue
-        await self.work_tickets.acquire()
         async for message in self.profile_queue:
             obj = msg2json(message)
             dataset_id = obj['id']
@@ -183,6 +189,7 @@ class Profiler(object):
                 metadata,
                 self.lazo_client,
                 self.nominatim,
+                self.profile_semaphore,
                 cache_invalid,
             )
 
@@ -191,8 +198,6 @@ class Profiler(object):
                     message, dataset_id,
                 )
             )
-
-            await self.work_tickets.acquire()
 
     def process_dataset_callback(self, message, dataset_id):
         async def coro(future):
@@ -264,7 +269,6 @@ class Profiler(object):
                 raise
 
         def callback(future):
-            self.work_tickets.release()
             log_future(self.loop.create_task(coro(future)), logger)
 
         return callback
