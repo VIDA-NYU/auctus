@@ -807,6 +807,28 @@ class TestDownload(DatamartTest):
                 os.path.join(os.path.dirname(__file__), 'data/agg.csv'),
             )
 
+    def test_basic_add_index(self):
+        """Test adding d3mIndex automatically."""
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.basic',
+            params={'format': 'd3m',  'format_need_d3mindex': '1'},
+            allow_redirects=False,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        self.assertEqual(set(zip_.namelist()),
+                         {'datasetDoc.json', 'tables/learningData.csv'})
+        self.assertEqual(
+            json.load(zip_.open('datasetDoc.json')),
+            basic_metadata_d3m('4.0.0'),
+        )
+        with data('basic.d3m.csv') as f_ref:
+            self.assertEqual(
+                zip_.open('tables/learningData.csv').read(),
+                f_ref.read(),
+            )
+
 
 class TestAugment(DatamartTest):
     def test_basic_join(self):

@@ -111,6 +111,7 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                     )
                     with writer.open_file('wb') as dst:
                         shutil.copyfileobj(src, dst)
+                    writer.finish()
 
                 # Make a ZIP if it's a folder
                 if os.path.isdir(cache_temp):
