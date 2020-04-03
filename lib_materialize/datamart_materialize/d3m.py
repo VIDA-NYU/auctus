@@ -20,14 +20,27 @@ STRUCTURAL_TYPE_MAP = {
 DEFAULT_VERSION = '4.0.0'
 
 
-def d3m_metadata(dataset_id, metadata, *, version=None):
+def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
     if not version:
         version = DEFAULT_VERSION
     elif version not in ('3.2.0', '4.0.0'):
         raise ValueError("Unknown D3M schema version %r" % (version,))
 
-    columns = []
-    for i, column in enumerate(metadata['columns']):
+    columns = metadata['columns']
+
+    if (
+        need_d3mindex and
+        not any(c['name'] == 'd3mIndex' for c in columns)
+    ):
+        d3mindex_meta = {
+            'name': 'd3mIndex',
+            'structural_type': types.INTEGER,
+            'semantic_types': [types.ID],
+        }
+        columns = [d3mindex_meta] + columns
+
+    d3m_columns = []
+    for i, column in enumerate(columns):
         # D3M has a 'dateTime' structural type but we use string
         if types.DATE_TIME in column['semantic_types']:
             col_type = 'dateTime'
@@ -44,7 +57,7 @@ def d3m_metadata(dataset_id, metadata, *, version=None):
                     'string',
                 )
         role = 'index' if column['name'] == 'd3mIndex' else 'attribute'
-        columns.append({
+        d3m_columns.append({
             'colIndex': i,
             'colName': column['name'],
             'colType': col_type,
@@ -71,7 +84,7 @@ def d3m_metadata(dataset_id, metadata, *, version=None):
                     else ['text/csv']
                 ),
                 'isCollection': False,
-                'columns': columns,
+                'columns': d3m_columns,
             },
         ],
     }
@@ -113,7 +126,10 @@ class D3mWriter(object):
         os.mkdir(destination)
         os.mkdir(os.path.join(destination, 'tables'))
 
-        d3m_meta = d3m_metadata(dataset_id, metadata, version=version)
+        d3m_meta = d3m_metadata(
+            dataset_id, metadata,
+            version=version, need_d3mindex=self.need_d3mindex,
+        )
 
         with open(os.path.join(destination, 'datasetDoc.json'), 'w') as fp:
             json.dump(d3m_meta, fp, sort_keys=True, indent=2)

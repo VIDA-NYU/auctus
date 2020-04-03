@@ -819,9 +819,20 @@ class TestDownload(DatamartTest):
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
         self.assertEqual(set(zip_.namelist()),
                          {'datasetDoc.json', 'tables/learningData.csv'})
+        meta = basic_metadata_d3m('4.0.0')
+        index_meta = {
+            'colIndex': 0,
+            'colName': 'd3mIndex',
+            'colType': 'integer',
+            'role': ['index'],
+        }
+        meta['dataResources'][0]['columns'] = [index_meta] + [
+            dict(col, colIndex=col['colIndex'] + 1)
+            for col in meta['dataResources'][0]['columns']
+        ]
         self.assertEqual(
             json.load(zip_.open('datasetDoc.json')),
-            basic_metadata_d3m('4.0.0'),
+            meta,
         )
         with data('basic.d3m.csv') as f_ref:
             self.assertEqual(

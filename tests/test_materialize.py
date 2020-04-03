@@ -89,6 +89,21 @@ basic_d3m_metadata = {
 }
 
 
+basic_d3m_metadata_with_index = copy.deepcopy(basic_d3m_metadata)
+basic_d3m_metadata_with_index['dataResources'][0]['columns'] = (
+        [{
+            'colIndex': 0,
+            'colName': 'd3mIndex',
+            'colType': 'integer',
+            'role': ['index'],
+        }] +
+        [
+            dict(col, colIndex=col['colIndex'] + 1)
+            for col in basic_d3m_metadata['dataResources'][0]['columns']
+        ]
+)
+
+
 class TestD3m(unittest.TestCase):
     def _check_output(self, target, *,
                       metadata=basic_d3m_metadata, data_path='basic.csv'):
@@ -156,7 +171,11 @@ class TestD3m(unittest.TestCase):
                 shutil.copyfileobj(f_in, f_out)
             writer.finish()
 
-            self._check_output(target, data_path='basic.d3m.csv')
+            self._check_output(
+                target,
+                metadata=basic_d3m_metadata_with_index,
+                data_path='basic.d3m.csv',
+            )
 
     def test_index_present(self):
         """Test that requiring an index doesn't add one if already there."""
@@ -168,4 +187,8 @@ class TestD3m(unittest.TestCase):
                 shutil.copyfileobj(f_in, f_out)
             writer.finish()
 
-            self._check_output(target, data_path='basic.d3m.csv')
+            self._check_output(
+                target,
+                metadata=basic_d3m_metadata_with_index,
+                data_path='basic.d3m.csv',
+            )
