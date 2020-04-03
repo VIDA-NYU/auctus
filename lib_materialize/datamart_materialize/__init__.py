@@ -5,7 +5,7 @@ import requests
 import time
 
 
-__version__ = '0.5.5'
+__version__ = '0.5.6'
 
 
 logger = logging.getLogger(__name__)
