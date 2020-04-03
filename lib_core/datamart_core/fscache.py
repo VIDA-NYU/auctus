@@ -9,6 +9,7 @@ import os
 import prometheus_client
 import shutil
 import signal
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -159,6 +160,11 @@ def _lock(filepath, exclusive, timeout=None):
         logger.debug("Releasing %s lock: %r", type_, filepath)
         pipe.send('UNLOCK')
         proc.join(10)
+        if proc.exitcode is None:
+            start = time.perf_counter()
+            proc.join(3 * 60)
+            logger.critical("Releasing %s lock took %.2fs: %r",
+                            type_, time.perf_counter() - start, filepath)
         if proc.exitcode != 0:
             logger.critical("Failed (%r) to release %s lock: %r",
                             proc.exitcode, type_, filepath)
