@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as Icon from 'react-feather';
-import { BASE_PATH_URL } from '../../config';
+import { BASE_PATH_URL, API_URL } from '../../config';
 import { formatSize } from '../../utils';
 import { SearchResult } from '../../api/types';
 import { Description, DataTypes, DatasetColumns } from './Metadata';
@@ -22,7 +22,7 @@ function DownloadViewDetails(props: { id: string }) {
     <div className="mt-2">
       <a
         className="btn btn-sm btn-outline-primary"
-        href={`${BASE_PATH_URL}/download/${props.id}`}
+        href={`${API_URL}/download/${props.id}`}
       >
         <Icon.Download className="feather" /> Download
       </a>

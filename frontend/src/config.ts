@@ -6,19 +6,20 @@
  *
  * This can be configured by adding an HTML meta-tag to the static HTML.
  *     <meta name="base_path" content="/auctus/">
+ *     <meta name="api_path" content="https://api.auctus/v1/">
  */
-function loadBasePathFromHTML(): string {
-  const meta = document.getElementsByName('base_path')[0];
-  let basePath: string | null = meta ? meta.getAttribute('content') : null;
-  if (basePath) {
-    basePath = basePath.startsWith('/') ? basePath : '/' + basePath;
-    basePath = basePath.endsWith('/')
-      ? basePath.substring(0, basePath.length - 1)
-      : basePath;
+function loadVariableFromHTML(name: string): string {
+  const meta = document.getElementsByName(name)[0];
+  let value: string | null = meta ? meta.getAttribute('content') : null;
+  if (value) {
+    value = value.startsWith('/') ? value : '/' + value;
+    value = value.endsWith('/')
+      ? value.substring(0, value.length - 1)
+      : value;
   } else {
-    basePath = '';
+    value = '';
   }
-  return basePath;
+  return value;
 }
 
 /*
@@ -42,9 +43,9 @@ if (isDev && process.env.REACT_APP_API_HOST && process.env.REACT_APP_API_PORT) {
   baseHost = `${process.env.REACT_APP_API_HOST}`;
 }
 
-const BASE_PATH: string = loadBasePathFromHTML();
+const BASE_PATH: string = loadVariableFromHTML('base_path');
 const BASE_PATH_URL = `//${baseHost}${BASE_PATH}`;
-const API_URL = `${BASE_PATH_URL}`;
+const API_URL = loadVariableFromHTML('api_path') || BASE_PATH_URL;
 
 console.log('BASE_PATH_URL', BASE_PATH_URL);
 console.log('API_URL', API_URL);
