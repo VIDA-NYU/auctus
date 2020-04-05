@@ -21,6 +21,7 @@ import {
   GeoSpatialVariable,
 } from './api/types';
 import { Chip, ChipGroup } from './components/Chip/Chip';
+import { MainMenu } from './components/MainMenu/MainMenu';
 import * as Icon from 'react-feather';
 
 interface Filter {
@@ -41,7 +42,7 @@ interface AppState {
   searchQuery?: api.SearchQuery;
 }
 
-class App extends React.Component<{}, AppState> {
+class SearchApp extends React.Component<{}, AppState> {
   constructor(props: AppState) {
     super(props);
     this.state = this.initialState();
@@ -257,7 +258,7 @@ class App extends React.Component<{}, AppState> {
 
   render() {
     return (
-      <div className="container-fluid">
+      <>
         {this.state.searchQuery ? (
           <>
             <div className="row">
@@ -315,6 +316,17 @@ class App extends React.Component<{}, AppState> {
             </div>
           </div>
         )}
+      </>
+    );
+  }
+}
+
+class App extends React.Component<{}, AppState> {
+  render() {
+    return (
+      <div className="container-fluid">
+        <MainMenu />
+        <SearchApp />
       </div>
     );
   }

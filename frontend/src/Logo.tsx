@@ -3,7 +3,7 @@ import logo from './auctus-logo.svg';
 
 function VerticalLogo() {
   return (
-    <div className="text-center" style={{ marginTop: 100, marginBottom: 30 }}>
+    <div className="text-center" style={{ paddingTop: 100, paddingBottom: 30 }}>
       <img
         src={logo}
         className="d-block"
