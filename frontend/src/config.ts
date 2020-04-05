@@ -11,13 +11,10 @@
 function loadVariableFromHTML(name: string): string {
   const meta = document.getElementsByName(name)[0];
   let value: string | null = meta ? meta.getAttribute('content') : null;
-  if (value) {
-    value = value.startsWith('/') ? value : '/' + value;
-    value = value.endsWith('/')
-      ? value.substring(0, value.length - 1)
-      : value;
-  } else {
+  if (!value) {
     value = '';
+  } else if(value.endsWith('/')) {
+    value = value.substring(0, value.length - 1);
   }
   return value;
 }
