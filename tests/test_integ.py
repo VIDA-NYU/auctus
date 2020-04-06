@@ -3,10 +3,12 @@ import io
 import json
 import jsonschema
 import os
+import pkg_resources
 import re
 import requests
 import tempfile
 import time
+import yaml
 import zipfile
 
 import datamart_materialize
@@ -110,6 +112,30 @@ class TestProfiler(DataTestCase):
                 'datamart.test.hourly': hourly_metadata,
             },
         )
+
+    def test_indexes(self):
+        response = requests.get(
+            'http://' + os.environ['ELASTICSEARCH_HOSTS'].split(',')[0] +
+            '/_all'
+        )
+        response.raise_for_status()
+        actual = response.json()
+        with pkg_resources.resource_stream(
+                'coordinator', 'elasticsearch.yml') as stream:
+            expected = yaml.safe_load(stream)
+        actual.pop('lazo', None)
+        for index in expected.values():
+            index.setdefault('aliases', {})
+        for index in actual.values():
+            index.pop('settings', None)
+        # +DEBUG
+        import sys
+        print("expected")
+        json.dump(expected, sys.stdout, sort_keys=True, indent=2)
+        print("actual")
+        json.dump(actual, sys.stdout, sort_keys=True, indent=2)
+        # -DEBUG
+        self.assertEqual(actual, expected)
 
 
 class TestProfileQuery(DatamartTest):

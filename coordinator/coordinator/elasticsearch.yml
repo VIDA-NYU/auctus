@@ -1,12 +1,31 @@
 datamart:
   mappings:
     properties:
+      id:
+        type: keyword
+      name:
+        type: text
+      description:
+        type: text
+      date:
+        type: date
+      license:
+        type: keyword
       sample:
         type: text
         index: false
       source:
         type: keyword
-        index: true
+      size:
+        type: long
+      nb_rows:
+        type: long
+      nb_profiled_rows:
+        type: long
+        index: false
+      version:
+        type: keyword
+        index: false
       # 'columns' is a nested field, we want
       # to query individual columns
       columns:
@@ -21,16 +40,28 @@ datamart:
                 type: keyword
           structural_type:
             type: keyword
-            index: true
           semantic_types:
             type: keyword
-            index: true
+          missing_values_ratio:
+            type: float
+          unclean_values_ratio:
+            type: float
+          num_distinct_values:
+            type: long
+          # Numerical summaries
+          mean:
+            type: float
+          stddev:
+            type: float
           # we want to query individual numerical ranges
           coverage:
             type: nested
             properties:
               range:
                 type: double_range
+          plot:
+            type: object
+            enabled: false
       spatial_coverage:
         type: nested
         properties:
@@ -46,12 +77,40 @@ datamart:
             properties:
               range:
                 type: geo_shape
-      license:
-        type: keyword
-        index: true
+      materialize:
+        properties:
+          identifier:
+            type: keyword
+          date:
+            type: date
+          direct_url:
+            type: keyword
+            index: false
 datamart_columns:
   mappings:
     properties:
+      dataset_id:
+        type: keyword
+      dataset_name:
+        type: text
+      dataset_description:
+        type: text
+      dataset_date:
+        type: date
+      dataset_license:
+        type: keyword
+      dataset_source:
+        type: keyword
+      dataset_size:
+        type: long
+      dataset_nb_rows:
+        type: long
+      dataset_nb_profiled_rows:
+        type: long
+        index: false
+      dataset_version:
+        type: keyword
+        index: false
       name:
         type: text
         # the following is needed for
@@ -62,19 +121,22 @@ datamart_columns:
             type: keyword
       index:
         type: integer
-      dataset_id:
-        type: keyword
-        index: true
-      dataset_name:
-        type: text
-      dataset_description:
-        type: text
       structural_type:
         type: keyword
-        index: true
       semantic_types:
         type: keyword
-        index: true
+      missing_values_ratio:
+        type: float
+      unclean_values_ratio:
+        type: float
+      num_distinct_values:
+        type: long
+      # Numerical summaries
+      mean:
+        type: float
+      stddev:
+        type: float
+      # numerical ranges
       coverage:
         type: nested
         properties:
@@ -102,7 +164,6 @@ datamart_spatial_coverage:
         type: integer
       dataset_id:
         type: keyword
-        index: true
       dataset_name:
         type: text
       dataset_description:
