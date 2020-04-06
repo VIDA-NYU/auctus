@@ -157,7 +157,7 @@ def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
 
 
 def get_numerical_join_search_results(es, type_, type_value, pivot_column, ranges,
-                                      dataset_id=None, query_args=None):
+                                      dataset_id=None, query_args_sup=None):
     """Retrieve numerical join search results that intersect with the input numerical ranges.
     """
 
@@ -234,7 +234,7 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
                         'minimum_should_match': 1
                     }
                 },
-                'functions': query_args or [],
+                'functions': query_args_sup or [],
                 'score_mode': 'sum',
                 'boost_mode': 'multiply'
             }
@@ -251,7 +251,7 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
 
 
 def get_spatial_join_search_results(es, ranges, dataset_id=None,
-                                    query_args=None):
+                                    query_args_sup=None):
     """Retrieve spatial join search results that intersect
     with the input spatial ranges.
     """
@@ -333,7 +333,7 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
                         'minimum_should_match': 1
                     }
                 },
-                'functions': query_args or [],
+                'functions': query_args_sup or [],
                 'score_mode': 'sum',
                 'boost_mode': 'multiply'
             }
@@ -350,7 +350,7 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
 
 
 def get_textual_join_search_results(es, dataset_ids, column_names,
-                                    lazo_scores, query_args=None):
+                                    lazo_scores, query_args_sup=None):
     """Combine Lazo textual search results with Elasticsearch
     (keyword search).
     """
@@ -365,7 +365,7 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
         scores_per_dataset[d_id][name] = lazo_score
 
     # if there is no keyword query
-    if not query_args:
+    if not query_args_sup:
         results = list()
         for dataset_id in column_per_dataset:
             column_indices = get_column_identifiers(
@@ -434,7 +434,7 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
                         'minimum_should_match': 1
                     }
                 },
-                'functions': query_args,
+                'functions': query_args_sup,
                 'score_mode': 'sum',
                 'boost_mode': 'multiply'
             }
@@ -475,7 +475,7 @@ def get_dataset_metadata(es, dataset_id):
 
 
 def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
-                          query_args=None, tabular_variables=()):
+                          query_args_sup=None, tabular_variables=()):
     """
     Retrieve datasets that can be joined with an input dataset.
 
@@ -483,7 +483,7 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
     :param lazo_client: client for the Lazo Index Server
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
-    :param query_args: list of query arguments (optional).
+    :param query_args_sup: list of query arguments (optional).
     :param tabular_variables: specifies which columns to focus on for the search.
     """
 
@@ -516,7 +516,7 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
                 es,
                 column_coverage[column]['ranges'],
                 dataset_id,
-                query_args
+                query_args_sup,
             )
             for result in spatial_results:
                 result['companion_column'] = column
@@ -530,7 +530,7 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
                 column_name,
                 column_coverage[column]['ranges'],
                 dataset_id,
-                query_args
+                query_args_sup,
             )
             for result in numerical_results:
                 result['companion_column'] = column
@@ -563,7 +563,7 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
             dataset_ids,
             column_names,
             scores,
-            query_args
+            query_args_sup,
         )
         for result in textual_results:
             result['companion_column'] = column
@@ -663,7 +663,7 @@ def get_columns_by_type(data_profile, filter_=()):
 
 
 def get_unionable_datasets(es, data_profile, dataset_id=None,
-                           query_args=None, tabular_variables=()):
+                           query_args_main=None, tabular_variables=()):
     """
     Retrieve datasets that can be unioned to an input dataset using fuzzy search
     (max edit distance = 2).
@@ -671,7 +671,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
     :param es: Elasticsearch client.
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
-    :param query_args: list of query arguments (optional).
+    :param query_args_main: list of query arguments (optional).
     :param tabular_variables: specifies which columns to focus on for the search.
     """
 
@@ -723,10 +723,10 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 }
             }
 
-            if not query_args:
+            if not query_args_main:
                 args = query
             else:
-                args = [query] + query_args
+                args = [query] + query_args_main
             query_obj = {
                 '_source': {
                     'excludes': [
@@ -766,7 +766,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 for hit in hits:
 
                     dataset_name = hit['_id']
-                    es_score = hit['_score'] if query_args else 1
+                    es_score = hit['_score'] if query_args_main else 1
                     columns = hit['_source']['columns']
                     inner_hits = hit['inner_hits']
 
@@ -1169,7 +1169,7 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
             lazo_client=lazo_client,
             data_profile=data_profile,
             dataset_id=dataset_id,
-            query_args=query_args_sup,
+            query_args_sup=query_args_sup,
             tabular_variables=tabular_variables
         )
         logger.info("Found %d join results in %.2fs",
@@ -1181,7 +1181,7 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
             es=es,
             data_profile=data_profile,
             dataset_id=dataset_id,
-            query_args=query_args_main,
+            query_args_main=query_args_main,
             tabular_variables=tabular_variables
         )
         logger.info("Found %d union results in %.2fs",
