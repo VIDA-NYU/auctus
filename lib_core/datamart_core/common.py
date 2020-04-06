@@ -128,7 +128,9 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
     Adds dataset to the supplementary Datamart indices:
     'datamart_columns' and 'datamart_spatial_coverage'.
     """
-    DISCARD_DATASET_FIELDS = ['columns', 'sample']
+    DISCARD_DATASET_FIELDS = [
+        'columns', 'sample', 'materialize', 'spatial_coverage',
+    ]
     DISCARD_COLUMN_FIELDS = ['plot']
 
     common_dataset_metadata = dict(dataset_id=dataset_id)
