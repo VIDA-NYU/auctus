@@ -867,57 +867,52 @@ def parse_keyword_query_main_index(query_json):
     Elasticsearch query over 'datamart' index.
     """
 
-    keywords_query_all = list()
-    if 'keywords' in query_json and query_json['keywords']:
-        if not isinstance(query_json['keywords'], list):
-            raise ClientError("'keywords' must be an array")
+    query_args_main = list()
+    if query_json.get('keywords'):
         keywords_query = list()
-        for name in query_json['keywords']:
-            # description
-            keywords_query.append({
-                'match': {
-                    'description': {
-                        'query': name,
-                        'operator': 'and'
-                    }
+        keywords = query_json['keywords']
+        if isinstance(keywords, list):
+            keywords = ' '.join(keywords)
+        # description
+        keywords_query.append({
+            'match': {
+                'description': {
+                    'query': keywords,
+                    'operator': 'and'
                 }
-            })
-            # name
-            keywords_query.append({
-                'match': {
-                    'name': {
-                        'query': name,
-                        'operator': 'and'
-                    }
+            }
+        })
+        # name
+        keywords_query.append({
+            'match': {
+                'name': {
+                    'query': keywords,
+                    'operator': 'and'
                 }
-            })
-            # keywords
-            keywords_query.append({
-                'nested': {
-                    'path': 'columns',
-                    'query': {
-                        'match': {
-                            'columns.name': {
-                                'query': name,
-                                'operator': 'and'
-                            }
-                        },
+            }
+        })
+        # column names
+        keywords_query.append({
+            'nested': {
+                'path': 'columns',
+                'query': {
+                    'match': {
+                        'columns.name': {
+                            'query': keywords,
+                            'operator': 'and'
+                        }
                     },
                 },
-            })
-            keywords_query.append({
-                'wildcard': {
-                    'materialize.identifier': '*%s*' % name.lower()
-                }
-            })
-        keywords_query_all.append({
+            },
+        })
+        query_args_main.append({
             'bool': {
                 'should': keywords_query,
                 'minimum_should_match': 1
             }
         })
 
-    return keywords_query_all
+    return query_args_main
 
 
 def parse_keyword_query_sup_index(query_json):
