@@ -62,54 +62,49 @@ class TestSearch(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            sup,
+            sup_funcs,
             [
                 {
-                    'bool': {
-                        'should': [
-                            {
-                                'filter': {
-                                    'match': {
-                                        'dataset_description': {
-                                            'query': 'green taxi',
-                                            'operator': 'and',
-                                        },
-                                    },
-                                },
+                    'filter': {
+                        'match': {
+                            'dataset_description': {
+                                'query': 'green taxi',
+                                'operator': 'and',
                             },
-                            {
-                                'filter': {
-                                    'match': {
-                                        'dataset_name': {
-                                            'query': 'green taxi',
-                                            'operator': 'and',
-                                        },
-                                    },
-                                },
-                            },
-                            {
-                                'filter': {
-                                    'match': {
-                                        'name': {
-                                            'query': 'green taxi',
-                                            'operator': 'and',
-                                        },
-                                    },
-                                },
-                            },
-                        ],
-                        'minimum_should_match': 1,
+                        },
                     },
+                    'weight': 10,
                 },
                 {
-                    'bool': {
-                        'filter': [
-                            {
-                                'terms': {
-                                    'dataset_source': 'gov',
-                                },
+                    'filter': {
+                        'match': {
+                            'dataset_name': {
+                                'query': 'green taxi',
+                                'operator': 'and',
                             },
-                        ],
+                        },
+                    },
+                    'weight': 10,
+                },
+                {
+                    'filter': {
+                        'match': {
+                            'name': {
+                                'query': 'green taxi',
+                                'operator': 'and',
+                            },
+                        },
+                    },
+                    'weight': 10,
+                },
+            ],
+        )
+        self.assertEqual(
+            sup_filters,
+            [
+                {
+                    'terms': {
+                        'dataset_source': 'gov',
                     },
                 },
             ],
