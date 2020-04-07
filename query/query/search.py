@@ -5,6 +5,7 @@ import hashlib
 import io
 import logging
 import pickle
+import textwrap
 import time
 import tornado.web
 
@@ -156,12 +157,17 @@ def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
     return lazo_sketches
 
 
-def get_numerical_join_search_results(es, type_, type_value, pivot_column, ranges,
-                                      dataset_id=None, query_args=None):
+def get_numerical_join_search_results(
+    es, type_, type_value, pivot_column, ranges, dataset_id=None,
+    query_sup_functions=None, query_sup_filters=None,
+):
     """Retrieve numerical join search results that intersect with the input numerical ranges.
     """
 
-    filter_query = [{'term': {'%s' % type_: type_value}}]
+    filter_query = []
+    if query_sup_filters:
+        filter_query.extend(query_sup_filters)
+    filter_query.append({'term': {'%s' % type_: type_value}})
     if dataset_id:
         filter_query.append(
             {'term': {'dataset_id': dataset_id}}
@@ -195,10 +201,10 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
                                     'lte': range_[1],
                                     'coverage': coverage
                                 },
-                                'source': '''
+                                'source': textwrap.dedent('''\
                                 double start = Math.max(params.gte, doc['coverage.gte'].value);
                                 double end = Math.min(params.lte, doc['coverage.lte'].value);
-                                return (end - start + 1) / params.coverage;'''
+                                return (end - start + 1) / params.coverage;''')
                             }
                         },
                         'boost_mode': 'replace'
@@ -234,7 +240,7 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
                         'minimum_should_match': 1
                     }
                 },
-                'functions': [] if not query_args else query_args,
+                'functions': query_sup_functions or [],
                 'score_mode': 'sum',
                 'boost_mode': 'multiply'
             }
@@ -250,13 +256,17 @@ def get_numerical_join_search_results(es, type_, type_value, pivot_column, range
     )['hits']['hits']
 
 
-def get_spatial_join_search_results(es, ranges, dataset_id=None,
-                                    query_args=None):
+def get_spatial_join_search_results(
+    es, ranges, dataset_id=None,
+    query_sup_functions=None, query_sup_filters=None,
+):
     """Retrieve spatial join search results that intersect
     with the input spatial ranges.
     """
 
-    filter_query = list()
+    filter_query = []
+    if query_sup_filters:
+        filter_query.extend(query_sup_filters)
     if dataset_id:
         filter_query.append(
             {'term': {'dataset_id': dataset_id}}
@@ -295,12 +305,12 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
                                     'min_lat': range_[1][1],
                                     'coverage': coverage
                                 },
-                                'source': '''
+                                'source': textwrap.dedent('''\
                                 double n_min_lon = Math.max(doc['ranges.min_lon'].value, params.min_lon);
                                 double n_max_lat = Math.min(doc['ranges.max_lat'].value, params.max_lat);
                                 double n_max_lon = Math.min(doc['ranges.max_lon'].value, params.max_lon);
                                 double n_min_lat = Math.max(doc['ranges.min_lat'].value, params.min_lat);
-                                return ((n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)) / params.coverage;'''
+                                return ((n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)) / params.coverage;''')
                             }
                         },
                         'boost_mode': 'replace'
@@ -333,7 +343,7 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
                         'minimum_should_match': 1
                     }
                 },
-                'functions': [] if not query_args else query_args,
+                'functions': query_sup_functions or [],
                 'score_mode': 'sum',
                 'boost_mode': 'multiply'
             }
@@ -349,8 +359,10 @@ def get_spatial_join_search_results(es, ranges, dataset_id=None,
     )['hits']['hits']
 
 
-def get_textual_join_search_results(es, dataset_ids, column_names,
-                                    lazo_scores, query_args=None):
+def get_textual_join_search_results(
+    es, dataset_ids, column_names, lazo_scores,
+    query_sup_functions=None, query_sup_filters=None,
+):
     """Combine Lazo textual search results with Elasticsearch
     (keyword search).
     """
@@ -365,7 +377,7 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
         scores_per_dataset[d_id][name] = lazo_score
 
     # if there is no keyword query
-    if not query_args:
+    if not (query_sup_functions or query_sup_filters):
         results = list()
         for dataset_id in column_per_dataset:
             column_indices = get_column_identifiers(
@@ -430,11 +442,12 @@ def get_textual_join_search_results(es, dataset_ids, column_names,
             'function_score': {
                 'query': {
                     'bool': {
+                        'filter': query_sup_filters or [],
                         'should': should_query,
                         'minimum_should_match': 1
                     }
                 },
-                'functions': query_args,
+                'functions': query_sup_functions,
                 'score_mode': 'sum',
                 'boost_mode': 'multiply'
             }
@@ -474,8 +487,11 @@ def get_dataset_metadata(es, dataset_id):
     return hit
 
 
-def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
-                          query_args=None, tabular_variables=()):
+def get_joinable_datasets(
+    es, lazo_client, data_profile, dataset_id=None,
+    query_sup_functions=None, query_sup_filters=None,
+    tabular_variables=(),
+):
     """
     Retrieve datasets that can be joined with an input dataset.
 
@@ -483,7 +499,8 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
     :param lazo_client: client for the Lazo Index Server
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
-    :param query_args: list of query arguments (optional).
+    :param query_sup_functions: list of query functions over sup index.
+    :param query_sup_filters: list of query filters over sup index.
     :param tabular_variables: specifies which columns to focus on for the search.
     """
 
@@ -516,7 +533,8 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
                 es,
                 column_coverage[column]['ranges'],
                 dataset_id,
-                query_args
+                query_sup_functions,
+                query_sup_filters,
             )
             for result in spatial_results:
                 result['companion_column'] = column
@@ -530,7 +548,8 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
                 column_name,
                 column_coverage[column]['ranges'],
                 dataset_id,
-                query_args
+                query_sup_functions,
+                query_sup_filters,
             )
             for result in numerical_results:
                 result['companion_column'] = column
@@ -563,7 +582,8 @@ def get_joinable_datasets(es, lazo_client, data_profile, dataset_id=None,
             dataset_ids,
             column_names,
             scores,
-            query_args
+            query_sup_functions,
+            query_sup_filters,
         )
         for result in textual_results:
             result['companion_column'] = column
@@ -663,7 +683,7 @@ def get_columns_by_type(data_profile, filter_=()):
 
 
 def get_unionable_datasets(es, data_profile, dataset_id=None,
-                           query_args=None, tabular_variables=()):
+                           query_args_main=None, tabular_variables=()):
     """
     Retrieve datasets that can be unioned to an input dataset using fuzzy search
     (max edit distance = 2).
@@ -671,7 +691,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
     :param es: Elasticsearch client.
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
-    :param query_args: list of query arguments (optional).
+    :param query_args_main: list of query arguments (optional).
     :param tabular_variables: specifies which columns to focus on for the search.
     """
 
@@ -723,10 +743,10 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 }
             }
 
-            if not query_args:
+            if not query_args_main:
                 args = query
             else:
-                args = [query] + query_args
+                args = [query] + query_args_main
             query_obj = {
                 '_source': {
                     'excludes': [
@@ -766,7 +786,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 for hit in hits:
 
                     dataset_name = hit['_id']
-                    es_score = hit['_score'] if query_args else 1
+                    es_score = hit['_score'] if query_args_main else 1
                     columns = hit['_source']['columns']
                     inner_hits = hit['inner_hits']
 
@@ -867,126 +887,51 @@ def parse_keyword_query_main_index(query_json):
     Elasticsearch query over 'datamart' index.
     """
 
-    keywords_query_all = list()
-    if 'keywords' in query_json and query_json['keywords']:
-        if not isinstance(query_json['keywords'], list):
-            raise ClientError("'keywords' must be an array")
+    query_args_main = list()
+    if query_json.get('keywords'):
         keywords_query = list()
-        for name in query_json['keywords']:
-            # description
-            keywords_query.append({
-                'match': {
-                    'description': {
-                        'query': name,
-                        'operator': 'and'
-                    }
+        keywords = query_json['keywords']
+        if isinstance(keywords, list):
+            keywords = ' '.join(keywords)
+        # description
+        keywords_query.append({
+            'match': {
+                'description': {
+                    'query': keywords,
+                    'operator': 'and'
                 }
-            })
-            # name
-            keywords_query.append({
-                'match': {
-                    'name': {
-                        'query': name,
-                        'operator': 'and'
-                    }
+            }
+        })
+        # name
+        keywords_query.append({
+            'match': {
+                'name': {
+                    'query': keywords,
+                    'operator': 'and'
                 }
-            })
-            # keywords
-            keywords_query.append({
-                'nested': {
-                    'path': 'columns',
-                    'query': {
-                        'match': {
-                            'columns.name': {
-                                'query': name,
-                                'operator': 'and'
-                            }
-                        },
+            }
+        })
+        # column names
+        keywords_query.append({
+            'nested': {
+                'path': 'columns',
+                'query': {
+                    'match': {
+                        'columns.name': {
+                            'query': keywords,
+                            'operator': 'and'
+                        }
                     },
                 },
-            })
-            keywords_query.append({
-                'wildcard': {
-                    'materialize.identifier': '*%s*' % name.lower()
-                }
-            })
-        keywords_query_all.append({
+            },
+        })
+        query_args_main.append({
             'bool': {
                 'should': keywords_query,
                 'minimum_should_match': 1
             }
         })
 
-    return keywords_query_all
-
-
-def parse_keyword_query_sup_index(query_json):
-    """Parses a Datamart keyword query, turning it into an
-    Elasticsearch query over 'datamart_column' and
-    'datamart_spatial_coverage' indices.
-    """
-
-    keywords_query = list()
-    if 'keywords' in query_json and query_json['keywords']:
-        if not isinstance(query_json['keywords'], list):
-            raise ClientError("'keywords' must be an array")
-        for name in query_json['keywords']:
-            # dataset description
-            keywords_query.append({
-                'filter': {
-                    'match': {
-                        'dataset_description': {
-                            'query': name,
-                            'operator': 'and'
-                        }
-                    }
-                },
-                'weight': 10
-            })
-            # dataset name
-            keywords_query.append({
-                'filter': {
-                    'match': {
-                        'dataset_name': {
-                            'query': name,
-                            'operator': 'and'
-                        }
-                    }
-                },
-                'weight': 10
-            })
-            # column name
-            keywords_query.append({
-                'filter': {
-                    'match': {
-                        'name': {
-                            'query': name,
-                            'operator': 'and'
-                        }
-                    }
-                },
-                'weight': 10
-            })
-
-    return keywords_query
-
-
-def parse_query(query_json):
-    """Parses a Datamart query, turning it into an Elasticsearch query
-    over 'datamart' index as well as the supplementary indices
-    ('datamart_columns' and 'datamart_spatial_coverage').
-    """
-
-    query_args_main = list()
-
-    # keywords
-    keywords_query_main = parse_keyword_query_main_index(query_json)
-    query_args_sup = parse_keyword_query_sup_index(query_json)
-
-    if keywords_query_main:
-        query_args_main.append(keywords_query_main)
-
-    # sources
     if 'source' in query_json:
         query_args_main.append({
             'bool': {
@@ -1000,15 +945,86 @@ def parse_query(query_json):
             }
         })
 
+    return query_args_main
+
+
+def parse_keyword_query_sup_index(query_json):
+    """Parses a Datamart keyword query, turning it into an
+    Elasticsearch query over 'datamart_column' and
+    'datamart_spatial_coverage' indices.
+    """
+    query_sup_functions = list()
+    query_sup_filters = list()
+
+    if query_json.get('keywords'):
+        keywords = query_json['keywords']
+        if isinstance(keywords, list):
+            keywords = ' '.join(keywords)
+        # dataset description
+        query_sup_functions.append({
+            'filter': {
+                'match': {
+                    'dataset_description': {
+                        'query': keywords,
+                        'operator': 'and'
+                    }
+                }
+            },
+            'weight': 10
+        })
+        # dataset name
+        query_sup_functions.append({
+            'filter': {
+                'match': {
+                    'dataset_name': {
+                        'query': keywords,
+                        'operator': 'and'
+                    }
+                }
+            },
+            'weight': 10
+        })
+        # column name
+        query_sup_functions.append({
+            'filter': {
+                'match': {
+                    'name': {
+                        'query': keywords,
+                        'operator': 'and'
+                    }
+                }
+            },
+            'weight': 10
+        })
+
+    if 'source' in query_json:
+        query_sup_filters.append({
+            'terms': {
+                'dataset_source': query_json['source'],
+            }
+        })
+
+    return query_sup_functions, query_sup_filters
+
+
+def parse_query(query_json):
+    """Parses a Datamart query, turning it into an Elasticsearch query
+    over 'datamart' index as well as the supplementary indices
+    ('datamart_columns' and 'datamart_spatial_coverage').
+    """
+
+    query_args_main = parse_keyword_query_main_index(query_json)
+    query_sup_functions, query_sup_filters = \
+        parse_keyword_query_sup_index(query_json)
+
     # tabular_variables
     tabular_variables = []
 
     # variables
     variables_query = None
     if 'variables' in query_json:
-        variables_query = parse_query_variables(
-            query_json['variables'],
-            tabular_variables=tabular_variables
+        variables_query, tabular_variables = parse_query_variables(
+            query_json['variables']
         )
 
     # TODO: for now, temporal and geospatial variables are ignored
@@ -1017,18 +1033,19 @@ def parse_query(query_json):
     if variables_query:
         query_args_main.append(variables_query)
 
-    return query_args_main, query_args_sup, list(set(tabular_variables))
+    return query_args_main, query_sup_functions, query_sup_filters, list(set(tabular_variables))
 
 
-def parse_query_variables(data, tabular_variables=None):
+def parse_query_variables(data):
     """Parses the variables of a Datamart query, turning it into an
     Elasticsearch query over 'datamart' index
     """
 
     output = list()
+    tabular_variables = []
 
     if not data:
-        return output
+        return output, tabular_variables
 
     for variable in data:
         if 'type' not in variable:
@@ -1145,19 +1162,15 @@ def parse_query_variables(data, tabular_variables=None):
                 }
             })
 
-    if output:
-        return {
-            'bool': {
-                'must': output
-            }
-        }
-    return {}
+    return output, tabular_variables
 
 
-def get_augmentation_search_results(es, lazo_client, data_profile,
-                                    query_args_main, query_args_sup,
-                                    tabular_variables,
-                                    dataset_id=None, join=True, union=True):
+def get_augmentation_search_results(
+    es, lazo_client, data_profile,
+    query_args_main, query_sup_functions, query_sup_filters,
+    tabular_variables,
+    dataset_id=None, join=True, union=True,
+):
     join_results = []
     union_results = []
 
@@ -1169,7 +1182,8 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
             lazo_client=lazo_client,
             data_profile=data_profile,
             dataset_id=dataset_id,
-            query_args=query_args_sup,
+            query_sup_functions=query_sup_functions,
+            query_sup_filters=query_sup_filters,
             tabular_variables=tabular_variables
         )
         logger.info("Found %d join results in %.2fs",
@@ -1181,7 +1195,7 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
             es=es,
             data_profile=data_profile,
             dataset_id=dataset_id,
-            query_args=query_args_main,
+            query_args_main=query_args_main,
             tabular_variables=tabular_variables
         )
         logger.info("Found %d union results in %.2fs",
