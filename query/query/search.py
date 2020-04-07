@@ -912,6 +912,19 @@ def parse_keyword_query_main_index(query_json):
             }
         })
 
+    if 'source' in query_json:
+        query_args_main.append({
+            'bool': {
+                'filter': [
+                    {
+                        'terms': {
+                            'source': query_json['source'],
+                        }
+                    }
+                ]
+            }
+        })
+
     return query_args_main
 
 
