@@ -976,7 +976,12 @@ def parse_keyword_query_sup_index(query_json):
             },
             'weight': 10
         })
-        query_args_sup.extend(keywords_query)
+        query_args_sup.append({
+            'bool': {
+                'should': keywords_query,
+                'minimum_should_match': 1
+            }
+        })
 
     return query_args_sup
 
