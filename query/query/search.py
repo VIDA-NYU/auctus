@@ -934,49 +934,51 @@ def parse_keyword_query_sup_index(query_json):
     'datamart_spatial_coverage' indices.
     """
 
-    keywords_query = list()
-    if 'keywords' in query_json and query_json['keywords']:
-        if not isinstance(query_json['keywords'], list):
-            raise ClientError("'keywords' must be an array")
-        for name in query_json['keywords']:
-            # dataset description
-            keywords_query.append({
-                'filter': {
-                    'match': {
-                        'dataset_description': {
-                            'query': name,
-                            'operator': 'and'
-                        }
+    query_args_sup = list()
+    if query_json.get('keywords'):
+        keywords_query = list()
+        keywords = query_json['keywords']
+        if isinstance(keywords, list):
+            keywords = ' '.join(keywords)
+        # dataset description
+        keywords_query.append({
+            'filter': {
+                'match': {
+                    'dataset_description': {
+                        'query': keywords,
+                        'operator': 'and'
                     }
-                },
-                'weight': 10
-            })
-            # dataset name
-            keywords_query.append({
-                'filter': {
-                    'match': {
-                        'dataset_name': {
-                            'query': name,
-                            'operator': 'and'
-                        }
+                }
+            },
+            'weight': 10
+        })
+        # dataset name
+        keywords_query.append({
+            'filter': {
+                'match': {
+                    'dataset_name': {
+                        'query': keywords,
+                        'operator': 'and'
                     }
-                },
-                'weight': 10
-            })
-            # column name
-            keywords_query.append({
-                'filter': {
-                    'match': {
-                        'name': {
-                            'query': name,
-                            'operator': 'and'
-                        }
+                }
+            },
+            'weight': 10
+        })
+        # column name
+        keywords_query.append({
+            'filter': {
+                'match': {
+                    'name': {
+                        'query': keywords,
+                        'operator': 'and'
                     }
-                },
-                'weight': 10
-            })
+                }
+            },
+            'weight': 10
+        })
+        query_args_sup.extend(keywords_query)
 
-    return keywords_query
+    return query_args_sup
 
 
 def parse_query(query_json):
