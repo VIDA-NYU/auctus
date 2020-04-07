@@ -17,6 +17,14 @@ class TestSearch(unittest.TestCase):
                         'should': [
                             {
                                 'match': {
+                                    'id': {
+                                        'query': 'green taxi',
+                                        'operator': 'and',
+                                    },
+                                },
+                            },
+                            {
+                                'match': {
                                     'description': {
                                         'query': 'green taxi',
                                         'operator': 'and',
@@ -64,6 +72,17 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(
             sup_funcs,
             [
+                {
+                    'filter': {
+                        'match': {
+                            'dataset_id': {
+                                'query': 'green taxi',
+                                'operator': 'and',
+                            },
+                        },
+                    },
+                    'weight': 10,
+                },
                 {
                     'filter': {
                         'match': {

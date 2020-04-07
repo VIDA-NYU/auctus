@@ -893,6 +893,15 @@ def parse_keyword_query_main_index(query_json):
         keywords = query_json['keywords']
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
+        # id
+        keywords_query.append({
+            'match': {
+                'id': {
+                    'query': keywords,
+                    'operator': 'and'
+                }
+            }
+        })
         # description
         keywords_query.append({
             'match': {
@@ -960,6 +969,18 @@ def parse_keyword_query_sup_index(query_json):
         keywords = query_json['keywords']
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
+        # dataset id
+        query_sup_functions.append({
+            'filter': {
+                'match': {
+                    'dataset_id': {
+                        'query': keywords,
+                        'operator': 'and'
+                    }
+                }
+            },
+            'weight': 10
+        })
         # dataset description
         query_sup_functions.append({
             'filter': {
