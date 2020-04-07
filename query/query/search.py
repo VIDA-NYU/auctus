@@ -983,6 +983,19 @@ def parse_keyword_query_sup_index(query_json):
             }
         })
 
+    if 'source' in query_json:
+        query_args_sup.append({
+            'bool': {
+                'filter': [
+                    {
+                        'terms': {
+                            'dataset_source': query_json['source'],
+                        }
+                    }
+                ]
+            }
+        })
+
     return query_args_sup
 
 
