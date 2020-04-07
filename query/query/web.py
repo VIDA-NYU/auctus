@@ -197,11 +197,12 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # parameter: query
         query_args_main = list()
-        query_args_sup = list()
+        query_sup_functions = list()
+        query_sup_filters = list()
         tabular_variables = list()
         if query:
             try:
-                query_args_main, query_args_sup, tabular_variables = \
+                query_args_main, query_sup_functions, query_sup_filters, tabular_variables = \
                     parse_query(query)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
@@ -251,7 +252,8 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 self.application.lazo_client,
                 data_profile,
                 query_args_main,
-                query_args_sup,
+                query_sup_functions,
+                query_sup_filters,
                 tabular_variables,
             )
         results = [enhance_metadata(result) for result in results]
@@ -540,7 +542,8 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 lazo_client=self.application.lazo_client,
                 data_profile=data_profile,
                 query_args_main=None,
-                query_args_sup=None,
+                query_sup_functions=None,
+                query_sup_filters=None,
                 tabular_variables=None,
                 dataset_id=task['id'],
                 union=False
