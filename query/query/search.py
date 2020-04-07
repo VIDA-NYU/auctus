@@ -1221,7 +1221,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
         sha1 = hashlib.sha1(data)
         data_hash = sha1.hexdigest()
 
-        data_profile = self.application.redis.get('profile_' + data_hash)
+        data_profile = self.application.redis.get('profile:' + data_hash)
 
         if data_profile is not None:
             logger.info("Found cached profile_data")
@@ -1240,7 +1240,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
             logger.info("Profiled in %.2fs", time.perf_counter() - start)
 
             self.application.redis.set(
-                'profile_' + data_hash,
+                'profile:' + data_hash,
                 pickle.dumps(data_profile),
             )
 

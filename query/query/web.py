@@ -8,6 +8,7 @@ import lazo_index_service
 import logging
 import json
 import os
+import pickle
 import prometheus_client
 import redis
 import shutil
@@ -122,13 +123,14 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         logger.info("Got profile")
 
         try:
-            data_profile, _ = self.handle_data_parameter(data)
+            data_profile, data_hash = self.handle_data_parameter(data)
         except ClientError as e:
             return self.send_error_json(400, str(e))
 
         return self.send_json(dict(
             data_profile,
             version=os.environ['DATAMART_VERSION'],
+            token=data_hash,
         ))
 
 
@@ -161,7 +163,19 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 data_profile = self.request.files['data_profile'][0].body
                 data_profile = data_profile.decode('utf-8')
             if data_profile is not None:
-                data_profile = json.loads(data_profile)
+                if len(data_profile) == 40 and '{' not in data_profile:
+                    data_profile = self.application.redis.get(
+                        'profile:' + data_profile,
+                    )
+                    if data_profile:
+                        data_profile = pickle.loads(data_profile)
+                    else:
+                        return self.send_error_json(
+                            404,
+                            "Data profile token expired",
+                        )
+                else:
+                    data_profile = json.loads(data_profile)
 
         elif (type_.startswith('text/csv') or
                 type_.startswith('application/csv')):

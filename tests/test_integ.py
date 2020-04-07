@@ -135,6 +135,8 @@ class TestProfileQuery(DatamartTest):
         metadata['columns'][0]['lazo'] = check_lazo
         metadata['columns'][1]['lazo'] = check_lazo
         metadata['columns'][2]['lazo'] = check_lazo
+        # Expect token
+        metadata['token'] = 'cac18c69aff995773bed73273421365006e5e0b6'
 
         self.assertJson(response.json(), metadata)
 
@@ -353,6 +355,42 @@ class TestDataSearch(DatamartTest):
             files={
                 'data_profile': json.dumps(profile).encode('utf-8'),
             },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertJson(
+            results,
+            [
+                {
+                    'id': 'datamart.test.basic',
+                    'metadata': basic_metadata,
+                    'd3m_dataset_description': basic_metadata_d3m('4.0.0'),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['number']],
+                        'right_columns': [[2]],
+                        'right_columns_names': [['number']],
+                        'type': 'join'
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
+                }
+            ]
+        )
+
+    def test_basic_join_only_token(self):
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/profile',
+                files={'data': basic_aug},
+            )
+        token = response.json()['token']
+        self.assertEqual(len(token), 40)
+
+        response = self.datamart_post(
+            '/search',
+            data={'data_profile': token},
             schema=result_list_schema,
         )
         results = response.json()['results']
