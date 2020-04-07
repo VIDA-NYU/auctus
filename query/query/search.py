@@ -892,32 +892,16 @@ def parse_keyword_query_main_index(query_json):
         keywords = query_json['keywords']
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
-        # id
         keywords_query.append({
-            'match': {
-                'id': {
-                    'query': keywords,
-                    'operator': 'and'
-                }
-            }
-        })
-        # description
-        keywords_query.append({
-            'match': {
-                'description': {
-                    'query': keywords,
-                    'operator': 'and'
-                }
-            }
-        })
-        # name
-        keywords_query.append({
-            'match': {
-                'name': {
-                    'query': keywords,
-                    'operator': 'and'
-                }
-            }
+            'multi_match': {
+                'query': keywords,
+                'operator': 'and',
+                'fields': [
+                    'id',
+                    'description',
+                    'name',
+                ],
+            },
         })
         # column names
         keywords_query.append({
@@ -968,53 +952,20 @@ def parse_keyword_query_sup_index(query_json):
         keywords = query_json['keywords']
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
-        # dataset id
         query_sup_functions.append({
             'filter': {
-                'match': {
-                    'dataset_id': {
-                        'query': keywords,
-                        'operator': 'and'
-                    }
-                }
+                'multi_match': {
+                    'query': keywords,
+                    'operator': 'and',
+                    'fields': [
+                        'dataset_id',
+                        'dataset_description',
+                        'dataset_name',
+                        'name',
+                    ],
+                },
             },
-            'weight': 10
-        })
-        # dataset description
-        query_sup_functions.append({
-            'filter': {
-                'match': {
-                    'dataset_description': {
-                        'query': keywords,
-                        'operator': 'and'
-                    }
-                }
-            },
-            'weight': 10
-        })
-        # dataset name
-        query_sup_functions.append({
-            'filter': {
-                'match': {
-                    'dataset_name': {
-                        'query': keywords,
-                        'operator': 'and'
-                    }
-                }
-            },
-            'weight': 10
-        })
-        # column name
-        query_sup_functions.append({
-            'filter': {
-                'match': {
-                    'name': {
-                        'query': keywords,
-                        'operator': 'and'
-                    }
-                }
-            },
-            'weight': 10
+            'weight': 10,
         })
 
     if 'source' in query_json:

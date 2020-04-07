@@ -16,27 +16,10 @@ class TestSearch(unittest.TestCase):
                     'bool': {
                         'should': [
                             {
-                                'match': {
-                                    'id': {
-                                        'query': 'green taxi',
-                                        'operator': 'and',
-                                    },
-                                },
-                            },
-                            {
-                                'match': {
-                                    'description': {
-                                        'query': 'green taxi',
-                                        'operator': 'and',
-                                    },
-                                },
-                            },
-                            {
-                                'match': {
-                                    'name': {
-                                        'query': 'green taxi',
-                                        'operator': 'and',
-                                    },
+                                'multi_match': {
+                                    'query': 'green taxi',
+                                    'operator': 'and',
+                                    'fields': ['id', 'description', 'name'],
                                 },
                             },
                             {
@@ -74,44 +57,15 @@ class TestSearch(unittest.TestCase):
             [
                 {
                     'filter': {
-                        'match': {
-                            'dataset_id': {
-                                'query': 'green taxi',
-                                'operator': 'and',
-                            },
-                        },
-                    },
-                    'weight': 10,
-                },
-                {
-                    'filter': {
-                        'match': {
-                            'dataset_description': {
-                                'query': 'green taxi',
-                                'operator': 'and',
-                            },
-                        },
-                    },
-                    'weight': 10,
-                },
-                {
-                    'filter': {
-                        'match': {
-                            'dataset_name': {
-                                'query': 'green taxi',
-                                'operator': 'and',
-                            },
-                        },
-                    },
-                    'weight': 10,
-                },
-                {
-                    'filter': {
-                        'match': {
-                            'name': {
-                                'query': 'green taxi',
-                                'operator': 'and',
-                            },
+                        'multi_match': {
+                            'query': 'green taxi',
+                            'operator': 'and',
+                            'fields': [
+                                'dataset_id',
+                                'dataset_description',
+                                'dataset_name',
+                                'name',
+                            ],
                         },
                     },
                     'weight': 10,
@@ -156,27 +110,10 @@ class TestSearch(unittest.TestCase):
                     'bool': {
                         'should': [
                             {
-                                'match': {
-                                    'id': {
-                                        'query': 'green taxi',
-                                        'operator': 'and',
-                                    },
-                                },
-                            },
-                            {
-                                'match': {
-                                    'description': {
-                                        'query': 'green taxi',
-                                        'operator': 'and',
-                                    },
-                                },
-                            },
-                            {
-                                'match': {
-                                    'name': {
-                                        'query': 'green taxi',
-                                        'operator': 'and',
-                                    },
+                                'multi_match': {
+                                    'query': 'green taxi',
+                                    'operator': 'and',
+                                    'fields': ['id', 'description', 'name'],
                                 },
                             },
                             {
