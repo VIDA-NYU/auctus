@@ -1070,19 +1070,10 @@ def parse_query_variables(data):
     for variable in data:
         if 'type' not in variable:
             raise ClientError("variable is missing property 'type'")
-        variable_query = list()
 
         # temporal variable
         # TODO: handle 'granularity'
         if 'temporal_variable' in variable['type']:
-            variable_query.append({
-                'nested': {
-                    'path': 'columns',
-                    'query': {
-                        'term': {'columns.semantic_types': types.DATE_TIME},
-                    },
-                },
-            })
             start = end = None
             if 'start' in variable and 'end' in variable:
                 try:
@@ -1104,20 +1095,31 @@ def parse_query_variables(data):
                     pass
             else:
                 pass
-            if start and end:
-                variable_query.append({
+            if start is not None and end is not None:
+                output.append({
                     'nested': {
-                        'path': 'columns.coverage',
+                        'path': 'columns',
                         'query': {
-                            'range': {
-                                'columns.coverage.range': {
-                                    'gte': start,
-                                    'lte': end,
-                                    'relation': 'intersects'
-                                }
-                            }
-                        }
-                    }
+                            'bool': {
+                                'must': [
+                                    {
+                                        'term': {
+                                            'columns.semantic_types': types.DATE_TIME,
+                                        },
+                                    },
+                                    {
+                                        'range': {
+                                            'columns.coverage.range': {
+                                                'gte': start,
+                                                'lte': end,
+                                                'relation': 'intersects'
+                                            }
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    },
                 })
 
         # geospatial variable
@@ -1144,7 +1146,7 @@ def parse_query_variables(data):
                 float(variable['latitude1']),
                 float(variable['latitude2'])
             )
-            variable_query.append({
+            output.append({
                 'nested': {
                     'path': 'spatial_coverage.ranges',
                     'query': {
@@ -1154,9 +1156,10 @@ def parse_query_variables(data):
                                     'spatial_coverage.ranges.range': {
                                         'shape': {
                                             'type': 'envelope',
-                                            'coordinates':
-                                                [[longitude1, latitude1],
-                                                 [longitude2, latitude2]]
+                                            'coordinates': [
+                                                [longitude1, latitude1],
+                                                [longitude2, latitude2],
+                                            ],
                                         },
                                         'relation': 'intersects'
                                     }
@@ -1174,13 +1177,6 @@ def parse_query_variables(data):
             if 'columns' in variable:
                 for column_index in variable['columns']:
                     tabular_variables.append(column_index)
-
-        if variable_query:
-            output.append({
-                'bool': {
-                    'must': variable_query,
-                }
-            })
 
     return output, tabular_variables
 
