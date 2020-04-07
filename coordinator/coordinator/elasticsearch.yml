@@ -152,6 +152,28 @@ datamart_columns:
 datamart_spatial_coverage:
   mappings:
     properties:
+      dataset_id:
+        type: keyword
+      dataset_name:
+        type: text
+      dataset_description:
+        type: text
+      dataset_date:
+        type: date
+      dataset_license:
+        type: keyword
+      dataset_source:
+        type: keyword
+      dataset_size:
+        type: long
+      dataset_nb_rows:
+        type: long
+      dataset_nb_profiled_rows:
+        type: long
+        index: false
+      dataset_version:
+        type: keyword
+        index: false
       name:
         type: text
       lat:
@@ -162,12 +184,6 @@ datamart_spatial_coverage:
         type: integer
       lon_index:
         type: integer
-      dataset_id:
-        type: keyword
-      dataset_name:
-        type: text
-      dataset_description:
-        type: text
       ranges:
         type: nested
         properties:
