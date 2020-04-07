@@ -985,14 +985,8 @@ def parse_query(query_json):
     ('datamart_columns' and 'datamart_spatial_coverage').
     """
 
-    query_args_main = list()
-
-    # keywords
-    keywords_query_main = parse_keyword_query_main_index(query_json)
+    query_args_main = parse_keyword_query_main_index(query_json)
     query_args_sup = parse_keyword_query_sup_index(query_json)
-
-    if keywords_query_main:
-        query_args_main.append(keywords_query_main)
 
     # tabular_variables
     tabular_variables = []
