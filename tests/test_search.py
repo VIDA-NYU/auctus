@@ -5,7 +5,7 @@ from query.search import parse_query
 
 class TestSearch(unittest.TestCase):
     def test_simple(self):
-        main, sup, vars = parse_query({
+        main, sup_funcs, sup_filters, vars = parse_query({
             'keywords': ['green', 'taxi'],
             'source': 'gov',
         })
