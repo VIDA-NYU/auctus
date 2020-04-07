@@ -1,5 +1,4 @@
 from datetime import datetime
-from dateutil.parser import parse
 import distance
 import hashlib
 import io
@@ -10,7 +9,7 @@ import time
 import tornado.web
 
 from datamart_core import types
-from datamart_profiler import process_dataset
+from datamart_profiler import process_dataset, parse_date
 
 
 logger = logging.getLogger(__name__)
@@ -1087,20 +1086,20 @@ def parse_query_variables(data):
             start = end = None
             if 'start' in variable and 'end' in variable:
                 try:
-                    start = parse(variable['start']).timestamp()
-                    end = parse(variable['end']).timestamp()
+                    start = parse_date(variable['start']).timestamp()
+                    end = parse_date(variable['end']).timestamp()
                 except (KeyError, ValueError, OverflowError):
                     pass
             elif 'start' in variable:
                 try:
-                    start = parse(variable['start']).timestamp()
-                    end = datetime.now().timestamp()
+                    start = parse_date(variable['start']).timestamp()
+                    end = datetime.utcnow().timestamp()
                 except (KeyError, ValueError, OverflowError):
                     pass
             elif 'end' in variable:
                 try:
                     start = 0
-                    end = parse(variable['end']).timestamp()
+                    end = parse_date(variable['end']).timestamp()
                 except (KeyError, ValueError, OverflowError):
                     pass
             else:

@@ -274,7 +274,6 @@ elasticsearch = ">=7.0,<8.0"
 lazo-index-service = "0.4"
 prometheus-async = "*"
 prometheus_client = "*"
-python-dateutil = "*"
 redis = ">=3.4,<4.0"
 tornado = ">=5.0"
 

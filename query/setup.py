@@ -13,7 +13,6 @@ req = [
     'lazo-index-service==0.4',
     'prometheus_client',
     'prometheus-async',
-    'python-dateutil',
     'tornado>=5.0',
     'datamart_augmentation',
     'datamart_core',
