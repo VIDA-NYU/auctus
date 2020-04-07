@@ -40,11 +40,10 @@ if (isDev && process.env.REACT_APP_API_HOST && process.env.REACT_APP_API_PORT) {
   baseHost = `${process.env.REACT_APP_API_HOST}`;
 }
 
-const BASE_PATH: string = loadVariableFromHTML('base_path');
-const BASE_PATH_URL = `//${baseHost}${BASE_PATH}`;
-const API_URL = loadVariableFromHTML('api_path') || BASE_PATH_URL;
+const BASE_URL: string = loadVariableFromHTML('base_url');
+const API_URL = loadVariableFromHTML('api_url') || BASE_URL;
 
-console.log('BASE_PATH_URL', BASE_PATH_URL);
+console.log('BASE_URL', BASE_URL);
 console.log('API_URL', API_URL);
 
-export { BASE_PATH, BASE_PATH_URL, API_URL };
+export { BASE_URL, API_URL };

@@ -46,4 +46,4 @@ ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
 ENTRYPOINT ["/tini", "--"]
-CMD ["sh", "-c", "sed -i 's|<meta name=\"api_path\"[^>]\\+>|<meta name=\"api_path\" content=\"'\"$QUERY_HOST\"'\">|' coordinator/coordinator/templates/search.html && coordinator"]
+CMD ["sh", "-c", "sed -i 's|<meta name=\"api_url\"[^>]\\+>|<meta name=\"api_url\" content=\"'\"$QUERY_HOST\"'\">|' coordinator/coordinator/templates/search.html && coordinator"]
