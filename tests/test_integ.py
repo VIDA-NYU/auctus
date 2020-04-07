@@ -128,13 +128,6 @@ class TestProfiler(DataTestCase):
             index.setdefault('aliases', {})
         for index in actual.values():
             index.pop('settings', None)
-        # +DEBUG
-        import sys
-        print("expected")
-        json.dump(expected, sys.stdout, sort_keys=True, indent=2)
-        print("actual")
-        json.dump(actual, sys.stdout, sort_keys=True, indent=2)
-        # -DEBUG
         self.assertEqual(actual, expected)
 
 
