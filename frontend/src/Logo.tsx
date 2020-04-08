@@ -3,7 +3,7 @@ import logo from './auctus-logo.svg';
 
 function VerticalLogo() {
   return (
-    <div className="text-center" style={{ paddingTop: 100, paddingBottom: 30 }}>
+    <div className="text-center" style={{ paddingTop: 30, paddingBottom: 30 }}>
       <img
         src={logo}
         className="d-block"
@@ -20,7 +20,7 @@ function VerticalLogo() {
   );
 }
 
-function HorizontalLogo(props: { onClick: () => void }) {
+function HorizontalLogo(props: { onClick?: () => void }) {
   const style = props.onClick ? { cursor: 'pointer' } : undefined;
   return (
     <div className="d-inline text-center" style={style} onClick={props.onClick}>
@@ -40,4 +40,17 @@ function HorizontalLogo(props: { onClick: () => void }) {
   );
 }
 
-export { VerticalLogo, HorizontalLogo };
+function CenteredHorizontalLogo(props: { onClick?: () => void }) {
+  const style: React.CSSProperties = {
+    textAlign: 'center',
+    paddingTop: 30,
+    paddingBottom: 30,
+  };
+  return (
+    <div style={style}>
+      <HorizontalLogo onClick={props.onClick} />
+    </div>
+  );
+}
+
+export { VerticalLogo, HorizontalLogo, CenteredHorizontalLogo };

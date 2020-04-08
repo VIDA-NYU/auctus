@@ -3,6 +3,7 @@
   color: #707070;
   font-size: 0.9rem;
   position: absolute;
+  z-index: 1000;
   right: 10px;
   top: 7px;
   /* bottom: 0; */
@@ -24,4 +25,8 @@
 
 .menu-link:hover {
   background-color: #f0f0f0;
+}
+
+.menu-link a:hover {
+  text-decoration: none;
 }

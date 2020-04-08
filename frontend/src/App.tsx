@@ -1,7 +1,7 @@
 import React from 'react';
 import { generateRandomId } from './utils';
 import * as api from './api/rest';
-import { VerticalLogo, HorizontalLogo } from './Logo';
+import { VerticalLogo, HorizontalLogo, CenteredHorizontalLogo } from './Logo';
 import {
   AdvancedSearchBar,
   FilterType,
@@ -22,7 +22,9 @@ import {
 } from './api/types';
 import { Chip, ChipGroup } from './components/Chip/Chip';
 import { MainMenu } from './components/MainMenu/MainMenu';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import * as Icon from 'react-feather';
+import { Upload } from './components/Upload/Upload';
 
 interface Filter {
   id: string;
@@ -325,8 +327,26 @@ class App extends React.Component<{}, AppState> {
   render() {
     return (
       <div className="container-fluid">
-        <MainMenu />
-        <SearchApp />
+        <Router>
+          <Switch>
+            <Route
+              path="/upload"
+              render={routeProps => (
+                <>
+                  <MainMenu />
+                  <CenteredHorizontalLogo
+                    onClick={() => routeProps.history.push('/')}
+                  />
+                  <Upload />
+                </>
+              )}
+            />
+            <Route path="/">
+              <MainMenu />
+              <SearchApp />
+            </Route>
+          </Switch>
+        </Router>
       </div>
     );
   }
