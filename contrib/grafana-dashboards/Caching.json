@@ -36,6 +36,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -44,6 +45,7 @@
         "x": 0,
         "y": 0
       },
+      "hiddenSeries": false,
       "id": 2,
       "legend": {
         "avg": false,
@@ -124,6 +126,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -132,6 +135,7 @@
         "x": 12,
         "y": 0
       },
+      "hiddenSeries": false,
       "id": 4,
       "legend": {
         "avg": false,
@@ -216,6 +220,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -224,6 +229,7 @@
         "x": 0,
         "y": 8
       },
+      "hiddenSeries": false,
       "id": 6,
       "legend": {
         "avg": false,
@@ -245,19 +251,20 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
+      "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "cache_datasets_count",
+          "expr": "avg(cache_datasets_count)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Datasets",
           "refId": "A"
         },
         {
-          "expr": "cache_augmentations_count",
+          "expr": "avg(cache_augmentations_count)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Augmentations",
@@ -306,6 +313,41 @@
       }
     },
     {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                120000000000
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "5m",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "Cache disk usage alert",
+        "noDataState": "alerting",
+        "notifications": []
+      },
       "aliasColors": {
         "Augmentations": "orange",
         "Datasets": "dark-blue"
@@ -313,6 +355,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -321,6 +364,7 @@
         "x": 12,
         "y": 8
       },
+      "hiddenSeries": false,
       "id": 8,
       "legend": {
         "avg": false,
@@ -353,21 +397,29 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "cache_datasets_bytes",
+          "expr": "cache_datasets_bytes{job=\"coordinator\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Datasets",
           "refId": "A"
         },
         {
-          "expr": "cache_augmentations_bytes",
+          "expr": "cache_augmentations_bytes{job=\"coordinator\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Augmentations",
           "refId": "B"
         }
       ],
-      "thresholds": [],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 120000000000
+        }
+      ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -411,13 +463,12 @@
     {
       "aliasColors": {
         "Hits": "blue",
-        "Hits /cache/datasets": "blue",
-        "Misses": "red",
-        "Misses /cache/datasets": "red"
+        "Misses": "red"
       },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -426,6 +477,7 @@
         "x": 0,
         "y": 16
       },
+      "hiddenSeries": false,
       "id": 10,
       "legend": {
         "avg": false,
@@ -508,13 +560,12 @@
     {
       "aliasColors": {
         "Hits": "blue",
-        "Hits /cache/datasets": "blue",
-        "Misses": "red",
-        "Misses /cache/datasets": "red"
+        "Misses": "red"
       },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -523,6 +574,7 @@
         "x": 12,
         "y": 16
       },
+      "hiddenSeries": false,
       "id": 11,
       "legend": {
         "avg": false,
@@ -604,7 +656,7 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 19,
+  "schemaVersion": 22,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -642,5 +694,5 @@
   "timezone": "",
   "title": "Caching",
   "uid": "Uwae0IvWz",
-  "version": 9
+  "version": 7
 }

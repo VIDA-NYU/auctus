@@ -32,16 +32,17 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 2,
   "links": [],
   "panels": [
     {
       "alert": {
+        "alertRuleTags": {},
         "conditions": [
           {
             "evaluator": {
               "params": [
-                190
+                10
               ],
               "type": "gt"
             },
@@ -64,7 +65,7 @@
         ],
         "executionErrorState": "alerting",
         "for": "1m",
-        "frequency": "5m",
+        "frequency": "1m",
         "handler": 1,
         "name": "Profile queue alert",
         "noDataState": "alerting",
@@ -77,14 +78,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
-        "h": 5,
-        "w": 24,
+        "h": 7,
+        "w": 12,
         "x": 0,
         "y": 0
       },
+      "hiddenSeries": false,
       "id": 6,
       "legend": {
         "avg": false,
@@ -122,6 +125,7 @@
         {
           "expr": "rabbitmq_queue_messages{queue=\"profile\"} offset 1d",
           "format": "time_series",
+          "hide": true,
           "intervalFactor": 1,
           "legendFormat": "yesterday",
           "refId": "B"
@@ -133,13 +137,114 @@
           "fill": true,
           "line": true,
           "op": "gt",
-          "value": 190
+          "value": 10
         }
       ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
       "title": "Profile queue",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "none",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "today": "rgb(47, 87, 94)",
+        "yesterday": "rgba(47, 87, 94, 0.5)"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 4,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 16,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "paceLength": 10,
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(profile_profiling_count)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Profiling",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(profile_downloading_count)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Downloading",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Datasets currently processing",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -188,14 +293,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 5
+        "y": 7
       },
+      "hiddenSeries": false,
       "id": 2,
       "legend": {
         "avg": true,
@@ -304,14 +411,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 7
       },
+      "hiddenSeries": false,
       "id": 7,
       "legend": {
         "avg": true,
@@ -423,11 +532,12 @@
         "mode": "spectrum"
       },
       "dataFormat": "tsbuckets",
+      "datasource": null,
       "gridPos": {
         "h": 7,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 12
+        "y": 14
       },
       "heatmap": {},
       "hideZeroBuckets": false,
@@ -475,13 +585,114 @@
       "yBucketSize": null
     },
     {
+      "aliasColors": {
+        "Augmentations": "orange",
+        "Datasets": "dark-blue"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "hiddenSeries": false,
+      "id": 15,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "Augmentations",
+          "yaxis": 1
+        }
+      ],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "avg(cache_datasets_bytes)",
+          "legendFormat": "Datasets",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(cache_augmentations_bytes)",
+          "legendFormat": "Augmentations",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Cache disk usage",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "bytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "bytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
       "columns": [],
+      "datasource": null,
       "fontSize": "100%",
       "gridPos": {
         "h": 7,
         "w": 10,
         "x": 0,
-        "y": 19
+        "y": 21
       },
       "hideTimeOverride": false,
       "id": 11,
@@ -497,12 +708,14 @@
       "styles": [
         {
           "alias": "Time",
+          "align": "auto",
           "dateFormat": "YYYY-MM-DD HH:mm:ss",
           "pattern": "Time",
           "type": "hidden"
         },
         {
           "alias": "",
+          "align": "auto",
           "colorMode": null,
           "colors": [
             "rgba(245, 54, 54, 0.9)",
@@ -535,14 +748,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 7,
         "w": 14,
         "x": 10,
-        "y": 19
+        "y": 21
       },
+      "hiddenSeries": false,
       "id": 9,
       "legend": {
         "alignAsTable": false,
@@ -621,8 +836,8 @@
       }
     }
   ],
-  "refresh": false,
-  "schemaVersion": 19,
+  "refresh": "1m",
+  "schemaVersion": 22,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -660,5 +875,5 @@
   "timezone": "",
   "title": "Profiling",
   "uid": "id-Heiwiz",
-  "version": 24
+  "version": 10
 }
