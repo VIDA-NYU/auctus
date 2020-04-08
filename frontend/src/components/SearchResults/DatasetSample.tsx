@@ -36,7 +36,7 @@ function TypeBadges(props: { column: ColumnMetadata }) {
         {typeName(props.column.structural_type)}
       </span>
       {props.column.semantic_types.map(c => (
-        <SemanticTypeBadge type={c} />
+        <SemanticTypeBadge type={c} key={`sem-type-badge-${c}`} />
       ))}
     </>
   );
