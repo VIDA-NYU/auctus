@@ -2,6 +2,7 @@ import aio_pika
 import asyncio
 import contextlib
 import csv
+from datetime import datetime
 import elasticsearch
 import io
 import lazo_index_service
@@ -12,15 +13,17 @@ import pickle
 import prometheus_client
 import redis
 import shutil
+from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.httputil
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+import uuid
 import zipfile
 
 from datamart_augmentation.augmentation import AugmentationError, augment
-from datamart_core.common import setup_logging, hash_json, log_future
+from datamart_core.common import setup_logging, hash_json, log_future, json2msg
 from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
 import datamart_profiler
@@ -101,6 +104,8 @@ class BaseHandler(RequestHandler):
         # CORS pre-flight
         self.set_status(204)
         return self.finish()
+
+    http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
 
 class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
@@ -609,6 +614,73 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         return self.finish()
 
 
+class Upload(BaseHandler):
+    async def post(self):
+        if 'file' in self.request.files:
+            file = self.request.files['file'][0]
+            metadata = dict(
+                filename=file.filename,
+                name=self.get_body_argument('name', None),
+                source='upload',
+                materialize=dict(identifier='datamart.upload',
+                                 date=datetime.utcnow().isoformat() + 'Z'),
+            )
+            description = self.get_body_argument('description', None)
+            if description:
+                metadata['description'] = description
+            dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
+
+            # Write file to shared storage
+            dataset_dir = os.path.join('/datasets', dataset_id)
+            os.mkdir(dataset_dir)
+            try:
+                with open(os.path.join(dataset_dir, 'main.csv'), 'wb') as fp:
+                    fp.write(file.body)
+            except Exception:
+                shutil.rmtree(dataset_dir)
+                raise
+        elif self.get_body_argument('address', None):
+            # Check the URL
+            address = self.get_body_argument('address')
+            response = await self.http_client.fetch(address, raise_error=False)
+            if response.code != 200:
+                return self.send_error_json(
+                    400, "Invalid URL ({} {})".format(
+                        response.code, response.reason,
+                    ),
+                )
+
+            # Metadata with 'direct_url' in materialization info
+            metadata = dict(
+                name=self.get_body_argument('name', None),
+                source='upload',
+                materialize=dict(identifier='datamart.url',
+                                 direct_url=address,
+                                 date=datetime.utcnow().isoformat() + 'Z'),
+            )
+            description = self.get_body_argument('description', None)
+            if description:
+                metadata['description'] = description
+            dataset_id = 'datamart.url.%s' % (uuid.uuid4().hex)
+        else:
+            return self.send_error_json(400, "No file")
+
+        # Publish to the profiling queue
+        await self.application.profile_exchange.publish(
+            json2msg(
+                dict(
+                    id=dataset_id,
+                    metadata=metadata,
+                ),
+                # Lower priority than on-demand datasets, but higher than base
+                priority=1,
+            ),
+            '',
+        )
+
+        return self.send_json({'id': dataset_id})
+
+
 class Version(BaseHandler):
     def get(self):
         return self.send_json({
@@ -649,6 +721,12 @@ class Application(GracefulApplication):
         self.channel = await connection.channel()
         await self.channel.set_qos(prefetch_count=1)
 
+        # Declare profiling exchange (to publish datasets via upload)
+        self.profile_exchange = await self.channel.declare_exchange(
+            'profile',
+            aio_pika.ExchangeType.FANOUT,
+        )
+
     def log_request(self, handler):
         if handler.request.path == '/health':
             return
@@ -673,6 +751,7 @@ def make_app(debug=False):
             URLSpec('/download', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
+            URLSpec('/upload', Upload, name='upload'),
             URLSpec('/version', Version, name='version'),
             URLSpec('/health', Health, name='health'),
         ],
