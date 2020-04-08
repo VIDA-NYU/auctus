@@ -34,7 +34,7 @@ def main():
                 '--build-arg', 'version=%s' % version,
                 build['context'],
             ]
-            print(' '.join(cmd))
+            print(' '.join(cmd), flush=True)
             subprocess.check_call(cmd)
 
 
