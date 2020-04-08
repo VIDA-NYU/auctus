@@ -157,11 +157,16 @@ class TestSearch(unittest.TestCase):
                                             },
                                         },
                                         {
-                                            'range': {
-                                                'columns.coverage.range': {
-                                                    'gte': 1546300800.0,
-                                                    'lte': 1577750400.0,
-                                                    'relation': 'intersects',
+                                            'nested': {
+                                                'path': 'columns.coverage',
+                                                'query': {
+                                                    'range': {
+                                                        'columns.coverage.range': {
+                                                            'gte': 1546300800.0,
+                                                            'lte': 1577750400.0,
+                                                            'relation': 'intersects',
+                                                        },
+                                                    },
                                                 },
                                             },
                                         },

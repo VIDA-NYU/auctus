@@ -1059,12 +1059,17 @@ def parse_query_variables(data):
                                         },
                                     },
                                     {
-                                        'range': {
-                                            'columns.coverage.range': {
-                                                'gte': start,
-                                                'lte': end,
-                                                'relation': 'intersects'
-                                            }
+                                        'nested': {
+                                            'path': 'columns.coverage',
+                                            'query': {
+                                                'range': {
+                                                    'columns.coverage.range': {
+                                                        'gte': start,
+                                                        'lte': end,
+                                                        'relation': 'intersects',
+                                                    }
+                                                },
+                                            },
                                         },
                                     },
                                 ],
