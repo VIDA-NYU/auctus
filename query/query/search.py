@@ -888,40 +888,21 @@ def parse_keyword_query_main_index(query_json):
 
     query_args_main = list()
     if query_json.get('keywords'):
-        keywords_query = list()
         keywords = query_json['keywords']
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
-        keywords_query.append({
+        query_args_main.append({
             'multi_match': {
                 'query': keywords,
-                'operator': 'and',
+                'operator': 'or',
+                'type': 'most_fields',
                 'fields': [
                     'id',
                     'description',
                     'name',
+                    'columns.name',
                 ],
             },
-        })
-        # column names
-        keywords_query.append({
-            'nested': {
-                'path': 'columns',
-                'query': {
-                    'match': {
-                        'columns.name': {
-                            'query': keywords,
-                            'operator': 'and'
-                        }
-                    },
-                },
-            },
-        })
-        query_args_main.append({
-            'bool': {
-                'should': keywords_query,
-                'minimum_should_match': 1
-            }
         })
 
     if 'source' in query_json:
@@ -956,7 +937,8 @@ def parse_keyword_query_sup_index(query_json):
             'filter': {
                 'multi_match': {
                     'query': keywords,
-                    'operator': 'and',
+                    'operator': 'or',
+                    'type': 'most_fields',
                     'fields': [
                         'dataset_id',
                         'dataset_description',

@@ -13,30 +13,11 @@ class TestSearch(unittest.TestCase):
             main,
             [
                 {
-                    'bool': {
-                        'should': [
-                            {
-                                'multi_match': {
-                                    'query': 'green taxi',
-                                    'operator': 'and',
-                                    'fields': ['id', 'description', 'name'],
-                                },
-                            },
-                            {
-                                'nested': {
-                                    'path': 'columns',
-                                    'query': {
-                                        'match': {
-                                            'columns.name': {
-                                                'query': 'green taxi',
-                                                'operator': 'and',
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        ],
-                        'minimum_should_match': 1,
+                    'multi_match': {
+                        'query': 'green taxi',
+                        'operator': 'or',
+                        'type': 'most_fields',
+                        'fields': ['id', 'description', 'name', 'columns.name'],
                     },
                 },
                 {
@@ -59,7 +40,8 @@ class TestSearch(unittest.TestCase):
                     'filter': {
                         'multi_match': {
                             'query': 'green taxi',
-                            'operator': 'and',
+                            'operator': 'or',
+                            'type': 'most_fields',
                             'fields': [
                                 'dataset_id',
                                 'dataset_description',
@@ -107,30 +89,11 @@ class TestSearch(unittest.TestCase):
             main,
             [
                 {
-                    'bool': {
-                        'should': [
-                            {
-                                'multi_match': {
-                                    'query': 'green taxi',
-                                    'operator': 'and',
-                                    'fields': ['id', 'description', 'name'],
-                                },
-                            },
-                            {
-                                'nested': {
-                                    'path': 'columns',
-                                    'query': {
-                                        'match': {
-                                            'columns.name': {
-                                                'query': 'green taxi',
-                                                'operator': 'and',
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        ],
-                        'minimum_should_match': 1,
+                    'multi_match': {
+                        'query': 'green taxi',
+                        'operator': 'or',
+                        'type': 'most_fields',
+                        'fields': ['id', 'description', 'name', 'columns.name'],
                     },
                 },
                 {
