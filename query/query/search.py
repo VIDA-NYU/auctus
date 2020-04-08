@@ -488,10 +488,6 @@ def get_joinable_datasets(
     :param tabular_variables: specifies which columns to focus on for the search.
     """
 
-    if not dataset_id and not data_profile:
-        raise TypeError("Either a dataset id or a data profile "
-                        "must be provided for the join")
-
     column_index_mapping = {
         column['name']: idx
         for idx, column in enumerate(data_profile['columns'])
@@ -678,10 +674,6 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
     :param query_args_main: list of query arguments (optional).
     :param tabular_variables: specifies which columns to focus on for the search.
     """
-
-    if not dataset_id and not data_profile:
-        raise TypeError("Either a dataset id or a data profile "
-                        "must be provided for the union")
 
     main_dataset_columns = get_columns_by_type(
         data_profile=data_profile,
