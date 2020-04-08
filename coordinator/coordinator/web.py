@@ -193,7 +193,7 @@ class Upload(BaseHandler):
             if description:
                 metadata['description'] = description
             dataset_id = 'datamart.url.%s' % (
-                uuid.uuid5(uuid.NAMESPACE_URL, address).hex
+                uuid.uuid4().hex
             )
         else:
             return self.render('upload.html', error="No file entered")
@@ -211,7 +211,7 @@ class Upload(BaseHandler):
             '',
         )
 
-        self.redirect('/')
+        return self.redirect('/')
 
 
 def format_size(bytes):
