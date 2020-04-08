@@ -13,7 +13,7 @@ function loadVariableFromHTML(name: string): string {
   let value: string | null = meta ? meta.getAttribute('content') : null;
   if (!value) {
     value = '';
-  } else if(value.endsWith('/')) {
+  } else if (value.endsWith('/')) {
     value = value.substring(0, value.length - 1);
   }
   return value;
@@ -32,16 +32,19 @@ function loadVariableFromHTML(name: string): string {
  * the REST API is server, so the requests will work seamlessly.
  */
 
+let baseUrl = `//${window.location.host}`;
+let apiUrl = baseUrl;
+
 const isDev = process.env.NODE_ENV === 'development';
-let baseHost = `${window.location.host}`;
-if (isDev && process.env.REACT_APP_API_HOST && process.env.REACT_APP_API_PORT) {
-  baseHost = `${process.env.REACT_APP_API_HOST}:${process.env.REACT_APP_API_PORT}`;
-} else if (isDev && process.env.REACT_APP_API_HOST) {
-  baseHost = `${process.env.REACT_APP_API_HOST}`;
+if (isDev && process.env.REACT_APP_BASE_URL) {
+  baseUrl = process.env.REACT_APP_BASE_URL;
+}
+if (isDev && process.env.REACT_APP_API_URL) {
+  apiUrl = process.env.REACT_APP_API_URL;
 }
 
-const BASE_URL: string = loadVariableFromHTML('base_url');
-const API_URL = loadVariableFromHTML('api_url') || BASE_URL;
+const BASE_URL: string = loadVariableFromHTML('base_url') || baseUrl;
+const API_URL = loadVariableFromHTML('api_url') || apiUrl;
 
 console.log('BASE_URL', BASE_URL);
 console.log('API_URL', API_URL);
