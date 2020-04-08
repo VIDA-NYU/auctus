@@ -6,19 +6,17 @@
  *
  * This can be configured by adding an HTML meta-tag to the static HTML.
  *     <meta name="base_path" content="/auctus/">
+ *     <meta name="api_path" content="https://api.auctus/v1/">
  */
-function loadBasePathFromHTML(): string {
-  const meta = document.getElementsByName('base_path')[0];
-  let basePath: string | null = meta ? meta.getAttribute('content') : null;
-  if (basePath) {
-    basePath = basePath.startsWith('/') ? basePath : '/' + basePath;
-    basePath = basePath.endsWith('/')
-      ? basePath.substring(0, basePath.length - 1)
-      : basePath;
-  } else {
-    basePath = '';
+function loadVariableFromHTML(name: string): string {
+  const meta = document.getElementsByName(name)[0];
+  let value: string | null = meta ? meta.getAttribute('content') : null;
+  if (!value) {
+    value = '';
+  } else if (value.endsWith('/')) {
+    value = value.substring(0, value.length - 1);
   }
-  return basePath;
+  return value;
 }
 
 /*
@@ -34,19 +32,21 @@ function loadBasePathFromHTML(): string {
  * the REST API is server, so the requests will work seamlessly.
  */
 
+let baseUrl = `//${window.location.host}`;
+let apiUrl = baseUrl;
+
 const isDev = process.env.NODE_ENV === 'development';
-let baseHost = `${window.location.host}`;
-if (isDev && process.env.REACT_APP_API_HOST && process.env.REACT_APP_API_PORT) {
-  baseHost = `${process.env.REACT_APP_API_HOST}:${process.env.REACT_APP_API_PORT}`;
-} else if (isDev && process.env.REACT_APP_API_HOST) {
-  baseHost = `${process.env.REACT_APP_API_HOST}`;
+if (isDev && process.env.REACT_APP_BASE_URL) {
+  baseUrl = process.env.REACT_APP_BASE_URL;
+}
+if (isDev && process.env.REACT_APP_API_URL) {
+  apiUrl = process.env.REACT_APP_API_URL;
 }
 
-const BASE_PATH: string = loadBasePathFromHTML();
-const BASE_PATH_URL = `//${baseHost}${BASE_PATH}`;
-const API_URL = `${BASE_PATH_URL}`;
+const BASE_URL: string = loadVariableFromHTML('base_url') || baseUrl;
+const API_URL = loadVariableFromHTML('api_url') || apiUrl;
 
-console.log('BASE_PATH_URL', BASE_PATH_URL);
+console.log('BASE_URL', BASE_URL);
 console.log('API_URL', API_URL);
 
-export { BASE_PATH, BASE_PATH_URL, API_URL };
+export { BASE_URL, API_URL };

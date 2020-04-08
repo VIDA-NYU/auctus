@@ -1,6 +1,6 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import { BASE_PATH_URL } from '../../config';
+import { API_URL } from '../../config';
 import { SearchResult } from '../../api/types';
 import { ColumnMetadata } from '../../api/types';
 import { generateRandomId } from '../../utils';
@@ -60,13 +60,13 @@ export function DownloadButtons(props: { hit: SearchResult }) {
         <b>Download: </b>
         <a
           className="btn btn-sm btn-outline-primary ml-2"
-          href={`${BASE_PATH_URL}/download/${hit.id}`}
+          href={`${API_URL}/download/${hit.id}`}
         >
           <Icon.Download className="feather" /> CSV
         </a>
         <a
           className="btn btn-sm btn-outline-primary ml-2"
-          href={`${BASE_PATH_URL}/download/${hit.id}?format=d3m`}
+          href={`${API_URL}/download/${hit.id}?format=d3m`}
         >
           <Icon.Download className="feather" /> D3M
         </a>
