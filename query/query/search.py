@@ -129,6 +129,12 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
     return column_coverage
 
 
+JOIN_RESULT_SOURCE_FIELDS = [
+    'dataset_id', 'index', 'name', 'lat_index', 'lon_index',
+    'lat', 'lon', 'address_index', 'address',
+]
+
+
 def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
     """
     Get Lazo sketches of the input dataset, if available.
@@ -220,15 +226,7 @@ def get_numerical_join_search_results(
 
     body = {
         '_source': {
-            'excludes': [
-                'dataset_name',
-                'dataset_description',
-                'coverage',
-                'mean',
-                'stddev',
-                'structural_type',
-                'semantic_types'
-            ]
+            'includes': JOIN_RESULT_SOURCE_FIELDS
         },
         'query': {
             'function_score': {
@@ -326,12 +324,7 @@ def get_spatial_join_search_results(
 
     body = {
         '_source': {
-            'excludes': [
-                'name',
-                'dataset_name',
-                'dataset_description',
-                'ranges'
-            ]
+            'includes': JOIN_RESULT_SOURCE_FIELDS
         },
         'query': {
             'function_score': {
@@ -427,15 +420,7 @@ def get_textual_join_search_results(
 
     body = {
         '_source': {
-            'excludes': [
-                'dataset_name',
-                'dataset_description',
-                'coverage',
-                'mean',
-                'stddev',
-                'structural_type',
-                'semantic_types'
-            ]
+            'includes': JOIN_RESULT_SOURCE_FIELDS
         },
         'query': {
             'function_score': {
@@ -748,18 +733,9 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
                 args = [query] + query_args_main
             query_obj = {
                 '_source': {
-                    'excludes': [
-                        'date',
-                        'materialize',
-                        'name',
-                        'description',
-                        'license',
-                        'size',
-                        'columns.mean',
-                        'columns.stddev',
-                        'columns.structural_type',
-                        'columns.semantic_types'
-                    ]
+                    'includes': [
+                        'columns.name',
+                    ],
                 },
                 'query': {
                     'bool': {
