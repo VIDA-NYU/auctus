@@ -548,6 +548,10 @@ def get_joinable_datasets(
             hash_values,
             cardinality
         )
+        if dataset_id:
+            query_results = [
+                res for res in query_results if res[0] == dataset_id
+            ]
         if not query_results:
             continue
         dataset_ids = list()
