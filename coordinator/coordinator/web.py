@@ -128,6 +128,11 @@ class Status(BaseHandler):
 
 
 class StatusJson(BaseHandler):
+    def prepare(self):
+        super(BaseHandler, self).prepare()
+        self.set_header('Access-Control-Allow-Origin', '*')
+        self.set_header('Access-Control-Allow-Methods', 'GET')
+
     def get(self):
         return self.send_json({
             'recent_discoveries': self.coordinator.recent_discoveries,
