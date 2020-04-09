@@ -1,0 +1,32 @@
+.main-menu {
+  float: right;
+  color: #707070;
+  font-size: 0.9rem;
+  position: absolute;
+  z-index: 1000;
+  right: 10px;
+  top: 7px;
+  /* bottom: 0; */
+}
+
+.card-menu {
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  background-color: #fff;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.menu-link {
+  background-color: transparent;
+  padding: 0.8rem;
+  cursor: pointer;
+}
+
+.menu-link:hover {
+  background-color: #f0f0f0;
+}
+
+.menu-link a:hover {
+  text-decoration: none;
+}

@@ -1,0 +1,19 @@
+.nav-tabs .nav-item button {
+  cursor: pointer;
+  background-color: transparent;
+  color: #63508b;
+}
+
+.nav-tabs .nav-item button {
+  cursor: pointer;
+  background-color: transparent;
+  color: #63508b;
+}
+
+.nav-tabs .nav-item button:focus {
+  outline: none;
+}
+
+.nav-tabs .nav-item .nav-link.active {
+  color: #212529;
+}

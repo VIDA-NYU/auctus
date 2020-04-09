@@ -1,6 +1,7 @@
 **/.env
 volumes
 docs
+frontend/node_modules
 
 # Git
 **/.git

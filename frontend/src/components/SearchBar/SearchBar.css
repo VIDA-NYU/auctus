@@ -1,0 +1,40 @@
+.SearchBar {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.SearchBar-input {
+  height: 70px;
+  border-right-width: 0;
+}
+
+.SearchBar-icon {
+  width: 70px;
+  margin: 0 auto;
+  background-color: transparent;
+  border-left-width: 0;
+}
+
+.SearchBar-icon-active {
+  background-color: #63508b;
+}
+
+.SearchBar-icon-active .feather {
+  color: #ffffff!important;
+}
+
+.SearchBar-icon .feather {
+  margin: 0 auto;
+  color: #707070;
+  width: 24px;
+  height: 24px;
+}
+
+.SearchBar input:focus {
+  box-shadow: none;
+  border-color: #ced4da!important;
+}
+
+.SearchBar .input-group-append {
+  cursor: pointer;
+}

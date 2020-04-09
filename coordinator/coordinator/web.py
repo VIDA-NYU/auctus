@@ -122,6 +122,9 @@ class BaseHandler(RequestHandler):
         return self.application.coordinator
 
 
+# FIXME: Get rid of old views
+
+
 class Status(BaseHandler):
     def get(self):
         self.render('system_status.html')
@@ -325,11 +328,8 @@ def make_app(debug=False):
 
     return Application(
         [
-            URLSpec('/', Search, name='search'),
-            URLSpec('/upload', Upload, name='upload'),
-            URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
-            URLSpec('/status', Status, name='status'),
             URLSpec('/api/statistics', Statistics),
+            URLSpec('/.*', Search, name='search'),
         ],
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
