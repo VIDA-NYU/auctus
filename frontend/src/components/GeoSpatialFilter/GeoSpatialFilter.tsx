@@ -24,6 +24,7 @@ import {
   centralizeMapToFeature,
   MyMapBrowserEvent,
 } from '../spatial-utils';
+import 'ol/ol.css';
 
 interface GeoSpatialFilterState {
   selectedCoordinates?: {
@@ -185,7 +186,7 @@ class GeoSpatialFilter extends PersistentComponent<
             </div>
           </div>
         </div>
-        <div id={this.mapId} style={style} />
+        <div id={this.mapId} style={style} className="map" />
       </div>
     );
   }

@@ -2,6 +2,7 @@ import React from 'react';
 import { generateRandomId } from '../../utils';
 import { Map, View, Feature, Overlay } from 'ol/';
 import { toStringHDMS } from 'ol/coordinate';
+import { defaults as interactionDefaults } from 'ol/interaction';
 import { Select } from 'ol/interaction';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource, OSM as OSMSource } from 'ol/source';
@@ -15,6 +16,7 @@ import Fill from 'ol/style/Fill';
 import { click } from 'ol/events/condition';
 import './GeoSpatialCoverageMap.css';
 import { transformCoordinates, centralizeMapToExtent } from '../spatial-utils';
+import 'ol/ol.css';
 
 interface GeoSpatialCoverageMapProps {
   coverage: SpatialCoverage;
@@ -147,6 +149,7 @@ class GeoSpatialCoverageMap extends PersistentComponent<
     });
 
     const map = new Map({
+      interactions: interactionDefaults({ mouseWheelZoom: false }),
       layers: [raster, vector],
       overlays: [overlay], // [overlays[index]],
       target: this.mapId, //'map-' + index,
