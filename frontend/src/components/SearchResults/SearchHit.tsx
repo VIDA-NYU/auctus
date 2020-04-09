@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as Icon from 'react-feather';
-import { BASE_URL, API_URL } from '../../config';
+import { API_URL } from '../../config';
 import { formatSize } from '../../utils';
 import { SearchResult } from '../../api/types';
 import { Description, DataTypes, DatasetColumns } from './Metadata';
@@ -17,7 +17,10 @@ interface SearchHitState {
   hidden: boolean;
 }
 
-function DownloadViewDetails(props: { id: string }) {
+function DownloadViewDetails(props: {
+  id: string;
+  onSearchHitExpand: () => void;
+}) {
   return (
     <div className="mt-2">
       <a
@@ -26,14 +29,12 @@ function DownloadViewDetails(props: { id: string }) {
       >
         <Icon.Download className="feather" /> Download
       </a>
-      <a
-        href={`${BASE_URL}/dataset/${props.id}`}
+      <button
         className="btn btn-sm btn-outline-primary ml-2"
-        target="_blank"
-        rel="noopener noreferrer"
+        onClick={props.onSearchHitExpand}
       >
         <Icon.Info className="feather" /> View Details
-      </a>
+      </button>
     </div>
   );
 }
@@ -58,6 +59,11 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
     this.state = {
       hidden: true,
     };
+    this.onSearchHitExpand = this.onSearchHitExpand.bind(this);
+  }
+
+  onSearchHitExpand() {
+    this.props.onSearchHitExpand(this.props.hit);
   }
 
   render() {
@@ -70,14 +76,20 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
           <Description hit={hit} label={false} />
           <DatasetColumns columns={hit.metadata.columns} label={false} />
           <DataTypes hit={hit} label={false} />
-          <DownloadViewDetails id={hit.id} />
+          <DownloadViewDetails
+            id={hit.id}
+            onSearchHitExpand={this.onSearchHitExpand}
+          />
           <AugmentationOptions hit={hit} searchQuery={searchQuery} />
         </div>
         <div
-          style={{ margin: 'auto 0', cursor: 'pointer' }}
-          onClick={() => this.props.onSearchHitExpand(this.props.hit)}
+          className="d-flex align-items-stretch"
+          style={{ cursor: 'pointer' }}
+          onClick={this.onSearchHitExpand}
         >
-          <Icon.ChevronRight className="feather feather-lg" />
+          <div style={{ margin: 'auto 2px' }}>
+            <Icon.ChevronRight className="feather feather-lg" />
+          </div>
         </div>
       </div>
     );

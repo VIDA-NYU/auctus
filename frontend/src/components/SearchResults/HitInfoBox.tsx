@@ -25,6 +25,9 @@ function HitInfoBox(props: { hit: SearchResult }) {
           <div className="card-body d-flex flex-column">
             <h4>{hit.metadata.name}</h4>
             <div className="mt-2">
+              <b>ID:</b> {hit.id}
+            </div>
+            <div className="mt-2">
               <b>Source:</b> {hit.metadata.source}
             </div>
             <Description hit={hit} label={true} />
