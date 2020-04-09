@@ -112,6 +112,9 @@ test:
     - docker-compose logs query
     - docker-compose logs lazo
 
+    # Run the frontend tests
+    - docker run --rm datamart_npm sh -c "CI=true npm run test"
+
     # Generate coverage report
     - docker-compose down -t 30
     - coverage combine -a cov/
