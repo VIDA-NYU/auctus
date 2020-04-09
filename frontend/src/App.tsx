@@ -79,7 +79,7 @@ class SearchApp extends React.Component<{}, AppState> {
 
   updateFilterState(
     filterId: string,
-    state: TemporalVariable | GeoSpatialVariable | File | string[]
+    state?: TemporalVariable | GeoSpatialVariable | File | string[]
   ) {
     const filter = this.state.filters.find(f => f.id === filterId);
     if (filter) {

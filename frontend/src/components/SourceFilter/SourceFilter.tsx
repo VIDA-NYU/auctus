@@ -1,6 +1,7 @@
 import React from 'react';
 import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 import { DEFAULT_SOURCES } from '../../api/rest';
+import * as Icon from 'react-feather';
 
 interface SourceFilterState {
   checked: {
@@ -9,7 +10,7 @@ interface SourceFilterState {
 }
 
 interface SourceFilterProps {
-  onSourcesChange: (sources: string[]) => void;
+  onSourcesChange: (sources?: string[]) => void;
 }
 
 class SourceFilter extends PersistentComponent<
@@ -28,17 +29,49 @@ class SourceFilter extends PersistentComponent<
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     this.state.checked[input.value] = !this.state.checked[input.value];
-    const checked = { ...this.state.checked };
-    this.setState({ checked });
-    const checkedSources = Object.entries(checked)
+    const state = { checked: { ...this.state.checked } };
+    this.notifyChange(state);
+  }
+
+  notifyChange(state: SourceFilterState) {
+    this.setState(state);
+    const checkedSources = Object.entries(state.checked)
       .filter(c => c[1] === true)
       .map(c => c[0]) as string[];
-    this.props.onSourcesChange(checkedSources);
+    this.props.onSourcesChange(checkedSources.length > 0 ? checkedSources : undefined);
+  }
+
+  setCheckedStateForAll(checked: boolean) {
+    const state: SourceFilterState = { checked: {} };
+    DEFAULT_SOURCES.forEach(s => {
+      state.checked[s] = checked;
+    });
+    this.notifyChange(state);
   }
 
   render() {
     return (
       <>
+        <div className="mb-1 mt-1">
+          <button
+            className="btn-link small ml-2"
+            onClick={() => {
+              this.setCheckedStateForAll(true);
+            }}
+          >
+            <Icon.CheckSquare className="feather feather-sm mr-1" />
+            Select all
+          </button>
+          <button
+            className="btn-link small ml-2"
+            onClick={() => {
+              this.setCheckedStateForAll(false);
+            }}
+          >
+            <Icon.Square className="feather feather-sm mr-1" />
+            Unselect all
+          </button>
+        </div>
         {DEFAULT_SOURCES.map(source => (
           <div className="form-check ml-2" key={`div-${source}`}>
             <input
