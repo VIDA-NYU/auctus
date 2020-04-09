@@ -1,12 +1,12 @@
 /**
- * This function loads the "base_path" from the HTML. It allows us to
+ * This function loads variables from <meta> HTML tags. It allows us to
  * dynamically configure the base path for the application. It can useful
  * when configuring the system to run behind a proxy under a non-root path
  * such as: http://example.com/auctus/{all-paths}.
  *
  * This can be configured by adding an HTML meta-tag to the static HTML.
- *     <meta name="base_path" content="/auctus/">
- *     <meta name="api_path" content="https://api.auctus/v1/">
+ *     <meta name="base_url" content="https://auctus.vida-nyu.org/">
+ *     <meta name="api_url" content="https://auctus.vida-nyu.org/api/v1/">
  */
 function loadVariableFromHTML(name: string): string {
   const meta = document.getElementsByName(name)[0];

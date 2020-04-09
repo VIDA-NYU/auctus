@@ -46,7 +46,6 @@ function parseQueryString(q?: string): string[] {
 export async function search(
   q: SearchQuery
 ): Promise<Response<SearchResponse>> {
-
   const spec: QuerySpec = {
     keywords: parseQueryString(q.query),
     source: q.sources && q.sources.length > 0 ? q.sources : DEFAULT_SOURCES,
@@ -140,4 +139,25 @@ export async function upload(data: UploadData) {
   };
 
   return api.post('/upload', formData, config);
+}
+
+export interface RecentDiscovery {
+  id: string;
+  discoverer: string;
+  discovered: Date;
+  profiled: Date;
+  name: string;
+  spatial?: boolean;
+  temporal?: boolean;
+}
+
+export interface Status {
+  recent_discoveries: RecentDiscovery[];
+  sources_counts: {
+    [source: string]: number;
+  };
+}
+
+export async function status(): Promise<AxiosResponse<Status>> {
+  return api.get('/status');
 }

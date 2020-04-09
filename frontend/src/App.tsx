@@ -25,6 +25,7 @@ import { MainMenu } from './components/MainMenu/MainMenu';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import * as Icon from 'react-feather';
 import { Upload } from './components/Upload/Upload';
+import { Statistics } from './components/Statistics/Statistics';
 
 interface Filter {
   id: string;
@@ -338,6 +339,18 @@ class App extends React.Component<{}, AppState> {
                     onClick={() => routeProps.history.push('/')}
                   />
                   <Upload />
+                </>
+              )}
+            />
+            <Route
+              path="/statistics"
+              render={routeProps => (
+                <>
+                  <MainMenu />
+                  <CenteredHorizontalLogo
+                    onClick={() => routeProps.history.push('/')}
+                  />
+                  <Statistics />
                 </>
               )}
             />

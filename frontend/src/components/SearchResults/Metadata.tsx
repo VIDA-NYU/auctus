@@ -5,6 +5,7 @@ import { SearchResult } from '../../api/types';
 import { ColumnMetadata } from '../../api/types';
 import { generateRandomId } from '../../utils';
 import { GeoSpatialCoverageMap } from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
+import { BadgeGroup, SpatialBadge, TemporalBadge } from '../Badges/Badges';
 
 export function SpatialCoverage(props: { hit: SearchResult }) {
   const { spatial_coverage } = props.hit.metadata;
@@ -36,16 +37,10 @@ export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
       {(isSpatial || isTemporal) && (
         <div className="mt-2">
           {label && <b>Data Types: </b>}
-          {isSpatial && (
-            <span className="badge badge-primary badge-pill mr-2">
-              <Icon.MapPin className="feather-xs" /> Spatial
-            </span>
-          )}
-          {isTemporal && (
-            <span className="badge badge-info badge-pill">
-              <Icon.Calendar className="feather-xs" /> Temporal
-            </span>
-          )}
+          <BadgeGroup>
+            {isSpatial && <SpatialBadge />}
+            {isTemporal && <TemporalBadge />}
+          </BadgeGroup>
         </div>
       )}
     </>

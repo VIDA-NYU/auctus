@@ -35,11 +35,11 @@ class MainMenu extends React.PureComponent {
                     path="/upload"
                     label="Upload Dataset"
                   />
-                  {/* <Link
+                  <Link
                     icon={Icon.BarChart2}
                     path="/statistics"
                     label="Dataset Statistics"
-                  /> */}
+                  />
                 </div>
               )}
             </div>

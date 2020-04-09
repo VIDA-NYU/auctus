@@ -1,5 +1,5 @@
 import * as React from 'react';
-import './Tabs.css'
+import './Tabs.css';
 
 class Tabs extends React.PureComponent {
   render() {
@@ -17,10 +17,7 @@ class Tab extends React.PureComponent<TabProps> {
     const tabClassName = this.props.selected ? 'nav-link active' : 'nav-link';
     return (
       <li className="nav-item">
-        <button
-          className={tabClassName}
-          onClick={this.props.onClick}
-        >
+        <button className={tabClassName} onClick={this.props.onClick}>
           {this.props.children}
         </button>
       </li>
