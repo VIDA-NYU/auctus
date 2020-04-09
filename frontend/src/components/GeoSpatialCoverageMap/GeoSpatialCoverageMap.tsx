@@ -208,17 +208,42 @@ class GeoSpatialCoverageMap extends PersistentComponent<
     });
   }
 
-  render() {
-    const style = { width: '100%', height: '400px' };
-    const { lat, lon } = this.props.coverage;
-    return (
-      <div style={{ display: 'block' }}>
-        <div className="mb-2 mt-2">
+  renderCoverageColumns(coverage: SpatialCoverage) {
+    const { lat, lon, address } = coverage;
+    if (lat && lon) {
+      return (
+        <>
           <b>Latitude Column: </b>
           <span className="badge badge-pill badge-secondary mr-1">{lat}</span>
           &nbsp;|&nbsp;&nbsp;
           <b>Longitude Column: </b>
           <span className="badge badge-pill badge-secondary mr-1">{lon}</span>
+        </>
+      );
+    }
+    if (address) {
+      return (
+        <>
+          <b>Address Column: </b>
+          <span className="badge badge-pill badge-secondary mr-1">
+            {address}
+          </span>
+        </>
+      );
+    }
+    return (
+      <>
+        <b>Other Coverage: </b>
+      </>
+    );
+  }
+
+  render() {
+    const style = { width: '100%', height: '400px' };
+    return (
+      <div style={{ display: 'block' }}>
+        <div className="mb-2 mt-2">
+          {this.renderCoverageColumns(this.props.coverage)}
         </div>
         <div id={this.mapId} ref={this.mapRef} className="map" style={style} />
         <span className="mb-3" style={{ fontSize: '0.9rem' }}>

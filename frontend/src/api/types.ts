@@ -11,8 +11,9 @@ export interface AugmentationInfo {
 }
 
 export interface SpatialCoverage {
-  lat: string;
-  lon: string;
+  lat?: string;
+  lon?: string;
+  address?: string;
   ranges: Array<{
     range: {
       coordinates: [[number, number], [number, number]];
