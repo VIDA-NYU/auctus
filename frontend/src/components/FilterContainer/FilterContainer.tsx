@@ -14,8 +14,12 @@ class FilterContainer extends React.PureComponent<{
             onClick={() => this.props.onClose()}
             className="d-inline text-muted ml-1"
             style={{ cursor: 'pointer' }}
+            title="Remove this filter"
           >
-            <Icon.X className="feather feather-lg" />
+            <Icon.Trash2
+              className="feather feather"
+              style={{ marginBottom: '2px' }}
+            />
           </span>
         </div>
         <div className="d-block">{this.props.children}</div>

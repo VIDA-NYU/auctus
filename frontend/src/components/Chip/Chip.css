@@ -27,6 +27,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.chip-clickable:hover {
+  background-color: #f0f0f0;
+}
+
 .chip-btn-close {
   margin-left: .25rem!important;
   margin-right: .5rem!important;
