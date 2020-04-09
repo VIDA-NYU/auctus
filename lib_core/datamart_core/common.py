@@ -128,22 +128,24 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
     Adds dataset to the supplementary Datamart indices:
     'datamart_columns' and 'datamart_spatial_coverage'.
     """
+    DISCARD_DATASET_FIELDS = [
+        'columns', 'sample', 'materialize', 'spatial_coverage',
+    ]
+    DISCARD_COLUMN_FIELDS = ['plot']
 
     common_dataset_metadata = dict(dataset_id=dataset_id)
-    if 'name' in metadata:
-        common_dataset_metadata['dataset_name'] = \
-            metadata['name']
-    if metadata.get('description'):
-        common_dataset_metadata['dataset_description'] = \
-            metadata['description']
+    for key, value in metadata.items():
+        if key not in DISCARD_DATASET_FIELDS:
+            common_dataset_metadata['dataset_' + key] = value
 
     column_name_to_index = dict()
 
     # 'datamart_columns' index
     for column_index, column in enumerate(metadata['columns']):
-        column_metadata = dict()
+        column_metadata = dict(column)
+        for field in DISCARD_COLUMN_FIELDS:
+            column_metadata.pop(field, None)
         column_metadata.update(common_dataset_metadata)
-        column_metadata.update(column)
         column_metadata['index'] = column_index
         column_name_to_index[column_metadata['name']] = column_index
         if 'coverage' in column_metadata:
@@ -197,7 +199,7 @@ def add_dataset_to_index(es, dataset_id, metadata):
     # 'datamart' index
     es.index(
         'datamart',
-        metadata,
+        dict(metadata, id=dataset_id),
         id=dataset_id,
     )
 

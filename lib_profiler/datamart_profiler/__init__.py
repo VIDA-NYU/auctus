@@ -15,12 +15,15 @@ import time
 from urllib.parse import urlencode
 import warnings
 
-from .profile_types import identify_types
+from .profile_types import identify_types, parse_date
 from . import types
 from .warning_tools import ignore_warnings
 
 
 __version__ = '0.5.6'
+
+
+__all__ = ['process_dataset', 'parse_date']
 
 
 logger = logging.getLogger(__name__)

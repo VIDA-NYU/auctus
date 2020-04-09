@@ -3,10 +3,12 @@ import io
 import json
 import jsonschema
 import os
+import pkg_resources
 import re
 import requests
 import tempfile
 import time
+import yaml
 import zipfile
 
 import datamart_materialize
@@ -111,6 +113,23 @@ class TestProfiler(DataTestCase):
             },
         )
 
+    def test_indexes(self):
+        response = requests.get(
+            'http://' + os.environ['ELASTICSEARCH_HOSTS'].split(',')[0] +
+            '/_all'
+        )
+        response.raise_for_status()
+        actual = response.json()
+        with pkg_resources.resource_stream(
+                'coordinator', 'elasticsearch.yml') as stream:
+            expected = yaml.safe_load(stream)
+        actual.pop('lazo', None)
+        for index in expected.values():
+            index.setdefault('aliases', {})
+        for index in actual.values():
+            index.pop('settings', None)
+        self.assertEqual(actual, expected)
+
 
 class TestProfileQuery(DatamartTest):
     def test_basic(self):
@@ -121,7 +140,7 @@ class TestProfileQuery(DatamartTest):
             )
         # Some fields like 'name', 'description' won't be there
         metadata = {k: v for k, v in basic_metadata.items()
-                    if k not in {'name', 'description', 'source',
+                    if k not in {'id', 'name', 'description', 'source',
                                  'date', 'materialize', 'sample'}}
         # Plots are not computed, remove them too
         metadata['columns'] = [
@@ -1685,6 +1704,7 @@ assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 
 
 basic_metadata = {
+    "id": "datamart.test.basic",
     "name": "basic",
     "description": "This is a very simple CSV with people",
     'source': 'remi',
@@ -1818,6 +1838,7 @@ basic_metadata_d3m = lambda v: {
 
 
 agg_metadata = {
+    "id": "datamart.test.agg",
     "name": "agg",
     "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
     'source': 'fernando',
@@ -1912,6 +1933,7 @@ agg_metadata = {
 
 
 geo_metadata = {
+    "id": "datamart.test.geo",
     "name": "geo",
     "description": "Another simple CSV with places",
     'source': 'remi',
@@ -2033,6 +2055,7 @@ geo_metadata_d3m = lambda v: {
 
 
 lazo_metadata = {
+    'id': 'datamart.test.lazo',
     "name": "lazo",
     "description": "Simple CSV with states and years to test the Lazo index service",
     'source': 'fernando',
@@ -2087,6 +2110,7 @@ lazo_metadata = {
 
 
 daily_metadata = {
+    'id': 'datamart.test.daily',
     'name': 'daily',
     'description': 'Temporal dataset with daily resolution',
     'source': 'remi',
@@ -2155,6 +2179,7 @@ daily_metadata = {
 
 
 hourly_metadata = {
+    'id': 'datamart.test.hourly',
     'name': 'hourly',
     'description': 'Temporal dataset with hourly resolution',
     'source': 'remi',
