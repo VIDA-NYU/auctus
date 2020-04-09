@@ -38,7 +38,9 @@ class SourceFilter extends PersistentComponent<
     const checkedSources = Object.entries(state.checked)
       .filter(c => c[1] === true)
       .map(c => c[0]) as string[];
-    this.props.onSourcesChange(checkedSources.length > 0 ? checkedSources : undefined);
+    this.props.onSourcesChange(
+      checkedSources.length > 0 ? checkedSources : undefined
+    );
   }
 
   setCheckedStateForAll(checked: boolean) {
