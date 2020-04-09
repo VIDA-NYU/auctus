@@ -319,6 +319,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     :param metadata: The metadata provided by the discovery plugin (might be
         very limited).
     :param lazo_client: client for the Lazo Index Server
+    :param nominatim: URL of the Nominatim server
     :param search: True if this method is being called during the search
         operation (and not for indexing).
     :param include_sample: Set to True to include a few random rows to the
