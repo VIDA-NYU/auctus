@@ -995,6 +995,10 @@ def parse_query_variables(data):
                     end = end.timestamp()
                 else:
                     end = datetime.utcnow().timestamp()
+                    if start > end:
+                        end = start + 1
+                if start > end:
+                    raise ClientError("Invalid date range (start > end)")
                 output.append({
                     'nested': {
                         'path': 'columns',
