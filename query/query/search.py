@@ -979,28 +979,22 @@ def parse_query_variables(data):
         # temporal variable
         # TODO: handle 'granularity'
         if 'temporal_variable' in variable['type']:
-            start = end = None
-            if 'start' in variable and 'end' in variable:
-                try:
-                    start = parse_date(variable['start']).timestamp()
-                    end = parse_date(variable['end']).timestamp()
-                except (KeyError, ValueError, OverflowError):
-                    pass
-            elif 'start' in variable:
-                try:
-                    start = parse_date(variable['start']).timestamp()
-                    end = datetime.utcnow().timestamp()
-                except (KeyError, ValueError, OverflowError):
-                    pass
-            elif 'end' in variable:
-                try:
+            if 'start' in variable or 'end' in variable:
+                if 'start' in variable:
+                    start = parse_date(variable['start'])
+                    if start is None:
+                        raise ClientError("Invalid start date format")
+                    start = start.timestamp()
+                else:
                     start = 0
-                    end = parse_date(variable['end']).timestamp()
-                except (KeyError, ValueError, OverflowError):
-                    pass
-            else:
-                pass
-            if start is not None and end is not None:
+
+                if 'end' in variable:
+                    end = parse_date(variable['end'])
+                    if end is None:
+                        raise ClientError("Invalid end date format")
+                    end = end.timestamp()
+                else:
+                    end = datetime.utcnow().timestamp()
                 output.append({
                     'nested': {
                         'path': 'columns',
