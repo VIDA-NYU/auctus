@@ -127,7 +127,7 @@ class Status(BaseHandler):
         self.render('system_status.html')
 
 
-class StatusJson(BaseHandler):
+class Statistics(BaseHandler):
     def prepare(self):
         super(BaseHandler, self).prepare()
         self.set_header('Access-Control-Allow-Origin', '*')
@@ -329,7 +329,7 @@ def make_app(debug=False):
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/dataset/([^/]+)', Dataset, name='dataset'),
             URLSpec('/status', Status, name='status'),
-            URLSpec('/api/status', StatusJson),
+            URLSpec('/api/statistics', Statistics),
         ],
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),

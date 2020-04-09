@@ -19,7 +19,7 @@ function getJSON(url='', args) {
 }
 
 function loadStatus() {
-  getJSON('/api/status')
+  getJSON(QUERY_HOST + '/statistics')
   .then(function(result) {
     var recent_discoveries = document.getElementById('recent_discoveries');
     recent_discoveries.innerHTML = '';

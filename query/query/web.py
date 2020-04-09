@@ -681,6 +681,14 @@ class Upload(BaseHandler):
         return self.send_json({'id': dataset_id})
 
 
+class Statistics(BaseHandler):
+    def get(self):
+        return self.send_json({
+            'recent_discoveries': self.application.recent_discoveries,
+            'sources_counts': self.application.sources_counts,
+        })
+
+
 class Version(BaseHandler):
     def get(self):
         return self.send_json({
@@ -727,6 +735,33 @@ class Application(GracefulApplication):
             aio_pika.ExchangeType.FANOUT,
         )
 
+        # Start statistics-fetching coroutine
+        self.sources_counts = {}
+        self.recent_discoveries = []
+        log_future(
+            asyncio.get_event_loop().create_task(self.update_statistics()),
+            logger,
+            should_never_exit=True,
+        )
+
+    async def update_statistics(self):
+        http_client = AsyncHTTPClient()
+        while True:
+            try:
+                # Get counts from coordinator
+                response = await http_client.fetch(
+                    'http://coordinator:8001/api/statistics',
+                )
+                statistics = json.loads(response.body.decode('utf-8'))
+            except Exception as e:
+                logger.exception("Can't get statistics from coordinator")
+            else:
+                self.sources_counts = statistics['sources_counts']
+                self.recent_discoveries = statistics['recent_discoveries']
+
+            await asyncio.sleep(60)
+
+
     def log_request(self, handler):
         if handler.request.path == '/health':
             return
@@ -752,6 +787,7 @@ def make_app(debug=False):
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
             URLSpec('/upload', Upload, name='upload'),
+            URLSpec('/statistics', Statistics, name='statistics'),
             URLSpec('/version', Version, name='version'),
             URLSpec('/health', Health, name='health'),
         ],
