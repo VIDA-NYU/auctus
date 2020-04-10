@@ -1650,6 +1650,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_temporal_hourly_days_join(self):
+        """Join daily data with hourly (= aggregate down to daily)."""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.hourly'
         )
@@ -1695,6 +1696,67 @@ class TestAugment(DatamartTest):
                 [
                     '2019-06-12,blue,no',
                     '2019-06-13,green,no',
+                ],
+            )
+
+    def test_temporal_daily_hours_join(self):
+        """Join hourly data with daily (= repeat for each hour)."""
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.daily'
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.daily',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['orig_date']],
+                'right_columns': [[0]],
+                'right_columns_names': [['aug_date']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        with data('daily_aug_hours.csv') as daily_aug_hours:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': daily_aug_hours,
+                },
+            )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
+        self.assertEqual(
+            set(zip_.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip_.open('tables/learningData.csv') as table:
+            self.assertCsvEqualNoOrder(
+                table.read().decode('utf-8'),
+                'orig_date,n_people,rain',
+                [
+                    '2019-04-25T21:00:00Z,3,yes',
+                    '2019-04-26T01:00:00Z,5,no',
+                    '2019-04-26T05:00:00Z,6,no',
+                    '2019-04-26T09:00:00Z,7,no',
+                    '2019-04-26T13:00:00Z,6,no',
+                    '2019-04-26T17:00:00Z,8,no',
+                    '2019-04-26T21:00:00Z,7,no',
+                    '2019-04-27T01:00:00Z,0,yes',
+                    '2019-04-27T05:00:00Z,1,yes',
+                    '2019-04-27T09:00:00Z,0,yes',
+                    '2019-04-27T13:00:00Z,3,yes',
+                    '2019-04-27T17:00:00Z,0,yes',
+                    '2019-04-27T13:00:00Z,0,yes',
                 ],
             )
 
