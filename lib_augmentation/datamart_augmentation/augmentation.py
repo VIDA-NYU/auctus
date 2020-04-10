@@ -30,19 +30,26 @@ class _UniqueIndexKey(object):
 UNIQUE_INDEX_KEY = _UniqueIndexKey()
 
 
+# Resolutions for detection: which attribute of a Timestamp is common in group
 temporal_resolutions = [
-    'second',
-    'minute',
-    'hour',
-    'date'
+    ('second', 'second'),
+    ('minute', 'minute'),
+    ('hour', 'hour'),
+    ('day', 'date'),
 ]
 
+temporal_resolutions_priorities = {
+    n[0]: i
+    for i, n in enumerate(temporal_resolutions)
+}
 
-temporal_resolution_format = {
+
+# Resolution for alignment: convert Timestamps to join key
+temporal_resolution_keys = {
     'second': '%Y-%m-%d %H:%M:%S',
     'minute': '%Y-%m-%d %H:%M',
     'hour': '%Y-%m-%d %H',
-    'date': '%Y-%m-%d'
+    'day': '%Y-%m-%d',
 }
 
 
@@ -115,15 +122,24 @@ def match_column_temporal_resolutions(index_1, index_2):
 
     resolution_1 = check_temporal_resolution(index_1)
     resolution_2 = check_temporal_resolution(index_2)
-    if (temporal_resolutions.index(resolution_1) >
-            temporal_resolutions.index(resolution_2)):
+    if (temporal_resolutions_priorities[resolution_1] >
+            temporal_resolutions_priorities[resolution_2]):
         # Change resolution of second index to the first's
-        fmt = temporal_resolution_format[resolution_1]
-        return lambda idx1, idx2: (idx1, idx2.strftime(fmt))
+        logger.info("Temporal alignment: right to '%s'", resolution_1)
+        key = temporal_resolution_keys[resolution_1]
+        if isinstance(key, str):
+            return lambda idx1, idx2: (idx1, idx2.strftime(key))
+        else:
+            return lambda idx1, idx2: (idx1, idx2.map(key))
     else:
         # Change resolution of first index to the second's
-        fmt = temporal_resolution_format[resolution_2]
-        _idx1 = index_1.strftime(fmt)  # Cache it for speed
+        logger.info("Temporal alignment: left to '%s'", resolution_2)
+        key = temporal_resolution_keys[resolution_2]
+        # Cache it for speed, return constant lambda
+        if isinstance(key, str):
+            _idx1 = index_1.strftime(key)
+        else:
+            _idx1 = index_1.map(key)
         return lambda idx1, idx2: (_idx1, idx2)
 
 
@@ -133,8 +149,8 @@ def check_temporal_resolution(data):
 
     if not data.is_all_dates:
         return None
-    for res in temporal_resolutions[:-1]:
-        if len(set([getattr(x, res) for x in data[data.notnull()]])) > 1:
+    for res, attr in temporal_resolutions[:-1]:
+        if len(set([getattr(x, attr) for x in data[data.notnull()]])) > 1:
             return res
     return 'date'
 
