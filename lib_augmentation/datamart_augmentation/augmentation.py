@@ -92,7 +92,7 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
     return data
 
 
-def match_temporal_resolutions(input_data, companion_data):
+def match_temporal_resolutions(input_data, companion_data, temporal_resolution=None):
     """Matches the resolutions between the datasets.
 
     This takes in example indexes, and returns a function to update future
@@ -105,37 +105,52 @@ def match_temporal_resolutions(input_data, companion_data):
         pass
     elif (isinstance(input_data.index, pd.DatetimeIndex)
           and isinstance(companion_data.index, pd.DatetimeIndex)):
-        return match_column_temporal_resolutions(input_data.index, companion_data.index)
+        return match_column_temporal_resolutions(
+            input_data.index,
+            companion_data.index,
+            temporal_resolution,
+        )
 
     return lambda idx: idx  # no-op
 
 
-def match_column_temporal_resolutions(index_1, index_2):
+def match_column_temporal_resolutions(index_1, index_2, temporal_resolution=None):
     """Matches the resolutions between the dataset indices.
     """
 
     if not (index_1.is_all_dates and index_2.is_all_dates):
         return lambda idx: idx
 
-    resolution_1 = get_temporal_resolution(index_1[~index_1.isna()])
-    resolution_2 = get_temporal_resolution(index_2[~index_2.isna()])
-    if (temporal_resolutions_priorities[resolution_1] >
-            temporal_resolutions_priorities[resolution_2]):
-        # Change resolution of second index to the first's
-        logger.info("Temporal alignment: right to '%s'", resolution_1)
-        key = temporal_aggregation_keys[resolution_1]
+    # Use the provided resolution
+    if temporal_resolution is not None:
+        key = temporal_aggregation_keys[temporal_resolution]
+        logger.info("Temporal alignment: requested '%s'", temporal_resolution)
         if isinstance(key, str):
             return lambda idx: idx.strftime(key)
         else:
             return lambda idx: idx.map(key)
     else:
-        # Change resolution of first index to the second's
-        logger.info("Temporal alignment: left to '%s'", resolution_2)
-        key = temporal_aggregation_keys[resolution_2]
-        if isinstance(key, str):
-            return lambda idx: idx.strftime(key)
+        # Pick the more coarse of the two resolutions
+        resolution_1 = get_temporal_resolution(index_1[~index_1.isna()])
+        resolution_2 = get_temporal_resolution(index_2[~index_2.isna()])
+
+        if (temporal_resolutions_priorities[resolution_1] >
+                temporal_resolutions_priorities[resolution_2]):
+            # Change resolution of second index to the first's
+            logger.info("Temporal alignment: right to '%s'", resolution_1)
+            key = temporal_aggregation_keys[resolution_1]
+            if isinstance(key, str):
+                return lambda idx: idx.strftime(key)
+            else:
+                return lambda idx: idx.map(key)
         else:
-            return lambda idx: idx.map(key)
+            # Change resolution of first index to the second's
+            logger.info("Temporal alignment: left to '%s'", resolution_2)
+            key = temporal_aggregation_keys[resolution_2]
+            if isinstance(key, str):
+                return lambda idx: idx.strftime(key)
+            else:
+                return lambda idx: idx.map(key)
 
 
 def _first(series):
@@ -249,8 +264,10 @@ CHUNK_SIZE_ROWS = 10000
 def join(original_data, augment_data_path, original_metadata, augment_metadata,
          destination_csv,
          left_columns, right_columns,
-         how='left', columns=None, agg_functions=None,
-         return_only_datamart_data=False):
+         how='left', columns=None,
+         agg_functions=None, temporal_resolution=None,
+         return_only_datamart_data=False,
+):
     """
     Performs a join between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
@@ -327,7 +344,11 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
         if update_idx is None:
             # Guess temporal resolutions (on first chunk)
-            update_idx = match_temporal_resolutions(original_data, augment_data)
+            update_idx = match_temporal_resolutions(
+                original_data,
+                augment_data,
+                temporal_resolution,
+            )
             original_data_res = original_data.set_index(
                 update_idx(original_data.index)
             )
@@ -583,6 +604,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             task['augmentation']['right_columns'],
             columns=columns,
             agg_functions=task['augmentation'].get('agg_functions'),
+            temporal_resolution=task['augmentation'].get('temporal_resolution'),
             return_only_datamart_data=return_only_datamart_data,
         )
     elif task['augmentation']['type'] == 'union':
