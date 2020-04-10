@@ -122,7 +122,7 @@ def match_temporal_resolutions(input_data, companion_data):
           and isinstance(companion_data.index, pd.DatetimeIndex)):
         return match_column_temporal_resolutions(input_data.index, companion_data.index)
 
-    return lambda input_idx: input_idx, lambda comp_idx: comp_idx  # no-op
+    return lambda idx: idx  # no-op
 
 
 def match_column_temporal_resolutions(index_1, index_2):
@@ -137,19 +137,17 @@ def match_column_temporal_resolutions(index_1, index_2):
         logger.info("Temporal alignment: right to '%s'", resolution_1)
         key = temporal_resolution_keys[resolution_1]
         if isinstance(key, str):
-            return lambda idx1: idx1, lambda idx2: idx2.strftime(key)
+            return lambda idx: idx.strftime(key)
         else:
-            return lambda idx1: idx1, lambda idx2: idx2.map(key)
+            return lambda idx: idx.map(key)
     else:
         # Change resolution of first index to the second's
         logger.info("Temporal alignment: left to '%s'", resolution_2)
         key = temporal_resolution_keys[resolution_2]
-        # Cache it for speed, return constant lambda
         if isinstance(key, str):
-            _idx1 = index_1.strftime(key)
+            return lambda idx: idx.strftime(key)
         else:
-            _idx1 = index_1.map(key)
-        return lambda idx1: _idx1, lambda idx2: idx2
+            return lambda idx: idx.map(key)
 
 
 def check_temporal_resolution(data):
@@ -340,11 +338,11 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             # Guess temporal resolutions (on first chunk)
             update_idx = match_temporal_resolutions(original_data, augment_data)
             original_data_res = original_data.set_index(
-                update_idx[0](original_data.index)
+                update_idx(original_data.index)
             )
 
         # Match temporal resolutions
-        augment_data.index = update_idx[1](augment_data.index)
+        augment_data.index = update_idx(augment_data.index)
 
         # Filter columns
         if drop_columns:
