@@ -36,6 +36,8 @@ temporal_resolutions = [
     ('minute', 'minute'),
     ('hour', 'hour'),
     ('day', 'date'),
+    ('week', 'dayofweek'),
+    ('month', 'day'),
 ]
 
 temporal_resolutions_priorities = {
@@ -50,6 +52,12 @@ temporal_resolution_keys = {
     'minute': '%Y-%m-%d %H:%M',
     'hour': '%Y-%m-%d %H',
     'day': '%Y-%m-%d',
+    'week': lambda dt: (
+        # Simply using "%Y-%W" doesn't work at year boundaries
+        # Map each timestamp to the first day of its week
+        (dt - pd.Timedelta(days=dt.dayofweek)).strftime('%Y-%m-%d')
+    ),
+    'month': '%Y-%m',
 }
 
 
