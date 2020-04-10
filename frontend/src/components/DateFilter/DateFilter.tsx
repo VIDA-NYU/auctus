@@ -41,7 +41,7 @@ class DateFilter extends PersistentComponent<DateFilterProps, DateFilterState> {
 
   formatDate(date?: Date) {
     return date
-      ? `${date.getFullYear()}-${date.getMonth()}-${date.getDay()}`
+      ? date.toISOString().substring(0, 10)
       : undefined;
   }
 
