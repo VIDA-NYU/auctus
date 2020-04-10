@@ -40,9 +40,7 @@ class DateFilter extends PersistentComponent<DateFilterProps, DateFilterState> {
   }
 
   formatDate(date?: Date) {
-    return date
-      ? date.toISOString().substring(0, 10)
-      : undefined;
+    return date ? date.toISOString().substring(0, 10) : undefined;
   }
 
   render() {
