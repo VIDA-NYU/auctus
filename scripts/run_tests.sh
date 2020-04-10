@@ -6,6 +6,10 @@ cd "$(dirname "$(dirname "$0")")"
 
 set -eux
 
+# Run frontend tests
+docker build -t datamart_coordinator_npm -f coordinator/Dockerfile --target frontend-build .
+docker run -ti --name datamart_npm_test --rm datamart_coordinator_npm sh -c "CI=true npm run test"
+
 # Re-build and re-start services
 docker-compose build --build-arg version=v0.0 coordinator profiler query test_discoverer
 docker-compose up -d coordinator
