@@ -121,7 +121,7 @@ def match_temporal_resolutions(input_data, companion_data):
           and isinstance(companion_data.index, pd.DatetimeIndex)):
         return match_column_temporal_resolutions(input_data.index, companion_data.index)
 
-    return lambda input_idx, comp_idx: (input_idx, comp_idx)  # no-op
+    return lambda input_idx: input_idx, lambda comp_idx: comp_idx  # no-op
 
 
 def match_column_temporal_resolutions(index_1, index_2):
@@ -136,9 +136,9 @@ def match_column_temporal_resolutions(index_1, index_2):
         logger.info("Temporal alignment: right to '%s'", resolution_1)
         key = temporal_resolution_keys[resolution_1]
         if isinstance(key, str):
-            return lambda idx1, idx2: (idx1, idx2.strftime(key))
+            return lambda idx1: idx1, lambda idx2: idx2.strftime(key)
         else:
-            return lambda idx1, idx2: (idx1, idx2.map(key))
+            return lambda idx1: idx1, lambda idx2: idx2.map(key)
     else:
         # Change resolution of first index to the second's
         logger.info("Temporal alignment: left to '%s'", resolution_2)
@@ -148,7 +148,7 @@ def match_column_temporal_resolutions(index_1, index_2):
             _idx1 = index_1.strftime(key)
         else:
             _idx1 = index_1.map(key)
-        return lambda idx1, idx2: (_idx1, idx2)
+        return lambda idx1: _idx1, lambda idx2: idx2
 
 
 def check_temporal_resolution(data):
@@ -288,8 +288,10 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             )
         )
 
-    # Guess temporal resolutions
-    update_idx = match_temporal_resolutions(original_data, first_augment_data)
+    # Defer temporal alignment until reading the first block from companion
+    # (and converting it to the right data types!)
+    update_idx = None
+    original_data_res = None
 
     # Streaming join
     start = time.perf_counter()
@@ -306,11 +308,15 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             drop=True,  # Drop the join columns on that side (avoid duplicates)
         )
 
+        if update_idx is None:
+            # Guess temporal resolutions (on first chunk)
+            update_idx = match_temporal_resolutions(original_data, augment_data)
+            original_data_res = original_data.set_index(
+                update_idx[0](original_data.index)
+            )
+
         # Match temporal resolutions
-        original_data_res, augment_data = update_idx(
-            original_data,
-            augment_data,
-        )
+        augment_data.index = update_idx[1](augment_data.index)
 
         # Filter columns
         if drop_columns:
