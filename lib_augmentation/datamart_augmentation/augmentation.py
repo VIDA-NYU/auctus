@@ -32,16 +32,17 @@ UNIQUE_INDEX_KEY = _UniqueIndexKey()
 
 # Resolutions for detection: which attribute of a Timestamp is common in group
 temporal_resolutions = [
-    ('second', 'second'),
-    ('minute', 'minute'),
-    ('hour', 'hour'),
-    ('day', 'date'),
-    ('week', 'dayofweek'),
-    ('month', 'day'),
+    'second',
+    'minute',
+    'hour',
+    'day',
+    'week',
+    'month',
+    'year',
 ]
 
 temporal_resolutions_priorities = {
-    n[0]: i
+    n: i
     for i, n in enumerate(temporal_resolutions)
 }
 
@@ -157,10 +158,37 @@ def check_temporal_resolution(data):
 
     if not data.is_all_dates:
         return None
-    for res, attr in temporal_resolutions[:-1]:
-        if len(set([getattr(x, attr) for x in data[data.notnull()]])) > 1:
-            return res
-    return 'date'
+
+    def all_same(data, attr, call=False):
+        if not call:
+            return len(set(getattr(x, attr) for x in data)) <= 1
+        else:
+            return len(set(getattr(x, attr)() for x in data)) <= 1
+
+    if not all_same(data, 'second'):
+        # Happen on different seconds
+        return 'second'
+    elif not all_same(data, 'minute'):
+        # Happen on different minutes
+        return 'minute'
+    elif not all_same(data, 'hour'):
+        # Happen on different hours
+        return 'hour'
+    else:
+        if all_same(data, 'date', True):
+            # All on a single day: consider it daily, it's less weird
+            return 'day'
+        elif all_same(data, 'dayofweek'):
+            # All on the same day of the week
+            return 'week'
+        elif all_same(data, 'day'):
+            # All on the same day of the month
+            if all_same(data, 'month'):
+                return 'year'
+            else:
+                return 'month'
+        else:
+            return 'day'
 
 
 def perform_aggregations(data, original_columns):
