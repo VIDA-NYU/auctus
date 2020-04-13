@@ -189,6 +189,18 @@ def check_temporal_resolution(data):
             return 'day'
 
 
+def _sum(series):
+    """Variant of numpy.sum() that returns nan for all-nan array.
+
+    That way it works similarly to numpy.mean(), numpy.max(), etc instead of
+    returning 0.
+    """
+    if np.any(~np.isnan(series)):
+        return np.sum(series)
+    else:
+        return np.nan
+
+
 def perform_aggregations(data, original_columns):
     """Performs group by on dataset after join, to keep the shape of the
     new, augmented dataset the same as the original, input data.
@@ -213,7 +225,7 @@ def perform_aggregations(data, original_columns):
             if ('int' in str(data.dtypes[column]) or
                     'float' in str(data.dtypes[column])):
                 agg_functions[column] = [
-                    pd.NamedAgg('mean', np.mean), pd.NamedAgg('sum', np.sum),
+                    pd.NamedAgg('mean', np.mean), pd.NamedAgg('sum', _sum),
                     pd.NamedAgg('max', np.max), pd.NamedAgg('min', np.min),
                 ]
             else:

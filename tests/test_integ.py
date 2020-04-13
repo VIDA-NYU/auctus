@@ -1184,7 +1184,7 @@ class TestAugment(DatamartTest):
                 'id,location,work,mean salary,sum salary,max salary,min salary',
                 [
                     '30,korea,True,150.0,300.0,200.0,100.0',
-                    '40,brazil,False,,0.0,,',
+                    '40,brazil,False,,,,',
                     '70,usa,True,600.0,600.0,600.0,600.0',
                     '80,canada,True,200.0,200.0,200.0,200.0',
                     '100,france,False,250.0,500.0,300.0,200.0',
@@ -1196,7 +1196,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '239 B',
+                        'approximateSize': '236 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1322,9 +1322,9 @@ class TestAugment(DatamartTest):
                 [
                     'AZ,1990.0,1990.0,1990.0,1990.0',
                     'PA,1990.0,1990.0,1990.0,1990.0',
-                    'SD,,0.0,,',
+                    'SD,,,,',
                     'NJ,1990.0,1990.0,1990.0,1990.0',
-                    'NH,,0.0,,',
+                    'NH,,,,',
                     'TX,1990.0,1990.0,1990.0,1990.0',
                     'MS,1990.0,1990.0,1990.0,1990.0',
                     'TN,1990.0,1990.0,1990.0,1990.0',
@@ -1334,18 +1334,18 @@ class TestAugment(DatamartTest):
                     'OH,1990.0,1990.0,1990.0,1990.0',
                     'OR,1990.0,1990.0,1990.0,1990.0',
                     'IL,1990.0,1990.0,1990.0,1990.0',
-                    'MT,,0.0,,',
+                    'MT,,,,',
                     'GA,1990.0,1990.0,1990.0,1990.0',
-                    'FL,,0.0,,',
-                    'HI,,0.0,,',
+                    'FL,,,,',
+                    'HI,,,,',
                     'CA,1990.0,1990.0,1990.0,1990.0',
                     'NC,1990.0,1990.0,1990.0,1990.0',
                     'UT,1991.0,1991.0,1991.0,1991.0',
                     'SC,1991.0,1991.0,1991.0,1991.0',
                     'LA,1990.0,1990.0,1990.0,1990.0',
-                    'RI,,0.0,,',
+                    'RI,,,,',
                     'PR,1990.0,1990.0,1990.0,1990.0',
-                    'DE,,0.0,,',
+                    'DE,,,,',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -1354,7 +1354,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '709 B',
+                        'approximateSize': '688 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
