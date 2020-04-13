@@ -7,7 +7,7 @@ import shutil
 import zipfile
 
 from datamart_core.common import hash_json
-from datamart_core.fscache import cache_get_or_set
+from datamart_core.fscache import cache_get_or_set, delete_cache_entry
 
 from .discovery import encode_dataset_id
 
@@ -76,7 +76,21 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None,
                         size_limit=10000000000,  # 10 GB
                     )
 
-                # TODO: Remove other formats from cache, outdated
+                # Remove other formats from the cache, now outdated
+                prefix = encode_dataset_id(dataset_id) + '_'
+                for name in os.listdir('/cache/datasets'):
+                    if name.startswith(prefix) and name.endswith('.cache'):
+                        key = name[:-6]
+                        try:
+                            delete_cache_entry(
+                                '/cache/datasets', key,
+                                timeout=300,
+                            )
+                        except TimeoutError:
+                            logger.error(
+                                "Couldn't lock outdated cached dataset: %r",
+                                key,
+                            )
 
             csv_key = encode_dataset_id(dataset_id) + '_' + 'csv'
             csv_path = csv_lock.enter_context(
