@@ -1,7 +1,7 @@
 id,work,salary
-40,false,100
+40,false,
 30,true,200
-70,true,100
+70,true,
 80,true,200
 100,false,300
 100,true,200

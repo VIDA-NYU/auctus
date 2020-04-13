@@ -1183,11 +1183,11 @@ class TestAugment(DatamartTest):
                 table.read().decode('utf-8'),
                 'id,location,work,mean salary,sum salary,max salary,min salary',
                 [
-                    '30,korea,True,150,300,200,100',
-                    '40,brazil,False,100,100,100,100',
-                    '70,usa,True,350,700,600,100',
-                    '80,canada,True,200,200,200,200',
-                    '100,france,False,250,500,300,200',
+                    '30,korea,True,150.0,300.0,200.0,100.0',
+                    '40,brazil,False,,0.0,,',
+                    '70,usa,True,600.0,600.0,600.0,600.0',
+                    '80,canada,True,200.0,200.0,200.0,200.0',
+                    '100,france,False,250.0,500.0,300.0,200.0',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -1196,7 +1196,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '216 B',
+                        'approximateSize': '239 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1904,7 +1904,7 @@ agg_metadata = {
     "name": "agg",
     "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
     'source': 'fernando',
-    "size": 116,
+    "size": 110,
     "nb_rows": 8,
     "nb_profiled_rows": 8,
     "columns": [
@@ -1955,8 +1955,9 @@ agg_metadata = {
             "name": "salary",
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
-            "mean": 225.0,
-            "stddev": lambda n: round(n, 3) == 156.125,
+            'missing_values_ratio': 0.25,
+            "mean": 200.0,
+            "stddev": lambda n: round(n, 3) == 150.0,
             "coverage": (
                 lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
                     {
@@ -1986,9 +1987,8 @@ agg_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
-    "sample": "id,work,salary\n40,false,100\n30,true,200\n70,true,100\n80,tr" +
-              "ue,200\n100,false,300\n100,true,200\n30,false,100\n70,false,6" +
-              "00\n",
+    "sample": "id,work,salary\n40,false,\n30,true,200\n70,true,\n80,true,200" +
+              "\n100,false,300\n100,true,200\n30,false,100\n70,false,600\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
