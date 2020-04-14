@@ -511,6 +511,8 @@ class Metadata(BaseHandler, GracefulHandler):
         result = enhance_metadata(result)
         return self.send_json(result)
 
+    head = get
+
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_AUGMENT_TIME.time()
