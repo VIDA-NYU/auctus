@@ -187,7 +187,7 @@ def FSLockShared(filepath, timeout=None):
 
 
 @contextlib.contextmanager
-def cache_get_or_set(cache_dir, key, create_function):
+def cache_get_or_set(cache_dir, key, create_function, cache_invalid=False):
     """This function is a file cache safe for multiple processes (locking).
 
     It is used like so::
@@ -210,25 +210,29 @@ def cache_get_or_set(cache_dir, key, create_function):
     temp_path = os.path.join(cache_dir, key + '.temp')
     metric_set = False
     while True:
-        with contextlib.ExitStack() as lock:
-            try:
-                lock.enter_context(FSLockShared(lock_path))
-            except FileNotFoundError:
-                pass
-            else:
-                if os.path.exists(entry_path):
-                    if not metric_set:
-                        metric_set = True
-                        PROM_CACHE_HITS.labels(cache_dir).inc(1)
+        if not cache_invalid:
+            with contextlib.ExitStack() as lock:
+                try:
+                    lock.enter_context(FSLockShared(lock_path))
+                except FileNotFoundError:
+                    pass
+                else:
+                    if os.path.exists(entry_path):
+                        if not metric_set:
+                            metric_set = True
+                            PROM_CACHE_HITS.labels(cache_dir).inc(1)
 
-                    # Update time on the file
-                    with open(lock_path, 'a'):
-                        pass
+                        # Update time on the file
+                        with open(lock_path, 'a'):
+                            pass
 
-                    # Entry exists and we have it locked, return it
-                    yield entry_path
-                    return
-                # Entry was removed while we waited -- we'll try creating
+                        # Entry exists and we have it locked, return it
+                        yield entry_path
+                        return
+                    # Entry was removed while we waited -- we'll try creating
+
+        # Whether we do it below or conflict, entry will have been re-created
+        cache_invalid = False
 
         with FSLockExclusive(lock_path):
             if os.path.exists(entry_path):

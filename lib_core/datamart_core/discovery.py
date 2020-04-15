@@ -272,7 +272,7 @@ class Discoverer(object):
                 except TimeoutError:
                     logger.error(
                         "Couldn't lock cached dataset for deletion: %r",
-                        name,
+                        key,
                     )
 
         # And the stored datasets
