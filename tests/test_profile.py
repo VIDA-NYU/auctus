@@ -135,11 +135,21 @@ class TestDates(unittest.TestCase):
 
 
 class TestTemporalResolutions(unittest.TestCase):
-    def test_check(self):
+    def test_pandas(self):
         def get_res(data):
             idx = pandas.Index(pandas.to_datetime(data))
             return get_temporal_resolution(idx)
 
+        self.do_checks(get_res)
+
+    def test_native(self):
+        def get_res(data):
+            values = [profile_types.parse_date(d) for d in data]
+            return get_temporal_resolution(values)
+
+        self.do_checks(get_res)
+
+    def do_checks(self, get_res):
         self.assertEqual(
             get_res([
                 '2020-01-14T21:05:02',

@@ -207,7 +207,7 @@ def get_temporal_resolution(values):
         if all_same(values, 'date', True):
             # All on a single day: consider it daily, it's less weird
             return 'day'
-        elif all_same(values, 'dayofweek'):
+        elif all_same(values, 'weekday', True):
             # All on the same day of the week
             return 'week'
         elif all_same(values, 'day'):
