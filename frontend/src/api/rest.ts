@@ -156,6 +156,7 @@ export interface Status {
   };
 }
 
-export async function status(): Promise<AxiosResponse<Status>> {
-  return api.get('/statistics');
+export async function status(): Promise<Status> {
+  const response = await api.get('/statistics');
+  return response.data;
 }

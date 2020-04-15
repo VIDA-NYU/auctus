@@ -30,14 +30,7 @@ class Statistics extends React.PureComponent<{}, StatisticsState> {
 
   async fetchStatus() {
     try {
-      const response = await api.status();
-      if (response.status === 200) {
-        this.setState({ status: response.data, failed: undefined });
-      } else {
-        this.setState({
-          failed: `Error ${response.status}: ${response.statusText}`,
-        });
-      }
+      this.setState({ status: await api.status(), failed: undefined });
     } catch (e) {
       this.setState({ failed: `${e}` });
     }
