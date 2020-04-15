@@ -184,6 +184,42 @@ def get_spatial_ranges(values):
     return ranges
 
 
+def get_temporal_resolution(values):
+    """Returns the resolution of the temporal attribute.
+    """
+
+    def all_same(data, attr, call=False):
+        if not call:
+            return len(set(getattr(x, attr) for x in data)) <= 1
+        else:
+            return len(set(getattr(x, attr)() for x in data)) <= 1
+
+    if not all_same(values, 'second'):
+        # Happen on different seconds
+        return 'second'
+    elif not all_same(values, 'minute'):
+        # Happen on different minutes
+        return 'minute'
+    elif not all_same(values, 'hour'):
+        # Happen on different hours
+        return 'hour'
+    else:
+        if all_same(values, 'date', True):
+            # All on a single day: consider it daily, it's less weird
+            return 'day'
+        elif all_same(values, 'dayofweek'):
+            # All on the same day of the week
+            return 'week'
+        elif all_same(values, 'day'):
+            # All on the same day of the month
+            if all_same(values, 'month'):
+                return 'year'
+            else:
+                return 'month'
+        else:
+            return 'day'
+
+
 def normalize_latlong_column_name(name, *substrings):
     name = name.lower()
     for substr in substrings:

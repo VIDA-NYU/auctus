@@ -12,6 +12,7 @@ import uuid
 
 from datamart_materialize.d3m import d3m_metadata
 from datamart_materialize import types
+from datamart_profiler import get_temporal_resolution
 
 
 logger = logging.getLogger(__name__)
@@ -133,8 +134,11 @@ def match_column_temporal_resolutions(index_1, index_2):
     """Matches the resolutions between the dataset indices.
     """
 
-    resolution_1 = check_temporal_resolution(index_1)
-    resolution_2 = check_temporal_resolution(index_2)
+    if not (index_1.is_all_dates and index_2.is_all_dates):
+        return lambda idx: idx
+
+    resolution_1 = get_temporal_resolution(index_1)
+    resolution_2 = get_temporal_resolution(index_2)
     if (temporal_resolutions_priorities[resolution_1] >
             temporal_resolutions_priorities[resolution_2]):
         # Change resolution of second index to the first's
@@ -152,45 +156,6 @@ def match_column_temporal_resolutions(index_1, index_2):
             return lambda idx: idx.strftime(key)
         else:
             return lambda idx: idx.map(key)
-
-
-def check_temporal_resolution(data):
-    """Returns the resolution of the temporal attribute.
-    """
-
-    if not data.is_all_dates:
-        return None
-
-    def all_same(data, attr, call=False):
-        if not call:
-            return len(set(getattr(x, attr) for x in data)) <= 1
-        else:
-            return len(set(getattr(x, attr)() for x in data)) <= 1
-
-    if not all_same(data, 'second'):
-        # Happen on different seconds
-        return 'second'
-    elif not all_same(data, 'minute'):
-        # Happen on different minutes
-        return 'minute'
-    elif not all_same(data, 'hour'):
-        # Happen on different hours
-        return 'hour'
-    else:
-        if all_same(data, 'date', True):
-            # All on a single day: consider it daily, it's less weird
-            return 'day'
-        elif all_same(data, 'dayofweek'):
-            # All on the same day of the week
-            return 'week'
-        elif all_same(data, 'day'):
-            # All on the same day of the month
-            if all_same(data, 'month'):
-                return 'year'
-            else:
-                return 'month'
-        else:
-            return 'day'
 
 
 def _sum(series):
