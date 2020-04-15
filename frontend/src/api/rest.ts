@@ -46,9 +46,11 @@ function parseQueryString(q?: string): string[] {
 export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   const spec: QuerySpec = {
     keywords: parseQueryString(q.query),
-    source: q.sources && q.sources.length > 0 ? q.sources : DEFAULT_SOURCES,
     variables: q.filters ? [...q.filters] : [],
   };
+  if (q.sources && q.sources.length > 0) {
+    spec.source = q.sources;
+  }
 
   const formData = new FormData();
   formData.append('query', JSON.stringify(spec));
