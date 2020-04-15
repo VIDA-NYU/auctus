@@ -59,7 +59,11 @@ temporal_resolution_keys = {
         (dt - pd.Timedelta(days=dt.dayofweek)).strftime('%Y-%m-%d')
     ),
     'month': '%Y-%m',
+    'year': '%Y',
 }
+
+
+assert set(temporal_resolutions) == temporal_resolution_keys.keys()
 
 
 def convert_data_types(data, columns, columns_metadata, drop=False):
