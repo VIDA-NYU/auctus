@@ -35,7 +35,7 @@ datamart_augmentation = {path = "./lib_augmentation"}
 datamart_core = {path = "./lib_core"}
 datamart-coordinator-service = {path = "./coordinator"}
 datamart-profiler-service = {path = "./profiler"}
-datamart-query-service = {path = "./query"}
+datamart-api-service = {path = "./apiserver"}
 datamart-noaa_discovery-service = {path = "./discovery/noaa"}
 datamart-socrata-discovery-service = {path = "./discovery/socrata"}
 

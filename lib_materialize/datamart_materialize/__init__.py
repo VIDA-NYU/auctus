@@ -54,7 +54,7 @@ def _direct_download(url, writer, size_limit=None):
 
 
 def _proxy_download(dataset_id, writer, proxy, size_limit=None):
-    """Use a Datamart query service to materialize for us.
+    """Use a Datamart service to materialize for us.
 
     This is used when the materializer is not available locally. We request
     that the Datamart handle materialization, and then we download from there.

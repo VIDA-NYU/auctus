@@ -61,7 +61,7 @@ class BaseHandler(RequestHandler):
         return template.render(
             handler=self,
             current_user=self.current_user,
-            query_host=os.environ.get('QUERY_HOST', ''),
+            api_url=os.environ.get('API_URL', ''),
             **kwargs)
 
     def get_json(self):

@@ -1,6 +1,6 @@
 import unittest
 
-from query.search import parse_query
+from apiserver.search import parse_query
 
 
 class TestSearch(unittest.TestCase):

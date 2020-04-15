@@ -56,7 +56,7 @@ class DatamartTest(DataTestCase):
     def _request(self, method, url, schema=None, check_status=True, **kwargs):
         response = requests.request(
             method,
-            os.environ['QUERY_HOST'] + url,
+            os.environ['API_URL'] + url,
             **kwargs
         )
         for _ in range(5):
@@ -65,7 +65,7 @@ class DatamartTest(DataTestCase):
             time.sleep(0.5)
             response = requests.request(
                 method,
-                os.environ['QUERY_HOST'] + url,
+                os.environ['API_URL'] + url,
                 **kwargs
             )
         else:
@@ -838,7 +838,7 @@ class TestDownload(DatamartTest):
             df = datamart_materialize.download(
                 'datamart.test.agg',
                 None,
-                os.environ['QUERY_HOST'],
+                os.environ['API_URL'],
                 'pandas',
             )
             self.assertEqual(df.shape, (8, 3))
@@ -846,7 +846,7 @@ class TestDownload(DatamartTest):
             datamart_materialize.download(
                 'datamart.test.geo',
                 os.path.join(tempdir, 'geo.csv'),
-                os.environ['QUERY_HOST'],
+                os.environ['API_URL'],
             )
             assert_same_files(
                 os.path.join(tempdir, 'geo.csv'),
@@ -856,7 +856,7 @@ class TestDownload(DatamartTest):
             datamart_materialize.download(
                 'datamart.test.agg',
                 os.path.join(tempdir, 'agg'),
-                os.environ['QUERY_HOST'],
+                os.environ['API_URL'],
                 'd3m',
             )
             assert_same_files(

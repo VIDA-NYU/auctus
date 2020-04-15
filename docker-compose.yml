@@ -63,13 +63,13 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     environment:
-      - QUERY_HOST=${QUERY_HOST}
+      - API_URL=${API_URL}
     ports:
       - 8001:80
-  query:
+  apiserver:
     build:
       context: .
-      dockerfile: query/Dockerfile
+      dockerfile: apiserver/Dockerfile
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
@@ -81,13 +81,13 @@ services:
       - NOMINATIM_URL=${NOMINATIM_URL}
     ports:
       - 8002
-    # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m query & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m apiserver & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
       - ./volumes/cache:/cache
     mem_limit: 8000m
-  querylb:
+  apilb:
     build:
       context: ./docker
       dockerfile: haproxy.dockerfile
@@ -110,7 +110,7 @@ services:
       - AMQP_HOST=rabbitmq
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
-      - QUERY_HOST=${QUERY_HOST}
+      - API_URL=${API_URL}
       - MAX_CACHE_BYTES=100000000000  # 100 GB
     # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     ports:

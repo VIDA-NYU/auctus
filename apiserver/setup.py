@@ -19,14 +19,14 @@ req = [
     'datamart_materialize',
     'datamart_profiler',
 ]
-setup(name='datamart-query-service',
+setup(name='datamart-api-service',
       version='0.0',
-      packages=['query'],
+      packages=['apiserver'],
       entry_points={
           'console_scripts': [
-              'query = query.web:main']},
+              'datamart-apiserver = apiserver.web:main']},
       install_requires=req,
-      description="Query service of Datamart",
+      description="API service of Datamart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -37,7 +37,7 @@ setup(name='datamart-query-service',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Query service of Datamart",
+      long_description="API service of Datamart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
