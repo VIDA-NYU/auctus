@@ -34,7 +34,6 @@ test:
       # Update the base image (maybe)
       chmod 644 poetry.lock docker/install_deps.py
       touch -t 200001010000.00 poetry.lock docker/install_deps.py
-      ls -l poetry.lock docker/install_deps.py && shasum -a 1 poetry.lock docker/install_deps.py
       docker build -t datamart_base . \
         --cache-from=$CI_REGISTRY_IMAGE/base \
         -f base.Dockerfile
@@ -49,8 +48,8 @@ test:
       touch -t 200001010000.00 frontend/package.json frontend/package-lock.json
       docker build -t datamart_npm . \
         --cache-from=$CI_REGISTRY_IMAGE/npm \
-        -f coordinator/Dockerfile \
-        --target=frontend-build
+        -f frontend/Dockerfile \
+        --target=build
       # Push the updated image to the registry (might be no-op)
       docker tag datamart_npm $CI_REGISTRY_IMAGE/npm
       docker push $CI_REGISTRY_IMAGE/npm
@@ -91,7 +90,7 @@ test:
       fi
     - docker-compose up -d coordinator lazo
     - sleep 10
-    - docker-compose up -d profiler query querylb test_discoverer
+    - docker-compose up -d profiler apiserver apilb test_discoverer
     - |
       # Wait for profiling to end
       slept=0; while [ $slept -le 180 -a $(curl -s -o /dev/null -w "%{http_code}" http://docker:9200/datamart/_doc/datamart.test.basic) != 200 ]; do sleep 5; slept=$((slept + 5)); done
@@ -108,8 +107,8 @@ test:
     # Run the tests
     - |
       # Run tests
-      if ! python -Wd -m coverage run --branch tests/__main__.py; then docker-compose logs query; docker-compose logs lazo; exit 1; fi
-    - docker-compose logs query
+      if ! python -Wd -m coverage run --branch tests/__main__.py; then docker-compose logs apiserver; docker-compose logs lazo; exit 1; fi
+    - docker-compose logs apiserver
     - docker-compose logs lazo
 
     # Run the frontend tests

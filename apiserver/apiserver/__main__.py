@@ -1,4 +1,4 @@
-from query.web import main
+from apiserver.web import main
 
 
 if __name__ == '__main__':

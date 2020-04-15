@@ -23,10 +23,10 @@ data:
       metrics_path: /api/metrics
       static_configs:
       - targets: ["rabbitmq-scrape:15672"]
-    - job_name: query
+    - job_name: apiserver
       dns_sd_configs:
       - names:
-        - query-scrape
+        - apiserver-scrape
         type: "A"
         port: 8000
         refresh_interval: 60s
@@ -92,14 +92,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: query-scrape
+  name: apiserver-scrape
   labels:
     app: datamart
     what: monitoring
 spec:
   selector:
     app: datamart
-    what: query
+    what: apiserver
   clusterIP: None
   ports:
   - protocol: TCP
@@ -233,12 +233,6 @@ spec:
       - name: config
         configMap:
           name: monitoring
-
-
-
-
-
-
 ---
 apiVersion: v1
 kind: Service

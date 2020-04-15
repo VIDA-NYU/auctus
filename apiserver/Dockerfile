@@ -22,10 +22,10 @@ COPY lib_augmentation lib_augmentation
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_augmentation
 COPY lib_profiler lib_profiler
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_profiler
-COPY query query
-RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/query
+COPY apiserver apiserver
+RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/apiserver
 ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
 ENTRYPOINT ["/tini", "--"]
-CMD ["query"]
+CMD ["datamart-apiserver"]

@@ -756,7 +756,7 @@ class Application(GracefulApplication):
             try:
                 # Get counts from coordinator
                 response = await http_client.fetch(
-                    'http://coordinator:8001/api/statistics',
+                    'http://coordinator:8003/api/statistics',
                 )
                 statistics = json.loads(response.body.decode('utf-8'))
             except Exception as e:

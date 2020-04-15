@@ -111,6 +111,34 @@ toml = ["toml"]
 
 [[package]]
 category = "main"
+description = "API service of Datamart"
+develop = true
+name = "datamart-api-service"
+optional = false
+python-versions = "*"
+version = "0.0"
+
+[package.dependencies]
+Distance = "*"
+aio-pika = "*"
+datamart_augmentation = "*"
+datamart_core = "*"
+datamart_materialize = "*"
+datamart_profiler = "*"
+elasticsearch = ">=7.0,<8.0"
+lazo-index-service = "0.4"
+prometheus-async = "*"
+prometheus_client = "*"
+redis = ">=3.4,<4.0"
+tornado = ">=5.0"
+
+[package.source]
+reference = ""
+type = "directory"
+url = "apiserver"
+
+[[package]]
+category = "main"
 description = "Augmentation functions for Datamart services"
 develop = true
 name = "datamart-augmentation"
@@ -253,34 +281,6 @@ xlrd = "*"
 reference = ""
 type = "directory"
 url = "profiler"
-
-[[package]]
-category = "main"
-description = "Query service of Datamart"
-develop = true
-name = "datamart-query-service"
-optional = false
-python-versions = "*"
-version = "0.0"
-
-[package.dependencies]
-Distance = "*"
-aio-pika = "*"
-datamart_augmentation = "*"
-datamart_core = "*"
-datamart_materialize = "*"
-datamart_profiler = "*"
-elasticsearch = ">=7.0,<8.0"
-lazo-index-service = "0.4"
-prometheus-async = "*"
-prometheus_client = "*"
-redis = ">=3.4,<4.0"
-tornado = ">=5.0"
-
-[package.source]
-reference = ""
-type = "directory"
-url = "query"
 
 [[package]]
 category = "main"
@@ -911,7 +911,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "fa38e07f3c7a31c0527ecebfc1d6ceee3919dc9beec8f6925c70b1175a474e23"
+content-hash = "de5f34f959c36c5f9112ec649826e899eef370256eefcc9f8bf5f742e30085e7"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -984,6 +984,7 @@ coverage = [
     {file = "coverage-5.0.3-cp39-cp39m-win_amd64.whl", hash = "sha256:da93027835164b8223e8e5af2cf902a4c80ed93cb0909417234f4a9df3bcd9af"},
     {file = "coverage-5.0.3.tar.gz", hash = "sha256:77afca04240c40450c331fa796b3eab6f1e15c5ecf8bf2b8bee9706cd5452fef"},
 ]
+datamart-api-service = []
 datamart-augmentation = []
 datamart-coordinator-service = []
 datamart-core = []
@@ -991,7 +992,6 @@ datamart-materialize = []
 datamart-noaa-discovery-service = []
 datamart-profiler = []
 datamart-profiler-service = []
-datamart-query-service = []
 datamart-socrata-discovery-service = []
 distance = [
     {file = "Distance-0.1.3.tar.gz", hash = "sha256:60807584f5b6003f5c521aa73f39f51f631de3be5cccc5a1d67166fcbf0d4551"},
