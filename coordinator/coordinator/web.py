@@ -166,7 +166,7 @@ def main():
     logger.info("Startup: coordinator %s", os.environ['DATAMART_VERSION'])
 
     app = make_app()
-    app.listen(8001, xheaders=True, max_buffer_size=2147483648)
+    app.listen(8003, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
     check_cache()  # Schedules itself to run periodically
     loop.start()

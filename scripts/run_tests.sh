@@ -7,13 +7,13 @@ cd "$(dirname "$(dirname "$0")")"
 set -eux
 
 # Run frontend tests
-docker build -t datamart_coordinator_npm -f coordinator/Dockerfile --target frontend-build .
-docker run -ti --name datamart_npm_test --rm datamart_coordinator_npm sh -c "CI=true npm run test"
+docker build -t datamart_frontend_npm -f frontend/Dockerfile --target build .
+docker run -ti --name datamart_npm_test --rm datamart_frontend_npm sh -c "CI=true npm run test"
 
 # Re-build and re-start services
-docker-compose build --build-arg version=v0.0 coordinator profiler query test_discoverer
+docker-compose build --build-arg version=v0.0 coordinator profiler query frontend test_discoverer
 docker-compose up -d coordinator
-docker-compose up -d --force-recreate profiler query querylb
+docker-compose up -d --force-recreate profiler query querylb frontend
 
 # XXX: To run with debugger: remove 'query' up here, use 'read' to block, and
 # run query container like so:

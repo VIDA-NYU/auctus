@@ -58,24 +58,14 @@ services:
     volumes:
       - ./volumes/datasets:/datasets
       - ./volumes/cache:/cache
-  coordinator:
+  frontend:
     build:
       context: .
-      dockerfile: coordinator/Dockerfile
+      dockerfile: frontend/Dockerfile
     environment:
-      - ELASTICSEARCH_HOSTS=elasticsearch:9200
-      - AMQP_HOST=rabbitmq
-      - AMQP_USER=${AMQP_USER}
-      - AMQP_PASSWORD=${AMQP_PASSWORD}
       - QUERY_HOST=${QUERY_HOST}
-      - MAX_CACHE_BYTES=100000000000  # 100 GB
-    # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
     ports:
-      - 8001:8001
-    volumes:
-      # CI: - ./cov:/cov
-      - ./volumes/datasets:/datasets
-      - ./volumes/cache:/cache
+      - 8001:80
   query:
     build:
       context: .
@@ -111,6 +101,24 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 10s
       retries: 2
+  coordinator:
+    build:
+      context: .
+      dockerfile: coordinator/Dockerfile
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - AMQP_HOST=rabbitmq
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - QUERY_HOST=${QUERY_HOST}
+      - MAX_CACHE_BYTES=100000000000  # 100 GB
+    # CI: command: ["bash", "-c", "set -m; python -Wd -m coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS; cp .coverage* /cov/"]
+    ports:
+      - 8003:8003
+    volumes:
+      # CI: - ./cov:/cov
+      - ./volumes/datasets:/datasets
+      - ./volumes/cache:/cache
   profiler:
     build:
       context: .

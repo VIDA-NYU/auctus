@@ -34,7 +34,6 @@ test:
       # Update the base image (maybe)
       chmod 644 poetry.lock docker/install_deps.py
       touch -t 200001010000.00 poetry.lock docker/install_deps.py
-      ls -l poetry.lock docker/install_deps.py && shasum -a 1 poetry.lock docker/install_deps.py
       docker build -t datamart_base . \
         --cache-from=$CI_REGISTRY_IMAGE/base \
         -f base.Dockerfile
@@ -49,8 +48,8 @@ test:
       touch -t 200001010000.00 frontend/package.json frontend/package-lock.json
       docker build -t datamart_npm . \
         --cache-from=$CI_REGISTRY_IMAGE/npm \
-        -f coordinator/Dockerfile \
-        --target=frontend-build
+        -f frontend/Dockerfile \
+        --target=build
       # Push the updated image to the registry (might be no-op)
       docker tag datamart_npm $CI_REGISTRY_IMAGE/npm
       docker push $CI_REGISTRY_IMAGE/npm
