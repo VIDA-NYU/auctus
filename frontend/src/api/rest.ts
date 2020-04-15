@@ -163,7 +163,6 @@ export async function status(): Promise<Status> {
   return response.data;
 }
 
-export async function listSources(): Promise<string[]> {
-  const response = await status();
-  return Object.keys(response.sources_counts);
-}
+export let sources: Promise<string[]> = status().then(response =>
+  Object.keys(response.sources_counts)
+);

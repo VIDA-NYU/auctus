@@ -63,12 +63,13 @@ class SearchApp extends React.Component<{}, AppState> {
     };
   }
 
-  async componentDidMount() {
+  componentDidMount() {
     this.fetchSources();
   }
+
   async fetchSources() {
     try {
-      this.setState({ sources: await api.listSources() });
+      this.setState({ sources: await api.sources });
     } catch (e) {
       console.error('Unable to fetch list of sources:', e);
     }
