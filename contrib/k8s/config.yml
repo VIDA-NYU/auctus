@@ -8,7 +8,7 @@ metadata:
 data:
   elasticsearch.cluster_name: "docker-cluster"
   elasticsearch.heap_size: "4g"
-  query_host: http://192.168.99.100:30081
+  api_url: http://192.168.99.100:30081
   redis.conf: |
     maxmemory 500mb
     maxmemory-policy allkeys-lru

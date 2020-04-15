@@ -79,14 +79,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: query
+  name: apiserver
   labels:
     app: datamart
-    what: query
+    what: apiserver
 spec:
   selector:
     app: datamart
-    what: query
+    what: apiserver
   type: NodePort
   ports:
   - protocol: TCP

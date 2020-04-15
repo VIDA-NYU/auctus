@@ -118,10 +118,10 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: coordinator
+  name: frontend
   labels:
     app: datamart
-    what: coordinator
+    what: frontend
 spec:
   replicas: 1
   strategy:
@@ -133,56 +133,28 @@ spec:
     metadata:
       labels:
         app: datamart
-        what: coordinator
+        what: frontend
     spec:
       containers:
       - name: web
-        image: datamart_coordinator
+        image: datamart_frontend
         imagePullPolicy: IfNotPresent
         env:
-        - name: ELASTICSEARCH_HOSTS
-          value: elasticsearch:9200
-        - name: AMQP_HOST
-          value: rabbitmq
-        - name: AMQP_USER
-          valueFrom:
-            secretKeyRef:
-              name: secrets
-              key: amqp.user
-        - name: AMQP_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: secrets
-              key: amqp.password
-        - name: QUERY_HOST
+        - name: API_URL
           valueFrom:
             configMapKeyRef:
               name: config
-              key: query_host
-        - name: MAX_CACHE_BYTES
-          value: "100000000000"  # 100 GB
+              key: api_url
         ports:
         - containerPort: 8001
-        volumeMounts:
-        - mountPath: /datasets
-          name: datasets
-        - mountPath: /cache
-          name: cache
-      volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
-      - name: cache
-        persistentVolumeClaim:
-          claimName: cache
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: query
+  name: apiserver
   labels:
     app: datamart
-    what: query
+    what: apiserver
 spec:
   replicas: 4
   strategy:
@@ -194,11 +166,11 @@ spec:
     metadata:
       labels:
         app: datamart
-        what: query
+        what: apiserver
     spec:
       containers:
       - name: web
-        image: datamart_query
+        image: datamart_apiserver
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
@@ -242,6 +214,67 @@ spec:
         persistentVolumeClaim:
           claimName: cache
       terminationGracePeriodSeconds: 600
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: coordinator
+  labels:
+    app: datamart
+    what: coordinator
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: coordinator
+    spec:
+      containers:
+      - name: web
+        image: datamart_coordinator
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: elasticsearch:9200
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: AMQP_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: AMQP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        - name: API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: api_url
+        - name: MAX_CACHE_BYTES
+          value: "100000000000"  # 100 GB
+        ports:
+        - containerPort: 8003
+        volumeMounts:
+        - mountPath: /datasets
+          name: datasets
+        - mountPath: /cache
+          name: cache
+      volumes:
+      - name: datasets
+        persistentVolumeClaim:
+          claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
