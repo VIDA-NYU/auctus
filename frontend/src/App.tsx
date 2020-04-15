@@ -159,6 +159,8 @@ class SearchApp extends React.Component<{}, AppState> {
                 results: response.data.results,
               },
             });
+          } else {
+            this.setState({ searchState: SearchState.SEARCH_FAILED });
           }
         })
         .catch(() => {
