@@ -63,7 +63,7 @@ class AugmentationOptions extends React.PureComponent<
       .map(c => +c[0]); // cast index back to number
   }
 
-  async submitAugmentationForm(hit: SearchResult) {
+  submitAugmentationForm(hit: SearchResult) {
     // find indexes of columns that are checked
     const checkedIndexes = this.findIndexesOfCheckedColumn();
 

@@ -116,7 +116,7 @@ class SearchApp extends React.Component<{}, AppState> {
     this.setState({ filters: [...filters] });
   }
 
-  async submitQuery() {
+  submitQuery() {
     if (this.validQuery()) {
       const filterVariables = this.state.filters
         .filter(f => f.type !== FilterType.RELATED_FILE)

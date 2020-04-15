@@ -16,7 +16,7 @@ class Statistics extends React.PureComponent<{}, StatisticsState> {
     this.state = {};
   }
 
-  async componentDidMount() {
+  componentDidMount() {
     this.fetchStatus();
     // update status every so often
     this.timer = setInterval(() => {

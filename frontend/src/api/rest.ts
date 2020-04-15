@@ -43,9 +43,7 @@ function parseQueryString(q?: string): string[] {
   return q ? q.split(' ').filter(t => t.length > 0) : [];
 }
 
-export async function search(
-  q: SearchQuery
-): Promise<Response<SearchResponse>> {
+export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   const spec: QuerySpec = {
     keywords: parseQueryString(q.query),
     source: q.sources && q.sources.length > 0 ? q.sources : DEFAULT_SOURCES,
@@ -117,7 +115,7 @@ export interface UploadData {
   file?: File;
 }
 
-export async function upload(data: UploadData) {
+export function upload(data: UploadData) {
   const formData = new FormData();
   formData.append('name', data.name);
 
