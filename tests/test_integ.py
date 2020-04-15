@@ -2187,6 +2187,7 @@ daily_metadata = {
                 'http://schema.org/DateTime',
             ],
             'num_distinct_values': 30,
+            'temporal_resolution': 'day',
             'mean': lambda n: round(n) == 1557230400.0,
             'stddev': lambda n: round(n, 2) == 747830.14,
             'coverage': (
@@ -2256,6 +2257,7 @@ hourly_metadata = {
                 'http://schema.org/DateTime',
             ],
             'num_distinct_values': 52,
+            'temporal_resolution': 'hour',
             'mean': lambda n: round(n) == 1560389398.0,
             'stddev': lambda n: round(n, 2) == 54027.44,
             'coverage': (

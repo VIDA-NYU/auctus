@@ -48,6 +48,8 @@ datamart:
             type: float
           num_distinct_values:
             type: long
+          temporal_resolution:
+            type: keyword
           # Numerical summaries
           mean:
             type: float
@@ -131,6 +133,8 @@ datamart_columns:
         type: float
       num_distinct_values:
         type: long
+      temporal_resolution:
+        type: keyword
       # Numerical summaries
       mean:
         type: float

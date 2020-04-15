@@ -562,6 +562,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     if ranges:
                         column_meta['coverage'] = ranges
 
+                # Get temporal resolution
+                column_meta['temporal_resolution'] = get_temporal_resolution(
+                    semantic_types_dict[types.DATE_TIME],
+                )
+
                 # Compute histogram from temporal values
                 if plots:
                     counts, edges = numpy.histogram(timestamps, bins=10)
