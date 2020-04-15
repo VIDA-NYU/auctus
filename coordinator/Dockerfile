@@ -1,14 +1,3 @@
-FROM node:12-buster AS frontend-build
-
-RUN mkdir /src
-WORKDIR /src
-COPY frontend/package.json frontend/package-lock.json /src/
-RUN npm install
-#COPY frontend/prettier.config.js frontend/public frontend/README.md frontend/src frontend/tsconfig.json frontend/tslint.json /src/
-COPY frontend /src/
-RUN npm run build
-
-
 FROM python:3.7
 
 ENV TINI_VERSION v0.18.0
@@ -31,19 +20,8 @@ COPY lib_materialize lib_materialize
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_materialize
 COPY coordinator coordinator
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/coordinator
-COPY --from=frontend-build /src/build /usr/src/app/coordinator/coordinator/frontend
-RUN mv coordinator/coordinator/frontend/static/css/* coordinator/coordinator/static/css/ && \
-    rmdir coordinator/coordinator/frontend/static/css && \
-    mv coordinator/coordinator/frontend/static/js/* coordinator/coordinator/static/js/ && \
-    rmdir coordinator/coordinator/frontend/static/js && \
-    ls coordinator/coordinator/frontend/static && \
-    mv coordinator/coordinator/frontend/static/* coordinator/coordinator/static/ && \
-    rmdir coordinator/coordinator/frontend/static && \
-    mv coordinator/coordinator/frontend/index.html coordinator/coordinator/templates/search.html && \
-    mv coordinator/coordinator/frontend/* coordinator/coordinator/static/ && \
-    rmdir coordinator/coordinator/frontend
 ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
 ENTRYPOINT ["/tini", "--"]
-CMD ["sh", "-c", "sed -i 's|<meta name=\"api_url\"[^>]\\+>|<meta name=\"api_url\" content=\"'\"$QUERY_HOST\"'\">|' coordinator/coordinator/templates/search.html && coordinator"]
+CMD ["coordinator"]

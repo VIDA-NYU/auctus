@@ -53,43 +53,6 @@ class BaseHandler(RequestHandler):
         return jinja2.Markup(context['handler'].xsrf_form_html())
     template_env.globals['xsrf_form_html'] = _tpl_xsrf_form_html
 
-    template_env.globals['islist'] = lambda v: isinstance(v, (list, tuple))
-    template_env.globals['isdict'] = lambda v: isinstance(v, dict)
-
-    def _tpl_json_table(table):
-        lines = [[]]
-
-        def to_lines(item):
-            if isinstance(item, dict):
-                if item:
-                    items = item.items()
-                else:
-                    lines[-1].append([1, '{}'])
-                    lines.append([])
-                    return 1
-            elif isinstance(item, (list, tuple)):
-                if item:
-                    items = enumerate(item)
-                else:
-                    lines[-1].append([1, '[]'])
-                    lines.append([])
-                    return 1
-            else:
-                lines[-1].append([1, item])
-                lines.append([])
-                return 1
-            l = 0
-            for k, v in items:
-                key = [1, k]
-                lines[-1].append(key)
-                key[0] = to_lines(v)
-                l += key[0]
-            return l
-
-        to_lines(table)
-        return lines[:-1]
-    template_env.globals['json_table'] = _tpl_json_table
-
     def set_default_headers(self):
         self.set_header('Server', 'Auctus/%s' % os.environ['DATAMART_VERSION'])
 
@@ -122,12 +85,9 @@ class BaseHandler(RequestHandler):
         return self.application.coordinator
 
 
-# FIXME: Get rid of old views
-
-
-class Status(BaseHandler):
+class Index(BaseHandler):
     def get(self):
-        self.render('system_status.html')
+        self.render('index.html')
 
 
 class Statistics(BaseHandler):
@@ -141,146 +101,6 @@ class Statistics(BaseHandler):
             'recent_discoveries': self.coordinator.recent_discoveries,
             'sources_counts': self.coordinator.sources_counts,
         })
-
-
-class Search(BaseHandler):
-    def get(self):
-        self.render(
-            'search.html',
-            sources=sorted(self.coordinator.sources_counts),
-        )
-
-
-class Upload(BaseHandler):
-    def get(self):
-        self.render('upload.html')
-
-    async def post(self):
-        if 'file' in self.request.files:
-            file = self.request.files['file'][0]
-            metadata = dict(
-                filename=file.filename,
-                name=self.get_body_argument('name', None),
-                source='upload',
-                materialize=dict(identifier='datamart.upload',
-                                 date=datetime.utcnow().isoformat() + 'Z'),
-            )
-            description = self.get_body_argument('description', None)
-            if description:
-                metadata['description'] = description
-            dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
-
-            # Write file to shared storage
-            dataset_dir = os.path.join('/datasets', dataset_id)
-            os.mkdir(dataset_dir)
-            try:
-                with open(os.path.join(dataset_dir, 'main.csv'), 'wb') as fp:
-                    fp.write(file.body)
-            except Exception:
-                shutil.rmtree(dataset_dir)
-                raise
-        elif self.get_body_argument('address', None):
-            # Check the URL
-            address = self.get_body_argument('address')
-            response = await self.http_client.fetch(address, raise_error=False)
-            if response.code != 200:
-                return self.render(
-                    'upload.html',
-                    error="Error {} {}".format(response.code, response.reason),
-                )
-
-            # Metadata with 'direct_url' in materialization info
-            metadata = dict(
-                name=self.get_body_argument('name', None),
-                source='upload',
-                materialize=dict(identifier='datamart.url',
-                                 direct_url=address,
-                                 date=datetime.utcnow().isoformat() + 'Z'),
-            )
-            description = self.get_body_argument('description', None)
-            if description:
-                metadata['description'] = description
-            dataset_id = 'datamart.url.%s' % (
-                uuid.uuid4().hex
-            )
-        else:
-            return self.render('upload.html', error="No file entered")
-
-        # Publish to the profiling queue
-        await self.coordinator.profile_exchange.publish(
-            json2msg(
-                dict(
-                    id=dataset_id,
-                    metadata=metadata,
-                ),
-                # Lower priority than on-demand datasets, but higher than base
-                priority=1,
-            ),
-            '',
-        )
-
-        return self.redirect('/')
-
-
-def format_size(bytes):
-    units = [' B', ' kB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB']
-
-    i = 0
-    while bytes > 1000 and i + 1 < len(units):
-        bytes = bytes / 1000.0
-        i += 1
-
-    return '%.1f%s' % (bytes, units[i])
-
-
-class Dataset(BaseHandler):
-    def get(self, dataset_id):
-        # Get metadata from Elasticsearch
-        es = self.application.elasticsearch
-        try:
-            metadata = es.get('datamart', dataset_id)['_source']
-        except elasticsearch.NotFoundError:
-            raise HTTPError(404)
-        # readable format for temporal and numerical coverage
-        for column in metadata['columns']:
-            if 'coverage' in column:
-                if types.DATE_TIME in column['semantic_types']:
-                    column['temporal coverage'] = []
-                    for range_ in column['coverage']:
-                        from_ = \
-                            datetime.utcfromtimestamp(int(range_['range']['gte'])).\
-                            strftime('%Y-%m-%d %H:%M')
-                        to_ = \
-                            datetime.utcfromtimestamp(int(range_['range']['lte'])).\
-                            strftime('%Y-%m-%d %H:%M')
-                        column['temporal coverage'].append({
-                            'from': from_,
-                            'to': to_
-                        })
-                elif types.INTEGER in column['structural_type']:
-                    column['numerical coverage'] = [
-                        {'from': int(range_['range']['gte']),
-                         'to': int(range_['range']['lte'])
-                         } for range_ in column['coverage']
-                    ]
-                else:
-                    column['numerical coverage'] = [
-                        {'from': float(range_['range']['gte']),
-                         'to': float(range_['range']['lte'])
-                         } for range_ in column['coverage']
-                    ]
-                del column['coverage']
-        materialize = metadata.pop('materialize', {})
-        discoverer = materialize.pop('identifier', '(unknown)')
-        spatial_coverage = metadata.pop('spatial_coverage', [])
-        sample = metadata.pop('sample', None)
-        if sample:
-            sample = list(csv.reader(io.StringIO(sample)))
-        self.render('dataset.html',
-                    dataset_id=dataset_id, discoverer=discoverer,
-                    metadata=metadata, materialize=materialize,
-                    spatial_coverage=spatial_coverage, sample=sample,
-                    size=format_size(metadata['size']))
 
 
 class Application(tornado.web.Application):
@@ -329,7 +149,7 @@ def make_app(debug=False):
     return Application(
         [
             URLSpec('/api/statistics', Statistics),
-            URLSpec('/.*', Search, name='search'),
+            URLSpec('/', Index, name='index'),
         ],
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
