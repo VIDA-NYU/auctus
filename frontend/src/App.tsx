@@ -47,8 +47,6 @@ interface AppState {
 }
 
 class SearchApp extends React.Component<{}, AppState> {
-  sourcesTimer: number | undefined;
-
   constructor(props: AppState) {
     super(props);
     this.state = this.initialState();
@@ -67,15 +65,7 @@ class SearchApp extends React.Component<{}, AppState> {
 
   async componentDidMount() {
     this.fetchSources();
-    this.sourcesTimer = setInterval(() => {
-      this.fetchSources();
-    }, 60 * 1000);
   }
-
-  componentWillUnmount() {
-    clearInterval(this.sourcesTimer);
-  }
-
   async fetchSources() {
     try {
       this.setState({ sources: await api.listSources() });
