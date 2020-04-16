@@ -633,8 +633,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
             # Resolve addresses into coordinates
             if (
                 nominatim is not None and
-                structural_type == types.TEXT and
-                types.TEXT in semantic_types_dict
+                structural_type == types.TEXT
             ):
                 locations, non_empty = nominatim_resolve_all(
                     nominatim,
