@@ -12,6 +12,8 @@ import uuid
 
 from datamart_materialize.d3m import d3m_metadata
 from datamart_materialize import types
+from datamart_profiler import get_temporal_resolution, \
+    temporal_aggregation_keys
 
 
 logger = logging.getLogger(__name__)
@@ -30,40 +32,10 @@ class _UniqueIndexKey(object):
 UNIQUE_INDEX_KEY = _UniqueIndexKey()
 
 
-# Resolutions for detection: which attribute of a Timestamp is common in group
-temporal_resolutions = [
-    'second',
-    'minute',
-    'hour',
-    'day',
-    'week',
-    'month',
-    'year',
-]
-
 temporal_resolutions_priorities = {
     n: i
-    for i, n in enumerate(temporal_resolutions)
+    for i, n in enumerate(reversed(list(temporal_aggregation_keys)))
 }
-
-
-# Resolution for alignment: convert Timestamps to join key
-temporal_resolution_keys = {
-    'second': '%Y-%m-%d %H:%M:%S',
-    'minute': '%Y-%m-%d %H:%M',
-    'hour': '%Y-%m-%d %H',
-    'day': '%Y-%m-%d',
-    'week': lambda dt: (
-        # Simply using "%Y-%W" doesn't work at year boundaries
-        # Map each timestamp to the first day of its week
-        (dt - pd.Timedelta(days=dt.dayofweek)).strftime('%Y-%m-%d')
-    ),
-    'month': '%Y-%m',
-    'year': '%Y',
-}
-
-
-assert set(temporal_resolutions) == temporal_resolution_keys.keys()
 
 
 def convert_data_types(data, columns, columns_metadata, drop=False):
@@ -133,13 +105,16 @@ def match_column_temporal_resolutions(index_1, index_2):
     """Matches the resolutions between the dataset indices.
     """
 
-    resolution_1 = check_temporal_resolution(index_1)
-    resolution_2 = check_temporal_resolution(index_2)
+    if not (index_1.is_all_dates and index_2.is_all_dates):
+        return lambda idx: idx
+
+    resolution_1 = get_temporal_resolution(index_1)
+    resolution_2 = get_temporal_resolution(index_2)
     if (temporal_resolutions_priorities[resolution_1] >
             temporal_resolutions_priorities[resolution_2]):
         # Change resolution of second index to the first's
         logger.info("Temporal alignment: right to '%s'", resolution_1)
-        key = temporal_resolution_keys[resolution_1]
+        key = temporal_aggregation_keys[resolution_1]
         if isinstance(key, str):
             return lambda idx: idx.strftime(key)
         else:
@@ -147,50 +122,11 @@ def match_column_temporal_resolutions(index_1, index_2):
     else:
         # Change resolution of first index to the second's
         logger.info("Temporal alignment: left to '%s'", resolution_2)
-        key = temporal_resolution_keys[resolution_2]
+        key = temporal_aggregation_keys[resolution_2]
         if isinstance(key, str):
             return lambda idx: idx.strftime(key)
         else:
             return lambda idx: idx.map(key)
-
-
-def check_temporal_resolution(data):
-    """Returns the resolution of the temporal attribute.
-    """
-
-    if not data.is_all_dates:
-        return None
-
-    def all_same(data, attr, call=False):
-        if not call:
-            return len(set(getattr(x, attr) for x in data)) <= 1
-        else:
-            return len(set(getattr(x, attr)() for x in data)) <= 1
-
-    if not all_same(data, 'second'):
-        # Happen on different seconds
-        return 'second'
-    elif not all_same(data, 'minute'):
-        # Happen on different minutes
-        return 'minute'
-    elif not all_same(data, 'hour'):
-        # Happen on different hours
-        return 'hour'
-    else:
-        if all_same(data, 'date', True):
-            # All on a single day: consider it daily, it's less weird
-            return 'day'
-        elif all_same(data, 'dayofweek'):
-            # All on the same day of the week
-            return 'week'
-        elif all_same(data, 'day'):
-            # All on the same day of the month
-            if all_same(data, 'month'):
-                return 'year'
-            else:
-                return 'month'
-        else:
-            return 'day'
 
 
 def _sum(series):
