@@ -11,6 +11,10 @@ scratch, or by importing the JSON files.
 * Renamed `lazo_server` container to `lazo`
 * Updated to MIT-LL D3M schema version 4.0.0
 * Added 'source' key to schema, you will have to manually add this to the indexed documents (or just re-profile)
+* Added a Redis server, used to store profiling information
+* Profiling now needs a Nominatim server, to resolve addresses
+* New frontend, served as static JavaScript app that uses the API directly, in new container `frontend`
+* Renamed `query` container to `apiserver`
 
 Enhancements:
 * Compute additional metadata `missing_values_ratio`, `unclean_values_ratio`, `num_distinct_values`
@@ -26,6 +30,13 @@ Enhancements:
 * Fix aggregation breaking with missing data in join column
 * Added Kubernetes config (`contrib/k8s/`)
 * Don't ignore Lazo errors on profiling (you will now see errors if using Lazo and it's not responding). Have it re-try on Elasticsearch errors
+* Correctly deal with empty datasets
+* Move additional endpoints to REST-JSON and the API container (upload, statistics)
+* Improved logging (quiet Elasticsearch)
+* Get lat/long from addresses to include in spatial coverage
+* Add option to generate d3mIndex column, to use dataset as ML input
+* Allow ability to refer to already-profiled input data using a token instead of re-uploading
+* Many improvements to spatial profiling, added new aggregation resolutions (weekly, monthly, yearly)
 
 0.5 (2019-08-28)
 ================
