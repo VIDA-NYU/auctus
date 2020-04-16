@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import call, patch
 
 import datamart_profiler
-from datamart_profiler import pair_latlong_columns, \
+from datamart_profiler import LATITUDE, LONGITUDE, pair_latlong_columns, \
     normalize_latlong_column_name
 from datamart_profiler import profile_types
 
@@ -55,15 +55,19 @@ class TestLatlongSelection(unittest.TestCase):
     def test_normalize_name(self):
         """Test normalizing column names."""
         self.assertEqual(
-            normalize_latlong_column_name('latitude', 'latitude', 'lat'),
+            normalize_latlong_column_name('latitude', LATITUDE),
             '',
         )
         self.assertEqual(
-            normalize_latlong_column_name('Place_Latitude', 'latitude', 'lat'),
+            normalize_latlong_column_name('Place_Latitude', LATITUDE),
             'place_',
         )
         self.assertEqual(
-            normalize_latlong_column_name('start_Lat_deg', 'latitude', 'lat'),
+            normalize_latlong_column_name('start_Long_deg', LONGITUDE),
+            'start__deg',
+        )
+        self.assertEqual(
+            normalize_latlong_column_name('start_Lon_deg', LONGITUDE),
             'start__deg',
         )
 
