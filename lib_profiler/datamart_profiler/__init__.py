@@ -184,40 +184,49 @@ def get_spatial_ranges(values):
     return ranges
 
 
+temporal_aggregation_keys = {
+    'year': '%Y',
+    'month': '%Y-%m',
+    'week': lambda dt: (
+        # Simply using "%Y-%W" doesn't work at year boundaries
+        # Map each timestamp to the first day of its week
+        (dt - pandas.Timedelta(days=dt.weekday())).strftime('%Y-%m-%d')
+    ),
+    'day': '%Y-%m-%d',
+    'hour': '%Y-%m-%d %H',
+    'minute': '%Y-%m-%d %H:%M',
+    'second': '%Y-%m-%d %H:%M:%S',
+}
+
+
 def get_temporal_resolution(values):
     """Returns the resolution of the temporal attribute.
     """
 
-    def all_same(data, attr, call=False):
-        if not call:
-            return len(set(getattr(x, attr) for x in data)) <= 1
+    # Python 3.7+ iterates on dict in insertion order
+    for resolution, key in temporal_aggregation_keys.items():
+        counts = {}
+        if isinstance(key, str):
+            for value in values:
+                bin = value.strftime(key)
+                if bin in counts:
+                    counts[bin].add(value)
+                else:
+                    counts[bin] = {value}
         else:
-            return len(set(getattr(x, attr)() for x in data)) <= 1
+            for value in values:
+                bin = key(value)
+                if bin in counts:
+                    counts[bin].add(value)
+                else:
+                    counts[bin] = {value}
 
-    if not all_same(values, 'second'):
-        # Happen on different seconds
-        return 'second'
-    elif not all_same(values, 'minute'):
-        # Happen on different minutes
-        return 'minute'
-    elif not all_same(values, 'hour'):
-        # Happen on different hours
-        return 'hour'
-    else:
-        if all_same(values, 'date', True):
-            # All on a single day: consider it daily, it's less weird
-            return 'day'
-        elif all_same(values, 'weekday', True):
-            # All on the same day of the week
-            return 'week'
-        elif all_same(values, 'day'):
-            # All on the same day of the month
-            if all_same(values, 'month'):
-                return 'year'
-            else:
-                return 'month'
-        else:
-            return 'day'
+        avg_per_bin = sum(len(v) for v in counts.values()) / len(counts)
+        if avg_per_bin < 1.05:
+            # 5 % error tolerated
+            return resolution
+
+    return 'second'
 
 
 def normalize_latlong_column_name(name, *substrings):

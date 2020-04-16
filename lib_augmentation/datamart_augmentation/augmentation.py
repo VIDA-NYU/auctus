@@ -12,7 +12,8 @@ import uuid
 
 from datamart_materialize.d3m import d3m_metadata
 from datamart_materialize import types
-from datamart_profiler import get_temporal_resolution
+from datamart_profiler import get_temporal_resolution, \
+    temporal_aggregation_keys
 
 
 logger = logging.getLogger(__name__)
@@ -31,40 +32,10 @@ class _UniqueIndexKey(object):
 UNIQUE_INDEX_KEY = _UniqueIndexKey()
 
 
-# Resolutions for detection: which attribute of a Timestamp is common in group
-temporal_resolutions = [
-    'second',
-    'minute',
-    'hour',
-    'day',
-    'week',
-    'month',
-    'year',
-]
-
 temporal_resolutions_priorities = {
     n: i
-    for i, n in enumerate(temporal_resolutions)
+    for i, n in enumerate(reversed(list(temporal_aggregation_keys)))
 }
-
-
-# Resolution for alignment: convert Timestamps to join key
-temporal_resolution_keys = {
-    'second': '%Y-%m-%d %H:%M:%S',
-    'minute': '%Y-%m-%d %H:%M',
-    'hour': '%Y-%m-%d %H',
-    'day': '%Y-%m-%d',
-    'week': lambda dt: (
-        # Simply using "%Y-%W" doesn't work at year boundaries
-        # Map each timestamp to the first day of its week
-        (dt - pd.Timedelta(days=dt.dayofweek)).strftime('%Y-%m-%d')
-    ),
-    'month': '%Y-%m',
-    'year': '%Y',
-}
-
-
-assert set(temporal_resolutions) == temporal_resolution_keys.keys()
 
 
 def convert_data_types(data, columns, columns_metadata, drop=False):
@@ -143,7 +114,7 @@ def match_column_temporal_resolutions(index_1, index_2):
             temporal_resolutions_priorities[resolution_2]):
         # Change resolution of second index to the first's
         logger.info("Temporal alignment: right to '%s'", resolution_1)
-        key = temporal_resolution_keys[resolution_1]
+        key = temporal_aggregation_keys[resolution_1]
         if isinstance(key, str):
             return lambda idx: idx.strftime(key)
         else:
@@ -151,7 +122,7 @@ def match_column_temporal_resolutions(index_1, index_2):
     else:
         # Change resolution of first index to the second's
         logger.info("Temporal alignment: left to '%s'", resolution_2)
-        key = temporal_resolution_keys[resolution_2]
+        key = temporal_aggregation_keys[resolution_2]
         if isinstance(key, str):
             return lambda idx: idx.strftime(key)
         else:
