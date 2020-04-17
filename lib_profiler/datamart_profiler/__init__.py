@@ -45,7 +45,10 @@ MAX_ADDRESS_LENGTH = 90  # 90 characters
 MAX_NOMINATIM_REQUESTS = 200
 
 
-BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
+BUCKETS = [
+    0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 240.0, 360.0, 480.0, 600.0,
+    720.0, 900.0, 1200.0, 1500.0,
+]
 
 PROM_PROFILE = prometheus_client.Histogram(
     'profile_seconds', "Profile time",
