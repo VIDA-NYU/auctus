@@ -343,6 +343,8 @@ def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
             else:
                 cache[value] = None
                 not_found += 1
+                if len(cache) == 10 and not_found > 8:
+                    break
             if len(cache) >= max_requests:
                 break
     logger.info(
