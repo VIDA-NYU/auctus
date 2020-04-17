@@ -1,3 +1,4 @@
+import collections
 import contextlib
 from datetime import datetime
 import logging
@@ -205,21 +206,15 @@ def get_temporal_resolution(values):
 
     # Python 3.7+ iterates on dict in insertion order
     for resolution, key in temporal_aggregation_keys.items():
-        counts = {}
+        counts = collections.defaultdict(collections.Counter)
         if isinstance(key, str):
             for value in values:
                 bin = value.strftime(key)
-                if bin in counts:
-                    counts[bin].add(value)
-                else:
-                    counts[bin] = {value}
+                counts[bin][value] += 1
         else:
             for value in values:
                 bin = key(value)
-                if bin in counts:
-                    counts[bin].add(value)
-                else:
-                    counts[bin] = {value}
+                counts[bin][value] += 1
 
         avg_per_bin = sum(len(v) for v in counts.values()) / len(counts)
         if avg_per_bin < 1.05:
