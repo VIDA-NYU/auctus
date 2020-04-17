@@ -65,6 +65,11 @@ PROM_NOMINATIM_REQS = prometheus_client.Counter(
 PROM_NOMINATIM_REQ_TIME = prometheus_client.Histogram(
     'profile_nominatim_req_seconds', "Time for Nominatim to answer a query",
 )
+PROM_NOMINATIM_TOTAL_TIME = prometheus_client.Histogram(
+    'profile_nominatim_total_seconds',
+    "Profiling time spent on Nominatim, per dataset",
+    buckets=BUCKETS,
+)
 
 
 def mean_stddev(array):
@@ -477,6 +482,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
         logger.info("0 rows, returning early")
         return metadata
 
+    total_nominatim_time = 0.0
+
     # Lat / Long
     columns_lat = []
     columns_long = []
@@ -637,10 +644,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 nominatim is not None and
                 structural_type == types.TEXT
             ):
+                start = time.perf_counter()
                 locations, non_empty = nominatim_resolve_all(
                     nominatim,
                     array,
                 )
+                total_nominatim_time += time.perf_counter() - start
                 if non_empty > 0:
                     unclean_ratio = 1.0 - len(locations) / non_empty
                     if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
@@ -757,6 +766,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
         sample = data.iloc[choose_rows]
         sample = sample.applymap(truncate_string)  # Truncate long values
         metadata['sample'] = sample.to_csv(index=False)
+
+    PROM_NOMINATIM_TOTAL_TIME.observe(total_nominatim_time)
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
