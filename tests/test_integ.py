@@ -1926,6 +1926,7 @@ basic_metadata = {
             "name": "number",
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 6.150,
             "stddev": lambda n: round(n, 3) == 1.526,
             "coverage": (
@@ -2049,6 +2050,7 @@ agg_metadata = {
             "semantic_types": [
                 "http://schema.org/identifier"
             ],
+            "unclean_values_ratio": 0.0,
             "mean": 65.0,
             "stddev": lambda n: round(n, 3) == 26.926,
             "coverage": (
@@ -2091,6 +2093,7 @@ agg_metadata = {
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
             'missing_values_ratio': 0.25,
+            "unclean_values_ratio": 0.0,
             "mean": 200.0,
             "stddev": lambda n: round(n, 3) == 150.0,
             "coverage": (
@@ -2149,6 +2152,7 @@ geo_metadata = {
             "name": "lat",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/latitude" in l,
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 40.711,
             "stddev": lambda n: round(n, 4) == 0.0186,
             "plot": check_plot('histogram_numerical'),
@@ -2157,6 +2161,7 @@ geo_metadata = {
             "name": "long",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/longitude" in l,
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == -73.993,
             "stddev": lambda n: round(n, 5) == 0.00684,
             "plot": check_plot('histogram_numerical'),
@@ -2165,6 +2170,7 @@ geo_metadata = {
             "name": "height",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: isinstance(l, list),
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 47.827,
             "stddev": lambda n: round(n, 2) == 21.28,
             "coverage": check_ranges(1.0, 90.0),
@@ -2271,6 +2277,7 @@ lazo_metadata = {
             "name": "year",
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 2) == 1990.11,
             "stddev": lambda n: round(n, 4) == 0.3143,
             "coverage": (

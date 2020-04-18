@@ -55,6 +55,8 @@ def identify_types(array, name):
     num_total = len(array)
     ratio = 1.0 - MAX_UNCLEAN
 
+    column_meta = {}
+
     # Identify structural type
     num_float = num_int = num_bool = num_empty = num_text = 0
     for elem in array:
@@ -75,13 +77,16 @@ def identify_types(array, name):
         structural_type = types.MISSING_DATA
     elif num_int >= threshold:
         structural_type = types.INTEGER
+        column_meta['unclean_values_ratio'] = \
+            (num_total - num_empty - num_int) / num_total
     elif num_int + num_float >= threshold:
         structural_type = types.FLOAT
+        column_meta['unclean_values_ratio'] = \
+            (num_total - num_empty - num_int - num_float) / num_total
     else:
         structural_type = types.TEXT
 
     semantic_types_dict = {}
-    column_meta = {}
 
     if structural_type != types.MISSING_DATA and num_empty > 0:
         column_meta['missing_values_ratio'] = num_empty / num_total
