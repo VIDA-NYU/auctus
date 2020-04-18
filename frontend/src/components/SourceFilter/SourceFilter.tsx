@@ -1,6 +1,5 @@
 import React from 'react';
 import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
-import { DEFAULT_SOURCES } from '../../api/rest';
 import * as Icon from 'react-feather';
 
 interface SourceFilterState {
@@ -10,6 +9,7 @@ interface SourceFilterState {
 }
 
 interface SourceFilterProps {
+  sources: string[];
   onSourcesChange: (sources?: string[]) => void;
 }
 
@@ -17,10 +17,13 @@ class SourceFilter extends PersistentComponent<
   SourceFilterProps,
   SourceFilterState
 > {
+  sources: string[];
+
   constructor(props: SourceFilterProps) {
     super(props);
     const initialState: SourceFilterState = { checked: {} };
-    DEFAULT_SOURCES.forEach(s => {
+    this.sources = props.sources;
+    this.sources.forEach(s => {
       initialState.checked[s] = true;
     });
     this.state = initialState;
@@ -45,7 +48,7 @@ class SourceFilter extends PersistentComponent<
 
   setCheckedStateForAll(checked: boolean) {
     const state: SourceFilterState = { checked: {} };
-    DEFAULT_SOURCES.forEach(s => {
+    this.sources.forEach(s => {
       state.checked[s] = checked;
     });
     this.notifyChange(state);
@@ -74,7 +77,7 @@ class SourceFilter extends PersistentComponent<
             Unselect all
           </button>
         </div>
-        {DEFAULT_SOURCES.map(source => (
+        {this.sources.map(source => (
           <div className="form-check ml-2" key={`div-${source}`}>
             <input
               className="form-check-input"

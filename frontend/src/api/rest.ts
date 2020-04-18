@@ -43,14 +43,14 @@ function parseQueryString(q?: string): string[] {
   return q ? q.split(' ').filter(t => t.length > 0) : [];
 }
 
-export async function search(
-  q: SearchQuery
-): Promise<Response<SearchResponse>> {
+export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   const spec: QuerySpec = {
     keywords: parseQueryString(q.query),
-    source: q.sources && q.sources.length > 0 ? q.sources : DEFAULT_SOURCES,
     variables: q.filters ? [...q.filters] : [],
   };
+  if (q.sources && q.sources.length > 0) {
+    spec.source = q.sources;
+  }
 
   const formData = new FormData();
   formData.append('query', JSON.stringify(spec));
@@ -117,7 +117,7 @@ export interface UploadData {
   file?: File;
 }
 
-export async function upload(data: UploadData) {
+export function upload(data: UploadData) {
   const formData = new FormData();
   formData.append('name', data.name);
 
@@ -158,6 +158,11 @@ export interface Status {
   };
 }
 
-export async function status(): Promise<AxiosResponse<Status>> {
-  return api.get('/statistics');
+export async function status(): Promise<Status> {
+  const response = await api.get('/statistics');
+  return response.data;
 }
+
+export let sources: Promise<string[]> = status().then(response =>
+  Object.keys(response.sources_counts)
+);

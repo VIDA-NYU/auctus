@@ -43,6 +43,7 @@ interface AppState {
   searchState: SearchState;
   searchResponse?: SearchResponse;
   searchQuery?: api.SearchQuery;
+  sources: string[];
 }
 
 class SearchApp extends React.Component<{}, AppState> {
@@ -58,7 +59,20 @@ class SearchApp extends React.Component<{}, AppState> {
       searchResponse: undefined,
       searchState: SearchState.CLEAN,
       filters: [],
+      sources: api.DEFAULT_SOURCES,
     };
+  }
+
+  componentDidMount() {
+    this.fetchSources();
+  }
+
+  async fetchSources() {
+    try {
+      this.setState({ sources: await api.sources });
+    } catch (e) {
+      console.error('Unable to fetch list of sources:', e);
+    }
   }
 
   resetQuery() {
@@ -116,7 +130,7 @@ class SearchApp extends React.Component<{}, AppState> {
     this.setState({ filters: [...filters] });
   }
 
-  async submitQuery() {
+  submitQuery() {
     if (this.validQuery()) {
       const filterVariables = this.state.filters
         .filter(f => f.type !== FilterType.RELATED_FILE)
@@ -214,6 +228,7 @@ class SearchApp extends React.Component<{}, AppState> {
           component: (
             <SourceFilter
               key={`sourcefilter-${filterId}`}
+              sources={this.state.sources}
               onSourcesChange={s => this.updateFilterState(filterId, s)}
             />
           ),
