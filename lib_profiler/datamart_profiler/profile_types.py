@@ -7,15 +7,34 @@ from . import types
 from .warning_tools import raise_warnings
 
 
-_re_int = re.compile(r'^[+-]?[0-9]+'
-                     r'(?:\.0*)?'  # 4.0 and 7.000 are integers
-                     r'$')
-_re_float = re.compile(r'^[+-]?'
-                       r'(?:'
-                       r'(?:[0-9]+\.[0-9]*)|'
-                       r'(?:\.[0-9]+)'
-                       r')'
-                       r'(?:[Ee][0-9]+)?$')
+_re_int = re.compile(
+    r'^[+-]?[0-9]+'
+    r'(?:\.0*)?'  # 4.0 and 7.000 are integers
+    r'$'
+)
+_re_float = re.compile(
+    r'^[+-]?'
+    r'(?:'
+    r'(?:[0-9]+\.[0-9]*)|'
+    r'(?:\.[0-9]+)'
+    r')'
+    r'(?:[Ee][0-9]+)?$'
+)
+_re_wkt_point = re.compile(
+    r'^POINT ?\('
+    r'-?[0-9]{1,3}\.[0-9]{1,15}'
+    r' '
+    r'-?[0-9]{1,3}\.[0-9]{1,15}'
+    r'\)$'
+)
+_re_wkt_polygon = re.compile(
+    r'^POLYGON ?\('
+    r'('
+    r'\([0-9 .]+\)'
+    r', ?)*'
+    r'\([0-9 .]+\)'
+    r'\)$'
+)
 _re_whitespace = re.compile(r'\s')
 
 
@@ -58,7 +77,8 @@ def identify_types(array, name):
     column_meta = {}
 
     # Identify structural type
-    num_float = num_int = num_bool = num_empty = num_text = 0
+    num_float = num_int = num_bool = num_empty = 0
+    num_point = num_polygon = num_text = 0
     for elem in array:
         if not elem:
             num_empty += 1
@@ -66,6 +86,10 @@ def identify_types(array, name):
             num_int += 1
         elif _re_float.match(elem):
             num_float += 1
+        elif _re_wkt_point.match(elem):
+            num_point += 1
+        elif _re_wkt_polygon.match(elem):
+            num_polygon += 1
         elif len(_re_whitespace.findall(elem)) >= 4:
             num_text += 1
         if elem.lower() in ('0', '1', 'true', 'false', 'y', 'n', 'yes', 'no'):
@@ -83,8 +107,18 @@ def identify_types(array, name):
         structural_type = types.FLOAT
         column_meta['unclean_values_ratio'] = \
             (num_total - num_empty - num_int - num_float) / num_total
+    elif num_point >= threshold:
+        structural_type = types.GEO_POINT
+        column_meta['unclean_values_ratio'] = \
+            (num_total - num_empty - num_point) / num_total
+    elif num_polygon >= threshold:
+        structural_type = types.GEO_POLYGON
+        column_meta['unclean_values_ratio'] = \
+            (num_total - num_empty - num_polygon) / num_total
     else:
         structural_type = types.TEXT
+
+    # TODO: structural or semantic types?
 
     semantic_types_dict = {}
 
