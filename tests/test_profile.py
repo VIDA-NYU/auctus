@@ -5,10 +5,12 @@ import pandas
 import unittest
 from unittest.mock import call, patch
 
-import datamart_profiler
-from datamart_profiler import LATITUDE, LONGITUDE, pair_latlong_columns, \
-    normalize_latlong_column_name, get_temporal_resolution
+from datamart_profiler import process_dataset
 from datamart_profiler import profile_types
+import datamart_profiler.spatial
+from datamart_profiler.spatial import pair_latlong_columns, \
+    normalize_latlong_column_name, LATITUDE, LONGITUDE
+from datamart_profiler.temporal import get_temporal_resolution
 
 from .utils import DataTestCase
 
@@ -74,7 +76,7 @@ class TestLatlongSelection(unittest.TestCase):
 
     def test_pairing(self):
         """Test pairing latitude and longitude columns by name."""
-        with patch('datamart_profiler.logger') as mock_warn:
+        with patch('datamart_profiler.spatial.logger') as mock_warn:
             pairs = pair_latlong_columns(
                 [
                     ('Pickup_latitude', 1),
@@ -321,7 +323,7 @@ class TestTypes(unittest.TestCase):
 
 class TestTruncate(unittest.TestCase):
     def test_simple(self):
-        from datamart_profiler import truncate_string
+        from datamart_profiler.core import truncate_string
 
         self.assertEqual(truncate_string("abc", 10), "abc")
         self.assertEqual(truncate_string("abcdefghij", 10), "abcdefghij")
@@ -329,7 +331,7 @@ class TestTruncate(unittest.TestCase):
         self.assertEqual(truncate_string("abcdefghijklmnop", 10), "abcdefg...")
 
     def test_words(self):
-        from datamart_profiler import truncate_string
+        from datamart_profiler.core import truncate_string
 
         self.assertEqual(
             truncate_string("abcde fghijklmnopqrs tuvwxyzABCD EF", 30),
@@ -347,7 +349,7 @@ class TestTruncate(unittest.TestCase):
 
 class TestNominatim(DataTestCase):
     def test_profile(self):
-        old_query = datamart_profiler.nominatim_query
+        old_query = datamart_profiler.spatial.nominatim_query
         queries = {
             "70 Washington Square S, New York, NY 10012": [{
                 'lat': 40.7294, 'lon': -73.9972,
@@ -359,17 +361,18 @@ class TestNominatim(DataTestCase):
                 'lat': 40.7287, 'lon': -73.9957,
             }],
         }
-        datamart_profiler.nominatim_query = lambda url, *, q: queries[q]
+        datamart_profiler.spatial.nominatim_query = \
+            lambda url, *, q: queries[q]
         try:
             data_dir = os.path.join(os.path.dirname(__file__), 'data')
             with open(os.path.join(data_dir, 'addresses.csv')) as data:
-                metadata = datamart_profiler.process_dataset(
+                metadata = process_dataset(
                     data,
                     nominatim='http://nominatim/',
                     coverage=True,
                 )
         finally:
-            datamart_profiler.nominatim_query = old_query
+            datamart_profiler.spatial.nominatim_query = old_query
 
         self.assertJson(
             metadata,

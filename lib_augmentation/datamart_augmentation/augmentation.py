@@ -12,7 +12,7 @@ import uuid
 
 from datamart_materialize.d3m import d3m_metadata
 from datamart_materialize import types
-from datamart_profiler import get_temporal_resolution, \
+from datamart_profiler.temporal import get_temporal_resolution, \
     temporal_aggregation_keys
 
 
