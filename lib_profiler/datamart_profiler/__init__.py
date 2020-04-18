@@ -225,7 +225,7 @@ def get_temporal_resolution(values):
 
 
 LATITUDE = ('latitude', 'lat')
-LONGITUDE = ('longitude', 'long', 'lon')
+LONGITUDE = ('longitude', 'long', 'lon', 'lng')
 
 
 def normalize_latlong_column_name(name, substrings):
