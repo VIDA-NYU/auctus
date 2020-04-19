@@ -105,7 +105,7 @@ class ObjectStore(object):
         return self._build_client_url(fileobj.url())
 
 
-class _ObjecStoreFileWrapper(object):
+class _ObjectStoreFileWrapper(object):
     def __init__(self, fp):
         self._fileobj = fp
 
@@ -116,16 +116,16 @@ class _ObjecStoreFileWrapper(object):
         self._fileobj.flush()
 
     def close(self):
-        raise TypeError("Attempted to close ObjecStoreFileWrapper")
+        raise TypeError("Attempted to close ObjectStoreFileWrapper")
 
     def __enter__(self):
-        raise TypeError("Attempted to enter ObjecStoreFileWrapper")
+        raise TypeError("Attempted to enter ObjectStoreFileWrapper")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        raise TypeError("Attempted to exit ObjecStoreFileWrapper")
+        raise TypeError("Attempted to exit ObjectStoreFileWrapper")
 
     def __iter__(self):
-        raise TypeError("Attempted to iter ObjecStoreFileWrapper")
+        raise TypeError("Attempted to iter ObjectStoreFileWrapper")
 
 
 @contextlib.contextmanager
@@ -133,7 +133,7 @@ def _commit_discard_context(fp, filename):
     try:
         with fp:
             logger.info("Opened for writing: %s", filename)
-            yield _ObjecStoreFileWrapper(fp)
+            yield _ObjectStoreFileWrapper(fp)
     except:
         logger.info("Exception, discarding file %s", filename)
         fp.discard()
