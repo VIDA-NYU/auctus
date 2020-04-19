@@ -239,7 +239,8 @@ def truncate_string(s, limit=140):
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client=None, search=False, include_sample=False,
-                    coverage=True, load_max_size=None, **kwargs):
+                    coverage=True, load_max_size=None,
+                    data_url=None, **kwargs):
     """Compute all metafeatures from a dataset.
 
     :param data: path to dataset, or file object, or DataFrame
@@ -275,7 +276,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
     if metadata is None:
         metadata = {}
 
-    data_path = None
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
         # FIXME: no sampling here!
@@ -285,8 +285,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 if not os.path.exists(data):
                     raise ValueError("data file does not exist")
 
-                # saving path
-                data_path = data
+                if data_url is None:
+                    data_url = 'file://' + data
 
                 # File size
                 metadata['size'] = os.path.getsize(data)
@@ -435,10 +435,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
             # TODO: Remove previous data from lazo
             logger.info("Indexing textual data with Lazo...")
             try:
-                if data_path:
-                    # if we have the path, send the path
-                    lazo_client.index_data_path(
-                        data_path,
+                if data_url:
+                    # if we have the URL, send that
+                    lazo_client.index_data_url(
+                        data_url,
                         dataset_id,
                         column_textual
                     )
@@ -457,10 +457,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
         else:
             logger.info("Generating Lazo sketches...")
             try:
-                if data_path:
+                if data_url:
                     # if we have the path, send the path
-                    lazo_sketches = lazo_client.get_lazo_sketch_from_data_path(
-                        data_path,
+                    lazo_sketches = lazo_client.get_lazo_sketch_from_data_url(
+                        data_url,
                         "",
                         column_textual
                     )

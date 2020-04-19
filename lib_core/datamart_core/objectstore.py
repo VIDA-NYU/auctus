@@ -104,6 +104,11 @@ class ObjectStore(object):
             fileobj = fileobj.raw
         return self._build_client_url(fileobj.url())
 
+    def file_internal_url(self, fileobj):
+        if isinstance(fileobj, BufferedReader):
+            fileobj = fileobj.raw
+        return fileobj.url()
+
 
 class _ObjectStoreFileWrapper(object):
     def __init__(self, fp):
