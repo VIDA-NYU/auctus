@@ -2,3 +2,6 @@
 source =
     .
     /usr/src/app
+
+[report]
+omit = */lazo_index_service/*
