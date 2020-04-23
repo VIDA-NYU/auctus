@@ -79,6 +79,15 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
                 )
             else:
                 data.index = pd.to_numeric(data.index, errors='coerce', downcast='float')
+        elif column['structural_type'] == types.TEXT:
+            if isinstance(data.index, pd.MultiIndex):
+                data.index = data.index.set_levels(
+                    [data.index.levels[j] if j != i
+                     else data.index.levels[j].str.lower()
+                     for j in range(len(data.index.levels))]
+                )
+            else:
+                data.index = data.index.str.lower()
 
     return data
 
