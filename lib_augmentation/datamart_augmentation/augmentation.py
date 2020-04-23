@@ -38,7 +38,18 @@ temporal_resolutions_priorities = {
 }
 
 
-def convert_data_types(data, columns, columns_metadata, drop=False):
+def _transform_data_index(data, level, func):
+    if isinstance(data.index, pd.MultiIndex):
+        data.index = data.index.set_levels(
+            [data.index.levels[i] if i != level
+             else func(data.index.levels[i])
+             for i in range(len(data.index.levels))]
+        )
+    else:
+        data.index = func(data.index)
+
+
+def set_data_index(data, columns, columns_metadata, drop=False):
     """
     Converts columns in a dataset (pandas.DataFrame) to their corresponding
     data types, based on the provided metadata.
@@ -50,44 +61,28 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
         inplace=True
     )
 
-    for i, index in enumerate(columns):
-        column = columns_metadata[index]
+    for i, col_idx in enumerate(columns):
+        column = columns_metadata[col_idx]
         if types.DATE_TIME in column['semantic_types']:
-            if isinstance(data.index, pd.MultiIndex):
-                data.index = data.index.set_levels(
-                    [data.index.levels[j] if j != i
-                     else pd.to_datetime(data.index.levels[j], errors='coerce')
-                     for j in range(len(data.index.levels))]
-                )
-            else:
-                data.index = pd.to_datetime(data.index, errors='coerce')
+            _transform_data_index(
+                data, i,
+                lambda idx: pd.to_datetime(idx, errors='coerce'),
+            )
         elif column['structural_type'] == types.INTEGER:
-            if isinstance(data.index, pd.MultiIndex):
-                data.index = data.index.set_levels(
-                    [data.index.levels[j] if j != i
-                     else pd.to_numeric(data.index.levels[j], errors='coerce', downcast='integer')
-                     for j in range(len(data.index.levels))]
-                )
-            else:
-                data.index = pd.to_numeric(data.index, errors='coerce', downcast='integer')
+            _transform_data_index(
+                data, i,
+                lambda idx: pd.to_numeric(idx, errors='coerce', downcast='integer'),
+            )
         elif column['structural_type'] == types.FLOAT:
-            if isinstance(data.index, pd.MultiIndex):
-                data.index = data.index.set_levels(
-                    [data.index.levels[j] if j != i
-                     else pd.to_numeric(data.index.levels[j], errors='coerce', downcast='float')
-                     for j in range(len(data.index.levels))]
-                )
-            else:
-                data.index = pd.to_numeric(data.index, errors='coerce', downcast='float')
+            _transform_data_index(
+                data, i,
+                lambda idx: pd.to_numeric(idx, errors='coerce', downcast='float'),
+            )
         elif column['structural_type'] == types.TEXT:
-            if isinstance(data.index, pd.MultiIndex):
-                data.index = data.index.set_levels(
-                    [data.index.levels[j] if j != i
-                     else data.index.levels[j].str.lower()
-                     for j in range(len(data.index.levels))]
-                )
-            else:
-                data.index = data.index.str.lower()
+            _transform_data_index(
+                data, i,
+                lambda idx: idx.str.lower(),
+            )
 
     return data
 
@@ -287,7 +282,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         original_join_columns_idx.append(left[0])
         augment_join_columns_idx.append(right[0])
 
-    original_data = convert_data_types(
+    original_data = set_data_index(
         original_data,
         original_join_columns_idx,
         original_metadata['columns'],
@@ -335,7 +330,7 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             itertools.chain([first_augment_data], augment_data_chunks)
     ):
         # Convert data types
-        augment_data = convert_data_types(
+        augment_data = set_data_index(
             augment_data,
             augment_join_columns_idx,
             augment_metadata['columns'],
