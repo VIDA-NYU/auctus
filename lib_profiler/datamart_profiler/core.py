@@ -207,7 +207,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
             # Insert additional metadata
             column_meta.update(additional_meta)
 
-            # Compute ranges for numerical/spatial data
+            # Compute ranges for numerical data
             if structural_type in (types.INTEGER, types.FLOAT):
                 # Get numerical ranges
                 numerical_values = []
@@ -413,9 +413,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Lat / Long
     if coverage:
         logger.info("Computing spatial coverage...")
+        spatial_coverage = []
         with PROM_SPATIAL.time():
-            spatial_coverage = []
-
             # Pair lat & long columns
             pairs, (missed_lat, missed_long) = \
                 pair_latlong_columns(columns_lat, columns_long)
@@ -433,6 +432,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     col['semantic_types'].discard(types.LATITUDE)
                     col['semantic_types'].discard(types.LONGITUDE)
 
+            # Compute ranges from lat/long pairs
             for (name_lat, values_lat), (name_long, values_long) in pairs:
                 values = []
                 for lat, long in zip(values_lat, values_long):
@@ -451,6 +451,25 @@ def process_dataset(data, dataset_id=None, metadata=None,
                                                  "lon": name_long,
                                                  "ranges": spatial_ranges})
 
+            # Compute ranges from WKT points
+            geo_point_columns = [
+                i for i, col in enumerate(columns)
+                if types.GEO_POINT in col['semantic_types']
+            ]
+            for i in geo_point_columns:
+                values = data.iloc[:, i].dropna(axis=0)
+                name = data.columns[i]
+                logger.info(
+                    "Computing spatial ranges point=%r (%d rows)",
+                    name, len(values),
+                )
+                values = list((p.x, p.y) for p in values)
+                spatial_ranges = get_spatial_ranges(values)
+                if spatial_ranges:
+                    spatial_coverage.append({"point": name,
+                                             "ranges": spatial_ranges})
+
+            # Compute ranges from addresses
             for name, values in resolved_addresses.items():
                 logger.info(
                     "Computing spatial ranges address=%r (%d rows)",
