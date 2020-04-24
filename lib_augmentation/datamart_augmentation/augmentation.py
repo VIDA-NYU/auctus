@@ -92,7 +92,7 @@ def convert_data_types(data, columns, columns_metadata, drop=False):
     return data
 
 
-def match_temporal_resolutions(input_data, companion_data):
+def match_temporal_resolutions(input_data, companion_data, temporal_resolution=None):
     """Matches the resolutions between the datasets.
 
     This takes in example indexes, and returns a function to update future
@@ -105,37 +105,56 @@ def match_temporal_resolutions(input_data, companion_data):
         pass
     elif (isinstance(input_data.index, pd.DatetimeIndex)
           and isinstance(companion_data.index, pd.DatetimeIndex)):
-        return match_column_temporal_resolutions(input_data.index, companion_data.index)
+        return match_column_temporal_resolutions(
+            input_data.index,
+            companion_data.index,
+            temporal_resolution,
+        )
 
     return lambda idx: idx  # no-op
 
 
-def match_column_temporal_resolutions(index_1, index_2):
+def match_column_temporal_resolutions(index_1, index_2, temporal_resolution=None):
     """Matches the resolutions between the dataset indices.
     """
 
     if not (index_1.is_all_dates and index_2.is_all_dates):
         return lambda idx: idx
 
-    resolution_1 = get_temporal_resolution(index_1[~index_1.isna()])
-    resolution_2 = get_temporal_resolution(index_2[~index_2.isna()])
-    if (temporal_resolutions_priorities[resolution_1] >
-            temporal_resolutions_priorities[resolution_2]):
-        # Change resolution of second index to the first's
-        logger.info("Temporal alignment: right to '%s'", resolution_1)
-        key = temporal_aggregation_keys[resolution_1]
+    # Use the provided resolution
+    if temporal_resolution is not None:
+        key = temporal_aggregation_keys[temporal_resolution]
+        logger.info("Temporal alignment: requested '%s'", temporal_resolution)
         if isinstance(key, str):
             return lambda idx: idx.strftime(key)
         else:
             return lambda idx: idx.map(key)
     else:
-        # Change resolution of first index to the second's
-        logger.info("Temporal alignment: left to '%s'", resolution_2)
-        key = temporal_aggregation_keys[resolution_2]
-        if isinstance(key, str):
-            return lambda idx: idx.strftime(key)
+        # Pick the more coarse of the two resolutions
+        resolution_1 = get_temporal_resolution(index_1[~index_1.isna()])
+        resolution_2 = get_temporal_resolution(index_2[~index_2.isna()])
+
+        if (temporal_resolutions_priorities[resolution_1] >
+                temporal_resolutions_priorities[resolution_2]):
+            # Change resolution of second index to the first's
+            logger.info("Temporal alignment: right to '%s'", resolution_1)
+            key = temporal_aggregation_keys[resolution_1]
+            if isinstance(key, str):
+                return lambda idx: idx.strftime(key)
+            else:
+                return lambda idx: idx.map(key)
         else:
-            return lambda idx: idx.map(key)
+            # Change resolution of first index to the second's
+            logger.info("Temporal alignment: left to '%s'", resolution_2)
+            key = temporal_aggregation_keys[resolution_2]
+            if isinstance(key, str):
+                return lambda idx: idx.strftime(key)
+            else:
+                return lambda idx: idx.map(key)
+
+
+def _first(series):
+    return series.iloc[0]
 
 
 def _sum(series):
@@ -150,7 +169,20 @@ def _sum(series):
         return np.nan
 
 
-def perform_aggregations(data, original_columns):
+AGGREGATION_FUNCTIONS = {
+    'first': pd.NamedAgg('first', _first),
+    'mean': pd.NamedAgg('mean', np.mean),
+    'sum': pd.NamedAgg('sum', _sum),
+    'max': pd.NamedAgg('max', np.max),
+    'min': pd.NamedAgg('min', np.min),
+    'count': pd.NamedAgg('count', lambda s: (~s.isna()).sum()),
+}
+
+
+def perform_aggregations(
+    data, original_columns,
+    agg_functions=None, augment_columns_name=None,
+):
     """Performs group by on dataset after join, to keep the shape of the
     new, augmented dataset the same as the original, input data.
     """
@@ -159,27 +191,48 @@ def perform_aggregations(data, original_columns):
         col: idx for idx, col in enumerate(data.columns)
     }
 
-    def first(series):
-        return series.iloc[0]
-
     start = time.perf_counter()
     original_columns_set = set(original_columns)
+
+    provided_agg_functions = agg_functions
+    if provided_agg_functions:
+        provided_agg_functions = {
+            # Columns might have been renamed if conflicting, deal with that
+            augment_columns_name[col]:
+                # Turn single value into list
+                [funcs] if isinstance(funcs, str) else funcs
+            for col, funcs in provided_agg_functions.items()
+        }
+
     agg_functions = dict()
     for column in data.columns:
         if column == UNIQUE_INDEX_KEY or column in original_columns_set:
             # Just pick the first value
             # (they are all the same, from a single row in the original data)
-            agg_functions[column] = [pd.NamedAgg('first', first)]
+            agg_functions[column] = ['first']
+        elif provided_agg_functions:
+            try:
+                funcs = provided_agg_functions[column]
+            except KeyError:
+                pass
+            else:
+                agg_functions[column] = (
+                    [funcs] if isinstance(funcs, str)
+                    else funcs
+                )
         else:
             if ('int' in str(data.dtypes[column]) or
                     'float' in str(data.dtypes[column])):
-                agg_functions[column] = [
-                    pd.NamedAgg('mean', np.mean), pd.NamedAgg('sum', _sum),
-                    pd.NamedAgg('max', np.max), pd.NamedAgg('min', np.min),
-                ]
+                agg_functions[column] = ['mean', 'sum', 'max', 'min']
             else:
                 # Just pick the first value
-                agg_functions[column] = [pd.NamedAgg('first', first)]
+                agg_functions[column] = ['first']
+
+    # Resolve names into functions using AGGREGATION_FUNCTIONS map
+    agg_functions = {
+        col: [AGGREGATION_FUNCTIONS[name] for name in names]
+        for col, names in agg_functions.items()
+    }
 
     # Perform group-by
     data = data.groupby(by=[UNIQUE_INDEX_KEY]).agg(agg_functions)
@@ -196,7 +249,7 @@ def perform_aggregations(data, original_columns):
 
     # Rename columns
     data.columns = [
-        col[0] if col[1] == 'first'
+        col[0] if col[1] == 'first' and len(agg_functions[col[0]]) <= 1
         else ' '.join(col[::-1]).strip()
         for col in data.columns
     ]
@@ -211,7 +264,10 @@ CHUNK_SIZE_ROWS = 10000
 def join(original_data, augment_data_path, original_metadata, augment_metadata,
          destination_csv,
          left_columns, right_columns,
-         how='left', columns=None, return_only_datamart_data=False):
+         how='left', columns=None,
+         agg_functions=None, temporal_resolution=None,
+         return_only_datamart_data=False,
+):
     """
     Performs a join between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
@@ -242,15 +298,6 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     original_data[UNIQUE_INDEX_KEY] = pd.RangeIndex(len(original_data))
 
     logger.info("Performing join...")
-
-    # join columns
-    augment_join_columns = list()
-    for left, right in zip(left_columns, right_columns):
-        left_name = original_data.columns[left[0]]
-        right_name = augment_data_columns[right[0]]
-        if right_name == left_name:
-            right_name += '_r'
-        augment_join_columns.append(right_name)
 
     # Stream the data in
     augment_data_chunks = pd.read_csv(
@@ -297,7 +344,11 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
 
         if update_idx is None:
             # Guess temporal resolutions (on first chunk)
-            update_idx = match_temporal_resolutions(original_data, augment_data)
+            update_idx = match_temporal_resolutions(
+                original_data,
+                augment_data,
+                temporal_resolution,
+            )
             original_data_res = original_data.set_index(
                 update_idx(original_data.index)
             )
@@ -324,21 +375,20 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
     join_ = pd.concat(join_)
     logger.info("Join completed in %.4fs", time.perf_counter() - start)
 
+    intersection = set(original_data.columns).intersection(set(first_augment_data.columns))
+
     # qualities
-    qualities_list = list()
+    qualities_list = []
 
     if return_only_datamart_data:
         # drop unique index
         join_.drop([UNIQUE_INDEX_KEY], axis=1, inplace=True)
 
         # drop columns from original data
-        drop_columns = list()
-        intersection = set(original_data.columns).intersection(set(first_augment_data.columns))
-        if len(intersection) > 0:
-            drop_columns = list(intersection)
-        drop_columns += list(set(original_data.columns).difference(intersection))
+        drop_columns = list(intersection)
+        drop_columns.extend(set(original_data.columns).difference(intersection))
         join_.drop(drop_columns, axis=1, inplace=True)
-        if len(intersection) > 0:
+        if intersection:
             rename = dict()
             for column in intersection:
                 rename[column + '_r'] = column
@@ -348,10 +398,18 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
         join_.dropna(axis=0, how='all', inplace=True)
 
     else:
+        # map column names for the augmentation data
+        augment_columns_map = {
+            name: name + '_r' if name in intersection else name
+            for name in first_augment_data.columns
+        }
+
         # aggregations
         join_ = perform_aggregations(
             join_,
             list(original_data.columns),
+            agg_functions,
+            augment_columns_map,
         )
 
         # drop unique index
@@ -385,12 +443,10 @@ def join(original_data, augment_data_path, original_metadata, augment_metadata,
             column['name'] + '_r'
         ]
         # agg names
-        all_names = ['sum ' + name for name in names]
-        all_names += ['mean ' + name for name in names]
-        all_names += ['max ' + name for name in names]
-        all_names += ['min ' + name for name in names]
-        all_names += ['first ' + name for name in names]
-        all_names += names
+        all_names = itertools.chain(names, (
+            agg + ' ' + name
+            for agg, name in itertools.product(AGGREGATION_FUNCTIONS, names)
+        ))
         for name in all_names:
             column_metadata = copy.deepcopy(column)
             column_metadata['name'] = name
@@ -547,6 +603,8 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
             columns=columns,
+            agg_functions=task['augmentation'].get('agg_functions'),
+            temporal_resolution=task['augmentation'].get('temporal_resolution'),
             return_only_datamart_data=return_only_datamart_data,
         )
     elif task['augmentation']['type'] == 'union':

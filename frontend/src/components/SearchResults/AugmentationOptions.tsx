@@ -1,9 +1,15 @@
 import * as React from 'react';
 import * as Icon from 'react-feather';
-import { SearchResult, AugmentationInfo } from '../../api/types';
+import {
+  SearchResult,
+  AugmentationInfo,
+  ColumnAggregations,
+} from '../../api/types';
 import * as api from '../../api/rest';
 import { SearchQuery } from '../../api/rest';
 import { triggerFileDownload, cloneObject } from '../../utils';
+import { JoinColumnsSelector } from '../JoinColumnsSelector/JoinColumnsSelector';
+import { ColumnBadge, SimpleColumnBadge } from '../Badges/Badges';
 
 interface AugmentationOptionsProps {
   hit: SearchResult;
@@ -14,6 +20,7 @@ interface AugmentationOptionsState {
   checked: {
     [id: string]: boolean;
   };
+  columnAggregations?: ColumnAggregations;
 }
 
 function getAugmentationColumns(aug?: AugmentationInfo) {
@@ -48,6 +55,9 @@ class AugmentationOptions extends React.PureComponent<
       initialState.checked[c.idx.toString()] = true;
     });
     this.state = initialState;
+    this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(
+      this
+    );
   }
 
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -63,12 +73,11 @@ class AugmentationOptions extends React.PureComponent<
       .map(c => +c[0]); // cast index back to number
   }
 
-  submitAugmentationForm(hit: SearchResult) {
-    // find indexes of columns that are checked
-    const checkedIndexes = this.findIndexesOfCheckedColumn();
-
-    // hit.augmentation should never undefined at this point
-    const original = hit.augmentation!;
+  createAugmentationInfo(
+    original: AugmentationInfo,
+    checkedIndexes: number[],
+    columnAggregations?: ColumnAggregations
+  ) {
     // make a copy of the original so we can modify it
     const augmentation = cloneObject(original);
 
@@ -87,11 +96,33 @@ class AugmentationOptions extends React.PureComponent<
       augmentation.right_columns_names.push(original.right_columns_names[i]);
     }
 
+    augmentation.agg_functions = columnAggregations;
+
+    return augmentation;
+  }
+
+  async submitAugmentationForm(hit: SearchResult) {
+    // find indexes of columns that are checked
+    const checkedIndexes = this.findIndexesOfCheckedColumn();
+
+    // augmentation form is only shown when a file was provided as search
+    // input, so the file should never be undefined at this point. The search
+    // API always returns hit.augmentation when the file was provided.
+    const original = hit.augmentation!;
+    const relatedFile = this.props.searchQuery.relatedFile!;
+
     // clone object because we need to modify it for sending as an API parameter
     const task = cloneObject(hit);
-    task.augmentation = augmentation;
 
-    const relatedFile = this.props.searchQuery.relatedFile!;
+    // adjust augmentation info to use only the checked indexes
+    task.augmentation = this.createAugmentationInfo(
+      original,
+      checkedIndexes,
+      this.state.columnAggregations
+    );
+
+    console.log('submit', task);
+
     api.augment(relatedFile, task).then(response => {
       const zipFile = response.data;
       if (zipFile) {
@@ -119,6 +150,47 @@ class AugmentationOptions extends React.PureComponent<
     );
   }
 
+  renderMergeColumns(
+    columns: Array<{
+      leftColumn: string;
+      rightColumn: string;
+      key: string;
+      idx: number;
+    }>,
+    hit: SearchResult
+  ) {
+    return columns.map((c, i) => {
+      const rightMetadata = hit.metadata.columns.find(
+        m => m.name === c.rightColumn
+      );
+      return (
+        <div className="form-check ml-2" key={`div-aug-${i}`}>
+          <input
+            className="form-check-input"
+            type="checkbox"
+            value={c.idx}
+            checked={this.state.checked[c.idx]}
+            id={`checkbox-${c.key}`}
+            onChange={e => this.handleChange(e)}
+          />
+          <label className="form-check-label" htmlFor={`checkbox-${c.key}`}>
+            <SimpleColumnBadge name={c.leftColumn} />
+            <span className="ml-1 mr-1">and</span>
+            {rightMetadata ? (
+              <ColumnBadge column={rightMetadata} />
+            ) : (
+              <SimpleColumnBadge name={c.rightColumn} />
+            )}
+          </label>
+        </div>
+      );
+    });
+  }
+
+  handleColumnSelectionChange(columnAggregations: ColumnAggregations) {
+    this.setState({ columnAggregations });
+  }
+
   render() {
     const { hit } = this.props;
     if (!hit.augmentation || hit.augmentation.type === 'none') {
@@ -129,33 +201,23 @@ class AugmentationOptions extends React.PureComponent<
     const columns = getAugmentationColumns(hit.augmentation);
 
     return (
-      <div className="mt-3">
-        <b>
+      <div className="d-flex flex-column mt-3">
+        <h6>
           Augmentation{' '}
-          <span style={{ textTransform: 'uppercase' }}>({type})</span>:
+          <span style={{ textTransform: 'uppercase' }}>({type})</span>
+        </h6>
+        <b>
+          <span style={{ textTransform: 'capitalize' }}>{type}</span> on:
         </b>
-        {columns.map((c, i) => (
-          <div className="form-check ml-2" key={`div-aug-${i}`}>
-            <input
-              className="form-check-input"
-              type="checkbox"
-              value={c.idx}
-              checked={this.state.checked[c.idx]}
-              id={`checkbox-${c.key}`}
-              onChange={e => this.handleChange(e)}
-            />
-            <label className="form-check-label" htmlFor={`checkbox-${c.key}`}>
-              <span className="badge badge-pill badge-secondary mr-1">
-                {c.leftColumn}
-              </span>
-              and
-              <span className="badge badge-pill badge-secondary ml-1">
-                {c.rightColumn}
-              </span>
-            </label>
-          </div>
-        ))}
-        {this.renderAugmentButton(hit, type)}
+        {this.renderMergeColumns(columns, hit)}
+        <div>
+          <JoinColumnsSelector
+            hit={hit}
+            excludeColumns={columns.map(c => c.rightColumn)}
+            onChange={this.handleColumnSelectionChange}
+          />
+        </div>
+        <div>{this.renderAugmentButton(hit, type)}</div>
       </div>
     );
   }
