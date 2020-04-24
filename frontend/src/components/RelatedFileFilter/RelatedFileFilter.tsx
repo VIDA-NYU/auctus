@@ -3,13 +3,14 @@ import Dropzone from 'react-dropzone';
 import { CardShadow, CardButton } from '../visus/Card/Card';
 import { formatSize } from '../../utils';
 import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
+import { RelatedFile } from '../../api/types';
 
 interface RelatedFileFilterState {
-  file?: File;
+  relatedFile?: RelatedFile;
 }
 
 interface RelatedFileFilterProps {
-  onSelectedFileChange: (file: File) => void;
+  onSelectedFileChange: (relatedFile: RelatedFile) => void;
 }
 
 class RelatedFileFilter extends PersistentComponent<
@@ -18,27 +19,40 @@ class RelatedFileFilter extends PersistentComponent<
 > {
   constructor(props: RelatedFileFilterProps) {
     super(props);
-    this.state = { file: undefined };
+    this.state = { relatedFile: undefined };
   }
 
   handleSelectedFile(acceptedFiles: File[]) {
     const file = acceptedFiles[0];
-    this.setState({ file });
-    this.props.onSelectedFileChange(file);
+    const relatedFile: RelatedFile = { kind: 'localFile', file };
+    this.setState({ relatedFile });
+    this.props.onSelectedFileChange(relatedFile);
   }
 
   render() {
     const maxSize = 100 * 1024 * 1024; // maximum file size
-    const file = this.state.file;
-    if (file) {
+    const relatedFile = this.state.relatedFile;
+    if (!relatedFile) {
+    } else if (relatedFile.kind === 'localFile') {
       return (
         <div>
           <CardShadow height={'auto'}>
-            <span className="font-weight-bold">Selected file:</span> {file.name}{' '}
-            ({formatSize(file.size)})
+            <span className="font-weight-bold">Selected file:</span>{' '}
+            {relatedFile.file.name} ({formatSize(relatedFile.file.size)})
           </CardShadow>
         </div>
       );
+    } else if (relatedFile.kind === 'searchResult') {
+      return (
+        <div>
+          <CardShadow height={'auto'}>
+            <span className="font-weight-bold">Selected dataset:</span>{' '}
+            {relatedFile.datasetId}
+          </CardShadow>
+        </div>
+      );
+    } else {
+      throw new Error('Invalid RelatedFile argument');
     }
     return (
       <div>

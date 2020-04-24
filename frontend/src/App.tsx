@@ -19,6 +19,7 @@ import {
   FilterVariables,
   TemporalVariable,
   GeoSpatialVariable,
+  RelatedFile,
 } from './api/types';
 import { Chip, ChipGroup } from './components/Chip/Chip';
 import { MainMenu } from './components/MainMenu/MainMenu';
@@ -34,7 +35,7 @@ interface Filter {
   icon: Icon.Icon;
   hidden: boolean;
   component: JSX.Element;
-  state?: FilterVariables | File | string[];
+  state?: FilterVariables | RelatedFile | string[];
 }
 
 interface AppState {
@@ -93,7 +94,7 @@ class SearchApp extends React.Component<{}, AppState> {
 
   updateFilterState(
     filterId: string,
-    state?: TemporalVariable | GeoSpatialVariable | File | string[]
+    state?: TemporalVariable | GeoSpatialVariable | RelatedFile | string[]
   ) {
     const filter = this.state.filters.find(f => f.id === filterId);
     if (filter) {
@@ -138,9 +139,9 @@ class SearchApp extends React.Component<{}, AppState> {
         .filter(f => f && f.state)
         .map(f => f.state as FilterVariables);
 
-      const files: File[] = this.state.filters
+      const relatedFiles: RelatedFile[] = this.state.filters
         .filter(f => f.type === FilterType.RELATED_FILE)
-        .map(f => f.state as File);
+        .map(f => f.state as RelatedFile);
 
       const sources: string[][] = this.state.filters
         .filter(f => f.type === FilterType.SOURCE)
@@ -150,7 +151,7 @@ class SearchApp extends React.Component<{}, AppState> {
         query: this.state.query,
         filters: filterVariables,
         sources: sources[0],
-        file: files[0],
+        relatedFile: relatedFiles[0],
       };
 
       this.setState({

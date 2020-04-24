@@ -4,6 +4,7 @@ import {
   SearchResult,
   FilterVariables,
   QuerySpec,
+  RelatedFile,
 } from './types';
 import { API_URL } from '../config';
 
@@ -36,7 +37,7 @@ export interface SearchQuery {
   query?: string;
   filters?: FilterVariables[];
   sources?: string[];
-  file?: File;
+  relatedFile?: RelatedFile;
 }
 
 function parseQueryString(q?: string): string[] {
@@ -54,8 +55,14 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
 
   const formData = new FormData();
   formData.append('query', JSON.stringify(spec));
-  if (q.file) {
-    formData.append('data', q.file);
+  if (q.relatedFile) {
+    if (q.relatedFile.kind === 'localFile') {
+      formData.append('data', q.relatedFile.file);
+    } else if (q.relatedFile.kind === 'searchResult') {
+      formData.append('data_id', q.relatedFile.datasetId);
+    } else {
+      throw new Error('Invalid RelatedFile argument');
+    }
   }
   const config = {
     headers: {
@@ -96,7 +103,7 @@ export function augment(
     .post('/augment', formData, config)
     .then((response: AxiosResponse) => {
       if (response.status !== 200) {
-        throw Error('Status ' + response.status);
+        throw new Error('Status ' + response.status);
       }
       return {
         status: RequestResult.SUCCESS,
