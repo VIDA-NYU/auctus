@@ -14,4 +14,4 @@ COPY --from=build /src/build /var/www/html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # nginx default CMD is ["nginx", "-g", "daemon off;"]
-CMD ["sh", "-c", "sed -i 's|<meta name=\"api_url\"[^>]\\+>|<meta name=\"api_url\" content=\"'\"$API_URL\"'\">|' /var/www/html/index.html && nginx -g \"daemon off;\""]
+CMD ["sh", "-c", "sed -i 's|<meta name=\"api_url\"[^>]\\+>|<meta name=\"api_url\" content=\"'\"$API_URL\"'\">|' /var/www/html/index.html && nginx -g \"daemon off;\" -g \"worker_shutdown_timeout 2s;\""]
