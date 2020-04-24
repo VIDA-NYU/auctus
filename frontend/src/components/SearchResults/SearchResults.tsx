@@ -1,6 +1,6 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import { SearchResponse, SearchResult } from '../../api/types';
+import { SearchResponse, SearchResult, RelatedFile } from '../../api/types';
 import { SearchHit } from './SearchHit';
 import { SearchState } from './SearchState';
 import { Loading } from '../visus/Loading/Loading';
@@ -11,7 +11,7 @@ interface SearchResultsProps {
   searchQuery: SearchQuery;
   searchState: SearchState;
   searchResponse?: SearchResponse;
-  onSearchRelated: (datasetId: string) => void;
+  onSearchRelated: (relatedFile: RelatedFile) => void;
 }
 
 interface SearchResultsState {

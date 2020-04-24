@@ -249,8 +249,7 @@ class SearchApp extends React.Component<{}, AppState> {
     }
   }
 
-  onSearchRelated(datasetId: string) {
-    const relatedFile: RelatedFile = { kind: 'searchResult', datasetId };
+  onSearchRelated(relatedFile: RelatedFile) {
     const filters = this.state.filters;
     const relatedFileFilters = filters.filter(
       f => f.type === FilterType.RELATED_FILE

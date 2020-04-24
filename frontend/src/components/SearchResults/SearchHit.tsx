@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as Icon from 'react-feather';
 import { API_URL } from '../../config';
 import { formatSize } from '../../utils';
-import { SearchResult } from '../../api/types';
+import { SearchResult, RelatedFile } from '../../api/types';
 import { Description, DataTypes, DatasetColumns } from './Metadata';
 import { AugmentationOptions } from './AugmentationOptions';
 import { SearchQuery } from '../../api/rest';
@@ -11,7 +11,7 @@ interface SearchHitProps {
   searchQuery: SearchQuery;
   hit: SearchResult;
   onSearchHitExpand: (hit: SearchResult) => void;
-  onSearchRelated: (datasetId: string) => void;
+  onSearchRelated: (relatedFile: RelatedFile) => void;
 }
 
 interface SearchHitState {
@@ -76,7 +76,13 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
   }
 
   onSearchRelated() {
-    this.props.onSearchRelated(this.props.hit.id);
+    const relatedFile: RelatedFile = {
+      kind: 'searchResult',
+      datasetId: this.props.hit.id,
+      datasetName: this.props.hit.metadata.name,
+      datasetSize: this.props.hit.metadata.size,
+    };
+    this.props.onSearchRelated(relatedFile);
   }
 
   render() {

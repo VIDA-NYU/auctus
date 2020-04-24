@@ -54,7 +54,7 @@ class RelatedFileFilter extends PersistentComponent<
         <div>
           <CardShadow height={'auto'}>
             <span className="font-weight-bold">Selected dataset:</span>{' '}
-            {relatedFile.datasetId}
+            {relatedFile.datasetName} ({formatSize(relatedFile.datasetSize)})
           </CardShadow>
         </div>
       );

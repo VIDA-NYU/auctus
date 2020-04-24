@@ -95,6 +95,8 @@ export interface RelatedToLocalFile {
 export interface RelatedToSearchResult {
   kind: 'searchResult';
   datasetId: string;
+  datasetName: string;
+  datasetSize: number;
 }
 
 export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
