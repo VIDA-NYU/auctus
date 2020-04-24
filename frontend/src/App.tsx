@@ -247,6 +247,29 @@ class SearchApp extends React.Component<{}, AppState> {
     }
   }
 
+  onSearchRelated(datasetId: string) {
+    const relatedFile: RelatedFile = { kind: 'searchResult', datasetId };
+    const filters = this.state.filters;
+    const relatedFileFilters = filters.filter(
+      f => f.type === FilterType.RELATED_FILE
+    );
+    if (relatedFileFilters.length > 0) {
+      // Update existing filter
+      relatedFileFilters[0].state = relatedFile;
+    } else {
+      // Add new filter
+      const filterId = generateRandomId();
+      filters.push({
+        id: filterId,
+        type: FilterType.RELATED_FILE,
+        hidden: false,
+        state: relatedFile, // TODO: state on the RelatedFileFilter component is not set correctly
+        ...this.createFilterComponent(filterId, FilterType.RELATED_FILE),
+      });
+    }
+    this.setState({ filters: [...filters] });
+  }
+
   renderFilters() {
     return this.state.filters
       .filter(f => !f.hidden)
@@ -315,6 +338,7 @@ class SearchApp extends React.Component<{}, AppState> {
                   searchQuery={this.state.searchQuery}
                   searchState={this.state.searchState}
                   searchResponse={this.state.searchResponse}
+                  onSearchRelated={this.onSearchRelated.bind(this)}
                 />
               </div>
             </div>

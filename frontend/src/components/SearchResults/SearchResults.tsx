@@ -11,6 +11,7 @@ interface SearchResultsProps {
   searchQuery: SearchQuery;
   searchState: SearchState;
   searchResponse?: SearchResponse;
+  onSearchRelated: (datasetId: string) => void;
 }
 
 interface SearchResultsState {
@@ -85,6 +86,7 @@ class SearchResults extends React.PureComponent<
                   hit={hit}
                   key={idx}
                   onSearchHitExpand={hit => this.setState({ selectedHit: hit })}
+                  onSearchRelated={this.props.onSearchRelated}
                 />
               ))}
             </div>

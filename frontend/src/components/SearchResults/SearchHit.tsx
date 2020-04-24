@@ -11,6 +11,7 @@ interface SearchHitProps {
   searchQuery: SearchQuery;
   hit: SearchResult;
   onSearchHitExpand: (hit: SearchResult) => void;
+  onSearchRelated: (datasetId: string) => void;
 }
 
 interface SearchHitState {
@@ -20,6 +21,7 @@ interface SearchHitState {
 function DownloadViewDetails(props: {
   id: string;
   onSearchHitExpand: () => void;
+  onSearchRelated: () => void;
 }) {
   return (
     <div className="mt-2">
@@ -34,6 +36,12 @@ function DownloadViewDetails(props: {
         onClick={props.onSearchHitExpand}
       >
         <Icon.Info className="feather" /> View Details
+      </button>
+      <button
+        className="btn btn-sm btn-outline-primary ml-2"
+        onClick={props.onSearchRelated}
+      >
+        Search related
       </button>
     </div>
   );
@@ -60,10 +68,15 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
       hidden: true,
     };
     this.onSearchHitExpand = this.onSearchHitExpand.bind(this);
+    this.onSearchRelated = this.onSearchRelated.bind(this);
   }
 
   onSearchHitExpand() {
     this.props.onSearchHitExpand(this.props.hit);
+  }
+
+  onSearchRelated() {
+    this.props.onSearchRelated(this.props.hit.id);
   }
 
   render() {
@@ -79,6 +92,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
           <DownloadViewDetails
             id={hit.id}
             onSearchHitExpand={this.onSearchHitExpand}
+            onSearchRelated={this.onSearchRelated}
           />
           <AugmentationOptions hit={hit} searchQuery={searchQuery} />
         </div>
