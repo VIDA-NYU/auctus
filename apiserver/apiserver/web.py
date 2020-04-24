@@ -108,6 +108,32 @@ class BaseHandler(RequestHandler):
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
 
+def get_data_profile_from_es(es, dataset_id):
+    try:
+        data_profile = es.get('datamart', dataset_id)['_source']
+    except elasticsearch.NotFoundError:
+        return None
+
+    # Get Lazo sketches from Elasticsearch
+    # FIXME: Add support for this in Lazo instead
+    for col in data_profile['columns']:
+        try:
+            sketch = es.get(
+                'lazo',
+                '%s__.__%s' % (dataset_id, col['name']),
+            )['_source']
+        except elasticsearch.NotFoundError:
+            pass
+        else:
+            col['lazo'] = dict(
+                n_permutations=int(sketch['n_permutations']),
+                hash_values=[int(e) for e in sketch['hash']],
+                cardinality=int(sketch['cardinality']),
+            )
+
+    return data_profile
+
+
 class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_PROFILE_TIME.time()
     def post(self):
@@ -228,28 +254,12 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # parameter: data_id
         if data_id:
-            es = self.application.elasticsearch
-            try:
-                data_profile = es.get('datamart', data_id)['_source']
-            except elasticsearch.NotFoundError:
+            data_profile = get_data_profile_from_es(
+                self.application.elasticsearch,
+                data_id,
+            )
+            if data_profile is None:
                 return self.send_error_json(400, "No such dataset")
-
-            # Get Lazo sketches from Elasticsearch
-            # FIXME: Add support for this in Lazo instead
-            for col in data_profile['columns']:
-                try:
-                    sketch = es.get(
-                        'lazo',
-                        '%s__.__%s' % (data_id, col['name']),
-                    )['_source']
-                except elasticsearch.NotFoundError:
-                    pass
-                else:
-                    col['lazo'] = dict(
-                        n_permutations=int(sketch['n_permutations']),
-                        hash_values=[int(e) for e in sketch['hash']],
-                        cardinality=int(sketch['cardinality']),
-                    )
 
         # parameter: query
         query_args_main = list()
@@ -573,8 +583,10 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             data = data.encode('utf-8')
         elif 'data' in self.request.files:
             data = self.request.files['data'][0].body
-        else:
-            return self.send_error_json(400, "Missing 'data'")
+
+        data_id = self.get_body_argument('data_id', None)
+        if data_id in self.request.files:
+            data_id = self.request.files['data_id'][0].body.decode('utf-8')
 
         columns = self.get_body_argument('columns', None)
         if 'columns' in self.request.files:
@@ -585,10 +597,27 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
 
         # data
-        try:
-            data_profile, data_hash = self.handle_data_parameter(data)
-        except ClientError as e:
-            return self.send_error_json(400, str(e))
+        if data_id is not None and data is not None:
+            return self.send_error_json(
+                400,
+                "Please only provide one input dataset " +
+                "(either 'data' or 'data_id')",
+            )
+        elif data_id is not None:
+            data_profile = get_data_profile_from_es(
+                self.application.elasticsearch,
+                data_id,
+            )
+            data_hash = None
+            if data_profile is None:
+                return self.send_error_json(400, "No such dataset")
+        elif data is not None:
+            try:
+                data_profile, data_hash = self.handle_data_parameter(data)
+            except ClientError as e:
+                return self.send_error_json(400, str(e))
+        else:
+            return self.send_error_json(400, "Missing 'data'")
 
         # materialize augmentation data
         metadata = task['metadata']
@@ -620,18 +649,29 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         key = hash_json(
             task=task,
-            supplied_data=data_hash,
+            supplied_data=data_hash or data_id,
             version=os.environ['DATAMART_VERSION'],
             columns=columns,
         )
 
         def create_aug(cache_temp):
             try:
-                with get_dataset(metadata, task['id'], format='csv') as newdata:
-                    # perform augmentation
+                with contextlib.ExitStack() as stack:
+                    # Get augmentation data
+                    newdata = stack.enter_context(
+                        get_dataset(metadata, task['id'], format='csv'),
+                    )
+                    # Get  input data if it's a reference to a dataset
+                    if data_id:
+                        data_file = stack.enter_context(
+                            get_dataset(data_profile, data_id, format='csv'),
+                        )
+                    else:
+                        data_file = io.BytesIO(data)
+                    # Perform augmentation
                     logger.info("Performing augmentation with supplied data")
                     augment(
-                        io.BytesIO(data),
+                        data_file,
                         newdata,
                         data_profile,
                         task,
