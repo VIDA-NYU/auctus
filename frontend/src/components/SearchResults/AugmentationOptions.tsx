@@ -91,7 +91,8 @@ class AugmentationOptions extends React.PureComponent<
     const task = cloneObject(hit);
     task.augmentation = augmentation;
 
-    api.augment(this.props.searchQuery.file!, task).then(response => {
+    const relatedFile = this.props.searchQuery.relatedFile!;
+    api.augment(relatedFile, task).then(response => {
       const zipFile = response.data;
       if (zipFile) {
         triggerFileDownload(zipFile, 'augmentation.zip');

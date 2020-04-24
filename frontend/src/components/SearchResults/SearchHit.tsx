@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as Icon from 'react-feather';
 import { API_URL } from '../../config';
 import { formatSize } from '../../utils';
-import { SearchResult } from '../../api/types';
+import { SearchResult, RelatedFile } from '../../api/types';
 import { Description, DataTypes, DatasetColumns } from './Metadata';
 import { AugmentationOptions } from './AugmentationOptions';
 import { SearchQuery } from '../../api/rest';
@@ -11,6 +11,7 @@ interface SearchHitProps {
   searchQuery: SearchQuery;
   hit: SearchResult;
   onSearchHitExpand: (hit: SearchResult) => void;
+  onSearchRelated: (relatedFile: RelatedFile) => void;
 }
 
 interface SearchHitState {
@@ -20,6 +21,7 @@ interface SearchHitState {
 function DownloadViewDetails(props: {
   id: string;
   onSearchHitExpand: () => void;
+  onSearchRelated: () => void;
 }) {
   return (
     <div className="mt-2">
@@ -34,6 +36,12 @@ function DownloadViewDetails(props: {
         onClick={props.onSearchHitExpand}
       >
         <Icon.Info className="feather" /> View Details
+      </button>
+      <button
+        className="btn btn-sm btn-outline-primary ml-2"
+        onClick={props.onSearchRelated}
+      >
+        <Icon.Search className="feather" /> Search related
       </button>
     </div>
   );
@@ -60,10 +68,21 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
       hidden: true,
     };
     this.onSearchHitExpand = this.onSearchHitExpand.bind(this);
+    this.onSearchRelated = this.onSearchRelated.bind(this);
   }
 
   onSearchHitExpand() {
     this.props.onSearchHitExpand(this.props.hit);
+  }
+
+  onSearchRelated() {
+    const relatedFile: RelatedFile = {
+      kind: 'searchResult',
+      datasetId: this.props.hit.id,
+      datasetName: this.props.hit.metadata.name,
+      datasetSize: this.props.hit.metadata.size,
+    };
+    this.props.onSearchRelated(relatedFile);
   }
 
   render() {
@@ -79,6 +98,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
           <DownloadViewDetails
             id={hit.id}
             onSearchHitExpand={this.onSearchHitExpand}
+            onSearchRelated={this.onSearchRelated}
           />
           <AugmentationOptions hit={hit} searchQuery={searchQuery} />
         </div>

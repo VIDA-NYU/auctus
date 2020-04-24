@@ -108,6 +108,32 @@ class BaseHandler(RequestHandler):
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
 
+def get_data_profile_from_es(es, dataset_id):
+    try:
+        data_profile = es.get('datamart', dataset_id)['_source']
+    except elasticsearch.NotFoundError:
+        return None
+
+    # Get Lazo sketches from Elasticsearch
+    # FIXME: Add support for this in Lazo instead
+    for col in data_profile['columns']:
+        try:
+            sketch = es.get(
+                'lazo',
+                '%s__.__%s' % (dataset_id, col['name']),
+            )['_source']
+        except elasticsearch.NotFoundError:
+            pass
+        else:
+            col['lazo'] = dict(
+                n_permutations=int(sketch['n_permutations']),
+                hash_values=[int(e) for e in sketch['hash']],
+                cardinality=int(sketch['cardinality']),
+            )
+
+    return data_profile
+
+
 class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_PROFILE_TIME.time()
     def post(self):
@@ -146,28 +172,38 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
         type_ = self.request.headers.get('Content-type', '')
         data = None
+        data_id = None
         data_profile = None
         if type_.startswith('application/json'):
             query = self.get_json()
         elif (type_.startswith('multipart/form-data') or
                 type_.startswith('application/x-www-form-urlencoded')):
+            # Get the query document
             query = self.get_body_argument('query', None)
             if query is None and 'query' in self.request.files:
                 query = self.request.files['query'][0].body.decode('utf-8')
             if query is not None:
                 query = json.loads(query)
 
+            # Get the data
             data = self.get_body_argument('data', None)
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
             elif data is not None:
                 data = data.encode('utf-8')
 
+            # Get a reference to a dataset in the index
+            data_id = self.get_body_argument('data_id', None)
+            if 'data_id' in self.request.files:
+                data_id = self.request.files['data_id'][0].body.decode('utf-8')
+
+            # Get the data sketch JSON
             data_profile = self.get_body_argument('data_profile', None)
             if data_profile is None and 'data_profile' in self.request.files:
                 data_profile = self.request.files['data_profile'][0].body
                 data_profile = data_profile.decode('utf-8')
             if data_profile is not None:
+                # Data profile can optionally be just the hash
                 if len(data_profile) == 40 and '{' not in data_profile:
                     data_profile = self.application.redis.get(
                         'profile:' + data_profile,
@@ -195,16 +231,18 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 "send data alone",
             )
 
-        if data is not None and data_profile is not None:
+        if sum(1 for e in [data, data_id, data_profile] if e is not None) > 1:
             return self.send_error_json(
                 400,
-                "Please send either 'data' or 'data_profile'",
+                "Please only provide one input dataset (either 'data', " +
+                "'data_id', or  'data_profile')",
             )
 
-        logger.info("Got search, content-type=%r%s%s%s",
+        logger.info("Got search, content-type=%r%s%s%s%s",
                     type_.split(';')[0],
                     ', query' if query else '',
                     ', data' if data else '',
+                    ', data_id' if data_id else '',
                     ', data_profile' if data_profile else '')
 
         # parameter: data
@@ -213,6 +251,15 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
+
+        # parameter: data_id
+        if data_id:
+            data_profile = get_data_profile_from_es(
+                self.application.elasticsearch,
+                data_id,
+            )
+            if data_profile is None:
+                return self.send_error_json(400, "No such dataset")
 
         # parameter: query
         query_args_main = list()
@@ -476,7 +523,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 # perform augmentation
                 logger.info("Performing half-augmentation with supplied data")
                 new_path = augment(
-                    data,
+                    io.BytesIO(data),
                     newdata,
                     data_profile,
                     task,
@@ -536,8 +583,10 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             data = data.encode('utf-8')
         elif 'data' in self.request.files:
             data = self.request.files['data'][0].body
-        else:
-            return self.send_error_json(400, "Missing 'data'")
+
+        data_id = self.get_body_argument('data_id', None)
+        if data_id in self.request.files:
+            data_id = self.request.files['data_id'][0].body.decode('utf-8')
 
         columns = self.get_body_argument('columns', None)
         if 'columns' in self.request.files:
@@ -548,10 +597,27 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
 
         # data
-        try:
-            data_profile, data_hash = self.handle_data_parameter(data)
-        except ClientError as e:
-            return self.send_error_json(400, str(e))
+        if data_id is not None and data is not None:
+            return self.send_error_json(
+                400,
+                "Please only provide one input dataset " +
+                "(either 'data' or 'data_id')",
+            )
+        elif data_id is not None:
+            data_profile = get_data_profile_from_es(
+                self.application.elasticsearch,
+                data_id,
+            )
+            data_hash = None
+            if data_profile is None:
+                return self.send_error_json(400, "No such dataset")
+        elif data is not None:
+            try:
+                data_profile, data_hash = self.handle_data_parameter(data)
+            except ClientError as e:
+                return self.send_error_json(400, str(e))
+        else:
+            return self.send_error_json(400, "Missing 'data'")
 
         # materialize augmentation data
         metadata = task['metadata']
@@ -583,18 +649,29 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         key = hash_json(
             task=task,
-            supplied_data=data_hash,
+            supplied_data=data_hash or data_id,
             version=os.environ['DATAMART_VERSION'],
             columns=columns,
         )
 
         def create_aug(cache_temp):
             try:
-                with get_dataset(metadata, task['id'], format='csv') as newdata:
-                    # perform augmentation
+                with contextlib.ExitStack() as stack:
+                    # Get augmentation data
+                    newdata = stack.enter_context(
+                        get_dataset(metadata, task['id'], format='csv'),
+                    )
+                    # Get  input data if it's a reference to a dataset
+                    if data_id:
+                        data_file = stack.enter_context(
+                            get_dataset(data_profile, data_id, format='csv'),
+                        )
+                    else:
+                        data_file = io.BytesIO(data)
+                    # Perform augmentation
                     logger.info("Performing augmentation with supplied data")
                     augment(
-                        data,
+                        data_file,
                         newdata,
                         data_profile,
                         task,

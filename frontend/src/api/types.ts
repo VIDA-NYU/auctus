@@ -86,3 +86,17 @@ export interface QuerySpec {
   source?: string[];
   variables: FilterVariables[];
 }
+
+export interface RelatedToLocalFile {
+  kind: 'localFile';
+  file: File;
+}
+
+export interface RelatedToSearchResult {
+  kind: 'searchResult';
+  datasetId: string;
+  datasetName: string;
+  datasetSize: number;
+}
+
+export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
