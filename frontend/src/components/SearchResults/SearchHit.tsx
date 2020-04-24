@@ -41,7 +41,7 @@ function DownloadViewDetails(props: {
         className="btn btn-sm btn-outline-primary ml-2"
         onClick={props.onSearchRelated}
       >
-        Search related
+        <Icon.Search className="feather" /> Search related
       </button>
     </div>
   );
