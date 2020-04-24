@@ -146,28 +146,38 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
         type_ = self.request.headers.get('Content-type', '')
         data = None
+        data_id = None
         data_profile = None
         if type_.startswith('application/json'):
             query = self.get_json()
         elif (type_.startswith('multipart/form-data') or
                 type_.startswith('application/x-www-form-urlencoded')):
+            # Get the query document
             query = self.get_body_argument('query', None)
             if query is None and 'query' in self.request.files:
                 query = self.request.files['query'][0].body.decode('utf-8')
             if query is not None:
                 query = json.loads(query)
 
+            # Get the data
             data = self.get_body_argument('data', None)
             if 'data' in self.request.files:
                 data = self.request.files['data'][0].body
             elif data is not None:
                 data = data.encode('utf-8')
 
+            # Get a reference to a dataset in the index
+            data_id = self.get_body_argument('data_id', None)
+            if 'data_id' in self.request.files:
+                data_id = self.request.files['data_id'][0].body.decode('utf-8')
+
+            # Get the data sketch JSON
             data_profile = self.get_body_argument('data_profile', None)
             if data_profile is None and 'data_profile' in self.request.files:
                 data_profile = self.request.files['data_profile'][0].body
                 data_profile = data_profile.decode('utf-8')
             if data_profile is not None:
+                # Data profile can optionally be just the hash
                 if len(data_profile) == 40 and '{' not in data_profile:
                     data_profile = self.application.redis.get(
                         'profile:' + data_profile,
@@ -195,16 +205,18 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 "send data alone",
             )
 
-        if data is not None and data_profile is not None:
+        if sum(1 for e in [data, data_id, data_profile] if e is not None) > 1:
             return self.send_error_json(
                 400,
-                "Please send either 'data' or 'data_profile'",
+                "Please only provide one input dataset (either 'data', " +
+                "'data_id', or  'data_profile')",
             )
 
-        logger.info("Got search, content-type=%r%s%s%s",
+        logger.info("Got search, content-type=%r%s%s%s%s",
                     type_.split(';')[0],
                     ', query' if query else '',
                     ', data' if data else '',
+                    ', data_id' if data_id else '',
                     ', data_profile' if data_profile else '')
 
         # parameter: data
@@ -213,6 +225,31 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
+
+        # parameter: data_id
+        if data_id:
+            es = self.application.elasticsearch
+            try:
+                data_profile = es.get('datamart', data_id)['_source']
+            except elasticsearch.NotFoundError:
+                return self.send_error_json(400, "No such dataset")
+
+            # Get Lazo sketches from Elasticsearch
+            # FIXME: Add support for this in Lazo instead
+            for col in data_profile['columns']:
+                try:
+                    sketch = es.get(
+                        'lazo',
+                        '%s__.__%s' % (data_id, col['name']),
+                    )['_source']
+                except elasticsearch.NotFoundError:
+                    pass
+                else:
+                    col['lazo'] = dict(
+                        n_permutations=int(sketch['n_permutations']),
+                        hash_values=[int(e) for e in sketch['hash']],
+                        cardinality=int(sketch['cardinality']),
+                    )
 
         # parameter: query
         query_args_main = list()
