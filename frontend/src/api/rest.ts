@@ -86,12 +86,18 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
 }
 
 export function augment(
-  data: File,
+  data: RelatedFile,
   task: SearchResult
 ): Promise<Response<Blob>> {
   const formData = new FormData();
-  formData.append('data', data);
   formData.append('task', JSON.stringify(task));
+  if (data.kind === 'localFile') {
+    formData.append('data', data.file);
+  } else if (data.kind === 'searchResult') {
+    formData.append('data_id', data.datasetId);
+  } else {
+    throw new Error('Invalid RelatedFile argument');
+  }
 
   const config: AxiosRequestConfig = {
     responseType: 'blob',

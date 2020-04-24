@@ -92,20 +92,14 @@ class AugmentationOptions extends React.PureComponent<
     task.augmentation = augmentation;
 
     const relatedFile = this.props.searchQuery.relatedFile!;
-    if (relatedFile.kind === 'localFile') {
-      api.augment(relatedFile.file, task).then(response => {
-        const zipFile = response.data;
-        if (zipFile) {
-          triggerFileDownload(zipFile, 'augmentation.zip');
-        } else {
-          console.error('Augment API call returned invalid file: ', zipFile);
-        }
-      });
-    } else if (relatedFile.kind === 'searchResult') {
-      // TODO
-    } else {
-      throw new Error();
-    }
+    api.augment(relatedFile, task).then(response => {
+      const zipFile = response.data;
+      if (zipFile) {
+        triggerFileDownload(zipFile, 'augmentation.zip');
+      } else {
+        console.error('Augment API call returned invalid file: ', zipFile);
+      }
+    });
   }
 
   renderAugmentButton(hit: SearchResult, type: string) {
