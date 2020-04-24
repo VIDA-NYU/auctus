@@ -513,7 +513,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 # perform augmentation
                 logger.info("Performing half-augmentation with supplied data")
                 new_path = augment(
-                    data,
+                    io.BytesIO(data),
                     newdata,
                     data_profile,
                     task,
@@ -631,7 +631,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                     # perform augmentation
                     logger.info("Performing augmentation with supplied data")
                     augment(
-                        data,
+                        io.BytesIO(data),
                         newdata,
                         data_profile,
                         task,

@@ -509,7 +509,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     """
     Augments original data based on the task.
 
-    :param data: the data to be augmented, as bytes.
+    :param data: the data to be augmented, as binary file object.
     :param newdata: the path to the CSV file to augment with.
     :param metadata: the metadata of the data to be augmented.
     :param task: the augmentation task.
@@ -539,7 +539,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
     start = time.perf_counter()
     if task['augmentation']['type'] == 'join':
         output_metadata = join(
-            pd.read_csv(io.BytesIO(data), error_bad_lines=False),
+            pd.read_csv(data, error_bad_lines=False),
             newdata,
             metadata,
             task['metadata'],
@@ -551,7 +551,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
         )
     elif task['augmentation']['type'] == 'union':
         output_metadata = union(
-            pd.read_csv(io.BytesIO(data), error_bad_lines=False),
+            pd.read_csv(data, error_bad_lines=False),
             newdata,
             metadata,
             task['metadata'],
