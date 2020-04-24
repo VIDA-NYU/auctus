@@ -163,13 +163,14 @@ def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
 
 
 def get_numerical_join_search_results(
-    es, type_, type_value, pivot_column, ranges, dataset_id=None,
+    es, type_, type_value, pivot_column, ranges, dataset_id=None, ignore_datasets=None,
     query_sup_functions=None, query_sup_filters=None,
 ):
     """Retrieve numerical join search results that intersect with the input numerical ranges.
     """
 
     filter_query = []
+    must_not_query = []
     if query_sup_filters:
         filter_query.extend(query_sup_filters)
     filter_query.append({'term': {'%s' % type_: type_value}})
@@ -180,6 +181,11 @@ def get_numerical_join_search_results(
     if type_value != types.DATE_TIME:
         filter_query.append(
             {'fuzzy': {'name.raw': pivot_column}}
+        )
+    if ignore_datasets:
+        must_not_query.extend(
+            {'term': {'dataset_id': id}}
+            for id in ignore_datasets
         )
 
     should_query = list()
@@ -234,6 +240,7 @@ def get_numerical_join_search_results(
                     'bool': {
                         'filter': filter_query,
                         'should': should_query,
+                        'must_not': must_not_query,
                         'minimum_should_match': 1
                     }
                 },
@@ -254,7 +261,7 @@ def get_numerical_join_search_results(
 
 
 def get_spatial_join_search_results(
-    es, ranges, dataset_id=None,
+    es, ranges, dataset_id=None, ignore_datasets=None,
     query_sup_functions=None, query_sup_filters=None,
 ):
     """Retrieve spatial join search results that intersect
@@ -262,11 +269,17 @@ def get_spatial_join_search_results(
     """
 
     filter_query = []
+    must_not_query = []
     if query_sup_filters:
         filter_query.extend(query_sup_filters)
     if dataset_id:
         filter_query.append(
             {'term': {'dataset_id': dataset_id}}
+        )
+    if ignore_datasets:
+        must_not_query.extend(
+            {'term': {'dataset_id': id}}
+            for id in ignore_datasets
         )
 
     should_query = list()
@@ -332,7 +345,8 @@ def get_spatial_join_search_results(
                     'bool': {
                         'filter': filter_query,
                         'should': should_query,
-                        'minimum_should_match': 1
+                        'must_not': must_not_query,
+                        'minimum_should_match': 1,
                     }
                 },
                 'functions': query_sup_functions or [],
@@ -472,7 +486,7 @@ def get_dataset_metadata(es, dataset_id):
 
 
 def get_joinable_datasets(
-    es, lazo_client, data_profile, dataset_id=None,
+    es, lazo_client, data_profile, dataset_id=None, ignore_datasets=None,
     query_sup_functions=None, query_sup_filters=None,
     tabular_variables=(),
 ):
@@ -483,6 +497,7 @@ def get_joinable_datasets(
     :param lazo_client: client for the Lazo Index Server
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
+    :param ignore_datasets: Identifiers of datasets to ignore.
     :param query_sup_functions: list of query functions over sup index.
     :param query_sup_filters: list of query filters over sup index.
     :param tabular_variables: specifies which columns to focus on for the search.
@@ -513,6 +528,7 @@ def get_joinable_datasets(
                 es,
                 column_coverage[column]['ranges'],
                 dataset_id,
+                ignore_datasets,
                 query_sup_functions,
                 query_sup_filters,
             )
@@ -528,6 +544,7 @@ def get_joinable_datasets(
                 column_name,
                 column_coverage[column]['ranges'],
                 dataset_id,
+                ignore_datasets,
                 query_sup_functions,
                 query_sup_filters,
             )
@@ -551,6 +568,10 @@ def get_joinable_datasets(
         if dataset_id:
             query_results = [
                 res for res in query_results if res[0] == dataset_id
+            ]
+        if ignore_datasets:
+            query_results = [
+                res for res in query_results if res[0] not in ignore_datasets
             ]
         if not query_results:
             continue
@@ -666,7 +687,7 @@ def get_columns_by_type(data_profile, filter_=()):
     return output
 
 
-def get_unionable_datasets(es, data_profile, dataset_id=None,
+def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=None,
                            query_args_main=None, tabular_variables=()):
     """
     Retrieve datasets that can be unioned to an input dataset using fuzzy search
@@ -675,6 +696,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
     :param es: Elasticsearch client.
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
+    :param ignore_datasets: Identifiers of datasets to ignore.
     :param query_args_main: list of query arguments (optional).
     :param tabular_variables: specifies which columns to focus on for the search.
     """
@@ -711,6 +733,11 @@ def get_unionable_datasets(es, data_profile, dataset_id=None,
             if dataset_id:
                 partial_query['must'].append(
                     {'term': {'_id': dataset_id}}
+                )
+            if ignore_datasets:
+                partial_query.setdefault('must_not', []).extend(
+                    {'term': {'_id': id}}
+                    for id in ignore_datasets
                 )
 
             query = {
@@ -1093,7 +1120,7 @@ def get_augmentation_search_results(
     es, lazo_client, data_profile,
     query_args_main, query_sup_functions, query_sup_filters,
     tabular_variables,
-    dataset_id=None, join=True, union=True,
+    dataset_id=None, join=True, union=True, ignore_datasets=None,
 ):
     join_results = []
     union_results = []
@@ -1106,9 +1133,10 @@ def get_augmentation_search_results(
             lazo_client=lazo_client,
             data_profile=data_profile,
             dataset_id=dataset_id,
+            ignore_datasets=ignore_datasets,
             query_sup_functions=query_sup_functions,
             query_sup_filters=query_sup_filters,
-            tabular_variables=tabular_variables
+            tabular_variables=tabular_variables,
         )
         logger.info("Found %d join results in %.2fs",
                     len(join_results), time.perf_counter() - start)
@@ -1119,8 +1147,9 @@ def get_augmentation_search_results(
             es=es,
             data_profile=data_profile,
             dataset_id=dataset_id,
+            ignore_datasets=ignore_datasets,
             query_args_main=query_args_main,
-            tabular_variables=tabular_variables
+            tabular_variables=tabular_variables,
         )
         logger.info("Found %d union results in %.2fs",
                     len(union_results), time.perf_counter() - start)

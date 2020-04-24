@@ -321,6 +321,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 query_sup_functions,
                 query_sup_filters,
                 tabular_variables,
+                ignore_datasets=[data_id] if data_id is not None else [],
             )
         results = [enhance_metadata(result) for result in results]
 
