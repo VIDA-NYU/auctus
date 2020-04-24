@@ -186,7 +186,8 @@ class SearchApp extends React.Component<{}, AppState> {
 
   createFilterComponent(
     filterId: string,
-    filterType: FilterType
+    filterType: FilterType,
+    relatedFile?: RelatedFile
   ): { title: string; component: JSX.Element; icon: Icon.Icon } {
     switch (filterType) {
       case FilterType.TEMPORAL:
@@ -208,6 +209,7 @@ class SearchApp extends React.Component<{}, AppState> {
             <RelatedFileFilter
               key={`relatedfilefilter-${filterId}`}
               onSelectedFileChange={f => this.updateFilterState(filterId, f)}
+              relatedFile={relatedFile}
             />
           ),
         };
@@ -263,8 +265,12 @@ class SearchApp extends React.Component<{}, AppState> {
         id: filterId,
         type: FilterType.RELATED_FILE,
         hidden: false,
-        state: relatedFile, // TODO: state on the RelatedFileFilter component is not set correctly
-        ...this.createFilterComponent(filterId, FilterType.RELATED_FILE),
+        state: relatedFile,
+        ...this.createFilterComponent(
+          filterId,
+          FilterType.RELATED_FILE,
+          relatedFile
+        ),
       });
     }
     this.setState({ filters: [...filters] });

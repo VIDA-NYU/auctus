@@ -11,6 +11,7 @@ interface RelatedFileFilterState {
 
 interface RelatedFileFilterProps {
   onSelectedFileChange: (relatedFile: RelatedFile) => void;
+  relatedFile?: RelatedFile;
 }
 
 class RelatedFileFilter extends PersistentComponent<
@@ -19,7 +20,11 @@ class RelatedFileFilter extends PersistentComponent<
 > {
   constructor(props: RelatedFileFilterProps) {
     super(props);
-    this.state = { relatedFile: undefined };
+    if (props.relatedFile) {
+      this.state = { relatedFile: props.relatedFile };
+    } else {
+      this.state = { relatedFile: undefined };
+    }
   }
 
   handleSelectedFile(acceptedFiles: File[]) {
@@ -31,7 +36,9 @@ class RelatedFileFilter extends PersistentComponent<
 
   render() {
     const maxSize = 100 * 1024 * 1024; // maximum file size
-    const relatedFile = this.state.relatedFile;
+    const relatedFile = this.props.relatedFile
+      ? this.props.relatedFile
+      : this.state.relatedFile;
     if (!relatedFile) {
     } else if (relatedFile.kind === 'localFile') {
       return (
