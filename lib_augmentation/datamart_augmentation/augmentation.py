@@ -117,8 +117,8 @@ def match_column_temporal_resolutions(index_1, index_2):
     if not (index_1.is_all_dates and index_2.is_all_dates):
         return lambda idx: idx
 
-    resolution_1 = get_temporal_resolution(index_1)
-    resolution_2 = get_temporal_resolution(index_2)
+    resolution_1 = get_temporal_resolution(index_1[~index_1.isna()])
+    resolution_2 = get_temporal_resolution(index_2[~index_2.isna()])
     if (temporal_resolutions_priorities[resolution_1] >
             temporal_resolutions_priorities[resolution_2]):
         # Change resolution of second index to the first's
