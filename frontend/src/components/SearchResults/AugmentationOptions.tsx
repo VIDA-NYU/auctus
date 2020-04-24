@@ -213,6 +213,7 @@ class AugmentationOptions extends React.PureComponent<
         <div>
           <JoinColumnsSelector
             hit={hit}
+            excludeColumns={columns.map(c => c.rightColumn)}
             onChange={this.handleColumnSelectionChange}
           />
         </div>

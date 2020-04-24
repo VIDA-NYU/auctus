@@ -128,6 +128,7 @@ interface AggColumn {
 
 interface JoinColumnsSelectorProps {
   hit: SearchResult;
+  excludeColumns: string[];
   onChange: (columnAggregations: ColumnAggregations) => void;
 }
 
@@ -192,7 +193,7 @@ class JoinColumnsSelector extends React.Component<
   }
 
   render() {
-    const { hit } = this.props;
+    const { hit, excludeColumns } = this.props;
     if (!hit.augmentation || hit.augmentation.type === 'none') {
       return null;
     }
@@ -204,13 +205,15 @@ class JoinColumnsSelector extends React.Component<
             Select which columns should be added to the final merged dataset.
           </span>
           <BadgeGroup>
-            {hit.metadata.columns.map((c, i) => (
-              <DraggableBadge
-                key={`dragbadge-${i}-${hit.id}`}
-                column={c}
-                onDrop={(c, fn) => this.handleDrop(c, fn)}
-              />
-            ))}
+            {hit.metadata.columns
+              .filter(c => !excludeColumns.find(j => j === c.name))
+              .map((c, i) => (
+                <DraggableBadge
+                  key={`dragbadge-${i}-${hit.id}`}
+                  column={c}
+                  onDrop={(c, fn) => this.handleDrop(c, fn)}
+                />
+              ))}
           </BadgeGroup>
           <BadgeBin columns={this.state.columns} uniqueBinId={hit.id} />
         </div>
