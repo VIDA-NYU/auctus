@@ -51,8 +51,8 @@ class AugmentationOptions extends React.PureComponent<
     super(props);
     const initialState: AugmentationOptionsState = { checked: {} };
     const columns = getAugmentationColumns(props.hit.augmentation);
-    columns.forEach(c => {
-      initialState.checked[c.idx.toString()] = true;
+    columns.forEach((c, index) => {
+      initialState.checked[c.idx.toString()] = index === 0 ? true : false;
     });
     this.state = initialState;
     this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(
