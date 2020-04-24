@@ -211,11 +211,13 @@ class AugmentationOptions extends React.PureComponent<
         </b>
         {this.renderMergeColumns(columns, hit)}
         <div>
-          <JoinColumnsSelector
-            hit={hit}
-            excludeColumns={columns.map(c => c.rightColumn)}
-            onChange={this.handleColumnSelectionChange}
-          />
+          {hit.augmentation && hit.augmentation.type === 'join' && (
+            <JoinColumnsSelector
+              hit={hit}
+              excludeColumns={columns.map(c => c.rightColumn)}
+              onChange={this.handleColumnSelectionChange}
+            />
+          )}
         </div>
         <div>{this.renderAugmentButton(hit, type)}</div>
       </div>

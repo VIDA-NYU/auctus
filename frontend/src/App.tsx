@@ -27,6 +27,7 @@ import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import * as Icon from 'react-feather';
 import { Upload } from './components/Upload/Upload';
 import { Statistics } from './components/Statistics/Statistics';
+import { aggregateResults } from './api/augmentation';
 
 interface Filter {
   id: string;
@@ -159,7 +160,6 @@ class SearchApp extends React.Component<{}, AppState> {
         searchState: SearchState.SEARCH_REQUESTING,
         filters: this.state.filters.map(f => {
           f.hidden = true;
-          console.log(f);
           return f;
         }),
       });
@@ -171,7 +171,7 @@ class SearchApp extends React.Component<{}, AppState> {
             this.setState({
               searchState: SearchState.SEARCH_SUCCESS,
               searchResponse: {
-                results: response.data.results,
+                results: aggregateResults(response.data.results),
               },
             });
           } else {
