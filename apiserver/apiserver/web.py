@@ -624,7 +624,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         metadata = task['metadata']
 
         # no augmentation task provided -- will first look for possible augmentation
-        if task['augmentation']['type'] == 'none':
+        if 'augmentation' not in task or task['augmentation']['type'] == 'none':
             logger.info("No task, searching for augmentations")
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
