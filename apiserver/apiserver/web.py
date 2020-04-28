@@ -586,7 +586,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             data = self.request.files['data'][0].body
 
         data_id = self.get_body_argument('data_id', None)
-        if data_id in self.request.files:
+        if 'data_id' in self.request.files:
             data_id = self.request.files['data_id'][0].body.decode('utf-8')
 
         columns = self.get_body_argument('columns', None)
