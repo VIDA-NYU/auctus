@@ -512,13 +512,6 @@ class TestSearch(DatamartTest):
             results[0],
             {
                 'id': 'datamart.test.basic',
-                'augmentation': {
-                    'type': 'none',
-                    'left_columns': [],
-                    'right_columns': [],
-                    'left_columns_names': [],
-                    'right_columns_names': []
-                },
                 'score': lambda n: isinstance(n, float),
                 'metadata': basic_metadata,
                 'd3m_dataset_description': basic_metadata_d3m('4.0.0'),

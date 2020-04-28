@@ -608,13 +608,6 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     id=h['_id'],
                     score=h['_score'],
                     metadata=meta,
-                    augmentation={
-                        'type': 'none',
-                        'left_columns': [],
-                        'left_columns_names': [],
-                        'right_columns': [],
-                        'right_columns_names': []
-                    },
                     supplied_id=None,
                     supplied_resource_id=None
                 ))
