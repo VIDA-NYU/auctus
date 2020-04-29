@@ -113,6 +113,7 @@ class Coordinator(object):
     async def _amqp(self):
         connection = await aio_pika.connect_robust(
             host=os.environ['AMQP_HOST'],
+            port=os.environ['AMQP_PORT'],
             login=os.environ['AMQP_USER'],
             password=os.environ['AMQP_PASSWORD'],
         )

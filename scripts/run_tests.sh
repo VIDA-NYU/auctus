@@ -17,7 +17,7 @@ docker-compose up -d --force-recreate profiler apiserver apilb frontend
 
 # XXX: To run with debugger: remove 'apiserver' up here, use 'read' to block, and
 # run apiserver container like so:
-# docker run -ti --rm --name apiserver --network datamart_default -e ELASTICSEARCH_HOSTS=elasticsearch:9200 -e AMQP_HOST=rabbitmq -e AMQP_USER=${AMQP_USER} -e AMQP_PASSWORD=${AMQP_PASSWORD} -e LAZO_SERVER_HOST=lazo -e LAZO_SERVER_PORT=50051 -v $(pwd)/volumes/datasets:/datasets -v $(pwd)/volumes/cache:/cache datamart_apiserver
+# docker run -ti --rm --name apiserver --network datamart_default -e ELASTICSEARCH_HOSTS=elasticsearch:9200 -e AMQP_HOST=rabbitmq -e AMQP_PORT=5672 -e AMQP_USER=${AMQP_USER} -e AMQP_PASSWORD=${AMQP_PASSWORD} -e LAZO_SERVER_HOST=lazo -e LAZO_SERVER_PORT=50051 -v $(pwd)/volumes/datasets:/datasets -v $(pwd)/volumes/cache:/cache datamart_apiserver
 #echo "START DATAMART-APISERVER MANUALLY" && read i
 
 # Clear cache

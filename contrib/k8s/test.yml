@@ -27,6 +27,8 @@ spec:
           value: elasticsearch:9200
         - name: AMQP_HOST
           value: rabbitmq
+        - name: AMQP_PORT
+        - value: 5672
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
