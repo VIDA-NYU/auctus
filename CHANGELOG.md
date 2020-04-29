@@ -1,5 +1,5 @@
-0.6 (TBD 2020-04-29)
-====================
+0.6 (2020-04-29)
+================
 
 Incompatible changes:
 * Updated Elasticsearch from 6 to 7. You should recreate your index from
