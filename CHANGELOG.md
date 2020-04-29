@@ -1,4 +1,4 @@
-0.6 (TBD 2020-01-??)
+0.6 (TBD 2020-04-29)
 ====================
 
 Incompatible changes:
@@ -15,6 +15,7 @@ scratch, or by importing the JSON files.
 * Profiling now needs a Nominatim server, to resolve addresses
 * New frontend, served as static JavaScript app that uses the API directly, in new container `frontend`
 * Renamed `query` container to `apiserver`
+* Updated Lazo to transform strings to lowercase (index needs to be recreated)
 
 Enhancements:
 * Compute additional metadata `missing_values_ratio`, `unclean_values_ratio`, `num_distinct_values`
@@ -37,6 +38,9 @@ Enhancements:
 * Add option to generate d3mIndex column, to use dataset as ML input
 * Allow ability to refer to already-profiled input data using a token instead of re-uploading
 * Many improvements to spatial profiling, added new aggregation resolutions (weekly, monthly, yearly)
+* Profiler detects and indexes temporal resolution of datetime columns
+* Can search for datasets related to another dataset in the index (by sending only its ID)
+* Add selection of aggregation functions to the API (`agg_functions` list in `augmentation` dict) and frontend
 
 0.5 (2019-08-28)
 ================
