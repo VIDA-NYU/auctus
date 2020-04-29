@@ -89,7 +89,7 @@ def get_spatial_ranges(values):
 
 
 def normalize_latlong_column_name(name, substrings):
-    name = name.lower()
+    name = name.strip().lower()
     for substr in substrings:
         idx = name.find(substr)
         if idx >= 0:
