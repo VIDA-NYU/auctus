@@ -251,8 +251,6 @@ def get_numerical_join_search_results(
         }
     }
 
-    # logger.info("Query (numerical): %r", body)
-
     return es.search(
         index='datamart_columns',
         body=body,
@@ -356,8 +354,6 @@ def get_spatial_join_search_results(
         }
     }
 
-    # logger.info("Query (spatial): %r", body)
-
     return es.search(
         index='datamart_spatial_coverage',
         body=body,
@@ -451,8 +447,6 @@ def get_textual_join_search_results(
             }
         }
     }
-
-    # logger.info("Query (textual): %r", body)
 
     return es.search(
         index='datamart_columns',
@@ -605,7 +599,6 @@ def get_joinable_datasets(
         dt = result['_source']['dataset_id']
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
-        # materialize = meta.get('materialize', {})
         if meta.get('description') and len(meta['description']) > 100:
             meta['description'] = meta['description'][:97] + "..."
         left_columns = []
@@ -767,8 +760,6 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
                 }
             }
 
-            # logger.info("Query (union-fuzzy): %r", query_obj)
-
             # FIXME: Use search-after API here?
             from_ = 0
             while True:
@@ -841,7 +832,6 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
     for dt, score in sorted_datasets:
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
-        # materialize = meta.get('materialize', {})
         if meta.get('description') and len(meta['description']) > 100:
             meta['description'] = meta['description'][:97] + "..."
         # TODO: augmentation information is incorrect
@@ -866,7 +856,6 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
         results.append(dict(
             id=dt,
             score=score,
-            # discoverer=materialize['identifier'],
             metadata=meta,
             augmentation={
                 'type': 'union',
