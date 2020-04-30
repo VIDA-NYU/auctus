@@ -106,6 +106,7 @@ class TestProfiler(DataTestCase):
             {
                 'datamart.test.basic': basic_metadata,
                 'datamart.test.geo': geo_metadata,
+                'datamart.test.geo_wkt': geo_wkt_metadata,
                 'datamart.test.agg': agg_metadata,
                 'datamart.test.lazo': lazo_metadata,
                 'datamart.test.daily': daily_metadata,
@@ -1926,6 +1927,7 @@ basic_metadata = {
             "name": "number",
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 6.150,
             "stddev": lambda n: round(n, 3) == 1.526,
             "coverage": (
@@ -2049,6 +2051,7 @@ agg_metadata = {
             "semantic_types": [
                 "http://schema.org/identifier"
             ],
+            "unclean_values_ratio": 0.0,
             "mean": 65.0,
             "stddev": lambda n: round(n, 3) == 26.926,
             "coverage": (
@@ -2091,6 +2094,7 @@ agg_metadata = {
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
             'missing_values_ratio': 0.25,
+            "unclean_values_ratio": 0.0,
             "mean": 200.0,
             "stddev": lambda n: round(n, 3) == 150.0,
             "coverage": (
@@ -2149,6 +2153,7 @@ geo_metadata = {
             "name": "lat",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/latitude" in l,
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 40.711,
             "stddev": lambda n: round(n, 4) == 0.0186,
             "plot": check_plot('histogram_numerical'),
@@ -2157,6 +2162,7 @@ geo_metadata = {
             "name": "long",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: "http://schema.org/longitude" in l,
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == -73.993,
             "stddev": lambda n: round(n, 5) == 0.00684,
             "plot": check_plot('histogram_numerical'),
@@ -2165,6 +2171,7 @@ geo_metadata = {
             "name": "height",
             "structural_type": "http://schema.org/Float",
             "semantic_types": lambda l: isinstance(l, list),
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 47.827,
             "stddev": lambda n: round(n, 2) == 21.28,
             "coverage": check_ranges(1.0, 90.0),
@@ -2251,6 +2258,72 @@ geo_metadata_d3m = lambda v: {
 }
 
 
+geo_wkt_metadata = {
+    "id": "datamart.test.geo_wkt",
+    "name": "geo_wkt",
+    "description": "Simple CSV in WKT format",
+    'source': 'remi',
+    "size": 4708,
+    "nb_rows": 100,
+    "nb_profiled_rows": 100,
+    "columns": [
+        {
+            "name": "id",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": [],
+            "missing_values_ratio": 0.01,
+            "num_distinct_values": 99
+        },
+        {
+            "name": "coords",
+            "structural_type": "http://schema.org/GeoCoordinates",
+            "semantic_types": [],
+            "unclean_values_ratio": 0.0,
+        },
+        {
+            "name": "height",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: isinstance(l, list),
+            "unclean_values_ratio": 0.0,
+            "mean": lambda n: round(n, 3) == 47.827,
+            "stddev": lambda n: round(n, 2) == 21.28,
+            "coverage": check_ranges(1.0, 90.0),
+            "plot": check_plot('histogram_numerical'),
+        }
+    ],
+    "spatial_coverage": [
+        {
+            "point": "coords",
+            "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
+        }
+    ],
+    "materialize": {
+        "identifier": "datamart.test",
+        "date": lambda d: isinstance(d, str),
+        "direct_url": "http://test_discoverer:7000/geo_wkt.csv",
+    },
+    "sample": "id,coords,height\nplace05,POINT (-74.001501 40.722948),42.904" +
+              "820\nplace06,POINT (-73.996996 40.735108),48.345170\nplace14," +
+              "POINT (-73.996875 40.733272),51.000673\nplace21,POINT (-73.99" +
+              "9205 40.733305),45.887002\nplace25,POINT (-73.999472 40.72781" +
+              "0),35.740136\nplace39,POINT (-73.996864 40.732095),47.361715" +
+              "\nplace41,POINT (-73.996098 40.727197),62.933509\nplace44,POI" +
+              "NT (-73.993764 40.730017),38.067007\nplace46,POINT (-73.99663" +
+              "3 40.730439),32.522354\nplace47,POINT (-73.998520 40.736176)," +
+              "50.594276\nplace48,POINT (-74.001459 40.730226),5.034845\npla" +
+              "ce51,POINT (-73.987300 40.692165),67.055957\nplace55,POINT (-" +
+              "73.984096 40.693658),27.633986\nplace60,POINT (-73.987374 40." +
+              "691525),70.962950\nplace65,POINT (-73.986475 40.692605),53.01" +
+              "2337\nplace72,POINT (-73.987301 40.692980),46.909863\nplace74" +
+              ",POINT (-73.988686 40.693227),59.675767\nplace85,POINT (-73.9" +
+              "89237 40.692914),73.357646\nplace87,POINT (-73.984213 40.6933" +
+              "26),32.226852\nplace97,POINT (-73.986984 40.692794),32.891257" +
+              "\n",
+    "date": lambda d: isinstance(d, str),
+    "version": version
+}
+
+
 lazo_metadata = {
     'id': 'datamart.test.lazo',
     "name": "lazo",
@@ -2271,6 +2344,7 @@ lazo_metadata = {
             "name": "year",
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
+            "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 2) == 1990.11,
             "stddev": lambda n: round(n, 4) == 0.3143,
             "coverage": (

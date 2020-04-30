@@ -19,6 +19,7 @@ export interface SpatialCoverage {
   lat?: string;
   lon?: string;
   address?: string;
+  point?: string;
   ranges: Array<{
     range: {
       coordinates: [[number, number], [number, number]];

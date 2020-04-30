@@ -1,6 +1,8 @@
 import logging
+import numpy
 import prometheus_client
 import requests
+from shapely import wkt
 from sklearn.cluster import KMeans
 from sklearn.exceptions import ConvergenceWarning
 import time
@@ -120,6 +122,27 @@ def pair_latlong_columns(columns_lat, columns_long):
     missed_lat = [columns_lat[i][0] for i in sorted(normalized_lat.values())]
 
     return pairs, (missed_lat, missed_long)
+
+
+def _wkt_loader(value):
+    try:
+        return wkt.loads(value)
+    except Exception:
+        return numpy.nan
+
+
+def parse_wkt_column(values):
+    """Parse a pandas.Series of points in WKT format into lat/long pairs.
+    """
+    # Parse points using shapely
+    # Use a wrapper around shapely.wkt.loads to ignore errors
+    values = values.apply(_wkt_loader)
+    # Drop NaN values
+    values = values.dropna(axis=0)
+    # Turn the points into (lat, long) pairs
+    values = list((p.y, p.x) for p in values)
+
+    return values
 
 
 def nominatim_query(url, *, q):

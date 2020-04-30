@@ -35,6 +35,15 @@ def main():
                 i = 'place%02d' % i
             print("%s,%f,%f,%f" % (i, lat, long, h), file=f_data)
 
+    with open(os.path.join(data_dir, 'geo_wkt.csv'), 'w') as f_data:
+        print("id,coords,height", file=f_data)
+        for i, (lat, long, h) in enumerate(zip(latitudes, longitudes, heights)):
+            if i == 42:
+                i = ''
+            else:
+                i = 'place%02d' % i
+            print("%s,POINT (%f %f),%f" % (i, long, lat, h), file=f_data)
+
 
 if __name__ == '__main__':
     main()

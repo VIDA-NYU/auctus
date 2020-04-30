@@ -29,6 +29,17 @@ class TestDiscoverer(Discoverer):
             dataset_id='geo',
         )
 
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test_discoverer:7000/geo_wkt.csv'),
+            {
+                'name': 'geo_wkt',
+                'description': "Simple CSV in WKT format",
+                'source': 'remi',
+            },
+            dataset_id='geo_wkt',
+        )
+
         # Put this one on disk
         with self.write_to_shared_storage('agg') as dirname:
             shutil.copy2('agg.csv', os.path.join(dirname, 'main.csv'))
