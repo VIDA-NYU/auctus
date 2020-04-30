@@ -1,4 +1,5 @@
 import contextlib
+import itertools
 from datetime import datetime
 import logging
 import numpy
@@ -424,6 +425,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 logger.warning("Unmatched latitude columns: %r", missed_lat)
             if missed_long:
                 logger.warning("Unmatched longitude columns: %r", missed_long)
+
+            # Remove semantic type from unpaired columns
+            missed = set(itertools.chain(missed_lat, missed_long))
+            for col in columns:
+                if col['name'] in missed:
+                    col['semantic_types'].discard(types.LATITUDE)
+                    col['semantic_types'].discard(types.LONGITUDE)
 
             for (name_lat, values_lat), (name_long, values_long) in pairs:
                 values = []
