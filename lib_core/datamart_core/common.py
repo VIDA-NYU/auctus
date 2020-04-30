@@ -28,6 +28,12 @@ def setup_logging(clear=True):
             record.args[0] == 'DELETE' and record.args[1].startswith('http')
         ):
             return False
+        if (
+            len(record.args) >= 3 and
+            record.args[0] == 'GET' and record.args[1].startswith('http') and
+            record.args[2] == 404
+        ):
+            return False
         return True
 
     logging.getLogger('elasticsearch').setLevel(logging.WARNING)
