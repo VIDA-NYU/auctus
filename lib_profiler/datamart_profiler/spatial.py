@@ -116,14 +116,10 @@ def pair_latlong_columns(columns_lat, columns_long):
         else:
             missed_long.append(name)
 
-    # Gather missed columns and log them
+    # Gather missed columns
     missed_lat = [columns_lat[i][0] for i in sorted(normalized_lat.values())]
-    if missed_lat:
-        logger.warning("Unmatched latitude columns: %r", missed_lat)
-    if missed_long:
-        logger.warning("Unmatched longitude columns: %r", missed_long)
 
-    return pairs
+    return pairs, (missed_lat, missed_long)
 
 
 def nominatim_query(url, *, q):

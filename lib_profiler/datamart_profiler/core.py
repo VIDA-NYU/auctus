@@ -409,12 +409,22 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 logger.warning("Error getting Lazo sketches")
                 raise
 
-    # Lat / Lon
+    # Lat / Long
     if coverage:
         logger.info("Computing spatial coverage...")
         with PROM_SPATIAL.time():
             spatial_coverage = []
-            pairs = pair_latlong_columns(columns_lat, columns_long)
+
+            # Pair lat & long columns
+            pairs, (missed_lat, missed_long) = \
+                pair_latlong_columns(columns_lat, columns_long)
+
+            # Log missed columns
+            if missed_lat:
+                logger.warning("Unmatched latitude columns: %r", missed_lat)
+            if missed_long:
+                logger.warning("Unmatched longitude columns: %r", missed_long)
+
             for (name_lat, values_lat), (name_long, values_long) in pairs:
                 values = []
                 for lat, long in zip(values_lat, values_long):

@@ -3,7 +3,6 @@ from dateutil.tz import UTC
 import os
 import pandas
 import unittest
-from unittest.mock import call, patch
 
 from datamart_profiler import process_dataset
 from datamart_profiler import profile_types
@@ -76,21 +75,20 @@ class TestLatlongSelection(unittest.TestCase):
 
     def test_pairing(self):
         """Test pairing latitude and longitude columns by name."""
-        with patch('datamart_profiler.spatial.logger') as mock_warn:
-            pairs = pair_latlong_columns(
-                [
-                    ('Pickup_latitude', 1),
-                    ('lat', 7),
-                    ('dropoff_latitude', 2),
-                    ('latitude_place', 8),
-                ],
-                [
-                    ('long', 5),
-                    ('dropoff_Longitude', 3),
-                    ('pickup_longitude', 4),
-                    ('other_Longitude', 6),
-                ],
-            )
+        pairs, (missed_lat, missed_long) = pair_latlong_columns(
+            [
+                ('Pickup_latitude', 1),
+                ('lat', 7),
+                ('dropoff_latitude', 2),
+                ('latitude_place', 8),
+            ],
+            [
+                ('long', 5),
+                ('dropoff_Longitude', 3),
+                ('pickup_longitude', 4),
+                ('other_Longitude', 6),
+            ],
+        )
         self.assertEqual(
             pairs,
             [
@@ -100,11 +98,12 @@ class TestLatlongSelection(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            mock_warn.warning.call_args_list,
-            [
-                call("Unmatched latitude columns: %r", ['latitude_place']),
-                call("Unmatched longitude columns: %r", ['other_Longitude']),
-            ],
+            missed_lat,
+            ['latitude_place'],
+        )
+        self.assertEqual(
+            missed_long,
+            ['other_Longitude'],
         )
 
 
