@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timedelta
 import elasticsearch.helpers
 import logging
+import os
 import requests
 import time
 from urllib.parse import urlencode
@@ -48,10 +49,11 @@ class ZenodoDiscoverer(Discoverer):
         )
         while url:
             logger.info("Getting %s", url)
-            response = requests.get(
-                url,
-                headers={'Accept': 'application/json'},
-            )
+            headers = {'Accept': 'application/json'}
+            token = os.environ.get('ZENODO_TOKEN')
+            if token:
+                headers['Authorization'] = 'Bearer %s' % token
+            response = requests.get(url, headers=headers)
             response.raise_for_status()
             obj = response.json()
 

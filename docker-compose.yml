@@ -232,6 +232,7 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
+      - ZENODO_TOKEN=${ZENODO_TOKEN}
     volumes:
       - ./volumes/cache:/cache
   noaa:
