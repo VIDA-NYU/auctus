@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+import elasticsearch.helpers
 import logging
 import requests
 import time
@@ -31,6 +32,7 @@ class ZenodoDiscoverer(Discoverer):
                 time.sleep((sleep_until - datetime.utcnow()).total_seconds())
 
     def get_datasets(self):
+        seen = set()
         url = (
             'https://zenodo.org/api/records/'
             '?' + urlencode(
@@ -55,12 +57,38 @@ class ZenodoDiscoverer(Discoverer):
 
             for record in obj:
                 self.process_record(record)
+                seen.add(record['id'])
 
             if 'next' in response.links:
                 url = response.links['next']['url']
                 time.sleep(2)
             else:
                 url = None
+
+        # Clean up the datasets we didn't see
+        deleted = 0
+        size = 10000
+        query = {
+            'query': {
+                'term': {
+                    'materialize.identifier': self.identifier,
+                },
+            },
+        }
+        hits = elasticsearch.helpers.scan(
+            self.elasticsearch,
+            index='datamart',
+            query=query,
+            size=size,
+            _source=['materialize.zenodo_record_id'],
+        )
+        for h in hits:
+            if h['_source']['materialize']['zenodo_record_id'] not in seen:
+                self.delete_dataset(full_id=h['_id'])
+                deleted += 1
+
+        if deleted:
+            logger.info("Deleted %d missing datasets", deleted)
 
     def process_record(self, record):
         # Get metadata common for the whole deposit
