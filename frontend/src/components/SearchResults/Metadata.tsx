@@ -5,7 +5,12 @@ import { SearchResult } from '../../api/types';
 import { ColumnMetadata } from '../../api/types';
 import { generateRandomId } from '../../utils';
 import { GeoSpatialCoverageMap } from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
-import { BadgeGroup, SpatialBadge, TemporalBadge } from '../Badges/Badges';
+import {
+  BadgeGroup,
+  SpatialBadge,
+  TemporalBadge,
+  ColumnBadge,
+} from '../Badges/Badges';
 
 export function SpatialCoverage(props: { hit: SearchResult }) {
   const { spatial_coverage } = props.hit.metadata;
@@ -36,8 +41,8 @@ export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
     <>
       {(isSpatial || isTemporal) && (
         <div className="mt-2">
-          {label && <b>Data Types: </b>}
           <BadgeGroup>
+            {label && <b>Data Types:</b>}
             {isSpatial && <SpatialBadge />}
             {isTemporal && <TemporalBadge />}
           </BadgeGroup>
@@ -106,20 +111,40 @@ export class DatasetColumns extends React.PureComponent<
     this.state = { hidden: true };
   }
 
-  splitColumns(columns: Array<{ name: string }>) {
-    const visibleColumns: string[] = [];
-    const hiddenColumns: string[] = [];
+  splitColumns(columns: ColumnMetadata[]) {
+    const visibleColumns: ColumnMetadata[] = [];
+    const hiddenColumns: ColumnMetadata[] = [];
     const maxLength = this.props.maxLength ? this.props.maxLength : 100;
     let characters = 0;
     columns.forEach(c => {
       if (characters + c.name.length > maxLength) {
-        hiddenColumns.push(c.name);
+        hiddenColumns.push(c);
       } else {
-        visibleColumns.push(c.name);
-        characters += c.name.length + 5; // add 5 extra to account for extra space of badges
+        visibleColumns.push(c);
+        // add extra chars to account for the badges' extra space
+        characters += c.name.length + 9;
       }
     });
     return { visibleColumns, hiddenColumns };
+  }
+
+  renderShowMoreButton(hiddenColumns: number) {
+    return (
+      <button
+        className="text-muted small"
+        style={{
+          cursor: 'pointer',
+          textDecoration: 'underline',
+          background: 'transparent',
+          border: 0,
+        }}
+        onClick={() => this.setState({ hidden: !this.state.hidden })}
+      >
+        {this.state.hidden
+          ? `Show ${hiddenColumns} more columns...`
+          : 'Hide columns...'}
+      </button>
+    );
   }
 
   render() {
@@ -129,44 +154,18 @@ export class DatasetColumns extends React.PureComponent<
     const showLabel = this.props.label ? this.props.label : false;
     return (
       <div className="mt-2">
-        {showLabel && (
-          <>
-            <b>Columns:</b>&nbsp;
-          </>
-        )}
-        {visibleColumns.map(cname => (
-          <span
-            key={`${this.id}-${cname}`}
-            className="badge badge-pill badge-secondary mr-1"
-          >
-            {cname}
-          </span>
-        ))}
-        {!this.state.hidden &&
-          hiddenColumns.map(cname => (
-            <span
-              key={`${this.id}-${cname}`}
-              className="badge badge-pill badge-secondary mr-1"
-            >
-              {cname}
-            </span>
+        <BadgeGroup>
+          {showLabel && <b>Columns:</b>}
+          {visibleColumns.map(column => (
+            <ColumnBadge column={column} key={`${this.id}-${column}`} />
           ))}
-        {hiddenColumns.length > 0 && (
-          <button
-            className="text-muted small"
-            style={{
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              background: 'transparent',
-              border: 0,
-            }}
-            onClick={() => this.setState({ hidden: !this.state.hidden })}
-          >
-            {this.state.hidden
-              ? `Show ${hiddenColumns.length} more...`
-              : 'Hide'}
-          </button>
-        )}
+          {!this.state.hidden &&
+            hiddenColumns.map(column => (
+              <ColumnBadge column={column} key={`${this.id}-${column}`} />
+            ))}
+          {hiddenColumns.length > 0 &&
+            this.renderShowMoreButton(hiddenColumns.length)}
+        </BadgeGroup>
       </div>
     );
   }
