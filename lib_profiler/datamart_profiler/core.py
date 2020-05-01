@@ -426,11 +426,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 logger.warning("Unmatched longitude columns: %r", missed_long)
 
             # Remove semantic type from unpaired columns
-            missed = set(itertools.chain(missed_lat, missed_long))
             for col in columns:
-                if col['name'] in missed:
-                    col['semantic_types'].discard(types.LATITUDE)
-                    col['semantic_types'].discard(types.LONGITUDE)
+                if col['name'] in missed_lat:
+                    col['semantic_types'].remove(types.LATITUDE)
+                if col['name'] in missed_long:
+                    col['semantic_types'].remove(types.LONGITUDE)
 
             # Compute ranges from lat/long pairs
             for (name_lat, values_lat), (name_long, values_long) in pairs:
