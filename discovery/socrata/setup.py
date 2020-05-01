@@ -29,7 +29,7 @@ setup(name='datamart-socrata_discovery-service',
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
-          'Development Status :: 2 - Pre-Alpha',
+          'Development Status :: 3 - Alpha',
           'Intended Audience :: Science/Research',
           'Natural Language :: English',
           'Operating System :: OS Independent',
