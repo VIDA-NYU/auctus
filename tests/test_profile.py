@@ -53,7 +53,7 @@ def check_plot(kind):
     return check
 
 
-class TestLatlongSelection(unittest.TestCase):
+class TestLatlongSelection(DataTestCase):
     def test_normalize_name(self):
         """Test normalizing column names."""
         self.assertEqual(
@@ -104,6 +104,55 @@ class TestLatlongSelection(unittest.TestCase):
         self.assertEqual(
             missed_long,
             ['other_Longitude'],
+        )
+
+    def test_process(self):
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+        with open(os.path.join(data_dir, 'lat_longs.csv')) as data:
+            metadata = process_dataset(
+                data,
+            )
+        # Check columns
+        self.assertJson(
+            [
+                {k: v for k, v in c.items()
+                 if k in ['name', 'structural_type', 'semantic_types']}
+                for c in metadata['columns']],
+            [
+                {
+                    'name': 'from latitude',
+                    'structural_type': 'http://schema.org/Float',
+                    'semantic_types': ['http://schema.org/latitude'],
+                },
+                {
+                    'name': 'to long',
+                    'structural_type': 'http://schema.org/Float',
+                    'semantic_types': ['http://schema.org/longitude'],
+                },
+                {
+                    'name': 'to lat',
+                    'structural_type': 'http://schema.org/Float',
+                    'semantic_types': ['http://schema.org/latitude'],
+                },
+                {
+                    'name': 'from longitude',
+                    'structural_type': 'http://schema.org/Float',
+                    'semantic_types': ['http://schema.org/longitude'],
+                },
+                {
+                    'name': 'unpaired lat',
+                    'structural_type': 'http://schema.org/Float',
+                    'semantic_types': [],
+                },
+            ]
+        )
+        # Check pairs
+        self.assertJson(
+            [{k: v for k, v in c.items() if k != 'ranges'} for c in metadata['spatial_coverage']],
+            [
+                {'lat': 'to lat', 'lon': 'to long'},
+                {'lat': 'from latitude', 'lon': 'from longitude'},
+            ],
         )
 
 
