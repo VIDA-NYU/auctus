@@ -157,11 +157,11 @@ export class DatasetColumns extends React.PureComponent<
         <BadgeGroup>
           {showLabel && <b>Columns:</b>}
           {visibleColumns.map(column => (
-            <ColumnBadge column={column} key={`${this.id}-${column}`} />
+            <ColumnBadge column={column} key={`${this.id}-${column.name}`} />
           ))}
           {!this.state.hidden &&
             hiddenColumns.map(column => (
-              <ColumnBadge column={column} key={`${this.id}-${column}`} />
+              <ColumnBadge column={column} key={`${this.id}-${column.name}`} />
             ))}
           {hiddenColumns.length > 0 &&
             this.renderShowMoreButton(hiddenColumns.length)}
