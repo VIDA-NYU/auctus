@@ -147,6 +147,9 @@ def parse_wkt_column(values):
     return values
 
 
+_nominatim_session = requests.Session()
+
+
 def nominatim_query(url, *, q):
     if url[-1] == '/':
         url = url [:-1]
@@ -158,7 +161,7 @@ def nominatim_query(url, *, q):
         start = time.perf_counter()
         if isinstance(q, (tuple, list)):
             # Batch query
-            res = requests.get(
+            res = _nominatim_session.get(
                 url +
                 '/search?' +
                 urlencode({
@@ -168,7 +171,7 @@ def nominatim_query(url, *, q):
             )
         else:
             # Normal query
-            res = requests.get(
+            res = _nominatim_session.get(
                 url +
                 '/search?' +
                 urlencode({'q': q, 'format': 'jsonv2'}),
