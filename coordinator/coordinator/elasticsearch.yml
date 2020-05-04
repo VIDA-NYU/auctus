@@ -9,6 +9,8 @@ datamart:
         type: text
       date:
         type: date
+      filename:
+        type: text
       license:
         type: keyword
       sample:
@@ -101,6 +103,8 @@ datamart_columns:
         type: text
       dataset_date:
         type: date
+      dataset_filename:
+        type: text
       dataset_license:
         type: keyword
       dataset_source:
@@ -166,6 +170,8 @@ datamart_spatial_coverage:
         type: text
       dataset_date:
         type: date
+      dataset_filename:
+        type: text
       dataset_license:
         type: keyword
       dataset_source:
@@ -184,12 +190,28 @@ datamart_spatial_coverage:
         type: text
       lat:
         type: text
+        index: false
       lon:
         type: text
+        index: false
       lat_index:
         type: integer
+        index: false
       lon_index:
         type: integer
+        index: false
+      address:
+        type: text
+        index: false
+      address_index:
+        type: integer
+        index: false
+      point:
+        type: text
+        index: false
+      point_index:
+        type: integer
+        index: false
       ranges:
         type: nested
         properties:
