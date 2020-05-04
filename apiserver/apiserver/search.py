@@ -635,6 +635,13 @@ def get_joinable_datasets(
             right_columns_names.append([
                 source['address'],
             ])
+        elif 'point_index' in source:
+            right_columns.append([
+                source['point_index'],
+            ])
+            right_columns_names.append([
+                source['point'],
+            ])
         else:
             continue
 

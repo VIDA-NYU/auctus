@@ -183,6 +183,11 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
                     spatial_coverage_metadata['address']
                 spatial_coverage_metadata['address_index'] = \
                     column_name_to_index[spatial_coverage_metadata['address']]
+            elif 'point' in spatial_coverage_metadata:
+                spatial_coverage_metadata['name'] = \
+                    spatial_coverage_metadata['point']
+                spatial_coverage_metadata['point_index'] = \
+                    column_name_to_index[spatial_coverage_metadata['point']]
             else:
                 raise ValueError("Invalid spatial_coverage")
             for spatial_range in spatial_coverage_metadata['ranges']:
