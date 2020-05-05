@@ -36,8 +36,16 @@ def setup_logging(clear=True):
             return False
         return True
 
+    def filter_shapely_exc(record):
+        if len(record.args) == 1 and record.args[0] == (
+            'ParseException: Expected word but encountered end of stream'
+        ):
+            return False
+        return True
+
     logging.getLogger('elasticsearch').setLevel(logging.WARNING)
     logging.getLogger('elasticsearch').addFilter(filter_delete)
+    logging.getLogger('shapely.geos').addFilter(filter_shapely_exc)
 
 
 def block_wait_future(future):
