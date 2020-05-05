@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class ZenodoDiscoverer(Discoverer):
     CHECK_INTERVAL = timedelta(days=1)
     EXTENSIONS = ('.xls', '.xlsx', '.csv')
+    KEYWORD_QUERY = ''
 
     def main_loop(self):
         while True:
@@ -40,7 +41,7 @@ class ZenodoDiscoverer(Discoverer):
                 dict(
                     page=1,
                     size=200,
-                    q='',
+                    q=self.KEYWORD_QUERY or '',
                     file_type=['csv', 'xlsx'],
                     type='dataset',
                 ),
