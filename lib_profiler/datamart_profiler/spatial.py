@@ -128,9 +128,13 @@ def pair_latlong_columns(columns_lat, columns_long):
 
 def _wkt_loader(value):
     try:
-        return wkt.loads(value)
+        point = wkt.loads(value)
     except Exception:
-        return numpy.nan
+        pass
+    else:
+        if -180.0 < point.x < 180.0 and -90.0 < point.y < 90.0:
+            return point
+    return numpy.nan
 
 
 def parse_wkt_column(values):
