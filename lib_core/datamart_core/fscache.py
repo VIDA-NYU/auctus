@@ -9,6 +9,7 @@ import os
 import prometheus_client
 import shutil
 import signal
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -122,14 +123,18 @@ def _lock_process(pipe, filepath, exclusive, timeout=None):
     # Exiting releases the lock
 
 
+# Using the 'fork' method causes deadlocks because other threads acquire locks
+_mp_context = multiprocessing.get_context('spawn')
+
+
 @contextlib.contextmanager
 def _lock(filepath, exclusive, timeout=None):
     type_ = "exclusive" if exclusive else "shared"
 
     started = False
     locked = False
-    pipe, pipe2 = multiprocessing.Pipe()
-    proc = multiprocessing.Process(
+    pipe, pipe2 = _mp_context.Pipe()
+    proc = _mp_context.Process(
         target=_lock_process,
         args=(pipe2, filepath, exclusive, timeout),
     )
@@ -159,6 +164,11 @@ def _lock(filepath, exclusive, timeout=None):
         logger.debug("Releasing %s lock: %r", type_, filepath)
         pipe.send('UNLOCK')
         proc.join(10)
+        if proc.exitcode is None:
+            start = time.perf_counter()
+            proc.join(3 * 60)
+            logger.critical("Releasing %s lock took %.2fs: %r",
+                            type_, time.perf_counter() - start, filepath)
         if proc.exitcode != 0:
             logger.critical("Failed (%r) to release %s lock: %r",
                             proc.exitcode, type_, filepath)

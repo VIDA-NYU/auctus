@@ -2,6 +2,7 @@ import io
 import logging
 from pkg_resources import iter_entry_points
 import requests
+import threading
 import time
 
 
@@ -81,6 +82,8 @@ converters = {}
 
 _materializers_loaded = False
 
+_materializers_mutex = threading.Lock()
+
 
 def load_materializers():
     """Load materializers/writers from package entrypoint metadata.
@@ -89,27 +92,31 @@ def load_materializers():
     again if more materializers/writers get installed.
     """
     global materializers, writers, converters, _materializers_loaded
-    _materializers_loaded = True
+    with _materializers_mutex:
+        if _materializers_loaded:
+            return
 
-    def load(what, entry_point_name):
-        result = {}
-        for entry_point in iter_entry_points(entry_point_name):
-            try:
-                obj = entry_point.load()
-            except Exception:
-                logger.exception("Failed to load %s %s from %s %s",
-                                 what,
-                                 entry_point.name,
-                                 entry_point.dist.project_name,
-                                 entry_point.dist.version)
-            else:
-                result[entry_point.name] = obj
-                logger.info("%s loaded: %s", what, entry_point.name)
-        return result
+        def load(what, entry_point_name):
+            result = {}
+            for entry_point in iter_entry_points(entry_point_name):
+                try:
+                    obj = entry_point.load()
+                except Exception:
+                    logger.exception("Failed to load %s %s from %s %s",
+                                     what,
+                                     entry_point.name,
+                                     entry_point.dist.project_name,
+                                     entry_point.dist.version)
+                else:
+                    result[entry_point.name] = obj
+                    logger.info("%s loaded: %s", what, entry_point.name)
+            return result
 
-    materializers = load('materializer', 'datamart_materialize')
-    writers = load('writer', 'datamart_materialize.writer')
-    converters = load('converter', 'datamart_materialize.converter')
+        materializers = load('materializer', 'datamart_materialize')
+        writers = load('writer', 'datamart_materialize.writer')
+        converters = load('converter', 'datamart_materialize.converter')
+
+        _materializers_loaded = True
 
 
 def get_writer(format):
