@@ -64,9 +64,13 @@ def materialize_and_process_dataset(
         else:
             logger.info("This is an Excel file")
             materialize.setdefault('convert', []).append({'identifier': 'xls'})
-            os.rename(dataset_path, dataset_path + '.xls')
-            with open(dataset_path, 'w', newline='') as dst:
-                xls_to_csv(dataset_path + '.xls', dst)
+            excel_temp_path = dataset_path + '.xls'
+            os.rename(dataset_path, excel_temp_path)
+            try:
+                with open(dataset_path, 'w', newline='') as dst:
+                    xls_to_csv(excel_temp_path, dst)
+            finally:
+                os.remove(excel_temp_path)
 
         # Profile
         with prom_incremented(PROM_PROFILING):
