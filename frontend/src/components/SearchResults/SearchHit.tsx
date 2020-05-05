@@ -10,6 +10,7 @@ import { SearchQuery } from '../../api/rest';
 interface SearchHitProps {
   searchQuery: SearchQuery;
   hit: SearchResult;
+  selectedHit?: boolean;
   onSearchHitExpand: (hit: SearchResult) => void;
   onSearchRelated: (relatedFile: RelatedFile) => void;
 }
@@ -86,9 +87,12 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
   }
 
   render() {
-    const { hit, searchQuery } = this.props;
+    const { hit, searchQuery, selectedHit } = this.props;
     return (
-      <div className="card mb-4 shadow-sm d-flex flex-row">
+      <div
+        className="card mb-4 shadow-sm d-flex flex-row"
+        style={{ backgroundColor: selectedHit ? '#f5f4fa' : 'white' }}
+      >
         <div className="card-body d-flex flex-column">
           <HitTitle hit={hit} />
           <span className="small">{hit.metadata.source}</span>
