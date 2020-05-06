@@ -246,7 +246,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     ', data_profile' if data_profile else '')
 
         # parameter: data
-        if data:
+        if data is not None:
             try:
                 data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
