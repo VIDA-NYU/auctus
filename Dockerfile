@@ -37,7 +37,7 @@ RUN mkdir -p /usr/src/app/home && \
 WORKDIR /usr/src/app
 RUN pip --disable-pip-version-check --no-cache-dir install toml
 COPY docker/install_deps.py poetry.lock /usr/src/app/
-RUN python3 install_deps.py poetry.lock
+RUN pypy3 install_deps.py poetry.lock
 # CI: RUN pip --disable-pip-version-check install coverage==5.3.1
 # CI: COPY docker/coveragerc /usr/src/app/.coveragerc
 
@@ -50,7 +50,7 @@ RUN sh -c "pip --disable-pip-version-check --no-cache-dir install --no-deps \$(f
 
 ENV DATAMART_GEO_DATA /usr/src/app/lib_geo/data
 
-RUN python -m compileall /usr/src/app/
+RUN pypy3 -m compileall /usr/src/app/
 ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"

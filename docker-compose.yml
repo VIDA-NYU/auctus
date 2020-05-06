@@ -134,7 +134,7 @@ services:
     cpu_shares: 10
     ports:
       - 8002
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m apiserver & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage pypy3 -Wd -m coverage run --context=server --branch -p -m apiserver & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/cache:/cache
@@ -185,7 +185,7 @@ services:
       - FRONTEND_URL=${FRONTEND_URL}
       - API_URL=${API_URL}
       - CUSTOM_FIELDS=${CUSTOM_FIELDS}
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage pypy3 -Wd -m coverage run --context=server --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     cpu_shares: 100
     ports:
       - 127.0.0.1:8003:8003
@@ -202,7 +202,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - MAX_CACHE_BYTES=${MAX_CACHE_BYTES}
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m cache_cleaner & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage pypy3 -Wd -m coverage run --context=server --branch -p -m cache_cleaner & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     cpu_shares: 100
     volumes:
       # CI: - ./cov:/cov
@@ -240,7 +240,7 @@ services:
       - LAZO_SERVER_PORT=50051
       - NOMINATIM_URL=${NOMINATIM_URL}
       - AUCTUS_REQUEST_WHITELIST=${AUCTUS_REQUEST_WHITELIST}
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage pypy3 -Wd -m coverage run --context=server --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     cpu_shares: 10
     volumes:
       # CI: - ./cov:/cov
@@ -279,8 +279,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "discovery/test_discovery.py"]  # NOTCI
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p discovery/test_discovery.py & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS"]
+    command: ["pypy3", "discovery/test_discovery.py"]  # NOTCI
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage pypy3 -Wd -m coverage run --context=server --branch -p discovery/test_discovery.py & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS"]
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
@@ -306,7 +306,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "socrata_discovery"]
+    command: ["pypy3", "-m", "socrata_discovery"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -334,7 +334,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "zenodo_discovery"]
+    command: ["pypy3", "-m", "zenodo_discovery"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -362,7 +362,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "ckan_discovery"]
+    command: ["pypy3", "-m", "ckan_discovery"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -390,7 +390,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "uaz_indicators"]
+    command: ["pypy3", "-m", "uaz_indicators"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -416,7 +416,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "worldbank_discovery"]
+    command: ["pypy3", "-m", "worldbank_discovery"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -442,7 +442,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "isi_discovery"]
+    command: ["pypy3", "-m", "isi_discovery"]
     cpu_shares: 10
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
@@ -467,7 +467,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "noaa_discovery.noaa_discovery"]
+    command: ["pypy3", "-m", "noaa_discovery.noaa_discovery"]
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
