@@ -54,6 +54,21 @@ class DatamartTest(DataTestCase):
         return self._request('post', url, **kwargs)
 
     def _request(self, method, url, schema=None, check_status=True, **kwargs):
+        if 'files' in kwargs:
+            # Read files now
+            # If we retry, requests would read un-rewinded files
+            files = {}
+            for k, v in kwargs['files'].items():
+                if isinstance(v, (list, tuple)):
+                    v = (
+                        v[0],
+                        v[1].read() if hasattr(v[1], 'read') else v[1],
+                    ) + v[2:]
+                elif hasattr(v, 'read'):
+                    v = v.read()
+                files[k] = v
+            kwargs['files'] = files
+
         response = requests.request(
             method,
             os.environ['API_URL'] + url,
