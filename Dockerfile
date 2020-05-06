@@ -35,6 +35,7 @@ RUN mkdir -p /usr/src/app/home && \
     useradd -d /usr/src/app/home -s /usr/sbin/nologin -u 998 appuser && \
     chown appuser /usr/src/app/home
 WORKDIR /usr/src/app
+RUN apt-get update && apt-get install -y gcc gfortran libopenblas-dev liblapack-dev && rm -rf /var/lib/apt/lists/*
 RUN pip --disable-pip-version-check --no-cache-dir install toml
 COPY docker/install_deps.py poetry.lock /usr/src/app/
 RUN pypy3 install_deps.py poetry.lock
