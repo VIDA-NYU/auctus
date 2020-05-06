@@ -1,4 +1,4 @@
-FROM python:3.8 AS sources
+FROM pypy:3.7 AS sources
 # If only there was a way to do this copy directly with Docker...
 # https://github.com/moby/moby/issues/33551
 RUN mkdir /usr/src/app
@@ -23,7 +23,7 @@ COPY discovery/worldbank /usr/src/app/discovery/worldbank
 COPY discovery/uaz_indicators /usr/src/app/discovery/uaz_indicators
 COPY tests/data /usr/src/app/tests/data
 
-FROM python:3.8
+FROM pypy:3.7
 
 ENV TINI_VERSION v0.18.0
 RUN curl -Lo /tini https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini && \
