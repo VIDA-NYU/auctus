@@ -62,7 +62,7 @@ test:
     - "sed -i '/# NOTCI$/d' docker-compose.yml base.Dockerfile */Dockerfile"
 
     # Build images
-    - python3 scripts/docker-compose-cached-build.py
+    - python scripts/docker-compose-cached-build.py
     - docker-compose pull rabbitmq  # Don't build it
 
     # Bring services up
