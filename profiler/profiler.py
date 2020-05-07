@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 import contextlib
+import csv
 from datetime import datetime
 import elasticsearch
 import itertools
@@ -17,6 +18,7 @@ from datamart_core.common import setup_logging, add_dataset_to_index, \
 from datamart_core.materialize import get_dataset
 from datamart_materialize import DatasetTooBig
 from datamart_materialize.excel import xls_to_csv
+from datamart_materialize.tsv import tsv_to_csv
 from datamart_profiler import process_dataset
 
 
@@ -74,6 +76,20 @@ def materialize_and_process_dataset(
                     xls_to_csv(excel_temp_path, dst)
             finally:
                 os.remove(excel_temp_path)
+
+        # Check for TSV file format
+        with open(dataset_path, 'r') as fp:
+            dialect = csv.Sniffer().sniff(fp.read(4096))
+        if getattr(dialect, 'delimiter', '') == '\t':
+            logger.info("This is a TSV file")
+            materialize.setdefault('convert', []).append({'identifier': 'tsv'})
+            tsv_temp_path = dataset_path + '.tsv'
+            os.rename(dataset_path, tsv_temp_path)
+            try:
+                with open(dataset_path, 'w', newline='') as dst:
+                    tsv_to_csv(tsv_temp_path, dst)
+            finally:
+                os.remove(tsv_temp_path)
 
         # Profile
         with profile_semaphore:
