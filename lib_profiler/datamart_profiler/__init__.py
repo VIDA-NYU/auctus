@@ -1,5 +1,5 @@
 from .core import process_dataset
-from .profile_types import parse_date
+from .temporal import parse_date
 
 
 __version__ = '0.5.6'

@@ -1,6 +1,11 @@
 import collections
+from datetime import datetime
+import dateutil.parser
+import dateutil.tz
 import logging
 import pandas
+
+from .warning_tools import raise_warnings
 
 
 logger = logging.getLogger(__name__)
@@ -43,3 +48,27 @@ def get_temporal_resolution(values):
             return resolution
 
     return 'second'
+
+
+_defaults = datetime(1985, 1, 1), datetime(2005, 6, 15)
+
+
+def parse_date(string):
+    with raise_warnings(dateutil.parser.UnknownTimezoneWarning):
+        # This is a dirty trick because dateutil returns a datetime for strings
+        # than only contain times. We parse it twice with different defaults,
+        # so we can tell whether the default date is used in the result
+        try:
+            dt1 = dateutil.parser.parse(string, default=_defaults[0])
+            dt2 = dateutil.parser.parse(string, default=_defaults[1])
+        except Exception:  # ValueError, OverflowError, UnknownTimezoneWarning
+            return None
+
+    if dt1 != dt2:
+        # It was not a date, just a time; no good
+        return None
+
+    # If no timezone was read, assume UTC
+    if dt1.tzinfo is None:
+        dt1 = dt1.replace(tzinfo=dateutil.tz.UTC)
+    return dt1
