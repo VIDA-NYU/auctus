@@ -3,13 +3,14 @@ import os
 import unittest
 
 
-def data(name, mode='rb'):
+def data(name, mode='rb', **kwargs):
     return open(
         os.path.join(
             os.path.dirname(__file__),
             'data', name,
         ),
         mode,
+        **kwargs,
     )
 
 
