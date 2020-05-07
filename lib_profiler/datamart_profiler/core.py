@@ -1,5 +1,6 @@
 import collections
 import contextlib
+import re
 from datetime import datetime
 import logging
 import numpy
@@ -43,6 +44,9 @@ PROM_SPATIAL = prometheus_client.Histogram(
     'profile_spatial_seconds', "Profile spatial coverage time",
     buckets=BUCKETS,
 )
+
+
+_re_word_split = re.compile(r'\W+')
 
 
 def truncate_string(s, limit=140):
@@ -314,6 +318,29 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 counts = sorted(counts)
                 column_meta['plot'] = {
                     "type": "histogram_categorical",
+                    "data": [
+                        {
+                            "bin": value,
+                            "count": count,
+                        }
+                        for value, count in counts
+                    ]
+                }
+
+            # Compute histogram from textual values
+            if (
+                plots and types.TEXT in semantic_types_dict and
+                'plot' not in column_meta
+            ):
+                counter = collections.Counter()
+                for value in array:
+                    for word in _re_word_split.split(value):
+                        word = word.lower()
+                        if word:
+                            counter[word] += 1
+                counts = counter.most_common(5)
+                column_meta['plot'] = {
+                    "type": "histogram_text",
                     "data": [
                         {
                             "bin": value,
