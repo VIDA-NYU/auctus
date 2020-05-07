@@ -12,6 +12,8 @@ import { DatasetSample } from './DatasetSample';
 
 function HitInfoBox(props: { hit: SearchResult }) {
   const { hit } = props;
+  console.warn('hit');
+  console.warn(hit);
   return (
     <div className="ml-2" style={{ maxWidth: 800 }}>
       <div className="sticky-top" style={{ top: '1rem' }}>
