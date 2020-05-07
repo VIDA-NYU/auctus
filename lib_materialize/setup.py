@@ -26,6 +26,7 @@ setup(name='datamart_materialize',
           ],
           'datamart_materialize.converter': [
               'xls = datamart_materialize.excel:ExcelConverter',
+              'tsv = datamart_materialize.tsv:TsvConverter',
           ],
       },
       install_requires=req,
