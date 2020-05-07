@@ -57,20 +57,21 @@ interface TableProps {
   hit: SearchResult;
 }
 
-function getEncoding(typePlot: string) {
+function getEncoding(typePlot: string | undefined) {
+  const yContent = {
+    field: 'count',
+    type: 'quantitative',
+    title: null,
+  };
   if (typePlot === 'histogram_numerical') {
     return {
-      y: {
-        field: 'count',
-        type: 'quantitative',
-        title: null,
-      },
+      y: yContent,
       x: {
         title: null,
         bin: { binned: true },
         field: 'bin_start',
         type: 'quantitative',
-        axis: null,
+        // axis: null,
       },
       x2: {
         field: 'bin_end',
@@ -82,18 +83,14 @@ function getEncoding(typePlot: string) {
     };
   } else if (typePlot === 'histogram_temporal') {
     return {
-      y: {
-        field: 'count',
-        type: 'quantitative',
-        title: null,
-      },
+      y: yContent,
       x: {
         title: null,
         bin: { binned: true },
         field: 'date_start',
         type: 'temporal',
         utc: true,
-        axis: null,
+        // axis: null,
       },
       x2: {
         field: 'date_end',
@@ -105,20 +102,13 @@ function getEncoding(typePlot: string) {
     };
   } else if (typePlot === 'histogram_categorical') {
     return {
-      y: {
-        field: 'count',
-        type: 'quantitative',
-        title: null,
-      },
+      y: yContent,
       x: {
         title: null,
         bin: { binned: true },
         field: 'bin',
         type: 'ordinal',
-        axis: null,
-      },
-      x2: {
-        field: 'date_end',
+        // axis: null,
       },
       tooltip: { field: 'bin', type: 'ordinal' },
     };
@@ -134,11 +124,11 @@ function getSpecification(
     | TemporalDataVegaFormat[]
     | CategoricalDataVegaFormat[]
     | undefined,
-  typePlot: string
+  typePlot: string | undefined
 ) {
   return {
     width: '120',
-    height: '200',
+    height: '120',
     data: { values: data },
     description: 'A simple bar chart with embedded data.',
     encoding: getEncoding(typePlot),
@@ -148,37 +138,6 @@ function getSpecification(
 
 function Table(props: TableProps) {
   const { columns, data, hit } = props;
-  console.warn('hit');
-  console.warn(hit);
-  const data1 = [
-    { a: 'A', b: 100 },
-    { a: 'B', b: 34 },
-    { a: 'C', b: 55 },
-    { a: 'D', b: 19 },
-    { a: 'E', b: 40 },
-    { a: 'F', b: 34 },
-    { a: 'G', b: 91 },
-    { a: 'H', b: 78 },
-    { a: 'I', b: 25 },
-  ];
-  const data2 = [
-    { count: 1, bin_start: 135500, bin_end: 173956.7 },
-    { count: 1, bin_start: 173956.7, bin_end: 212413.4 },
-    { count: 3, bin_start: 212413.4, bin_end: 250870.09999999998 },
-  ];
-
-  // const spec1 = {
-  //   width: "120",
-  //   height: "120",
-  //   data: {values: data1},
-  //   description: 'A simple bar chart with embedded data.',
-  //   encoding: {
-  //     x: { field: 'a', type: 'ordinal' },
-  //     y: { field: 'b', type: 'quantitative' },
-  //   },
-  //   mark: 'bar',
-  // };
-
   const {
     getTableProps,
     getTableBodyProps,
@@ -211,7 +170,7 @@ function Table(props: TableProps) {
                     spec={
                       getSpecification(
                         dataVega,
-                        'histogram_numerical'
+                        hit.metadata.columns[i].plot?.type
                       ) as VlSpec
                     }
                     data={{ values: dataVega }}
