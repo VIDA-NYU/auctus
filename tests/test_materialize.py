@@ -1,4 +1,5 @@
 import copy
+import io
 import json
 import os
 import shutil
@@ -6,6 +7,7 @@ import tempfile
 import unittest
 
 from datamart_materialize.d3m import D3mWriter
+from datamart_materialize.pivot import pivot_table
 
 from .utils import data
 
@@ -191,4 +193,19 @@ class TestD3m(unittest.TestCase):
                 target,
                 metadata=basic_d3m_metadata_with_index,
                 data_path='basic.d3m.csv',
+            )
+
+
+class TestConvert(unittest.TestCase):
+    def test_pivot(self):
+        f_out = io.StringIO()
+        pivot_table(
+            os.path.join(os.path.dirname(__file__), 'data/dates_pivoted.csv'),
+            f_out,
+            [0],
+        )
+        with data('dates_pivoted.converted.csv', 'r', newline='') as f_exp:
+            self.assertEqual(
+                f_out.getvalue(),
+                f_exp.read(),
             )

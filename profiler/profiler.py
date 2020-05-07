@@ -18,8 +18,9 @@ from datamart_core.common import setup_logging, add_dataset_to_index, \
 from datamart_core.materialize import get_dataset
 from datamart_materialize import DatasetTooBig
 from datamart_materialize.excel import xls_to_csv
+from datamart_materialize.pivot import pivot_table
 from datamart_materialize.tsv import tsv_to_csv
-from datamart_profiler import process_dataset
+from datamart_profiler import process_dataset, parse_date
 
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,29 @@ def materialize_and_process_dataset(
                     tsv_to_csv(tsv_temp_path, dst)
             finally:
                 os.remove(tsv_temp_path)
+
+        # Check for pivoted temporal table
+        with open(dataset_path, 'r') as fp:
+            reader = csv.reader(fp)
+            columns = next(iter(reader))
+        if len(columns) >= 3:
+            non_matches = [
+                i for i, name in enumerate(columns)
+                if  parse_date(name) is None
+            ]
+            if len(non_matches) <= max(2.0, 0.20 * len(columns)):
+                logger.info("Detected pivoted table")
+                materialize.setdefault('convert', []).append({
+                    'identifier': 'pivot',
+                    'except_columns': non_matches,
+                })
+                pivot_temp_path = dataset_path + '.pivot.csv'
+                os.rename(dataset_path, pivot_temp_path)
+                try:
+                    with open(dataset_path, 'w', newline='') as dst:
+                        pivot_table(pivot_temp_path, dst, non_matches)
+                finally:
+                    os.remove(pivot_temp_path)
 
         # Profile
         with profile_semaphore:

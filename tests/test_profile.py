@@ -9,7 +9,7 @@ from datamart_profiler import profile_types
 import datamart_profiler.spatial
 from datamart_profiler.spatial import pair_latlong_columns, \
     normalize_latlong_column_name, LATITUDE, LONGITUDE
-from datamart_profiler.temporal import get_temporal_resolution
+from datamart_profiler.temporal import get_temporal_resolution, parse_date
 
 from .utils import DataTestCase
 
@@ -160,14 +160,14 @@ class TestDates(unittest.TestCase):
     def test_parse(self):
         """Test parsing dates."""
         self.assertEqual(
-            profile_types.parse_date('Monday July 1, 2019'),
+            parse_date('Monday July 1, 2019'),
             datetime(2019, 7, 1, tzinfo=UTC),
         )
         self.assertEqual(
-            profile_types.parse_date('20190702T211319Z'),
+            parse_date('20190702T211319Z'),
             datetime(2019, 7, 2, 21, 13, 19, tzinfo=UTC),
         )
-        dt = profile_types.parse_date('2019-07-02T21:13:19-04:00')
+        dt = parse_date('2019-07-02T21:13:19-04:00')
         self.assertEqual(
             dt.replace(tzinfo=None),
             datetime(2019, 7, 2, 21, 13, 19),
@@ -179,11 +179,11 @@ class TestDates(unittest.TestCase):
 
         # Check that unknown timezones are not accepted
         self.assertEqual(
-            profile_types.parse_date('2019-07-02 18:05 UTC'),
+            parse_date('2019-07-02 18:05 UTC'),
             datetime(2019, 7, 2, 18, 5, tzinfo=UTC),
         )
         self.assertEqual(
-            profile_types.parse_date('2019-07-02 18:05 L'),
+            parse_date('2019-07-02 18:05 L'),
             None,
         )
 
@@ -198,7 +198,7 @@ class TestTemporalResolutions(unittest.TestCase):
 
     def test_native(self):
         def get_res(data):
-            values = [profile_types.parse_date(d) for d in data]
+            values = [parse_date(d) for d in data]
             return get_temporal_resolution(values)
 
         self.do_checks(get_res)
