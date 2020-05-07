@@ -1,3 +1,4 @@
+import collections
 import contextlib
 from datetime import datetime
 import logging
@@ -304,18 +305,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
             # Compute histogram from categorical values
             if plots and types.CATEGORICAL in semantic_types_dict:
-                counts = {}
+                counter = collections.Counter()
                 for value in array:
                     if not value:
                         continue
-                    try:
-                        counts[value] += 1
-                    except KeyError:
-                        counts[value] = 1
-                counts = sorted(
-                    counts.items(),
-                    key=lambda p: p[1],
-                )[:5]
+                    counter[value] += 1
+                counts = counter.most_common(5)
                 counts = sorted(counts)
                 column_meta['plot'] = {
                     "type": "histogram_categorical",
