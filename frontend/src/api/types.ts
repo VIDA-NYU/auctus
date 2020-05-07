@@ -53,7 +53,15 @@ export interface ColumnMetadata {
   coverage?: Array<{}>;
   mean?: number;
   stddev?: number;
-  plot?: {};
+  plot?: PlotVegas;
+}
+
+export interface PlotVegas {
+  type: string;
+  data:
+    | NumericalDataVegaFormat[]
+    | TemporalDataVegaFormat[]
+    | CategoricalDataVegaFormat[];
 }
 
 export interface SearchResult {
@@ -108,6 +116,21 @@ export interface RelatedToSearchResult {
   datasetId: string;
   datasetName: string;
   datasetSize: number;
+}
+export interface NumericalDataVegaFormat {
+  count: number;
+  bin_start: number;
+  bin_end: number;
+}
+
+export interface TemporalDataVegaFormat {
+  count: number;
+  date_start: string;
+  date_end: string;
+}
+export interface CategoricalDataVegaFormat {
+  count: number;
+  bin: string;
 }
 
 export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
