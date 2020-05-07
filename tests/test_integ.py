@@ -2344,7 +2344,7 @@ lazo_metadata = {
     "name": "lazo",
     "description": "Simple CSV with states and years to test the Lazo index service",
     'source': 'fernando',
-    "size": 297,
+    "size": 334,
     "nb_rows": 36,
     "nb_profiled_rows": 36,
     "columns": [
@@ -2384,7 +2384,8 @@ lazo_metadata = {
     "materialize": {
         "direct_url": "http://test_discoverer:7000/lazo.csv",
         "identifier": "datamart.test",
-        "date": lambda d: isinstance(d, str)
+        "date": lambda d: isinstance(d, str),
+        "convert": [{'identifier': 'tsv'}],
     },
     "sample": "state,year\nVA,1990\nKY,1990\nCA,1990\nWV,1990\nPR,1990\n" +
               "NC,1990\nAL,1990\nNJ,1990\nCT,1990\nCO,1990\n,1990\nMN,1990\n" +

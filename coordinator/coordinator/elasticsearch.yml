@@ -92,6 +92,9 @@ datamart:
           direct_url:
             type: keyword
             index: false
+          convert:
+            type: object
+            enabled: false
 datamart_columns:
   mappings:
     properties:
