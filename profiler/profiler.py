@@ -101,7 +101,7 @@ def materialize_and_process_dataset(
                 i for i, name in enumerate(columns)
                 if  parse_date(name) is None
             ]
-            if len(non_matches) <= max(2.0, 0.10 * len(columns)):
+            if len(non_matches) <= max(2.0, 0.20 * len(columns)):
                 logger.info("Detected pivoted table")
                 materialize.setdefault('convert', []).append({
                     'identifier': 'pivot',
