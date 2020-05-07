@@ -126,6 +126,7 @@ class TestProfiler(DataTestCase):
                 'datamart.test.lazo': lazo_metadata,
                 'datamart.test.daily': daily_metadata,
                 'datamart.test.hourly': hourly_metadata,
+                'datamart.test.dates_pivoted': dates_pivoted_metadata,
             },
         )
 
@@ -2537,4 +2538,68 @@ hourly_metadata = {
               "06-14T01:00:00,yes\n",
     'date': lambda d: isinstance(d, str),
     'version': version,
+}
+
+
+dates_pivoted_metadata = {
+    'id': 'datamart.test.dates_pivoted',
+    'name': 'dates pivoted',
+    'description': 'Temporal dataset but in columns',
+    'source': 'remi',
+    'size': 525,
+    'nb_rows': 24,
+    'nb_profiled_rows': 24,
+    'columns': [
+        {
+            'name': 'country',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': [
+                'http://schema.org/Enumeration',
+            ],
+            'num_distinct_values': 2,
+            'plot': check_plot('histogram_categorical'),
+        },
+        {
+            'name': 'date',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': [
+                'http://schema.org/DateTime',
+            ],
+            'num_distinct_values': 12,
+            'mean': 1339833600.0,
+            'stddev': 9093802.373045063,
+            'coverage': check_ranges(1325376000.0, 1354320000.0),
+            'temporal_resolution': 'month',
+            'plot': check_plot('histogram_temporal'),
+        },
+        {
+            'name': 'value',
+            'structural_type': 'http://schema.org/Text',
+            'unclean_values_ratio': 0.0,
+            'semantic_types': [
+                'http://schema.org/Boolean',
+                'http://schema.org/Enumeration',
+            ],
+            'num_distinct_values': 2,
+            'plot': check_plot('histogram_categorical'),
+        },
+    ],
+    'materialize': {
+        'direct_url': 'http://test_discoverer:7000/dates_pivoted.csv',
+        'identifier': 'datamart.test',
+        'date': lambda d: isinstance(d, str),
+        'convert': [
+            {'identifier': 'pivot', 'except_columns': [0]},
+        ],
+    },
+    'sample': "country,date,value\nfrance,2012-01-01,yes\nfrance,2012-02-01," +
+              "no\nfrance,2012-03-01,no\nfrance,2012-04-01,yes\nfrance,2012-" +
+              "06-01,yes\nfrance,2012-07-01,yes\nfrance,2012-08-01,yes\nfran" +
+              "ce,2012-09-01,yes\nfrance,2012-10-01,no\nfrance,2012-11-01,no" +
+              "\nusa,2012-01-01,no\nusa,2012-03-01,yes\nusa,2012-04-01,yes\n" +
+              "usa,2012-05-01,no\nusa,2012-06-01,no\nusa,2012-07-01,no\nusa," +
+              "2012-09-01,no\nusa,2012-10-01,yes\nusa,2012-11-01,yes\nusa,20" +
+              "12-12-01,no\n",
+    'date': lambda d: isinstance(d, str),
+    'version': version
 }

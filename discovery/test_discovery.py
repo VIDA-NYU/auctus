@@ -90,6 +90,17 @@ class TestDiscoverer(Discoverer):
             dataset_id='hourly',
         )
 
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test_discoverer:7000/dates_pivoted.csv'),
+            {
+                'name': 'dates pivoted',
+                'description': "Temporal dataset but in columns",
+                'source': 'remi',
+            },
+            dataset_id='dates_pivoted',
+        )
+
         # Needs to be last, CI waits for it to test
 
         # Use URL for this one
