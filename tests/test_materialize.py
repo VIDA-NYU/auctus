@@ -4,6 +4,8 @@ import json
 import os
 import shutil
 import tempfile
+import textwrap
+import timeit
 import unittest
 
 from datamart_materialize.d3m import D3mWriter
@@ -209,3 +211,116 @@ class TestConvert(unittest.TestCase):
                 f_out.getvalue(),
                 f_exp.read(),
             )
+
+
+class TestD3mIndexBench(unittest.TestCase):
+    TIMES = 5
+    BUFSIZE = 4096
+
+    def test_bench_binary(self):
+        timing = timeit.timeit(
+            textwrap.dedent('''\
+            if os.path.exists('/tmp/dest'):
+                shutil.rmtree('/tmp/dest')
+            writer = D3mWriter('test', '/tmp/dest', {}, format_options={"need_d3mindex": True})
+            with writer.open_file('wb') as dest:
+                with open('/tmp/src.csv', 'rb') as src:
+                    buf = True
+                    while buf:
+                        buf = src.read(BUFSIZE)
+                        dest.write(buf)
+            writer.finish()
+            '''),
+            textwrap.dedent('''\
+            import os
+            import shutil
+            
+            from datamart_materialize.d3m import D3mWriter
+            
+            BUFSIZE = %d
+            ''' % self.BUFSIZE),
+            number=self.TIMES,
+        )
+        size = os.stat('/tmp/src.csv').st_size
+        print("bench binary %d bytes: %.2f seconds" % (size, timing / self.TIMES))
+
+    def test_bench_text(self):
+        timing = timeit.timeit(
+            textwrap.dedent('''\
+            if os.path.exists('/tmp/dest'):
+                shutil.rmtree('/tmp/dest')
+            writer = D3mWriter('test', '/tmp/dest', {}, format_options={"need_d3mindex": True})
+            with writer.open_file('w') as dest:
+                with open('/tmp/src.csv', 'r') as src:
+                    buf = True
+                    while buf:
+                        buf = src.read(BUFSIZE)
+                        dest.write(buf)
+            writer.finish()
+            '''),
+            textwrap.dedent('''\
+            import os
+            import shutil
+            
+            from datamart_materialize.d3m import D3mWriter
+            
+            BUFSIZE = %d
+            ''' % self.BUFSIZE),
+            number=self.TIMES,
+        )
+        size = os.stat('/tmp/src.csv').st_size
+        print("bench text %d bytes: %.2f seconds" % (size, timing / self.TIMES))
+
+    def test_bench_binary_noop(self):
+        timing = timeit.timeit(
+            textwrap.dedent('''\
+            if os.path.exists('/tmp/dest'):
+                shutil.rmtree('/tmp/dest')
+            writer = D3mWriter('test', '/tmp/dest', {}, format_options={"need_d3mindex": True})
+            with writer.open_file('wb') as dest:
+                with open('/tmp/srcI.csv', 'rb') as src:
+                    buf = True
+                    while buf:
+                        buf = src.read(BUFSIZE)
+                        dest.write(buf)
+            writer.finish()
+            '''),
+            textwrap.dedent('''\
+            import os
+            import shutil
+            
+            from datamart_materialize.d3m import D3mWriter
+            
+            BUFSIZE = %d
+            ''' % self.BUFSIZE),
+            number=self.TIMES,
+        )
+        size = os.stat('/tmp/src.csv').st_size
+        print("bench binary noop %d bytes: %.2f seconds" % (size, timing / self.TIMES))
+
+    def test_bench_text_noop(self):
+        timing = timeit.timeit(
+            textwrap.dedent('''\
+            if os.path.exists('/tmp/dest'):
+                shutil.rmtree('/tmp/dest')
+            writer = D3mWriter('test', '/tmp/dest', {}, format_options={"need_d3mindex": True})
+            with writer.open_file('w') as dest:
+                with open('/tmp/srcI.csv', 'r') as src:
+                    buf = True
+                    while buf:
+                        buf = src.read(BUFSIZE)
+                        dest.write(buf)
+            writer.finish()
+            '''),
+            textwrap.dedent('''\
+            import os
+            import shutil
+            
+            from datamart_materialize.d3m import D3mWriter
+            
+            BUFSIZE = %d
+            ''' % self.BUFSIZE),
+            number=self.TIMES,
+        )
+        size = os.stat('/tmp/src.csv').st_size
+        print("bench text noop %d bytes: %.2f seconds" % (size, timing / self.TIMES))
