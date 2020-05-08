@@ -215,7 +215,7 @@ class TestConvert(unittest.TestCase):
 
 class TestD3mIndexBench(unittest.TestCase):
     TIMES = 5
-    BUFSIZE = 4096
+    BUFSIZE = 4000
 
     def test_bench_binary(self):
         timing = timeit.timeit(
