@@ -1,4 +1,6 @@
+import codecs
 import csv
+import io
 import json
 import logging
 import os
@@ -22,6 +24,122 @@ DEFAULT_VERSION = '4.0.0'
 
 def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
     return {}
+
+
+class _D3mAddIndex(object):
+    BUFFER_MAX = 102400  # 100 kiB
+
+    def __init__(self, dest_fp, binary):
+        self._buffer = io.StringIO()
+        self._generate = None
+        self._dest_fp = dest_fp
+        self._dest_csv = None
+        self._idx = -1
+        if binary:
+            self._decoder = codecs.getincrementaldecoder('utf-8')()
+        else:
+            self._decoder = None
+
+    def __iter__(self):
+        # Pandas needs file objects to have __iter__
+        return self
+
+    def _peek_line(self):
+        # Make a CSV reader for the buffer
+        self._buffer.seek(0, 0)
+        reader = iter(csv.reader(self._buffer))
+
+        # Try to read two lines, which means we have one complete one
+        try:
+            line = next(reader)
+            next(reader)
+        except StopIteration:
+            line = None
+
+        # Reset buffer
+        self._buffer.seek(0, 2)
+
+        return line
+
+    def _get_lines(self):
+        # Make a CSV reader for the buffer
+        self._buffer.seek(0, 0)
+        reader = iter(csv.reader(self._buffer))
+
+        # Read lines, making sure they're complete by reading the following one
+        try:
+            prev = next(reader)
+        except StopIteration:
+            return
+        prevpos = 0
+        pos = self._buffer.tell()
+        while prev:
+            try:
+                line = next(reader)
+            except StopIteration:
+                break
+            yield prev
+            prev = line
+            prevpos = pos
+            pos = self._buffer.tell()
+
+        # Remove what was read from the buffer
+        self._buffer = io.StringIO(self._buffer.getvalue()[prevpos:])
+        self._buffer.seek(0, 2)
+
+    def write(self, buf):
+        if self._decoder is not None:
+            buf = self._decoder.decode(buf)
+        if self._generate is False:
+            return self._dest_fp.write(buf)
+        self._buffer.write(buf)
+        if self._buffer.tell() > self.BUFFER_MAX:
+            self._flush()
+        return len(buf)
+
+    def _flush(self):
+        if self._generate is None:
+            # Decide whether the index needs to be generated
+            columns = self._peek_line()
+            if columns is None:
+                raise ValueError("Couldn't read CSV header")
+            if 'd3mIndex' in columns:
+                self._generate = False
+                self._dest_fp.write(self._buffer.getvalue())
+                self._buffer = None
+                return
+            else:
+                logger.info("No 'd3mIndex' column, generating one")
+                self._generate = True
+                self._dest_csv = csv.writer(self._dest_fp)
+        for line in self._get_lines():
+            if self._idx == -1:
+                self._dest_csv.writerow(['d3mIndex'] + line)
+            else:
+                self._dest_csv.writerow([self._idx] + line)
+            self._idx += 1
+
+    def close(self):
+        if self._generate is not False:
+            if self._decoder is not None:
+                # Flush decoder
+                self._buffer.write(self._decoder.decode(b'', True))
+            self._flush()
+            if self._generate is True:
+                # Write last line
+                self._buffer.seek(0, 0)
+                line = next(iter(csv.reader(self._buffer)))
+                if line:
+                    self._dest_csv.writerow([self._idx] + line)
+        self._dest_fp.close()
+        self._dest_csv = None
+        self._dest_fp = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 class D3mWriter(object):
@@ -62,39 +180,24 @@ class D3mWriter(object):
         with open(os.path.join(destination, 'datasetDoc.json'), 'w') as fp:
             json.dump(d3m_meta, fp, sort_keys=True, indent=2)
 
-    def open_file(self, mode='wb', name=None, **kwargs):
+    def open_file(self, mode='wb', name=None):
         if name is not None:
             raise ValueError("D3mWriter can only write single-table datasets "
                              "for now")
-        return open(os.path.join(self.destination,
-                                 'tables', 'learningData.csv'),
-                    mode, **kwargs)
+        if self.need_d3mindex:
+            fp = open(
+                os.path.join(self.destination, 'tables', 'learningData.csv'),
+                'w',
+                encoding='utf-8',
+                newline='',
+            )
+            fp = _D3mAddIndex(fp, 'b' in mode)
+            return fp
+        else:
+            return open(
+                os.path.join(self.destination, 'tables', 'learningData.csv'),
+                mode,
+            )
 
     def finish(self):
-        if self.need_d3mindex:
-            overwrite = False
-            tables = os.path.join(self.destination, 'tables')
-            data_path = os.path.join(tables, 'learningData.csv')
-            tmp_path = os.path.join(tables, 'learningData.index.csv')
-            with open(data_path) as f_in:
-                reader = iter(csv.reader(f_in))
-
-                try:
-                    columns = next(reader)
-                except StopIteration:
-                    return None
-                if 'd3mIndex' not in columns:
-                    logger.info("No 'd3mIndex' column, generating one")
-                    overwrite = True
-                    with open(
-                        tmp_path,
-                        'w',
-                    ) as f_out:
-                        writer = csv.writer(f_out)
-                        writer.writerow(['d3mIndex'] + columns)
-                        for idx, row in enumerate(reader):
-                            writer.writerow([idx] + row)
-            if overwrite:
-                os.rename(tmp_path, data_path)
-
         return None
