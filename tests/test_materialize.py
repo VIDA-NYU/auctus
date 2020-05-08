@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import unittest
 
-from datamart_materialize.d3m import D3mWriter
+from datamart_materialize.d3m import D3mWriter, _D3mAddIndex
 from datamart_materialize.pivot import pivot_table
 
 from .utils import data
@@ -194,6 +194,133 @@ class TestD3m(unittest.TestCase):
                 metadata=basic_d3m_metadata_with_index,
                 data_path='basic.d3m.csv',
             )
+
+
+class StringIO(io.StringIO):
+    """Version of StringIO that doesn't throw away the buffer on close().
+    """
+    actually_closed = False
+
+    def write(self, buf):
+        if self.actually_closed:
+            raise ValueError("I/O operation on closed file")
+        return super(StringIO, self).write(buf)
+
+    def close(self):
+        self.actually_closed = True
+
+
+class TestD3mIndexAdder(unittest.TestCase):
+    maxDiff = None
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._orig_buffer_max = _D3mAddIndex.BUFFER_MAX
+        _D3mAddIndex.BUFFER_MAX = 10  # 10 bytes or characters
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        _D3mAddIndex.BUFFER_MAX = cls._orig_buffer_max
+
+    def test_add_binary(self):
+        """Test adding d3mIndex with binary=True."""
+        dest = StringIO()
+        adapter = _D3mAddIndex(dest, True)
+        self.assertIs(adapter._generate, None)
+        adapter.write(b'id,te')
+        self.assertIs(adapter._generate, None)
+        adapter.write(b'xt\n123')
+        self.assertIs(adapter._generate, True)
+        self.assertEqual(dest.getvalue(), 'd3mIndex,id,text\r\n')
+        adapter.write(b',hello world\n4')
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,id,text\r\n0,123,hello world\r\n',
+        )
+        adapter.write(b'56,some more\n1348,text values\n17,with ids')
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,id,text\r\n0,123,hello world\r\n1,456,some more\r\n' +
+            '2,1348,text values\r\n',
+        )
+        adapter.close()
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,id,text\r\n0,123,hello world\r\n1,456,some more\r\n' +
+            '2,1348,text values\r\n3,17,with ids\r\n',
+        )
+
+    def test_add_text(self):
+        """Test adding d3mIndex with binary=False."""
+        dest = StringIO()
+        adapter = _D3mAddIndex(dest, False)
+        self.assertIs(adapter._generate, None)
+        adapter.write('id,te')
+        self.assertIs(adapter._generate, None)
+        adapter.write('xt\n123')
+        self.assertIs(adapter._generate, True)
+        self.assertEqual(dest.getvalue(), 'd3mIndex,id,text\r\n')
+        adapter.write(',hello world\n4')
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,id,text\r\n0,123,hello world\r\n',
+        )
+        adapter.write('56,some more\n1348,text values\n17,with ids')
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,id,text\r\n0,123,hello world\r\n1,456,some more\r\n' +
+            '2,1348,text values\r\n',
+        )
+        adapter.close()
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,id,text\r\n0,123,hello world\r\n1,456,some more\r\n' +
+            '2,1348,text values\r\n3,17,with ids\r\n',
+        )
+
+    def test_passthrough_binary(self):
+        """Test passthrough with binary=True."""
+        dest = StringIO()
+        adapter = _D3mAddIndex(dest, True)
+        self.assertIs(adapter._generate, None)
+        adapter.write(b'd3mIndex,')
+        self.assertIs(adapter._generate, None)
+        adapter.write(b'text\n123')
+        self.assertIs(adapter._generate, False)
+        adapter.write(b',hello world\n4')
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,text\n123,hello world\n4',
+        )
+        adapter.write(b'56,some more\n1348,text values\n17,with ids')
+        adapter.close()
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,text\n123,hello world\n456,some more\n' +
+            '1348,text values\n17,with ids',
+        )
+
+    def test_passthrough_text(self):
+        """Test passthrough with binary=False."""
+        dest = StringIO()
+        adapter = _D3mAddIndex(dest, False)
+        self.assertIs(adapter._generate, None)
+        adapter.write('d3mIndex,')
+        self.assertIs(adapter._generate, None)
+        adapter.write('text\n123')
+        self.assertIs(adapter._generate, False)
+        adapter.write(',hello world\n4')
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,text\n123,hello world\n4',
+        )
+        adapter.write('56,some more\n1348,text values\n17,with ids')
+        adapter.close()
+        self.assertEqual(
+            dest.getvalue(),
+            'd3mIndex,text\n123,hello world\n456,some more\n' +
+            '1348,text values\n17,with ids',
+        )
 
 
 class TestConvert(unittest.TestCase):
