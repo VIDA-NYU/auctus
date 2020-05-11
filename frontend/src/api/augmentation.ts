@@ -12,13 +12,34 @@ function mergeJoinColumns(
   const leftColumnsNames = [];
   const rightColumns = [];
   const rightColumnsNames = [];
-  for (let i = 0; i < auginfo1.left_columns[0].length; i++) {
+  const length = auginfo1.left_columns[0].length;
+  for (let i = 0; i < length; i++) {
+    if (
+      !auginfo1.left_columns[i] ||
+      !auginfo1.left_columns_names[i] ||
+      !auginfo1.right_columns[i] ||
+      !auginfo1.right_columns_names[i]
+    ) {
+      // Defensive check: we verify the assumption that all arrays
+      // have the same length and have valid values. If false, skip.
+      continue;
+    }
     leftColumns.push(auginfo1.left_columns[i]);
     leftColumnsNames.push(auginfo1.left_columns_names[i]);
     rightColumns.push(auginfo1.right_columns[i]);
     rightColumnsNames.push(auginfo1.right_columns_names[i]);
   }
   for (let i = 0; i < auginfo2.left_columns[0].length; i++) {
+    if (
+      !auginfo2.left_columns[i] ||
+      !auginfo2.left_columns_names[i] ||
+      !auginfo2.right_columns[i] ||
+      !auginfo2.right_columns_names[i]
+    ) {
+      // Defensive check: we verify the assumption that all arrays
+      // have the same length and have valid values. If false, skip.
+      continue;
+    }
     leftColumns.push(auginfo2.left_columns[i]);
     leftColumnsNames.push(auginfo2.left_columns_names[i]);
     rightColumns.push(auginfo2.right_columns[i]);
