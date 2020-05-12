@@ -630,8 +630,8 @@ def get_joinable_datasets(
         except ValueError:
             index_1, index_2 = result['companion_column'].split(",")
             left_columns.append([int(index_1), int(index_2)])
-            left_columns_names.append([data_profile['columns'][int(index_1)]['name'] +
-                                       ', ' + data_profile['columns'][int(index_2)]['name']])
+            left_columns_names.append([data_profile['columns'][int(index_1)]['name'],
+                                       data_profile['columns'][int(index_2)]['name']])
         source = result['_source']
         # Keep in sync, search code for 279a32
         if 'index' in source:
