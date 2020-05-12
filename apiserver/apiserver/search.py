@@ -47,12 +47,11 @@ class ClientError(ValueError):
     """
 
 
-def get_column_coverage(data_profile, column_index_mapping, filter_=()):
+def get_column_coverage(data_profile, filter_=()):
     """
     Get coverage for each column of the input dataset.
 
     :param data_profile: Profiled input dataset, if dataset is not in Datamart index.
-    :param column_index_mapping: mapping from column name to column index
     :param filter_: list of column indices to return. If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a dict as follows:
 
@@ -63,11 +62,15 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
         }
     """
 
+    column_index_mapping = {
+        column['name']: idx
+        for idx, column in enumerate(data_profile['columns'])
+    }
+
     column_coverage = dict()
 
-    for column in data_profile['columns']:
+    for column_index, column in enumerate(data_profile['columns']):
         column_name = column['name']
-        column_index = column_index_mapping[column_name]
         if 'coverage' not in column:
             continue
         if filter_ and column_index not in filter_:
@@ -145,12 +148,11 @@ JOIN_RESULT_SOURCE_FIELDS = [
 ]
 
 
-def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
+def get_lazo_sketches(data_profile, filter_=None):
     """
     Get Lazo sketches of the input dataset, if available.
 
     :param data_profile: Profiled input dataset.
-    :param column_index_mapping: mapping from column name to column index
     :param filter_: list of column indices to return.
        If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a tuple
@@ -159,9 +161,8 @@ def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
 
     lazo_sketches = dict()
 
-    for column in data_profile['columns']:
+    for column_index, column in enumerate(data_profile['columns']):
         if 'lazo' in column:
-            column_index = column_index_mapping[column['name']]
             if not filter_ or column_index in filter_:
                 lazo_sketches[str(column_index)] = (
                     column['lazo']['n_permutations'],
@@ -515,15 +516,9 @@ def get_joinable_datasets(
     :param tabular_variables: specifies which columns to focus on for the search.
     """
 
-    column_index_mapping = {
-        column['name']: idx
-        for idx, column in enumerate(data_profile['columns'])
-    }
-
     # get the coverage for each column of the input dataset
     column_coverage = get_column_coverage(
         data_profile,
-        column_index_mapping,
         tabular_variables,
     )
 
@@ -566,8 +561,7 @@ def get_joinable_datasets(
     # textual/categorical attributes
     lazo_sketches = get_lazo_sketches(
         data_profile,
-        column_index_mapping,
-        tabular_variables
+        tabular_variables,
     )
     for column in lazo_sketches:
         n_permutations, hash_values, cardinality = lazo_sketches[column]
