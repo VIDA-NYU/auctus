@@ -1,23 +1,17 @@
-import csv
-from datetime import datetime
 import elasticsearch
-import io
 import logging
 import jinja2
 import json
 import os
 import pkg_resources
 import prometheus_client
-import shutil
 from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
-from tornado.web import HTTPError, RequestHandler
-import uuid
+from tornado.web import RequestHandler
 
-from datamart_core.common import setup_logging, json2msg
-from datamart_core import types
+from datamart_core.common import setup_logging
 
 from .cache import check_cache
 from .coordinator import Coordinator
@@ -63,12 +57,6 @@ class BaseHandler(RequestHandler):
             current_user=self.current_user,
             api_url=os.environ.get('API_URL', ''),
             **kwargs)
-
-    def get_json(self):
-        type_ = self.request.headers.get('Content-Type', '')
-        if not type_.startswith('application/json'):
-            raise HTTPError(400, "Expected JSON")
-        return json.loads(self.request.body.decode('utf-8'))
 
     def send_json(self, obj):
         if isinstance(obj, list):
