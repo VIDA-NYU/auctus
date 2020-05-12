@@ -116,6 +116,13 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
                 ):
                     continue
                 names = str(column_index_mapping[spatial['address']])
+            elif 'point' in spatial:
+                if (
+                    filter_ and
+                    column_index_mapping[spatial['point']] not in filter_
+                ):
+                    continue
+                names = str(column_index_mapping[spatial['point']])
             else:
                 raise ValueError("Invalid spatial_coverage")
             column_coverage[names] = {
