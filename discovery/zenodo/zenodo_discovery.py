@@ -112,9 +112,27 @@ class ZenodoDiscoverer(Discoverer):
         logger.info("Processing record %s %r", record['id'], record['title'])
 
         # Process each file
-        for file in record['files']:
+        for i, file in enumerate(record['files']):
             if not file['filename'].lower().endswith(self.EXTENSIONS):
                 continue
+
+            dataset_id = '%s.%s' % (record['id'], file['id'])
+
+            # In first iteration, see if we've ingested this file
+            # If we have, assume we had already processed this whole record
+            if i == 0:
+                try:
+                    self.elasticsearch.get(
+                        'datamart',
+                        '%s.%s' % (self.identifier, dataset_id),
+                        _source=False,
+                    )
+                except elasticsearch.NotFoundError:
+                    pass
+                else:
+                    logger.info("Dataset already in index")
+                    return
+
             logger.info("File %s", file['filename'])
 
             file_metadata = dict(
@@ -125,7 +143,6 @@ class ZenodoDiscoverer(Discoverer):
                 size=file['filesize'],
             )
             direct_url = file['links']['download']
-            dataset_id = '%s.%s' % (record['id'], file['id'])
 
             # Discover this dataset
             self.record_dataset(
