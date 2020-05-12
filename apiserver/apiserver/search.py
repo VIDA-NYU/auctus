@@ -89,13 +89,13 @@ def get_column_coverage(data_profile, filter_=()):
             type_value = types.DATE_TIME
         else:
             continue
-        column_coverage[str(column_index)] = {
+        column_coverage[(column_index,)] = {
             'type': type_,
             'type_value': type_value,
             'ranges': [],
         }
         for range_ in column['coverage']:
-            column_coverage[str(column_index)]['ranges'].append([
+            column_coverage[(column_index,)]['ranges'].append([
                 float(range_['range']['gte']),
                 float(range_['range']['lte']),
             ])
@@ -111,22 +111,22 @@ def get_column_coverage(data_profile, filter_=()):
                     )
                 ):
                     continue
-                names = (str(column_index_mapping[spatial['lat']]) + ',' +
-                         str(column_index_mapping[spatial['lon']]))
+                names = (column_index_mapping[spatial['lat']],
+                         column_index_mapping[spatial['lon']])
             elif 'address' in spatial:
                 if (
                     filter_ and
                     column_index_mapping[spatial['address']] not in filter_
                 ):
                     continue
-                names = str(column_index_mapping[spatial['address']])
+                names = (column_index_mapping[spatial['address']],)
             elif 'point' in spatial:
                 if (
                     filter_ and
                     column_index_mapping[spatial['point']] not in filter_
                 ):
                     continue
-                names = str(column_index_mapping[spatial['point']])
+                names = (column_index_mapping[spatial['point']],)
             else:
                 raise ValueError("Invalid spatial_coverage")
             column_coverage[names] = {
@@ -164,7 +164,7 @@ def get_lazo_sketches(data_profile, filter_=None):
     for column_index, column in enumerate(data_profile['columns']):
         if 'lazo' in column:
             if not filter_ or column_index in filter_:
-                lazo_sketches[str(column_index)] = (
+                lazo_sketches[(column_index,)] = (
                     column['lazo']['n_permutations'],
                     column['lazo']['hash_values'],
                     column['lazo']['cardinality'],
@@ -542,8 +542,8 @@ def get_joinable_datasets(
             for result in spatial_results:
                 result['companion_column'] = column
                 search_results.append(result)
-        else:
-            column_name = data_profile['columns'][int(column)]['name']
+        elif len(column) == 1:
+            column_name = data_profile['columns'][column[0]]['name']
             numerical_results = get_numerical_join_search_results(
                 es,
                 type_,
@@ -558,14 +558,15 @@ def get_joinable_datasets(
             for result in numerical_results:
                 result['companion_column'] = column
                 search_results.append(result)
+        else:
+            raise ValueError("Non-spatial coverage from multiple columns?")
 
     # textual/categorical attributes
     lazo_sketches = get_lazo_sketches(
         data_profile,
         tabular_variables,
     )
-    for column in lazo_sketches:
-        n_permutations, hash_values, cardinality = lazo_sketches[column]
+    for column, (n_permutations, hash_values, cardinality) in lazo_sketches.items():
         query_results = lazo_client.query_lazo_sketch_data(
             n_permutations,
             hash_values,
@@ -615,16 +616,12 @@ def get_joinable_datasets(
         right_columns = []
         left_columns_names = []
         right_columns_names = []
-        try:
-            left_columns.append([int(result['companion_column'])])
-            left_columns_names.append(
-                [data_profile['columns'][int(result['companion_column'])]['name']]
-            )
-        except ValueError:
-            index_1, index_2 = result['companion_column'].split(",")
-            left_columns.append([int(index_1), int(index_2)])
-            left_columns_names.append([data_profile['columns'][int(index_1)]['name'],
-                                       data_profile['columns'][int(index_2)]['name']])
+        left_columns.append(list(result['companion_column']))
+        left_columns_names.append([
+            data_profile['columns'][comp]['name']
+            for comp in result['companion_column']
+        ])
+
         source = result['_source']
         # Keep in sync, search code for 279a32
         if 'index' in source:
