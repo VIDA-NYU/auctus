@@ -99,6 +99,7 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
 
     if 'spatial_coverage' in data_profile:
         for spatial in data_profile['spatial_coverage']:
+            # Keep in sync, search code for 279a32
             if 'lat' in spatial:
                 if (
                     filter_ and (
@@ -632,6 +633,7 @@ def get_joinable_datasets(
             left_columns_names.append([data_profile['columns'][int(index_1)]['name'] +
                                        ', ' + data_profile['columns'][int(index_2)]['name']])
         source = result['_source']
+        # Keep in sync, search code for 279a32
         if 'index' in source:
             right_columns.append([source['index']])
             right_columns_names.append([source['name']])

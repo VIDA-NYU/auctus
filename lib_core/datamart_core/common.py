@@ -177,6 +177,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             spatial_coverage_metadata = dict()
             spatial_coverage_metadata.update(common_dataset_metadata)
             spatial_coverage_metadata.update(spatial_coverage)
+            # Keep in sync, search code for 279a32
             if 'lat' in spatial_coverage_metadata:
                 spatial_coverage_metadata['name'] = ' , '.join([
                     spatial_coverage_metadata['lat'],
