@@ -381,7 +381,7 @@ def get_spatial_join_search_results(
 
 
 def get_textual_join_search_results(
-    es, dataset_ids, column_names, lazo_scores,
+    es, query_results,
     query_sup_functions=None, query_sup_filters=None,
 ):
     """Combine Lazo textual search results with Elasticsearch
@@ -390,7 +390,7 @@ def get_textual_join_search_results(
 
     scores_per_dataset = dict()
     column_per_dataset = dict()
-    for d_id, name, lazo_score in zip(dataset_ids, column_names, lazo_scores):
+    for d_id, name, lazo_score in query_results:
         if d_id not in column_per_dataset:
             column_per_dataset[d_id] = list()
             scores_per_dataset[d_id] = dict()
@@ -422,7 +422,7 @@ def get_textual_join_search_results(
 
     # if there is a keyword query
     should_query = list()
-    for d_id, name, lazo_score in zip(dataset_ids, column_names, lazo_scores):
+    for d_id, name, lazo_score in query_results:
         should_query.append(
             {
                 'constant_score': {
@@ -582,18 +582,9 @@ def get_joinable_datasets(
             ]
         if not query_results:
             continue
-        dataset_ids = list()
-        column_names = list()
-        scores = list()
-        for dataset_id, column_name, threshold in query_results:
-            dataset_ids.append(dataset_id)
-            column_names.append(column_name)
-            scores.append(threshold)
         textual_results = get_textual_join_search_results(
             es,
-            dataset_ids,
-            column_names,
-            scores,
+            query_results,
             query_sup_functions,
             query_sup_filters,
         )
