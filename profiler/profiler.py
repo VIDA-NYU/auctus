@@ -241,6 +241,7 @@ class Profiler(object):
 
     def process_dataset_callback(self, message, dataset_id):
         async def coro(future):
+            metadata = None
             try:
                 try:
                     metadata = future.result()
@@ -255,6 +256,18 @@ class Profiler(object):
                             dataset_id,
                             # DO delete from Lazo
                             self.lazo_client,
+                        )
+                        self.es.index(
+                            'pending',
+                            dict(
+                                status='error',
+                                error="Dataset has no rows",
+                                metadata=metadata,
+                                date=datetime.utcnow().isoformat(),
+                                source=metadata['source'],
+                                materialize=metadata['materialize'],
+                            ),
+                            id=dataset_id,
                         )
                     else:
                         # Delete dataset if already exists in index
@@ -279,6 +292,18 @@ class Profiler(object):
                     # Materializer reached size limit
                     logger.info("Dataset over size limit: %r", dataset_id)
                     message.ack()
+                    self.es.index(
+                        'pending',
+                        dict(
+                            status='error',
+                            error="Dataset is too big",
+                            metadata=metadata,
+                            date=datetime.utcnow().isoformat(),
+                            source=metadata['source'],
+                            materialize=metadata['materialize'],
+                        ),
+                        id=dataset_id,
+                    )
                 except Exception as e:
                     if isinstance(e, elasticsearch.RequestError):
                         # This is a problem with our computed metadata
@@ -300,6 +325,19 @@ class Profiler(object):
                     )
                     # Ack anyway, retrying would probably fail again
                     message.ack()
+
+                    self.es.index(
+                        'pending',
+                        dict(
+                            status='error',
+                            error="Error profiling dataset",
+                            metadata=metadata,
+                            date=datetime.utcnow().isoformat(),
+                            source=metadata['source'],
+                            materialize=metadata['materialize'],
+                        ),
+                        id=dataset_id,
+                    )
                 else:
                     message.ack()
                     logger.info("Dataset %r processed successfully",
