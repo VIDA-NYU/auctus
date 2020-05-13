@@ -750,6 +750,19 @@ class Upload(BaseHandler):
         else:
             return self.send_error_json(400, "No file")
 
+        # Add to alternate index
+        self.application.elasticsearch.index(
+            'pending',
+            dict(
+                status='queued',
+                metadata=metadata,
+                date=datetime.utcnow().isoformat(),
+                source='upload',
+                materialize=metadata['materialize'],
+            ),
+            id=dataset_id,
+        )
+
         # Publish to the profiling queue
         await self.application.profile_exchange.publish(
             json2msg(
