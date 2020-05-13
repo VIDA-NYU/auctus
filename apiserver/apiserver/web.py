@@ -554,10 +554,27 @@ class Metadata(BaseHandler, GracefulHandler):
         try:
             metadata = es.get('datamart', dataset_id)['_source']
         except elasticsearch.NotFoundError:
-            raise HTTPError(404)
+            # Check alternate index
+            try:
+                record = es.get('pending', dataset_id)['_source']
+            except elasticsearch.NotFoundError:
+                raise HTTPError(404)
+            else:
+                result = {
+                    'id': dataset_id,
+                    'status': record['status'],
+                    'metadata': record['metadata'],
+                }
+                if 'error' in record:
+                    result['error'] = record['error']
+        else:
+            result = {
+                'id': dataset_id,
+                'status': 'indexed',
+                'metadata': metadata,
+            }
+            result = enhance_metadata(result)
 
-        result = {'id': dataset_id, 'metadata': metadata}
-        result = enhance_metadata(result)
         return self.send_json(result)
 
     head = get
