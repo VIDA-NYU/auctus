@@ -76,7 +76,7 @@ def get_column_coverage(data_profile, filter_=()):
         if filter_ and column_index not in filter_:
             continue
         # ignoring 'd3mIndex'
-        if 'd3mIndex' in column_name:
+        if column_name == 'd3mIndex':
             continue
         if types.ID in column['semantic_types']:
             type_ = 'semantic_types'
@@ -477,7 +477,8 @@ def get_textual_join_search_results(
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
-        columns = es.get('datamart', dataset_id)['_source']['columns']
+        columns = es.get('datamart', dataset_id, _source='columns.name')
+        columns = columns['_source']['columns']
     else:
         columns = data_profile['columns']
     for i in range(len(columns)):
@@ -526,13 +527,13 @@ def get_joinable_datasets(
     search_results = list()
 
     # numerical, temporal, and spatial attributes
-    for column in column_coverage:
-        type_ = column_coverage[column]['type']
-        type_value = column_coverage[column]['type_value']
+    for column, coverage in column_coverage.items():
+        type_ = coverage['type']
+        type_value = coverage['type_value']
         if type_ == 'spatial':
             spatial_results = get_spatial_join_search_results(
                 es,
-                column_coverage[column]['ranges'],
+                coverage['ranges'],
                 dataset_id,
                 ignore_datasets,
                 query_sup_functions,
@@ -548,7 +549,7 @@ def get_joinable_datasets(
                 type_,
                 type_value,
                 column_name,
-                column_coverage[column]['ranges'],
+                coverage['ranges'],
                 dataset_id,
                 ignore_datasets,
                 query_sup_functions,
@@ -653,6 +654,7 @@ def get_joinable_datasets(
                 source['point'],
             ])
         else:
+            logger.error("Invalid spatial_coverage")
             continue
 
         results.append(dict(
