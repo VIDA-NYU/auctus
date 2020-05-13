@@ -288,6 +288,12 @@ class Profiler(object):
                             json2msg(dict(body, id=dataset_id)),
                             dataset_id,
                         )
+
+                        # Remove from alternate index
+                        try:
+                            self.es.delete('pending', dataset_id)
+                        except elasticsearch.NotFoundError:
+                            pass
                 except DatasetTooBig:
                     # Materializer reached size limit
                     logger.info("Dataset over size limit: %r", dataset_id)
