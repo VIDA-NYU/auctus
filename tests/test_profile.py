@@ -9,7 +9,7 @@ from datamart_profiler import profile_types
 import datamart_profiler.spatial
 from datamart_profiler.spatial import pair_latlong_columns, \
     normalize_latlong_column_name, LATITUDE, LONGITUDE
-from datamart_profiler.temporal import get_temporal_resolution
+from datamart_profiler.temporal import get_temporal_resolution, parse_date
 
 from .utils import DataTestCase
 
@@ -160,14 +160,14 @@ class TestDates(unittest.TestCase):
     def test_parse(self):
         """Test parsing dates."""
         self.assertEqual(
-            profile_types.parse_date('Monday July 1, 2019'),
+            parse_date('Monday July 1, 2019'),
             datetime(2019, 7, 1, tzinfo=UTC),
         )
         self.assertEqual(
-            profile_types.parse_date('20190702T211319Z'),
+            parse_date('20190702T211319Z'),
             datetime(2019, 7, 2, 21, 13, 19, tzinfo=UTC),
         )
-        dt = profile_types.parse_date('2019-07-02T21:13:19-04:00')
+        dt = parse_date('2019-07-02T21:13:19-04:00')
         self.assertEqual(
             dt.replace(tzinfo=None),
             datetime(2019, 7, 2, 21, 13, 19),
@@ -179,11 +179,11 @@ class TestDates(unittest.TestCase):
 
         # Check that unknown timezones are not accepted
         self.assertEqual(
-            profile_types.parse_date('2019-07-02 18:05 UTC'),
+            parse_date('2019-07-02 18:05 UTC'),
             datetime(2019, 7, 2, 18, 5, tzinfo=UTC),
         )
         self.assertEqual(
-            profile_types.parse_date('2019-07-02 18:05 L'),
+            parse_date('2019-07-02 18:05 L'),
             None,
         )
 
@@ -198,7 +198,7 @@ class TestTemporalResolutions(unittest.TestCase):
 
     def test_native(self):
         def get_res(data):
-            values = [profile_types.parse_date(d) for d in data]
+            values = [parse_date(d) for d in data]
             return get_temporal_resolution(values)
 
         self.do_checks(get_res)
@@ -410,7 +410,7 @@ class TestNominatim(DataTestCase):
             }],
         }
         datamart_profiler.spatial.nominatim_query = \
-            lambda url, *, q: queries[q]
+            lambda url, *, q: [queries[qe] for qe in q]
         try:
             data_dir = os.path.join(os.path.dirname(__file__), 'data')
             with open(os.path.join(data_dir, 'addresses.csv')) as data:
@@ -452,3 +452,51 @@ class TestNominatim(DataTestCase):
                 ],
             },
         )
+
+    def test_querying(self):
+        old_query = datamart_profiler.spatial.nominatim_query
+        queries = {
+            'a': [{'lat': 11.0, 'lon': 12.0}],
+            'b': [],
+            'c': [{'lat': 31.0, 'lon': 32.0}],
+        }
+        datamart_profiler.spatial.nominatim_query = \
+            lambda url, *, q: [queries[qe] for qe in q]
+        try:
+            res, empty = datamart_profiler.spatial.nominatim_resolve_all(
+                'http://240.123.45.67:21',
+                ['a', 'b', 'c', 'b', 'b', 'c'],
+            )
+            self.assertEqual(
+                res,
+                [
+                    (11.0, 12.0),
+                    (31.0, 32.0),
+                    (31.0, 32.0),
+                ],
+            )
+            self.assertEqual(empty, 6)
+
+            res, empty = datamart_profiler.spatial.nominatim_resolve_all(
+                'http://240.123.45.67:21',
+                [
+                    'a', 'b', 'c', 'b', 'b', 'c', 'a', 'b', 'c',
+                    # Second batch
+                    'b', 'b', 'c',
+                ],
+            )
+            self.assertEqual(
+                res,
+                [
+                    (11.0, 12.0),
+                    (11.0, 12.0),
+                    (31.0, 32.0),
+                    (31.0, 32.0),
+                    (31.0, 32.0),
+                    # Second batch
+                    (31.0, 32.0),
+                ],
+            )
+            self.assertEqual(empty, 12)
+        finally:
+            datamart_profiler.spatial.nominatim_query = old_query

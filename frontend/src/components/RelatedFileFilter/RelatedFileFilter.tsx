@@ -28,10 +28,14 @@ class RelatedFileFilter extends PersistentComponent<
   }
 
   handleSelectedFile(acceptedFiles: File[]) {
-    const file = acceptedFiles[0];
-    const relatedFile: RelatedFile = { kind: 'localFile', file };
-    this.setState({ relatedFile });
-    this.props.onSelectedFileChange(relatedFile);
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0];
+      const relatedFile: RelatedFile = { kind: 'localFile', file };
+      this.setState({ relatedFile });
+      this.props.onSelectedFileChange(relatedFile);
+    } else {
+      this.setState({ relatedFile: undefined });
+    }
   }
 
   render() {

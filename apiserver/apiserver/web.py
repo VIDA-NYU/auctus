@@ -246,7 +246,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     ', data_profile' if data_profile else '')
 
         # parameter: data
-        if data:
+        if data is not None:
             try:
                 data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
@@ -268,8 +268,11 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         tabular_variables = list()
         if query:
             try:
-                query_args_main, query_sup_functions, query_sup_filters, tabular_variables = \
-                    parse_query(query)
+                (
+                    query_args_main,
+                    query_sup_functions, query_sup_filters,
+                    tabular_variables,
+                ) = parse_query(query)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
 
@@ -624,7 +627,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         metadata = task['metadata']
 
         # no augmentation task provided -- will first look for possible augmentation
-        if task['augmentation']['type'] == 'none':
+        if 'augmentation' not in task or task['augmentation']['type'] == 'none':
             logger.info("No task, searching for augmentations")
             search_results = get_augmentation_search_results(
                 es=self.application.elasticsearch,
@@ -838,14 +841,13 @@ class Application(GracefulApplication):
                     'http://coordinator:8003/api/statistics',
                 )
                 statistics = json.loads(response.body.decode('utf-8'))
-            except Exception as e:
+            except Exception:
                 logger.exception("Can't get statistics from coordinator")
             else:
                 self.sources_counts = statistics['sources_counts']
                 self.recent_discoveries = statistics['recent_discoveries']
 
             await asyncio.sleep(60)
-
 
     def log_request(self, handler):
         if handler.request.path == '/health':

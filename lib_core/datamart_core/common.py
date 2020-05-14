@@ -36,8 +36,16 @@ def setup_logging(clear=True):
             return False
         return True
 
+    def filter_shapely_exc(record):
+        if len(record.args) == 1 and record.args[0] == (
+            'ParseException: Expected word but encountered end of stream'
+        ):
+            return False
+        return True
+
     logging.getLogger('elasticsearch').setLevel(logging.WARNING)
     logging.getLogger('elasticsearch').addFilter(filter_delete)
+    logging.getLogger('shapely.geos').addFilter(filter_shapely_exc)
 
 
 def block_wait_future(future):
@@ -169,6 +177,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             spatial_coverage_metadata = dict()
             spatial_coverage_metadata.update(common_dataset_metadata)
             spatial_coverage_metadata.update(spatial_coverage)
+            # Keep in sync, search code for 279a32
             if 'lat' in spatial_coverage_metadata:
                 spatial_coverage_metadata['name'] = ' , '.join([
                     spatial_coverage_metadata['lat'],

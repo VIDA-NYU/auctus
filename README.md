@@ -50,7 +50,7 @@ Build the containers
 --------------------
 
 ```
-$ docker-compose build --build-arg version=$(git describe) coordinator profiler apiserver frontend socrata
+$ docker-compose build --build-arg version=$(git describe) coordinator profiler apiserver frontend socrata zenodo
 ```
 
 Start the base containers
@@ -95,7 +95,7 @@ Start discovery plugins (optional)
 ----------------------------------
 
 ```
-$ docker-compose up -d socrata
+$ docker-compose up -d socrata zenodo
 ```
 
 Start metric dashboard (optional)

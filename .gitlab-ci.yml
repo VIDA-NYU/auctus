@@ -18,7 +18,8 @@ test:
     # so exposed ports are at 'docker' not 'localhost', and
     # Docker containers can't reach the local runner!
   script:
-    - diff -u lib_core/datamart_core/types.py lib_profiler/datamart_profiler/types.py && diff -u lib_core/datamart_core/types.py lib_materialize/datamart_materialize/types.py
+    - diff -u lib_core/datamart_core/types.py lib_profiler/datamart_profiler/types.py
+    - diff -u lib_core/datamart_core/types.py lib_materialize/datamart_materialize/types.py
     - /root/.poetry/bin/poetry install
     - |
       # Check READMEs
@@ -62,7 +63,7 @@ test:
     - "sed -i '/# NOTCI$/d' docker-compose.yml base.Dockerfile */Dockerfile"
 
     # Build images
-    - python3 scripts/docker-compose-cached-build.py
+    - python scripts/docker-compose-cached-build.py
     - docker-compose pull rabbitmq  # Don't build it
 
     # Bring services up
@@ -122,6 +123,13 @@ test:
     paths:
       - htmlcov
     expire_in: 1 week
+
+style:
+  stage: test
+  before_script:
+    - pip --disable-pip-version-check install flake8
+  script:
+    - flake8 --ignore=E731,W504,W503,E501
 
 pages:
   stage: deploy

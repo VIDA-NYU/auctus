@@ -1,3 +1,4 @@
+import json
 import logging
 import numpy
 import prometheus_client
@@ -21,6 +22,7 @@ SPATIAL_RANGE_DELTA_LAT = 0.0001
 
 MAX_ADDRESS_LENGTH = 90  # 90 characters
 MAX_NOMINATIM_REQUESTS = 200
+NOMINATIM_BATCH_SIZE = 30
 
 LATITUDE = ('latitude', 'lat')
 LONGITUDE = ('longitude', 'long', 'lon', 'lng')
@@ -126,9 +128,13 @@ def pair_latlong_columns(columns_lat, columns_long):
 
 def _wkt_loader(value):
     try:
-        return wkt.loads(value)
+        point = wkt.loads(value)
     except Exception:
-        return numpy.nan
+        pass
+    else:
+        if -180.0 < point.x < 180.0 and -90.0 < point.y < 90.0:
+            return point
+    return numpy.nan
 
 
 def parse_wkt_column(values):
@@ -145,20 +151,35 @@ def parse_wkt_column(values):
     return values
 
 
+_nominatim_session = requests.Session()
+
+
 def nominatim_query(url, *, q):
     if url[-1] == '/':
-        url = url [:-1]
+        url = url[:-1]
     res = start = end = None  # Avoids warnings
     for i in range(5):
         if i > 0:
             time.sleep(1)
         PROM_NOMINATIM_REQS.inc()  # Count all requests
         start = time.perf_counter()
-        res = requests.get(
-            url +
-            '/search?' +
-            urlencode({'q': q, 'format': 'jsonv2'}),
-        )
+        if isinstance(q, (tuple, list)):
+            # Batch query
+            res = _nominatim_session.get(
+                url +
+                '/search?' +
+                urlencode({
+                    'batch': json.dumps([{'q': qe} for qe in q]),
+                    'format': 'jsonv2',
+                }),
+            )
+        else:
+            # Normal query
+            res = _nominatim_session.get(
+                url +
+                '/search?' +
+                urlencode({'q': q, 'format': 'jsonv2'}),
+            )
         end = time.perf_counter()
         if res.status_code not in (502, 503, 504):
             break
@@ -170,7 +191,10 @@ def nominatim_query(url, *, q):
             "Response is not JSON for URL: %s" % res.url,
             response=res,
         )
-    return res.json() or None
+    if isinstance(q, (tuple, list)):
+        return res.json()['batch']
+    else:
+        return res.json()
 
 
 def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
@@ -180,6 +204,25 @@ def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
     non_empty = 0
     start = time.perf_counter()
     processed = 0
+    batch = {}
+
+    def run_batch():
+        not_found_batch = 0
+        locs = nominatim_query(url, q=list(batch.keys()))
+        for location, count in zip(locs, batch.values()):
+            if location:
+                loc = (
+                    float(location[0]['lat']),
+                    float(location[0]['lon']),
+                )
+                cache[value] = loc
+                locations.extend([loc] * count)
+            else:
+                cache[value] = None
+                not_found_batch += count
+        batch.clear()
+        return not_found_batch
+
     for processed, value in enumerate(array):
         value = value.strip()
         if not value:
@@ -191,20 +234,18 @@ def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
         elif value in cache:
             if cache[value] is not None:
                 locations.append(cache[value])
+        elif value in batch:
+            batch[value] += 1
         else:
-            location = nominatim_query(url, q=value)
-            if location:
-                loc = (
-                    float(location[0]['lat']),
-                    float(location[0]['lon']),
-                )
-                cache[value] = loc
-                locations.append(loc)
-            else:
-                cache[value] = None
-                not_found += 1
-            if len(cache) >= max_requests:
-                break
+            batch[value] = 1
+            if len(batch) == NOMINATIM_BATCH_SIZE:
+                not_found += run_batch()
+                if len(cache) >= max_requests:
+                    break
+
+    if batch and len(cache) < max_requests:
+        not_found += run_batch()
+
     logger.info(
         "Performed %d Nominatim queries in %fs (%d hits). Found %d/%d",
         len(cache),

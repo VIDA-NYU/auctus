@@ -87,17 +87,19 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
         else:
             continue
         column_coverage[str(column_index)] = {
-            'type':       type_,
+            'type': type_,
             'type_value': type_value,
-            'ranges':     []
+            'ranges': [],
         }
         for range_ in column['coverage']:
-            column_coverage[str(column_index)]['ranges'].\
-                append([float(range_['range']['gte']),
-                        float(range_['range']['lte'])])
+            column_coverage[str(column_index)]['ranges'].append([
+                float(range_['range']['gte']),
+                float(range_['range']['lte']),
+            ])
 
     if 'spatial_coverage' in data_profile:
         for spatial in data_profile['spatial_coverage']:
+            # Keep in sync, search code for 279a32
             if 'lat' in spatial:
                 if (
                     filter_ and (
@@ -115,16 +117,24 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
                 ):
                     continue
                 names = str(column_index_mapping[spatial['address']])
+            elif 'point' in spatial:
+                if (
+                    filter_ and
+                    column_index_mapping[spatial['point']] not in filter_
+                ):
+                    continue
+                names = str(column_index_mapping[spatial['point']])
             else:
                 raise ValueError("Invalid spatial_coverage")
             column_coverage[names] = {
-                'type':      'spatial',
+                'type': 'spatial',
                 'type_value': types.LATITUDE + ',' + types.LONGITUDE,
-                'ranges':     []
+                'ranges': []
             }
             for range_ in spatial['ranges']:
-                column_coverage[names]['ranges'].\
-                    append(range_['range']['coordinates'])
+                column_coverage[names]['ranges'].append(
+                    range_['range']['coordinates']
+                )
 
     return column_coverage
 
@@ -213,9 +223,16 @@ def get_numerical_join_search_results(
                                     'coverage': coverage
                                 },
                                 'source': textwrap.dedent('''\
-                                double start = Math.max(params.gte, doc['coverage.gte'].value);
-                                double end = Math.min(params.lte, doc['coverage.lte'].value);
-                                return (end - start + 1) / params.coverage;''')
+                                    double start = Math.max(
+                                        params.gte,
+                                        doc['coverage.gte'].value
+                                    );
+                                    double end = Math.min(
+                                        params.lte,
+                                        doc['coverage.lte'].value
+                                    );
+                                    return (end - start + 1) / params.coverage;
+                                ''')
                             }
                         },
                         'boost_mode': 'replace'
@@ -314,11 +331,12 @@ def get_spatial_join_search_results(
                                     'coverage': coverage
                                 },
                                 'source': textwrap.dedent('''\
-                                double n_min_lon = Math.max(doc['ranges.min_lon'].value, params.min_lon);
-                                double n_max_lat = Math.min(doc['ranges.max_lat'].value, params.max_lat);
-                                double n_max_lon = Math.min(doc['ranges.max_lon'].value, params.max_lon);
-                                double n_min_lat = Math.max(doc['ranges.min_lat'].value, params.min_lat);
-                                return ((n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)) / params.coverage;''')
+                                    double n_min_lon = Math.max(doc['ranges.min_lon'].value, params.min_lon);
+                                    double n_max_lat = Math.min(doc['ranges.max_lat'].value, params.max_lat);
+                                    double n_max_lon = Math.min(doc['ranges.max_lon'].value, params.max_lon);
+                                    double n_min_lat = Math.max(doc['ranges.min_lat'].value, params.min_lat);
+                                    return ((n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)) / params.coverage;
+                                ''')
                             }
                         },
                         'boost_mode': 'replace'
@@ -503,11 +521,10 @@ def get_joinable_datasets(
     }
 
     # get the coverage for each column of the input dataset
-
     column_coverage = get_column_coverage(
         data_profile,
         column_index_mapping,
-        tabular_variables
+        tabular_variables,
     )
 
     # search results
@@ -613,9 +630,10 @@ def get_joinable_datasets(
         except ValueError:
             index_1, index_2 = result['companion_column'].split(",")
             left_columns.append([int(index_1), int(index_2)])
-            left_columns_names.append([data_profile['columns'][int(index_1)]['name'] +
-                                       ', ' + data_profile['columns'][int(index_2)]['name']])
+            left_columns_names.append([data_profile['columns'][int(index_1)]['name'],
+                                       data_profile['columns'][int(index_2)]['name']])
         source = result['_source']
+        # Keep in sync, search code for 279a32
         if 'index' in source:
             right_columns.append([source['index']])
             right_columns_names.append([source['name']])

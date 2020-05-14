@@ -6,16 +6,15 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'aio-pika',
     'elasticsearch~=7.0',
-    'lazo-index-service==0.5.1',
-    'prometheus_client',
+    'requests',
+    'datamart_core',
 ]
-setup(name='datamart_core',
+setup(name='datamart-zenodo_discovery-service',
       version='0.0',
-      packages=['datamart_core'],
+      py_modules=['zenodo_discovery'],
       install_requires=req,
-      description="Core library for Datamart services",
+      description="Zenodo discovery service for Datamart",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -26,7 +25,7 @@ setup(name='datamart_core',
           'Source': 'https://gitlab.com/ViDA-NYU/datamart/datamart',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
-      long_description="Core library for Datamart services",
+      long_description="Zenodo discovery service for Datamart",
       license='BSD-3-Clause',
       keywords=['datamart'],
       classifiers=[
