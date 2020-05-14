@@ -616,8 +616,6 @@ def get_joinable_datasets(
         dt = result['_source']['dataset_id']
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
-        if meta.get('description') and len(meta['description']) > 100:
-            meta['description'] = meta['description'][:97] + "..."
         left_columns = []
         right_columns = []
         left_columns_names = []
@@ -857,8 +855,6 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
     for dt, score in sorted_datasets:
         info = get_dataset_metadata(es, dt)
         meta = info.pop('_source')
-        if meta.get('description') and len(meta['description']) > 100:
-            meta['description'] = meta['description'][:97] + "..."
         # TODO: augmentation information is incorrect
         left_columns = []
         right_columns = []

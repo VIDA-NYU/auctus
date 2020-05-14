@@ -299,8 +299,6 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
             results = []
             for h in hits:
                 meta = h.pop('_source')
-                if meta.get('description') and len(meta['description']) > 100:
-                    meta['description'] = meta['description'][:97] + "..."
                 results.append(dict(
                     id=h['_id'],
                     score=h['_score'],
