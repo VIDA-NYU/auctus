@@ -186,19 +186,32 @@ function Table(props: TableProps) {
           <tr {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map((column, i) => {
               const dataVega = hit.metadata.columns[i].plot?.data;
-              return (
-                <th scope="col" {...column.getHeaderProps()}>
-                  <VegaLite
-                    spec={
-                      getSpecification(
-                        dataVega,
-                        hit.metadata.columns[i].plot?.type
-                      ) as VlSpec
-                    }
-                    data={{ values: dataVega }}
-                  />
-                </th>
-              );
+              if (dataVega) {
+                return (
+                  <th scope="col" {...column.getHeaderProps()}>
+                    <VegaLite
+                      spec={
+                        getSpecification(
+                          dataVega,
+                          hit.metadata.columns[i].plot?.type
+                        ) as VlSpec
+                      }
+                      data={{ values: dataVega }}
+                    />
+                  </th>
+                );
+              } else {
+                return (
+                  <th
+                    scope="col"
+                    {...column.getHeaderProps()}
+                    className="text-center"
+                    style={{ verticalAlign: 'middle' }}
+                  >
+                    <p className="small">Nothing to show.</p>
+                  </th>
+                );
+              }
             })}
           </tr>
         ))}
