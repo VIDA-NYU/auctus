@@ -78,7 +78,7 @@ function getEncoding(typePlot: string | undefined) {
       },
       tooltip: [
         { field: 'bin_start', title: 'start', type: 'quantitative' },
-        { field: 'bin_end', title: 'end', type: 'quantitative' }
+        { field: 'bin_end', title: 'end', type: 'quantitative' },
       ],
     };
   } else if (typePlot === 'histogram_temporal') {
@@ -97,7 +97,7 @@ function getEncoding(typePlot: string | undefined) {
       },
       tooltip: [
         { field: 'date_start', title: 'start', type: 'temporal' },
-        { field: 'date_end', title: 'end', type: 'temporal' }
+        { field: 'date_end', title: 'end', type: 'temporal' },
       ],
     };
   } else if (typePlot === 'histogram_categorical') {
@@ -127,7 +127,7 @@ function getEncoding(typePlot: string | undefined) {
       },
       tooltip: [
         { field: 'bin', type: 'ordinal' },
-        { field: 'count', type: 'quantitative' }
+        { field: 'count', type: 'quantitative' },
       ],
     };
   } else {
@@ -172,7 +172,11 @@ function Table(props: TableProps) {
         {headerGroups.map((headerGroup, i) => (
           <tr {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map(column => (
-              <th scope="col" {...column.getHeaderProps()}>
+              <th
+                scope="col"
+                {...column.getHeaderProps()}
+                style={{ position: 'sticky', top: 0, background: '#eee' }}
+              >
                 {column.render('Header')}
               </th>
             ))}
@@ -243,7 +247,7 @@ export function DatasetSample(props: TableSampleProps) {
   return (
     <div className="mt-2">
       <h6>Dataset Sample:</h6>
-      <div className="mt-2" style={{ overflow: 'auto', maxHeight: '20rem' }}>
+      <div className="mt-2" style={{ overflowY: 'auto', maxHeight: '20rem' }}>
         <Table columns={columns} data={rows} hit={hit} />
       </div>
     </div>
