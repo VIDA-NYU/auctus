@@ -3,6 +3,7 @@ from dateutil.tz import UTC
 import os
 import pandas
 import unittest
+import textwrap
 
 from datamart_profiler import process_dataset
 from datamart_profiler import profile_types
@@ -304,13 +305,11 @@ class TestTemporalResolutions(unittest.TestCase):
 
 class TestTypes(unittest.TestCase):
     def do_test(self, match, positive, negative):
-        for elem in positive.splitlines():
-            elem = elem.strip()
+        for elem in textwrap.dedent(positive).splitlines():
             if elem:
                 self.assertTrue(match(elem),
                                 "Didn't match: %s" % elem)
-        for elem in negative.splitlines():
-            elem = elem.strip()
+        for elem in textwrap.dedent(negative).splitlines():
             if elem:
                 self.assertFalse(match(elem),
                                  "Shouldn't have matched: %s" % elem)
@@ -367,6 +366,19 @@ class TestTypes(unittest.TestCase):
             positive, negative,
         )
         self.assertFalse(profile_types._re_float.match(''))
+
+    def test_geo_combined(self):
+        positive = '''\
+        70 WASHINGTON SQUARE S, NEW YORK, NY 10012 (40.729753, -73.997174)
+        R\u00C9MI'S HOUSE, BROOKLYN, NY (40.729753, -73.997174)
+        '''
+        negative = '''\
+        70 Washington Square (40.729753, -73.997174)
+        '''
+        self.do_test(
+            profile_types._re_geo_combined.match,
+            positive, negative,
+        )
 
 
 class TestTruncate(unittest.TestCase):
