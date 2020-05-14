@@ -71,14 +71,14 @@ function getEncoding(typePlot: string | undefined) {
         bin: { binned: true },
         field: 'bin_start',
         type: 'quantitative',
-        // axis: null,
+        axis: null,
       },
       x2: {
         field: 'bin_end',
       },
       tooltip: [
         { field: 'bin_start', title: 'start', type: 'quantitative' },
-        { field: 'bin_end', title: 'end', type: 'quantitative' },
+        { field: 'bin_end', title: 'end', type: 'quantitative' }
       ],
     };
   } else if (typePlot === 'histogram_temporal') {
@@ -90,14 +90,14 @@ function getEncoding(typePlot: string | undefined) {
         field: 'date_start',
         type: 'temporal',
         utc: true,
-        // axis: null,
+        axis: null,
       },
       x2: {
         field: 'date_end',
       },
       tooltip: [
         { field: 'date_start', title: 'start', type: 'temporal' },
-        { field: 'date_end', title: 'end', type: 'temporal' },
+        { field: 'date_end', title: 'end', type: 'temporal' }
       ],
     };
   } else if (typePlot === 'histogram_categorical') {
@@ -108,9 +108,27 @@ function getEncoding(typePlot: string | undefined) {
         bin: { binned: true },
         field: 'bin',
         type: 'ordinal',
-        // axis: null,
+        axis: null,
       },
       tooltip: { field: 'bin', type: 'ordinal' },
+    };
+  } else if (typePlot === 'histogram_text') {
+    return {
+      y: {
+        field: 'bin',
+        type: 'ordinal',
+        title: null,
+      },
+      x: {
+        title: null,
+        field: 'count',
+        type: 'quantitative',
+        axis: null,
+      },
+      tooltip: [
+        { field: 'bin', type: 'ordinal' },
+        { field: 'count', type: 'quantitative' }
+      ],
     };
   } else {
     console.log('Unknown plot type ', typePlot);
