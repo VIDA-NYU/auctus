@@ -130,6 +130,56 @@ class TestProfiler(DataTestCase):
             },
         )
 
+    def test_alternate(self):
+        es = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+        hits = es.search(
+            index='pending',
+            body={
+                'query': {
+                    'match_all': {},
+                },
+            },
+        )['hits']['hits']
+        hits = {h['_id']: h['_source'] for h in hits}
+
+        self.assertJson(
+            hits,
+            {
+                'datamart.test.empty': {
+                    'status': 'error',
+                    'error': "Dataset has no rows",
+                    'source': 'remi',
+                    'date': lambda d: isinstance(d, str),
+                    'metadata': {
+                        'description': "A CSV with no rows to test " +
+                                       "alternate index",
+                        'source': 'remi',
+                        'name': 'empty',
+                        'size': 28,
+                        'nb_rows': 0,
+                        'nb_profiled_rows': 0,
+                        'columns': [
+                            {'name': 'important features'},
+                            {'name': 'not here'},
+                        ],
+                        'materialize': {
+                            'identifier': 'datamart.test',
+                            'direct_url': 'http://test_discoverer:7000' +
+                                          '/empty.csv',
+                            'date': lambda d: isinstance(d, str),
+                        },
+                    },
+                    'materialize': {
+                        'identifier': 'datamart.test',
+                        'direct_url': 'http://test_discoverer:7000/empty.csv',
+                        'date': lambda d: isinstance(d, str),
+                    },
+                },
+            },
+        )
+
     def test_indexes(self):
         response = requests.get(
             'http://' + os.environ['ELASTICSEARCH_HOSTS'].split(',')[0] +
