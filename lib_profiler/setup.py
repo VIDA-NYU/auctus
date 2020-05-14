@@ -13,7 +13,6 @@ req = [
     'prometheus_client',
     'python-dateutil',
     'scikit-learn',
-    'geopandas',
     'regex',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
