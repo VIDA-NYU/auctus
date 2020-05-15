@@ -177,7 +177,8 @@ function Table(props: TableProps) {
                 style={{
                   position: 'sticky',
                   top: '-1px',
-                  background: '#eee'
+                  background: '#eee',
+                  zIndex: 1,
                 }}
               >
                 {column.render('Header')}
