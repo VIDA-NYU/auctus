@@ -8,9 +8,7 @@ import {
   CategoricalDataVegaFormat,
 } from '../../api/types';
 import './DatasetSample.css';
-// import { VegaLite, createClassFromSpec } from 'react-vega'
 import { VegaLite } from 'react-vega';
-// import * as VegaLite from
 import { TopLevelSpec as VlSpec } from 'vega-lite';
 
 const classMapping: { [key: string]: string } = {
@@ -172,13 +170,19 @@ function Table(props: TableProps) {
       <thead>
         {headerGroups.map((headerGroup, i) => (
           <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map(column => (
+            {headerGroup.headers.map((column, i) => (
               <th
                 scope="col"
                 {...column.getHeaderProps()}
-                style={{ position: 'sticky', top: 0, background: '#eee' }}
+                style={{
+                  position: 'sticky',
+                  top: '-1px',
+                  background: '#eee'
+                }}
               >
                 {column.render('Header')}
+                <br />
+                <TypeBadges column={hit.metadata.columns[i]} />
               </th>
             ))}
           </tr>
@@ -217,15 +221,6 @@ function Table(props: TableProps) {
               })}
             </tr>
           ))}
-        {headerGroups.map(headerGroup => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map((column, i) => (
-              <th scope="col" {...column.getHeaderProps()}>
-                <TypeBadges column={hit.metadata.columns[i]} />
-              </th>
-            ))}
-          </tr>
-        ))}
       </thead>
       <tbody {...getTableBodyProps()}>
         {rows.map((row, i) => {
