@@ -55,6 +55,7 @@ interface TableProps {
   columns: Array<Column<string[]>>;
   data: string[][];
   hit: SearchResult;
+  typeView: number;
 }
 
 function getEncoding(typePlot: string | undefined) {
@@ -155,7 +156,7 @@ function getSpecification(
 }
 
 function Table(props: TableProps) {
-  const { columns, data, hit } = props;
+  const { columns, data, hit, typeView } = props;
   const {
     getTableProps,
     getTableBodyProps,
@@ -182,39 +183,40 @@ function Table(props: TableProps) {
             ))}
           </tr>
         ))}
-        {headerGroups.map(headerGroup => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map((column, i) => {
-              const dataVega = hit.metadata.columns[i].plot?.data;
-              if (dataVega) {
-                return (
-                  <th scope="col" {...column.getHeaderProps()}>
-                    <VegaLite
-                      spec={
-                        getSpecification(
-                          dataVega,
-                          hit.metadata.columns[i].plot?.type
-                        ) as VlSpec
-                      }
-                      data={{ values: dataVega }}
-                    />
-                  </th>
-                );
-              } else {
-                return (
-                  <th
-                    scope="col"
-                    {...column.getHeaderProps()}
-                    className="text-center"
-                    style={{ verticalAlign: 'middle' }}
-                  >
-                    <p className="small">Nothing to show.</p>
-                  </th>
-                );
-              }
-            })}
-          </tr>
-        ))}
+        {typeView === 2 &&
+          headerGroups.map(headerGroup => (
+            <tr {...headerGroup.getHeaderGroupProps()}>
+              {headerGroup.headers.map((column, i) => {
+                const dataVega = hit.metadata.columns[i].plot?.data;
+                if (dataVega) {
+                  return (
+                    <th scope="col" {...column.getHeaderProps()}>
+                      <VegaLite
+                        spec={
+                          getSpecification(
+                            dataVega,
+                            hit.metadata.columns[i].plot?.type
+                          ) as VlSpec
+                        }
+                        data={{ values: dataVega }}
+                      />
+                    </th>
+                  );
+                } else {
+                  return (
+                    <th
+                      scope="col"
+                      {...column.getHeaderProps()}
+                      className="text-center"
+                      style={{ verticalAlign: 'middle' }}
+                    >
+                      <p className="small">Nothing to show.</p>
+                    </th>
+                  );
+                }
+              })}
+            </tr>
+          ))}
         {headerGroups.map(headerGroup => (
           <tr {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map((column, i) => (
@@ -244,25 +246,88 @@ function Table(props: TableProps) {
 interface TableSampleProps {
   hit: SearchResult;
 }
-
-export function DatasetSample(props: TableSampleProps) {
-  const { hit } = props;
-
-  const sample = hit.sample;
-  const headers = sample[0];
-  const rows = sample.slice(1, sample.length - 1);
-
-  const columns = headers.map((h, i) => ({
-    Header: h,
-    accessor: (row: string[]) => row[i],
-  }));
-
-  return (
-    <div className="mt-2">
-      <h6>Dataset Sample:</h6>
-      <div className="mt-2" style={{ overflowY: 'auto', maxHeight: '20rem' }}>
-        <Table columns={columns} data={rows} hit={hit} />
-      </div>
-    </div>
-  );
+interface TableSampleState {
+  typeView: number;
 }
+
+class DatasetSample extends React.PureComponent<
+  TableSampleProps,
+  TableSampleState
+> {
+  constructor(props: TableSampleProps) {
+    super(props);
+    this.state = { typeView: 1 };
+  }
+  updateTypeView(view: number) {
+    this.setState({ typeView: view });
+  }
+
+  // export function DatasetSample(props: TableSampleProps) {
+  render() {
+    const { hit } = this.props;
+
+    const sample = hit.sample;
+    const headers = sample[0];
+    const rows = sample.slice(1, sample.length - 1);
+
+    const columns = headers.map((h, i) => ({
+      Header: h,
+      accessor: (row: string[]) => row[i],
+    }));
+
+    return (
+      <div className="mt-2">
+        <h6>Dataset Sample:</h6>
+        <div>
+          <div
+            className="btn-group btn-group-sm"
+            role="group"
+            aria-label="Basic example"
+            style={{ float: 'initial', marginBottom: '-8px' }}
+          >
+            <button
+              type="button"
+              className={`btn btn-secondary ${
+                this.state.typeView === 1 ? 'active' : ''
+              }`}
+              onClick={() => this.updateTypeView(1)}
+            >
+              Compact view
+            </button>
+            <button
+              type="button"
+              className={`btn btn-secondary ${
+                this.state.typeView === 2 ? 'active' : ''
+              }`}
+              onClick={() => this.updateTypeView(2)}
+            >
+              Detail view
+            </button>
+            <button
+              type="button"
+              className={`btn btn-secondary ${
+                this.state.typeView === 3 ? 'active' : ''
+              }`}
+              onClick={() => this.updateTypeView(3)}
+            >
+              Column view
+            </button>
+          </div>
+          <div
+            className="mt-2"
+            style={{ overflowY: 'auto', maxHeight: '20rem' }}
+          >
+            <Table
+              columns={columns}
+              data={rows}
+              hit={hit}
+              typeView={this.state.typeView}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+export { DatasetSample };
