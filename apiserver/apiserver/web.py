@@ -763,7 +763,7 @@ class Upload(BaseHandler):
             description = self.get_body_argument('description', None)
             if description:
                 metadata['description'] = description
-            dataset_id = 'datamart.url.%s' % (uuid.uuid4().hex)
+            dataset_id = 'datamart.url.%s' % uuid.uuid4().hex
         else:
             return self.send_error_json(400, "No file")
 

@@ -1963,6 +1963,97 @@ class TestAugment(DatamartTest):
             )
 
 
+class TestUpload(DatamartTest):
+    def test_upload(self):
+        response = self.datamart_post(
+            '/upload',
+            data={
+                'address': 'http://test_discoverer:7000/basic.csv',
+                'name': 'basic reupload',
+                'description': "sent through upload endpoint",
+            },
+        )
+        record = response.json()
+        self.assertEqual(record.keys(), {'id'})
+        dataset_id = record['id']
+
+        es = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+
+        try:
+            # Check it's in the alternate index
+            try:
+                pending = es.get('pending', dataset_id)['_source']
+                self.assertJson(
+                    pending,
+                    {
+                        'status': 'queued',
+                        'date': lambda d: isinstance(d, str),
+                        'source': 'upload',
+                        'metadata': {
+                            'name': 'basic reupload',
+                            'description': 'sent through upload endpoint',
+                            'source': 'upload',
+                            'materialize': {
+                                'identifier': 'datamart.url',
+                                'direct_url': 'http://test_discoverer:7000/basic.csv',
+                                'date': lambda d: isinstance(d, str),
+                            },
+                        },
+                        'materialize': {
+                            'identifier': 'datamart.url',
+                            'direct_url': 'http://test_discoverer:7000/basic.csv',
+                            'date': lambda d: isinstance(d, str),
+                        },
+                    },
+                )
+            finally:
+                # Wait for it to be indexed
+                for _ in range(10):
+                    try:
+                        record = es.get('datamart', dataset_id)['_source']
+                    except elasticsearch.NotFoundError:
+                        pass
+                    else:
+                        break
+                    time.sleep(2)
+                else:
+                    self.fail("Dataset didn't make it to index")
+
+            self.assertJson(
+                record,
+                dict(
+                    basic_metadata,
+                    id=dataset_id,
+                    name='basic reupload',
+                    description="sent through upload endpoint",
+                    source='upload',
+                    materialize=dict(
+                        basic_metadata['materialize'],
+                        identifier='datamart.url',
+                    ),
+                ),
+            )
+
+            # Check it's no longer in alternate index
+            with self.assertRaises(elasticsearch.NotFoundError):
+                es.get('pending', dataset_id)
+        finally:
+            import lazo_index_service
+            from datamart_core.common import delete_dataset_from_index
+
+            lazo_client = lazo_index_service.LazoIndexClient(
+                host=os.environ['LAZO_SERVER_HOST'],
+                port=int(os.environ['LAZO_SERVER_PORT'])
+            )
+            delete_dataset_from_index(
+                es,
+                dataset_id,
+                lazo_client,
+            )
+
+
 version = os.environ['DATAMART_VERSION']
 assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 
