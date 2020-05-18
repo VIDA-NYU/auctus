@@ -554,10 +554,27 @@ class Metadata(BaseHandler, GracefulHandler):
         try:
             metadata = es.get('datamart', dataset_id)['_source']
         except elasticsearch.NotFoundError:
-            raise HTTPError(404)
+            # Check alternate index
+            try:
+                record = es.get('pending', dataset_id)['_source']
+            except elasticsearch.NotFoundError:
+                raise HTTPError(404)
+            else:
+                result = {
+                    'id': dataset_id,
+                    'status': record['status'],
+                    'metadata': record['metadata'],
+                }
+                if 'error' in record:
+                    result['error'] = record['error']
+        else:
+            result = {
+                'id': dataset_id,
+                'status': 'indexed',
+                'metadata': metadata,
+            }
+            result = enhance_metadata(result)
 
-        result = {'id': dataset_id, 'metadata': metadata}
-        result = enhance_metadata(result)
         return self.send_json(result)
 
     head = get
@@ -746,9 +763,22 @@ class Upload(BaseHandler):
             description = self.get_body_argument('description', None)
             if description:
                 metadata['description'] = description
-            dataset_id = 'datamart.url.%s' % (uuid.uuid4().hex)
+            dataset_id = 'datamart.url.%s' % uuid.uuid4().hex
         else:
             return self.send_error_json(400, "No file")
+
+        # Add to alternate index
+        self.application.elasticsearch.index(
+            'pending',
+            dict(
+                status='queued',
+                metadata=metadata,
+                date=datetime.utcnow().isoformat(),
+                source='upload',
+                materialize=metadata['materialize'],
+            ),
+            id=dataset_id,
+        )
 
         # Publish to the profiling queue
         await self.application.profile_exchange.publish(

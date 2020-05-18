@@ -66,6 +66,17 @@ class TestDiscoverer(Discoverer):
             dataset_id='lazo',
         )
 
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test_discoverer:7000/empty.csv'),
+            {
+                # Omit name, should be set to 'empty' automatically
+                'description': "A CSV with no rows to test alternate index",
+                'source': 'remi',
+            },
+            dataset_id='empty',
+        )
+
         # Put this one on disk
         with self.write_to_shared_storage('daily') as dirname:
             shutil.copy2('daily.csv', os.path.join(dirname, 'main.csv'))

@@ -231,3 +231,30 @@ datamart_spatial_coverage:
             type: double
           min_lat:
             type: double
+pending:
+  mappings:
+    properties:
+      status:
+        type: keyword
+      error:
+        type: text
+        index: false
+      metadata:
+        type: object
+        enabled: false
+      date:
+        type: date
+      source:
+        type: keyword
+      materialize:
+        properties:
+          identifier:
+            type: keyword
+          date:
+            type: date
+          direct_url:
+            type: keyword
+            index: false
+          convert:
+            type: object
+            enabled: false

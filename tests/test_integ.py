@@ -130,6 +130,56 @@ class TestProfiler(DataTestCase):
             },
         )
 
+    def test_alternate(self):
+        es = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+        hits = es.search(
+            index='pending',
+            body={
+                'query': {
+                    'match_all': {},
+                },
+            },
+        )['hits']['hits']
+        hits = {h['_id']: h['_source'] for h in hits}
+
+        self.assertJson(
+            hits,
+            {
+                'datamart.test.empty': {
+                    'status': 'error',
+                    'error': "Dataset has no rows",
+                    'source': 'remi',
+                    'date': lambda d: isinstance(d, str),
+                    'metadata': {
+                        'description': "A CSV with no rows to test " +
+                                       "alternate index",
+                        'source': 'remi',
+                        'name': 'empty',
+                        'size': 28,
+                        'nb_rows': 0,
+                        'nb_profiled_rows': 0,
+                        'columns': [
+                            {'name': 'important features'},
+                            {'name': 'not here'},
+                        ],
+                        'materialize': {
+                            'identifier': 'datamart.test',
+                            'direct_url': 'http://test_discoverer:7000' +
+                                          '/empty.csv',
+                            'date': lambda d: isinstance(d, str),
+                        },
+                    },
+                    'materialize': {
+                        'identifier': 'datamart.test',
+                        'direct_url': 'http://test_discoverer:7000/empty.csv',
+                        'date': lambda d: isinstance(d, str),
+                    },
+                },
+            },
+        )
+
     def test_indexes(self):
         response = requests.get(
             'http://' + os.environ['ELASTICSEARCH_HOSTS'].split(',')[0] +
@@ -1910,6 +1960,98 @@ class TestAugment(DatamartTest):
                     '2019-04-27T17:00:00Z,0,yes',
                     '2019-04-27T13:00:00Z,0,yes',
                 ],
+            )
+
+
+class TestUpload(DatamartTest):
+    def test_upload(self):
+        response = self.datamart_post(
+            '/upload',
+            data={
+                'address': 'http://test_discoverer:7000/basic.csv',
+                'name': 'basic reupload',
+                'description': "sent through upload endpoint",
+            },
+        )
+        record = response.json()
+        self.assertEqual(record.keys(), {'id'})
+        dataset_id = record['id']
+
+        es = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+
+        try:
+            # Check it's in the alternate index
+            try:
+                pending = es.get('pending', dataset_id)['_source']
+                self.assertJson(
+                    pending,
+                    {
+                        'status': 'queued',
+                        'date': lambda d: isinstance(d, str),
+                        'source': 'upload',
+                        'metadata': {
+                            'name': 'basic reupload',
+                            'description': 'sent through upload endpoint',
+                            'source': 'upload',
+                            'materialize': {
+                                'identifier': 'datamart.url',
+                                'direct_url': 'http://test_discoverer:7000/basic.csv',
+                                'date': lambda d: isinstance(d, str),
+                            },
+                        },
+                        'materialize': {
+                            'identifier': 'datamart.url',
+                            'direct_url': 'http://test_discoverer:7000/basic.csv',
+                            'date': lambda d: isinstance(d, str),
+                        },
+                    },
+                )
+            finally:
+                # Wait for it to be indexed
+                for _ in range(10):
+                    try:
+                        record = es.get('datamart', dataset_id)['_source']
+                    except elasticsearch.NotFoundError:
+                        pass
+                    else:
+                        break
+                    time.sleep(2)
+                else:
+                    self.fail("Dataset didn't make it to index")
+
+            self.assertJson(
+                record,
+                dict(
+                    basic_metadata,
+                    id=dataset_id,
+                    name='basic reupload',
+                    description="sent through upload endpoint",
+                    source='upload',
+                    materialize=dict(
+                        basic_metadata['materialize'],
+                        identifier='datamart.url',
+                    ),
+                ),
+            )
+
+            # Check it's no longer in alternate index
+            with self.assertRaises(elasticsearch.NotFoundError):
+                es.get('pending', dataset_id)
+        finally:
+            import lazo_index_service
+            from datamart_core.common import delete_dataset_from_index
+
+            time.sleep(3)  # Deleting won't work immediately
+            lazo_client = lazo_index_service.LazoIndexClient(
+                host=os.environ['LAZO_SERVER_HOST'],
+                port=int(os.environ['LAZO_SERVER_PORT'])
+            )
+            delete_dataset_from_index(
+                es,
+                dataset_id,
+                lazo_client,
             )
 
 
