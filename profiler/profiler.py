@@ -241,7 +241,7 @@ class Profiler(object):
 
     def process_dataset_callback(self, message, dataset_id):
         async def coro(future):
-            metadata = None
+            metadata = msg2json(message)['metadata']
             try:
                 try:
                     metadata = future.result()
