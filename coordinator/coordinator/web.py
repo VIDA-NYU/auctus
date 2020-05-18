@@ -142,7 +142,6 @@ def make_app(debug=False):
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
         debug=debug,
-        serve_traceback=True,
         cookie_secret=secret,
         es=es,
     )
@@ -150,10 +149,13 @@ def make_app(debug=False):
 
 def main():
     setup_logging()
+    debug = os.environ.get('DEBUG') not in (None, '', 'no', 'off', 'false')
     prometheus_client.start_http_server(8000)
-    logger.info("Startup: coordinator %s", os.environ['DATAMART_VERSION'])
+    logger.info("Startup: coordinator %s%s", os.environ['DATAMART_VERSION'])
+    if debug:
+        logger.error("Debug mode is ON")
 
-    app = make_app()
+    app = make_app(debug)
     app.listen(8003, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
     check_cache()  # Schedules itself to run periodically

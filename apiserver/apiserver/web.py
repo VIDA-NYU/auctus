@@ -78,7 +78,8 @@ class BaseHandler(RequestHandler):
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
         if not type_.startswith('application/json'):
-            raise HTTPError(400, "Expected JSON")
+            self.send_error_json(404, "Expected JSON")
+            raise HTTPError(400)
         return json.loads(self.request.body.decode('utf-8'))
 
     def send_json(self, obj):
@@ -440,7 +441,7 @@ class DownloadId(BaseDownload, GracefulHandler):
                 'datamart', dataset_id
             )['_source']
         except elasticsearch.NotFoundError:
-            raise HTTPError(404)
+            return self.send_error_json(404, "No such dataset")
 
         return self.send_dataset(dataset_id, metadata, format, format_options)
 
@@ -558,7 +559,7 @@ class Metadata(BaseHandler, GracefulHandler):
             try:
                 record = es.get('pending', dataset_id)['_source']
             except elasticsearch.NotFoundError:
-                raise HTTPError(404)
+                return self.send_error_json(404, "No such dataset")
             else:
                 result = {
                     'id': dataset_id,
@@ -907,7 +908,6 @@ def make_app(debug=False):
             URLSpec('/health', Health, name='health'),
         ],
         debug=debug,
-        serve_traceback=True,
         es=es,
         redis_client=redis_client,
         lazo=lazo_client
@@ -916,10 +916,13 @@ def make_app(debug=False):
 
 def main():
     setup_logging()
+    debug = os.environ.get('DEBUG') not in (None, '', 'no', 'off', 'false')
     prometheus_client.start_http_server(8000)
     logger.info("Startup: apiserver %s", os.environ['DATAMART_VERSION'])
+    if debug:
+        logger.error("Debug mode is ON")
 
-    app = make_app()
+    app = make_app(debug)
     app.listen(8002, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
     loop.start()
