@@ -2043,6 +2043,7 @@ class TestUpload(DatamartTest):
             import lazo_index_service
             from datamart_core.common import delete_dataset_from_index
 
+            time.sleep(3)  # Deleting won't work immediately
             lazo_client = lazo_index_service.LazoIndexClient(
                 host=os.environ['LAZO_SERVER_HOST'],
                 port=int(os.environ['LAZO_SERVER_PORT'])
