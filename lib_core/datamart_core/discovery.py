@@ -246,7 +246,8 @@ class Discoverer(object):
             try:
                 os.rename(temp_dir, dataset_dir)
             except OSError:
-                pass  # Dataset was written concurrently
+                # Dataset was written concurrently
+                shutil.rmtree(temp_dir)
 
     def delete_dataset(self, *, full_id=None, dataset_id=None):
         """Delete a dataset that is no longer present in the source.
