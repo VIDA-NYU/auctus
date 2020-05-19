@@ -80,7 +80,7 @@ def materialize_and_process_dataset(
 
         # Check for TSV file format
         with open(dataset_path, 'r') as fp:
-            dialect = csv.Sniffer().sniff(fp.read(4096))
+            dialect = csv.Sniffer().sniff(fp.read(16384))
         if getattr(dialect, 'delimiter', '') == '\t':
             logger.info("This is a TSV file")
             materialize.setdefault('convert', []).append({'identifier': 'tsv'})
