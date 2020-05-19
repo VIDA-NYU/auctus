@@ -128,7 +128,20 @@ class ZenodoDiscoverer(Discoverer):
                         _source=False,
                     )
                 except elasticsearch.NotFoundError:
-                    pass
+                    try:
+                        hit = self.elasticsearch.get(
+                            'pending',
+                            '%s.%s' % (self.identifier, dataset_id),
+                            _source=['status'],
+                        )['_source']
+                    except elasticsearch.NotFoundError:
+                        pass
+                    else:
+                        logger.info(
+                            "Dataset already in pending index, status=%s",
+                            hit.get('status'),
+                        )
+                        return
                 else:
                     logger.info("Dataset already in index")
                     return

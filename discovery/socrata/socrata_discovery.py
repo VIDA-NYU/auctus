@@ -137,15 +137,25 @@ class SocrataDiscoverer(Discoverer):
             return False
 
         # Get record from Elasticsearch
+        hit = None
         try:
             hit = self.elasticsearch.get(
-                'datamart',
+                'pending',
                 '%s.%s' % (self.identifier, dataset_id),
-                _source=['materialize.socrata_updated'])
+                _source=['materialize.socrata_updated'],
+            )['_source']
         except elasticsearch.NotFoundError:
-            pass
-        else:
-            updated = hit['_source']['materialize']['socrata_updated']
+            try:
+                hit = self.elasticsearch.get(
+                    'datamart',
+                    '%s.%s' % (self.identifier, dataset_id),
+                    _source=['materialize.socrata_updated'],
+                )['_source']
+            except elasticsearch.NotFoundError:
+                pass
+
+        if hit is not None:
+            updated = hit['materialize']['socrata_updated']
             if resource['updatedAt'] <= updated:
                 logger.info("Dataset has not changed: %s", id)
                 return True
