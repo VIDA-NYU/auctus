@@ -1,4 +1,5 @@
 import re
+import regex
 
 from . import types
 from .temporal import parse_date
@@ -32,6 +33,13 @@ _re_wkt_polygon = re.compile(
     r'\([0-9 .]+\)'
     r'\)$'
 )
+_re_geo_combined = regex.compile(
+    r'^([\p{Lu}\p{Po}0-9 ])+ \('
+    r'-?[0-9]{1,3}\.[0-9]{1,15}'
+    r', ?'
+    r'-?[0-9]{1,3}\.[0-9]{1,15}'
+    r'\)$'
+)
 _re_whitespace = re.compile(r'\s')
 
 
@@ -51,7 +59,7 @@ def identify_types(array, name):
 
     # Identify structural type
     num_float = num_int = num_bool = num_empty = 0
-    num_point = num_polygon = num_text = 0
+    num_point = num_geo_combined = num_polygon = num_text = 0
     for elem in array:
         if not elem:
             num_empty += 1
@@ -61,6 +69,8 @@ def identify_types(array, name):
             num_float += 1
         elif _re_wkt_point.match(elem):
             num_point += 1
+        elif _re_geo_combined.match(elem):
+            num_geo_combined += 1
         elif _re_wkt_polygon.match(elem):
             num_polygon += 1
         elif len(_re_whitespace.findall(elem)) >= 4:
@@ -80,7 +90,7 @@ def identify_types(array, name):
         structural_type = types.FLOAT
         column_meta['unclean_values_ratio'] = \
             (num_total - num_empty - num_int - num_float) / num_total
-    elif num_point >= threshold:
+    elif num_point >= threshold or num_geo_combined >= threshold:
         structural_type = types.GEO_POINT
         column_meta['unclean_values_ratio'] = \
             (num_total - num_empty - num_point) / num_total
