@@ -268,11 +268,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 for j, dt in enumerate(
                         semantic_types_dict[types.DATE_TIME]):
                     timestamps[j] = dt.timestamp()
-                column_meta['mean'], column_meta['stddev'] = \
-                    mean_stddev(timestamps)
+                if 'mean' not in column_meta:
+                    column_meta['mean'], column_meta['stddev'] = \
+                        mean_stddev(timestamps)
 
                 # Get temporal ranges
-                if coverage:
+                if coverage and 'coverage' not in column_meta:
                     ranges = get_numerical_ranges(timestamps)
                     if ranges:
                         column_meta['coverage'] = ranges

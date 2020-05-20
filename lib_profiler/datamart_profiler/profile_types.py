@@ -1,3 +1,5 @@
+from datetime import datetime
+import dateutil.tz
 import re
 import regex
 
@@ -139,6 +141,19 @@ def identify_types(array, name):
                 name.lower().startswith('index') or
                 name.lower().endswith('index')):
             semantic_types_dict[types.ID] = None
+
+        # Identify years
+        if name.lower() == 'year':
+            dates = []
+            for year in array:
+                try:
+                    dates.append(datetime(
+                        int(year), 1, 1,
+                        tzinfo=dateutil.tz.UTC,
+                    ))
+                except ValueError:
+                    pass
+            semantic_types_dict[types.DATE_TIME] = dates
 
     # Identify lat/long
     if structural_type == types.FLOAT:
