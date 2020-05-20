@@ -63,7 +63,7 @@ async def freshen(version):
 
     amqp_conn = await aio_pika.connect_robust(
         host=os.environ['AMQP_HOST'],
-        port=os.environ['AMQP_PORT'],
+        port=int(os.environ['AMQP_PORT']),
         login=os.environ['AMQP_USER'],
         password=os.environ['AMQP_PASSWORD'],
     )
