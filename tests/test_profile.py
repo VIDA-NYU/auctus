@@ -1,5 +1,6 @@
 from datetime import datetime
 from dateutil.tz import UTC
+import io
 import os
 import pandas
 import unittest
@@ -157,7 +158,7 @@ class TestLatlongSelection(DataTestCase):
         )
 
 
-class TestDates(unittest.TestCase):
+class TestDates(DataTestCase):
     def test_parse(self):
         """Test parsing dates."""
         self.assertEqual(
@@ -186,6 +187,57 @@ class TestDates(unittest.TestCase):
         self.assertEqual(
             parse_date('2019-07-02 18:05 L'),
             None,
+        )
+
+    def test_year(self):
+        """Test the 'year' special-case."""
+        metadata = process_dataset(io.StringIO(textwrap.dedent('''\
+            year,number
+            2004,2014
+            2005,2015
+            2006,2016
+        ''')))
+
+        def year_rng(year):
+            year = float(year)
+            return {'range': {'gte': year, 'lte': year}}
+
+        self.assertJson(
+            metadata,
+            {
+                'size': 42,
+                'nb_rows': 3,
+                'nb_profiled_rows': 3,
+                'columns': [
+                    {
+                        'name': 'year',
+                        'structural_type': 'http://schema.org/Integer',
+                        'semantic_types': ['http://schema.org/DateTime'],
+                        'unclean_values_ratio': 0.0,
+                        'mean': 2005.0,
+                        'stddev': lambda n: round(n, 3) == 0.816,
+                        'coverage': [
+                            year_rng(2004),
+                            year_rng(2005),
+                            year_rng(2006),
+                        ],
+                        'temporal_resolution': 'year',
+                    },
+                    {
+                        'name': 'number',
+                        'structural_type': 'http://schema.org/Integer',
+                        'semantic_types': [],
+                        'unclean_values_ratio': 0.0,
+                        'mean': 2015.0,
+                        'stddev': lambda n: round(n, 3) == 0.816,
+                        'coverage': [
+                            {'range': {'gte': 2014.0, 'lte': 2014.0}},
+                            {'range': {'gte': 2015.0, 'lte': 2015.0}},
+                            {'range': {'gte': 2016.0, 'lte': 2016.0}},
+                        ],
+                    },
+                ],
+            },
         )
 
 
