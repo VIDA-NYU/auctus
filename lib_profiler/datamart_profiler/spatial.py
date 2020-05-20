@@ -70,6 +70,7 @@ def get_spatial_ranges(values):
             [max_long, min_lat],
         ])
         sizes.append(len(cluster))
+    ranges.sort()
     logger.info("Ranges: %r", ranges)
     logger.info("Sizes: %r", sizes)
 

@@ -65,6 +65,7 @@ def get_numerical_ranges(values):
             cluster[max_idx],
         ])
         sizes.append(len(cluster))
+    ranges.sort()
     logger.info("Ranges: %r", ranges)
     logger.info("Sizes: %r", sizes)
 
