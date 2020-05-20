@@ -43,21 +43,17 @@ def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
 
     d3m_columns = []
     for i, column in enumerate(columns):
-        # D3M has a 'dateTime' structural type but we use string
-        if types.DATE_TIME in column['semantic_types']:
+        if types.BOOLEAN in column['semantic_types']:
+            col_type = 'boolean'
+        elif types.CATEGORICAL in column['semantic_types']:
+            col_type = 'categorical'
+        elif types.DATE_TIME in column['semantic_types']:
             col_type = 'dateTime'
         else:
-            if types.BOOLEAN in column['semantic_types']:
-                col_type = 'boolean'
-            elif types.CATEGORICAL in column['semantic_types']:
-                col_type = 'categorical'
-            elif types.DATE_TIME in column['semantic_types']:
-                col_type = 'dateTime'
-            else:
-                col_type = STRUCTURAL_TYPE_MAP.get(
-                    column['structural_type'],
-                    'string',
-                )
+            col_type = STRUCTURAL_TYPE_MAP.get(
+                column['structural_type'],
+                'string',
+            )
         role = 'index' if column['name'] == 'd3mIndex' else 'attribute'
         d3m_columns.append({
             'colIndex': i,
