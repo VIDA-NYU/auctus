@@ -158,6 +158,7 @@ class UazIndicatorsDiscoverer(Discoverer):
         df.columns.name = None
         df = df.reset_index()
         df = df.drop(['_dummy_index'], axis=1)
+        df = df.sort_values(['Country', 'State', 'County', 'Year', 'Month'])
 
         with self.write_to_shared_storage(dataset_id) as tmp:
             df.to_csv(os.path.join(tmp, 'main.csv'), index=False)
