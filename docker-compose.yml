@@ -161,7 +161,7 @@ services:
       - ./volumes/prometheus:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:6.7.3
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       #- GF_SMTP_ENABLED=true
