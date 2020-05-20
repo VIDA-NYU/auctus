@@ -31,7 +31,10 @@ class DataTestCase(unittest.TestCase):
                     )
                 return
 
-        if type(actual) != type(expected):
+        if (
+            not isinstance(actual, type(expected))
+            and not isinstance(expected, type(actual))
+        ):
             raise AssertionError(
                 "Type mismatch: expected %r, got %r at %s" % (
                     type(expected), type(actual), pos,
