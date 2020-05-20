@@ -47,7 +47,10 @@ def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
             col_type = 'boolean'
         elif types.CATEGORICAL in column['semantic_types']:
             col_type = 'categorical'
-        elif types.DATE_TIME in column['semantic_types']:
+        elif (
+            column['structural_type'] == types.TEXT
+            and types.DATE_TIME in column['semantic_types']
+        ):
             col_type = 'dateTime'
         else:
             col_type = STRUCTURAL_TYPE_MAP.get(

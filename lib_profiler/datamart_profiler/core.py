@@ -284,7 +284,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 )
 
                 # Compute histogram from temporal values
-                if plots:
+                if plots and 'plot' not in column_meta:
                     counts, edges = numpy.histogram(timestamps, bins=10)
                     counts = [int(i) for i in counts]
                     column_meta['plot'] = {

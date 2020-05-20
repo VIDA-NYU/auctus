@@ -2501,7 +2501,7 @@ lazo_metadata = {
         {
             "name": "year",
             "structural_type": "http://schema.org/Integer",
-            "semantic_types": [],
+            "semantic_types": ["http://schema.org/DateTime"],
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 2) == 1990.11,
             "stddev": lambda n: round(n, 4) == 0.3143,
@@ -2521,6 +2521,7 @@ lazo_metadata = {
                     }
                 ]
             ),
+            "temporal_resolution": "year",
             "plot": check_plot('histogram_numerical'),
         }
     ],
