@@ -32,7 +32,8 @@ class SimpleConverterProxy(object):
 
     def __exit__(self, exc, value, tb):
         self._fp.__exit__(exc, value, tb)
-        self._convert()
+        if exc is None:
+            self._convert()
 
 
 class SimpleConverter(object):
