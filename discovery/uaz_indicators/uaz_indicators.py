@@ -86,13 +86,14 @@ class UazIndicatorsDiscoverer(Discoverer):
     def discover_indicators(self, filename):
         conn = sqlite3.connect(filename)
         indicators = iter(conn.execute('''\
-            SELECT DISTINCT Variable, Unit
+            SELECT DISTINCT Variable, Unit, Source
             FROM indicator
-            ORDER BY Variable;
+            ORDER BY Source, Variable;
         '''))
         current_prefix = None
+        current_source = None
         variables = []
-        for variable_name, unit in indicators:
+        for variable_name, unit, source in indicators:
             idx = variable_name.find(',')
             if idx == -1:
                 prefix = variable_name
@@ -102,22 +103,30 @@ class UazIndicatorsDiscoverer(Discoverer):
             # If we're still on the same prefix, add it to the variables
             if current_prefix is None:
                 current_prefix = prefix
-            elif prefix != current_prefix:
-                self.make_indicator_dataset(conn, current_prefix, variables)
+                current_source = source
+            elif prefix != current_prefix or source != current_source:
+                self.make_indicator_dataset(
+                    current_prefix, current_source,
+                    conn, variables,
+                )
                 current_prefix = prefix
+                current_source = source
                 variables = []
 
             variables.append((variable_name, unit))
 
         if variables:
-            self.make_indicator_dataset(conn, current_prefix, variables)
+            self.make_indicator_dataset(
+                current_prefix, current_source,
+                conn, variables,
+            )
 
-    def make_indicator_dataset(self, conn, variable_prefix, variables):
-        name = variable_prefix
-        dataset_id = uuid.uuid5(self.NAMESPACE, variable_prefix).hex
+    def make_indicator_dataset(self, variable_prefix, source, conn, variables):
+        name = '%s (%s)' % (variable_prefix, source)
+        dataset_id = uuid.uuid5(self.NAMESPACE, name).hex
         logger.info(
-            "Making indicator dataset %r variables=%r",
-            variable_prefix, variables,
+            "Making indicator dataset %r %r variables=%r",
+            variable_prefix, source, variables,
         )
 
         # Read data using Pandas
@@ -130,10 +139,10 @@ class UazIndicatorsDiscoverer(Discoverer):
                     Variable, Unit,
                     Value
                 FROM indicator
-                WHERE Variable = ? AND Unit = ?;
+                WHERE Variable = ? AND Unit = ? AND Source = ?;
                 ''',
                 conn,
-                params=(variable_name, unit),
+                params=(variable_name, unit, source),
             ))
         df = pandas.concat(dataframes, axis=0)
 
@@ -164,8 +173,14 @@ class UazIndicatorsDiscoverer(Discoverer):
             df.to_csv(os.path.join(tmp, 'main.csv'), index=False)
 
         self.record_dataset(
-            dict(uaz_indicators_variable_prefix=variable_prefix),
-            dict(name=name),
+            dict(
+                uaz_indicators_variable_prefix=variable_prefix,
+                uaz_source=source,
+            ),
+            dict(
+                name=name,
+                source="%s (UAZ)" % source,
+            ),
             dataset_id=dataset_id,
         )
 
