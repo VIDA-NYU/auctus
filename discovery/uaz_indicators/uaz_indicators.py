@@ -128,7 +128,7 @@ class UazIndicatorsDiscoverer(Discoverer):
                 SELECT
                     Country, State, County, Year, Month,
                     Variable, Unit,
-                    Value
+                    Value, Source
                 FROM indicator
                 WHERE Variable = ? AND Unit = ?;
                 ''',
@@ -154,7 +154,10 @@ class UazIndicatorsDiscoverer(Discoverer):
             append=True,
         )
         df = df.unstack(level=[-1])
-        df.columns = df.columns.get_level_values(1)
+        df.columns = [
+            'source for %s' % col[1] if col[0] == 'Source' else col[1]
+            for col in df.columns
+        ]
         df.columns.name = None
         df = df.reset_index()
         df = df.drop(['_dummy_index'], axis=1)
