@@ -56,7 +56,7 @@ _defaults = datetime(1985, 1, 1), datetime(2005, 6, 15)
 def parse_date(string):
     with raise_warnings(dateutil.parser.UnknownTimezoneWarning):
         # This is a dirty trick because dateutil returns a datetime for strings
-        # than only contain times. We parse it twice with different defaults,
+        # that only contain times. We parse it twice with different defaults,
         # so we can tell whether the default date is used in the result
         try:
             dt1 = dateutil.parser.parse(string, default=_defaults[0])
