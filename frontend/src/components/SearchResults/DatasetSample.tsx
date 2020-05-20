@@ -146,7 +146,7 @@ function getSpecification(
   return {
     width: '120',
     height: '120',
-    data: { values: data },
+    data: { name: 'values' },
     description: 'A simple bar chart with embedded data.',
     encoding: getEncoding(typePlot),
     mark: 'bar',
