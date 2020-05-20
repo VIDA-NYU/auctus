@@ -104,10 +104,10 @@ function getEncoding(typePlot: string | undefined) {
       y: yContent,
       x: {
         title: null,
-        bin: { binned: true },
         field: 'bin',
         type: 'ordinal',
         axis: null,
+        sort: { order: 'descending', field: 'count' },
       },
       tooltip: { field: 'bin', type: 'ordinal' },
     };
@@ -122,6 +122,7 @@ function getEncoding(typePlot: string | undefined) {
         title: null,
         field: 'count',
         type: 'quantitative',
+        sort: { order: 'descending', field: 'count' },
         axis: null,
       },
       tooltip: [
