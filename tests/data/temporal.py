@@ -11,7 +11,7 @@ def main():
         date = datetime(2019, 4, 23)
         rand = random.Random(1)
         for _ in range(30):
-            time = date.date().isoformat()
+            time = date.date().strftime('%Y%m%d')
             boolean = ['no', 'yes'][rand.randint(0, 1)]
             print('%s,%s' % (time, boolean), file=f_daily)
             date += timedelta(days=1)
