@@ -266,7 +266,7 @@ function Table(props: TableProps) {
                   style={{ listStyle: 'none', columnCount: 2, columnGap: 10 }}
                 >
                   {hit.metadata.columns[i].num_distinct_values && (
-                    <li>Unique values</li>
+                    <li>Unique Values</li>
                   )}
                   {hit.metadata.columns[i].stddev && <li>Std Deviation</li>}
                   {hit.metadata.columns[i].mean && <li>Mean</li>}
