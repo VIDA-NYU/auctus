@@ -143,7 +143,7 @@ def identify_types(array, name):
             semantic_types_dict[types.ID] = None
 
         # Identify years
-        if name.lower() == 'year':
+        if name.strip().lower() == 'year':
             dates = []
             for year in array:
                 try:
