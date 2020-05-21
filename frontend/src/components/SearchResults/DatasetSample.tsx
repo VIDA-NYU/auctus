@@ -16,6 +16,12 @@ const classMapping: { [key: string]: string } = {
   datetime: 'semtype-datetime',
 };
 
+enum tableViews {
+  COMPACT = 'COMPACT',
+  DETAIL = 'DETAIL',
+  COLUMN = 'COLUMN',
+}
+
 function typeName(type: string) {
   return type
     .replace('http://schema.org/', '')
@@ -48,7 +54,7 @@ interface TableProps {
   columns: Array<Column<string[]>>;
   data: string[][];
   hit: SearchResult;
-  typeView: number;
+  typeView: tableViews;
 }
 
 function getEncoding(typePlot: string | undefined) {
@@ -131,8 +137,8 @@ function getEncoding(typePlot: string | undefined) {
   }
 }
 
-function getSpecification(typePlot: string | undefined) {
-  return {
+function getSpecification(typePlot: string | undefined): VlSpec {
+  const specification = {
     width: '120',
     height: '120',
     data: { name: 'values' },
@@ -140,6 +146,7 @@ function getSpecification(typePlot: string | undefined) {
     encoding: getEncoding(typePlot),
     mark: 'bar',
   };
+  return specification as VlSpec;
 }
 
 function Table(props: TableProps) {
@@ -156,7 +163,7 @@ function Table(props: TableProps) {
   });
   return (
     <table {...getTableProps()} className="table table-hover small">
-      {typeView < 3 ? (
+      {typeView === tableViews.COMPACT || typeView === tableViews.DETAIL ? (
         <>
           {/* Compact and detail View */}
           <thead>
@@ -180,7 +187,7 @@ function Table(props: TableProps) {
                 ))}
               </tr>
             ))}
-            {typeView === 2 &&
+            {typeView === tableViews.DETAIL &&
               headerGroups.map(headerGroup => (
                 <tr {...headerGroup.getHeaderGroupProps()}>
                   {headerGroup.headers.map((column, i) => {
@@ -189,11 +196,9 @@ function Table(props: TableProps) {
                       return (
                         <th scope="col" {...column.getHeaderProps()}>
                           <VegaLite
-                            spec={
-                              getSpecification(
-                                hit.metadata.columns[i].plot?.type
-                              ) as VlSpec
-                            }
+                            spec={getSpecification(
+                              hit.metadata.columns[i].plot?.type
+                            )}
                             data={{ values: dataVega }}
                           />
                         </th>
@@ -247,11 +252,7 @@ function Table(props: TableProps) {
             const plotVega = dataVega ? (
               <td>
                 <VegaLite
-                  spec={
-                    getSpecification(
-                      hit.metadata.columns[i].plot?.type
-                    ) as VlSpec
-                  }
+                  spec={getSpecification(hit.metadata.columns[i].plot?.type)}
                   data={{ values: dataVega }}
                 />
               </td>
@@ -301,7 +302,7 @@ interface TableSampleProps {
   hit: SearchResult;
 }
 interface TableSampleState {
-  typeView: number;
+  typeView: tableViews;
 }
 
 class DatasetSample extends React.PureComponent<
@@ -310,13 +311,12 @@ class DatasetSample extends React.PureComponent<
 > {
   constructor(props: TableSampleProps) {
     super(props);
-    this.state = { typeView: 1 };
+    this.state = { typeView: tableViews.COMPACT };
   }
-  updateTypeView(view: number) {
+  updateTypeView(view: tableViews) {
     this.setState({ typeView: view });
   }
 
-  // export function DatasetSample(props: TableSampleProps) {
   render() {
     const { hit } = this.props;
 
@@ -342,27 +342,27 @@ class DatasetSample extends React.PureComponent<
             <button
               type="button"
               className={`btn btn-secondary ${
-                this.state.typeView === 1 ? 'active' : ''
+                this.state.typeView === tableViews.COMPACT ? 'active' : ''
               }`}
-              onClick={() => this.updateTypeView(1)}
+              onClick={() => this.updateTypeView(tableViews.COMPACT)}
             >
               Compact view
             </button>
             <button
               type="button"
               className={`btn btn-secondary ${
-                this.state.typeView === 2 ? 'active' : ''
+                this.state.typeView === tableViews.DETAIL ? 'active' : ''
               }`}
-              onClick={() => this.updateTypeView(2)}
+              onClick={() => this.updateTypeView(tableViews.DETAIL)}
             >
               Detail view
             </button>
             <button
               type="button"
               className={`btn btn-secondary ${
-                this.state.typeView === 3 ? 'active' : ''
+                this.state.typeView === tableViews.COLUMN ? 'active' : ''
               }`}
-              onClick={() => this.updateTypeView(3)}
+              onClick={() => this.updateTypeView(tableViews.COLUMN)}
             >
               Column view
             </button>

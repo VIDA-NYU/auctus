@@ -53,10 +53,10 @@ export interface ColumnMetadata {
   coverage?: Array<{}>;
   mean?: number;
   stddev?: number;
-  plot?: PlotVegas;
+  plot?: PlotVega;
 }
 
-export interface PlotVegas {
+export interface PlotVega {
   type: string;
   data:
     | NumericalDataVegaFormat[]
