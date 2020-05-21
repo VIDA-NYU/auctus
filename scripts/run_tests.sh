@@ -6,14 +6,10 @@ cd "$(dirname "$(dirname "$0")")"
 
 set -eux
 
-# Run frontend tests
-docker build -t datamart_frontend_npm -f frontend/Dockerfile --target build .
-docker run -ti --name datamart_npm_test --rm datamart_frontend_npm sh -c "CI=true npm run test"
-
 # Re-build and re-start services
-docker-compose build --build-arg version=v0.0 coordinator profiler apiserver frontend test_discoverer
+docker-compose build --build-arg version=v0.0 coordinator profiler apiserver test_discoverer
 docker-compose up -d coordinator
-docker-compose up -d --force-recreate profiler apiserver apilb frontend
+docker-compose up -d --force-recreate profiler apiserver apilb
 
 # XXX: To run with debugger: remove 'apiserver' up here, use 'read' to block, and
 # run apiserver container like so:
