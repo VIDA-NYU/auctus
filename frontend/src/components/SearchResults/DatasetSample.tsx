@@ -1,12 +1,7 @@
 import React from 'react';
 import { useTable, Column } from 'react-table';
 import { SearchResult } from '../../api/types';
-import {
-  ColumnMetadata,
-  NumericalDataVegaFormat,
-  TemporalDataVegaFormat,
-  CategoricalDataVegaFormat,
-} from '../../api/types';
+import { ColumnMetadata } from '../../api/types';
 import './DatasetSample.css';
 import { VegaLite } from 'react-vega';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
@@ -136,14 +131,7 @@ function getEncoding(typePlot: string | undefined) {
   }
 }
 
-function getSpecification(
-  data:
-    | NumericalDataVegaFormat[]
-    | TemporalDataVegaFormat[]
-    | CategoricalDataVegaFormat[]
-    | undefined,
-  typePlot: string | undefined
-) {
+function getSpecification(typePlot: string | undefined) {
   return {
     width: '120',
     height: '120',
@@ -168,74 +156,143 @@ function Table(props: TableProps) {
   });
   return (
     <table {...getTableProps()} className="table table-hover small">
-      <thead>
-        {headerGroups.map((headerGroup, i) => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map((column, i) => (
-              <th
-                scope="col"
-                {...column.getHeaderProps()}
-                style={{
-                  position: 'sticky',
-                  top: '-1px',
-                  background: '#eee',
-                  zIndex: 1,
-                }}
-              >
-                {column.render('Header')}
-                <br />
-                <TypeBadges column={hit.metadata.columns[i]} />
-              </th>
+      {typeView < 3 ? (
+        <>
+          {/* Compact and detail View */}
+          <thead>
+            {headerGroups.map((headerGroup, i) => (
+              <tr {...headerGroup.getHeaderGroupProps()}>
+                {headerGroup.headers.map((column, i) => (
+                  <th
+                    scope="col"
+                    {...column.getHeaderProps()}
+                    style={{
+                      position: 'sticky',
+                      top: '-1px',
+                      background: '#eee',
+                      zIndex: 1,
+                    }}
+                  >
+                    {column.render('Header')}
+                    <br />
+                    <TypeBadges column={hit.metadata.columns[i]} />
+                  </th>
+                ))}
+              </tr>
             ))}
-          </tr>
-        ))}
-        {typeView === 2 &&
-          headerGroups.map(headerGroup => (
-            <tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column, i) => {
-                const dataVega = hit.metadata.columns[i].plot?.data;
-                if (dataVega) {
-                  return (
-                    <th scope="col" {...column.getHeaderProps()}>
-                      <VegaLite
-                        spec={
-                          getSpecification(
-                            dataVega,
-                            hit.metadata.columns[i].plot?.type
-                          ) as VlSpec
-                        }
-                        data={{ values: dataVega }}
-                      />
-                    </th>
-                  );
-                } else {
-                  return (
-                    <th
-                      scope="col"
-                      {...column.getHeaderProps()}
-                      className="text-center"
-                      style={{ verticalAlign: 'middle' }}
-                    >
-                      <p className="small">Nothing to show.</p>
-                    </th>
-                  );
-                }
-              })}
-            </tr>
-          ))}
-      </thead>
-      <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
-          prepareRow(row);
-          return (
-            <tr {...row.getRowProps()}>
-              {row.cells.map(cell => {
-                return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>;
-              })}
-            </tr>
-          );
-        })}
-      </tbody>
+            {typeView === 2 &&
+              headerGroups.map(headerGroup => (
+                <tr {...headerGroup.getHeaderGroupProps()}>
+                  {headerGroup.headers.map((column, i) => {
+                    const dataVega = hit.metadata.columns[i].plot?.data;
+                    if (dataVega) {
+                      return (
+                        <th scope="col" {...column.getHeaderProps()}>
+                          <VegaLite
+                            spec={
+                              getSpecification(
+                                hit.metadata.columns[i].plot?.type
+                              ) as VlSpec
+                            }
+                            data={{ values: dataVega }}
+                          />
+                        </th>
+                      );
+                    } else {
+                      return (
+                        <th
+                          scope="col"
+                          {...column.getHeaderProps()}
+                          className="text-center"
+                          style={{ verticalAlign: 'middle' }}
+                        >
+                          <p className="small">Nothing to show.</p>
+                        </th>
+                      );
+                    }
+                  })}
+                </tr>
+              ))}
+          </thead>
+          <tbody {...getTableBodyProps()}>
+            {rows.map((row, i) => {
+              prepareRow(row);
+              return (
+                <tr {...row.getRowProps()}>
+                  {row.cells.map(cell => {
+                    return (
+                      <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </>
+      ) : (
+        // Column View
+        <tbody>
+          {headerGroups[0].headers.map((column, i) => {
+            const dataVega = hit.metadata.columns[i].plot?.data;
+            const columName = (
+              <td>
+                <b>{column.render('Header')} </b>
+              </td>
+            );
+            const columnTypeBadges = (
+              <td>
+                <TypeBadges column={hit.metadata.columns[i]} />{' '}
+              </td>
+            );
+            const plotVega = dataVega ? (
+              <td>
+                <VegaLite
+                  spec={
+                    getSpecification(
+                      hit.metadata.columns[i].plot?.type
+                    ) as VlSpec
+                  }
+                  data={{ values: dataVega }}
+                />
+              </td>
+            ) : (
+              <td className="text-center" style={{ verticalAlign: 'middle' }}>
+                <p className="small">Nothing to show.</p>
+              </td>
+            );
+            const columnStatistics = (
+              <td style={{ minWidth: 200 }}>
+                <ul
+                  style={{ listStyle: 'none', columnCount: 2, columnGap: 10 }}
+                >
+                  {hit.metadata.columns[i].num_distinct_values && (
+                    <li>Unique values</li>
+                  )}
+                  {hit.metadata.columns[i].stddev && <li>Std Deviation</li>}
+                  {hit.metadata.columns[i].mean && <li>Mean</li>}
+                  {hit.metadata.columns[i].num_distinct_values && (
+                    <li>{hit.metadata.columns[i].num_distinct_values}</li>
+                  )}
+                  {hit.metadata.columns[i].stddev && (
+                    <li>{hit.metadata.columns[i].stddev?.toFixed(2)}</li>
+                  )}
+                  {hit.metadata.columns[i].mean && (
+                    <li>{hit.metadata.columns[i].mean?.toFixed(2)}</li>
+                  )}
+                </ul>
+              </td>
+            );
+            return (
+              <tr key={'column' + i} {...column.getHeaderProps()}>
+                {columName}
+                {columnTypeBadges}
+                {plotVega}
+                {columnStatistics}
+              </tr>
+            );
+          })}
+        </tbody>
+      )}
     </table>
   );
 }
