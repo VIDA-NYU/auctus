@@ -1,5 +1,10 @@
 import React from 'react';
-import logo from './auctus-logo.svg';
+//
+// auctus-logo.min.svg is a minified file generated from auctus-logo.svg
+// After updating source file, it can be with re-minified with:
+//   npx svgo auctus-logo.svg -o auctus-logo.min.svg
+//
+import logo from './auctus-logo.min.svg';
 
 function VerticalLogo() {
   return (
