@@ -158,6 +158,97 @@ def country_names(writer):
         writer.writerow([value, name, name_lang])
 
 
+WIKIDATA_ADMIN_LEVELS = [
+    'Q6256',        # "country"
+    'Q10864048',    # "first-level administrative country subdivision"
+    'Q13220204',    # "second-level administrative country subdivision"
+    'Q13221722',    # "third-level administrative country subdivision"
+    'Q14757767',    # "fourth-level administrative country subdivision"
+    'Q15640612',    # "fifth-level administrative country subdivision"
+]
+
+
+def get_admin_level(level):
+    if level == 0:
+        rows = sparql_query(
+            'SELECT ?country ?countryLabel\n'
+            'WHERE\n'
+            '{\n'
+            '  ?country wdt:P31 wd:Q6256.\n'
+            '  SERVICE wikibase:label {\n'
+            '    bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".\n'
+            '  }\n'
+            '}\n'
+        )
+        for row in rows:
+            yield (
+                None,
+                q_entity_uri(row['country']),
+                literal(row['countryLabel']),
+            )
+    elif level == 1:
+        rows = sparql_query(
+            'SELECT ?parent ?area ?areaLabel\n'
+            'WHERE\n'
+            '{\n'
+            # parent "instance of" "country" (country = admin level 0)
+            '  ?parent wdt:P31 wd:Q6256.\n'
+            # parent "contains administrative territorial entity" child
+            '  ?parent wdt:P150 ?area.\n'
+            # child "instance of" ["subclass of" "admin level 1"]
+            '  ?area wdt:P31 [wdt:P279 wd:Q10864048].\n'
+            '  SERVICE wikibase:label {\n'
+            '    bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".\n'
+            '  }\n'
+            '}\n'
+        )
+        for row in rows:
+            yield (
+                q_entity_uri(row['parent']),
+                q_entity_uri(row['area']),
+                literal(row['areaLabel']),
+            )
+    else:
+        rows = sparql_query(
+            'SELECT ?parent ?area ?areaLabel\n'
+            'WHERE\n'
+            '{{\n'
+            # tmp0 "instance of" "country" (country = admin level 0)
+            '  ?tmp0 wdt:P31 wd:Q6256.\n'
+            # go down 0 to level-2 levels, to the immediate parent
+            '{levels}\n'
+            '  ?parent wdt:P150 ?area.\n'
+            '  ?area wdt:P31 [wdt:P279 wd:{klass}].\n'
+            '  SERVICE wikibase:label {{\n'
+            '    bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".\n'
+            '  }}\n'
+            '}}\n'.format(
+                levels='\n'.join(
+                    f'?tmp{i} wdt:P150? ?tmp{i+1}.'
+                    for i in range(level - 2)
+                ),
+                klass=WIKIDATA_ADMIN_LEVELS[level]
+            )
+        )
+        for row in rows:
+            yield (
+                q_entity_uri(row['parent']),
+                q_entity_uri(row['area']),
+                literal(row['areaLabel']),
+            )
+
+
+@makes_file('areas1.csv')
+def areas1(writer):
+    """Get one level of administrative areas.
+    """
+    writer.writerow(['parent', 'admin', 'admin level', 'admin name'])
+
+    for level in range(1 + 1):
+        for parent, admin, admin_name in get_admin_level(level):
+            writer.writerow([parent, admin, level, admin_name])
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     os.chdir(os.path.dirname(__file__) or '.')
@@ -165,6 +256,7 @@ def main():
     countries()
     geoshapes()
     country_names()
+    areas1()
 
 
 if __name__ == '__main__':
