@@ -104,11 +104,37 @@ def geoshapes(writer):
         writer.writerow([value, shape_uri, shape])
 
 
+@makes_file('country_names.csv')
+def country_names(writer):
+    """Get the localized names of countries.
+    """
+    rows = sparql_query(
+        'SELECT ?item ?name ?nameLang\n'
+        'WHERE\n'
+        '{\n'
+        '  ?item wdt:P31 wd:Q6256.\n'  # item "instance of" "country"
+        '  ?item wdt:P1448 ?name.\n'  # item "official name" name
+        '  BIND(LANG(?name) AS ?nameLang).\n'  # nameLang = LANG(name)
+        '  MINUS{ ?item wdt:P31 wd:Q3024240. }\n'  # not "historical country"
+        '}\n'
+    )
+
+    writer.writerow(['country', 'name', 'name_lang'])
+    for row in rows:
+        value = q_entity_uri(row['item'])
+        name = literal(row['name'])
+        name_lang = literal(row['nameLang'])
+
+        writer.writerow([value, name, name_lang])
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     os.chdir(os.path.dirname(__file__) or '.')
 
     geoshapes()
+
+    country_names()
 
 
 if __name__ == '__main__':
