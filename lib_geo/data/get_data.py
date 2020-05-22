@@ -69,6 +69,36 @@ def uri(item):
     return item['value']
 
 
+@makes_file('countries.csv')
+def countries(writer):
+    """Get all countries with label and standard codes.
+    """
+    rows = sparql_query(
+        'SELECT ?item ?itemLabel ?fips ?iso2 ?iso3\n'
+        'WHERE\n'
+        '{\n'
+        '  ?item wdt:P31 wd:Q6256.\n'  # item "instance of" "country"
+        '  ?item wdt:P901 ?fips.\n'  # item "FIPS 10-4 (countries and region)"
+        '  ?item wdt:P297 ?iso2.\n'  # item "ISO 3166-1 alpha-2 code"
+        '  ?item wdt:P298 ?iso3.\n'  # item "ISO 3166-1 alpha-3 code"
+        '  MINUS{ ?item wdt:P31 wd:Q3024240. }\n'  # not "historical country"
+        '  SERVICE wikibase:label {\n'
+        '    bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".\n'
+        '  }\n'
+        '}\n'
+    )
+
+    writer.writerow(['country', 'label', 'fips', 'iso2', 'iso3'])
+    for row in rows:
+        value = q_entity_uri(row['item'])
+        label = literal(row['itemLabel'])
+        fips = literal(row['fips'])
+        iso2 = literal(row['iso2'])
+        iso3 = literal(row['iso3'])
+
+        writer.writerow([value, label, fips, iso2, iso3])
+
+
 @makes_file('geoshapes.csv')
 def geoshapes(writer):
     """Get all countries with their geometry.
@@ -132,8 +162,8 @@ def main():
     logging.basicConfig(level=logging.INFO)
     os.chdir(os.path.dirname(__file__) or '.')
 
+    countries()
     geoshapes()
-
     country_names()
 
 
