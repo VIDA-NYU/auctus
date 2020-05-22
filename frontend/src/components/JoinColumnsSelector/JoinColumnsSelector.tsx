@@ -13,7 +13,7 @@ import { FunctionBin } from './FunctionBin';
 const ItemType = 'badge';
 
 const NUMBER_AGG_FUNCTIONS = ['first', 'mean', 'sum', 'max', 'min', 'count'];
-const STRING_AGG_FUNCTIONS = ['first'];
+const STRING_AGG_FUNCTIONS = ['first', 'count'];
 const ALL_AGG_FUNCTIONS = '_all';
 
 const badgeBinStyle = (background: string): React.CSSProperties => ({

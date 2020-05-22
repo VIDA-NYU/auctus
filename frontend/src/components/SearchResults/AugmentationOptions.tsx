@@ -51,8 +51,8 @@ class AugmentationOptions extends React.PureComponent<
     super(props);
     const initialState: AugmentationOptionsState = { checked: {} };
     const columns = getAugmentationColumns(props.hit.augmentation);
-    columns.forEach(c => {
-      initialState.checked[c.idx.toString()] = true;
+    columns.forEach((c, index) => {
+      initialState.checked[c.idx.toString()] = index === 0 ? true : false;
     });
     this.state = initialState;
     this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(
@@ -211,11 +211,13 @@ class AugmentationOptions extends React.PureComponent<
         </b>
         {this.renderMergeColumns(columns, hit)}
         <div>
-          <JoinColumnsSelector
-            hit={hit}
-            excludeColumns={columns.map(c => c.rightColumn)}
-            onChange={this.handleColumnSelectionChange}
-          />
+          {hit.augmentation && hit.augmentation.type === 'join' && (
+            <JoinColumnsSelector
+              hit={hit}
+              excludeColumns={columns.map(c => c.rightColumn)}
+              onChange={this.handleColumnSelectionChange}
+            />
+          )}
         </div>
         <div>{this.renderAugmentButton(hit, type)}</div>
       </div>
