@@ -246,15 +246,24 @@ def get_admin_level(level):
             )
 
 
+@makes_file('areas0.csv')
+def areas0(writer):
+    """Get the level 0 of areas (countries).
+    """
+    writer.writerow(['parent', 'admin', 'admin level', 'admin name'])
+
+    for parent, admin, admin_name in get_admin_level(0):
+        writer.writerow([parent, admin, 0, admin_name])
+
+
 @makes_file('areas1.csv')
 def areas1(writer):
     """Get one level of administrative areas.
     """
     writer.writerow(['parent', 'admin', 'admin level', 'admin name'])
 
-    for level in range(1 + 1):
-        for parent, admin, admin_name in get_admin_level(level):
-            writer.writerow([parent, admin, level, admin_name])
+    for parent, admin, admin_name in get_admin_level(1):
+        writer.writerow([parent, admin, 1, admin_name])
 
 
 @makes_file('areas2.csv')
@@ -263,9 +272,8 @@ def areas2(writer):
     """
     writer.writerow(['parent', 'admin', 'admin level', 'admin name'])
 
-    for level in range(2 + 1):
-        for parent, admin, admin_name in get_admin_level(level):
-            writer.writerow([parent, admin, level, admin_name])
+    for parent, admin, admin_name in get_admin_level(2):
+        writer.writerow([parent, admin, 2, admin_name])
 
 
 def main():
@@ -275,6 +283,7 @@ def main():
     countries()
     geoshapes()
     country_names()
+    areas0()
     areas1()
     areas2()
 
