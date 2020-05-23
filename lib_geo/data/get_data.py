@@ -118,6 +118,14 @@ def geoshapes(writer):
         value = q_entity_uri(row['item'])
         shape_uri = uri(row['shape'])
 
+        # FIXME: Work around Wikidata bug: '+' in URL needs to be '_'
+        last_slash = shape_uri.index('/')
+        if '+' in shape_uri[last_slash + 1:]:
+            shape_uri = (
+                shape_uri[:last_slash + 1] +
+                shape_uri[last_slash + 1:].replace('+', '_')
+            )
+
         try:
             logger.info("Getting geoshape %s", shape_uri)
             shape_resp = requests.get(shape_uri)
