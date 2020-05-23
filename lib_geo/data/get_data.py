@@ -257,6 +257,17 @@ def areas1(writer):
             writer.writerow([parent, admin, level, admin_name])
 
 
+@makes_file('areas2.csv')
+def areas2(writer):
+    """Get two levels of administrative areas.
+    """
+    writer.writerow(['parent', 'admin', 'admin level', 'admin name'])
+
+    for level in range(2 + 1):
+        for parent, admin, admin_name in get_admin_level(level):
+            writer.writerow([parent, admin, level, admin_name])
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     os.chdir(os.path.dirname(__file__) or '.')
@@ -265,6 +276,7 @@ def main():
     geoshapes()
     country_names()
     areas1()
+    areas2()
 
 
 if __name__ == '__main__':
