@@ -593,6 +593,7 @@ class TestGeo(DataTestCase):
                             'http://schema.org/Enumeration',
                         ],
                         'num_distinct_values': 2,
+                        'admin_area_level': 0,
                     },
                     {
                         'name': 'one',
@@ -602,6 +603,7 @@ class TestGeo(DataTestCase):
                             'http://schema.org/Enumeration',
                         ],
                         'num_distinct_values': 5,
+                        'admin_area_level': 1,
                     },
                 ],
             },
