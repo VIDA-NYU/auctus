@@ -1250,7 +1250,7 @@ class TestAugment(DatamartTest):
                 table.read().decode('utf-8'),
                 'id,location,work,mean salary,sum salary,max salary,min salary',
                 [
-                    '30,korea,True,150.0,300.0,200.0,100.0',
+                    '30,south korea,True,150.0,300.0,200.0,100.0',
                     '40,brazil,False,,,,',
                     '70,usa,True,600.0,600.0,600.0,600.0',
                     '80,canada,True,200.0,200.0,200.0,200.0',
@@ -1263,7 +1263,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '236 B',
+                        'approximateSize': '242 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1391,7 +1391,7 @@ class TestAugment(DatamartTest):
                 table.read().decode('utf-8'),
                 'id,location,count work,first salary,sum salary,max salary',
                 [
-                    '30,korea,2,200.0,300.0,200.0',
+                    '30,south korea,2,200.0,300.0,200.0',
                     '40,brazil,1,,,',
                     '70,usa,2,,600.0,600.0',
                     '80,canada,1,200.0,200.0,200.0',
@@ -1404,7 +1404,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '185 B',
+                        'approximateSize': '191 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
