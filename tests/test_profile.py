@@ -1,7 +1,6 @@
 from datetime import datetime
 from dateutil.tz import UTC
 import io
-import os
 import pandas
 import unittest
 import textwrap
@@ -13,7 +12,7 @@ from datamart_profiler.spatial import pair_latlong_columns, \
     normalize_latlong_column_name, LATITUDE, LONGITUDE
 from datamart_profiler.temporal import get_temporal_resolution, parse_date
 
-from .utils import DataTestCase
+from .utils import DataTestCase, data
 
 
 def check_ranges(min_, max_):
@@ -109,10 +108,9 @@ class TestLatlongSelection(DataTestCase):
         )
 
     def test_process(self):
-        data_dir = os.path.join(os.path.dirname(__file__), 'data')
-        with open(os.path.join(data_dir, 'lat_longs.csv')) as data:
+        with data('lat_longs.csv', 'r') as data_fp:
             metadata = process_dataset(
-                data,
+                data_fp,
             )
         # Check columns
         self.assertJson(
@@ -243,15 +241,15 @@ class TestDates(DataTestCase):
 
 class TestTemporalResolutions(unittest.TestCase):
     def test_pandas(self):
-        def get_res(data):
-            idx = pandas.Index(pandas.to_datetime(data))
+        def get_res(values):
+            idx = pandas.Index(pandas.to_datetime(values))
             return get_temporal_resolution(idx)
 
         self.do_checks(get_res)
 
     def test_native(self):
-        def get_res(data):
-            values = [parse_date(d) for d in data]
+        def get_res(values):
+            values = [parse_date(d) for d in values]
             return get_temporal_resolution(values)
 
         self.do_checks(get_res)
@@ -476,10 +474,9 @@ class TestNominatim(DataTestCase):
         datamart_profiler.spatial.nominatim_query = \
             lambda url, *, q: [queries[qe] for qe in q]
         try:
-            data_dir = os.path.join(os.path.dirname(__file__), 'data')
-            with open(os.path.join(data_dir, 'addresses.csv')) as data:
+            with data('addresses.csv', 'r') as data_fp:
                 metadata = process_dataset(
-                    data,
+                    data_fp,
                     nominatim='http://nominatim/',
                     coverage=True,
                 )
