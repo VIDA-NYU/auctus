@@ -92,7 +92,7 @@ export class Description extends React.PureComponent<
     const showLabel = this.props.label ? this.props.label : false;
     const displayedDescription =
       description && this.state.hidden
-        ? description.substring(0, limitLenght)
+        ? description.substring(0, limitLenght - 3) + '...'
         : description;
     return (
       <div className="mt-2">
@@ -111,7 +111,7 @@ export class Description extends React.PureComponent<
                 }}
                 onClick={() => this.setState({ hidden: !this.state.hidden })}
               >
-                {this.state.hidden ? 'Show more' : 'Show less'}
+                {this.state.hidden ? 'Show more...' : 'Show less'}
               </button>
             )}
           </>

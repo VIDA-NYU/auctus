@@ -1,7 +1,6 @@
 import React from 'react';
-import { useTable, Column } from 'react-table';
-import { SearchResult } from '../../api/types';
-import { ColumnMetadata } from '../../api/types';
+import { useTable, Column, ColumnInstance, HeaderGroup } from 'react-table';
+import { SearchResult, ColumnMetadata } from '../../api/types';
 import './DatasetSample.css';
 import { VegaLite } from 'react-vega';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
@@ -48,13 +47,6 @@ function TypeBadges(props: { column: ColumnMetadata }) {
       ))}
     </>
   );
-}
-
-interface TableProps {
-  columns: Array<Column<string[]>>;
-  data: string[][];
-  hit: SearchResult;
-  typeView: tableViews;
 }
 
 function getEncoding(typePlot: string | undefined) {
@@ -149,150 +141,173 @@ function getSpecification(typePlot: string | undefined): VlSpec {
   return specification as VlSpec;
 }
 
+function VegaPlot(props: {
+  columnMetadata: ColumnMetadata;
+  column: ColumnInstance<string[]>;
+  isHeader: boolean;
+}) {
+  const dataVega = props.columnMetadata.plot?.data;
+  const plot = (
+    <VegaLite
+      spec={getSpecification(props.columnMetadata.plot?.type)}
+      data={{ values: dataVega }}
+    />
+  );
+  const message = <p className="small">Nothing to show.</p>;
+  if (dataVega) {
+    return props.isHeader ? (
+      <th scope="col" {...props.column.getHeaderProps()}>
+        {plot}
+      </th>
+    ) : (
+      <td> {plot} </td>
+    );
+  } else {
+    return props.isHeader ? (
+      <th
+        scope="col"
+        {...props.column.getHeaderProps()}
+        className="text-center"
+        style={{ verticalAlign: 'middle' }}
+      >
+        {message}
+      </th>
+    ) : (
+      <td> {message} </td>
+    );
+  }
+}
+
+function TableColumnView(props: {
+  headerGroups: Array<HeaderGroup<string[]>>;
+  hit: SearchResult;
+}) {
+  return (
+    <tbody>
+      {props.headerGroups[0].headers.map((column, i) => {
+        const columnStatistics = (
+          <td style={{ minWidth: 200 }}>
+            <ul style={{ listStyle: 'none', columnCount: 2, columnGap: 10 }}>
+              {props.hit.metadata.columns[i].num_distinct_values && (
+                <li>Unique Values</li>
+              )}
+              {props.hit.metadata.columns[i].stddev && <li>Std Deviation</li>}
+              {props.hit.metadata.columns[i].mean && <li>Mean</li>}
+              {props.hit.metadata.columns[i].num_distinct_values && (
+                <li>{props.hit.metadata.columns[i].num_distinct_values}</li>
+              )}
+              {props.hit.metadata.columns[i].stddev && (
+                <li>{props.hit.metadata.columns[i].stddev?.toFixed(2)}</li>
+              )}
+              {props.hit.metadata.columns[i].mean && (
+                <li>{props.hit.metadata.columns[i].mean?.toFixed(2)}</li>
+              )}
+            </ul>
+          </td>
+        );
+        return (
+          <tr key={'column' + i} {...column.getHeaderProps()}>
+            <td>
+              <b>{column.render('Header')} </b>
+            </td>
+            <td>
+              <TypeBadges column={props.hit.metadata.columns[i]} />
+            </td>
+            <VegaPlot
+              key={`bodyPlot_${i}`}
+              columnMetadata={props.hit.metadata.columns[i]}
+              column={column}
+              isHeader={false}
+            />
+            {columnStatistics}
+          </tr>
+        );
+      })}
+    </tbody>
+  );
+}
+
+// Compact and Detail view share the same body content. Just the header will change.
+function TableCompactDetailView(props: { tableProps: TableProps }) {
+  const { columns, data, hit, typeView } = props.tableProps;
+  const { getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
+    columns,
+    data,
+  });
+  return (
+    <>
+      <thead>
+        {headerGroups.map((headerGroup, i) => (
+          <tr {...headerGroup.getHeaderGroupProps()}>
+            {headerGroup.headers.map((column, i) => (
+              <th
+                scope="col"
+                {...column.getHeaderProps()}
+                style={{
+                  position: 'sticky',
+                  top: '-1px',
+                  background: '#eee',
+                  zIndex: 1,
+                }}
+              >
+                {column.render('Header')}
+                <br />
+                <TypeBadges column={hit.metadata.columns[i]} />
+              </th>
+            ))}
+          </tr>
+        ))}
+        {typeView === tableViews.DETAIL &&
+          headerGroups.map((headerGroup, i) => (
+            <tr {...headerGroup.getHeaderGroupProps()}>
+              {headerGroup.headers.map((column, i) => (
+                <VegaPlot
+                  key={`headerPlot_${i}`}
+                  columnMetadata={hit.metadata.columns[i]}
+                  column={column}
+                  isHeader={true}
+                />
+              ))}
+            </tr>
+          ))}
+      </thead>
+      <tbody {...getTableBodyProps()}>
+        {rows.map((row, i) => {
+          prepareRow(row);
+          return (
+            <tr {...row.getRowProps()}>
+              {row.cells.map(cell => {
+                return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>;
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </>
+  );
+}
+
+interface TableProps {
+  columns: Array<Column<string[]>>;
+  data: string[][];
+  hit: SearchResult;
+  typeView: tableViews;
+}
+
 function Table(props: TableProps) {
   const { columns, data, hit, typeView } = props;
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-  } = useTable({
+  const { getTableProps, headerGroups } = useTable({
     columns,
     data,
   });
   return (
     <table {...getTableProps()} className="table table-hover small">
-      {typeView === tableViews.COMPACT || typeView === tableViews.DETAIL ? (
-        <>
-          {/* Compact and detail View */}
-          <thead>
-            {headerGroups.map((headerGroup, i) => (
-              <tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map((column, i) => (
-                  <th
-                    scope="col"
-                    {...column.getHeaderProps()}
-                    style={{
-                      position: 'sticky',
-                      top: '-1px',
-                      background: '#eee',
-                      zIndex: 1,
-                    }}
-                  >
-                    {column.render('Header')}
-                    <br />
-                    <TypeBadges column={hit.metadata.columns[i]} />
-                  </th>
-                ))}
-              </tr>
-            ))}
-            {typeView === tableViews.DETAIL &&
-              headerGroups.map(headerGroup => (
-                <tr {...headerGroup.getHeaderGroupProps()}>
-                  {headerGroup.headers.map((column, i) => {
-                    const dataVega = hit.metadata.columns[i].plot?.data;
-                    if (dataVega) {
-                      return (
-                        <th scope="col" {...column.getHeaderProps()}>
-                          <VegaLite
-                            spec={getSpecification(
-                              hit.metadata.columns[i].plot?.type
-                            )}
-                            data={{ values: dataVega }}
-                          />
-                        </th>
-                      );
-                    } else {
-                      return (
-                        <th
-                          scope="col"
-                          {...column.getHeaderProps()}
-                          className="text-center"
-                          style={{ verticalAlign: 'middle' }}
-                        >
-                          <p className="small">Nothing to show.</p>
-                        </th>
-                      );
-                    }
-                  })}
-                </tr>
-              ))}
-          </thead>
-          <tbody {...getTableBodyProps()}>
-            {rows.map((row, i) => {
-              prepareRow(row);
-              return (
-                <tr {...row.getRowProps()}>
-                  {row.cells.map(cell => {
-                    return (
-                      <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </>
-      ) : (
+      {typeView === tableViews.COLUMN ? (
         // Column View
-        <tbody>
-          {headerGroups[0].headers.map((column, i) => {
-            const dataVega = hit.metadata.columns[i].plot?.data;
-            const columName = (
-              <td>
-                <b>{column.render('Header')} </b>
-              </td>
-            );
-            const columnTypeBadges = (
-              <td>
-                <TypeBadges column={hit.metadata.columns[i]} />{' '}
-              </td>
-            );
-            const plotVega = dataVega ? (
-              <td>
-                <VegaLite
-                  spec={getSpecification(hit.metadata.columns[i].plot?.type)}
-                  data={{ values: dataVega }}
-                />
-              </td>
-            ) : (
-              <td className="text-center" style={{ verticalAlign: 'middle' }}>
-                <p className="small">Nothing to show.</p>
-              </td>
-            );
-            const columnStatistics = (
-              <td style={{ minWidth: 200 }}>
-                <ul
-                  style={{ listStyle: 'none', columnCount: 2, columnGap: 10 }}
-                >
-                  {hit.metadata.columns[i].num_distinct_values && (
-                    <li>Unique Values</li>
-                  )}
-                  {hit.metadata.columns[i].stddev && <li>Std Deviation</li>}
-                  {hit.metadata.columns[i].mean && <li>Mean</li>}
-                  {hit.metadata.columns[i].num_distinct_values && (
-                    <li>{hit.metadata.columns[i].num_distinct_values}</li>
-                  )}
-                  {hit.metadata.columns[i].stddev && (
-                    <li>{hit.metadata.columns[i].stddev?.toFixed(2)}</li>
-                  )}
-                  {hit.metadata.columns[i].mean && (
-                    <li>{hit.metadata.columns[i].mean?.toFixed(2)}</li>
-                  )}
-                </ul>
-              </td>
-            );
-            return (
-              <tr key={'column' + i} {...column.getHeaderProps()}>
-                {columName}
-                {columnTypeBadges}
-                {plotVega}
-                {columnStatistics}
-              </tr>
-            );
-          })}
-        </tbody>
+        <TableColumnView headerGroups={headerGroups} hit={hit} />
+      ) : (
+        // Compact or Detail View
+        <TableCompactDetailView tableProps={props} />
       )}
     </table>
   );
