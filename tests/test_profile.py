@@ -1,6 +1,5 @@
 from datetime import datetime
 from dateutil.tz import UTC
-import io
 import pandas
 import unittest
 import textwrap
@@ -109,9 +108,10 @@ class TestLatlongSelection(DataTestCase):
 
     def test_process(self):
         with data('lat_longs.csv', 'r') as data_fp:
-            metadata = process_dataset(
-                data_fp,
-            )
+            dataframe = pandas.read_csv(data_fp)
+        metadata = process_dataset(
+            dataframe,
+        )
         # Check columns
         self.assertJson(
             [
@@ -189,12 +189,11 @@ class TestDates(DataTestCase):
 
     def test_year(self):
         """Test the 'year' special-case."""
-        metadata = process_dataset(io.StringIO(textwrap.dedent('''\
-            year,number
-            2004,2014
-            2005,2015
-            2006,2016
-        ''')))
+        dataframe = pandas.DataFrame({
+            'year': [2004, 2005, 2006],
+            'number': [2014, 2015, 2016],
+        })
+        metadata = process_dataset(dataframe)
 
         def year_rng(year):
             year = float(year)
@@ -203,7 +202,6 @@ class TestDates(DataTestCase):
         self.assertJson(
             metadata,
             {
-                'size': 42,
                 'nb_rows': 3,
                 'nb_profiled_rows': 3,
                 'columns': [

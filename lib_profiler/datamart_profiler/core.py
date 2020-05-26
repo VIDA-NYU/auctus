@@ -108,6 +108,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     data_path = None
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
+        data = data.astype(str)
         # FIXME: no sampling here!
     else:
         with contextlib.ExitStack() as stack:
