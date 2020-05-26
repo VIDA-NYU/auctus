@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 class UazIndicatorsDiscoverer(Discoverer):
+    """Discoverer for University of Arizona's indicator database.
+
+    https://ml4ai.github.io/delphi/delphi_database.html
+    """
     CHECK_INTERVAL = timedelta(days=1)
     NAMESPACE = uuid.UUID('d20b45e8-b0d5-4b17-a6c4-e8399afc2afa')  # Random
 
