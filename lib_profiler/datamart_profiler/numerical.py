@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 N_RANGES = 3
+MIN_RANGE_SIZE = 0.1  # 10%
 
 
 def mean_stddev(array):
@@ -57,6 +58,11 @@ def get_numerical_ranges(values):
                    if clustering.labels_[i] == rg]
         if not cluster:
             continue
+
+        # Eliminate clusters of outliers
+        if len(cluster) < MIN_RANGE_SIZE * len(values):
+            continue
+
         cluster.sort()
         min_idx = int(0.05 * len(cluster))
         max_idx = int(0.95 * len(cluster))

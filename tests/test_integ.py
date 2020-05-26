@@ -2102,12 +2102,6 @@ basic_metadata = {
                             "lte": 7.0
                         }
                     },
-                    {
-                        "range": {
-                            "gte": 11.0,
-                            "lte": 11.0
-                        }
-                    }
                 ]
             ),
             "plot": check_plot('histogram_numerical'),

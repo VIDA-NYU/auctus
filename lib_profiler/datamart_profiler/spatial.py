@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 N_RANGES = 3
+MIN_RANGE_SIZE = 0.10  # 10%
 
 SPATIAL_RANGE_DELTA_LONG = 0.0001
 SPATIAL_RANGE_DELTA_LAT = 0.0001
@@ -57,6 +58,11 @@ def get_spatial_ranges(values):
                    if clustering.labels_[i] == rg]
         if not cluster:
             continue
+
+        # Eliminate clusters of outliers
+        if len(cluster) < MIN_RANGE_SIZE * len(values):
+            continue
+
         cluster.sort(key=lambda p: p[0])
         min_idx = int(0.05 * len(cluster))
         max_idx = int(0.95 * len(cluster))
@@ -82,8 +88,6 @@ def get_spatial_ranges(values):
         if rg[0][1] == rg[1][1]:
             rg[0][1] += SPATIAL_RANGE_DELTA_LAT
             rg[1][1] -= SPATIAL_RANGE_DELTA_LAT
-
-    # TODO: Deal with clusters made of outliers
 
     # Convert to Elasticsearch syntax
     ranges = [{'range': {'type': 'envelope',
