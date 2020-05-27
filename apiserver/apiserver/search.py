@@ -134,6 +134,13 @@ def get_column_coverage(data_profile, filter_=()):
                 ):
                     continue
                 names = (column_index_mapping[spatial['point']],)
+            elif 'admin' in spatial:
+                if (
+                    filter_ and
+                    column_index_mapping[spatial['admin']] not in filter_
+                ):
+                    continue
+                names = (column_index_mapping[spatial['admin']],)
             else:
                 raise ValueError("Invalid spatial_coverage")
             column_coverage[names] = {
@@ -664,6 +671,13 @@ def get_joinable_datasets(
             ])
             right_columns_names.append([
                 source['point'],
+            ])
+        elif 'admin_index' in source:
+            right_columns.append([
+                source['admin_index'],
+            ])
+            right_columns_names.append([
+                source['admin'],
             ])
         else:
             logger.error("Invalid spatial_coverage")
