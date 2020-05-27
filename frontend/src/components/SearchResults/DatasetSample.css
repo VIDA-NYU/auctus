@@ -27,3 +27,7 @@
 .badge.semtype.semtype-datetime {
   background-color: #008775;
 }
+
+#vg-tooltip-element {
+  z-index: 2000;
+}

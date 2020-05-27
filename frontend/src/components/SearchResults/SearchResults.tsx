@@ -85,6 +85,9 @@ class SearchResults extends React.PureComponent<
                   searchQuery={searchQuery}
                   hit={hit}
                   key={idx}
+                  selectedHit={
+                    selectedHit && hit.id === selectedHit.id ? true : false
+                  }
                   onSearchHitExpand={hit => this.setState({ selectedHit: hit })}
                   onSearchRelated={this.props.onSearchRelated}
                 />

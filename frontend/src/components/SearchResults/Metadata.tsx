@@ -75,19 +75,57 @@ export function DownloadButtons(props: { hit: SearchResult }) {
   );
 }
 
-export function Description(props: { hit: SearchResult; label?: boolean }) {
-  const { description } = props.hit.metadata;
-  const showLabel = props.label ? props.label : false;
-  return (
-    <div className="mt-2">
-      {showLabel && <b>Description: </b>}
-      {description ? (
-        description
-      ) : (
-        <span className="text-muted">[No description]</span>
-      )}
-    </div>
-  );
+interface DescriptionProps {
+  hit: SearchResult;
+  label?: boolean;
+}
+interface DescriptionState {
+  hidden: boolean;
+}
+
+export class Description extends React.PureComponent<
+  DescriptionProps,
+  DescriptionState
+> {
+  constructor(props: DescriptionProps) {
+    super(props);
+    this.state = { hidden: true };
+  }
+  render() {
+    const limitLenght = 100;
+    const { description } = this.props.hit.metadata;
+    const showLabel = this.props.label ? this.props.label : false;
+    const displayedDescription =
+      description && this.state.hidden
+        ? description.substring(0, limitLenght - 3) + '...'
+        : description;
+    return (
+      <div className="mt-2">
+        {showLabel && <b>Description: </b>}
+        {description ? (
+          <>
+            {displayedDescription}
+            {description.length > limitLenght && (
+              <button
+                className="text-muted small"
+                style={{
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  background: 'transparent',
+                  border: 0,
+                }}
+                onClick={() => this.setState({ hidden: !this.state.hidden })}
+              >
+                {this.state.hidden ? 'Show more...' : 'Show less'}
+              </button>
+            )}
+          </>
+        ) : (
+          <span className="text-muted">[No description]</span>
+        )}
+      </div>
+    );
+  }
 }
 
 interface ColumnsViewerProps {

@@ -1,8 +1,9 @@
 import React from 'react';
-import { useTable, Column } from 'react-table';
-import { SearchResult } from '../../api/types';
-import { ColumnMetadata } from '../../api/types';
+import { useTable, Column, ColumnInstance, HeaderGroup } from 'react-table';
+import { SearchResult, ColumnMetadata } from '../../api/types';
 import './DatasetSample.css';
+import { VegaLite } from 'react-vega';
+import { TopLevelSpec as VlSpec } from 'vega-lite';
 
 const classMapping: { [key: string]: string } = {
   text: 'semtype-text',
@@ -13,6 +14,12 @@ const classMapping: { [key: string]: string } = {
   longitude: 'semtype-longitude',
   datetime: 'semtype-datetime',
 };
+
+enum tableViews {
+  COMPACT = 'COMPACT',
+  DETAIL = 'DETAIL',
+  COLUMN = 'COLUMN',
+}
 
 function typeName(type: string) {
   return type
@@ -42,45 +49,227 @@ function TypeBadges(props: { column: ColumnMetadata }) {
   );
 }
 
-interface TableProps {
-  columns: Array<Column<string[]>>;
-  data: string[][];
-  hit: SearchResult;
+function getEncoding(typePlot: string | undefined) {
+  const yContent = {
+    field: 'count',
+    type: 'quantitative',
+    title: null,
+  };
+  if (typePlot === 'histogram_numerical') {
+    return {
+      y: yContent,
+      x: {
+        title: null,
+        bin: { binned: true },
+        field: 'bin_start',
+        type: 'quantitative',
+        axis: null,
+      },
+      x2: {
+        field: 'bin_end',
+      },
+      tooltip: [
+        { field: 'bin_start', title: 'start', type: 'quantitative' },
+        { field: 'bin_end', title: 'end', type: 'quantitative' },
+      ],
+    };
+  } else if (typePlot === 'histogram_temporal') {
+    return {
+      y: yContent,
+      x: {
+        title: null,
+        bin: { binned: true },
+        field: 'date_start',
+        type: 'temporal',
+        utc: true,
+        axis: null,
+      },
+      x2: {
+        field: 'date_end',
+      },
+      tooltip: [
+        { field: 'date_start', title: 'start', type: 'temporal' },
+        { field: 'date_end', title: 'end', type: 'temporal' },
+      ],
+    };
+  } else if (typePlot === 'histogram_categorical') {
+    return {
+      y: yContent,
+      x: {
+        title: null,
+        field: 'bin',
+        type: 'ordinal',
+        axis: null,
+        sort: { order: 'descending', field: 'count' },
+      },
+      tooltip: { field: 'bin', type: 'ordinal' },
+    };
+  } else if (typePlot === 'histogram_text') {
+    return {
+      y: {
+        field: 'bin',
+        type: 'ordinal',
+        title: null,
+      },
+      x: {
+        title: null,
+        field: 'count',
+        type: 'quantitative',
+        sort: { order: 'descending', field: 'count' },
+        axis: null,
+      },
+      tooltip: [
+        { field: 'bin', type: 'ordinal' },
+        { field: 'count', type: 'quantitative' },
+      ],
+    };
+  } else {
+    console.log('Unknown plot type ', typePlot);
+    return;
+  }
 }
 
-function Table(props: TableProps) {
-  const { columns, data, hit } = props;
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-  } = useTable({
+function getSpecification(typePlot: string | undefined): VlSpec {
+  const specification = {
+    width: '120',
+    height: '120',
+    data: { name: 'values' },
+    description: 'A simple bar chart with embedded data.',
+    encoding: getEncoding(typePlot),
+    mark: 'bar',
+  };
+  return specification as VlSpec;
+}
+
+function VegaPlot(props: {
+  columnMetadata: ColumnMetadata;
+  column: ColumnInstance<string[]>;
+  isHeader: boolean;
+}) {
+  const dataVega = props.columnMetadata.plot?.data;
+  const plot = (
+    <VegaLite
+      spec={getSpecification(props.columnMetadata.plot?.type)}
+      data={{ values: dataVega }}
+    />
+  );
+  const message = <p className="small">Nothing to show.</p>;
+  if (dataVega) {
+    return props.isHeader ? (
+      <th scope="col" {...props.column.getHeaderProps()}>
+        {plot}
+      </th>
+    ) : (
+      <td> {plot} </td>
+    );
+  } else {
+    return props.isHeader ? (
+      <th
+        scope="col"
+        {...props.column.getHeaderProps()}
+        className="text-center"
+        style={{ verticalAlign: 'middle' }}
+      >
+        {message}
+      </th>
+    ) : (
+      <td> {message} </td>
+    );
+  }
+}
+
+function TableColumnView(props: {
+  headerGroups: Array<HeaderGroup<string[]>>;
+  hit: SearchResult;
+}) {
+  return (
+    <tbody>
+      {props.headerGroups[0].headers.map((column, i) => {
+        const columnStatistics = (
+          <td style={{ minWidth: 200 }}>
+            <ul style={{ listStyle: 'none', columnCount: 2, columnGap: 10 }}>
+              {props.hit.metadata.columns[i].num_distinct_values && (
+                <li>Unique Values</li>
+              )}
+              {props.hit.metadata.columns[i].stddev && <li>Std Deviation</li>}
+              {props.hit.metadata.columns[i].mean && <li>Mean</li>}
+              {props.hit.metadata.columns[i].num_distinct_values && (
+                <li>{props.hit.metadata.columns[i].num_distinct_values}</li>
+              )}
+              {props.hit.metadata.columns[i].stddev && (
+                <li>{props.hit.metadata.columns[i].stddev?.toFixed(2)}</li>
+              )}
+              {props.hit.metadata.columns[i].mean && (
+                <li>{props.hit.metadata.columns[i].mean?.toFixed(2)}</li>
+              )}
+            </ul>
+          </td>
+        );
+        return (
+          <tr key={'column' + i} {...column.getHeaderProps()}>
+            <td>
+              <b>{column.render('Header')} </b>
+            </td>
+            <td>
+              <TypeBadges column={props.hit.metadata.columns[i]} />
+            </td>
+            <VegaPlot
+              key={`bodyPlot_${i}`}
+              columnMetadata={props.hit.metadata.columns[i]}
+              column={column}
+              isHeader={false}
+            />
+            {columnStatistics}
+          </tr>
+        );
+      })}
+    </tbody>
+  );
+}
+
+// Compact and Detail view share the same body content. Just the header will change.
+function TableCompactDetailView(props: { tableProps: TableProps }) {
+  const { columns, data, hit, typeView } = props.tableProps;
+  const { getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
     columns,
     data,
   });
   return (
-    <table {...getTableProps()} className="table table-hover small">
+    <>
       <thead>
         {headerGroups.map((headerGroup, i) => (
           <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map(column => (
-              <th scope="col" {...column.getHeaderProps()}>
-                {column.render('Header')}
-              </th>
-            ))}
-          </tr>
-        ))}
-        {headerGroups.map(headerGroup => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map((column, i) => (
-              <th scope="col" {...column.getHeaderProps()}>
+              <th
+                scope="col"
+                {...column.getHeaderProps()}
+                style={{
+                  position: 'sticky',
+                  top: '-1px',
+                  background: '#eee',
+                  zIndex: 1,
+                }}
+              >
+                {column.render('Header')}
+                <br />
                 <TypeBadges column={hit.metadata.columns[i]} />
               </th>
             ))}
           </tr>
         ))}
+        {typeView === tableViews.DETAIL &&
+          headerGroups.map((headerGroup, i) => (
+            <tr {...headerGroup.getHeaderGroupProps()}>
+              {headerGroup.headers.map((column, i) => (
+                <VegaPlot
+                  key={`headerPlot_${i}`}
+                  columnMetadata={hit.metadata.columns[i]}
+                  column={column}
+                  isHeader={true}
+                />
+              ))}
+            </tr>
+          ))}
       </thead>
       <tbody {...getTableBodyProps()}>
         {rows.map((row, i) => {
@@ -94,6 +283,32 @@ function Table(props: TableProps) {
           );
         })}
       </tbody>
+    </>
+  );
+}
+
+interface TableProps {
+  columns: Array<Column<string[]>>;
+  data: string[][];
+  hit: SearchResult;
+  typeView: tableViews;
+}
+
+function Table(props: TableProps) {
+  const { columns, data, hit, typeView } = props;
+  const { getTableProps, headerGroups } = useTable({
+    columns,
+    data,
+  });
+  return (
+    <table {...getTableProps()} className="table table-hover small">
+      {typeView === tableViews.COLUMN ? (
+        // Column View
+        <TableColumnView headerGroups={headerGroups} hit={hit} />
+      ) : (
+        // Compact or Detail View
+        <TableCompactDetailView tableProps={props} />
+      )}
     </table>
   );
 }
@@ -101,25 +316,87 @@ function Table(props: TableProps) {
 interface TableSampleProps {
   hit: SearchResult;
 }
-
-export function DatasetSample(props: TableSampleProps) {
-  const { hit } = props;
-
-  const sample = hit.sample;
-  const headers = sample[0];
-  const rows = sample.slice(1, sample.length - 1);
-
-  const columns = headers.map((h, i) => ({
-    Header: h,
-    accessor: (row: string[]) => row[i],
-  }));
-
-  return (
-    <div className="mt-2">
-      <h6>Dataset Sample:</h6>
-      <div className="mt-2" style={{ overflow: 'auto', maxHeight: '20rem' }}>
-        <Table columns={columns} data={rows} hit={hit} />
-      </div>
-    </div>
-  );
+interface TableSampleState {
+  typeView: tableViews;
 }
+
+class DatasetSample extends React.PureComponent<
+  TableSampleProps,
+  TableSampleState
+> {
+  constructor(props: TableSampleProps) {
+    super(props);
+    this.state = { typeView: tableViews.COMPACT };
+  }
+  updateTypeView(view: tableViews) {
+    this.setState({ typeView: view });
+  }
+
+  render() {
+    const { hit } = this.props;
+
+    const sample = hit.sample;
+    const headers = sample[0];
+    const rows = sample.slice(1, sample.length - 1);
+
+    const columns = headers.map((h, i) => ({
+      Header: h,
+      accessor: (row: string[]) => row[i],
+    }));
+
+    return (
+      <div className="mt-2">
+        <h6>Dataset Sample:</h6>
+        <div>
+          <div
+            className="btn-group btn-group-sm"
+            role="group"
+            aria-label="Basic example"
+            style={{ float: 'initial', marginBottom: '-8px' }}
+          >
+            <button
+              type="button"
+              className={`btn btn-secondary ${
+                this.state.typeView === tableViews.COMPACT ? 'active' : ''
+              }`}
+              onClick={() => this.updateTypeView(tableViews.COMPACT)}
+            >
+              Compact view
+            </button>
+            <button
+              type="button"
+              className={`btn btn-secondary ${
+                this.state.typeView === tableViews.DETAIL ? 'active' : ''
+              }`}
+              onClick={() => this.updateTypeView(tableViews.DETAIL)}
+            >
+              Detail view
+            </button>
+            <button
+              type="button"
+              className={`btn btn-secondary ${
+                this.state.typeView === tableViews.COLUMN ? 'active' : ''
+              }`}
+              onClick={() => this.updateTypeView(tableViews.COLUMN)}
+            >
+              Column view
+            </button>
+          </div>
+          <div
+            className="mt-2"
+            style={{ overflowY: 'auto', maxHeight: '20rem' }}
+          >
+            <Table
+              columns={columns}
+              data={rows}
+              hit={hit}
+              typeView={this.state.typeView}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+export { DatasetSample };
