@@ -15,6 +15,7 @@ class GeoData(object):
         self._data_path = os.path.abspath(data_path)
         self._areas = {}
         self._area_names = {}
+        self._areas_bounds = {}
         self._levels_loaded = set()
 
     @staticmethod
@@ -52,6 +53,7 @@ class GeoData(object):
         return levels
 
     def load_area(self, level):
+        # Load admin area information
         filename = 'areas%d.csv' % level
         with open(os.path.join(self._data_path, filename)) as fp:
             reader = iter(csv.reader(fp))
@@ -70,8 +72,31 @@ class GeoData(object):
                 self._areas[admin] = obj
                 self._area_names[name.lower()] = obj
                 count += 1
-        self._levels_loaded.add(level)
         logger.info("Loaded %s, %d areas", filename, count)
+
+        # Load admin area bounds
+        filename = 'bounds%d.csv' % level
+        if os.path.exists(os.path.join(self._data_path, filename)):
+            with open(os.path.join(self._data_path, filename)) as fp:
+                reader = iter(csv.reader(fp))
+                try:
+                    row = next(reader)
+                except StopIteration:
+                    raise ValueError("No rows in %s" % filename)
+                if row != [
+                    'admin',
+                    'min long', 'max long', 'min lat', 'max lat',
+                ]:
+                    raise ValueError("Invalid %s" % filename)
+                count = 0
+                for row in reader:
+                    admin = row[0]
+                    bounds = [float(e) for e in row[1:]]
+                    self._areas_bounds[admin] = bounds
+                    count += 1
+            logger.info("Loaded %s, %d bounding boxes", filename, count)
+
+        self._levels_loaded.add(level)
 
     def resolve_names(self, names):
         results = []
@@ -84,6 +109,9 @@ class GeoData(object):
                 results.append(None)
 
         return results
+
+    def get_bounds(self, area):
+        return self._areas_bounds.get(area)
 
 
 class Area(object):
