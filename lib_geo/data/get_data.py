@@ -99,23 +99,23 @@ def countries(writer):
         writer.writerow([value, label, fips, iso2, iso3])
 
 
-@makes_file('geoshapes.csv')
-def geoshapes(writer):
+@makes_file('geoshapes0.csv')
+def geoshapes0(writer):
     """Get all countries with their geometry.
     """
     rows = sparql_query(
-        'SELECT ?item ?shape\n'
+        'SELECT ?area ?shape\n'
         'WHERE\n'
         '{\n'
-        '  ?item wdt:P31 wd:Q6256.\n'  # item "instance of" "country"
-        '  ?item wdt:P3896 ?shape.\n'  # item "geoshape" shape
-        '  MINUS{ ?item wdt:P31 wd:Q3024240. }\n'  # not "historical country"
+        '  ?area wdt:P31 wd:Q6256.\n'  # area "instance of" "country"
+        '  ?area wdt:P3896 ?shape.\n'  # area "geoshape" shape
+        '  MINUS{ ?area wdt:P31 wd:Q3024240. }\n'  # not "historical country"
         '}\n'
     )
 
-    writer.writerow(['country', 'geoshape URL', 'geoshape'])
+    writer.writerow(['admin', 'geoshape URL', 'geoshape'])
     for row in rows:
-        value = q_entity_uri(row['item'])
+        area = q_entity_uri(row['area'])
         shape_uri = uri(row['shape'])
 
         # FIXME: Work around Wikidata bug: '+' in URL needs to be '_'
@@ -139,7 +139,7 @@ def geoshapes(writer):
             logger.error("Error getting geoshape: %s", e)
             shape = None
 
-        writer.writerow([value, shape_uri, shape])
+        writer.writerow([area, shape_uri, shape])
 
 
 @makes_file('country_names.csv')
@@ -281,7 +281,7 @@ def main():
     os.chdir(os.path.dirname(__file__) or '.')
 
     countries()
-    geoshapes()
+    geoshapes0()
     country_names()
     areas0()
     areas1()
