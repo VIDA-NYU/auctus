@@ -142,6 +142,56 @@ def geoshapes0(writer):
         writer.writerow([area, shape_uri, shape])
 
 
+@makes_file('geoshapes1.csv')
+def geoshapes1(writer):
+    """Get all countries with their geometry.
+    """
+    rows = sparql_query(
+        'SELECT ?area ?shape\n'
+        'WHERE\n'
+        '{\n'
+        # parent "instance of" "country" (country = admin level 0)
+        '  ?parent wdt:P31 wd:Q6256.\n'
+        # parent "contains administrative territorial entity" area
+        '  ?parent wdt:P150 ?area.\n'
+        # area "instance of" ["subclass of" "admin level 1"]
+        '  ?area wdt:P31 [wdt:P279 wd:Q10864048].\n'
+        # area "geoshape" shape
+        '  ?area wdt:P3896 ?shape.\n'
+        # parent not "historical country"
+        '  MINUS{ ?parent wdt:P31 wd:Q3024240. }\n'
+        '}\n'
+    )
+
+    writer.writerow(['admin', 'geoshape URL', 'geoshape'])
+    for row in rows:
+        area = q_entity_uri(row['area'])
+        shape_uri = uri(row['shape'])
+
+        # FIXME: Work around Wikidata bug: '+' in URL needs to be '_'
+        last_slash = shape_uri.index('/')
+        if '+' in shape_uri[last_slash + 1:]:
+            shape_uri = (
+                shape_uri[:last_slash + 1] +
+                shape_uri[last_slash + 1:].replace('+', '_')
+            )
+
+        try:
+            logger.info("Getting geoshape %s", shape_uri)
+            shape_resp = requests.get(shape_uri)
+            shape_resp.raise_for_status()
+            shape = json.dumps(
+                shape_resp.json(),
+                # Compact
+                sort_keys=True, indent=None, separators=(',', ':'),
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error("Error getting geoshape: %s", e)
+            shape = None
+
+        writer.writerow([area, shape_uri, shape])
+
+
 @makes_file('country_names.csv')
 def country_names(writer):
     """Get the localized names of countries.
@@ -201,9 +251,9 @@ def get_admin_level(level):
             '{\n'
             # parent "instance of" "country" (country = admin level 0)
             '  ?parent wdt:P31 wd:Q6256.\n'
-            # parent "contains administrative territorial entity" child
+            # parent "contains administrative territorial entity" area
             '  ?parent wdt:P150 ?area.\n'
-            # child "instance of" ["subclass of" "admin level 1"]
+            # area "instance of" ["subclass of" "admin level 1"]
             '  ?area wdt:P31 [wdt:P279 wd:Q10864048].\n'
             '  SERVICE wikibase:label {\n'
             '    bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".\n'
@@ -282,6 +332,7 @@ def main():
 
     countries()
     geoshapes0()
+    geoshapes1()
     country_names()
     areas0()
     areas1()
