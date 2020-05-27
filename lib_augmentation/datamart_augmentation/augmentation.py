@@ -79,7 +79,7 @@ def set_data_index(data, columns, columns_metadata, drop=False):
         if types.DATE_TIME in column['semantic_types']:
             _transform_data_index(
                 data, i,
-                lambda idx: pd.to_datetime(idx, errors='coerce'),
+                lambda idx: pd.to_datetime(idx.map(str), errors='coerce'),
             )
         elif column['structural_type'] == types.INTEGER:
             _transform_data_index(

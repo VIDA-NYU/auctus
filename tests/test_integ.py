@@ -2539,7 +2539,7 @@ daily_metadata = {
     'name': 'daily',
     'description': 'Temporal dataset with daily resolution',
     'source': 'remi',
-    'size': 448,
+    'size': 388,
     'nb_rows': 30,
     "nb_profiled_rows": 30,
     'columns': [
@@ -2549,7 +2549,7 @@ daily_metadata = {
             'semantic_types': [
                 'http://schema.org/DateTime',
             ],
-            'num_distinct_values': 30,
+            'unclean_values_ratio': 0.0,
             'temporal_resolution': 'day',
             'mean': lambda n: round(n) == 1557230400.0,
             'stddev': lambda n: round(n, 2) == 747830.14,
@@ -2593,12 +2593,11 @@ daily_metadata = {
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
     },
-    'sample': "aug_date,rain\n2019-04-23,no\n2019-04-25,yes\n2019-04-26,no\n" +
-              "2019-04-29,yes\n2019-05-02,no\n2019-05-03,yes\n2019-05-05,yes" +
-              "\n2019-05-07,no\n2019-05-08,yes\n2019-05-09,yes\n2019-05-10,n" +
-              "o\n2019-05-13,no\n2019-05-14,no\n2019-05-16,no\n2019-05-17,ye" +
-              "s\n2019-05-18,no\n2019-05-19,yes\n2019-05-20,no\n2019-05-21,n" +
-              "o\n2019-05-22,yes\n",
+    'sample': "aug_date,rain\n20190423,no\n20190425,yes\n20190426,no\n201904" +
+              "29,yes\n20190502,no\n20190503,yes\n20190505,yes\n20190507,no" +
+              "\n20190508,yes\n20190509,yes\n20190510,no\n20190513,no\n20190" +
+              "514,no\n20190516,no\n20190517,yes\n20190518,no\n20190519,yes" +
+              "\n20190520,no\n20190521,no\n20190522,yes\n",
     'date': lambda d: isinstance(d, str),
     'version': version,
 }

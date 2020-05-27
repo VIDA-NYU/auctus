@@ -175,14 +175,17 @@ def identify_types(array, name):
             semantic_types_dict[types.LONGITUDE] = None
 
     # Identify dates
-    if structural_type == types.TEXT:
-        parsed_dates = []
-        for elem in array:
-            elem = parse_date(elem)
-            if elem is not None:
-                parsed_dates.append(elem)
+    parsed_dates = []
+    for elem in array:
+        elem = parse_date(elem)
+        if elem is not None:
+            parsed_dates.append(elem)
 
-        if len(parsed_dates) >= threshold:
-            semantic_types_dict[types.DATE_TIME] = parsed_dates
+    if len(parsed_dates) >= threshold:
+        semantic_types_dict[types.DATE_TIME] = parsed_dates
+        if structural_type == types.INTEGER:
+            # 'YYYYMMDD' format means values can be parsed as integers, but
+            # that's not what they are
+            structural_type = types.TEXT
 
     return structural_type, semantic_types_dict, column_meta
