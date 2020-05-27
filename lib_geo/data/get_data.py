@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import requests
+import sys
 from urllib.parse import urlencode
 
 
@@ -192,6 +193,91 @@ def geoshapes1(writer):
         writer.writerow([area, shape_uri, shape])
 
 
+def get_shape_points(shape):
+    points = []
+    for feature in shape['data']['features']:
+        assert feature['type'] == 'Feature'
+        geometry = feature['geometry']
+        if geometry['type'] == 'Polygon':
+            for polygon in geometry['coordinates']:
+                for point in polygon:
+                    points.append(point)
+        elif geometry['type'] == 'MultiPolygon':
+            for multipolygon in geometry['coordinates']:
+                for polygon in multipolygon:
+                    for point in polygon:
+                        points.append(point)
+        else:
+            raise AssertionError("Unrecognized geometry %r" % geometry['type'])
+    return points
+
+
+@makes_file('bounds0.csv')
+def bounds0(writer):
+    """Make bounding boxes from level 0 geometry.
+    """
+    with open('geoshapes0.csv') as fp:
+        reader = iter(csv.reader(fp))
+        assert next(reader) == ['admin', 'geoshape URL', 'geoshape']
+        writer.writerow([
+            'admin',
+            'min long', 'max long',
+            'min lat', 'max lat',
+        ])
+
+        for row in reader:
+            area, shape_uri, shape = row
+            shape = json.loads(shape)
+            points = get_shape_points(shape)
+            merged = (
+                points[0][0], points[0][0],
+                points[0][1], points[0][1],
+            )
+            for point in points[1:]:
+                merged = (
+                    min(merged[0], point[0]),
+                    max(merged[1], point[0]),
+                    min(merged[2], point[1]),
+                    max(merged[3], point[1]),
+                )
+            writer.writerow([
+                area, merged[0], merged[1], merged[2], merged[3],
+            ])
+
+
+@makes_file('bounds1.csv')
+def bounds1(writer):
+    """Make bounding boxes from level 1 geometry.
+    """
+    with open('geoshapes1.csv') as fp:
+        reader = iter(csv.reader(fp))
+        assert next(reader) == ['admin', 'geoshape URL', 'geoshape']
+        writer.writerow([
+            'admin',
+            'min long', 'max long',
+            'min lat', 'max lat',
+        ])
+
+        for row in reader:
+            area, shape_uri, shape = row
+            shape = json.loads(shape)
+            points = get_shape_points(shape)
+            merged = (
+                points[0][0], points[0][0],
+                points[0][1], points[0][1],
+            )
+            for point in points[1:]:
+                merged = (
+                    min(merged[0], point[0]),
+                    max(merged[1], point[0]),
+                    min(merged[2], point[1]),
+                    max(merged[3], point[1]),
+                )
+            writer.writerow([
+                area, merged[0], merged[1], merged[2], merged[3],
+            ])
+
+
 @makes_file('country_names.csv')
 def country_names(writer):
     """Get the localized names of countries.
@@ -330,9 +416,13 @@ def main():
     logging.basicConfig(level=logging.INFO)
     os.chdir(os.path.dirname(__file__) or '.')
 
+    csv.field_size_limit(sys.maxsize)
+
     countries()
     geoshapes0()
     geoshapes1()
+    bounds0()
+    bounds1()
     country_names()
     areas0()
     areas1()
