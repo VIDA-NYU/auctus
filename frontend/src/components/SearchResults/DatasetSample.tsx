@@ -382,10 +382,7 @@ class DatasetSample extends React.PureComponent<
               Column view
             </button>
           </div>
-          <div
-            className="mt-2"
-            style={{ overflowY: 'auto', maxHeight: '20rem' }}
-          >
+          <div className="mt-2">
             <Table
               columns={columns}
               data={rows}
