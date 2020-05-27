@@ -177,7 +177,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Set column names
     for column_meta, name in zip(columns, data.columns):
-        column_meta['name'] = name
+        if 'name' not in column_meta:
+            column_meta['name'] = name
 
     if data.shape[0] == 0:
         logger.info("0 rows, returning early")
@@ -477,12 +478,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
                                                  "ranges": spatial_ranges})
 
             # Compute ranges from WKT points
-            geo_point_columns = [
-                i for i, col in enumerate(columns)
-                if col['structural_type'] == types.GEO_POINT
-            ]
-            for i in geo_point_columns:
-                name = data.columns[i]
+            for i, col in enumerate(columns):
+                if col['structural_type'] != types.GEO_POINT:
+                    continue
+                name = col['name']
                 values = parse_wkt_column(data.iloc[:, i])
                 logger.info(
                     "Computing spatial ranges point=%r (%d rows)",
