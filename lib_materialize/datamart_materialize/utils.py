@@ -3,8 +3,9 @@ import tempfile
 
 
 class SimpleConverterProxy(object):
-    def __init__(self, writer, name, temp_file, fp):
+    def __init__(self, writer, transform, name, temp_file, fp):
         self._writer = writer
+        self._transform = transform
         self._name = name
         self._temp_file = temp_file
         self._fp = fp
@@ -16,7 +17,7 @@ class SimpleConverterProxy(object):
     def _convert(self):
         # Read back the file we wrote, and transform it to the final file
         with self._writer.open_file('w', self._name, newline='') as dst:
-            self._writer.transform(self._temp_file, dst)
+            self._transform(self._temp_file, dst)
 
     # Those methods forward to the actual file object
 
@@ -49,7 +50,8 @@ class SimpleConverter(object):
         # Return a proxy that will write to the destination when closed
         fp = open(temp_file, mode, **kwargs)
         return SimpleConverterProxy(
-            self.writer, name,
+            self.writer, self.transform,
+            name,
             temp_file, fp,
         )
 
