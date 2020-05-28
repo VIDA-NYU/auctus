@@ -1,5 +1,6 @@
 import aio_pika
 import asyncio
+import collections
 import elasticsearch
 import elasticsearch.helpers
 import itertools
@@ -18,9 +19,16 @@ from datamart_core import types
 logger = logging.getLogger(__name__)
 
 
-PROM_DATASETS = prometheus_client.Gauge('source_count',
-                                        "Count of datasets per source",
-                                        ['source'])
+PROM_DATASETS = prometheus_client.Gauge(
+    'source_count',
+    "Count of datasets per source",
+    ['source'],
+)
+PROM_PROFILED_VERSION = prometheus_client.Gauge(
+    'profiled_version_count',
+    "Count of datasets per profiler version",
+    ['version'],
+)
 
 
 class Coordinator(object):
@@ -83,10 +91,11 @@ class Coordinator(object):
             should_never_exit=True,
         )
 
-        # Start source count coroutine
+        # Start statistics coroutine
         self.sources_counts = {}
+        self.profiler_versions_counts = {}
         log_future(
-            asyncio.get_event_loop().create_task(self.update_sources_counts()),
+            asyncio.get_event_loop().create_task(self.update_statistics()),
             logger,
             should_never_exit=True,
         )
@@ -154,10 +163,13 @@ class Coordinator(object):
                 )
                 del self.recent_discoveries[15:]
 
-    def _update_sources_counts(self):
+    def _update_statistics(self):
+        """Scan whole index to compute statistics.
+        """
         SIZE = 10000
         sleep_in = SIZE
-        sources = {}
+        sources = collections.Counter()
+        versions = collections.Counter()
         # TODO: Aggregation query?
         hits = elasticsearch.helpers.scan(
             self.elasticsearch,
@@ -172,11 +184,10 @@ class Coordinator(object):
         )
         for h in hits:
             source = h['_source'].get('source', 'unknown')
+            sources[source] += 1
 
-            try:
-                sources[source] += 1
-            except KeyError:
-                sources[source] = 1
+            version = h['_source'].get('version', 'unknown')
+            versions[version] += 1
 
             sleep_in -= 1
             if sleep_in <= 0:
@@ -189,21 +200,32 @@ class Coordinator(object):
         for source in self.sources_counts.keys() - sources.keys():
             PROM_DATASETS.remove(source)
 
-        return sources
+        for version, count in versions.items():
+            PROM_PROFILED_VERSION.labels(version).set(count)
+        for version in self.profiler_versions_counts.keys() - versions.keys():
+            PROM_PROFILED_VERSION.remove(version)
 
-    async def update_sources_counts(self):
+        return sources, versions
+
+    async def update_statistics(self):
+        """Periodically update statistics.
+        """
         while True:
             try:
-                # Count datasets in thread
-                sources = await asyncio.get_event_loop().run_in_executor(
+                # Compute statistics in background thread
+                (
+                    self.sources_counts,
+                    self.profiler_versions_counts,
+                ) = await asyncio.get_event_loop().run_in_executor(
                     None,
-                    self._update_sources_counts,
+                    self._update_statistics,
                 )
 
-                # Update count
-                self.sources_counts = sources
-                logger.info("Now %d datasets", sum(sources.values()))
+                logger.info(
+                    "Now %d datasets",
+                    sum(self.sources_counts.values()),
+                )
             except Exception:
-                logger.exception("Exception counting sources")
+                logger.exception("Exception computing statistics")
 
             await asyncio.sleep(5 * 60)
