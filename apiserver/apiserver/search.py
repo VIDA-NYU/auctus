@@ -901,16 +901,36 @@ def parse_keyword_query_main_index(query_json):
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
         query_args_main.append({
-            'multi_match': {
-                'query': keywords,
-                'operator': 'or',
-                'type': 'most_fields',
-                'fields': [
-                    'id',
-                    'description',
-                    'name',
-                    'columns.name',
-                ],
+            'bool': {
+                'should': [
+                    {
+                        'multi_match': {
+                            'query': keywords,
+                            'operator': 'or',
+                            'type': 'most_fields',
+                            'fields': [
+                                'id',
+                                'description',
+                                'name',
+                            ],
+                        },
+                    },
+                    {
+                        'nested': {
+                            'path': 'columns',
+                            'query': {
+                                'multi_match': {
+                                    'query': keywords,
+                                    'operator': 'or',
+                                    'type': 'most_fields',
+                                    'fields': [
+                                        'columns.name',
+                                    ],
+                                },
+                            },
+                        },
+                    },
+                ]
             },
         })
 

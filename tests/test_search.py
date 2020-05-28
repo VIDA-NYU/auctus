@@ -13,11 +13,30 @@ class TestSearch(unittest.TestCase):
             main,
             [
                 {
-                    'multi_match': {
-                        'query': 'green taxi',
-                        'operator': 'or',
-                        'type': 'most_fields',
-                        'fields': ['id', 'description', 'name', 'columns.name'],
+                    'bool': {
+                        'should': [
+                            {
+                                'multi_match': {
+                                    'query': 'green taxi',
+                                    'operator': 'or',
+                                    'type': 'most_fields',
+                                    'fields': ['id', 'description', 'name'],
+                                },
+                            },
+                            {
+                                'nested': {
+                                    'path': 'columns',
+                                    'query': {
+                                        'multi_match': {
+                                            'query': 'green taxi',
+                                            'operator': 'or',
+                                            'type': 'most_fields',
+                                            'fields': ['columns.name'],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
                     },
                 },
                 {
@@ -89,11 +108,30 @@ class TestSearch(unittest.TestCase):
             main,
             [
                 {
-                    'multi_match': {
-                        'query': 'green taxi',
-                        'operator': 'or',
-                        'type': 'most_fields',
-                        'fields': ['id', 'description', 'name', 'columns.name'],
+                    'bool': {
+                        'should': [
+                            {
+                                'multi_match': {
+                                    'query': 'green taxi',
+                                    'operator': 'or',
+                                    'type': 'most_fields',
+                                    'fields': ['id', 'description', 'name'],
+                                },
+                            },
+                            {
+                                'nested': {
+                                    'path': 'columns',
+                                    'query': {
+                                        'multi_match': {
+                                            'query': 'green taxi',
+                                            'operator': 'or',
+                                            'type': 'most_fields',
+                                            'fields': ['columns.name'],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
                     },
                 },
                 {
