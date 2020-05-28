@@ -210,6 +210,7 @@ class TestDates(DataTestCase):
                         'structural_type': 'http://schema.org/Integer',
                         'semantic_types': ['http://schema.org/DateTime'],
                         'unclean_values_ratio': 0.0,
+                        'num_distinct_values': 3,
                         'mean': 2005.0,
                         'stddev': lambda n: round(n, 3) == 0.816,
                         'coverage': [
@@ -224,6 +225,7 @@ class TestDates(DataTestCase):
                         'structural_type': 'http://schema.org/Integer',
                         'semantic_types': [],
                         'unclean_values_ratio': 0.0,
+                        'num_distinct_values': 3,
                         'mean': 2015.0,
                         'stddev': lambda n: round(n, 3) == 0.816,
                         'coverage': [

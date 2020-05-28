@@ -2086,6 +2086,7 @@ basic_metadata = {
             "structural_type": "http://schema.org/Integer",
             "semantic_types": [],
             "unclean_values_ratio": 0.0,
+            'num_distinct_values': 5,
             "mean": lambda n: round(n, 3) == 6.150,
             "stddev": lambda n: round(n, 3) == 1.526,
             "coverage": (
@@ -2204,6 +2205,7 @@ agg_metadata = {
                 "http://schema.org/identifier"
             ],
             "unclean_values_ratio": 0.0,
+            'num_distinct_values': 5,
             "mean": 65.0,
             "stddev": lambda n: round(n, 3) == 26.926,
             "coverage": (
@@ -2247,6 +2249,7 @@ agg_metadata = {
             "semantic_types": [],
             'missing_values_ratio': 0.25,
             "unclean_values_ratio": 0.0,
+            'num_distinct_values': 4,
             "mean": 200.0,
             "stddev": lambda n: round(n, 3) == 150.0,
             "coverage": (
@@ -2497,6 +2500,7 @@ lazo_metadata = {
             "structural_type": "http://schema.org/Integer",
             "semantic_types": ["http://schema.org/DateTime"],
             "unclean_values_ratio": 0.0,
+            'num_distinct_values': 2,
             "mean": lambda n: round(n, 2) == 1990.11,
             "stddev": lambda n: round(n, 4) == 0.3143,
             "coverage": (
@@ -2551,6 +2555,7 @@ daily_metadata = {
             ],
             'unclean_values_ratio': 0.0,
             'temporal_resolution': 'day',
+            'num_distinct_values': 30,
             'mean': lambda n: round(n) == 1557230400.0,
             'stddev': lambda n: round(n, 2) == 747830.14,
             'coverage': (
