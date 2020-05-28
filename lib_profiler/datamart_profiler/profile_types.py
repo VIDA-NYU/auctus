@@ -79,7 +79,7 @@ def identify_types(array, name):
         if elem.lower() in ('0', '1', 'true', 'false', 'y', 'n', 'yes', 'no'):
             num_bool += 1
 
-    threshold = (1.0 - MAX_UNCLEAN) * (num_total - num_empty)
+    threshold = max(1, (1.0 - MAX_UNCLEAN) * (num_total - num_empty))
 
     if num_empty == num_total:
         structural_type = types.MISSING_DATA
@@ -110,7 +110,7 @@ def identify_types(array, name):
         column_meta['missing_values_ratio'] = num_empty / num_total
 
     # Identify booleans
-    if structural_type != types.MISSING_DATA and num_bool >= threshold:
+    if num_bool >= threshold:
         semantic_types_dict[types.BOOLEAN] = None
         column_meta['unclean_values_ratio'] = \
             (num_total - num_empty - num_bool) / num_total
