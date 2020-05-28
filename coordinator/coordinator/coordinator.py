@@ -1,5 +1,6 @@
 import aio_pika
 import asyncio
+import collections
 import elasticsearch
 import elasticsearch.helpers
 import itertools
@@ -83,10 +84,10 @@ class Coordinator(object):
             should_never_exit=True,
         )
 
-        # Start source count coroutine
+        # Start statistics coroutine
         self.sources_counts = {}
         log_future(
-            asyncio.get_event_loop().create_task(self.update_sources_counts()),
+            asyncio.get_event_loop().create_task(self.update_statistics()),
             logger,
             should_never_exit=True,
         )
@@ -154,10 +155,12 @@ class Coordinator(object):
                 )
                 del self.recent_discoveries[15:]
 
-    def _update_sources_counts(self):
+    def _update_statistics(self):
+        """Scan whole index to compute statistics.
+        """
         SIZE = 10000
         sleep_in = SIZE
-        sources = {}
+        sources = collections.Counter()
         # TODO: Aggregation query?
         hits = elasticsearch.helpers.scan(
             self.elasticsearch,
@@ -172,11 +175,8 @@ class Coordinator(object):
         )
         for h in hits:
             source = h['_source'].get('source', 'unknown')
+            sources[source] += 1
 
-            try:
-                sources[source] += 1
-            except KeyError:
-                sources[source] = 1
 
             sleep_in -= 1
             if sleep_in <= 0:
@@ -191,19 +191,24 @@ class Coordinator(object):
 
         return sources
 
-    async def update_sources_counts(self):
+    async def update_statistics(self):
+        """Periodically update statistics.
+        """
         while True:
             try:
-                # Count datasets in thread
-                sources = await asyncio.get_event_loop().run_in_executor(
+                # Compute statistics in background thread
+                (
+                    self.sources_counts
+                ) = await asyncio.get_event_loop().run_in_executor(
                     None,
-                    self._update_sources_counts,
+                    self._update_statistics,
                 )
 
-                # Update count
-                self.sources_counts = sources
-                logger.info("Now %d datasets", sum(sources.values()))
+                logger.info(
+                    "Now %d datasets",
+                    sum(self.sources_counts.values()),
+                )
             except Exception:
-                logger.exception("Exception counting sources")
+                logger.exception("Exception computing statistics")
 
             await asyncio.sleep(5 * 60)
