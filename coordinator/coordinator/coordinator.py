@@ -19,9 +19,16 @@ from datamart_core import types
 logger = logging.getLogger(__name__)
 
 
-PROM_DATASETS = prometheus_client.Gauge('source_count',
-                                        "Count of datasets per source",
-                                        ['source'])
+PROM_DATASETS = prometheus_client.Gauge(
+    'source_count',
+    "Count of datasets per source",
+    ['source'],
+)
+PROM_PROFILED_VERSION = prometheus_client.Gauge(
+    'profiled_version_count',
+    "Count of datasets per profiler version",
+    ['version'],
+)
 
 
 class Coordinator(object):
@@ -86,6 +93,7 @@ class Coordinator(object):
 
         # Start statistics coroutine
         self.sources_counts = {}
+        self.profiler_versions_counts = {}
         log_future(
             asyncio.get_event_loop().create_task(self.update_statistics()),
             logger,
@@ -161,6 +169,7 @@ class Coordinator(object):
         SIZE = 10000
         sleep_in = SIZE
         sources = collections.Counter()
+        versions = collections.Counter()
         # TODO: Aggregation query?
         hits = elasticsearch.helpers.scan(
             self.elasticsearch,
@@ -177,6 +186,8 @@ class Coordinator(object):
             source = h['_source'].get('source', 'unknown')
             sources[source] += 1
 
+            version = h['_source'].get('version', 'unknown')
+            versions[version] += 1
 
             sleep_in -= 1
             if sleep_in <= 0:
@@ -189,7 +200,12 @@ class Coordinator(object):
         for source in self.sources_counts.keys() - sources.keys():
             PROM_DATASETS.remove(source)
 
-        return sources
+        for version, count in versions.items():
+            PROM_PROFILED_VERSION.labels(version).set(count)
+        for version in self.profiler_versions_counts.keys() - versions.keys():
+            PROM_PROFILED_VERSION.remove(version)
+
+        return sources, versions
 
     async def update_statistics(self):
         """Periodically update statistics.
@@ -198,7 +214,8 @@ class Coordinator(object):
             try:
                 # Compute statistics in background thread
                 (
-                    self.sources_counts
+                    self.sources_counts,
+                    self.profiler_versions_counts,
                 ) = await asyncio.get_event_loop().run_in_executor(
                     None,
                     self._update_statistics,
