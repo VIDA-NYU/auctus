@@ -141,6 +141,10 @@ def identify_types(array, name):
                 name.lower().endswith('index')):
             semantic_types_dict[types.ID] = None
 
+        # Count distinct values
+        values = set(e for e in array if e)
+        column_meta['num_distinct_values'] = len(values)
+
         # Identify years
         if name.strip().lower() == 'year':
             dates = []
