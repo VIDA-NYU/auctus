@@ -55,7 +55,6 @@ MAX_CATEGORICAL_RATIO = 0.10  # 10%
 
 def identify_types(array, name):
     num_total = len(array)
-    ratio = 1.0 - MAX_UNCLEAN
 
     column_meta = {}
 
@@ -80,7 +79,7 @@ def identify_types(array, name):
         if elem.lower() in ('0', '1', 'true', 'false', 'y', 'n', 'yes', 'no'):
             num_bool += 1
 
-    threshold = ratio * (num_total - num_empty)
+    threshold = (1.0 - MAX_UNCLEAN) * (num_total - num_empty)
 
     if num_empty == num_total:
         structural_type = types.MISSING_DATA
@@ -153,7 +152,8 @@ def identify_types(array, name):
                     ))
                 except ValueError:
                     pass
-            semantic_types_dict[types.DATE_TIME] = dates
+            if len(dates) >= threshold:
+                semantic_types_dict[types.DATE_TIME] = dates
 
     # Identify lat/long
     if structural_type == types.FLOAT:
