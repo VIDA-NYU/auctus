@@ -181,6 +181,18 @@ class TestProfiler(DataTestCase):
         )
 
     def test_indexes(self):
+        def hide_default_analyzers(value):
+            if isinstance(value, dict):
+                if value.get('analyzer') == 'default':
+                    del value['analyzer']
+                if value.get('search_analyzer') == 'default_search':
+                    del value['search_analyzer']
+                for v in value.values():
+                    hide_default_analyzers(v)
+            elif isinstance(value, list):
+                for v in value:
+                    hide_default_analyzers(v)
+
         response = requests.get(
             'http://' + os.environ['ELASTICSEARCH_HOSTS'].split(',')[0] +
             '/_all'
@@ -190,11 +202,20 @@ class TestProfiler(DataTestCase):
         with pkg_resources.resource_stream(
                 'coordinator', 'elasticsearch.yml') as stream:
             expected = yaml.safe_load(stream)
+        expected.pop('_refs', None)
         actual.pop('lazo', None)
         for index in expected.values():
             index.setdefault('aliases', {})
+            hide_default_analyzers(index)
         for index in actual.values():
-            index.pop('settings', None)
+            hide_default_analyzers(index)
+            settings = index['settings']['index']
+            settings.pop('creation_date', None)
+            settings.pop('number_of_replicas', None)
+            settings.pop('number_of_shards', None)
+            settings.pop('provided_name', None)
+            settings.pop('uuid', None)
+            settings.pop('version', None)
         self.assertEqual(actual, expected)
 
 
