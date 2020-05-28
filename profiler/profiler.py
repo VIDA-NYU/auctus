@@ -118,6 +118,7 @@ def materialize_and_process_dataset(
         # Profile
         with profile_semaphore:
             with prom_incremented(PROM_PROFILING):
+                logger.info("Profiling dataset %r", dataset_id)
                 start = time.perf_counter()
                 metadata = process_dataset(
                     data=dataset_path,
@@ -130,7 +131,8 @@ def materialize_and_process_dataset(
                     plots=True,
                 )
                 logger.info(
-                    "Profiling took %.2fs",
+                    "Profiling dataset %r took %.2fs",
+                    dataset_id,
                     time.perf_counter() - start,
                 )
 
