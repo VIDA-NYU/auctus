@@ -4,6 +4,7 @@ import functools
 import json
 import logging
 import os
+import pickle
 import requests
 import sys
 from urllib.parse import urlencode
@@ -249,6 +250,15 @@ def bounds0(writer):
 def bounds1(writer):
     """Make bounding boxes from level 1 geometry.
     """
+    # Read all administrative areas
+    all_admins = set()
+    with open('areas1.csv') as fp:
+        reader = iter(csv.reader(fp))
+        assert next(reader) == ['parent', 'admin', 'admin level', 'admin name']
+        for row in reader:
+            all_admins.add(row[1])
+    remaining_admins = set(all_admins)
+
     with open('geoshapes1.csv') as fp:
         reader = iter(csv.reader(fp))
         assert next(reader) == ['admin', 'geoshape URL', 'geoshape']
@@ -260,6 +270,11 @@ def bounds1(writer):
 
         for row in reader:
             area, shape_uri, shape = row
+            assert area in all_admins
+            if area not in remaining_admins:
+                logger.warning("Duplicate shape for %s", area)
+                continue
+            remaining_admins.discard(area)
             shape = json.loads(shape)
             points = get_shape_points(shape)
             merged = (
@@ -276,6 +291,105 @@ def bounds1(writer):
             writer.writerow([
                 area, merged[0], merged[1], merged[2], merged[3],
             ])
+
+    # Read the missing shapes from OSM
+    if not remaining_admins:
+        return
+
+    # To be able to resume if failed, build a pickle file first
+    if os.path.isfile('.bounds1.pkl'):
+        with open('.bounds1.pkl', 'rb') as fp:
+            osm_cache = pickle.load(fp)
+    else:
+        osm_cache = {}
+    try:
+        logger.info(
+            "Missing %d admin1 shapes, will get from OSM (%d in cache)",
+            len(remaining_admins), len(osm_cache),
+        )
+
+        rows = sparql_query(
+            'SELECT ?area ?osm\n'
+            'WHERE\n'
+            '{\n'
+            # parent "instance of" "country" (country = admin level 0)
+            '  ?parent wdt:P31 wd:Q6256.\n'
+            # parent "contains administrative territorial entity" area
+            '  ?parent wdt:P150 ?area.\n'
+            # area "instance of" ["subclass of" "admin level 1"]
+            '  ?area wdt:P31 [wdt:P279 wd:Q10864048].\n'
+            # area "OSM relation ID" osm
+            '  ?area wdt:P402 ?osm.\n'
+            # parent not "historical country"
+            '  MINUS{ ?parent wdt:P31 wd:Q3024240. }\n'
+            '}\n'
+        )
+        for row in rows:
+            area = q_entity_uri(row['area'])
+            if area not in remaining_admins:
+                continue
+            remaining_admins.discard(area)
+            if area in osm_cache:
+                continue
+
+            osm = literal(row['osm'])
+            logger.info("Getting from OSM: %s", area)
+            response = requests.get(
+                f'https://api.openstreetmap.org/api/0.6/relation/{osm}/full',
+                headers={'Accept': 'application/json'},
+            )
+            response.raise_for_status()
+            osm_data = response.json()
+
+            # Read nodes
+            nodes = {}
+            for element in osm_data['elements']:
+                if element['type'] == 'node':
+                    nodes[element['id']] = element
+
+            # Read ways that are boundaries to compute the bounding box
+            merged = None
+            for element in osm_data['elements']:
+                if (
+                    element['type'] == 'way'
+                    and 'tags' in element
+                    and element['tags'].get('boundary') == 'administrative'
+                ):
+                    for node in element['nodes']:
+                        node = nodes[node]
+                        lat, long = node['lat'], node['lon']
+                        if merged is None:
+                            merged = (
+                                long, long,
+                                lat, lat,
+                            )
+                        else:
+                            merged = (
+                                min(merged[0], long),
+                                max(merged[1], long),
+                                min(merged[2], lat),
+                                max(merged[3], lat),
+                            )
+
+            if merged is not None:
+                osm_cache[area] = merged
+            else:
+                osm_cache[area] = None
+    except BaseException:
+        with open('.bounds1.pkl', 'wb') as fp:
+            pickle.dump(osm_cache, fp)
+        raise
+    else:
+        for area, merged in osm_cache.items():
+            if merged is not None:
+                writer.writerow([
+                    area, merged[0], merged[1], merged[2], merged[3],
+                ])
+        os.remove('.bounds1.pkl')
+        logger.info(
+            "Filling from OSM complete, still missing %d",
+            len(remaining_admins),
+        )
 
 
 @makes_file('country_names.csv')
