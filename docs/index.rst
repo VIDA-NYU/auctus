@@ -5,6 +5,8 @@ Datamart is a dataset search engine and data augmentation platform developed at 
 
 The system can be found at this address: https://auctus.vida-nyu.org/
 
+You can find the source code on GitLab: https://gitlab.com/ViDA-NYU/datamart/datamart
+
 ..  toctree::
     :maxdepth: 2
     :caption: Contents:
