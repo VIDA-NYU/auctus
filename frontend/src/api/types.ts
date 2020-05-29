@@ -25,6 +25,7 @@ export interface AugmentationInfo {
   right_columns: number[][];
   right_columns_names: string[][];
   agg_functions?: ColumnAggregations;
+  temporal_resolution?: TemporalResolution;
 }
 
 export interface SpatialCoverage {
