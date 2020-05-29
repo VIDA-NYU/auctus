@@ -11,6 +11,7 @@ from .warning_tools import raise_warnings
 logger = logging.getLogger(__name__)
 
 
+# Keep in sync with frontend's TemporalResolution
 temporal_aggregation_keys = {
     'year': '%Y',
     'month': '%Y-%m',

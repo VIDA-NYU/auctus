@@ -6,6 +6,17 @@ export interface ColumnAggregations {
   [columnName: string]: string[];
 }
 
+// Keep in sync with datamart_profiler's temporal_aggregation_keys
+export enum TemporalResolution {
+  YEAR = 'year',
+  MONTH = 'month',
+  WEEK = 'week',
+  DAY = 'day',
+  HOUR = 'hour',
+  MINUTE = 'minute',
+  SECOND = 'second',
+}
+
 export interface AugmentationInfo {
   type: string;
   left_columns: number[][];
