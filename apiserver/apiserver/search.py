@@ -10,6 +10,7 @@ import tornado.web
 
 from datamart_core import types
 from datamart_profiler import process_dataset, parse_date
+from datamart_profiler.temporal import temporal_aggregation_keys
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,12 @@ def compute_levenshtein_sim(str1, str2):
 class ClientError(ValueError):
     """Error in query sent by client.
     """
+
+
+temporal_resolutions_priorities = {
+    n: i
+    for i, n in enumerate(reversed(list(temporal_aggregation_keys)))
+}
 
 
 def get_column_coverage(data_profile, filter_=()):
@@ -143,8 +150,14 @@ def get_column_coverage(data_profile, filter_=()):
 
 
 JOIN_RESULT_SOURCE_FIELDS = [
-    'dataset_id', 'index', 'name', 'lat_index', 'lon_index',
-    'lat', 'lon', 'address_index', 'address',
+    # General
+    'dataset_id', 'name',
+    # Column indices
+    'index',
+    'lat_index', 'lon_index', 'lat', 'lon',
+    'address_index', 'address',
+    # To determine temporal resolution of join
+    'temporal_resolution',
 ]
 
 
@@ -607,17 +620,28 @@ def get_joinable_datasets(
         right_columns = []
         left_columns_names = []
         right_columns_names = []
+        left_temporal_resolution = None
+        right_temporal_resolution = None
+
         left_columns.append(list(result['companion_column']))
         left_columns_names.append([
             data_profile['columns'][comp]['name']
             for comp in result['companion_column']
         ])
+        for left_indices in left_columns:
+            if len(left_indices) == 1:
+                left_index = left_indices[0]
+                column = data_profile['columns'][left_index]
+                if 'temporal_resolution' in column:
+                    left_temporal_resolution = column['temporal_resolution']
+                    break
 
         source = result['_source']
         # Keep in sync, search code for 279a32
         if 'index' in source:
             right_columns.append([source['index']])
             right_columns_names.append([source['name']])
+            right_temporal_resolution = source.get('temporal_resolution')
         elif 'lat_index' in source and 'lon_index' in source:
             right_columns.append([
                 source['lat_index'],
@@ -645,19 +669,34 @@ def get_joinable_datasets(
             logger.error("Invalid spatial_coverage")
             continue
 
-        results.append(dict(
+        res = dict(
             id=dt,
             score=result['_score'],
-            # discoverer=materialize['identifier'],
             metadata=meta,
             augmentation={
                 'type': 'join',
                 'left_columns': left_columns,
                 'right_columns': right_columns,
                 'left_columns_names': left_columns_names,
-                'right_columns_names': right_columns_names
+                'right_columns_names': right_columns_names,
             }
-        ))
+        )
+        logger.info(
+            "Temporal resolutions: left=%r right=%r",
+            left_temporal_resolution,
+            right_temporal_resolution,
+        )
+        if left_temporal_resolution and right_temporal_resolution:
+            # Keep in sync with lib_augmentation's match_column_temporal_resolutions
+            if (
+                temporal_resolutions_priorities[left_temporal_resolution] >
+                temporal_resolutions_priorities[right_temporal_resolution]
+            ):
+                join_resolution = left_temporal_resolution
+            else:
+                join_resolution = right_temporal_resolution
+            res['augmentation']['temporal_resolution'] = join_resolution
+        results.append(res)
 
     return results
 

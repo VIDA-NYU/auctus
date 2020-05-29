@@ -148,6 +148,8 @@ def match_column_temporal_resolutions(index_1, index_2, level,
     if not (index_1.is_all_dates and index_2.is_all_dates):
         return lambda idx: idx
 
+    # Keep in sync with search.get_joinable_datasets()
+
     # Use the provided resolution
     if temporal_resolution is not None:
         key = temporal_aggregation_keys[temporal_resolution]
@@ -635,7 +637,7 @@ def augment(data, newdata, metadata, task, columns=None, destination=None,
             task['augmentation']['right_columns'],
             columns=columns,
             agg_functions=task['augmentation'].get('agg_functions'),
-            temporal_resolution=task['augmentation'].get('temporal_resolution'),
+            temporal_resolution=task['augmentation'].get('temporal_resolution'),  # look
             return_only_datamart_data=return_only_datamart_data,
         )
     elif task['augmentation']['type'] == 'union':
