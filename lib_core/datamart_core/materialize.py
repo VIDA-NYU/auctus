@@ -7,7 +7,7 @@ import shutil
 import zipfile
 
 from datamart_core.common import hash_json
-from datamart_core.fscache import cache_get_or_set, delete_cache_entry
+from datamart_core.fscache import cache_get_or_set
 
 from .discovery import encode_dataset_id
 
@@ -39,6 +39,29 @@ def make_zip_recursive(zip_, src, dst=''):
             )
     else:
         zip_.write(src, dst)
+
+
+def dataset_cache_key(dataset_id, metadata, format, format_options):
+    if format == 'csv':
+        materialize = metadata.get('materialize', {})
+        metadata = {'id': dataset_id}
+    else:
+        metadata = dict(metadata, id=dataset_id)
+        materialize = metadata.pop('materialize', {})
+    h = hash_json({
+        'format': format,
+        'format_options': format_options,
+        'metadata': metadata,
+        'materialize': materialize,
+        # Note that DATAMART_VERSION is NOT in here
+        # We rely on the admin clearing the cache if required
+    })
+    # The hash is sufficient, other components are for convenience
+    return '%s_%s.%s' % (
+        encode_dataset_id(dataset_id),
+        h,
+        format,
+    )
 
 
 @contextlib.contextmanager
@@ -76,23 +99,7 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None,
                         size_limit=10000000000,  # 10 GB
                     )
 
-                # Remove other formats from the cache, now outdated
-                prefix = encode_dataset_id(dataset_id) + '_'
-                for name in os.listdir('/cache/datasets'):
-                    if name.startswith(prefix) and name.endswith('.cache'):
-                        key = name[:-6]
-                        try:
-                            delete_cache_entry(
-                                '/cache/datasets', key,
-                                timeout=300,
-                            )
-                        except TimeoutError:
-                            logger.error(
-                                "Couldn't lock outdated cached dataset: %r",
-                                key,
-                            )
-
-            csv_key = encode_dataset_id(dataset_id) + '_' + 'csv'
+            csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
             csv_path = csv_lock.enter_context(
                 cache_get_or_set(
                     '/cache/datasets', csv_key, create_csv,
@@ -113,9 +120,9 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None,
             format_options = writer_cls.parse_options(format_options)
         elif format_options:
             raise ValueError("Invalid output options")
-        key = '%s_%s_%s' % (
-            encode_dataset_id(dataset_id), format,
-            hash_json(format_options),
+        key = dataset_cache_key(
+            dataset_id, metadata,
+            format, format_options,
         )
 
         def create(cache_temp):
@@ -123,12 +130,8 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None,
             logger.info("Converting CSV to %r opts=%r", format, format_options)
             with PROM_CONVERT.time():
                 with open(csv_path, 'rb') as src:
-                    if format_options:
-                        kwargs = dict(format_options=format_options)
-                    else:
-                        kwargs = {}
                     writer = writer_cls(
-                        cache_temp, **kwargs,
+                        cache_temp, format_options=format_options,
                     )
                     writer.set_metadata(dataset_id, metadata)
                     with writer.open_file('wb') as dst:
