@@ -47,12 +47,11 @@ class ClientError(ValueError):
     """
 
 
-def get_column_coverage(data_profile, column_index_mapping, filter_=()):
+def get_column_coverage(data_profile, filter_=()):
     """
     Get coverage for each column of the input dataset.
 
     :param data_profile: Profiled input dataset, if dataset is not in Datamart index.
-    :param column_index_mapping: mapping from column name to column index
     :param filter_: list of column indices to return. If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a dict as follows:
 
@@ -63,17 +62,21 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
         }
     """
 
+    column_index_mapping = {
+        column['name']: idx
+        for idx, column in enumerate(data_profile['columns'])
+    }
+
     column_coverage = dict()
 
-    for column in data_profile['columns']:
+    for column_index, column in enumerate(data_profile['columns']):
         column_name = column['name']
-        column_index = column_index_mapping[column_name]
         if 'coverage' not in column:
             continue
         if filter_ and column_index not in filter_:
             continue
         # ignoring 'd3mIndex'
-        if 'd3mIndex' in column_name:
+        if column_name == 'd3mIndex':
             continue
         if types.ID in column['semantic_types']:
             type_ = 'semantic_types'
@@ -86,13 +89,13 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
             type_value = types.DATE_TIME
         else:
             continue
-        column_coverage[str(column_index)] = {
+        column_coverage[(column_index,)] = {
             'type': type_,
             'type_value': type_value,
             'ranges': [],
         }
         for range_ in column['coverage']:
-            column_coverage[str(column_index)]['ranges'].append([
+            column_coverage[(column_index,)]['ranges'].append([
                 float(range_['range']['gte']),
                 float(range_['range']['lte']),
             ])
@@ -108,22 +111,22 @@ def get_column_coverage(data_profile, column_index_mapping, filter_=()):
                     )
                 ):
                     continue
-                names = (str(column_index_mapping[spatial['lat']]) + ',' +
-                         str(column_index_mapping[spatial['lon']]))
+                names = (column_index_mapping[spatial['lat']],
+                         column_index_mapping[spatial['lon']])
             elif 'address' in spatial:
                 if (
                     filter_ and
                     column_index_mapping[spatial['address']] not in filter_
                 ):
                     continue
-                names = str(column_index_mapping[spatial['address']])
+                names = (column_index_mapping[spatial['address']],)
             elif 'point' in spatial:
                 if (
                     filter_ and
                     column_index_mapping[spatial['point']] not in filter_
                 ):
                     continue
-                names = str(column_index_mapping[spatial['point']])
+                names = (column_index_mapping[spatial['point']],)
             else:
                 raise ValueError("Invalid spatial_coverage")
             column_coverage[names] = {
@@ -145,12 +148,11 @@ JOIN_RESULT_SOURCE_FIELDS = [
 ]
 
 
-def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
+def get_lazo_sketches(data_profile, filter_=None):
     """
     Get Lazo sketches of the input dataset, if available.
 
     :param data_profile: Profiled input dataset.
-    :param column_index_mapping: mapping from column name to column index
     :param filter_: list of column indices to return.
        If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a tuple
@@ -159,11 +161,10 @@ def get_lazo_sketches(data_profile, column_index_mapping, filter_=None):
 
     lazo_sketches = dict()
 
-    for column in data_profile['columns']:
+    for column_index, column in enumerate(data_profile['columns']):
         if 'lazo' in column:
-            column_index = column_index_mapping[column['name']]
             if not filter_ or column_index in filter_:
-                lazo_sketches[str(column_index)] = (
+                lazo_sketches[(column_index,)] = (
                     column['lazo']['n_permutations'],
                     column['lazo']['hash_values'],
                     column['lazo']['cardinality'],
@@ -380,7 +381,7 @@ def get_spatial_join_search_results(
 
 
 def get_textual_join_search_results(
-    es, dataset_ids, column_names, lazo_scores,
+    es, query_results,
     query_sup_functions=None, query_sup_filters=None,
 ):
     """Combine Lazo textual search results with Elasticsearch
@@ -389,7 +390,7 @@ def get_textual_join_search_results(
 
     scores_per_dataset = dict()
     column_per_dataset = dict()
-    for d_id, name, lazo_score in zip(dataset_ids, column_names, lazo_scores):
+    for d_id, name, lazo_score in query_results:
         if d_id not in column_per_dataset:
             column_per_dataset[d_id] = list()
             scores_per_dataset[d_id] = dict()
@@ -421,7 +422,7 @@ def get_textual_join_search_results(
 
     # if there is a keyword query
     should_query = list()
-    for d_id, name, lazo_score in zip(dataset_ids, column_names, lazo_scores):
+    for d_id, name, lazo_score in query_results:
         should_query.append(
             {
                 'constant_score': {
@@ -476,7 +477,8 @@ def get_textual_join_search_results(
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
-        columns = es.get('datamart', dataset_id)['_source']['columns']
+        columns = es.get('datamart', dataset_id, _source='columns.name')
+        columns = columns['_source']['columns']
     else:
         columns = data_profile['columns']
     for i in range(len(columns)):
@@ -515,15 +517,9 @@ def get_joinable_datasets(
     :param tabular_variables: specifies which columns to focus on for the search.
     """
 
-    column_index_mapping = {
-        column['name']: idx
-        for idx, column in enumerate(data_profile['columns'])
-    }
-
     # get the coverage for each column of the input dataset
     column_coverage = get_column_coverage(
         data_profile,
-        column_index_mapping,
         tabular_variables,
     )
 
@@ -531,13 +527,13 @@ def get_joinable_datasets(
     search_results = list()
 
     # numerical, temporal, and spatial attributes
-    for column in column_coverage:
-        type_ = column_coverage[column]['type']
-        type_value = column_coverage[column]['type_value']
+    for column, coverage in column_coverage.items():
+        type_ = coverage['type']
+        type_value = coverage['type_value']
         if type_ == 'spatial':
             spatial_results = get_spatial_join_search_results(
                 es,
-                column_coverage[column]['ranges'],
+                coverage['ranges'],
                 dataset_id,
                 ignore_datasets,
                 query_sup_functions,
@@ -546,14 +542,14 @@ def get_joinable_datasets(
             for result in spatial_results:
                 result['companion_column'] = column
                 search_results.append(result)
-        else:
-            column_name = data_profile['columns'][int(column)]['name']
+        elif len(column) == 1:
+            column_name = data_profile['columns'][column[0]]['name']
             numerical_results = get_numerical_join_search_results(
                 es,
                 type_,
                 type_value,
                 column_name,
-                column_coverage[column]['ranges'],
+                coverage['ranges'],
                 dataset_id,
                 ignore_datasets,
                 query_sup_functions,
@@ -562,15 +558,15 @@ def get_joinable_datasets(
             for result in numerical_results:
                 result['companion_column'] = column
                 search_results.append(result)
+        else:
+            raise ValueError("Non-spatial coverage from multiple columns?")
 
     # textual/categorical attributes
     lazo_sketches = get_lazo_sketches(
         data_profile,
-        column_index_mapping,
-        tabular_variables
+        tabular_variables,
     )
-    for column in lazo_sketches:
-        n_permutations, hash_values, cardinality = lazo_sketches[column]
+    for column, (n_permutations, hash_values, cardinality) in lazo_sketches.items():
         query_results = lazo_client.query_lazo_sketch_data(
             n_permutations,
             hash_values,
@@ -586,18 +582,9 @@ def get_joinable_datasets(
             ]
         if not query_results:
             continue
-        dataset_ids = list()
-        column_names = list()
-        scores = list()
-        for dataset_id, column_name, threshold in query_results:
-            dataset_ids.append(dataset_id)
-            column_names.append(column_name)
-            scores.append(threshold)
         textual_results = get_textual_join_search_results(
             es,
-            dataset_ids,
-            column_names,
-            scores,
+            query_results,
             query_sup_functions,
             query_sup_filters,
         )
@@ -620,16 +607,12 @@ def get_joinable_datasets(
         right_columns = []
         left_columns_names = []
         right_columns_names = []
-        try:
-            left_columns.append([int(result['companion_column'])])
-            left_columns_names.append(
-                [data_profile['columns'][int(result['companion_column'])]['name']]
-            )
-        except ValueError:
-            index_1, index_2 = result['companion_column'].split(",")
-            left_columns.append([int(index_1), int(index_2)])
-            left_columns_names.append([data_profile['columns'][int(index_1)]['name'],
-                                       data_profile['columns'][int(index_2)]['name']])
+        left_columns.append(list(result['companion_column']))
+        left_columns_names.append([
+            data_profile['columns'][comp]['name']
+            for comp in result['companion_column']
+        ])
+
         source = result['_source']
         # Keep in sync, search code for 279a32
         if 'index' in source:
@@ -659,6 +642,7 @@ def get_joinable_datasets(
                 source['point'],
             ])
         else:
+            logger.error("Invalid spatial_coverage")
             continue
 
         results.append(dict(
