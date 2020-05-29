@@ -43,6 +43,8 @@ def make_zip_recursive(zip_, src, dst=''):
 
 def dataset_cache_key(dataset_id, metadata, format, format_options):
     if format == 'csv':
+        if format_options:
+            raise ValueError
         materialize = metadata.get('materialize', {})
         metadata = {'id': dataset_id}
     else:
@@ -67,7 +69,7 @@ def dataset_cache_key(dataset_id, metadata, format, format_options):
 @contextlib.contextmanager
 def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     if not format:
-        raise ValueError
+        raise ValueError("Invalid output options")
 
     logger.info(
         "Getting dataset %r, size %s",
