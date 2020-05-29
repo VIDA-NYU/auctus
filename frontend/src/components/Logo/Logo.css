@@ -30,3 +30,9 @@
   padding-top: 30px;
   padding-bottom: 30px;
 }
+
+/* don't decorate the logo if inside a link */
+a .logo-horizontal, a .logo-vertical, a:hover .logo-horizontal, a:hover .logo-vertical {
+  text-decoration: none;
+  color: #212529;
+}

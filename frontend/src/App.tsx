@@ -1,7 +1,7 @@
 import React from 'react';
 import { CenteredHorizontalLogo } from './components/Logo/Logo';
 import { MainMenu } from './components/MainMenu/MainMenu';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Link, Switch, Route } from 'react-router-dom';
 import { Upload } from './components/Upload/Upload';
 import { Statistics } from './components/Statistics/Statistics';
 import { SearchApp } from './components/SearchApp/SearchApp';
@@ -17,9 +17,9 @@ class App extends React.Component {
               render={routeProps => (
                 <>
                   <MainMenu />
-                  <CenteredHorizontalLogo
-                    onClick={() => routeProps.history.push('/')}
-                  />
+                  <Link to="/" style={{ textDecoration: 'none' }}>
+                    <CenteredHorizontalLogo />
+                  </Link>
                   <Upload />
                 </>
               )}
@@ -29,9 +29,9 @@ class App extends React.Component {
               render={routeProps => (
                 <>
                   <MainMenu />
-                  <CenteredHorizontalLogo
-                    onClick={() => routeProps.history.push('/')}
-                  />
+                  <Link to="/" style={{ textDecoration: 'none' }}>
+                    <CenteredHorizontalLogo />
+                  </Link>
                   <Statistics />
                 </>
               )}
