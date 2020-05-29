@@ -13,7 +13,10 @@ def pivot_table(source_filename, dest_fileobj, except_columns):
         dst = csv.writer(dest_fileobj)
 
         # Read original columns, some are carried over
-        orig_columns = next(src)
+        try:
+            orig_columns = next(src)
+        except StopIteration:
+            raise ValueError("Empty table")
         carried_columns = [orig_columns[i] for i in except_columns]
 
         # Generate new header

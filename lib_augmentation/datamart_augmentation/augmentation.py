@@ -333,7 +333,10 @@ def join(
         error_bad_lines=False,
         chunksize=CHUNK_SIZE_ROWS,
     )
-    first_augment_data = next(augment_data_chunks)
+    try:
+        first_augment_data = next(augment_data_chunks)
+    except StopIteration:
+        raise AugmentationError("Empty augmentation data")
 
     # Columns to drop
     drop_columns = None

@@ -99,7 +99,10 @@ def materialize_and_process_dataset(
         # Check for pivoted temporal table
         with open(dataset_path, 'r') as fp:
             reader = csv.reader(fp)
-            columns = next(iter(reader))
+            try:
+                columns = next(iter(reader))
+            except StopIteration:
+                columns = []
         if len(columns) >= 3:
             non_matches = [
                 i for i, name in enumerate(columns)

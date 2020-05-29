@@ -199,7 +199,10 @@ class _D3mAddIndex(object):
             if self._generate is True:
                 # Write last line
                 self._buffer.seek(0, 0)
-                line = next(iter(csv.reader(self._buffer)))
+                try:
+                    line = next(iter(csv.reader(self._buffer)))
+                except StopIteration:
+                    line = ''
                 if line:
                     self._dest_csv.writerow([self._idx] + line)
         self._dest_fp.close()
