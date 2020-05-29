@@ -79,12 +79,12 @@ def materialize_and_process_dataset(
                 os.remove(excel_temp_path)
 
         # Check for TSV file format
-        try:
-            with open(dataset_path, 'r') as fp:
+        with open(dataset_path, 'r') as fp:
+            try:
                 dialect = csv.Sniffer().sniff(fp.read(16384))
-        except csv.Error as error:
-            logger.error("csv.Sniffer error: %s", error)
-            dialect = csv.get_dialect('excel')
+            except Exception as error:  # csv.Error, UnicodeDecodeError
+                logger.error("csv.Sniffer error: %s", error)
+                dialect = csv.get_dialect('excel')
         if getattr(dialect, 'delimiter', '') == '\t':
             logger.info("This is a TSV file")
             materialize.setdefault('convert', []).append({'identifier': 'tsv'})
