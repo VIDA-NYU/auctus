@@ -65,8 +65,7 @@ def dataset_cache_key(dataset_id, metadata, format, format_options):
 
 
 @contextlib.contextmanager
-def get_dataset(metadata, dataset_id, format='csv', format_options=None,
-                cache_invalid=False):
+def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     if not format:
         raise ValueError
 
@@ -103,7 +102,6 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None,
             csv_path = csv_lock.enter_context(
                 cache_get_or_set(
                     '/cache/datasets', csv_key, create_csv,
-                    cache_invalid=cache_invalid,
                 )
             )
 
@@ -149,6 +147,5 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None,
 
         with cache_get_or_set(
             '/cache/datasets', key, create,
-            cache_invalid=cache_invalid,
         ) as cache_path:
             yield cache_path

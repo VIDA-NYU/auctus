@@ -54,12 +54,11 @@ def materialize_and_process_dataset(
     dataset_id, metadata,
     lazo_client, nominatim, geo_data,
     profile_semaphore,
-    cache_invalid=False,
 ):
     with contextlib.ExitStack() as stack:
         with prom_incremented(PROM_DOWNLOADING):
             dataset_path = stack.enter_context(
-                get_dataset(metadata, dataset_id, cache_invalid=cache_invalid)
+                get_dataset(metadata, dataset_id)
             )
         materialize = metadata.pop('materialize')
 
@@ -227,15 +226,6 @@ class Profiler(object):
             logger.info("Processing dataset %r from %r",
                         dataset_id, materialize.get('identifier'))
 
-            # Compare materialization info with stored to know whether cache
-            # should be ignored
-            try:
-                hit = self.es.get('datamart', dataset_id)
-            except elasticsearch.NotFoundError:
-                cache_invalid = True
-            else:
-                cache_invalid = materialize != hit['_source']['materialize']
-
             future = self.loop.run_in_executor(
                 None,
                 materialize_and_process_dataset,
@@ -245,7 +235,6 @@ class Profiler(object):
                 self.nominatim,
                 self.geo_data,
                 self.profile_semaphore,
-                cache_invalid,
             )
 
             future.add_done_callback(
