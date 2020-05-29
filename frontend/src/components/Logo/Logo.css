@@ -1,0 +1,32 @@
+.logo-vertical {
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
+
+.logo-vertical img {
+  width: 190px;
+  margin: 0 auto;
+}
+
+.logo-vertical span {
+  font-size: 60px;
+  line-height: 1;
+  margin-top: -10px;
+}
+
+.logo-horizontal img {
+  width: 80px;
+  margin: 0 auto;
+}
+
+.logo-horizontal span {
+  font-size: 35px;
+  line-height: 1;
+  margin-top: -10px;
+}
+
+.logo-centered-horizontal {
+  text-align: center;
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
