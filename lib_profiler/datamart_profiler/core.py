@@ -29,6 +29,8 @@ SAMPLE_ROWS = 20
 
 MAX_UNCLEAN_ADDRESSES = 0.20  # 20%
 
+MAX_WRONG_LEVEL_ADMIN = 0.10  # 10%
+
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
 
@@ -65,7 +67,7 @@ def truncate_string(s, limit=140):
 
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
-                    lazo_client=None, nominatim=None,
+                    lazo_client=None, nominatim=None, geo_data=None,
                     search=False, include_sample=False,
                     coverage=True, plots=False, load_max_size=None, **kwargs):
     """Compute all metafeatures from a dataset.
@@ -76,6 +78,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
         very limited).
     :param lazo_client: client for the Lazo Index Server
     :param nominatim: URL of the Nominatim server
+    :param geo_data: a datamart_geo.GeoData instance to use to resolve named
+        administrative territorial entities
     :param search: True if this method is being called during the search
         operation (and not for indexing).
     :param include_sample: Set to True to include a few random rows to the
@@ -194,6 +198,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Addresses
     resolved_addresses = {}
 
+    # Administrative areas
+    resolved_admin_areas = {}
+
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
     with PROM_TYPES.time():
@@ -202,7 +209,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
             array = data.iloc[:, i]
             # Identify types
             structural_type, semantic_types_dict, additional_meta = \
-                identify_types(array, column_meta['name'])
+                identify_types(array, column_meta['name'], geo_data)
             # Set structural type
             column_meta['structural_type'] = structural_type
             # Add semantic types to the ones already present
@@ -376,6 +383,21 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         if types.ADDRESS not in column_meta['semantic_types']:
                             column_meta['semantic_types'].append(types.ADDRESS)
 
+            # Guess level of administrative areas
+            if types.ADMIN in semantic_types_dict:
+                areas = semantic_types_dict[types.ADMIN]
+                level_counter = collections.Counter()
+                for area in areas:
+                    if area is not None:
+                        level_counter[area.level] += 1
+                threshold = (1.0 - MAX_WRONG_LEVEL_ADMIN) * len(areas)
+                threshold = max(3, threshold)
+                for level, count in level_counter.items():
+                    if count >= threshold:
+                        column_meta['admin_area_level'] = level
+                        break
+                resolved_admin_areas[column_meta['name']] = areas
+
     # Textual columns
     if lazo_client and column_textual:
         # Indexing with lazo
@@ -502,6 +524,43 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 if spatial_ranges:
                     spatial_coverage.append({"address": name,
                                              "ranges": spatial_ranges})
+
+            # Compute ranges from administrative areas
+            for name, areas in resolved_admin_areas.items():
+                merged = None
+                for area in areas:
+                    if area is None:
+                        continue
+                    new = geo_data.get_bounds(area.area)
+                    if new:
+                        if merged is None:
+                            merged = new
+                        else:
+                            merged = (
+                                min(merged[0], new[0]),
+                                max(merged[1], new[1]),
+                                min(merged[2], new[2]),
+                                max(merged[3], new[3]),
+                            )
+                if (
+                    merged is not None
+                    and merged[1] - merged[0] > 0.01
+                    and merged[3] - merged[2] > 0.01
+                ):
+                    spatial_coverage.append({
+                        "admin": name,
+                        "ranges": [
+                            {
+                                'range': {
+                                    'type': 'envelope',
+                                    'coordinates': [
+                                        [merged[0], merged[3]],
+                                        [merged[1], merged[2]],
+                                    ],
+                                },
+                            },
+                        ],
+                    })
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage

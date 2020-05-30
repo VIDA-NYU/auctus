@@ -4,6 +4,7 @@ import pandas
 import unittest
 import textwrap
 
+from datamart_geo import GeoData
 from datamart_profiler import process_dataset
 from datamart_profiler import profile_types
 import datamart_profiler.spatial
@@ -561,3 +562,79 @@ class TestNominatim(DataTestCase):
             self.assertEqual(empty, 12)
         finally:
             datamart_profiler.spatial.nominatim_query = old_query
+
+
+class TestGeo(DataTestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.geo_data = GeoData.from_local_cache()
+        cls.geo_data.load_areas([0, 1], bounds=True)
+
+    def test_profile(self):
+        with data('admins.csv', 'r') as data_fp:
+            metadata = process_dataset(
+                data_fp,
+                geo_data=self.geo_data,
+                coverage=True,
+            )
+
+        self.assertJson(
+            metadata,
+            {
+                'size': 93,
+                'nb_rows': 5,
+                'nb_profiled_rows': 5,
+                'columns': [
+                    {
+                        'name': 'zero',
+                        'structural_type': 'http://schema.org/Text',
+                        'semantic_types': [
+                            'http://schema.org/AdministrativeArea',
+                            'http://schema.org/Enumeration',
+                        ],
+                        'num_distinct_values': 2,
+                        'admin_area_level': 0,
+                    },
+                    {
+                        'name': 'one',
+                        'structural_type': 'http://schema.org/Text',
+                        'semantic_types': [
+                            'http://schema.org/AdministrativeArea',
+                            'http://schema.org/Enumeration',
+                        ],
+                        'num_distinct_values': 5,
+                        'admin_area_level': 1,
+                    },
+                ],
+                'spatial_coverage': [
+                    {
+                        'admin': 'zero',
+                        'ranges': [
+                            {
+                                'range': {
+                                    'type': 'envelope',
+                                    'coordinates': [
+                                        [-61.79784095, 55.065334377],
+                                        [55.8545028, -21.370782159],
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        'admin': 'one',
+                        'ranges': [
+                            {
+                                'range': {
+                                    'type': 'envelope',
+                                    'coordinates': [
+                                        [-61.79784, 53.72778],
+                                        [13.81686, 14.40811],
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                ],
+            },
+        )

@@ -9,6 +9,7 @@ It is divided in multiple components:
 
 * Libraries
   * [Client library](https://gitlab.com/ViDA-NYU/datamart/api) `datamart`. This can be installed by clients to query the Datamart server. It is able to perform profiling and materialization locally, if the corresponding libraries are installed. This lives in a separate repository to ease collaboration.
+  * [Geospatial database](https://gitlab.com/ViDA-NYU/datamart/datamart-geo) `datamart_geo`. This contains data about administrative areas extracted from Wikidata and OpenStreetMap. It lives in its own repository and is used here as a submodule.
   * [Profiling library](lib_profiler/) `datamart_profiler`. This can be installed by clients, will allow the client library to profile datasets locally instead of sending them to the server. It is also used by the apiserver and profiler services.
   * [Materialization library](lib_materialize/) `datamart_materialize`. This is used to materialize dataset from the various sources that Datamart supports. It can be installed by clients, which will allow them to materialize datasets locally instead of using the server as a proxy.
   * [Data augmentation library](lib_augmentation/) `datamart_augmentation`. This performs the join or union of two datasets and is used by the apiserver service, but could conceivably be used stand-alone.
@@ -41,6 +42,8 @@ To deploy the system locally using docker-compose, follow those step:
 
 Set up environment
 ------------------
+
+Make sure you have checked out the submodule with `git submodule init && git submodule update`
 
 Copy env.default to .env and update the variables there. You might want to update the password for a production deployment.
 
