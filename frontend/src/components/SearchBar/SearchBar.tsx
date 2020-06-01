@@ -38,6 +38,7 @@ class SearchBar extends PersistentComponent<SearchBarProps> {
         <div className="input-group SearchBar">
           <input
             type="text"
+            name="search"
             className="form-control SearchBar-input"
             value={this.props.value}
             onChange={this.handleChange}
