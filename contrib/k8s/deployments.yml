@@ -1,5 +1,5 @@
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq
@@ -10,6 +10,10 @@ spec:
   replicas: 1
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: datamart
+      what: rabbitmq
   template:
     metadata:
       labels:
@@ -34,7 +38,7 @@ spec:
         - containerPort: 5672
         - containerPort: 15672
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
@@ -45,6 +49,10 @@ spec:
   replicas: 1
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: datamart
+      what: redis
   template:
     metadata:
       labels:
@@ -68,7 +76,7 @@ spec:
           - key: redis.conf
             path: redis.conf
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: lazo
@@ -82,6 +90,10 @@ spec:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: datamart
+      what: lazo
   template:
     metadata:
       labels:
@@ -115,7 +127,7 @@ spec:
         persistentVolumeClaim:
           claimName: cache
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
@@ -129,6 +141,10 @@ spec:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: datamart
+      what: frontend
   template:
     metadata:
       labels:
@@ -148,7 +164,7 @@ spec:
         ports:
         - containerPort: 80
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: apiserver
@@ -162,6 +178,10 @@ spec:
     rollingUpdate:
       maxSurge: 2
       maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: datamart
+      what: apiserver
   template:
     metadata:
       labels:
@@ -222,7 +242,7 @@ spec:
           claimName: cache
       terminationGracePeriodSeconds: 600
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: coordinator
@@ -236,6 +256,10 @@ spec:
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: datamart
+      what: coordinator
   template:
     metadata:
       labels:
@@ -285,7 +309,7 @@ spec:
         persistentVolumeClaim:
           claimName: cache
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: profiler
@@ -299,6 +323,10 @@ spec:
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 2
+  selector:
+    matchLabels:
+      app: datamart
+      what: profiler
   template:
     metadata:
       labels:

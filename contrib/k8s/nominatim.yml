@@ -27,7 +27,7 @@ spec:
     port: 8080
     nodePort: 30083
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nominatim
@@ -38,6 +38,10 @@ spec:
   replicas: 1
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: datamart
+      what: nominatim
   template:
     metadata:
       labels:
