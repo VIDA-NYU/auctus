@@ -121,6 +121,7 @@ test:
 
     # Generate coverage report
     - docker-compose down -t 30
+    - ls -lA cov/
     - coverage combine -a cov/
     - coverage html
   artifacts:
