@@ -838,7 +838,9 @@ class Application(GracefulApplication):
 
         self.geo_data.load_areas([0, 1, 2], bounds=True)
 
-        log_future(asyncio.get_event_loop().create_task(self._amqp()), logger)
+        asyncio.get_event_loop().run_until_complete(
+            asyncio.get_event_loop().create_task(self._amqp())
+        )
 
     async def _amqp(self):
         connection = await aio_pika.connect_robust(
