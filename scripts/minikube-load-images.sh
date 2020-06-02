@@ -13,5 +13,24 @@ else
     echo "DOCKER_HOST is set" >&2
 fi
 
-DOCKER_HOST= sudo -g docker docker save busybox docker.elastic.co/elasticsearch/elasticsearch:7.6.0 remram/rabbitmq:3.7.8 datamart_coordinator datamart_apiserver datamart_profiler datamart_frontend datamart_test_discoverer \
-    | docker load
+IMAGES="
+    busybox
+    docker.elastic.co/elasticsearch/elasticsearch:7.6.2
+    remram/rabbitmq:3.7.8
+    redis:5.0
+    registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.2.0
+    datamart_coordinator
+    datamart_apiserver
+    datamart_profiler
+    datamart_frontend
+    datamart_test_discoverer
+"
+NB_IMAGES=$(set -f; set -- $IMAGES; echo $#)
+
+i=0
+for img in $IMAGES; do
+    i=$(( i + 1 ))
+    echo "$i/$NB_IMAGES - $img"
+    sudo -g docker env DOCKER_HOST= docker save $img \
+        | sudo -g docker env DOCKER_HOST="$DOCKER_HOST" DOCKER_TLS_VERIFY="$DOCKER_TLS_VERIFY" DOCKER_CERT_PATH="$DOCKER_CERT_PATH" docker load
+done
