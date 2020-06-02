@@ -151,7 +151,7 @@ def main():
     setup_logging()
     debug = os.environ.get('DEBUG') not in (None, '', 'no', 'off', 'false')
     prometheus_client.start_http_server(8000)
-    logger.info("Startup: coordinator %s%s", os.environ['DATAMART_VERSION'])
+    logger.info("Startup: coordinator %s", os.environ['DATAMART_VERSION'])
     if debug:
         logger.error("Debug mode is ON")
 
