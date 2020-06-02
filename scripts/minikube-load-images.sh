@@ -23,7 +23,7 @@ IMAGES="
     datamart_apiserver
     datamart_profiler
     datamart_frontend
-    datamart_test_discoverer
+    datamart_test-discoverer
 "
 NB_IMAGES=$(set -f; set -- $IMAGES; echo $#)
 

@@ -31,7 +31,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test_discoverer:7000/geo_wkt.csv'),
+            dict(direct_url='http://test-discoverer:7000/geo_wkt.csv'),
             {
                 'name': 'geo_wkt',
                 'description': "Simple CSV in WKT format",
@@ -56,7 +56,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test_discoverer:7000/lazo.csv'),
+            dict(direct_url='http://test-discoverer:7000/lazo.csv'),
             {
                 # Omit name, should be set to 'lazo' automatically
                 'description': "Simple CSV with states and years"
@@ -68,7 +68,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test_discoverer:7000/empty.csv'),
+            dict(direct_url='http://test-discoverer:7000/empty.csv'),
             {
                 # Omit name, should be set to 'empty' automatically
                 'description': "A CSV with no rows to test alternate index",
@@ -92,7 +92,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test_discoverer:7000/hourly.csv'),
+            dict(direct_url='http://test-discoverer:7000/hourly.csv'),
             {
                 # Omit name, should be set to 'hourly' automatically
                 'description': "Temporal dataset with hourly resolution",
@@ -103,7 +103,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test_discoverer:7000/dates_pivoted.csv'),
+            dict(direct_url='http://test-discoverer:7000/dates_pivoted.csv'),
             {
                 'name': 'dates pivoted',
                 'description': "Temporal dataset but in columns",
@@ -116,7 +116,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test_discoverer:7000/basic.csv'),
+            dict(direct_url='http://test-discoverer:7000/basic.csv'),
             {
                 'name': "basic",
                 'description': "This is a very simple CSV with people",

@@ -7,7 +7,7 @@ cd "$(dirname "$(dirname "$0")")"
 set -eux
 
 # Re-build and re-start services
-docker-compose build --build-arg version=v0.0 coordinator profiler apiserver test_discoverer
+docker-compose build --build-arg version=v0.0 coordinator profiler apiserver test-discoverer
 docker-compose up -d coordinator
 docker-compose up -d --force-recreate profiler apiserver apilb
 
@@ -25,7 +25,7 @@ scripts/docker_purge_source.sh datamart.test
 sleep 2
 
 # Re-profile
-docker-compose up -d --force-recreate test_discoverer
+docker-compose up -d --force-recreate test-discoverer
 
 # Wait for profiling to end
 (set +x

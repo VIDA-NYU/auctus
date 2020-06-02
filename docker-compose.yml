@@ -20,7 +20,7 @@ services:
       - 9200:9200
     volumes:
       - ./volumes/elasticsearch:/usr/share/elasticsearch/data
-  elasticsearch_exporter:
+  elasticsearch-exporter:
     image: justwatch/elasticsearch_exporter:1.1.0
     restart: on-failure
     command:
@@ -175,7 +175,7 @@ services:
       - 3000:3000
     volumes:
       - ./volumes/grafana:/var/lib/grafana
-  example_discoverer:
+  example-discoverer:
     build:
       context: .
       dockerfile: discovery/Dockerfile
@@ -191,7 +191,7 @@ services:
     cpu_shares: 10
     volumes:
       - ./volumes/datasets:/datasets
-  test_discoverer:
+  test-discoverer:
     build:
       context: .
       dockerfile: discovery/Dockerfile
@@ -240,7 +240,7 @@ services:
       - ZENODO_TOKEN=${ZENODO_TOKEN}
     volumes:
       - ./volumes/cache:/cache
-  uaz_indicators:
+  uaz-indicators:
     build:
       context: .
       dockerfile: discovery/uaz_indicators/Dockerfile
