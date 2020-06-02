@@ -90,7 +90,7 @@ spec:
     spec:
       containers:
       - name: lazo
-        image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.1.0
+        image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.2.0
         env:
         - name: DATABASE
           value: elasticsearch
@@ -146,7 +146,7 @@ spec:
               name: config
               key: api_url
         ports:
-        - containerPort: 8001
+        - containerPort: 80
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -178,7 +178,7 @@ spec:
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_PORT
-        - value: 5672
+          value: "5672"
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
@@ -195,6 +195,11 @@ spec:
           value: lazo
         - name: LAZO_SERVER_PORT
           value: "50051"
+        - name: NOMINATIM_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: nominatim_url
         ports:
         - containerPort: 8002
         volumeMounts:
@@ -247,7 +252,7 @@ spec:
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_PORT
-        - value: 5672
+          value: "5672"
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
@@ -310,7 +315,7 @@ spec:
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_PORT
-        - value: 5672
+          value: "5672"
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
@@ -325,6 +330,11 @@ spec:
           value: lazo
         - name: LAZO_SERVER_PORT
           value: "50051"
+        - name: NOMINATIM_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: nominatim_url
         volumeMounts:
         - mountPath: /datasets
           name: datasets

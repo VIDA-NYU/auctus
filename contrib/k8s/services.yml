@@ -62,6 +62,23 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: frontend
+  labels:
+    app: datamart
+    what: frontend
+spec:
+  selector:
+    app: datamart
+    what: frontend
+  type: NodePort
+  ports:
+  - protocol: TCP
+    port: 80
+    nodePort: 30080
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: coordinator
   labels:
     app: datamart
@@ -73,8 +90,8 @@ spec:
   type: NodePort
   ports:
   - protocol: TCP
-    port: 8001
-    nodePort: 30080
+    port: 8003
+    nodePort: 30082
 ---
 apiVersion: v1
 kind: Service

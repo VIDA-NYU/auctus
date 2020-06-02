@@ -28,7 +28,7 @@ spec:
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_PORT
-        - value: 5672
+          value: "5672"
         - name: AMQP_USER
           valueFrom:
             secretKeyRef:
