@@ -1,4 +1,19 @@
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-discoverer
+  labels:
+    app: datamart
+    what: test-discoverer
+spec:
+  selector:
+    app: datamart
+    what: test-discoverer
+  ports:
+  - protocol: TCP
+    port: 7000
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,7 +38,7 @@ spec:
     spec:
       containers:
       - name: discoverer
-        image: datamart_test_discoverer
+        image: datamart_test-discoverer
         args: ["testsuite"]
         imagePullPolicy: IfNotPresent
         env:
