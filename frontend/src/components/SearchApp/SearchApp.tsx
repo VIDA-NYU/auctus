@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { generateRandomId } from '../../utils';
 import * as api from '../../api/rest';
 import { VerticalLogo, HorizontalLogo } from '../Logo/Logo';
@@ -314,7 +315,13 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               <div className="col-md">
                 <div className="d-flex flex-row mt-4 mb-3">
                   <div>
-                    <HorizontalLogo onClick={() => this.resetQuery()} />
+                    <Link
+                      to="/"
+                      style={{ textDecoration: 'none' }}
+                      onClick={() => this.resetQuery()}
+                    >
+                      <HorizontalLogo />
+                    </Link>
                   </div>
                   <div className="ml-4">
                     <SearchBar

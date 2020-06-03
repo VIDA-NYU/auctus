@@ -5,22 +5,13 @@ import React from 'react';
 //   npx svgo auctus-logo.svg -o auctus-logo.min.svg
 //
 import logo from './auctus-logo.min.svg';
+import './Logo.css';
 
 function VerticalLogo() {
   return (
-    <div className="text-center" style={{ paddingTop: 30, paddingBottom: 30 }}>
-      <img
-        src={logo}
-        className="d-block"
-        style={{ width: 190, margin: '0 auto' }}
-        alt="Auctus Logo"
-      />
-      <span
-        className="d-block text-oswald"
-        style={{ fontSize: '60px', lineHeight: '1', marginTop: -10 }}
-      >
-        Auctus Datamart
-      </span>
+    <div className="text-center logo-vertical">
+      <img src={logo} className="d-block" alt="Auctus Logo" />
+      <span className="d-block text-oswald">Auctus Datamart</span>
     </div>
   );
 }
@@ -28,31 +19,20 @@ function VerticalLogo() {
 function HorizontalLogo(props: { onClick?: () => void }) {
   const style = props.onClick ? { cursor: 'pointer' } : undefined;
   return (
-    <div className="d-inline text-center" style={style} onClick={props.onClick}>
-      <img
-        src={logo}
-        className="d-inline"
-        style={{ width: 80, margin: '0 auto' }}
-        alt="Auctus Logo"
-      />
-      <span
-        className="d-inline text-oswald"
-        style={{ fontSize: '35px', lineHeight: '1', marginTop: -10 }}
-      >
-        Auctus
-      </span>
+    <div
+      className="d-inline text-center logo-horizontal"
+      style={style}
+      onClick={props.onClick}
+    >
+      <img src={logo} className="d-inline" alt="Auctus Logo" />
+      <span className="d-inline text-oswald">Auctus</span>
     </div>
   );
 }
 
 function CenteredHorizontalLogo(props: { onClick?: () => void }) {
-  const style: React.CSSProperties = {
-    textAlign: 'center',
-    paddingTop: 30,
-    paddingBottom: 30,
-  };
   return (
-    <div style={style}>
+    <div className="logo-centered-horizontal">
       <HorizontalLogo onClick={props.onClick} />
     </div>
   );

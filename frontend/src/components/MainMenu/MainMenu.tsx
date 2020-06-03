@@ -5,13 +5,18 @@ import { DropdownMenu } from '../ui/DropdownMenu/DropdownMenu';
 import { Link as RouterLink } from 'react-router-dom';
 
 function Link(props: { path: string; label: string; icon: Icon.Icon }) {
+  const content = (
+    <span className="text-oswald">
+      <props.icon className="feather-lg mr-1" /> {props.label}
+    </span>
+  );
   return (
     <div className="menu-link">
-      <RouterLink to={props.path}>
-        <span className="text-oswald">
-          <props.icon className="feather-lg mr-1" /> {props.label}
-        </span>
-      </RouterLink>
+      {props.path.startsWith('http:') || props.path.startsWith('https:') ? (
+        <a href={props.path}>{content}</a>
+      ) : (
+        <RouterLink to={props.path}>{content}</RouterLink>
+      )}
     </div>
   );
 }
@@ -39,6 +44,11 @@ class MainMenu extends React.PureComponent {
                     icon={Icon.BarChart2}
                     path="/statistics"
                     label="Dataset Statistics"
+                  />
+                  <Link
+                    icon={Icon.BookOpen}
+                    path="https://docs.auctus.vida-nyu.org/"
+                    label="Documentation"
                   />
                 </div>
               )}
