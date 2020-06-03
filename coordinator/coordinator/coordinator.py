@@ -40,6 +40,7 @@ class Coordinator(object):
         with pkg_resources.resource_stream(
                 'coordinator', 'elasticsearch.yml') as stream:
             indices = yaml.safe_load(stream)
+        indices.pop('_refs', None)
         # Retry a few times, in case the Elasticsearch container is not yet up
         for i in itertools.count():
             try:
@@ -49,7 +50,7 @@ class Coordinator(object):
                                     name)
                         es.indices.create(
                             name,
-                            {'mappings': index['mappings']},
+                            index,
                         )
             except Exception:
                 logger.warning("Can't connect to Elasticsearch, retrying...")

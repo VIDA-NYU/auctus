@@ -1,4 +1,27 @@
+_refs:
+  analyzer: &analyzer
+    index:
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-custom-analyzer.html
+      analysis:
+        analyzer:
+          default: &default_analyzer
+            type: custom
+            tokenizer: standard
+            char_filter:
+            - html_strip
+            filter:
+            - lowercase
+            - general_stemmer
+          default_search:
+            <<: *default_analyzer
+        filter:
+          general_stemmer:
+            type: stemmer
+            language: english
+
 datamart:
+  settings:
+    <<: *analyzer
   mappings:
     properties:
       id:
@@ -96,6 +119,8 @@ datamart:
             type: object
             enabled: false
 datamart_columns:
+  settings:
+    <<: *analyzer
   mappings:
     properties:
       dataset_id:
@@ -163,6 +188,8 @@ datamart_columns:
           lte:
             type: double
 datamart_spatial_coverage:
+  settings:
+    <<: *analyzer
   mappings:
     properties:
       dataset_id:
@@ -232,6 +259,8 @@ datamart_spatial_coverage:
           min_lat:
             type: double
 pending:
+  settings:
+    <<: *analyzer
   mappings:
     properties:
       status:
