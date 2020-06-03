@@ -63,6 +63,8 @@ test:
     - export DATAMART_GEO_DATA=$(pwd)/lib_geo/data
     - "sed -i 's/# CI: //' docker-compose.yml base.Dockerfile */Dockerfile"
     - "sed -i '/# NOTCI$/d' docker-compose.yml base.Dockerfile */Dockerfile"
+    - mkdir cov
+    - chown 998 cov
 
     # Build images
     - python scripts/docker-compose-cached-build.py
@@ -119,6 +121,7 @@ test:
 
     # Generate coverage report
     - docker-compose down -t 30
+    - ls -lA cov/
     - coverage combine -a cov/
     - coverage html
   artifacts:

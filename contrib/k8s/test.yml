@@ -36,6 +36,8 @@ spec:
         app: datamart
         what: test-discoverer
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: discoverer
         image: datamart_test-discoverer

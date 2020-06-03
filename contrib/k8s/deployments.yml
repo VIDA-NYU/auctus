@@ -20,9 +20,13 @@ spec:
         app: datamart
         what: rabbitmq
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: rabbitmq
         image: remram/rabbitmq:3.7.8
+        securityContext:
+          runAsUser: 999
         env:
         - name: RABBITMQ_DEFAULT_USER
           valueFrom:
@@ -59,9 +63,13 @@ spec:
         app: datamart
         what: redis
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: redis
         image: redis:5.0
+        securityContext:
+          runAsUser: 999
         args: ["redis-server", "/usr/local/etc/redis/redis.conf"]
         ports:
         - containerPort: 6379
@@ -100,9 +108,11 @@ spec:
         app: datamart
         what: lazo
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: lazo
-        image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.2.0
+        image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.3.0
         env:
         - name: DATABASE
           value: elasticsearch
@@ -188,6 +198,8 @@ spec:
         app: datamart
         what: apiserver
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: web
         image: datamart_apiserver
@@ -266,6 +278,19 @@ spec:
         app: datamart
         what: coordinator
     spec:
+      securityContext:
+        runAsNonRoot: true
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        securityContext:
+          runAsNonRoot: false
+        command: ["sh", "-c", "chown -R 998 /datasets /cache"]
+        volumeMounts:
+        - mountPath: /datasets
+          name: datasets
+        - mountPath: /cache
+          name: cache
       containers:
       - name: web
         image: datamart_coordinator
@@ -333,6 +358,8 @@ spec:
         app: datamart
         what: profiler
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: web
         image: datamart_profiler

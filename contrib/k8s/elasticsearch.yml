@@ -38,6 +38,8 @@ spec:
         app: datamart
         what: elasticsearch
     spec:
+      securityContext:
+        runAsNonRoot: true
       initContainers:
       - name: fix-permissions
         image: busybox
@@ -53,6 +55,8 @@ spec:
       containers:
       - name: elasticsearch
         image: docker.elastic.co/elasticsearch/elasticsearch:7.6.2
+        securityContext:
+          runAsUser: 1000
         env:
         - name: cluster.name
           value: datamart-cluster

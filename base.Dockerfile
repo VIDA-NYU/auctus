@@ -4,9 +4,11 @@ ENV TINI_VERSION v0.18.0
 RUN curl -Lo /tini https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini && \
     chmod +x /tini
 
-RUN mkdir -p /usr/src/app
+RUN mkdir -p /usr/src/app/home && \
+    useradd -d /usr/src/app/home -s /usr/sbin/nologin -u 998 appuser && \
+    chown appuser /usr/src/app/home
 WORKDIR /usr/src/app
-RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python && /root/.poetry/bin/poetry config virtualenvs.create false
+RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python && $HOME/.poetry/bin/poetry config virtualenvs.create false
 RUN pip --disable-pip-version-check install toml
 COPY docker/install_deps.py poetry.lock /usr/src/app/
 RUN python -c "import json, toml; json.dump(toml.load(open('poetry.lock')), open('poetry.lock.json', 'w'))"

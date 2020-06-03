@@ -153,6 +153,8 @@ spec:
       labels:
         app: datamart
         what: elasticsearch-exporter
+    securityContext:
+      runAsNonRoot: true
     spec:
       containers:
       - name: elasticsearch-exporter
@@ -208,9 +210,13 @@ spec:
         app: datamart
         what: prometheus
     spec:
+      securityContext:
+        runAsNonRoot: true
       initContainers:
       - name: fix-permissions
         image: busybox
+        securityContext:
+          runAsNonRoot: false
         command: ["sh", "-c", "chown -R 65534:65534 /prometheus"]
         volumeMounts:
         - mountPath: /prometheus
@@ -279,9 +285,13 @@ spec:
         app: datamart
         what: grafana
     spec:
+      securityContext:
+        runAsNonRoot: true
       initContainers:
       - name: fix-permissions
         image: busybox
+        securityContext:
+          runAsNonRoot: false
         command: ["sh", "-c", "chown -R 472:472 /grafana"]
         volumeMounts:
         - mountPath: /grafana
