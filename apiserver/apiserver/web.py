@@ -191,6 +191,9 @@ class BaseHandler(RequestHandler):
             raise HTTPError(400)
         return format, format_options
 
+    def read_transforms(self):
+        return self.get_query_arguments('transform')
+
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
 
@@ -457,12 +460,16 @@ class RecursiveZipWriter(object):
 
 class BaseDownload(BaseHandler):
     async def send_dataset(self, dataset_id, metadata,
-                           format='csv', format_options=None):
+                           format='csv', format_options=None,
+                           transforms=None):
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
-        if ('direct_url' in materialize and
-                format == 'csv' and not materialize.get('convert')):
+        if (
+            'direct_url' in materialize and format == 'csv'
+            and not materialize.get('convert')
+            and not transforms
+        ):
             if format_options:
                 return await self.send_error_json(
                     400,
@@ -481,6 +488,7 @@ class BaseDownload(BaseHandler):
                     get_dataset(
                         metadata, dataset_id,
                         format=format, format_options=format_options,
+                        transforms=transforms,
                     )
                 )
             except Exception:
@@ -505,6 +513,7 @@ class DownloadId(BaseDownload, GracefulHandler):
     @PROM_DOWNLOAD.sync()
     def get(self, dataset_id):
         format, format_options = self.read_format()
+        transforms = self.read_transforms()
 
         # Get materialization data from Elasticsearch
         try:
@@ -514,7 +523,8 @@ class DownloadId(BaseDownload, GracefulHandler):
         except elasticsearch.NotFoundError:
             return self.send_error_json(404, "No such dataset")
 
-        return self.send_dataset(dataset_id, metadata, format, format_options)
+        return self.send_dataset(dataset_id, metadata, format, format_options,
+                                 transforms)
 
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
@@ -525,6 +535,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         task = None
         data = None
         format, format_options = self.read_format()
+        transforms = self.read_transforms()
         if type_.startswith('application/json'):
             task = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -561,6 +572,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         if not data:
             return await self.send_dataset(
                 task['id'], metadata, format, format_options,
+                transforms,
             )
         else:
             # data
