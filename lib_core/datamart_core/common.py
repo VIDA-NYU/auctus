@@ -307,3 +307,9 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
             body=query,
         )['deleted']
         logger.info("Deleted %d documents from %s", nb, index)
+
+    # Remove from alternate index
+    try:
+        es.delete('pending', dataset_id)
+    except elasticsearch.NotFoundError:
+        pass
