@@ -14,12 +14,13 @@ req = [
     'python-dateutil',
     'scikit-learn',
     'regex',
+    'requests',
     'datamart-geo==0.1',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
 setup(name='datamart_profiler',
-      version='0.5.8',
+      version='0.6.1',
       packages=['datamart_profiler'],
       install_requires=req,
       description="Data profiling library for Datamart",

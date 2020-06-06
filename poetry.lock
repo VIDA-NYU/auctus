@@ -145,11 +145,11 @@ develop = true
 name = "datamart-augmentation"
 optional = false
 python-versions = "*"
-version = "0.5.8"
+version = "0.6.1"
 
 [package.dependencies]
-datamart_materialize = "0.5.7"
-datamart_profiler = "0.5.8"
+datamart_materialize = "0.6.1"
+datamart_profiler = "0.6.1"
 numpy = "*"
 pandas = "*"
 
@@ -222,7 +222,7 @@ develop = true
 name = "datamart-materialize"
 optional = false
 python-versions = "*"
-version = "0.5.7"
+version = "0.6.1"
 
 [package.dependencies]
 requests = "*"
@@ -259,7 +259,7 @@ develop = true
 name = "datamart-profiler"
 optional = false
 python-versions = "*"
-version = "0.5.8"
+version = "0.6.1"
 
 [package.dependencies]
 lazo-index-service = "0.5.1"
