@@ -774,15 +774,21 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         try:
             with cache_get_or_set('/cache/aug', key, create_aug) as path:
-                # send a zip file
-                self.set_header('Content-Type', 'application/zip')
-                self.set_header(
-                    'Content-Disposition',
-                    'attachment; filename="augmentation.zip"')
-                logger.info("Sending ZIP...")
-                writer = RecursiveZipWriter(self.write, self.flush)
-                await writer.write_recursive(path)
-                writer.close()
+                if os.path.isdir(path):
+                    # send a zip file
+                    self.set_header('Content-Type', 'application/zip')
+                    self.set_header(
+                        'Content-Disposition',
+                        'attachment; filename="augmentation.zip"')
+                    logger.info("Sending ZIP...")
+                    writer = RecursiveZipWriter(self.write, self.flush)
+                    await writer.write_recursive(path)
+                    writer.close()
+                    return await self.finish()
+                else:
+                    # send the file
+                    with open(path, 'rb') as fp:
+                        await self.send_file(fp)
         except AugmentationError as e:
             return await self.send_error_json(400, str(e))
 
