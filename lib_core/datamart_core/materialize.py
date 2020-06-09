@@ -109,11 +109,13 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None,
 
         # Otherwise, do format conversion
         writer_cls = datamart_materialize.get_writer(format)
-        all_format_options = dict(getattr(writer_cls, 'default_options', ()))
-        all_format_options.update(format_options)
+        if hasattr(writer_cls, 'parse_options'):
+            format_options = writer_cls.parse_options(format_options)
+        elif format_options:
+            raise ValueError("Invalid output options")
         key = '%s_%s_%s' % (
             encode_dataset_id(dataset_id), format,
-            hash_json(all_format_options),
+            hash_json(format_options),
         )
 
         def create(cache_temp):

@@ -29,7 +29,7 @@ from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
 from datamart_core.prom import PromMeasureRequest
 from datamart_geo import GeoData
-from datamart_materialize import make_writer
+from datamart_materialize import get_writer, make_writer
 import datamart_profiler
 
 from .enhance_metadata import enhance_metadata
@@ -182,6 +182,13 @@ class BaseHandler(RequestHandler):
                     )
                     raise HTTPError(400)
                 format_options[n[7:]] = self.decode_argument(v[0])
+
+        writer_cls = get_writer(format)
+        if hasattr(writer_cls, 'parse_options'):
+            format_options = writer_cls.parse_options(format_options)
+        elif format_options:
+            self.send_error_json(400, "Invalid output options")
+            raise HTTPError(400)
         return format, format_options
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))

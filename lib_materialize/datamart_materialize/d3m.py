@@ -228,19 +228,24 @@ class D3mWriter(object):
     default_options = {'version': DEFAULT_VERSION, 'need_d3mindex': False}
 
     @classmethod
-    def _get_opt(cls, options, key):
-        if options and key in options:
-            return options.pop(key)
-        else:
-            return cls.default_options[key]
+    def parse_options(cls, options):
+        merged_options = dict(cls.default_options)
+        if options:
+            merged_options.update(options)
+        unknown_keys = merged_options.keys() - cls.default_options
+        if unknown_keys:
+            raise ValueError(
+                "Invalid format option %r" % (next(iter(unknown_keys)),)
+            )
+        merged_options['need_d3mindex'] = (
+            merged_options['need_d3mindex'] in (True, 'True', 'true', '1')
+        )
+        return merged_options
 
     def __init__(self, destination, format_options=None):
-        self.version = self._get_opt(format_options, 'version')
-        self.need_d3mindex = self._get_opt(format_options, 'need_d3mindex')
-        if format_options:
-            raise ValueError(
-                "Invalid format option %r" % (next(iter(format_options)),)
-            )
+        format_options = self.parse_options(format_options)
+        self.version = format_options['version']
+        self.need_d3mindex = format_options['need_d3mindex']
 
         self.destination = destination
         os.mkdir(destination)
