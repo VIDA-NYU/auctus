@@ -66,7 +66,7 @@ class NoaaMaterializer(object):
                        startdate=materialize['noaa_start'],
                        enddate=materialize['noaa_end'])
 
-        with writer.open_file('w', newline='') as fp:
+        with writer.open_file('w') as fp:
             writer = csv.writer(fp)
             writer.writerow(['date', materialize['noaa_datatype_id']])
             # Sort by date

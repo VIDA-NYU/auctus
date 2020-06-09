@@ -13,6 +13,7 @@ import pickle
 import prometheus_client
 import redis
 import shutil
+import tempfile
 from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
@@ -28,6 +29,7 @@ from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset
 from datamart_core.prom import PromMeasureRequest
 from datamart_geo import GeoData
+from datamart_materialize import make_writer
 import datamart_profiler
 
 from .enhance_metadata import enhance_metadata
@@ -136,6 +138,27 @@ class BaseHandler(RequestHandler):
         self.set_status(status)
         return self.send_json({'error': message})
 
+    async def send_file(self, fp, name=None, type_=None):
+        if not type_:
+            type_ = 'application/octet-stream'
+        self.set_header('Content-Type', type_)
+        self.set_header('X-Content-Type-Options', 'nosniff')
+        if name:
+            self.set_header('Content-Disposition',
+                            'attachment; filename="%s"' % name)
+        else:
+            self.set_header('Content-Disposition', 'attachment')
+        logger.info("Sending file...")
+        BUFSIZE = 40960
+        buf = fp.read(BUFSIZE)
+        while buf:
+            self.write(buf)
+            if len(buf) != BUFSIZE:
+                break
+            buf = fp.read(BUFSIZE)
+            await self.flush()
+        return await self.finish()
+
     def prepare(self):
         super(BaseHandler, self).prepare()
         self.set_header('Access-Control-Allow-Origin', '*')
@@ -146,6 +169,20 @@ class BaseHandler(RequestHandler):
         # CORS pre-flight
         self.set_status(204)
         return self.finish()
+
+    def read_format(self, default_format='csv'):
+        format = self.get_query_argument('format', default_format)
+        format_options = {}
+        for n, v in self.request.query_arguments.items():
+            if n.startswith('format_'):
+                if len(v) != 1:
+                    self.send_error_json(
+                        400,
+                        "Multiple occurrences of format option %r" % n[7:],
+                    )
+                    raise HTTPError(400)
+                format_options[n[7:]] = self.decode_argument(v[0])
+        return format, format_options
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
@@ -412,20 +449,6 @@ class RecursiveZipWriter(object):
 
 
 class BaseDownload(BaseHandler):
-    def read_format(self):
-        format = self.get_query_argument('format', 'csv')
-        format_options = {}
-        for n, v in self.request.query_arguments.items():
-            if n.startswith('format_'):
-                if len(v) != 1:
-                    self.send_error_json(
-                        400,
-                        "Multiple occurrences of format option %r" % n[7:],
-                    )
-                    raise HTTPError(400)
-                format_options[n[7:]] = self.decode_argument(v[0])
-        return format, format_options
-
     async def send_dataset(self, dataset_id, metadata,
                            format='csv', format_options=None):
         materialize = metadata.get('materialize', {})
@@ -457,28 +480,18 @@ class BaseDownload(BaseHandler):
                 await self.send_error_json(500, "Materializer reports failure")
                 raise
             with stack:
+                type_ = None
                 if zipfile.is_zipfile(dataset_path):
-                    self.set_header('Content-Type', 'application/zip')
-                    self.set_header(
-                        'Content-Disposition',
-                        'attachment; filename="%s.zip"' % dataset_id)
+                    type_ = 'application/zip'
                     logger.info("Sending ZIP...")
                 else:
-                    self.set_header('Content-Type', 'application/octet-stream')
-                    self.set_header('X-Content-Type-Options', 'nosniff')
-                    self.set_header('Content-Disposition',
-                                    'attachment; filename="%s"' % dataset_id)
                     logger.info("Sending file...")
                 with open(dataset_path, 'rb') as fp:
-                    BUFSIZE = 40960
-                    buf = fp.read(BUFSIZE)
-                    while buf:
-                        self.write(buf)
-                        if len(buf) != BUFSIZE:
-                            break
-                        buf = fp.read(BUFSIZE)
-                    await self.flush()
-                return await self.finish()
+                    return await self.send_file(
+                        fp,
+                        name=dataset_id,
+                        type_=type_,
+                    )
 
 
 class DownloadId(BaseDownload, GracefulHandler):
@@ -571,29 +584,36 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
 
             task = search_results[0]
 
-            with get_dataset(metadata, task['id'], format='csv') as newdata:
-                # perform augmentation
-                logger.info("Performing half-augmentation with supplied data")
-                new_path = augment(
-                    io.BytesIO(data),
-                    newdata,
-                    data_profile,
-                    task,
-                    return_only_datamart_data=True
-                )
-                # FIXME: This always sends in D3M format
+            with tempfile.TemporaryDirectory(prefix='datamart_aug_') as tmp:
+                new_path = os.path.join(tmp.name, 'dataset')
+                with get_dataset(metadata, task['id'], format='csv') as newdata:
+                    # perform augmentation
+                    logger.info("Performing half-augmentation with supplied data")
+                    writer = make_writer(new_path, format, format_options)
+                    augment(
+                        io.BytesIO(data),
+                        newdata,
+                        data_profile,
+                        task,
+                        writer,
+                        return_only_datamart_data=True
+                    )
 
-            # send a zip file
-            self.set_header('Content-Type', 'application/zip')
-            self.set_header(
-                'Content-Disposition',
-                'attachment; filename="augmentation.zip"')
-            logger.info("Sending ZIP...")
-            writer = RecursiveZipWriter(self.write, self.flush)
-            await writer.write_recursive(new_path)
-            writer.close()
-            shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-            return await self.finish()
+            if os.path.isdir(new_path):
+                # send a zip file
+                self.set_header('Content-Type', 'application/zip')
+                self.set_header(
+                    'Content-Disposition',
+                    'attachment; filename="augmentation.zip"')
+                logger.info("Sending ZIP...")
+                writer = RecursiveZipWriter(self.write, self.flush)
+                await writer.write_recursive(new_path)
+                writer.close()
+                shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+                return await self.finish()
+            else:
+                with open(new_path, 'rb') as fp:
+                    return await self.send_file(fp)
 
 
 class Metadata(BaseHandler, GracefulHandler):
@@ -632,6 +652,8 @@ class Metadata(BaseHandler, GracefulHandler):
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_AUGMENT.sync()
     async def post(self):
+        format, format_options = self.read_format('d3m')
+
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
             return await self.send_error_json(
@@ -739,27 +761,34 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 else:
                     data_file = io.BytesIO(data)
                 # Perform augmentation
+                writer = make_writer(cache_temp, format, format_options)
                 logger.info("Performing augmentation with supplied data")
                 augment(
                     data_file,
                     newdata,
                     data_profile,
                     task,
+                    writer,
                     columns=columns,
-                    destination=cache_temp,
                 )
 
         try:
             with cache_get_or_set('/cache/aug', key, create_aug) as path:
-                # send a zip file
-                self.set_header('Content-Type', 'application/zip')
-                self.set_header(
-                    'Content-Disposition',
-                    'attachment; filename="augmentation.zip"')
-                logger.info("Sending ZIP...")
-                writer = RecursiveZipWriter(self.write, self.flush)
-                await writer.write_recursive(path)
-                writer.close()
+                if os.path.isdir(path):
+                    # send a zip file
+                    self.set_header('Content-Type', 'application/zip')
+                    self.set_header(
+                        'Content-Disposition',
+                        'attachment; filename="augmentation.zip"')
+                    logger.info("Sending ZIP...")
+                    writer = RecursiveZipWriter(self.write, self.flush)
+                    await writer.write_recursive(path)
+                    writer.close()
+                    return await self.finish()
+                else:
+                    # send the file
+                    with open(path, 'rb') as fp:
+                        await self.send_file(fp)
         except AugmentationError as e:
             return await self.send_error_json(400, str(e))
 

@@ -234,8 +234,8 @@ class D3mWriter(object):
         else:
             return cls.default_options[key]
 
-    def __init__(self, dataset_id, destination, metadata, format_options=None):
-        version = self._get_opt(format_options, 'version')
+    def __init__(self, destination, format_options=None):
+        self.version = self._get_opt(format_options, 'version')
         self.need_d3mindex = self._get_opt(format_options, 'need_d3mindex')
         if format_options:
             raise ValueError(
@@ -245,14 +245,6 @@ class D3mWriter(object):
         self.destination = destination
         os.mkdir(destination)
         os.mkdir(os.path.join(destination, 'tables'))
-
-        d3m_meta = d3m_metadata(
-            dataset_id, metadata,
-            version=version, need_d3mindex=self.need_d3mindex,
-        )
-
-        with open(os.path.join(destination, 'datasetDoc.json'), 'w') as fp:
-            json.dump(d3m_meta, fp, sort_keys=True, indent=2)
 
     def open_file(self, mode='wb', name=None):
         if name is not None:
@@ -272,6 +264,16 @@ class D3mWriter(object):
                 os.path.join(self.destination, 'tables', 'learningData.csv'),
                 mode,
             )
+
+    def set_metadata(self, dataset_id, metadata):
+        d3m_meta = d3m_metadata(
+            dataset_id, metadata,
+            version=self.version, need_d3mindex=self.need_d3mindex,
+        )
+
+        json_path = os.path.join(self.destination, 'datasetDoc.json')
+        with open(json_path, 'w', encoding='utf-8', newline='') as fp:
+            json.dump(d3m_meta, fp, sort_keys=True, indent=2)
 
     def finish(self):
         return None

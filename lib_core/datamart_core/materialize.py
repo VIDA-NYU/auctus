@@ -126,9 +126,9 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None,
                     else:
                         kwargs = {}
                     writer = writer_cls(
-                        dataset_id, cache_temp, metadata,
-                        **kwargs,
+                        cache_temp, **kwargs,
                     )
+                    writer.set_metadata(dataset_id, metadata)
                     with writer.open_file('wb') as dst:
                         shutil.copyfileobj(src, dst)
                     writer.finish()
