@@ -1,9 +1,10 @@
 import csv
 
-from datamart_materialize.utils import SimpleConverter
+from .utils import SimpleConverter
+from .typing import WriteIO
 
 
-def tsv_to_csv(source_filename, dest_fileobj):
+def tsv_to_csv(source_filename: str, dest_fileobj: WriteIO[str]) -> None:
     with open(source_filename, 'r') as src_fp:
         src = csv.reader(src_fp, delimiter='\t')
         dst = csv.writer(dest_fileobj)

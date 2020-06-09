@@ -8,7 +8,8 @@ import typing
 import os
 
 from . import types
-
+from .typing import WriteIO, JSON
+from .utils import safe_open_w
 
 logger = logging.getLogger(__name__)
 
@@ -105,24 +106,18 @@ def d3m_metadata(
     return d3m_meta
 
 
-T = typing.TypeVar('T', typing.TextIO, typing.BinaryIO)
+T = typing.TypeVar('T', str, bytes)
 
 
-class _D3mAddIndex(typing.Generic[T]):
+class _D3mAddIndex(typing.Generic[T], WriteIO[T]):
     BUFFER_MAX = 102400  # 100 kiB
 
-    _dest_fp: typing.TextIO
+    _dest_fp: WriteIO[str]
     _decoder: typing.Optional[codecs.IncrementalDecoder]
     _generate: typing.Optional[bool]
     _dest_csv: typing.Optional['_csv._writer']
 
-    @typing.overload
-    def __init__(self: '_D3mAddIndex[typing.TextIO]', dest_fp: typing.TextIO, binary: typing.Literal[False]): ...
-
-    @typing.overload
-    def __init__(self: '_D3mAddIndex[typing.BinaryIO]', dest_fp: typing.TextIO, binary: typing.Literal[True]): ...
-
-    def __init__(self, dest_fp: typing.TextIO, binary: bool):
+    def __init__(self, dest_fp: WriteIO[str], binary: bool):
         self._buffer = io.StringIO()
         self._generate = None
         self._dest_fp = dest_fp
@@ -181,18 +176,15 @@ class _D3mAddIndex(typing.Generic[T]):
         self._buffer = io.StringIO(self._buffer.getvalue()[prevpos:])
         self._buffer.seek(0, 2)
 
-    @typing.overload
-    def write(self: '_D3mAddIndex[typing.TextIO]', buf: str) -> int: ...
-
-    @typing.overload
-    def write(self: '_D3mAddIndex[typing.BinaryIO]', buf: bytes) -> int: ...
-
-    def write(self, buf):
+    def write(self, buf: T) -> int:
+        buf_str: str
+        buf_str = buf  # type: ignore
         if self._decoder is not None:
-            buf = self._decoder.decode(buf)
+            assert isinstance(buf, bytes)
+            buf_str = self._decoder.decode(buf)
         if self._generate is False:
-            return self._dest_fp.write(buf)
-        self._buffer.write(buf)
+            return self._dest_fp.write(buf_str)
+        self._buffer.write(buf_str)
         if self._buffer.tell() > self.BUFFER_MAX:
             self._flush()
         return len(buf)
@@ -213,14 +205,16 @@ class _D3mAddIndex(typing.Generic[T]):
                 self._generate = True
                 self._dest_csv = csv.writer(self._dest_fp)
         for line in self._get_lines():
+            assert self._dest_csv is not None
             if self._idx == -1:
                 self._dest_csv.writerow(['d3mIndex'] + line)
             else:
-                self._dest_csv.writerow([self._idx] + line)
+                self._dest_csv.writerow([str(self._idx)] + line)
             self._idx += 1
 
     def close(self) -> None:
         if self._generate is not False:
+            assert self._dest_csv is not None
             if self._decoder is not None:
                 # Flush decoder
                 self._buffer.write(self._decoder.decode(b'', True))
@@ -231,17 +225,16 @@ class _D3mAddIndex(typing.Generic[T]):
                 try:
                     line = next(iter(csv.reader(self._buffer)))
                 except StopIteration:
-                    line = ''
+                    line = []
                 if line:
-                    self._dest_csv.writerow([self._idx] + line)
+                    self._dest_csv.writerow([str(self._idx)] + line)
         self._dest_fp.close()
         self._dest_csv = None
-        self._dest_fp = None
 
     def __enter__(self) -> '_D3mAddIndex[T]':
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc: typing.Any, value: typing.Any, tb: typing.Any) -> None:
         self.close()
 
 
@@ -257,13 +250,13 @@ class D3mWriter(object):
     default_options = {'version': DEFAULT_VERSION, 'need_d3mindex': False}
 
     @classmethod
-    def _get_opt(cls, options, key):
+    def _get_opt(cls, options: typing.Optional[typing.Dict[str, str]], key: str) -> typing.Any:
         if options and key in options:
             return options.pop(key)
         else:
             return cls.default_options[key]
 
-    def __init__(self, dataset_id, destination, metadata, format_options=None):
+    def __init__(self, dataset_id: str, destination: str, metadata: JSON, format_options: typing.Optional[typing.Dict[str, typing.Any]] = None):
         version = self._get_opt(format_options, 'version')
         self.need_d3mindex = self._get_opt(format_options, 'need_d3mindex')
         if format_options:
@@ -280,19 +273,23 @@ class D3mWriter(object):
             version=version, need_d3mindex=self.need_d3mindex,
         )
 
-        with open(os.path.join(destination, 'datasetDoc.json'), 'w') as fp:
+        with safe_open_w(os.path.join(destination, 'datasetDoc.json'), 'w') as fp:
             json.dump(d3m_meta, fp, sort_keys=True, indent=2)
 
-    def open_file(self, mode='wb', name=None):
+    @typing.overload
+    def open_file(self, mode: typing.Literal['wb'] = 'wb', name: typing.Optional[str] = None) -> WriteIO[bytes]: ...
+
+    @typing.overload
+    def open_file(self, mode: typing.Literal['w'], name: typing.Optional[str] = None) -> WriteIO[str]: ...
+
+    def open_file(self, mode: str = 'wb', name: typing.Optional[str] = None) -> typing.Any:
         if name is not None:
             raise ValueError("D3mWriter can only write single-table datasets "
                              "for now")
         if self.need_d3mindex:
-            fp = open(
+            fp: WriteIO[str] = safe_open_w(
                 os.path.join(self.destination, 'tables', 'learningData.csv'),
                 'w',
-                encoding='utf-8',
-                newline='',
             )
             fp = _D3mAddIndex(fp, 'b' in mode)
             return fp
@@ -302,5 +299,5 @@ class D3mWriter(object):
                 mode,
             )
 
-    def finish(self):
+    def finish(self) -> None:
         return None

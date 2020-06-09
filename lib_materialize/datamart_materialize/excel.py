@@ -1,11 +1,11 @@
 import csv
-import typing
 import xlrd
 
 from .utils import SimpleConverter
+from .typing import WriteIO
 
 
-def xls_to_csv(source_filename: str, dest_fileobj: typing.TextIO) -> None:
+def xls_to_csv(source_filename: str, dest_fileobj: WriteIO[str]) -> None:
     workbook = xlrd.open_workbook(source_filename)
     sheets = workbook.sheets()
     if len(sheets) != 1:

@@ -2,22 +2,22 @@ import os
 import tempfile
 import typing
 
-from .typing import WriterBase
+from .typing import WriteIO, WriterBase
 
 
-T = typing.TypeVar('T', typing.TextIO, typing.BinaryIO)
+T = typing.TypeVar('T', str, bytes)
 
 
 class SimpleConverterProxy(typing.Generic[T]):
-    _fp: T
+    _fp: WriteIO[T]
 
     def __init__(
         self,
         writer: WriterBase,
-        transform: typing.Callable[[str, typing.TextIO], None],
-        name: str,
+        transform: typing.Callable[[str, WriteIO[str]], None],
+        name: typing.Optional[str],
         temp_file: str,
-        fp: T,
+        fp: WriteIO[T],
     ):
         self._writer = writer
         self._transform = transform
@@ -36,15 +36,7 @@ class SimpleConverterProxy(typing.Generic[T]):
 
     # Those methods forward to the actual file object
 
-    @typing.overload
-    def write(self: 'SimpleConverterProxy[typing.BinaryIO]', buffer: bytes) -> int:
-        ...
-
-    @typing.overload
-    def write(self: 'SimpleConverterProxy[typing.TextIO]', buffer: str) -> int:
-        ...
-
-    def write(self, buffer: typing.Union[bytes, str]) -> int:
+    def write(self, buffer: T) -> int:
         return self._fp.write(buffer)
 
     def flush(self) -> None:
@@ -69,12 +61,16 @@ class SimpleConverter(WriterBase):
         self.writer = writer
         self.dir = tempfile.TemporaryDirectory(prefix='datamart_excel_')
 
-    def open_file(self, mode: typing.Union[typing.Literal['w'], typing.Literal['wb']] = 'wb', name: typing.Optional[str] = None, **kwargs) -> typing.IO:
+    def open_file(
+        self,
+        mode: str = 'wb',
+        name: typing.Optional[str] = None,
+    ) -> typing.Union[WriteIO[str], WriteIO[bytes]]:
         assert isinstance(self.dir, tempfile.TemporaryDirectory)
         temp_file = os.path.join(self.dir.name, 'file.xls')
 
         # Return a proxy that will write to the destination when closed
-        fp = open(temp_file, mode, **kwargs)
+        fp = open(temp_file, mode)
         return SimpleConverterProxy(
             self.writer, self.transform,
             name,
@@ -87,5 +83,20 @@ class SimpleConverter(WriterBase):
         self.dir = None
 
     @staticmethod
-    def transform(source_filename: str, dest_fileobj: typing.TextIO) -> None:
+    def transform(source_filename: str, dest_fileobj: WriteIO[str]) -> None:
         raise NotImplementedError
+
+
+def safe_open_w(name: str, mode: str) -> typing.Union[WriteIO[str], WriteIO[bytes]]:
+    if mode == 'w':
+        return typing.cast(
+            WriteIO[str],
+            open(name, mode, encoding='utf-8', newline=''),
+        )
+    elif mode == 'wb':
+        return typing.cast(
+            WriteIO[bytes],
+            open(name, mode),
+        )
+    else:
+        raise ValueError("Invalid write mode %r" % mode)

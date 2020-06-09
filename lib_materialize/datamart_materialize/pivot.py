@@ -1,13 +1,19 @@
 import csv
+import typing
 
-from datamart_materialize.utils import SimpleConverter
+from .utils import SimpleConverter
+from .typing import WriteIO, WriterBase
 
 
 DATE_COLUMN_LABEL = 'date'
 VALUE_COLUMN_LABEL = 'value'
 
 
-def pivot_table(source_filename, dest_fileobj, except_columns):
+def pivot_table(
+    source_filename: str,
+    dest_fileobj: WriteIO[str],
+    except_columns: typing.List[int],
+) -> None:
     with open(source_filename, 'r') as src_fp:
         src = iter(csv.reader(src_fp))
         dst = csv.writer(dest_fileobj)
@@ -41,9 +47,9 @@ def pivot_table(source_filename, dest_fileobj, except_columns):
 class PivotConverter(SimpleConverter):
     """Adapter converting a TSV file to CSV.
     """
-    def __init__(self, writer, *, except_columns):
+    def __init__(self, writer: WriterBase, *, except_columns: typing.List[int]):
         super(PivotConverter, self).__init__(writer)
         self.except_columns = except_columns
 
-    def transform(self, source_filename, dest_fileobj):
+    def transform(self, source_filename: str, dest_fileobj: WriteIO[str]) -> None:
         pivot_table(source_filename, dest_fileobj, self.except_columns)

@@ -4,10 +4,14 @@ from pkg_resources import iter_entry_points
 import requests
 import threading
 import time
+import typing
+
+from .typing import WriteIO, WriterBase, JSON
 
 
 __version__ = '0.6.1'
 
+from .utils import safe_open_w
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +31,11 @@ class DatasetTooBig(Exception):
     """
 
 
-def _write_file(response, writer, size_limit=None):
+def _write_file(
+    response: requests.Response,
+    writer: WriterBase,
+    size_limit: typing.Optional[int] = None,
+) -> None:
     """Write download results to disk.
     """
     size = 0
@@ -40,7 +48,11 @@ def _write_file(response, writer, size_limit=None):
                     raise DatasetTooBig
 
 
-def _direct_download(url, writer, size_limit=None):
+def _direct_download(
+    url: str,
+    writer: WriterBase,
+    size_limit: typing.Optional[int] = None,
+) -> None:
     """Direct download of a file from a URL.
 
     This is used when the materialization info contains a ``direct_url`` key,
@@ -54,7 +66,12 @@ def _direct_download(url, writer, size_limit=None):
     _write_file(response, writer, size_limit=size_limit)
 
 
-def _proxy_download(dataset_id, writer, proxy, size_limit=None):
+def _proxy_download(
+    dataset_id: str,
+    writer: WriterBase,
+    proxy: str,
+    size_limit: typing.Optional[int] = None,
+) -> None:
     """Use a Datamart service to materialize for us.
 
     This is used when the materializer is not available locally. We request
@@ -77,7 +94,7 @@ def _proxy_download(dataset_id, writer, proxy, size_limit=None):
 
 
 materializers = {}
-writers = {}
+writers: typing.Dict[str, typing.Type[WriterBase]] = {}
 converters = {}
 
 _materializers_loaded = False
@@ -85,7 +102,7 @@ _materializers_loaded = False
 _materializers_mutex = threading.Lock()
 
 
-def load_materializers():
+def load_materializers() -> None:
     """Load materializers/writers from package entrypoint metadata.
 
     This is called automatically the first time we need it, or you can call it
@@ -96,17 +113,22 @@ def load_materializers():
         if _materializers_loaded:
             return
 
-        def load(what, entry_point_name):
+        def load(what: str, entry_point_name: str) -> typing.Any:
             result = {}
             for entry_point in iter_entry_points(entry_point_name):
                 try:
                     obj = entry_point.load()
                 except Exception:
-                    logger.exception("Failed to load %s %s from %s %s",
-                                     what,
-                                     entry_point.name,
-                                     entry_point.dist.project_name,
-                                     entry_point.dist.version)
+                    if entry_point.dist is not None:
+                        logger.exception("Failed to load %s %s from %s %s",
+                                         what,
+                                         entry_point.name,
+                                         entry_point.dist.project_name,
+                                         entry_point.dist.version)
+                    else:
+                        logger.exception("Failed to load %s %s",
+                                         what,
+                                         entry_point.name)
                 else:
                     result[entry_point.name] = obj
                     logger.info("%s loaded: %s", what, entry_point.name)
@@ -119,7 +141,7 @@ def load_materializers():
         _materializers_loaded = True
 
 
-def get_writer(format):
+def get_writer(format: str) -> typing.Type[WriterBase]:
     if not _materializers_loaded:
         load_materializers()
     return writers[format]
@@ -130,16 +152,20 @@ class CsvWriter(object):
     """
     needs_metadata = False
 
-    def __init__(self, dataset_id, destination, metadata, format_options=None):
+    def __init__(self, dataset_id: str, destination: str, metadata: JSON, format_options: typing.Optional[typing.Dict[str, typing.Any]] = None):
         self.destination = destination
 
-    def open_file(self, mode='wb', name=None, **kwargs):
+    def open_file(
+        self,
+        mode: str = 'wb',
+        name: typing.Optional[str] = None,
+    ) -> typing.Union[WriteIO[str], WriteIO[bytes]]:
         if name is not None:
             raise ValueError("CsvWriter can only write single-table datasets")
         if hasattr(self.destination, 'write'):
             return self.destination
         else:
-            return open(self.destination, mode, **kwargs)
+            return safe_open_w(self.destination, mode)
 
     def finish(self):
         return None
@@ -181,7 +207,7 @@ class PandasWriter(object):
             raise ValueError("Pandas format expects destination=None")
         self._data = None
 
-    def open_file(self, mode='wb', name=None, **kwargs):
+    def open_file(self, mode='wb', name=None):
         if name is not None:
             raise ValueError(
                 "PandasWriter can only write single-table datasets"
