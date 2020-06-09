@@ -128,7 +128,6 @@ datamart_materialize = "*"
 datamart_profiler = "*"
 elasticsearch = ">=7.0,<8.0"
 lazo-index-service = "0.5.1"
-prometheus-async = "*"
 prometheus_client = "*"
 redis = ">=3.4,<4.0"
 tornado = ">=5.0"
@@ -194,6 +193,7 @@ version = "0.0"
 aio-pika = "*"
 elasticsearch = ">=7.0,<8.0"
 lazo-index-service = "0.5.1"
+prometheus_async = "*"
 prometheus_client = "*"
 
 [package.source]
@@ -262,12 +262,14 @@ python-versions = "*"
 version = "0.6.1"
 
 [package.dependencies]
+datamart-geo = "0.1"
 lazo-index-service = "0.5.1"
 numpy = "*"
 pandas = "*"
 prometheus_client = "*"
 python-dateutil = "*"
 regex = "*"
+requests = "*"
 scikit-learn = "*"
 
 [package.source]
