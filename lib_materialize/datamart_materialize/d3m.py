@@ -271,7 +271,8 @@ class D3mWriter(object):
             version=self.version, need_d3mindex=self.need_d3mindex,
         )
 
-        with open(os.path.join(self.destination, 'datasetDoc.json'), 'w') as fp:
+        json_path = os.path.join(self.destination, 'datasetDoc.json')
+        with open(json_path, 'w', encoding='utf-8', newline='') as fp:
             json.dump(d3m_meta, fp, sort_keys=True, indent=2)
 
     def finish(self):

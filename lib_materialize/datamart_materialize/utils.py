@@ -16,7 +16,7 @@ class SimpleConverterProxy(object):
 
     def _convert(self):
         # Read back the file we wrote, and transform it to the final file
-        with self._writer.open_file('w', self._name, newline='') as dst:
+        with self._writer.open_file('w', self._name) as dst:
             self._transform(self._temp_file, dst)
 
     # Those methods forward to the actual file object
@@ -47,11 +47,16 @@ class SimpleConverter(object):
     def set_metadata(self, dataset_id, metadata):
         self.writer.set_metadata(dataset_id, metadata)
 
-    def open_file(self, mode='wb', name=None, **kwargs):
+    def open_file(self, mode='wb', name=None):
         temp_file = os.path.join(self.dir.name, 'file.xls')
 
         # Return a proxy that will write to the destination when closed
-        fp = open(temp_file, mode, **kwargs)
+        if mode == 'wb':
+            fp = open(temp_file, mode)
+        elif mode == 'w':
+            fp = open(temp_file, mode, encoding='utf-8', newline='')
+        else:
+            raise ValueError("Invalid write mode %r" % mode)
         return SimpleConverterProxy(
             self.writer, self.transform,
             name,

@@ -138,7 +138,7 @@ class CsvWriter(object):
     def __init__(self, destination, format_options=None):
         self.destination = destination
 
-    def open_file(self, mode='wb', name=None, encoding='utf-8'):
+    def open_file(self, mode='wb', name=None):
         if name is not None:
             raise ValueError("CsvWriter can only write single-table datasets")
         if hasattr(self.destination, 'write'):
@@ -146,11 +146,11 @@ class CsvWriter(object):
         elif 'b' in mode:
             return open(self.destination, mode)
         else:
-            return open(self.destination, mode, encoding=encoding)
+            return open(self.destination, mode, encoding='utf-8')
         if mode == 'wb':
             return fileobj
         else:
-            return codecs.getwriter(encoding)(fileobj)
+            return codecs.getwriter('utf-8')(fileobj)
 
     def set_metadata(self, dataset_id, metadata):
         pass
@@ -195,7 +195,7 @@ class PandasWriter(object):
             raise ValueError("Pandas format expects destination=None")
         self._data = None
 
-    def open_file(self, mode='wb', name=None, **kwargs):
+    def open_file(self, mode='wb', name=None):
         if name is not None:
             raise ValueError(
                 "PandasWriter can only write single-table datasets"
