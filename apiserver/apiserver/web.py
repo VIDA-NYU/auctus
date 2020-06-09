@@ -498,7 +498,7 @@ class DownloadId(BaseDownload, GracefulHandler):
 
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
-    @PROM_DOWNLOAD.async_()
+    @PROM_DOWNLOAD.sync()
     async def post(self):
         type_ = self.request.headers.get('Content-type', '')
 
@@ -630,7 +630,7 @@ class Metadata(BaseHandler, GracefulHandler):
 
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
-    @PROM_AUGMENT.async_()
+    @PROM_AUGMENT.sync()
     async def post(self):
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
