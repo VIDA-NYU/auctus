@@ -124,6 +124,7 @@ def _lock_process(pipe, filepath, exclusive, timeout=None):
 
 
 # Using the 'fork' method causes deadlocks because other threads acquire locks
+# https://bugs.python.org/issue6721
 _mp_context = multiprocessing.get_context('spawn')
 
 
