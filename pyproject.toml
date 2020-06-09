@@ -49,6 +49,7 @@ coverage = "*" # Keep it in sync with Dockerfiles for CI
 jsonschema = ">=3.0,<4"
 readme_renderer = "*"
 Sphinx = "*"
+mypy = "^0.780"
 
 [build-system]
 requires = ["poetry>=0.12"]
