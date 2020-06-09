@@ -9,6 +9,8 @@ T = typing.TypeVar('T', typing.TextIO, typing.BinaryIO)
 
 
 class SimpleConverterProxy(typing.Generic[T]):
+    _fp: T
+
     def __init__(
         self,
         writer: WriterBase,
@@ -21,7 +23,7 @@ class SimpleConverterProxy(typing.Generic[T]):
         self._transform = transform
         self._name = name
         self._temp_file = temp_file
-        self._fp: T = fp
+        self._fp = fp
 
     def close(self) -> None:
         self._fp.close()
@@ -42,7 +44,7 @@ class SimpleConverterProxy(typing.Generic[T]):
     def write(self: 'SimpleConverterProxy[typing.TextIO]', buffer: str) -> int:
         ...
 
-    def write(self, buffer) -> int:
+    def write(self, buffer: typing.Union[bytes, str]) -> int:
         return self._fp.write(buffer)
 
     def flush(self) -> None:
@@ -67,9 +69,9 @@ class SimpleConverter(WriterBase):
         self.writer = writer
         self.dir = tempfile.TemporaryDirectory(prefix='datamart_excel_')
 
-    def open_file(self, mode='wb', name=None, **kwargs):
-        dir_name = typing.cast(tempfile.TemporaryDirectory[str], self.dir).name
-        temp_file = os.path.join(dir_name, 'file.xls')
+    def open_file(self, mode: typing.Union[typing.Literal['w'], typing.Literal['wb']] = 'wb', name: typing.Optional[str] = None, **kwargs) -> typing.IO:
+        assert isinstance(self.dir, tempfile.TemporaryDirectory)
+        temp_file = os.path.join(self.dir.name, 'file.xls')
 
         # Return a proxy that will write to the destination when closed
         fp = open(temp_file, mode, **kwargs)
@@ -80,7 +82,8 @@ class SimpleConverter(WriterBase):
         )
 
     def finish(self) -> None:
-        typing.cast(tempfile.TemporaryDirectory[str], self.dir).cleanup()
+        assert isinstance(self.dir, tempfile.TemporaryDirectory)
+        self.dir.cleanup()
         self.dir = None
 
     @staticmethod

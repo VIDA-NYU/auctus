@@ -1,5 +1,5 @@
-import xlrd.book
+from xlrd.book import Book
 
 
-def open_workbook(filename: str) -> xlrd.book.Book:
+def open_workbook(filename: str) -> Book:
     ...

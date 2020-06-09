@@ -1,8 +1,10 @@
 import codecs
+import _csv
 import csv
 import io
 import json
 import logging
+import typing
 import os
 
 from . import types
@@ -22,7 +24,13 @@ STRUCTURAL_TYPE_MAP = {
 DEFAULT_VERSION = '4.0.0'
 
 
-def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
+def d3m_metadata(
+    dataset_id: str,
+    metadata: typing.Dict[str, typing.Any],
+    *,
+    version: typing.Optional[str] = None,
+    need_d3mindex: bool = False,
+) -> typing.Dict[str, typing.Any]:
     if not version:
         version = DEFAULT_VERSION
     elif version not in ('3.2.0', '4.0.0'):
@@ -65,7 +73,7 @@ def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
             'role': [role],
         })
 
-    d3m_meta = {
+    d3m_meta: typing.Dict[str, typing.Any] = {
         'about': {
             'datasetID': dataset_id,
             'datasetName': metadata.get('name', dataset_id),
@@ -97,10 +105,24 @@ def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
     return d3m_meta
 
 
-class _D3mAddIndex(object):
+T = typing.TypeVar('T', typing.TextIO, typing.BinaryIO)
+
+
+class _D3mAddIndex(typing.Generic[T]):
     BUFFER_MAX = 102400  # 100 kiB
 
-    def __init__(self, dest_fp, binary):
+    _dest_fp: typing.TextIO
+    _decoder: typing.Optional[codecs.IncrementalDecoder]
+    _generate: typing.Optional[bool]
+    _dest_csv: typing.Optional['_csv._writer']
+
+    @typing.overload
+    def __init__(self: '_D3mAddIndex[typing.TextIO]', dest_fp: typing.TextIO, binary: typing.Literal[False]): ...
+
+    @typing.overload
+    def __init__(self: '_D3mAddIndex[typing.BinaryIO]', dest_fp: typing.TextIO, binary: typing.Literal[True]): ...
+
+    def __init__(self, dest_fp: typing.TextIO, binary: bool):
         self._buffer = io.StringIO()
         self._generate = None
         self._dest_fp = dest_fp
@@ -111,16 +133,17 @@ class _D3mAddIndex(object):
         else:
             self._decoder = None
 
-    def __iter__(self):
+    def __iter__(self) -> '_D3mAddIndex[T]':
         # Pandas needs file objects to have __iter__
         return self
 
-    def _peek_line(self):
+    def _peek_line(self) -> typing.Optional[typing.List[str]]:
         # Make a CSV reader for the buffer
         self._buffer.seek(0, 0)
         reader = iter(csv.reader(self._buffer))
 
         # Try to read two lines, which means we have one complete one
+        line: typing.Optional[typing.List[str]]
         try:
             line = next(reader)
             next(reader)
@@ -132,7 +155,7 @@ class _D3mAddIndex(object):
 
         return line
 
-    def _get_lines(self):
+    def _get_lines(self) -> typing.Generator[typing.List[str], None, None]:
         # Make a CSV reader for the buffer
         self._buffer.seek(0, 0)
         reader = iter(csv.reader(self._buffer))
@@ -158,6 +181,12 @@ class _D3mAddIndex(object):
         self._buffer = io.StringIO(self._buffer.getvalue()[prevpos:])
         self._buffer.seek(0, 2)
 
+    @typing.overload
+    def write(self: '_D3mAddIndex[typing.TextIO]', buf: str) -> int: ...
+
+    @typing.overload
+    def write(self: '_D3mAddIndex[typing.BinaryIO]', buf: bytes) -> int: ...
+
     def write(self, buf):
         if self._decoder is not None:
             buf = self._decoder.decode(buf)
@@ -168,7 +197,7 @@ class _D3mAddIndex(object):
             self._flush()
         return len(buf)
 
-    def _flush(self):
+    def _flush(self) -> None:
         if self._generate is None:
             # Decide whether the index needs to be generated
             columns = self._peek_line()
@@ -177,7 +206,7 @@ class _D3mAddIndex(object):
             if 'd3mIndex' in columns:
                 self._generate = False
                 self._dest_fp.write(self._buffer.getvalue())
-                self._buffer = None
+                self._buffer.close()
                 return
             else:
                 logger.info("No 'd3mIndex' column, generating one")
@@ -190,7 +219,7 @@ class _D3mAddIndex(object):
                 self._dest_csv.writerow([self._idx] + line)
             self._idx += 1
 
-    def close(self):
+    def close(self) -> None:
         if self._generate is not False:
             if self._decoder is not None:
                 # Flush decoder
@@ -209,10 +238,10 @@ class _D3mAddIndex(object):
         self._dest_csv = None
         self._dest_fp = None
 
-    def __enter__(self):
+    def __enter__(self) -> '_D3mAddIndex[T]':
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.close()
 
 

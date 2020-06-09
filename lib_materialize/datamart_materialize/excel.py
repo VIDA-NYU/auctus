@@ -5,7 +5,7 @@ import xlrd
 from .utils import SimpleConverter
 
 
-def xls_to_csv(source_filename: str, dest_fileobj: typing.IO[str]) -> None:
+def xls_to_csv(source_filename: str, dest_fileobj: typing.TextIO) -> None:
     workbook = xlrd.open_workbook(source_filename)
     sheets = workbook.sheets()
     if len(sheets) != 1:
