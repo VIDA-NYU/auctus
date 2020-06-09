@@ -133,7 +133,7 @@ def pair_latlong_columns(columns_lat, columns_long):
 _re_loc = re.compile(
     r'\('
     r'(-?[0-9]{1,3}\.[0-9]{1,15})'
-    r',? ?'
+    r'(?:,| |(?:, ))'
     r'(-?[0-9]{1,3}\.[0-9]{1,15})'
     r'\)$'
 )
