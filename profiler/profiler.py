@@ -15,7 +15,8 @@ import xlrd
 
 from datamart_core.common import setup_logging, add_dataset_to_index, \
     delete_dataset_from_index, log_future, json2msg, msg2json
-from datamart_core.materialize import get_dataset
+from datamart_core.fscache import cache_get_or_set
+from datamart_core.materialize import get_dataset, dataset_cache_key
 from datamart_geo import GeoData
 from datamart_materialize import DatasetTooBig
 from datamart_materialize.excel import xls_to_csv
@@ -54,12 +55,11 @@ def materialize_and_process_dataset(
     dataset_id, metadata,
     lazo_client, nominatim, geo_data,
     profile_semaphore,
-    cache_invalid=False,
 ):
     with contextlib.ExitStack() as stack:
         with prom_incremented(PROM_DOWNLOADING):
             dataset_path = stack.enter_context(
-                get_dataset(metadata, dataset_id, cache_invalid=cache_invalid)
+                get_dataset(metadata, dataset_id)
             )
         materialize = metadata.pop('materialize')
 
@@ -69,15 +69,27 @@ def materialize_and_process_dataset(
         except xlrd.XLRDError:
             pass
         else:
+            # Update metadata
             logger.info("This is an Excel file")
             materialize.setdefault('convert', []).append({'identifier': 'xls'})
-            excel_temp_path = dataset_path + '.xls'
-            os.rename(dataset_path, excel_temp_path)
-            try:
-                with open(dataset_path, 'w', newline='') as dst:
-                    xls_to_csv(excel_temp_path, dst)
-            finally:
-                os.remove(excel_temp_path)
+
+            # Update file
+            def convert(cache_temp):
+                with open(cache_temp, 'w', newline='') as dst:
+                    xls_to_csv(dataset_path, dst)
+            converted_key = dataset_cache_key(
+                dataset_id,
+                dict(metadata, materialize=materialize),
+                'csv',
+                {},
+            )
+            dataset_path = stack.enter_context(
+                cache_get_or_set(
+                    '/cache/datasets',
+                    converted_key,
+                    convert,
+                )
+            )
 
         # Check for TSV file format
         with open(dataset_path, 'r') as fp:
@@ -87,15 +99,27 @@ def materialize_and_process_dataset(
                 logger.error("csv.Sniffer error: %s", error)
                 dialect = csv.get_dialect('excel')
         if getattr(dialect, 'delimiter', '') == '\t':
+            # Update metadata
             logger.info("This is a TSV file")
             materialize.setdefault('convert', []).append({'identifier': 'tsv'})
-            tsv_temp_path = dataset_path + '.tsv'
-            os.rename(dataset_path, tsv_temp_path)
-            try:
-                with open(dataset_path, 'w', newline='') as dst:
-                    tsv_to_csv(tsv_temp_path, dst)
-            finally:
-                os.remove(tsv_temp_path)
+
+            # Update file
+            def convert(cache_temp):
+                with open(cache_temp, 'w', newline='') as dst:
+                    tsv_to_csv(dataset_path, dst)
+            converted_key = dataset_cache_key(
+                dataset_id,
+                dict(metadata, materialize=materialize),
+                'csv',
+                {},
+            )
+            dataset_path = stack.enter_context(
+                cache_get_or_set(
+                    '/cache/datasets',
+                    converted_key,
+                    convert,
+                )
+            )
 
         # Check for pivoted temporal table
         with open(dataset_path, 'r') as fp:
@@ -110,18 +134,30 @@ def materialize_and_process_dataset(
                 if parse_date(name) is None
             ]
             if len(non_matches) <= max(2.0, 0.20 * len(columns)):
+                # Update metadata
                 logger.info("Detected pivoted table")
                 materialize.setdefault('convert', []).append({
                     'identifier': 'pivot',
                     'except_columns': non_matches,
                 })
-                pivot_temp_path = dataset_path + '.pivot.csv'
-                os.rename(dataset_path, pivot_temp_path)
-                try:
-                    with open(dataset_path, 'w', newline='') as dst:
-                        pivot_table(pivot_temp_path, dst, non_matches)
-                finally:
-                    os.remove(pivot_temp_path)
+
+                # Update file
+                def convert(cache_temp):
+                    with open(cache_temp, 'w', newline='') as dst:
+                        pivot_table(dataset_path, dst, non_matches)
+                converted_key = dataset_cache_key(
+                    dataset_id,
+                    dict(metadata, materialize=materialize),
+                    'csv',
+                    {},
+                )
+                dataset_path = stack.enter_context(
+                    cache_get_or_set(
+                        '/cache/datasets',
+                        converted_key,
+                        convert,
+                    )
+                )
 
         # Profile
         with profile_semaphore:
@@ -227,15 +263,6 @@ class Profiler(object):
             logger.info("Processing dataset %r from %r",
                         dataset_id, materialize.get('identifier'))
 
-            # Compare materialization info with stored to know whether cache
-            # should be ignored
-            try:
-                hit = self.es.get('datamart', dataset_id)
-            except elasticsearch.NotFoundError:
-                cache_invalid = True
-            else:
-                cache_invalid = materialize != hit['_source']['materialize']
-
             future = self.loop.run_in_executor(
                 None,
                 materialize_and_process_dataset,
@@ -245,7 +272,6 @@ class Profiler(object):
                 self.nominatim,
                 self.geo_data,
                 self.profile_semaphore,
-                cache_invalid,
             )
 
             future.add_done_callback(
