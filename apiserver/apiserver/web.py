@@ -707,44 +707,44 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         )
 
         def create_aug(cache_temp):
-            try:
-                with contextlib.ExitStack() as stack:
-                    # Get augmentation data
-                    newdata = stack.enter_context(
-                        get_dataset(metadata, task['id'], format='csv'),
+            with contextlib.ExitStack() as stack:
+                # Get augmentation data
+                newdata = stack.enter_context(
+                    get_dataset(metadata, task['id'], format='csv'),
+                )
+                # Get  input data if it's a reference to a dataset
+                if data_id:
+                    data_file = stack.enter_context(
+                        get_dataset(data_profile, data_id, format='csv'),
                     )
-                    # Get  input data if it's a reference to a dataset
-                    if data_id:
-                        data_file = stack.enter_context(
-                            get_dataset(data_profile, data_id, format='csv'),
-                        )
-                    else:
-                        data_file = io.BytesIO(data)
-                    # Perform augmentation
-                    logger.info("Performing augmentation with supplied data")
-                    augment(
-                        data_file,
-                        newdata,
-                        data_profile,
-                        task,
-                        columns=columns,
-                        destination=cache_temp,
-                    )
-            except AugmentationError as e:
-                return self.send_error_json(400, str(e))
+                else:
+                    data_file = io.BytesIO(data)
+                # Perform augmentation
+                logger.info("Performing augmentation with supplied data")
+                augment(
+                    data_file,
+                    newdata,
+                    data_profile,
+                    task,
+                    columns=columns,
+                    destination=cache_temp,
+                )
 
-        with cache_get_or_set('/cache/aug', key, create_aug) as path:
-            # send a zip file
-            self.set_header('Content-Type', 'application/zip')
-            self.set_header(
-                'Content-Disposition',
-                'attachment; filename="augmentation.zip"')
-            logger.info("Sending ZIP...")
-            writer = RecursiveZipWriter(self.write)
-            # FIXME: This will write the whole thing to Tornado's buffer
-            # Maybe compressing to disk and streaming that file is better?
-            writer.write_recursive(path)
-            writer.close()
+        try:
+            with cache_get_or_set('/cache/aug', key, create_aug) as path:
+                # send a zip file
+                self.set_header('Content-Type', 'application/zip')
+                self.set_header(
+                    'Content-Disposition',
+                    'attachment; filename="augmentation.zip"')
+                logger.info("Sending ZIP...")
+                writer = RecursiveZipWriter(self.write)
+                # FIXME: This will write the whole thing to Tornado's buffer
+                # Maybe compressing to disk and streaming that file is better?
+                writer.write_recursive(path)
+                writer.close()
+        except AugmentationError as e:
+            return self.send_error_json(400, str(e))
 
         return self.finish()
 
