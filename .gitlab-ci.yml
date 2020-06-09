@@ -138,6 +138,16 @@ style:
   script:
     - flake8 --ignore=E731,W504,W503,E501
 
+typing:
+  stage: test
+  before_script:
+    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python && /root/.poetry/bin/poetry config virtualenvs.create false
+    - /root/.poetry/bin/poetry export --dev --format requirements.txt >reqs.txt
+    - pip --disable-pip-version-check install --constraint reqs.txt mypy
+  script:
+    - export MYPYPATH=$(pwd)/stubs
+    - find . -name frontend -prune -o -name \*.py -a -not -name setup.py -exec mypy {} +
+
 pages:
   stage: deploy
   before_script:
