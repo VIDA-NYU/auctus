@@ -67,7 +67,8 @@ def dataset_cache_key(dataset_id, metadata, format, format_options):
 
 
 @contextlib.contextmanager
-def get_dataset(metadata, dataset_id, format='csv', format_options=None):
+def get_dataset(metadata, dataset_id, format='csv', format_options=None,
+                transforms=None):
     if not format:
         raise ValueError("Invalid output options")
 
@@ -106,6 +107,39 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                     '/cache/datasets', csv_key, create_csv,
                 )
             )
+
+        # Apply requested transformations
+        if transforms:
+            for func, descr in transforms:
+                # Update metadata (which will change the cache key)
+                metadata = dict(
+                    metadata,
+                    materialize=dict(
+                        metadata['materialize'],
+                        convert=(
+                            metadata['materialize'].get('convert', [])
+                            + [descr]
+                        ),
+                    )
+                )
+
+                # Update file
+                def transform(cache_temp):
+                    func(csv_path, cache_temp)
+                transformed_key = dataset_cache_key(
+                    dataset_id,
+                    metadata,
+                    'csv',
+                    {},
+                )
+                with dataset_lock.pop_all():
+                    csv_path = dataset_lock.enter_context(
+                        cache_get_or_set(
+                            '/cache/datasets',
+                            transformed_key,
+                            transform,
+                        )
+                    )
 
         # If CSV was requested, send it
         if format == 'csv':
