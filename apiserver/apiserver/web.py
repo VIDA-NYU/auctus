@@ -375,17 +375,20 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
 
 class RecursiveZipWriter(object):
-    def __init__(self, write):
+    def __init__(self, write, flush):
         self._write = write
+        self._flush = flush
         self._zip = zipfile.ZipFile(self, 'w')
 
-    def write_recursive(self, src, dst=''):
+    async def write_recursive(self, src, dst=''):
         if os.path.isdir(src):
             for name in os.listdir(src):
-                self.write_recursive(os.path.join(src, name),
-                                     dst + '/' + name if dst else name)
+                await self.write_recursive(
+                    os.path.join(src, name),
+                    dst + '/' + name if dst else name,
+                )
         else:
-            self._zip.write(src, dst)
+            await self.write_file(src, dst)
 
     def write(self, data):
         self._write(data)
@@ -393,6 +396,16 @@ class RecursiveZipWriter(object):
 
     def flush(self):
         return
+
+    async def write_file(self, src, dst):
+        CHUNKSIZE = 8192
+        with open(src, 'rb') as s_fp, self._zip.open(dst, 'w') as d_fp:
+            while True:
+                chunk = s_fp.read(CHUNKSIZE)
+                d_fp.write(chunk)
+                await self._flush()
+                if len(chunk) != CHUNKSIZE:
+                    return
 
     def close(self):
         self._zip.close()
@@ -485,8 +498,8 @@ class DownloadId(BaseDownload, GracefulHandler):
 
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
-    @PROM_DOWNLOAD.sync()
-    def post(self):
+    @PROM_DOWNLOAD.async_()
+    async def post(self):
         type_ = self.request.headers.get('Content-type', '')
 
         task = None
@@ -507,13 +520,13 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             elif data is not None:
                 data = data.encode('utf-8')
             if 'format' in self.request.files:
-                return self.send_error_json(
+                return await self.send_error_json(
                     400,
                     "Sending 'format' in the POST data is no longer "
                     "supported, please use query parameters",
                 )
         if task is None:
-            return self.send_error_json(
+            return await self.send_error_json(
                 400,
                 "Either use multipart/form-data to send the 'data' file and "
                 "'task' JSON, or use application/json to send 'task' alone",
@@ -526,7 +539,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         metadata = task['metadata']
 
         if not data:
-            return self.send_dataset(
+            return await self.send_dataset(
                 task['id'], metadata, format, format_options,
             )
         else:
@@ -534,7 +547,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             try:
                 data_profile, _ = self.handle_data_parameter(data)
             except ClientError as e:
-                return self.send_error_json(400, str(e))
+                return await self.send_error_json(400, str(e))
 
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
@@ -550,7 +563,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             )
 
             if not search_results:
-                return self.send_error_json(
+                return await self.send_error_json(
                     400,
                     "The Datamart dataset referenced by 'task' cannot augment "
                     "'data'",
@@ -576,10 +589,11 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 'Content-Disposition',
                 'attachment; filename="augmentation.zip"')
             logger.info("Sending ZIP...")
-            writer = RecursiveZipWriter(self.write)
-            writer.write_recursive(new_path)
+            writer = RecursiveZipWriter(self.write, self.flush)
+            await writer.write_recursive(new_path)
             writer.close()
             shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+            return await self.finish()
 
 
 class Metadata(BaseHandler, GracefulHandler):
@@ -616,18 +630,21 @@ class Metadata(BaseHandler, GracefulHandler):
 
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
-    @PROM_AUGMENT.sync()
-    def post(self):
+    @PROM_AUGMENT.async_()
+    async def post(self):
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
-            return self.send_error_json(400, "Use multipart/form-data to send "
-                                             "the 'data' file and 'task' JSON")
+            return await self.send_error_json(
+                400,
+                "Use multipart/form-data to send the 'data' file and "
+                "'task' JSON",
+            )
 
         task = self.get_body_argument('task', None)
         if task is None and 'task' in self.request.files:
             task = self.request.files['task'][0].body.decode('utf-8')
         if task is None:
-            return self.send_error_json(400, "Missing 'task' JSON")
+            return await self.send_error_json(400, "Missing 'task' JSON")
         task = json.loads(task)
 
         data = self.get_body_argument('data', None)
@@ -650,7 +667,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # data
         if data_id is not None and data is not None:
-            return self.send_error_json(
+            return await self.send_error_json(
                 400,
                 "Please only provide one input dataset " +
                 "(either 'data' or 'data_id')",
@@ -662,14 +679,14 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             )
             data_hash = None
             if data_profile is None:
-                return self.send_error_json(400, "No such dataset")
+                return await self.send_error_json(400, "No such dataset")
         elif data is not None:
             try:
                 data_profile, data_hash = self.handle_data_parameter(data)
             except ClientError as e:
-                return self.send_error_json(400, str(e))
+                return await self.send_error_json(400, str(e))
         else:
-            return self.send_error_json(400, "Missing 'data'")
+            return await self.send_error_json(400, "Missing 'data'")
 
         # materialize augmentation data
         metadata = task['metadata']
@@ -695,9 +712,11 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 logger.info("Using first of %d augmentation results: %r",
                             len(search_results), task['id'])
             else:
-                return self.send_error_json(400,
-                                            "The Datamart dataset referenced "
-                                            "by 'task' cannot augment 'data'")
+                return await self.send_error_json(
+                    400,
+                    "The Datamart dataset referenced by 'task' cannot "
+                    "augment 'data'",
+                )
 
         key = hash_json(
             task=task,
@@ -738,15 +757,13 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                     'Content-Disposition',
                     'attachment; filename="augmentation.zip"')
                 logger.info("Sending ZIP...")
-                writer = RecursiveZipWriter(self.write)
-                # FIXME: This will write the whole thing to Tornado's buffer
-                # Maybe compressing to disk and streaming that file is better?
-                writer.write_recursive(path)
+                writer = RecursiveZipWriter(self.write, self.flush)
+                await writer.write_recursive(path)
                 writer.close()
         except AugmentationError as e:
-            return self.send_error_json(400, str(e))
+            return await self.send_error_json(400, str(e))
 
-        return self.finish()
+        return await self.finish()
 
 
 class Upload(BaseHandler):
