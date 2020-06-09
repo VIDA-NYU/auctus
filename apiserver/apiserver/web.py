@@ -421,7 +421,10 @@ class BaseDownload(BaseHandler):
         if ('direct_url' in materialize and
                 format == 'csv' and not materialize.get('convert')):
             if format_options:
-                return self.send_error_json(400, "Invalid output options")
+                return await self.send_error_json(
+                    400,
+                    "Invalid output options",
+                )
             # Redirect the client to it
             logger.info("Sending redirect to direct_url")
             return self.redirect(materialize['direct_url'])
@@ -462,7 +465,7 @@ class BaseDownload(BaseHandler):
                             break
                         buf = fp.read(BUFSIZE)
                     await self.flush()
-                return self.finish()
+                return await self.finish()
 
 
 class DownloadId(BaseDownload, GracefulHandler):
@@ -777,7 +780,7 @@ class Upload(BaseHandler):
             address = self.get_body_argument('address')
             response = await self.http_client.fetch(address, raise_error=False)
             if response.code != 200:
-                return self.send_error_json(
+                return await self.send_error_json(
                     400, "Invalid URL ({} {})".format(
                         response.code, response.reason,
                     ),
@@ -796,7 +799,7 @@ class Upload(BaseHandler):
                 metadata['description'] = description
             dataset_id = 'datamart.url.%s' % uuid.uuid4().hex
         else:
-            return self.send_error_json(400, "No file")
+            return await self.send_error_json(400, "No file")
 
         # Add to alternate index
         self.application.elasticsearch.index(
@@ -824,7 +827,7 @@ class Upload(BaseHandler):
             '',
         )
 
-        return self.send_json({'id': dataset_id})
+        return await self.send_json({'id': dataset_id})
 
 
 class Statistics(BaseHandler):
