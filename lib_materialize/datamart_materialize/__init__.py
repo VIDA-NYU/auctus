@@ -190,7 +190,7 @@ class PandasWriter(object):
         return self._data
 
     def finish(self):
-        import pandas
+        import pandas  # type: ignore
 
         data = self._data._data  # unwrap the underlying BytesIO/StringIO
 
