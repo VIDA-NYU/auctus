@@ -988,6 +988,19 @@ class TestDownload(DatamartTest):
                 f_ref.read(),
             )
 
+    def test_geo_sample(self):
+        """Test using the 'sample' transform."""
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.geo' + '?transform=sample',
+            allow_redirects=False,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'],
+                         'application/octet-stream')
+        lines = response.content.decode('utf-8').splitlines()
+        self.assertEqual(lines[0], 'id,lat,long,height')
+        self.assertEqual(len(lines), 50 + 1)
+
 
 class TestAugment(DatamartTest):
     def test_basic_join(self):
