@@ -220,7 +220,7 @@ def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
     def run_batch():
         not_found_batch = 0
         locs = nominatim_query(url, q=list(batch.keys()))
-        for location, count in zip(locs, batch.values()):
+        for location, (value, count) in zip(locs, batch.items()):
             if location:
                 loc = (
                     float(location[0]['lat']),
