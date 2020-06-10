@@ -1,15 +1,15 @@
 from datetime import datetime
 from dateutil.tz import UTC
 import pandas
+import requests
 import unittest
 import textwrap
 
 from datamart_geo import GeoData
 from datamart_profiler import process_dataset
 from datamart_profiler import profile_types
-import datamart_profiler.spatial
-from datamart_profiler.spatial import pair_latlong_columns, \
-    normalize_latlong_column_name, LATITUDE, LONGITUDE
+from datamart_profiler import spatial
+from datamart_profiler.spatial import LATITUDE, LONGITUDE
 from datamart_profiler.temporal import get_temporal_resolution, parse_date
 
 from .utils import DataTestCase, data
@@ -58,25 +58,25 @@ class TestLatlongSelection(DataTestCase):
     def test_normalize_name(self):
         """Test normalizing column names."""
         self.assertEqual(
-            normalize_latlong_column_name('latitude', LATITUDE),
+            spatial.normalize_latlong_column_name('latitude', LATITUDE),
             '',
         )
         self.assertEqual(
-            normalize_latlong_column_name('Place_Latitude', LATITUDE),
+            spatial.normalize_latlong_column_name('Place_Latitude', LATITUDE),
             'place_',
         )
         self.assertEqual(
-            normalize_latlong_column_name('start_Long_deg', LONGITUDE),
+            spatial.normalize_latlong_column_name('start_Long_deg', LONGITUDE),
             'start__deg',
         )
         self.assertEqual(
-            normalize_latlong_column_name('start_Lon_deg', LONGITUDE),
+            spatial.normalize_latlong_column_name('start_Lon_deg', LONGITUDE),
             'start__deg',
         )
 
     def test_pairing(self):
         """Test pairing latitude and longitude columns by name."""
-        pairs, (missed_lat, missed_long) = pair_latlong_columns(
+        pairs, (missed_lat, missed_long) = spatial.pair_latlong_columns(
             [
                 ('Pickup_latitude', 1),
                 ('lat', 7),
@@ -460,7 +460,6 @@ class TestTruncate(unittest.TestCase):
 
 class TestNominatim(DataTestCase):
     def test_profile(self):
-        old_query = datamart_profiler.spatial.nominatim_query
         queries = {
             "70 Washington Square S, New York, NY 10012": [{
                 'lat': 40.7294, 'lon': -73.9972,
@@ -472,8 +471,20 @@ class TestNominatim(DataTestCase):
                 'lat': 40.7287, 'lon': -73.9957,
             }],
         }
-        datamart_profiler.spatial.nominatim_query = \
-            lambda url, *, q: [queries[qe] for qe in q]
+
+        def replacement(url, *, q):
+            if not replacement.failed:  # Fail just once
+                replacement.failed = True
+                response = requests.Response()
+                response.status_code = 500
+                raise requests.HTTPError("Fake 500 error", response=response)
+            return [queries[qe] for qe in q]
+        replacement.failed = False
+
+        old_query = spatial.nominatim_query
+        old_min_batch_size = spatial.NOMINATIM_MIN_SPLIT_BATCH_SIZE
+        spatial.nominatim_query = replacement
+        spatial.NOMINATIM_MIN_SPLIT_BATCH_SIZE = 2
         try:
             with data('addresses.csv', 'r') as data_fp:
                 metadata = process_dataset(
@@ -482,7 +493,8 @@ class TestNominatim(DataTestCase):
                     coverage=True,
                 )
         finally:
-            datamart_profiler.spatial.nominatim_query = old_query
+            spatial.nominatim_query = old_query
+            spatial.NOMINATIM_MIN_SPLIT_BATCH_SIZE = old_min_batch_size
 
         self.assertJson(
             metadata,
@@ -516,16 +528,16 @@ class TestNominatim(DataTestCase):
         )
 
     def test_querying(self):
-        old_query = datamart_profiler.spatial.nominatim_query
         queries = {
             'a': [{'lat': 11.0, 'lon': 12.0}],
             'b': [],
             'c': [{'lat': 31.0, 'lon': 32.0}],
         }
-        datamart_profiler.spatial.nominatim_query = \
+        old_query = spatial.nominatim_query
+        spatial.nominatim_query = \
             lambda url, *, q: [queries[qe] for qe in q]
         try:
-            res, empty = datamart_profiler.spatial.nominatim_resolve_all(
+            res, empty = spatial.nominatim_resolve_all(
                 'http://240.123.45.67:21',
                 ['a', 'b', 'c', 'b', 'b', 'c'],
             )
@@ -539,7 +551,7 @@ class TestNominatim(DataTestCase):
             )
             self.assertEqual(empty, 6)
 
-            res, empty = datamart_profiler.spatial.nominatim_resolve_all(
+            res, empty = spatial.nominatim_resolve_all(
                 'http://240.123.45.67:21',
                 [
                     'a', 'b', 'c', 'b', 'b', 'c', 'a', 'b', 'c',
@@ -561,7 +573,7 @@ class TestNominatim(DataTestCase):
             )
             self.assertEqual(empty, 12)
         finally:
-            datamart_profiler.spatial.nominatim_query = old_query
+            spatial.nominatim_query = old_query
 
 
 class TestGeo(DataTestCase):
