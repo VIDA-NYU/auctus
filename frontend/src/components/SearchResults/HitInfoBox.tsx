@@ -17,7 +17,7 @@ function HitInfoBox(props: { hit: SearchResult }) {
         <div
           className="card shadow-sm ml-2"
           style={{
-            maxHeight: '96vh',
+            maxHeight: '80vh',
             overflowY: 'scroll',
           }}
         >
