@@ -90,8 +90,8 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
     const { hit, searchQuery, selectedHit } = this.props;
     return (
       <div
-        className="card mb-4 shadow-sm d-flex flex-row"
-        style={{ backgroundColor: selectedHit ? '#f5f4fa' : 'white' }}
+        className="card mb-3 shadow-sm d-flex flex-row"
+        style={{ backgroundColor: selectedHit ? '#f5f4fa' : 'white', marginRight: 9}}
       >
         <div className="card-body d-flex flex-column">
           <HitTitle hit={hit} />
@@ -111,7 +111,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
           style={{ cursor: 'pointer' }}
           onClick={this.onSearchHitExpand}
         >
-          <div style={{ margin: 'auto 2px' }}>
+          <div style={{ margin: 'auto 3px' }}>
             <Icon.ChevronRight className="feather feather-lg" />
           </div>
         </div>

@@ -79,7 +79,7 @@ class SearchResults extends React.PureComponent<
         const { selectedHit } = this.state;
         return (
           <div className="d-flex flex-row">
-            <div style={{ width: 750 }}>
+            <div className="col-md-4 px-0" style={{maxHeight: '96vh', overflowY: 'scroll'}}>
               {currentHits.map((hit, idx) => (
                 <SearchHit
                   searchQuery={searchQuery}
