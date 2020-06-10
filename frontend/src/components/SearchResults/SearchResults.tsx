@@ -32,7 +32,9 @@ class SearchResults extends React.PureComponent<
   componentDidUpdate() {
     if (this.lastSearchResponse !== this.props.searchResponse) {
       this.setState({
-        selectedHit: this.props.searchResponse ? this.props.searchResponse.results[0] : undefined,
+        selectedHit: this.props.searchResponse
+          ? this.props.searchResponse.results[0]
+          : undefined,
       });
     }
     this.lastSearchResponse = this.props.searchResponse;
@@ -81,7 +83,10 @@ class SearchResults extends React.PureComponent<
         const { selectedHit } = this.state;
         return (
           <div className="d-flex flex-row">
-            <div className="col-md-4 px-0" style={{maxHeight: '80vh', overflowY: 'scroll'}}>
+            <div
+              className="col-md-4 px-0"
+              style={{ maxHeight: '80vh', overflowY: 'scroll' }}
+            >
               {currentHits.map((hit, idx) => (
                 <SearchHit
                   searchQuery={searchQuery}

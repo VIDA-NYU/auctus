@@ -91,7 +91,10 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
     return (
       <div
         className="card mb-3 shadow-sm d-flex flex-row"
-        style={{ backgroundColor: selectedHit ? '#f5f4fa' : 'white', marginRight: 9}}
+        style={{
+          backgroundColor: selectedHit ? '#f5f4fa' : 'white',
+          marginRight: 9,
+        }}
       >
         <div className="card-body d-flex flex-column">
           <HitTitle hit={hit} />
