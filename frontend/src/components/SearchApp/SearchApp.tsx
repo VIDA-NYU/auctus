@@ -313,7 +313,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           <>
             <div className="row">
               <div className="col-md">
-                <div className="d-flex flex-row mt-4 mb-3">
+                <div className="d-flex flex-row mt-2 mb-1">
                   <div>
                     <Link
                       to="/"
