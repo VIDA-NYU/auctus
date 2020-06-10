@@ -23,6 +23,7 @@ SPATIAL_RANGE_DELTA_LAT = 0.0001
 MAX_ADDRESS_LENGTH = 90  # 90 characters
 MAX_NOMINATIM_REQUESTS = 200
 NOMINATIM_BATCH_SIZE = 30
+NOMINATIM_MIN_SPLIT_BATCH_SIZE = 6  # Batches >=this are divided on failure
 
 LATITUDE = ('latitude', 'lat')
 LONGITUDE = ('longitude', 'long', 'lon', 'lng')
@@ -208,6 +209,40 @@ def nominatim_query(url, *, q):
         return res.json()
 
 
+def _nominatim_batch(url, batch, locations, cache):
+    try:
+        locs = nominatim_query(url, q=list(batch.keys()))
+    except requests.HTTPError as e:
+        if (
+            e.response.status_code == 500
+            and len(batch) >= max(2, NOMINATIM_MIN_SPLIT_BATCH_SIZE)
+        ):
+            # Try smaller batch size
+            batch_list = list(batch.items())
+            mid = len(batch) // 2
+            return (
+                _nominatim_batch(url, dict(batch_list[:mid]), locations, cache)
+                +
+                _nominatim_batch(url, dict(batch_list[mid:]), locations, cache)
+            )
+        raise
+
+    not_found = 0
+    for location, (value, count) in zip(locs, batch.items()):
+        if location:
+            loc = (
+                float(location[0]['lat']),
+                float(location[0]['lon']),
+            )
+            cache[value] = loc
+            locations.extend([loc] * count)
+        else:
+            cache[value] = None
+            not_found += count
+    batch.clear()
+    return not_found
+
+
 def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
     cache = {}
     locations = []
@@ -216,23 +251,6 @@ def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
     start = time.perf_counter()
     processed = 0
     batch = {}
-
-    def run_batch():
-        not_found_batch = 0
-        locs = nominatim_query(url, q=list(batch.keys()))
-        for location, (value, count) in zip(locs, batch.items()):
-            if location:
-                loc = (
-                    float(location[0]['lat']),
-                    float(location[0]['lon']),
-                )
-                cache[value] = loc
-                locations.extend([loc] * count)
-            else:
-                cache[value] = None
-                not_found_batch += count
-        batch.clear()
-        return not_found_batch
 
     for processed, value in enumerate(array):
         value = value.strip()
@@ -250,12 +268,12 @@ def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
         else:
             batch[value] = 1
             if len(batch) == NOMINATIM_BATCH_SIZE:
-                not_found += run_batch()
+                not_found += _nominatim_batch(url, batch, locations, cache)
                 if len(cache) >= max_requests:
                     break
 
     if batch and len(cache) < max_requests:
-        not_found += run_batch()
+        not_found += _nominatim_batch(url, batch, locations, cache)
 
     logger.info(
         "Performed %d Nominatim queries in %fs (%d hits). Found %d/%d",
