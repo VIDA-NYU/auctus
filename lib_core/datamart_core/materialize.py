@@ -81,8 +81,8 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     # the CSV again just because we want a different format
 
     # Context to lock the CSV
-    csv_lock = contextlib.ExitStack()
-    with csv_lock:
+    dataset_lock = contextlib.ExitStack()
+    with dataset_lock:
         # Try to read from persistent storage
         shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
         if os.path.exists(shared):
@@ -101,7 +101,7 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                     )
 
             csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
-            csv_path = csv_lock.enter_context(
+            csv_path = dataset_lock.enter_context(
                 cache_get_or_set(
                     '/cache/datasets', csv_key, create_csv,
                 )
@@ -147,7 +147,10 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                     shutil.rmtree(cache_temp)
                     os.rename(zip_name, cache_temp)
 
-        with cache_get_or_set(
-            '/cache/datasets', key, create,
-        ) as cache_path:
-            yield cache_path
+        with dataset_lock.pop_all():
+            cache_path = dataset_lock.enter_context(
+                cache_get_or_set(
+                    '/cache/datasets', key, create,
+                )
+            )
+        yield cache_path
