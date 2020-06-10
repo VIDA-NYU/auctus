@@ -80,7 +80,7 @@ class Coordinator(object):
                 size=15,
             )['hits']['hits']
         except elasticsearch.ElasticsearchException:
-            logging.warning("Couldn't get recent datasets from Elasticsearch")
+            logger.warning("Couldn't get recent datasets from Elasticsearch")
         else:
             for h in recent:
                 self.recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
