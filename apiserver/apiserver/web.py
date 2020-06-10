@@ -32,6 +32,7 @@ from datamart_geo import GeoData
 from datamart_materialize import get_writer, make_writer
 import datamart_profiler
 
+from . import dataset_transforms
 from .enhance_metadata import enhance_metadata
 from .graceful_shutdown import GracefulApplication, GracefulHandler
 from .search import TOP_K_SIZE, ClientError, parse_query, \
@@ -192,7 +193,16 @@ class BaseHandler(RequestHandler):
         return format, format_options
 
     def read_transforms(self):
-        return self.get_query_arguments('transform')
+        transforms = []
+        for xform in self.get_query_arguments('transform'):
+            if xform == 'sample':
+                transforms.append(
+                    (dataset_transforms.sample, 'sample'),
+                )
+            else:
+                self.send_error_json(400, "Unknown transform")
+                raise HTTPError(400)
+        return transforms
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
