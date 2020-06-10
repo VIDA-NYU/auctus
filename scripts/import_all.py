@@ -45,10 +45,20 @@ async def import_all(folder):
     else:
         lazo_client = None
 
-    print("Importing Elasticsearch data", end='', flush=True)
+    dataset_docs = []
+    lazo_docs = []
     for name in os.listdir(folder):
         if name.startswith('lazo.'):
-            continue
+            lazo_docs.append(name)
+        else:
+            dataset_docs.append(name)
+
+    for i, name in enumerate(dataset_docs):
+        if i % 50 == 0:
+            print(
+                "\nImporting to Elasticsearch, %d/%d" % (i, len(dataset_docs)),
+                flush=True,
+            )
         path = os.path.join(folder, name)
         with open(path, 'r') as fp:
             obj = json.load(fp)
@@ -68,10 +78,12 @@ async def import_all(folder):
         )
         print('.', end='', flush=True)
 
-    print("Importing Lazo data", end='', flush=True)
-    for name in os.listdir(folder):
-        if not name.startswith('lazo.'):
-            continue
+    for i, name in enumerate(lazo_docs):
+        if i % 50 == 0:
+            print(
+                "\nImporting to Lazo, %d/%d" % (i, len(lazo_docs)),
+                flush=True,
+            )
         path = os.path.join(folder, name)
         with open(path, 'r') as fp:
             obj = json.load(fp)
@@ -90,6 +102,8 @@ async def import_all(folder):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+    logging.getLogger('datamart_core.common').setLevel(logging.WARNING)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(loop.create_task(
