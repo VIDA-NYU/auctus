@@ -1,6 +1,7 @@
 from datetime import datetime
 from dateutil.tz import UTC
 import pandas
+import requests
 import unittest
 import textwrap
 
@@ -470,9 +471,20 @@ class TestNominatim(DataTestCase):
                 'lat': 40.7287, 'lon': -73.9957,
             }],
         }
+
+        def replacement(url, *, q):
+            if not replacement.failed:  # Fail just once
+                replacement.failed = True
+                response = requests.Response()
+                response.status_code = 500
+                raise requests.HTTPError("Fake 500 error", response=response)
+            return [queries[qe] for qe in q]
+        replacement.failed = False
+
         old_query = spatial.nominatim_query
-        spatial.nominatim_query = \
-            lambda url, *, q: [queries[qe] for qe in q]
+        old_min_batch_size = spatial.NOMINATIM_MIN_SPLIT_BATCH_SIZE
+        spatial.nominatim_query = replacement
+        spatial.NOMINATIM_MIN_SPLIT_BATCH_SIZE = 2
         try:
             with data('addresses.csv', 'r') as data_fp:
                 metadata = process_dataset(
@@ -482,6 +494,7 @@ class TestNominatim(DataTestCase):
                 )
         finally:
             spatial.nominatim_query = old_query
+            spatial.NOMINATIM_MIN_SPLIT_BATCH_SIZE = old_min_batch_size
 
         self.assertJson(
             metadata,
