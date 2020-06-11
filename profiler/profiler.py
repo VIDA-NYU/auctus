@@ -351,6 +351,10 @@ class Profiler(object):
                         ),
                         id=dataset_id,
                     )
+                    self.es.delete(
+                        'datamart',
+                        dataset_id,
+                    )
                 except Exception as e:
                     if isinstance(e, elasticsearch.RequestError):
                         # This is a problem with our computed metadata
