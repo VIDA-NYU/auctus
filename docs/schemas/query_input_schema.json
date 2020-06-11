@@ -4,6 +4,56 @@
   "title": "Query",
   "description": "JSON object that specifies queries for searching datasets in DataMart.",
   "type": "object",
+  "properties": {
+    "keywords": {
+      "description": "Keywords that match a dataset. The keywords can be matched against the dataset title, dataset description, dataset column names, etc.",
+      "oneOf":[
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "source": {
+      "description": "Source or sources that results should come from.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "variables": {
+      "type": "array",
+      "description": "Describes a set of features (variables) that a matching dataset must have. Datasets with more features will be ranked higher.",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/temporal_variable"
+          },
+          {
+            "$ref": "#/definitions/geospatial_variable"
+          },
+          {
+            "$ref": "#/definitions/tabular_variable"
+          },
+          {
+            "$ref": "#/definitions/named_entity_variable"
+          }
+        ]
+      }
+    }
+  },
   "definitions": {
     "temporal_variable": {
       "type": "object",
@@ -29,8 +79,10 @@
           "enum": [
             "year",
             "month",
+            "week",
             "day",
             "hour",
+            "minute",
             "second"
           ]
         }
@@ -127,7 +179,7 @@
         },
         "entities": {
           "type": "array",
-          "description": "A set of entity names. A matching dataset should contain a column with the requested names. ",
+          "description": "A set of entity names. A matching dataset should contain a column with the requested names.",
           "items": {
               "type": "string"
           }
@@ -136,35 +188,6 @@
       "required": [
         "type"
       ]
-    }
-  },
-  "properties": {
-    "keywords": {
-      "type": "array",
-      "description": "Keywords that match a dataset. The keywords can be matched against the dataset title, dataset description, dataset column names, etc.",
-      "items": {
-        "type": "string"
-      }
-    },
-    "variables": {
-      "type": "array",
-      "description": "Describes a set of features (variables) that a matching dataset must have. Datasets with more features will be ranked higher.",
-      "items": {
-        "oneOf": [
-          {
-            "$ref": "#/definitions/temporal_variable"
-          },
-          {
-            "$ref": "#/definitions/geospatial_variable"
-          },
-          {
-            "$ref": "#/definitions/tabular_variable"
-          },
-          {
-            "$ref": "#/definitions/named_entity_variable"
-          }
-        ]
-      }
     }
   }
 }

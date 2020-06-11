@@ -2,12 +2,6 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://gitlab.com/datadrivendiscovery/datamart-api/query_result_schema.json",
   "title": "Result",
-  "definitions": {
-    "augmentation_unit": {
-      "type": "array",
-      "description": "An array of column identifiers that represents an unit for the augmentation. In the simplest case, we have a single identifier, and in more complex cases, we have multiple identifiers (e.g.: columns 'latitude' and 'longitude' could be combined to join and/or concatenate with column 'country')."
-    }
-  },
   "type": "object",
   "properties": {
     "id": {
@@ -56,9 +50,76 @@
           "items": {
             "$ref": "#/definitions/augmentation_unit"
           }
+        },
+        "left_columns_names": {
+          "type": "array",
+          "description": "The names of the left-side columns, for information.",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "right_columns_names": {
+          "type": "array",
+          "description": "The names of the right-side columns, for information.",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "temporal_resolution": {
+          "$ref": "#/definitions/temporal_resolution"
+        },
+        "agg_functions": {
+          "type": "object",
+          "description": "Maps column names to aggregation function(s) names.",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
         }
-      }
+      },
+      "required": [
+        "type",
+        "left_columns",
+        "right_columns"
+      ],
+      "additionalProperties": false
     }
   },
-  "required": ["id", "score", "metadata"]
+  "required": ["id", "score", "metadata"],
+  "definitions": {
+    "augmentation_unit": {
+      "type": "array",
+      "description": "An array of column identifiers that represents an unit for the augmentation. In the simplest case, we have a single identifier, and in more complex cases, we have multiple identifiers (e.g.: columns 'latitude' and 'longitude' could be combined to join and/or concatenate with column 'country').",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "temporal_resolution": {
+      "type": "string",
+      "enum": [
+        "year",
+        "month",
+        "week",
+        "day",
+        "hour",
+        "minute",
+        "second"
+      ]
+    }
+  }
 }
