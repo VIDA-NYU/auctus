@@ -254,8 +254,21 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       f => f.type === FilterType.RELATED_FILE
     );
     if (relatedFileFilters.length > 0) {
+      // Find index of the specific object using findIndex method
+      const objIndex = filters.findIndex(
+        obj => obj.id === relatedFileFilters[0].id
+      );
       // Update existing filter
-      relatedFileFilters[0].state = relatedFile;
+      const updatedObject = {
+        ...relatedFileFilters[0],
+        state: relatedFile,
+        ...this.createFilterComponent(
+          relatedFileFilters[0].id,
+          FilterType.RELATED_FILE,
+          relatedFile
+        ),
+      };
+      filters[objIndex] = updatedObject;
     } else {
       // Add new filter
       const filterId = generateRandomId();
@@ -272,6 +285,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       });
     }
     this.setState({ filters: [...filters] });
+    this.submitQuery();
   }
 
   renderFilters() {
@@ -313,7 +327,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           <>
             <div className="row">
               <div className="col-md">
-                <div className="d-flex flex-row mt-4 mb-3">
+                <div className="d-flex flex-row mt-2 mb-1">
                   <div>
                     <Link
                       to="/"
