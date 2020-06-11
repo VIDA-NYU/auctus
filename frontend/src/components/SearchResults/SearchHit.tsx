@@ -4,7 +4,6 @@ import { API_URL } from '../../config';
 import { formatSize } from '../../utils';
 import { SearchResult, RelatedFile } from '../../api/types';
 import { Description, DataTypes, DatasetColumns } from './Metadata';
-import { AugmentationOptions } from './AugmentationOptions';
 import { SearchQuery } from '../../api/rest';
 
 interface SearchHitProps {
@@ -13,6 +12,7 @@ interface SearchHitProps {
   selectedHit?: boolean;
   onSearchHitExpand: (hit: SearchResult) => void;
   onSearchRelated: (relatedFile: RelatedFile) => void;
+  onAugmentationOptions: (hit: SearchResult) => void;
 }
 
 interface SearchHitState {
@@ -20,15 +20,16 @@ interface SearchHitState {
 }
 
 function DownloadViewDetails(props: {
-  id: string;
+  hit: SearchResult;
   onSearchHitExpand: () => void;
   onSearchRelated: () => void;
+  onAugmentationOptions: () => void;
 }) {
   return (
     <div className="mt-2">
       <a
         className="btn btn-sm btn-outline-primary"
-        href={`${API_URL}/download/${props.id}`}
+        href={`${API_URL}/download/${props.hit.id}`}
       >
         <Icon.Download className="feather" /> Download
       </a>
@@ -44,6 +45,14 @@ function DownloadViewDetails(props: {
       >
         <Icon.Search className="feather" /> Search Related
       </button>
+      {!(!props.hit.augmentation || props.hit.augmentation.type === 'none') && (
+        <button
+          className="btn btn-sm btn-outline-primary ml-2"
+          onClick={props.onAugmentationOptions}
+        >
+          <Icon.PlusCircle className="feather" /> Augment Options
+        </button>
+      )}
     </div>
   );
 }
@@ -70,6 +79,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
     };
     this.onSearchHitExpand = this.onSearchHitExpand.bind(this);
     this.onSearchRelated = this.onSearchRelated.bind(this);
+    this.onAugmentationOptions = this.onAugmentationOptions.bind(this);
   }
 
   onSearchHitExpand() {
@@ -86,8 +96,12 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
     this.props.onSearchRelated(relatedFile);
   }
 
+  onAugmentationOptions() {
+    this.props.onAugmentationOptions(this.props.hit);
+  }
+
   render() {
-    const { hit, searchQuery, selectedHit } = this.props;
+    const { hit, selectedHit } = this.props;
     return (
       <div
         className="card mb-3 shadow-sm d-flex flex-row"
@@ -103,11 +117,11 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
           <DatasetColumns columns={hit.metadata.columns} label={false} />
           <DataTypes hit={hit} label={false} />
           <DownloadViewDetails
-            id={hit.id}
+            hit={hit}
             onSearchHitExpand={this.onSearchHitExpand}
             onSearchRelated={this.onSearchRelated}
+            onAugmentationOptions={this.onAugmentationOptions}
           />
-          <AugmentationOptions hit={hit} searchQuery={searchQuery} />
         </div>
         <div
           className="d-flex align-items-stretch"

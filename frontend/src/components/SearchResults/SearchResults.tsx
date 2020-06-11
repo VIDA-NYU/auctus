@@ -1,6 +1,11 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import { SearchResponse, SearchResult, RelatedFile } from '../../api/types';
+import {
+  SearchResponse,
+  SearchResult,
+  RelatedFile,
+  InfoBoxType,
+} from '../../api/types';
 import { SearchHit } from './SearchHit';
 import { SearchState } from './SearchState';
 import { Loading } from '../visus/Loading/Loading';
@@ -16,6 +21,7 @@ interface SearchResultsProps {
 
 interface SearchResultsState {
   selectedHit?: SearchResult;
+  selectedInfoBoxType: InfoBoxType;
 }
 
 class SearchResults extends React.PureComponent<
@@ -26,7 +32,7 @@ class SearchResults extends React.PureComponent<
 
   constructor(props: SearchResultsProps) {
     super(props);
-    this.state = {};
+    this.state = { selectedInfoBoxType: InfoBoxType.DETAIL };
   }
 
   componentDidUpdate() {
@@ -35,6 +41,7 @@ class SearchResults extends React.PureComponent<
         selectedHit: this.props.searchResponse
           ? this.props.searchResponse.results[0]
           : undefined,
+        selectedInfoBoxType: InfoBoxType.DETAIL,
       });
     }
     this.lastSearchResponse = this.props.searchResponse;
@@ -80,7 +87,7 @@ class SearchResults extends React.PureComponent<
           (page - 1) * k,
           page * k
         );
-        const { selectedHit } = this.state;
+        const { selectedHit, selectedInfoBoxType } = this.state;
         return (
           <div className="d-flex flex-row">
             <div
@@ -95,12 +102,29 @@ class SearchResults extends React.PureComponent<
                   selectedHit={
                     selectedHit && hit.id === selectedHit.id ? true : false
                   }
-                  onSearchHitExpand={hit => this.setState({ selectedHit: hit })}
+                  onSearchHitExpand={hit =>
+                    this.setState({
+                      selectedHit: hit,
+                      selectedInfoBoxType: InfoBoxType.DETAIL,
+                    })
+                  }
                   onSearchRelated={this.props.onSearchRelated}
+                  onAugmentationOptions={hit =>
+                    this.setState({
+                      selectedHit: hit,
+                      selectedInfoBoxType: InfoBoxType.AUGMENTATION,
+                    })
+                  }
                 />
               ))}
             </div>
-            {selectedHit && <HitInfoBox hit={selectedHit} />}
+            {selectedHit && (
+              <HitInfoBox
+                hit={selectedHit}
+                searchQuery={searchQuery}
+                infoBoxType={selectedInfoBoxType}
+              />
+            )}
           </div>
         );
       }

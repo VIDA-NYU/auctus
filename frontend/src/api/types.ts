@@ -135,3 +135,8 @@ export interface CategoricalDataVegaFormat {
 }
 
 export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
+
+export enum InfoBoxType {
+  DETAIL = 'DETAIL',
+  AUGMENTATION = 'AUGMENTATION',
+}
