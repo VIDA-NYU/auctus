@@ -40,13 +40,9 @@ export interface SearchQuery {
   relatedFile?: RelatedFile;
 }
 
-function parseQueryString(q?: string): string[] {
-  return q ? q.split(' ').filter(t => t.length > 0) : [];
-}
-
 export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   const spec: QuerySpec = {
-    keywords: parseQueryString(q.query),
+    keywords: q.query,
     variables: q.filters ? [...q.filters] : [],
   };
   if (q.sources && q.sources.length > 0) {

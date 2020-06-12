@@ -102,7 +102,7 @@ export interface GeoSpatialVariable {
 export type FilterVariables = TemporalVariable | GeoSpatialVariable;
 
 export interface QuerySpec {
-  keywords: string[];
+  keywords?: string;
   source?: string[];
   variables: FilterVariables[];
 }
