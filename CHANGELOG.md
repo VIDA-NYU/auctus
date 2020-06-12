@@ -1,3 +1,31 @@
+0.7 (TBD)
+=========
+
+Incompatible changes:
+* Add a Zenodo discovery plugin (can be configured with a keyword)
+* Renamed docker-compose services to use dashes `-` instead of underscores `_`
+* Containers no longer run as root, change permissions on volumes to uid 998
+* Changed Elasticsearch index settings, use reindex API to update (`POST /_reindex`)
+
+Enhancements:
+* Remove latitude/longitude semantic types from unmatched columns
+* Recognize "Well-Known Text" (WKT) and "Socrata combined" point formats
+* Send batch queries to Nominatim, retry smaller batches on 500
+* While a profiler is processing, have it download the next dataset in parallel
+* Automatically handle TSV files
+* Automatically pivot files with columns for years
+* Add a new alternate index "pending" for non-profiled datasets (uploaded and waiting, or failed)
+* Add discovery plugin for indicators from University of Arizona
+* Recognize columns called "year" as temporal
+* Add plot for text columns (with most common words)
+* Aggregate search hits in frontend (same dataset with different augmentations)
+* Remove clusters of outliers when computing ranges
+* Show plots on frontend again
+* Recognize datetime strings in YYYYMMDD format (even though they are valid integers)
+* Fix searching on column names
+* Detect named administrative areas via the datamart-geo database
+* Accept format parameters for augmentations (don't only return D3M format)
+
 0.6 (2020-04-29)
 ================
 
