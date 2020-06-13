@@ -296,6 +296,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           key={`filter-container-${f.id}`}
           title={f.title}
           onClose={() => this.removeFilter(f.id)}
+          onCloseEditingMode={() => this.toggleFilter(f.id)}
         >
           {f.component}
         </FilterContainer>
@@ -352,11 +353,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 </div>
               </div>
             </div>
-            <div className="row" style={{ width: 780 }}>
+            <div
+              className="row"
+              style={{ maxHeight: '58vh', overflowY: 'scroll' }}
+            >
               <div className="col-md-12 mb-3">
                 {this.renderCompactFilters()}
               </div>
-              <div className="col-md-12">{this.renderFilters()}</div>
+              <div className="col-md-7">{this.renderFilters()}</div>
             </div>
             <div className="row">
               <div className="col-md-12">
