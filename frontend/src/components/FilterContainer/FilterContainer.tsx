@@ -12,14 +12,16 @@ class FilterContainer extends React.PureComponent<{
         <div>
           <h6 className="d-inline">{this.props.title}</h6>
           <h6 className="d-inline">
-            <a
-              href="/#"
-              className="btn-link"
-              title="Close editing mode"
-              onClick={() => this.props.onCloseEditingMode()}
-            >
-              (close)
-            </a>
+            <span className="chip-label">
+              &nbsp;
+              <button
+                className="btn-link"
+                title="Close editing mode"
+                onClick={() => this.props.onCloseEditingMode()}
+              >
+                (close)
+              </button>
+            </span>
           </h6>
           <span
             onClick={() => this.props.onClose()}
