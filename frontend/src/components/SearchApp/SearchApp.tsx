@@ -288,13 +288,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     this.submitQuery();
   }
 
-  renderFilters() {
+  renderFilters(isLandingPage: boolean) {
     return this.state.filters
       .filter(f => !f.hidden)
       .map(f => (
         <FilterContainer
           key={`filter-container-${f.id}`}
           title={f.title}
+          isLandingPage={isLandingPage}
           onClose={() => this.removeFilter(f.id)}
           onCloseEditingMode={() => this.toggleFilter(f.id)}
         >
@@ -360,7 +361,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               <div className="col-md-12 mb-3">
                 {this.renderCompactFilters()}
               </div>
-              <div className="col-md-7">{this.renderFilters()}</div>
+              <div className="col-md-7">{this.renderFilters(false)}</div>
             </div>
             <div className="row">
               <div className="col-md-12">
@@ -396,7 +397,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 overflowY: 'scroll',
               }}
             >
-              <div className="col-md-8 pl-0">{this.renderFilters()}</div>
+              <div className="col-md-8 pl-0">{this.renderFilters(true)}</div>
             </div>
           </div>
         )}

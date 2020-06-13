@@ -3,6 +3,7 @@ import * as Icon from 'react-feather';
 
 class FilterContainer extends React.PureComponent<{
   title: string;
+  isLandingPage: boolean;
   onClose: () => void;
   onCloseEditingMode: () => void;
 }> {
@@ -11,18 +12,20 @@ class FilterContainer extends React.PureComponent<{
       <div className="mt-2 mb-3">
         <div>
           <h6 className="d-inline">{this.props.title}</h6>
-          <h6 className="d-inline">
-            <span className="chip-label">
-              &nbsp;
-              <button
-                className="btn-link"
-                title="Close editing mode"
-                onClick={() => this.props.onCloseEditingMode()}
-              >
-                (close)
-              </button>
-            </span>
-          </h6>
+          {!this.props.isLandingPage && (
+            <h6 className="d-inline">
+              <span className="chip-label">
+                &nbsp;
+                <button
+                  className="btn-link"
+                  title="Close editing mode"
+                  onClick={() => this.props.onCloseEditingMode()}
+                >
+                  (close)
+                </button>
+              </span>
+            </h6>
+          )}
           <span
             onClick={() => this.props.onClose()}
             className="d-inline text-muted ml-1"
