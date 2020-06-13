@@ -386,8 +386,17 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             <AdvancedSearchBar
               onAddFilter={type => this.handleAddFilter(type)}
             />
-            <div style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
-              {this.renderFilters()}
+            <div
+              className="row"
+              style={{
+                maxWidth: 1000,
+                margin: '1.5rem auto',
+                minHeight: '50vh',
+                maxHeight: '50vh',
+                overflowY: 'scroll',
+              }}
+            >
+              <div className="col-md-8 pl-0">{this.renderFilters()}</div>
             </div>
           </div>
         )}
