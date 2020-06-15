@@ -76,7 +76,7 @@ class SocrataDiscoverer(Discoverer):
         seen = set()
         for dataset in datasets:
             try:
-                valid = self.process_dataset(domain, dataset)
+                valid = self.process_dataset(socrata, dataset)
             except Exception:
                 logger.exception("Error processing dataset %s",
                                  dataset['resource']['id'])
@@ -121,18 +121,18 @@ class SocrataDiscoverer(Discoverer):
         if deleted:
             logger.info("Deleted %d missing datasets", deleted)
 
-    def process_dataset(self, domain, dataset):
+    def process_dataset(self, socrata, dataset):
         # Get metadata
         resource = dataset['resource']
         id = resource['id']
 
-        encoded_domain = encode_domain(domain['url'])
+        encoded_domain = encode_domain(socrata.domain)
         dataset_id = '{}.{}'.format(encoded_domain, id)
 
         # Check type
         # api, calendar, chart, datalens, dataset, federated_href, file,
         # filter, form, href, link, map, measure, story, visualization
-        if resource['type'] != 'dataset':
+        if resource['type'] not in ('dataset', 'map'):
             logger.info("Skipping %s, type %s", id, resource['type'])
             return False
 
@@ -160,25 +160,47 @@ class SocrataDiscoverer(Discoverer):
                 logger.info("Dataset has not changed: %s", id)
                 return True
 
+        if resource['type'] == 'map':
+            views = socrata.get_metadata(id).get('childViews', [])
+            for child_id in views:
+                child_meta = socrata.get_metadata(child_id)
+                if child_meta['viewType'] == 'tabular':
+                    download_id = child_id
+                    break
+            else:
+                logger.info(
+                    "Skipping %s, map with no tabular view (%d views)",
+                    id, len(views),
+                )
+                return False
+        else:
+            download_id = id
+
         # Read metadata
         metadata = dict(
             name=resource.get('name', id),
-            source=domain['url'],
+            source=socrata.domain,
         )
         if resource.get('description'):
             metadata['description'] = resource['description']
         direct_url = (
-            'https://{domain}/api/views/{dataset_id}/rows.csv'
-            '?accessType=DOWNLOAD'.format(domain=domain['url'], dataset_id=id)
+            'https://{domain}/api/views/{download_id}/rows.csv'
+            '?accessType=DOWNLOAD'.format(
+                domain=socrata.domain,
+                download_id=download_id,
+            )
         )
 
         # Discover this dataset
-        self.record_dataset(dict(socrata_id=id,
-                                 socrata_domain=domain['url'],
-                                 socrata_updated=resource['updatedAt'],
-                                 direct_url=direct_url),
-                            metadata,
-                            dataset_id=dataset_id)
+        materialize = dict(
+            socrata_id=id,
+            socrata_domain=socrata.domain,
+            socrata_updated=resource['updatedAt'],
+            direct_url=direct_url,
+        )
+        if download_id != dataset_id:
+            materialize['socrata_view_id'] = download_id
+        self.record_dataset(materialize, metadata, dataset_id=dataset_id)
         return True
 
 
