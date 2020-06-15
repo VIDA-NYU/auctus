@@ -4,6 +4,7 @@ import './Chip.css';
 
 interface ChipProps {
   label: string;
+  isOpen: boolean;
   onClose?: () => void;
   onEdit?: () => void;
   icon?: Icon.Icon;
@@ -16,6 +17,8 @@ function Chip(props: ChipProps) {
   if (props.onClose) {
     classes += ' chip-closeable';
   }
+  const chipStatus = props.isOpen ? '(edit)' : '(close)';
+
   return (
     <div className={classes} tabIndex={0} role="button">
       {props.icon && (
@@ -26,16 +29,18 @@ function Chip(props: ChipProps) {
       <span className="chip-label">
         {props.label}
         &nbsp;
-        {props.onEdit ? (
+        {props.onEdit && (
           <button className="btn-link" onClick={props.onEdit}>
-            (edit)
+            {chipStatus}
           </button>
-        ) : (
-          ''
         )}
       </span>
       {props.icon && (
-        <div className="chip-btn-close" onClick={props.onClose}>
+        <div
+          className="chip-btn-close"
+          onClick={props.onClose}
+          title="Remove this filter"
+        >
           <Icon.Trash2 className="feather" />
         </div>
       )}

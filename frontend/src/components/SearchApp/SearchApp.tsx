@@ -310,6 +310,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         {this.state.filters.map(f => (
           <Chip
             key={`filter-chip-${f.id}`}
+            isOpen={f.hidden}
             icon={f.icon}
             label={f.title}
             onClose={() => this.removeFilter(f.id)}
