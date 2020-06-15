@@ -12,7 +12,6 @@ import uuid
 
 from .common import block_run, log_future, json2msg, msg2json, \
     encode_dataset_id, delete_dataset_from_index
-from .fscache import delete_cache_entry
 
 
 logger = logging.getLogger(__name__)
@@ -263,19 +262,6 @@ class Discoverer(object):
             full_id,
             self.lazo_client,
         )
-
-        # Also delete it from the cache
-        prefix = encode_dataset_id(full_id) + '_'
-        for name in os.listdir('/cache/datasets'):
-            if name.startswith(prefix) and name.endswith('.cache'):
-                key = name[:-6]
-                try:
-                    delete_cache_entry('/cache/datasets', key, timeout=300)
-                except TimeoutError:
-                    logger.error(
-                        "Couldn't lock cached dataset for deletion: %r",
-                        key,
-                    )
 
         # And the stored datasets
         dirname = os.path.join('/datasets', encode_dataset_id(full_id))

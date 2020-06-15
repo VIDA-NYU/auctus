@@ -222,8 +222,6 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
-    volumes:
-      - ./volumes/cache:/cache
   zenodo:
     build:
       context: .
@@ -238,8 +236,6 @@ services:
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
       - ZENODO_TOKEN=${ZENODO_TOKEN}
-    volumes:
-      - ./volumes/cache:/cache
   uaz-indicators:
     build:
       context: .
@@ -255,7 +251,6 @@ services:
       - LAZO_SERVER_PORT=50051
     volumes:
       - ./volumes/datasets:/datasets
-      - ./volumes/cache:/cache
   noaa:
     build:
       context: .
