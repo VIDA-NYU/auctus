@@ -9,6 +9,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'requests',
     'xlrd',
+    'pyreadstat>=1.0,<2.0',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
@@ -27,6 +28,7 @@ setup(name='datamart_materialize',
           'datamart_materialize.converter': [
               'xls = datamart_materialize.excel:ExcelConverter',
               'tsv = datamart_materialize.tsv:TsvConverter',
+              'spss = datamart_materialize.spss:SpssConverter',
               'pivot = datamart_materialize.pivot:PivotConverter',
           ],
       },
