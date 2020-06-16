@@ -797,11 +797,9 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 else:
                     # send the file
                     with open(path, 'rb') as fp:
-                        await self.send_file(fp)
+                        return await self.send_file(fp)
         except AugmentationError as e:
             return await self.send_error_json(400, str(e))
-
-        return await self.finish()
 
 
 class Upload(BaseHandler):
