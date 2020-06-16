@@ -1280,7 +1280,8 @@ class ProfilePostedData(tornado.web.RequestHandler):
                             stack.enter_context(tempfile.TemporaryDirectory()),
                             'dataset',
                         )
-                        func(path, dst)
+                        with open(dst, 'w', newline='') as dst_fp:
+                            func(path, dst_fp)
                         return dst
 
                 dataset_path = detect_format_convert_to_csv(
@@ -1291,15 +1292,16 @@ class ProfilePostedData(tornado.web.RequestHandler):
 
                 logger.info("Profiling...")
                 start = time.perf_counter()
-                data_profile = process_dataset(
-                    data=dataset_path,
-                    lazo_client=self.application.lazo_client,
-                    nominatim=self.application.nominatim,
-                    geo_data=self.application.geo_data,
-                    search=True,
-                    include_sample=False,
-                    coverage=True,
-                )
+                with open(dataset_path, 'rb') as data:
+                    data_profile = process_dataset(
+                        data=data,
+                        lazo_client=self.application.lazo_client,
+                        nominatim=self.application.nominatim,
+                        geo_data=self.application.geo_data,
+                        search=True,
+                        include_sample=False,
+                        coverage=True,
+                    )
                 logger.info("Profiled in %.2fs", time.perf_counter() - start)
 
             self.application.redis.set(
