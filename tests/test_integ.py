@@ -1049,7 +1049,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '161 B',
+                        'approximateSize': '167 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1167,7 +1167,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '161 B',
+                        'approximateSize': '167 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1341,7 +1341,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '191 B',
+                        'approximateSize': '197 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1493,7 +1493,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '760 B',
+                        'approximateSize': '787 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1624,7 +1624,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '3688 B',
+                        'approximateSize': '3798 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -2061,16 +2061,16 @@ basic_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
-    "sample": "name,country,number,what\njames,canada,5,false\n" +
-              "john,usa,4,false\nrobert,usa,6,false\nmichael,usa,7,true\n" +
-              "william,usa,7,true\ndavid,canada,5,false\n" +
-              "richard,canada,7,true\njoseph,usa,6,true\n" +
-              "thomas,usa,6,false\ncharles,usa,7,false\n" +
-              "christopher,canada,11,true\ndaniel,usa,5,false\n"
-              "matthew,canada,7,true\nanthony,canada,7,true\n" +
-              "donald,usa,6,true\nmark,usa,4,false\npaul,usa,4,false\n" +
-              "steven,usa,6,false\nandrew,canada,6,false\n" +
-              "kenneth,canada,7,true\n",
+    "sample": "name,country,number,what\r\njames,canada,5,false\r\n" +
+              "john,usa,4,false\r\nrobert,usa,6,false\r\nmichael,usa,7,true" +
+              "\r\nwilliam,usa,7,true\r\ndavid,canada,5,false\r\n" +
+              "richard,canada,7,true\r\njoseph,usa,6,true\r\n" +
+              "thomas,usa,6,false\r\ncharles,usa,7,false\r\n" +
+              "christopher,canada,11,true\r\ndaniel,usa,5,false\r\n"
+              "matthew,canada,7,true\r\nanthony,canada,7,true\r\n" +
+              "donald,usa,6,true\r\nmark,usa,4,false\r\npaul,usa,4,false\r\n" +
+              "steven,usa,6,false\r\nandrew,canada,6,false\r\n" +
+              "kenneth,canada,7,true\r\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -2218,8 +2218,9 @@ agg_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
-    "sample": "id,work,salary\n40,false,\n30,true,200\n70,true,\n80,true,200" +
-              "\n100,false,300\n100,true,200\n30,false,100\n70,false,600\n",
+    "sample": "id,work,salary\r\n40,false,\r\n30,true,200\r\n70,true,\r\n80," +
+              "true,200\r\n100,false,300\r\n100,true,200\r\n30,false,100\r\n" +
+              "70,false,600\r\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -2281,20 +2282,21 @@ geo_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
-    "sample": "id,lat,long,height\nplace05,40.722948,-74.001501,42.904820\np" +
-              "lace06,40.735108,-73.996996,48.345170\nplace14,40.733272,-73." +
-              "996875,51.000673\nplace21,40.733305,-73.999205,45.887002\npla" +
-              "ce25,40.727810,-73.999472,35.740136\nplace39,40.732095,-73.99" +
-              "6864,47.361715\nplace41,40.727197,-73.996098,62.933509\nplace" +
-              "44,40.730017,-73.993764,38.067007\nplace46,40.730439,-73.9966" +
-              "33,32.522354\nplace47,40.736176,-73.998520,50.594276\nplace48" +
-              ",40.730226,-74.001459,5.034845\nplace51,40.692165,-73.987300," +
-              "67.055957\nplace55,40.693658,-73.984096,27.633986\nplace60,40" +
-              ".691525,-73.987374,70.962950\nplace65,40.692605,-73.986475,53" +
-              ".012337\nplace72,40.692980,-73.987301,46.909863\nplace74,40.6" +
-              "93227,-73.988686,59.675767\nplace85,40.692914,-73.989237,73.3" +
-              "57646\nplace87,40.693326,-73.984213,32.226852\nplace97,40.692" +
-              "794,-73.986984,32.891257\n",
+    "sample": "id,lat,long,height\r\nplace05,40.722948,-74.001501,42.904820" +
+              "\r\nplace06,40.735108,-73.996996,48.345170\r\nplace14,40.7332" +
+              "72,-73.996875,51.000673\r\nplace21,40.733305,-73.999205,45.88" +
+              "7002\r\nplace25,40.727810,-73.999472,35.740136\r\nplace39,40." +
+              "732095,-73.996864,47.361715\r\nplace41,40.727197,-73.996098,6" +
+              "2.933509\r\nplace44,40.730017,-73.993764,38.067007\r\nplace46" +
+              ",40.730439,-73.996633,32.522354\r\nplace47,40.736176,-73.9985" +
+              "20,50.594276\r\nplace48,40.730226,-74.001459,5.034845\r\nplac" +
+              "e51,40.692165,-73.987300,67.055957\r\nplace55,40.693658,-73.9" +
+              "84096,27.633986\r\nplace60,40.691525,-73.987374,70.962950\r\n" +
+              "place65,40.692605,-73.986475,53.012337\r\nplace72,40.692980,-" +
+              "73.987301,46.909863\r\nplace74,40.693227,-73.988686,59.675767" +
+              "\r\nplace85,40.692914,-73.989237,73.357646\r\nplace87,40.6933" +
+              "26,-73.984213,32.226852\r\nplace97,40.692794,-73.986984,32.89" +
+              "1257\r\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -2394,23 +2396,23 @@ geo_wkt_metadata = {
         "date": lambda d: isinstance(d, str),
         "direct_url": "http://test-discoverer:7000/geo_wkt.csv",
     },
-    "sample": "id,coords,height\nplace05,POINT (-74.001501 40.722948),42.904" +
-              "820\nplace06,POINT (-73.996996 40.735108),48.345170\nplace14," +
-              "POINT (-73.996875 40.733272),51.000673\nplace21,POINT (-73.99" +
-              "9205 40.733305),45.887002\nplace25,POINT (-73.999472 40.72781" +
-              "0),35.740136\nplace39,POINT (-73.996864 40.732095),47.361715" +
-              "\nplace41,POINT (-73.996098 40.727197),62.933509\nplace44,POI" +
-              "NT (-73.993764 40.730017),38.067007\nplace46,POINT (-73.99663" +
-              "3 40.730439),32.522354\nplace47,POINT (-73.998520 40.736176)," +
-              "50.594276\nplace48,POINT (-74.001459 40.730226),5.034845\npla" +
-              "ce51,POINT (-73.987300 40.692165),67.055957\nplace55,POINT (-" +
-              "73.984096 40.693658),27.633986\nplace60,POINT (-73.987374 40." +
-              "691525),70.962950\nplace65,POINT (-73.986475 40.692605),53.01" +
-              "2337\nplace72,POINT (-73.987301 40.692980),46.909863\nplace74" +
-              ",POINT (-73.988686 40.693227),59.675767\nplace85,POINT (-73.9" +
-              "89237 40.692914),73.357646\nplace87,POINT (-73.984213 40.6933" +
-              "26),32.226852\nplace97,POINT (-73.986984 40.692794),32.891257" +
-              "\n",
+    "sample": "id,coords,height\r\nplace05,POINT (-74.001501 40.722948),42.9" +
+              "04820\r\nplace06,POINT (-73.996996 40.735108),48.345170\r\npl" +
+              "ace14,POINT (-73.996875 40.733272),51.000673\r\nplace21,POINT" +
+              " (-73.999205 40.733305),45.887002\r\nplace25,POINT (-73.99947" +
+              "2 40.727810),35.740136\r\nplace39,POINT (-73.996864 40.732095" +
+              "),47.361715\r\nplace41,POINT (-73.996098 40.727197),62.933509" +
+              "\r\nplace44,POINT (-73.993764 40.730017),38.067007\r\nplace46" +
+              ",POINT (-73.996633 40.730439),32.522354\r\nplace47,POINT (-73" +
+              ".998520 40.736176),50.594276\r\nplace48,POINT (-74.001459 40." +
+              "730226),5.034845\r\nplace51,POINT (-73.987300 40.692165),67.0" +
+              "55957\r\nplace55,POINT (-73.984096 40.693658),27.633986\r\npl" +
+              "ace60,POINT (-73.987374 40.691525),70.962950\r\nplace65,POINT" +
+              " (-73.986475 40.692605),53.012337\r\nplace72,POINT (-73.98730" +
+              "1 40.692980),46.909863\r\nplace74,POINT (-73.988686 40.693227" +
+              "),59.675767\r\nplace85,POINT (-73.989237 40.692914),73.357646" +
+              "\r\nplace87,POINT (-73.984213 40.693326),32.226852\r\nplace97" +
+              ",POINT (-73.986984 40.692794),32.891257\r\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -2466,10 +2468,10 @@ lazo_metadata = {
         "date": lambda d: isinstance(d, str),
         "convert": [{'identifier': 'tsv'}],
     },
-    "sample": "state,year\nVA,1990\nKY,1990\nCA,1990\nWV,1990\nPR,1990\n" +
-              "NC,1990\nAL,1990\nNJ,1990\nCT,1990\nCO,1990\n,1990\nMN,1990\n" +
-              "OR,1990\nND,1990\nTN,1990\nGA,1990\nNM,1990\nAR,1990\n" +
-              "UT,1991\nSC,1991\n",
+    "sample": "state,year\r\nVA,1990\r\nKY,1990\r\nCA,1990\r\nWV,1990\r\nPR," +
+              "1990\r\nNC,1990\r\nAL,1990\r\nNJ,1990\r\nCT,1990\r\nCO,1990\r" +
+              "\n,1990\r\nMN,1990\r\nOR,1990\r\nND,1990\r\nTN,1990\r\nGA,199" +
+              "0\r\nNM,1990\r\nAR,1990\r\nUT,1991\r\nSC,1991\r\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -2535,11 +2537,12 @@ daily_metadata = {
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
     },
-    'sample': "aug_date,rain\n20190423,no\n20190425,yes\n20190426,no\n201904" +
-              "29,yes\n20190502,no\n20190503,yes\n20190505,yes\n20190507,no" +
-              "\n20190508,yes\n20190509,yes\n20190510,no\n20190513,no\n20190" +
-              "514,no\n20190516,no\n20190517,yes\n20190518,no\n20190519,yes" +
-              "\n20190520,no\n20190521,no\n20190522,yes\n",
+    'sample': "aug_date,rain\r\n20190423,no\r\n20190425,yes\r\n20190426,no\r" +
+              "\n20190429,yes\r\n20190502,no\r\n20190503,yes\r\n20190505,yes" +
+              "\r\n20190507,no\r\n20190508,yes\r\n20190509,yes\r\n20190510,n" +
+              "o\r\n20190513,no\r\n20190514,no\r\n20190516,no\r\n20190517,ye" +
+              "s\r\n20190518,no\r\n20190519,yes\r\n20190520,no\r\n20190521,n" +
+              "o\r\n20190522,yes\r\n",
     'date': lambda d: isinstance(d, str),
     'version': version,
 }
@@ -2605,15 +2608,15 @@ hourly_metadata = {
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
     },
-    'sample': "aug_date,rain\n2019-06-12T01:00:00,no\n2019-06-12T02:00:00,no" +
-              "\n2019-06-12T03:00:00,yes\n2019-06-12T09:00:00,no\n2019-06-12" +
-              "T10:00:00,yes\n2019-06-12T11:00:00,yes\n2019-06-12T12:00:00,y" +
-              "es\n2019-06-12T14:00:00,yes\n2019-06-12T15:00:00,no\n2019-06-" +
-              "12T20:00:00,yes\n2019-06-12T21:00:00,yes\n2019-06-13T01:00:00" +
-              ",no\n2019-06-13T03:00:00,no\n2019-06-13T05:00:00,no\n2019-06-" +
-              "13T07:00:00,yes\n2019-06-13T10:00:00,yes\n2019-06-13T14:00:00" +
-              ",yes\n2019-06-13T17:00:00,yes\n2019-06-14T00:00:00,yes\n2019-" +
-              "06-14T01:00:00,yes\n",
+    'sample': "aug_date,rain\r\n2019-06-12T01:00:00,no\r\n2019-06-12T02:00:0" +
+              "0,no\r\n2019-06-12T03:00:00,yes\r\n2019-06-12T09:00:00,no\r\n" +
+              "2019-06-12T10:00:00,yes\r\n2019-06-12T11:00:00,yes\r\n2019-06" +
+              "-12T12:00:00,yes\r\n2019-06-12T14:00:00,yes\r\n2019-06-12T15:" +
+              "00:00,no\r\n2019-06-12T20:00:00,yes\r\n2019-06-12T21:00:00,ye" +
+              "s\r\n2019-06-13T01:00:00,no\r\n2019-06-13T03:00:00,no\r\n2019" +
+              "-06-13T05:00:00,no\r\n2019-06-13T07:00:00,yes\r\n2019-06-13T1" +
+              "0:00:00,yes\r\n2019-06-13T14:00:00,yes\r\n2019-06-13T17:00:00" +
+              ",yes\r\n2019-06-14T00:00:00,yes\r\n2019-06-14T01:00:00,yes\r\n",
     'date': lambda d: isinstance(d, str),
     'version': version,
 }
@@ -2670,14 +2673,14 @@ dates_pivoted_metadata = {
             {'identifier': 'pivot', 'except_columns': [0]},
         ],
     },
-    'sample': "country,date,value\nfrance,2012-01-01,yes\nfrance,2012-02-01," +
-              "no\nfrance,2012-03-01,no\nfrance,2012-04-01,yes\nfrance,2012-" +
-              "06-01,yes\nfrance,2012-07-01,yes\nfrance,2012-08-01,yes\nfran" +
-              "ce,2012-09-01,yes\nfrance,2012-10-01,no\nfrance,2012-11-01,no" +
-              "\nusa,2012-01-01,no\nusa,2012-03-01,yes\nusa,2012-04-01,yes\n" +
-              "usa,2012-05-01,no\nusa,2012-06-01,no\nusa,2012-07-01,no\nusa," +
-              "2012-09-01,no\nusa,2012-10-01,yes\nusa,2012-11-01,yes\nusa,20" +
-              "12-12-01,no\n",
+    'sample': "country,date,value\r\nfrance,2012-01-01,yes\r\nfrance,2012-02" +
+              "-01,no\r\nfrance,2012-03-01,no\r\nfrance,2012-04-01,yes\r\nfr" +
+              "ance,2012-06-01,yes\r\nfrance,2012-07-01,yes\r\nfrance,2012-0" +
+              "8-01,yes\r\nfrance,2012-09-01,yes\r\nfrance,2012-10-01,no\r\n" +
+              "france,2012-11-01,no\r\nusa,2012-01-01,no\r\nusa,2012-03-01,y" +
+              "es\r\nusa,2012-04-01,yes\r\nusa,2012-05-01,no\r\nusa,2012-06-" +
+              "01,no\r\nusa,2012-07-01,no\r\nusa,2012-09-01,no\r\nusa,2012-1" +
+              "0-01,yes\r\nusa,2012-11-01,yes\r\nusa,2012-12-01,no\r\n",
     'date': lambda d: isinstance(d, str),
     'version': version
 }
@@ -2737,7 +2740,8 @@ other_formats_metadata = lambda fmt: {
         'date': lambda d: isinstance(d, str),
         'convert': [{'identifier': fmt}],
     },
-    'sample': 'name,age\nC++,38.0\nPython,30.0\nRust,9.0\nLua,27.0\n',
+    'sample': 'name,age\r\nC++,38.0\r\nPython,30.0\r\nRust,9.0\r\nLua,27.0\r' +
+              '\n',
     'date': lambda d: isinstance(d, str),
     'version': version
 }

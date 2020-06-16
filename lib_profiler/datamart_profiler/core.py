@@ -576,7 +576,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         choose_rows.sort()  # Keep it in order
         sample = data.iloc[choose_rows]
         sample = sample.applymap(truncate_string)  # Truncate long values
-        metadata['sample'] = sample.to_csv(index=False)
+        metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches

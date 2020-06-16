@@ -174,7 +174,11 @@ class UazIndicatorsDiscoverer(Discoverer):
         df = df.sort_values(['Country', 'State', 'County', 'Year', 'Month'])
 
         with self.write_to_shared_storage(dataset_id) as tmp:
-            df.to_csv(os.path.join(tmp, 'main.csv'), index=False)
+            df.to_csv(
+                os.path.join(tmp, 'main.csv'),
+                index=False,
+                line_terminator='\r\n',
+            )
 
         self.record_dataset(
             dict(

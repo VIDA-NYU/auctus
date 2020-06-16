@@ -489,7 +489,7 @@ def join(
         ))
 
     with WriteCounter(writer.open_file('w')) as fout:
-        join_.to_csv(fout, index=False)
+        join_.to_csv(fout, index=False, line_terminator='\r\n')
         size = fout.size
 
     # Build a dict of information about all columns
@@ -569,7 +569,12 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
         fout.write(','.join(original_data.columns) + '\n')
         total_rows = 0
         if not return_only_datamart_data:
-            original_data.to_csv(fout, index=False, header=False)
+            original_data.to_csv(
+                fout,
+                header=False,
+                index=False,
+                line_terminator='\r\n',
+            )
             total_rows += len(original_data)
 
         # Iterate on chunks of augment data
@@ -598,7 +603,12 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             augment_data = augment_data[original_data.columns]
 
             # Add to CSV output
-            augment_data.to_csv(fout, index=False, header=False)
+            augment_data.to_csv(
+                fout,
+                header=False,
+                index=False,
+                line_terminator='\r\n',
+            )
             total_rows += len(augment_data)
 
         size = fout.size
