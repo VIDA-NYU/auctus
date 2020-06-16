@@ -225,6 +225,7 @@ python-versions = "*"
 version = "0.6.1"
 
 [package.dependencies]
+pyreadstat = ">=1.0,<2.0"
 requests = "*"
 xlrd = "*"
 
@@ -637,6 +638,17 @@ name = "pyparsing"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 version = "2.4.7"
+
+[[package]]
+category = "main"
+description = "Reads and Writes SAS, SPSS and Stata files into/from pandas data frames."
+name = "pyreadstat"
+optional = false
+python-versions = "*"
+version = "1.0.0"
+
+[package.dependencies]
+pandas = ">0.24.0"
 
 [[package]]
 category = "dev"
@@ -1267,6 +1279,27 @@ pygments = [
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
     {file = "pyparsing-2.4.7.tar.gz", hash = "sha256:c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1"},
+]
+pyreadstat = [
+    {file = "pyreadstat-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:7180c53c1a54ccebff9e3db8edbd44c7b1fa614c4fd37390a0dac81100e84a64"},
+    {file = "pyreadstat-1.0.0-cp27-cp27mu-manylinux1_i686.whl", hash = "sha256:eef013e2494f4387a8c50eac8807a75efde550e3af98315d809335902de951ab"},
+    {file = "pyreadstat-1.0.0-cp27-cp27mu-manylinux1_x86_64.whl", hash = "sha256:44a33800ade8bf303c30225f15bd568345b6c1c9325b88fa2e13d8bb022a3f7c"},
+    {file = "pyreadstat-1.0.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:4ab5f2a690035a66d88152bb42cdcc91cc904e3728ebc9b4d4a388cf65ff130f"},
+    {file = "pyreadstat-1.0.0-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:096d800003cf995f81f7307e48b3c522a43ed2fba065ad6c1022bcaf216fd5de"},
+    {file = "pyreadstat-1.0.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:33487a7b0078dcc564bee5457f8fec96f10b210d0aab7750da318d0523077ca5"},
+    {file = "pyreadstat-1.0.0-cp36-cp36m-win32.whl", hash = "sha256:69403829e906a526fcab921e734f9e78e0882bc7c804bdcf46ce290f4c1fe03c"},
+    {file = "pyreadstat-1.0.0-cp36-cp36m-win_amd64.whl", hash = "sha256:7072796fbe1e011f5538634c601f0e04c65203bc8b824365704fde29be642b2b"},
+    {file = "pyreadstat-1.0.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:982386fef575034aea864eb3dd4c73f5b2bee101a87c8cbb7dc3995ff348453f"},
+    {file = "pyreadstat-1.0.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:346be2722addd89f5d0186ce092847bb0c74fe7ed0d944392ccffd1c58a6bce4"},
+    {file = "pyreadstat-1.0.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:cdef32af20403a183a203d5b519028ac308492ce321d9c1088b990e9795c84a8"},
+    {file = "pyreadstat-1.0.0-cp37-cp37m-win32.whl", hash = "sha256:4916edfbe66e3f385c6069bfb970af0bd8febac6345ab75aa57cc01b488ce4d1"},
+    {file = "pyreadstat-1.0.0-cp37-cp37m-win_amd64.whl", hash = "sha256:20e283f61f605c8e520054ad90e15985044817c49d996ff04bd44297f88d2536"},
+    {file = "pyreadstat-1.0.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:edc08ab311b11157021030268aa4475fa9a302101609a4c7e12018950333d2db"},
+    {file = "pyreadstat-1.0.0-cp38-cp38-manylinux1_i686.whl", hash = "sha256:51fce5bf2dd23ed29e3b0c10c7bff4a1084a13d5a32d806a396446c7d7f5f4a2"},
+    {file = "pyreadstat-1.0.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:2fed017d43759bce4fc400fa8281c852117c48efebbf37d1016cb244c54f43ec"},
+    {file = "pyreadstat-1.0.0-cp38-cp38-win32.whl", hash = "sha256:fbc171fcd27be1f700476cbeea3b049e4421320b8cd7cc5675dbdec510d1973a"},
+    {file = "pyreadstat-1.0.0-cp38-cp38-win_amd64.whl", hash = "sha256:4ea4cdb843ebade5b9cef130d6d23e42f619f9b9ece1f633e69eeb9b657f4012"},
+    {file = "pyreadstat-1.0.0.tar.gz", hash = "sha256:0a07381ea94d67f27bb4220a1e905432fc22f1a06510c1285084881c7d68c566"},
 ]
 pyrsistent = [
     {file = "pyrsistent-0.16.0.tar.gz", hash = "sha256:28669905fe725965daa16184933676547c5bb40a5153055a8dee2a4bd7933ad3"},
