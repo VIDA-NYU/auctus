@@ -127,8 +127,8 @@ class TestProfiler(DataTestCase):
                 'datamart.test.daily': daily_metadata,
                 'datamart.test.hourly': hourly_metadata,
                 'datamart.test.dates_pivoted': dates_pivoted_metadata,
-                'datamart.test.excel': other_formats_metadata,
-                'datamart.test.spss': other_formats_metadata,
+                'datamart.test.excel': other_formats_metadata('xls'),
+                'datamart.test.spss': other_formats_metadata('spss'),
             },
         )
 
@@ -2689,7 +2689,7 @@ dates_pivoted_metadata = {
 other_formats_metadata = lambda fmt: {
     'id': lambda v: isinstance(v, str),
     'name': lambda v: isinstance(v, str),
-    'description': 'Excel format test',
+    'description': lambda v: isinstance(v, str),
     'source': 'remi',
     'size': 53,
     'nb_rows': 4,
