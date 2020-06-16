@@ -1,14 +1,18 @@
+import contextlib
 from datetime import datetime
 import distance
 import hashlib
-import io
 import logging
+import os
 import pickle
+import tempfile
 import textwrap
 import time
+
 import tornado.web
 
 from datamart_core import types
+from datamart_core.materialize import detect_format_convert_to_csv
 from datamart_profiler import process_dataset, parse_date
 from datamart_profiler.temporal import temporal_aggregation_keys
 
@@ -1261,18 +1265,42 @@ class ProfilePostedData(tornado.web.RequestHandler):
             logger.info("Found cached profile_data")
             data_profile = pickle.loads(data_profile)
         else:
-            logger.info("Profiling...")
-            start = time.perf_counter()
-            data_profile = process_dataset(
-                data=io.BytesIO(data),
-                lazo_client=self.application.lazo_client,
-                nominatim=self.application.nominatim,
-                geo_data=self.application.geo_data,
-                search=True,
-                include_sample=False,
-                coverage=True,
-            )
-            logger.info("Profiled in %.2fs", time.perf_counter() - start)
+            materialize = {}
+            with contextlib.ExitStack() as stack:
+                dataset_path = os.path.join(
+                    stack.enter_context(tempfile.TemporaryDirectory()),
+                    'dataset',
+                )
+                with open(dataset_path, 'wb') as fp:
+                    fp.write(data)
+
+                def convert_dataset(func, path):
+                    with stack.pop_all():
+                        dst = os.path.join(
+                            stack.enter_context(tempfile.TemporaryDirectory()),
+                            'dataset',
+                        )
+                        func(path, dst)
+                        return dst
+
+                dataset_path = detect_format_convert_to_csv(
+                    dataset_path,
+                    convert_dataset,
+                    materialize,
+                )
+
+                logger.info("Profiling...")
+                start = time.perf_counter()
+                data_profile = process_dataset(
+                    data=dataset_path,
+                    lazo_client=self.application.lazo_client,
+                    nominatim=self.application.nominatim,
+                    geo_data=self.application.geo_data,
+                    search=True,
+                    include_sample=False,
+                    coverage=True,
+                )
+                logger.info("Profiled in %.2fs", time.perf_counter() - start)
 
             self.application.redis.set(
                 'profile:' + data_hash,
