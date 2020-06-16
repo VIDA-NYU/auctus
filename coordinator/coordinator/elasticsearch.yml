@@ -92,6 +92,7 @@ datamart:
       spatial_coverage:
         type: nested
         properties:
+          # Keep in sync, search code for 279a32
           lat:
             type: text
           lon:
@@ -99,6 +100,8 @@ datamart:
           address:
             type: text
           point:
+            type: text
+          admin:
             type: text
           # we want to query individual spatial ranges
           ranges:
