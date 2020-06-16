@@ -9,6 +9,7 @@ import lazo_index_service
 import logging
 import os
 import prometheus_client
+import pyreadstat
 import threading
 import time
 import xlrd
@@ -21,6 +22,7 @@ from datamart_geo import GeoData
 from datamart_materialize import DatasetTooBig
 from datamart_materialize.excel import xls_to_csv
 from datamart_materialize.pivot import pivot_table
+from datamart_materialize.spss import spss_to_csv
 from datamart_materialize.tsv import tsv_to_csv
 from datamart_profiler import process_dataset, parse_date
 
@@ -100,6 +102,19 @@ def materialize_and_process_dataset(
 
             # Update file
             dataset_path = convert_dataset(xls_to_csv)
+
+        # Check for SPSS file format
+        try:
+            pyreadstat.read_sav(dataset_path)
+        except pyreadstat.ReadstatError:
+            pass
+        else:
+            # Update metadata
+            logger.info("This is an SPSS file")
+            materialize.setdefault('convert', []).append({'identifier': 'spss'})
+
+            # Update file
+            dataset_path = convert_dataset(spss_to_csv)
 
         # Check for TSV file format
         with open(dataset_path, 'r') as fp:
