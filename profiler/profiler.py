@@ -57,11 +57,18 @@ def materialize_and_process_dataset(
     profile_semaphore,
 ):
     with contextlib.ExitStack() as stack:
+        # Remove converters, we'll discover what's needed
+        metadata = dict(metadata)
+        materialize = dict(metadata.pop('materialize'))
+        materialize.pop('convert', None)
+
         with prom_incremented(PROM_DOWNLOADING):
             dataset_path = stack.enter_context(
-                get_dataset(metadata, dataset_id)
+                get_dataset(
+                    dict(metadata, materialize=materialize),
+                    dataset_id,
+                )
             )
-        materialize = metadata.pop('materialize')
 
         # Check for Excel file format
         try:
