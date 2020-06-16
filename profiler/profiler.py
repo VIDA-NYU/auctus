@@ -70,6 +70,24 @@ def materialize_and_process_dataset(
                 )
             )
 
+        def convert_dataset(func):
+            def convert(cache_temp):
+                with open(cache_temp, 'w', newline='') as dst:
+                    func(dataset_path, dst)
+            converted_key = dataset_cache_key(
+                dataset_id,
+                dict(metadata, materialize=materialize),
+                'csv',
+                {},
+            )
+            return stack.enter_context(
+                cache_get_or_set(
+                    '/cache/datasets',
+                    converted_key,
+                    convert,
+                )
+            )
+
         # Check for Excel file format
         try:
             xlrd.open_workbook(dataset_path)
@@ -81,22 +99,7 @@ def materialize_and_process_dataset(
             materialize.setdefault('convert', []).append({'identifier': 'xls'})
 
             # Update file
-            def convert(cache_temp):
-                with open(cache_temp, 'w', newline='') as dst:
-                    xls_to_csv(dataset_path, dst)
-            converted_key = dataset_cache_key(
-                dataset_id,
-                dict(metadata, materialize=materialize),
-                'csv',
-                {},
-            )
-            dataset_path = stack.enter_context(
-                cache_get_or_set(
-                    '/cache/datasets',
-                    converted_key,
-                    convert,
-                )
-            )
+            dataset_path = convert_dataset(xls_to_csv)
 
         # Check for TSV file format
         with open(dataset_path, 'r') as fp:
@@ -111,22 +114,7 @@ def materialize_and_process_dataset(
             materialize.setdefault('convert', []).append({'identifier': 'tsv'})
 
             # Update file
-            def convert(cache_temp):
-                with open(cache_temp, 'w', newline='') as dst:
-                    tsv_to_csv(dataset_path, dst)
-            converted_key = dataset_cache_key(
-                dataset_id,
-                dict(metadata, materialize=materialize),
-                'csv',
-                {},
-            )
-            dataset_path = stack.enter_context(
-                cache_get_or_set(
-                    '/cache/datasets',
-                    converted_key,
-                    convert,
-                )
-            )
+            dataset_path = convert_dataset(tsv_to_csv)
 
         # Check for pivoted temporal table
         with open(dataset_path, 'r') as fp:
@@ -149,21 +137,8 @@ def materialize_and_process_dataset(
                 })
 
                 # Update file
-                def convert(cache_temp):
-                    with open(cache_temp, 'w', newline='') as dst:
-                        pivot_table(dataset_path, dst, non_matches)
-                converted_key = dataset_cache_key(
-                    dataset_id,
-                    dict(metadata, materialize=materialize),
-                    'csv',
-                    {},
-                )
-                dataset_path = stack.enter_context(
-                    cache_get_or_set(
-                        '/cache/datasets',
-                        converted_key,
-                        convert,
-                    )
+                dataset_path = convert_dataset(
+                    lambda path, dst: pivot_table(path, dst, non_matches)
                 )
 
         # Profile
