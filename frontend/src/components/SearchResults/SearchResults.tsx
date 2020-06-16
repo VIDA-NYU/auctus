@@ -92,7 +92,7 @@ class SearchResults extends React.PureComponent<
           <div className="d-flex flex-row">
             <div
               className="col-md-4 px-0 pb-5"
-              style={{ maxHeight: '90vh', overflowY: 'scroll' }}
+              style={{ maxHeight: '90vh', overflowY: 'auto' }}
             >
               {currentHits.map((hit, idx) => (
                 <SearchHit

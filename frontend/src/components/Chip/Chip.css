@@ -20,6 +20,14 @@
   text-decoration: none;
   background-color: #e0e0e0;
 }
+.chip-label-font {
+  font-size: 0.8125rem;
+  font-family: "Oswald";
+}
+.chip-label-position {
+  margin-left: .4rem!important;
+  vertical-align: middle;
+}
 
 .chip-clickable {
   cursor: pointer;

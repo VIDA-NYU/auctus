@@ -247,6 +247,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       this.setState({ filters: [...this.state.filters] });
     }
   }
+  minimizeAllFilters() {
+    this.state.filters.forEach(f => {
+      if (!f.hidden) {
+        f.hidden = true;
+      }
+    });
+    this.setState({ filters: [...this.state.filters] });
+  }
 
   onSearchRelated(relatedFile: RelatedFile) {
     const filters = this.state.filters;
@@ -305,6 +313,9 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   renderCompactFilters() {
+    const isThereOpenedFilter = this.state.filters.find(
+      f => f.hidden === false
+    );
     return (
       <ChipGroup>
         {this.state.filters.map(f => (
@@ -317,6 +328,16 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             onEdit={() => this.toggleFilter(f.id)}
           />
         ))}
+        {isThereOpenedFilter && (
+          <span className="chip-label-font chip-label-position">
+            <button
+              className="btn-link"
+              onClick={() => this.minimizeAllFilters()}
+            >
+              Minimize all filters
+            </button>
+          </span>
+        )}
       </ChipGroup>
     );
   }
@@ -356,8 +377,8 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               </div>
             </div>
             <div
-              className="row"
-              style={{ maxHeight: '58vh', overflowY: 'scroll' }}
+              className="row ml-2"
+              style={{ maxHeight: '58vh', overflowY: 'auto' }}
             >
               <div className="col-md-12 mb-3">
                 {this.renderCompactFilters()}
@@ -395,7 +416,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 margin: '1.5rem auto',
                 minHeight: '50vh',
                 maxHeight: '50vh',
-                overflowY: 'scroll',
+                overflowY: 'auto',
               }}
             >
               <div className="col-md-8 pl-0">{this.renderFilters(true)}</div>

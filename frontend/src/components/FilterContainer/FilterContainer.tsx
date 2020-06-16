@@ -14,14 +14,14 @@ class FilterContainer extends React.PureComponent<{
           <h6 className="d-inline">{this.props.title}</h6>
           {!this.props.isLandingPage && (
             <h6 className="d-inline">
-              <span className="chip-label">
+              <span className="chip-label-font">
                 &nbsp;
                 <button
                   className="btn-link"
                   title="Close editing mode"
                   onClick={() => this.props.onCloseEditingMode()}
                 >
-                  (close)
+                  (minimize)
                 </button>
               </span>
             </h6>

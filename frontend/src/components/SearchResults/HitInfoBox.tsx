@@ -23,7 +23,7 @@ function HitInfoBox(props: {
       className="col-md-8 px-0 pb-5 card shadow-sm ml-2"
       style={{
         maxHeight: '90vh',
-        overflowY: 'scroll',
+        overflowY: 'auto',
       }}
     >
       <div className="card-body d-flex flex-column">

@@ -17,7 +17,7 @@ function Chip(props: ChipProps) {
   if (props.onClose) {
     classes += ' chip-closeable';
   }
-  const chipStatus = props.isOpen ? '(edit)' : '(close)';
+  const chipStatus = props.isOpen ? '(edit)' : '(minimize)';
 
   return (
     <div className={classes} tabIndex={0} role="button">
