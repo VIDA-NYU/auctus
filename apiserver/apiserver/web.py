@@ -114,6 +114,7 @@ PROM_UPLOAD = PromMeasureRequest(
 class BaseHandler(RequestHandler):
     """Base class for all request handlers.
     """
+    application: 'Application'
 
     def set_default_headers(self):
         self.set_header('Server', 'Auctus/%s' % os.environ['DATAMART_VERSION'])
@@ -923,6 +924,9 @@ class Application(GracefulApplication):
 
         self.geo_data.load_areas([0, 1, 2], bounds=True)
 
+        self.sources_counts = {}
+        self.recent_discoveries = []
+
         asyncio.get_event_loop().run_until_complete(
             asyncio.get_event_loop().create_task(self._amqp())
         )
@@ -944,8 +948,6 @@ class Application(GracefulApplication):
         )
 
         # Start statistics-fetching coroutine
-        self.sources_counts = {}
-        self.recent_discoveries = []
         log_future(
             asyncio.get_event_loop().create_task(self.update_statistics()),
             logger,
