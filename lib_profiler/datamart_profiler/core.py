@@ -193,7 +193,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     columns_long = []
 
     # Textual columns
-    column_textual = []
+    columns_textual = []
 
     # Addresses
     resolved_addresses = {}
@@ -204,9 +204,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
     with PROM_TYPES.time():
-        for i, column_meta in enumerate(columns):
-            logger.info("Processing column %d...", i)
-            array = data.iloc[:, i]
+        for column_idx, column_meta in enumerate(columns):
+            logger.info("Processing column %d...", column_idx)
+            array = data.iloc[:, column_idx]
             # Identify types
             structural_type, semantic_types_dict, additional_meta = \
                 identify_types(array, column_meta['name'], geo_data)
@@ -364,7 +364,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 structural_type == types.TEXT and
                 types.DATE_TIME not in semantic_types_dict
             ):
-                column_textual.append(column_meta['name'])
+                columns_textual.append(column_idx)
 
             # Resolve addresses into coordinates
             if (
@@ -399,7 +399,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 resolved_admin_areas[column_meta['name']] = areas
 
     # Textual columns
-    if lazo_client and column_textual:
+    if lazo_client and columns_textual:
         # Indexing with lazo
         if not search:
             # TODO: Remove previous data from lazo
@@ -410,15 +410,15 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client.index_data_path(
                         data_path,
                         dataset_id,
-                        column_textual
+                        [columns[idx]['name'] for idx in columns_textual],
                     )
                 else:
                     # if path is not available, send the data instead
-                    for column_name in column_textual:
+                    for idx in columns_textual:
                         lazo_client.index_data(
-                            data[column_name].values.tolist(),
+                            data.iloc[:, idx].values.tolist(),
                             dataset_id,
-                            column_name
+                            columns[idx]['name'],
                         )
             except Exception:
                 logger.error("Error indexing textual attributes from %s", dataset_id)
@@ -432,24 +432,23 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_sketches = lazo_client.get_lazo_sketch_from_data_path(
                         data_path,
                         "",
-                        column_textual,
+                        [columns[idx]['name'] for idx in columns_textual],
                     )
                 else:
                     # if path is not available, send the data instead
                     lazo_sketches = []
-                    for column_name in column_textual:
+                    for idx in columns_textual:
                         lazo_sketches.append(
                             lazo_client.get_lazo_sketch_from_data(
-                                data[column_name].values.tolist(),
+                                data.iloc[:, idx].values.tolist(),
                                 "",
-                                column_name,
+                                columns[idx]['name'],
                             )
                         )
                 # saving sketches into metadata
-                for i in range(len(column_textual)):
-                    n_permutations, hash_values, cardinality = \
-                        lazo_sketches[i]
-                    columns[i]['lazo'] = dict(
+                for sketch, idx in zip(lazo_sketches, columns_textual):
+                    n_permutations, hash_values, cardinality = sketch
+                    columns[idx]['lazo'] = dict(
                         n_permutations=n_permutations,
                         hash_values=list(hash_values),
                         cardinality=cardinality,

@@ -243,7 +243,7 @@ class TestProfileQuery(DatamartTest):
         )
         metadata['columns'][0]['lazo'] = check_lazo
         metadata['columns'][1]['lazo'] = check_lazo
-        metadata['columns'][2]['lazo'] = check_lazo
+        metadata['columns'][3]['lazo'] = check_lazo
         # Expect token
         metadata['token'] = 'cac18c69aff995773bed73273421365006e5e0b6'
 
