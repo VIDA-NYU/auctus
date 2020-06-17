@@ -3,6 +3,7 @@ import {
   SearchResponse,
   SearchResult,
   FilterVariables,
+  Metadata,
   QuerySpec,
   RelatedFile,
 } from './types';
@@ -148,6 +149,22 @@ export function upload(data: UploadData) {
   };
 
   return api.post('/upload', formData, config);
+}
+
+export interface ProfileResult extends Metadata {
+  token: string;
+}
+
+export async function profile(file: File | string): Promise<ProfileResult> {
+  const formData = new FormData();
+  formData.append('data', file);
+  const config = {
+    headers: {
+      'content-type': 'multipart/form-data',
+    },
+  };
+  const response = await api.post('/profile', formData, config);
+  return response.data;
 }
 
 export interface RecentDiscovery {
