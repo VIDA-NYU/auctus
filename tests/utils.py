@@ -25,6 +25,11 @@ class DataTestCase(unittest.TestCase):
                     "Validation failed for %r at %s" % (actual, pos)
                 ) from e
             else:
+                if not isinstance(ret, bool):
+                    raise TypeError(
+                        "Validation function: expected bool, returned %r" %
+                        type(ret)
+                    )
                 if not ret:
                     raise AssertionError(
                         "Validation failed for %r at %s" % (actual, pos)
