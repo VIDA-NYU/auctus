@@ -70,7 +70,6 @@ class RelatedFileFilter extends PersistentComponent<
         <CardShadow>
           <Dropzone
             multiple={false}
-            accept="text/csv"
             minSize={0}
             maxSize={maxSize}
             onDrop={acceptedFiles => this.handleSelectedFile(acceptedFiles)}
