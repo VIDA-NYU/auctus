@@ -130,6 +130,9 @@ export interface RelatedToSearchResult {
   datasetName: string;
   datasetSize: number;
 }
+
+export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
+
 export interface NumericalDataVegaFormat {
   count: number;
   bin_start: number;
@@ -141,12 +144,11 @@ export interface TemporalDataVegaFormat {
   date_start: string;
   date_end: string;
 }
+
 export interface CategoricalDataVegaFormat {
   count: number;
   bin: string;
 }
-
-export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
 
 export enum InfoBoxType {
   DETAIL = 'DETAIL',
