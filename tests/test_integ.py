@@ -222,14 +222,9 @@ class TestProfiler(DataTestCase):
 
 
 class TestProfileQuery(DatamartTest):
-    def test_basic(self):
-        with data('basic.csv') as basic_fp:
-            response = self.datamart_post(
-                '/profile',
-                files={'data': basic_fp}
-            )
+    def check_result(self, response, metadata, token):
         # Some fields like 'name', 'description' won't be there
-        metadata = {k: v for k, v in basic_metadata.items()
+        metadata = {k: v for k, v in metadata.items()
                     if k not in {'id', 'name', 'description', 'source',
                                  'date', 'materialize', 'sample'}}
         # Plots are not computed, remove them too
@@ -241,13 +236,37 @@ class TestProfileQuery(DatamartTest):
         check_lazo = lambda dct: (
             dct.keys() == {'cardinality', 'hash_values', 'n_permutations'}
         )
-        metadata['columns'][0]['lazo'] = check_lazo
-        metadata['columns'][1]['lazo'] = check_lazo
-        metadata['columns'][3]['lazo'] = check_lazo
+        for column in metadata['columns']:
+            if column['structural_type'] == 'http://schema.org/Text':
+                column['lazo'] = check_lazo
         # Expect token
-        metadata['token'] = 'cac18c69aff995773bed73273421365006e5e0b6'
+        metadata['token'] = token
 
         self.assertJson(response.json(), metadata)
+
+    def test_basic(self):
+        with data('basic.csv') as basic_fp:
+            response = self.datamart_post(
+                '/profile',
+                files={'data': basic_fp},
+            )
+        self.check_result(
+            response,
+            basic_metadata,
+            'cac18c69aff995773bed73273421365006e5e0b6',
+        )
+
+    def test_excel(self):
+        with data('excel.xlsx') as excel_fp:
+            response = self.datamart_post(
+                '/profile',
+                files={'data': excel_fp},
+            )
+        self.check_result(
+            response,
+            other_formats_metadata('xls'),
+            '87ef93cd71b93b0a1a6956a0281dbb8db69feb48',
+        )
 
 
 class TestSearch(DatamartTest):

@@ -1,7 +1,6 @@
 import aio_pika
 import asyncio
 import contextlib
-import csv
 from datetime import datetime
 import elasticsearch
 import itertools
@@ -9,22 +8,17 @@ import lazo_index_service
 import logging
 import os
 import prometheus_client
-import pyreadstat
 import threading
 import time
-import xlrd
 
 from datamart_core.common import setup_logging, add_dataset_to_index, \
     delete_dataset_from_index, log_future, json2msg, msg2json
 from datamart_core.fscache import cache_get_or_set
-from datamart_core.materialize import get_dataset, dataset_cache_key
+from datamart_core.materialize import get_dataset, dataset_cache_key, \
+    detect_format_convert_to_csv
 from datamart_geo import GeoData
 from datamart_materialize import DatasetTooBig
-from datamart_materialize.excel import xls_to_csv
-from datamart_materialize.pivot import pivot_table
-from datamart_materialize.spss import spss_to_csv
-from datamart_materialize.tsv import tsv_to_csv
-from datamart_profiler import process_dataset, parse_date
+from datamart_profiler import process_dataset
 
 
 logger = logging.getLogger(__name__)
@@ -72,10 +66,10 @@ def materialize_and_process_dataset(
                 )
             )
 
-        def convert_dataset(func):
+        def convert_dataset(func, path):
             def convert(cache_temp):
                 with open(cache_temp, 'w', newline='') as dst:
-                    func(dataset_path, dst)
+                    func(path, dst)
             converted_key = dataset_cache_key(
                 dataset_id,
                 dict(metadata, materialize=materialize),
@@ -90,71 +84,11 @@ def materialize_and_process_dataset(
                 )
             )
 
-        # Check for Excel file format
-        try:
-            xlrd.open_workbook(dataset_path)
-        except xlrd.XLRDError:
-            pass
-        else:
-            # Update metadata
-            logger.info("This is an Excel file")
-            materialize.setdefault('convert', []).append({'identifier': 'xls'})
-
-            # Update file
-            dataset_path = convert_dataset(xls_to_csv)
-
-        # Check for SPSS file format
-        try:
-            pyreadstat.read_sav(dataset_path)
-        except pyreadstat.ReadstatError:
-            pass
-        else:
-            # Update metadata
-            logger.info("This is an SPSS file")
-            materialize.setdefault('convert', []).append({'identifier': 'spss'})
-
-            # Update file
-            dataset_path = convert_dataset(spss_to_csv)
-
-        # Check for TSV file format
-        with open(dataset_path, 'r') as fp:
-            try:
-                dialect = csv.Sniffer().sniff(fp.read(16384))
-            except Exception as error:  # csv.Error, UnicodeDecodeError
-                logger.error("csv.Sniffer error: %s", error)
-                dialect = csv.get_dialect('excel')
-        if getattr(dialect, 'delimiter', '') == '\t':
-            # Update metadata
-            logger.info("This is a TSV file")
-            materialize.setdefault('convert', []).append({'identifier': 'tsv'})
-
-            # Update file
-            dataset_path = convert_dataset(tsv_to_csv)
-
-        # Check for pivoted temporal table
-        with open(dataset_path, 'r') as fp:
-            reader = csv.reader(fp)
-            try:
-                columns = next(iter(reader))
-            except StopIteration:
-                columns = []
-        if len(columns) >= 3:
-            non_matches = [
-                i for i, name in enumerate(columns)
-                if parse_date(name) is None
-            ]
-            if len(non_matches) <= max(2.0, 0.20 * len(columns)):
-                # Update metadata
-                logger.info("Detected pivoted table")
-                materialize.setdefault('convert', []).append({
-                    'identifier': 'pivot',
-                    'except_columns': non_matches,
-                })
-
-                # Update file
-                dataset_path = convert_dataset(
-                    lambda path, dst: pivot_table(path, dst, non_matches)
-                )
+        dataset_path = detect_format_convert_to_csv(
+            dataset_path,
+            convert_dataset,
+            materialize,
+        )
 
         # Profile
         with profile_semaphore:

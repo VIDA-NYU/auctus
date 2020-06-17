@@ -1,13 +1,21 @@
 import contextlib
+import csv
 import datamart_materialize
 import logging
 import os
 import prometheus_client
+import pyreadstat
 import shutil
+import xlrd
 import zipfile
 
 from datamart_core.common import hash_json
 from datamart_core.fscache import cache_get_or_set
+from datamart_materialize.excel import xls_to_csv
+from datamart_materialize.pivot import pivot_table
+from datamart_materialize.spss import spss_to_csv
+from datamart_materialize.tsv import tsv_to_csv
+from datamart_profiler import parse_date
 
 from .discovery import encode_dataset_id
 
@@ -81,8 +89,8 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     # the CSV again just because we want a different format
 
     # Context to lock the CSV
-    csv_lock = contextlib.ExitStack()
-    with csv_lock:
+    dataset_lock = contextlib.ExitStack()
+    with dataset_lock:
         # Try to read from persistent storage
         shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
         if os.path.exists(shared):
@@ -101,7 +109,7 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                     )
 
             csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
-            csv_path = csv_lock.enter_context(
+            csv_path = dataset_lock.enter_context(
                 cache_get_or_set(
                     '/cache/datasets', csv_key, create_csv,
                 )
@@ -147,7 +155,91 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                     shutil.rmtree(cache_temp)
                     os.rename(zip_name, cache_temp)
 
-        with cache_get_or_set(
-            '/cache/datasets', key, create,
-        ) as cache_path:
-            yield cache_path
+        with dataset_lock.pop_all():
+            cache_path = dataset_lock.enter_context(
+                cache_get_or_set(
+                    '/cache/datasets', key, create,
+                )
+            )
+        yield cache_path
+
+
+def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
+    """Detect supported formats and convert to CSV.
+
+    :param dataset_path: Input dataset to be processed.
+    :param convert_dataset: Function wrapping the conversion, in charge of
+        creating the new file and cleaning up the previous one for each
+        conversion. Takes the conversion function (filename, unicode file
+        object), runs it, and returns the new path.
+    :param materialize: Materialization info to be updated with the applied
+        conversions.
+    """
+    # Check for Excel file format
+    try:
+        xlrd.open_workbook(dataset_path)
+    except xlrd.XLRDError:
+        pass
+    else:
+        # Update metadata
+        logger.info("This is an Excel file")
+        materialize.setdefault('convert', []).append({'identifier': 'xls'})
+
+        # Update file
+        dataset_path = convert_dataset(xls_to_csv, dataset_path)
+
+    # Check for SPSS file format
+    try:
+        pyreadstat.read_sav(dataset_path)
+    except pyreadstat.ReadstatError:
+        pass
+    else:
+        # Update metadata
+        logger.info("This is an SPSS file")
+        materialize.setdefault('convert', []).append({'identifier': 'spss'})
+
+        # Update file
+        dataset_path = convert_dataset(spss_to_csv, dataset_path)
+
+    # Check for TSV file format
+    with open(dataset_path, 'r') as fp:
+        try:
+            dialect = csv.Sniffer().sniff(fp.read(16384))
+        except Exception as error:  # csv.Error, UnicodeDecodeError
+            logger.error("csv.Sniffer error: %s", error)
+            dialect = csv.get_dialect('excel')
+    if getattr(dialect, 'delimiter', '') == '\t':
+        # Update metadata
+        logger.info("This is a TSV file")
+        materialize.setdefault('convert', []).append({'identifier': 'tsv'})
+
+        # Update file
+        dataset_path = convert_dataset(tsv_to_csv, dataset_path)
+
+    # Check for pivoted temporal table
+    with open(dataset_path, 'r') as fp:
+        reader = csv.reader(fp)
+        try:
+            columns = next(iter(reader))
+        except StopIteration:
+            columns = []
+    if len(columns) >= 3:
+        non_matches = [
+            i for i, name in enumerate(columns)
+            if parse_date(name) is None
+        ]
+        if len(non_matches) <= max(2.0, 0.20 * len(columns)):
+            # Update metadata
+            logger.info("Detected pivoted table")
+            materialize.setdefault('convert', []).append({
+                'identifier': 'pivot',
+                'except_columns': non_matches,
+            })
+
+            # Update file
+            dataset_path = convert_dataset(
+                lambda path, dst: pivot_table(path, dst, non_matches),
+                dataset_path,
+            )
+
+    return dataset_path
