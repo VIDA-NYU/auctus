@@ -155,10 +155,12 @@ export function augment(
     });
 }
 
-export interface CustomField {
-  id: string;
-  name: string;
-  required: boolean;
+export interface CustomFields {
+  [id: string]: {
+    label: string;
+    required: boolean;
+    type: string;
+  };
 }
 
 export interface UploadData {
@@ -234,7 +236,7 @@ export interface Status {
   sources_counts: {
     [source: string]: number;
   };
-  custom_fields?: CustomField[];
+  custom_fields?: CustomFields;
 }
 
 export async function status(): Promise<Status> {
@@ -242,22 +244,18 @@ export async function status(): Promise<Status> {
   return response.data;
 }
 
-let statusPromise: Promise<string[]> | undefined = undefined;
+let statusPromise: Promise<Status> | undefined = undefined;
 
 export function sources(): Promise<string[]> {
   if (!statusPromise) {
     statusPromise = status();
   }
-  return statusPromise.then(response =>
-    Object.keys(response.sources_counts)
-  );
+  return statusPromise.then(response => Object.keys(response.sources_counts));
 }
 
-export function customFields(): Promise<CustomField[]> {
+export function customFields(): Promise<CustomFields> {
   if (!statusPromise) {
     statusPromise = status();
   }
-  return statusPromise.then(
-    response => response.custom_fields || []
-  );
+  return statusPromise.then(response => response.custom_fields || {});
 }
