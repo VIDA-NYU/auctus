@@ -81,3 +81,14 @@ The function returns one of the following:
 * the path (``text/plain``) to the directory containing the dataset as a ``csv`` file and its corresponding ``datasetDoc.json`` file, if the parameter ``destination`` is defined.
 
 The structure for the ``zip`` file follows the D3M format explained before for the :ref:`download endpoint <rest-download>`.
+
+``POST /upload``
+----------------
+
+Adds a dataset to the index. The file can be provided either via a URL or direct upload.
+
+When providing a URL, make sure it is a direct link to a file in a supported format (CSV, Excel, SPSS, ...) and not to an HTML page with a "download" button or GitHub page where the content is embedded (use the "raw" button).
+
+The request will return the ID of the new dataset immediately, but profiling will happen in the background so the file will only appear in searches after a couple minutes::
+
+    {"id": "datamart.upload.abcdef1234567890"}
