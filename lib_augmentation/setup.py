@@ -9,8 +9,8 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'pandas',
     'numpy',
-    'datamart_materialize==0.6.1',
-    'datamart_profiler==0.6.1',
+    'datamart_materialize==0.6.2',
+    'datamart_profiler==0.6.2',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()

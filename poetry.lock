@@ -147,8 +147,8 @@ python-versions = "*"
 version = "0.6.1"
 
 [package.dependencies]
-datamart_materialize = "0.6.1"
-datamart_profiler = "0.6.1"
+datamart_materialize = "0.6.2"
+datamart_profiler = "0.6.2"
 numpy = "*"
 pandas = "*"
 
@@ -222,7 +222,7 @@ develop = true
 name = "datamart-materialize"
 optional = false
 python-versions = "*"
-version = "0.6.1"
+version = "0.6.2"
 
 [package.dependencies]
 pyreadstat = ">=1.0,<2.0"
@@ -260,7 +260,7 @@ develop = true
 name = "datamart-profiler"
 optional = false
 python-versions = "*"
-version = "0.6.1"
+version = "0.6.2"
 
 [package.dependencies]
 datamart-geo = "0.1"
