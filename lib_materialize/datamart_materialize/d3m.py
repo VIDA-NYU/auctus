@@ -70,7 +70,6 @@ def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
             'datasetID': dataset_id,
             'datasetName': metadata.get('name', dataset_id),
             'license': metadata.get('license', 'unknown'),
-            'approximateSize': '%d B' % metadata['size'],
             'datasetSchemaVersion': version,
             'redacted': False,
             'datasetVersion': '1.0',
@@ -91,6 +90,8 @@ def d3m_metadata(dataset_id, metadata, *, version=None, need_d3mindex=False):
     }
     if 'description' in metadata:
         d3m_meta['about']['description'] = metadata['description']
+    if 'size' in metadata:
+        d3m_meta['about']['approximateSize'] = '%d B' % metadata['size']
     if 'qualities' in metadata:
         d3m_meta['qualities'] = metadata.get('qualities')
 
