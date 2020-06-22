@@ -1,7 +1,6 @@
 import './SearchBar.css';
 import React from 'react';
 import * as Icon from 'react-feather';
-import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 
 interface SearchBarProps {
   active: boolean;
@@ -10,7 +9,7 @@ interface SearchBarProps {
   onSubmitQuery: () => void;
 }
 
-class SearchBar extends PersistentComponent<SearchBarProps> {
+class SearchBar extends React.PureComponent<SearchBarProps> {
   constructor(props: SearchBarProps) {
     super(props);
     this.handleChange = this.handleChange.bind(this);
