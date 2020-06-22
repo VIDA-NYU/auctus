@@ -284,8 +284,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         ),
       });
     }
-    this.setState({ filters: [...filters] });
-    this.submitQuery();
+    this.setState({ filters: [...filters] }, this.submitQuery);
   }
 
   renderFilters() {
