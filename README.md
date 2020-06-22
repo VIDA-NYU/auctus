@@ -45,6 +45,8 @@ Set up environment
 
 Make sure you have checked out the submodule with `git submodule init && git submodule update`
 
+Make sure you have [Git LFS](https://git-lfs.github.com/) installed and configured (`git lfs install`)
+
 Copy env.default to .env and update the variables there. You might want to update the password for a production deployment.
 
 The `API_URL` is the URL at which the apiserver containers will be visible to clients. In a production deployment, this is probably a public-facing HTTPS URL. It can be the same URL that the "coordinator" component will be served at if using a reverse proxy (see [nginx.conf](nginx.conf)).
