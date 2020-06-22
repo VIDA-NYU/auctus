@@ -49,6 +49,8 @@ Make sure you have [Git LFS](https://git-lfs.github.com/) installed and configur
 
 Copy env.default to .env and update the variables there. You might want to update the password for a production deployment.
 
+Make sure your node is set up for running Elasticsearch. You will probably have to [raise the mmap limit](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/vm-max-map-count.html).
+
 The `API_URL` is the URL at which the apiserver containers will be visible to clients. In a production deployment, this is probably a public-facing HTTPS URL. It can be the same URL that the "coordinator" component will be served at if using a reverse proxy (see [nginx.conf](nginx.conf)).
 
 Build the containers
