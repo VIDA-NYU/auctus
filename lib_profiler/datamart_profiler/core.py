@@ -112,7 +112,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
     data_path = None
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
-        data = data.astype(str)
+        # Change to object dtype first and do fillna() to work around bug
+        # https://github.com/pandas-dev/pandas/issues/25353 (nan as str 'nan')
+        data = data.astype(object).fillna('').astype(str)
+
         # FIXME: no sampling here!
     else:
         with contextlib.ExitStack() as stack:

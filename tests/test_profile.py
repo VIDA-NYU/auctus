@@ -192,7 +192,7 @@ class TestDates(DataTestCase):
         """Test the 'year' special-case."""
         dataframe = pandas.DataFrame({
             'year': [2004, 2005, 2006],
-            'number': [2014, 2015, 2016],
+            'number': [2014, 2015, float('nan')],
         })
         metadata = process_dataset(dataframe)
 
@@ -225,14 +225,14 @@ class TestDates(DataTestCase):
                         'name': 'number',
                         'structural_type': 'http://schema.org/Integer',
                         'semantic_types': [],
+                        'missing_values_ratio': lambda n: round(n, 2) == 0.33,
                         'unclean_values_ratio': 0.0,
-                        'num_distinct_values': 3,
-                        'mean': 2015.0,
-                        'stddev': lambda n: round(n, 3) == 0.816,
+                        'num_distinct_values': 2,
+                        'mean': 2014.5,
+                        'stddev': 0.5,
                         'coverage': [
                             {'range': {'gte': 2014.0, 'lte': 2014.0}},
                             {'range': {'gte': 2015.0, 'lte': 2015.0}},
-                            {'range': {'gte': 2016.0, 'lte': 2016.0}},
                         ],
                     },
                 ],
