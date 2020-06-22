@@ -16,16 +16,19 @@ MIN_RANGE_SIZE = 0.1  # 10%
 
 def mean_stddev(array):
     total = 0
+    count = 0
     for elem in array:
         if elem is not None:
             total += elem
-    mean = total / len(array)if len(array) > 0 else 0
+            count += 1
+    mean = total / count if count > 0 else 0
+
     total = 0
     for elem in array:
         if elem is not None:
             elem = elem - mean
             total += elem * elem
-    stddev = math.sqrt(total / len(array)) if len(array) > 0 else 0
+    stddev = math.sqrt(total / count) if count > 0 else 0
 
     return mean, stddev
 

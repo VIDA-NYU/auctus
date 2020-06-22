@@ -2206,8 +2206,8 @@ agg_metadata = {
             'missing_values_ratio': 0.25,
             "unclean_values_ratio": 0.0,
             'num_distinct_values': 4,
-            "mean": 200.0,
-            "stddev": lambda n: round(n, 3) == 150.0,
+            "mean": lambda n: round(n, 2) == 266.67,
+            "stddev": lambda n: round(n, 3) == 159.861,
             "coverage": (
                 lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
                     {
