@@ -243,10 +243,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     }
   }
 
-  toggleFilter(itemId: string) {
+  toggleFilter(filterId: string) {
     this.setState(prevState => {
       const filters = this.state.filters.map(f => {
-        if (f.id === itemId) {
+        if (f.id === filterId) {
           return { ...f, hidden: !f.hidden };
         } else {
           return f;
