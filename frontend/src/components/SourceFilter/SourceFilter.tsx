@@ -31,8 +31,12 @@ class SourceFilter extends PersistentComponent<
 
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
-    this.state.checked[input.value] = !this.state.checked[input.value];
-    const state = { checked: { ...this.state.checked } };
+    const state = {
+      checked: {
+        ...this.state.checked,
+        [input.value]: !this.state.checked[input.value],
+      },
+    };
     this.notifyChange(state);
   }
 
