@@ -1,4 +1,3 @@
-import contextlib
 from datetime import datetime
 import distance
 import hashlib
@@ -12,6 +11,7 @@ import time
 import tornado.web
 
 from datamart_core import types
+from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import detect_format_convert_to_csv
 from datamart_profiler import process_dataset, parse_date
 from datamart_profiler.temporal import temporal_aggregation_keys
@@ -1278,34 +1278,38 @@ class ProfilePostedData(tornado.web.RequestHandler):
             logger.info("Found cached profile_data")
             data_profile = json.loads(data_profile)
         else:
+            # Do format conversion
             materialize = {}
-            with contextlib.ExitStack() as stack:
-                dataset_path = os.path.join(
-                    stack.enter_context(tempfile.TemporaryDirectory()),
-                    'dataset',
-                )
-                with open(dataset_path, 'wb') as fp:
+
+            def create_csv(cache_temp):
+                with open(cache_temp, 'wb') as fp:
                     fp.write(data)
 
                 def convert_dataset(func, path):
-                    with stack.pop_all():
-                        dst = os.path.join(
-                            stack.enter_context(tempfile.TemporaryDirectory()),
-                            'dataset',
-                        )
-                        with open(dst, 'w', newline='') as dst_fp:
-                            func(path, dst_fp)
-                        return dst
+                    with tempfile.NamedTemporaryFile(
+                        prefix='.convert',
+                        dir='/cache/user_data',
+                    ) as tmpfile:
+                        os.rename(path, tmpfile.name)
+                        with open(path, 'w', newline='') as dst:
+                            func(tmpfile.name, dst)
+                        return path
 
-                dataset_path = detect_format_convert_to_csv(
-                    dataset_path,
+                ret = detect_format_convert_to_csv(
+                    cache_temp,
                     convert_dataset,
                     materialize,
                 )
+                assert ret == cache_temp
 
+            with cache_get_or_set(
+                '/cache/user_data',
+                    data_hash,
+                    create_csv,
+            ) as csv_path:
                 logger.info("Profiling...")
                 start = time.perf_counter()
-                with open(dataset_path, 'rb') as data:
+                with open(csv_path, 'rb') as data:
                     data_profile = process_dataset(
                         data=data,
                         lazo_client=self.application.lazo_client,
