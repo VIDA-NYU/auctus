@@ -929,6 +929,7 @@ class Application(GracefulApplication):
 
         self.is_closing = False
 
+        self.frontend_url = os.environ['FRONTEND_URL']
         self.elasticsearch = es
         self.redis = redis_client
         self.lazo_client = lazo
