@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 import elasticsearch
+import functools
 import hashlib
 import json
 import logging
@@ -127,6 +128,17 @@ def hash_json(*args, **kwargs):
 
     bytes_ = json.dumps(dct, sort_keys=True).encode('utf-8')
     return hashlib.sha1(bytes_).hexdigest()
+
+
+def contextdecorator(factory, argname):
+    def inner(wrapped):
+        @functools.wraps(wrapped)
+        def wrapper(*args, **kwargs):
+            with factory() as ctx:
+                kwargs.update({argname: ctx})
+                return wrapped(*args, **kwargs)
+        return wrapper
+    return inner
 
 
 def add_dataset_to_sup_index(es, dataset_id, metadata):
