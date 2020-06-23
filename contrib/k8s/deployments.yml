@@ -232,6 +232,11 @@ spec:
             configMapKeyRef:
               name: config
               key: nominatim_url
+        - name: API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: api_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:

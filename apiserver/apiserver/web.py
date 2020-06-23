@@ -946,6 +946,25 @@ class SessionNew(BaseHandler):
         })
 
 
+class SessionGet(BaseHandler):
+    def get(self, session_id):
+        # Get session from Redis
+        datasets = self.application.redis.lrange(
+            'session:' + session_id,
+            0, -1,
+        )
+
+        api_url = self.application.api_url
+        return self.send_json({
+            'results': [
+                {
+                    'url': api_url + '/download/' + id.decode('ascii'),
+                }
+                for id in datasets
+            ]
+        })
+
+
 class Statistics(BaseHandler):
     def get(self):
         return self.send_json({
@@ -978,6 +997,7 @@ class Application(GracefulApplication):
         self.is_closing = False
 
         self.frontend_url = os.environ['FRONTEND_URL']
+        self.api_url = os.environ['API_URL']
         self.elasticsearch = es
         self.redis = redis_client
         self.lazo_client = lazo
@@ -1060,6 +1080,7 @@ def make_app(debug=False):
             URLSpec('/augment', Augment, name='augment'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/session/new', SessionNew, name='session_new'),
+            URLSpec('/session/([^/]+)', SessionGet, name='session_get'),
             URLSpec('/statistics', Statistics, name='statistics'),
             URLSpec('/version', Version, name='version'),
             URLSpec('/health', Health, name='health'),
