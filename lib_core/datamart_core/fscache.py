@@ -280,6 +280,48 @@ def cache_get_or_set(cache_dir, key, create_function, cache_invalid=False):
                 continue
 
 
+@contextlib.contextmanager
+def cache_get(cache_dir, key):
+    """This is like `cache_get_or_set()` except it won't create the entry.
+
+    It is used like so::
+
+        with cache_get('/tmp/cache', 'key123') as entry_path:
+            if entry_path is None:
+                raise KeyError("We don't have this cached")
+            else:
+                # We have the path locked with a shared lock, so it won't be
+                # changed or removed while we read and process it
+                with open(entry_path) as fp:
+                    print(fp.read())
+    """
+    entry_path = os.path.join(cache_dir, key + '.cache')
+    lock_path = os.path.join(cache_dir, key + '.lock')
+
+    with contextlib.ExitStack() as lock:
+        try:
+            lock.enter_context(FSLockShared(lock_path))
+        except FileNotFoundError:
+            yield None
+            return
+        else:
+            if os.path.exists(entry_path):
+                PROM_CACHE_HITS.labels(cache_dir).inc(1)
+
+                # Update time on the file
+                with open(lock_path, 'a'):
+                    pass
+
+                # Entry exists and we have it locked, return it
+                yield entry_path
+                return
+
+            # Entry was removed while we waited
+            PROM_CACHE_MISSES.labels(cache_dir).inc(1)
+            yield None
+            return
+
+
 def clear_cache(cache_dir, should_delete=None, only_if_possible=True):
     """Function used to safely clear a cache.
 
