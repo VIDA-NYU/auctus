@@ -21,6 +21,7 @@ docker exec -ti $(basename "$(pwd)")_coordinator_1 sh -c 'rm -rf /cache/*/*'
 
 # Clear index
 scripts/docker_purge_source.sh datamart.test
+scripts/docker_purge_source.sh datamart.upload
 
 sleep 2
 

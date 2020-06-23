@@ -1932,6 +1932,7 @@ class TestUpload(DatamartTest):
         record = response.json()
         self.assertEqual(record.keys(), {'id'})
         dataset_id = record['id']
+        self.assertTrue(dataset_id.startswith('datamart.url.'))
 
         es = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
