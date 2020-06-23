@@ -174,10 +174,21 @@ class BaseHandler(RequestHandler):
         self.set_status(204)
         return self.finish()
 
+    def validate_format(self, format, format_options):
+        writer_cls = get_writer(format)
+        format_ext = None
+        if hasattr(writer_cls, 'parse_options'):
+            format_options = writer_cls.parse_options(format_options)
+        elif format_options:
+            self.send_error_json(400, "Invalid output options")
+            raise HTTPError(400)
+        if hasattr(writer_cls, 'extension'):
+            format_ext = writer_cls.extension
+        return format, format_options, format_ext
+
     def read_format(self, default_format='csv'):
         format = self.get_query_argument('format', default_format)
         format_options = {}
-        format_ext = None
         for n, v in self.request.query_arguments.items():
             if n.startswith('format_'):
                 if len(v) != 1:
@@ -188,15 +199,7 @@ class BaseHandler(RequestHandler):
                     raise HTTPError(400)
                 format_options[n[7:]] = self.decode_argument(v[0])
 
-        writer_cls = get_writer(format)
-        if hasattr(writer_cls, 'parse_options'):
-            format_options = writer_cls.parse_options(format_options)
-        elif format_options:
-            self.send_error_json(400, "Invalid output options")
-            raise HTTPError(400)
-        if hasattr(writer_cls, 'extension'):
-            format_ext = writer_cls.extension
-        return format, format_options, format_ext
+        return self.validate_format(format, format_options)
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
@@ -912,6 +915,10 @@ class SessionNew(BaseHandler):
                 400,
                 "Invalid data_token",
             )
+        format, format_options, _ = self.validate_format(
+            session.pop('format', 'csv'),
+            session.pop('format_options', {}),
+        )
         if session:
             return self.send_error_json(
                 400,
@@ -922,7 +929,11 @@ class SessionNew(BaseHandler):
         session_id = str(uuid.uuid4())
 
         # Build our session object
-        session = {'session_id': session_id}
+        session = {
+            'session_id': session_id,
+            'format': format,
+            'format_options': format_options,
+        }
         if data_token:
             session['data_token'] = data_token
 
