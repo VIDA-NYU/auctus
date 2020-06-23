@@ -1317,6 +1317,8 @@ class ProfilePostedData(tornado.web.RequestHandler):
                     )
                 logger.info("Profiled in %.2fs", time.perf_counter() - start)
 
+                data_profile['materialize'] = materialize
+
             self.application.redis.set(
                 'profile:' + data_hash,
                 json.dumps(
