@@ -20,6 +20,7 @@ from tornado.routing import URLSpec
 import tornado.httputil
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+from urllib.parse import urlencode
 import uuid
 import zipfile
 
@@ -898,6 +899,53 @@ class Upload(BaseHandler):
         return await self.send_json({'id': dataset_id})
 
 
+class SessionNew(BaseHandler):
+    def post(self):
+        # Read input
+        session = self.get_json()
+        data_token = session.pop('data_token', None)
+        if data_token is not None and (
+            not isinstance(data_token, str)
+            or not _re_token.match(data_token)
+        ):
+            return self.send_error_json(
+                400,
+                "Invalid data_token",
+            )
+        if session:
+            return self.send_error_json(
+                400,
+                "Unrecognized key %r" % next(iter(session)),
+            )
+
+        # Build an ID for the session
+        session_id = str(uuid.uuid4())
+
+        # Build our session object
+        session = {'session_id': session_id}
+        if data_token:
+            session['data_token'] = data_token
+
+        # Build a link for the user's browser
+        session_json = json.dumps(
+            session,
+            # Compact
+            sort_keys=True, indent=None, separators=(',', ':'),
+        )
+        link_url = (
+            self.application.frontend_url
+            + '/?'
+            + urlencode({'session': session_json})
+        )
+
+        return self.send_json({
+            # Send the session ID to TA3, used to retrieve results
+            'session_id': session_id,
+            # Send the JSON info to the frontend
+            'link_url': link_url,
+        })
+
+
 class Statistics(BaseHandler):
     def get(self):
         return self.send_json({
@@ -1011,6 +1059,7 @@ def make_app(debug=False):
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
             URLSpec('/upload', Upload, name='upload'),
+            URLSpec('/session/new', SessionNew, name='session_new'),
             URLSpec('/statistics', Statistics, name='statistics'),
             URLSpec('/version', Version, name='version'),
             URLSpec('/health', Health, name='health'),
