@@ -31,6 +31,7 @@ export interface AugmentationInfo {
 }
 
 export interface SpatialCoverage {
+  // Keep in sync, search code for 279a32
   lat?: string;
   lon?: string;
   address?: string;

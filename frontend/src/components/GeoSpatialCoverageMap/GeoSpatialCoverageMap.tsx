@@ -212,6 +212,7 @@ class GeoSpatialCoverageMap extends PersistentComponent<
   }
 
   renderCoverageColumns(coverage: SpatialCoverage) {
+    // Keep in sync, search code for 279a32
     const {lat, lon, address, point, admin} = coverage;
     if (lat && lon) {
       return (
