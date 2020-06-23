@@ -211,7 +211,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             <RelatedFileFilter
               key={`relatedfilefilter-${filterId}`}
               onSelectedFileChange={f => this.updateFilterState(filterId, f)}
-              relatedFile={relatedFile}
+              state={relatedFile}
             />
           ),
         };
@@ -234,6 +234,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             <SourceFilter
               key={`sourcefilter-${filterId}`}
               sources={this.state.sources}
+              checkedSources={[] /* TODO */}
               onSourcesChange={s => this.updateFilterState(filterId, s)}
             />
           ),

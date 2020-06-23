@@ -6,14 +6,14 @@ import { RelatedFile } from '../../api/types';
 
 interface RelatedFileFilterProps {
   onSelectedFileChange: (relatedFile: RelatedFile) => void;
-  relatedFile?: RelatedFile;
+  state?: RelatedFile;
 }
 
 class RelatedFileFilter extends React.PureComponent<RelatedFileFilterProps> {
   constructor(props: RelatedFileFilterProps) {
     super(props);
-    if (props.relatedFile) {
-      this.state = { relatedFile: props.relatedFile };
+    if (props.state) {
+      this.state = { relatedFile: props.state };
     } else {
       this.state = { relatedFile: undefined };
     }
@@ -32,7 +32,7 @@ class RelatedFileFilter extends React.PureComponent<RelatedFileFilterProps> {
 
   render() {
     const maxSize = 100 * 1024 * 1024; // maximum file size
-    const relatedFile = this.props.relatedFile;
+    const relatedFile = this.props.state;
     if (!relatedFile) {
     } else if (relatedFile.kind === 'localFile') {
       return (
