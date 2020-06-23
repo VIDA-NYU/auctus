@@ -42,8 +42,17 @@ result_list_schema = {
     'properties': {
         'results': {'type': 'array', 'items': result_schema}
     },
+    'required': ['results'],
+    'additionalProperties': False,
     'definitions': result_schema.pop('definitions'),
 }
+metadata_schema = dict(result_schema)
+assert metadata_schema['required'] == ['id', 'score', 'metadata']
+metadata_schema['required'] = ['id', 'status', 'metadata']
+metadata_schema['properties'] = dict(
+    metadata_schema['properties'],
+    status={'type': 'string'},
+)
 
 
 class DatamartTest(DataTestCase):
@@ -817,7 +826,8 @@ class TestDownload(DatamartTest):
         """Download datasets via POST /download"""
         # Basic dataset, materialized via direct_url
         basic_meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.basic'
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
         )
         basic_meta = basic_meta.json()['metadata']
 
@@ -857,7 +867,8 @@ class TestDownload(DatamartTest):
 
         # Geo dataset, materialized via /datasets storage
         geo_meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.geo'
+            '/metadata/' + 'datamart.test.geo',
+            schema=metadata_schema,
         )
         geo_meta = geo_meta.json()['metadata']
 
@@ -1014,7 +1025,8 @@ class TestDownload(DatamartTest):
 class TestAugment(DatamartTest):
     def test_basic_join(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.basic'
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1136,7 +1148,8 @@ class TestAugment(DatamartTest):
 
     def test_basic_join_auto(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.basic'
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1254,7 +1267,8 @@ class TestAugment(DatamartTest):
 
     def test_agg_join(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.agg'
+            '/metadata/' + 'datamart.test.agg',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1302,7 +1316,8 @@ class TestAugment(DatamartTest):
 
     def test_agg_join_specific_functions(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.agg'
+            '/metadata/' + 'datamart.test.agg',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1437,7 +1452,8 @@ class TestAugment(DatamartTest):
 
     def test_lazo_join(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.lazo'
+            '/metadata/' + 'datamart.test.lazo',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1582,7 +1598,8 @@ class TestAugment(DatamartTest):
 
     def test_geo_union(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.geo'
+            '/metadata/' + 'datamart.test.geo',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1705,7 +1722,8 @@ class TestAugment(DatamartTest):
 
     def test_temporal_daily_join(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.daily'
+            '/metadata/' + 'datamart.test.daily',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1758,7 +1776,8 @@ class TestAugment(DatamartTest):
 
     def test_temporal_hourly_join(self):
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.hourly'
+            '/metadata/' + 'datamart.test.hourly',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1811,7 +1830,8 @@ class TestAugment(DatamartTest):
     def test_temporal_hourly_days_join(self):
         """Join daily data with hourly (= aggregate down to daily)."""
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.hourly'
+            '/metadata/' + 'datamart.test.hourly',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1861,7 +1881,8 @@ class TestAugment(DatamartTest):
     def test_temporal_daily_hours_join(self):
         """Join hourly data with daily (= repeat for each hour)."""
         meta = self.datamart_get(
-            '/metadata/' + 'datamart.test.daily'
+            '/metadata/' + 'datamart.test.daily',
+            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
