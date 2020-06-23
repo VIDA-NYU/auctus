@@ -33,29 +33,29 @@ paths:
           multipart/form-data:
             schema:
               oneOf:
-                - properties:
-                    name:
-                      type: string
-                      description: "Dataset name"
-                    description:
-                      type: string
-                    address:
-                      type: string
-                  required:
-                  - name
-                  - address
-                - properties:
-                    name:
-                      type: string
-                      description: "Dataset name"
-                    description:
-                      type: string
-                    file:
-                      type: string
-                      format: binary
-                  required:
-                  - name
-                  - file
+              - properties:
+                  name:
+                    type: string
+                    description: "Dataset name"
+                  description:
+                    type: string
+                  address:
+                    type: string
+                required:
+                - name
+                - address
+              - properties:
+                  name:
+                    type: string
+                    description: "Dataset name"
+                  description:
+                    type: string
+                  file:
+                    type: string
+                    format: binary
+                required:
+                - name
+                - file
         required: true
       responses:
         302:
