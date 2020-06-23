@@ -113,6 +113,7 @@ class TestProfiler(DataTestCase):
                     'match_all': {},
                 },
             },
+            size=100,
         )['hits']['hits']
         hits = {h['_id']: h['_source'] for h in hits}
 
