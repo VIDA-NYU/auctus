@@ -58,9 +58,18 @@ paths:
                 - file
         required: true
       responses:
-        302:
-          description: "OK, redirects to /"
-          content: {}
+        200:
+          description: "OK, provides ID of dataset (which will be available once profiling ends)"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                required:
+                - id
+                additionalProperties: false
         400:
           description: "Error"
           content:
