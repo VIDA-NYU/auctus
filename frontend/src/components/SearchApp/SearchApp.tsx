@@ -29,10 +29,7 @@ import { aggregateResults } from '../../api/augmentation';
 interface Filter {
   id: string;
   type: FilterType;
-  title: string;
-  icon: Icon.Icon;
   hidden: boolean;
-  component: JSX.Element;
   state?: FilterVariables | RelatedFile | string[];
 }
 
@@ -131,7 +128,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         id: filterId,
         type: filterType,
         hidden: false,
-        ...this.createFilterComponent(filterId, filterType),
       };
       return { filters: [filter, ...prevState.filters] };
     });
@@ -186,10 +182,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     }
   }
 
-  createFilterComponent(
+  filterComponent(
     filterId: string,
     filterType: FilterType,
-    relatedFile?: RelatedFile
+    state?: FilterVariables | RelatedFile | string[]
   ): { title: string; component: JSX.Element; icon: Icon.Icon } {
     switch (filterType) {
       case FilterType.TEMPORAL:
@@ -198,8 +194,8 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           icon: Icon.Calendar,
           component: (
             <DateFilter
-              key={`datefilter-${filterId}`}
               onDateFilterChange={d => this.updateFilterState(filterId, d)}
+              state={state as TemporalVariable | undefined}
             />
           ),
         };
@@ -209,9 +205,8 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           icon: Icon.File,
           component: (
             <RelatedFileFilter
-              key={`relatedfilefilter-${filterId}`}
               onSelectedFileChange={f => this.updateFilterState(filterId, f)}
-              state={relatedFile}
+              state={state as RelatedFile | undefined}
             />
           ),
         };
@@ -221,7 +216,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           icon: Icon.MapPin,
           component: (
             <GeoSpatialFilter
-              key={`geospatialfilter-${filterId}`}
+              state={state as GeoSpatialVariable | undefined}
               onSelectCoordinates={c => this.updateFilterState(filterId, c)}
             />
           ),
@@ -232,9 +227,8 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           icon: Icon.Database,
           component: (
             <SourceFilter
-              key={`sourcefilter-${filterId}`}
               sources={this.state.sources}
-              checkedSources={[] /* TODO */}
+              checkedSources={state as string[] | undefined}
               onSourcesChange={s => this.updateFilterState(filterId, s)}
             />
           ),
@@ -271,11 +265,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             return {
               ...relatedFileFilters[0],
               state: relatedFile,
-              ...this.createFilterComponent(
-                relatedFileFilters[0].id,
-                FilterType.RELATED_FILE,
-                relatedFile
-              ),
             };
           } else {
             return filter;
@@ -289,11 +278,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           type: FilterType.RELATED_FILE,
           hidden: false,
           state: relatedFile,
-          ...this.createFilterComponent(
-            filterId,
-            FilterType.RELATED_FILE,
-            relatedFile
-          ),
         };
         filters = [...prevFilters, filter];
       }
@@ -304,29 +288,39 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   renderFilters() {
     return this.state.filters
       .filter(f => !f.hidden)
-      .map(f => (
-        <FilterContainer
-          key={`filter-container-${f.id}`}
-          title={f.title}
-          onClose={() => this.removeFilter(f.id)}
-        >
-          {f.component}
-        </FilterContainer>
-      ));
+      .map(f => {
+        const { title, component } = this.filterComponent(
+          f.id,
+          f.type,
+          f.state
+        );
+        return (
+          <FilterContainer
+            key={`filter-container-${f.id}`}
+            title={title}
+            onClose={() => this.removeFilter(f.id)}
+          >
+            {component}
+          </FilterContainer>
+        );
+      });
   }
 
   renderCompactFilters() {
     return (
       <ChipGroup>
-        {this.state.filters.map(f => (
-          <Chip
-            key={`filter-chip-${f.id}`}
-            icon={f.icon}
-            label={f.title}
-            onClose={() => this.removeFilter(f.id)}
-            onEdit={() => this.toggleFilter(f.id)}
-          />
-        ))}
+        {this.state.filters.map(f => {
+          const { title, icon } = this.filterComponent(f.id, f.type, f.state);
+          return (
+            <Chip
+              key={`filter-chip-${f.id}`}
+              icon={icon}
+              label={title}
+              onClose={() => this.removeFilter(f.id)}
+              onEdit={() => this.toggleFilter(f.id)}
+            />
+          );
+        })}
       </ChipGroup>
     );
   }
