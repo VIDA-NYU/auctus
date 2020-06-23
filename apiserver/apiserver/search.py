@@ -2,9 +2,9 @@ import contextlib
 from datetime import datetime
 import distance
 import hashlib
+import json
 import logging
 import os
-import pickle
 import tempfile
 import textwrap
 import time
@@ -1263,7 +1263,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
 
         if data_profile is not None:
             logger.info("Found cached profile_data")
-            data_profile = pickle.loads(data_profile)
+            data_profile = json.loads(data_profile)
         else:
             materialize = {}
             with contextlib.ExitStack() as stack:
@@ -1306,7 +1306,11 @@ class ProfilePostedData(tornado.web.RequestHandler):
 
             self.application.redis.set(
                 'profile:' + data_hash,
-                pickle.dumps(data_profile),
+                json.dumps(
+                    data_profile,
+                    # Compact
+                    sort_keys=True, indent=None, separators=(',', ':'),
+                ),
             )
 
         return data_profile, data_hash

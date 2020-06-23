@@ -9,7 +9,6 @@ import lazo_index_service
 import logging
 import json
 import os
-import pickle
 import prometheus_client
 import redis
 import shutil
@@ -292,7 +291,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                         'profile:' + data_profile,
                     )
                     if data_profile:
-                        data_profile = pickle.loads(data_profile)
+                        data_profile = json.loads(data_profile)
                     else:
                         return self.send_error_json(
                             404,
