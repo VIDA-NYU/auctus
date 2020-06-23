@@ -26,13 +26,21 @@ PROM_CACHE_AUGMENTATIONS_BYTES = prometheus_client.Gauge(
     'cache_augmentations_bytes',
     "Total size of augmentation results in cache",
 )
+PROM_CACHE_USER_DATASETS = prometheus_client.Gauge(
+    'cache_user_datasets_count',
+    "Number of user datasets in cache",
+)
+PROM_CACHE_USER_DATASETS_BYTES = prometheus_client.Gauge(
+    'cache_user_datasets_bytes',
+    "Total size of user datasets in cache",
+)
 
 
 CACHE_HIGH = os.environ.get('MAX_CACHE_BYTES')
 CACHE_HIGH = int(CACHE_HIGH, 10) if CACHE_HIGH else 100000000000  # 100 GB
 CACHE_LOW = CACHE_HIGH * 0.33
 
-CACHES = ('/cache/datasets', '/cache/aug')
+CACHES = ('/cache/datasets', '/cache/aug', '/cache/user_data')
 
 
 def get_tree_size(path):
@@ -107,6 +115,13 @@ def check_cache():
         PROM_CACHE_AUGMENTATIONS_BYTES.set(augmentations_bytes)
         logger.info("%d augmentations in cache, %d bytes",
                     augmentations, augmentations_bytes)
+
+        # Count user datasets in cache
+        user_datasets, user_data_bytes = measure_cache_dir('/cache/user_data')
+        PROM_CACHE_USER_DATASETS.set(user_datasets)
+        PROM_CACHE_USER_DATASETS_BYTES.set(user_data_bytes)
+        logger.info("%d user datasets in cache, %d bytes",
+                    user_datasets, user_data_bytes)
 
         # Remove from caches if max is reached
         if datasets_bytes + augmentations_bytes > CACHE_HIGH:

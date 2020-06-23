@@ -63,6 +63,7 @@ class Coordinator(object):
         # Create cache directories
         os.makedirs('/cache/datasets', exist_ok=True)
         os.makedirs('/cache/aug', exist_ok=True)
+        os.makedirs('/cache/user_data', exist_ok=True)
 
         # Start AMQP coroutine
         log_future(
