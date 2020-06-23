@@ -1950,6 +1950,14 @@ class TestUpload(DatamartTest):
                 'name': 'basic reupload',
                 'description': "sent through upload endpoint",
             },
+            schema={
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'string'},
+                },
+                'required': ['id'],
+                'additionalProperties': False,
+            },
         )
         record = response.json()
         self.assertEqual(record.keys(), {'id'})
