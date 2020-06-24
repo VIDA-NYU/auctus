@@ -55,18 +55,18 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
       bottomRightLat,
       bottomRightLon,
     } = transformCoordinates(feature);
-    const p = this.props.state;
+    const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
     return (
-      topLeftLat.toString() === p.latitude1 &&
-      topLeftLon.toString() === p.longitude1 &&
-      bottomRightLat.toString() === p.latitude2 &&
-      bottomRightLon.toString() === p.longitude2
+      topLeftLat.toString() === latitude1 &&
+      topLeftLon.toString() === longitude1 &&
+      bottomRightLat.toString() === latitude2 &&
+      bottomRightLon.toString() === longitude2
     );
   }
 
   componentDidUpdate() {
     if (this.props.state) {
-      const ps = this.props.state;
+      const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
       const features = this.source.getFeatures();
       if (features.length > 0) {
         // Compare with props
@@ -80,22 +80,10 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
       const feature = new Feature({
         geometry: new Polygon([
           [
-            fromLonLat(
-              [Number(ps.longitude1), Number(ps.latitude1)],
-              'EPSG:3857'
-            ),
-            fromLonLat(
-              [Number(ps.longitude2), Number(ps.latitude1)],
-              'EPSG:3857'
-            ),
-            fromLonLat(
-              [Number(ps.longitude2), Number(ps.latitude2)],
-              'EPSG:3857'
-            ),
-            fromLonLat(
-              [Number(ps.longitude1), Number(ps.latitude2)],
-              'EPSG:3857'
-            ),
+            fromLonLat([Number(longitude1), Number(latitude1)], 'EPSG:3857'),
+            fromLonLat([Number(longitude2), Number(latitude1)], 'EPSG:3857'),
+            fromLonLat([Number(longitude2), Number(latitude2)], 'EPSG:3857'),
+            fromLonLat([Number(longitude1), Number(latitude2)], 'EPSG:3857'),
           ],
         ]),
       });
@@ -194,12 +182,9 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
     let topLeftText = undefined,
       topRightText = undefined;
     if (this.props.state) {
-      const ps = this.props.state;
-      topLeftText = toStringHDMS([Number(ps.longitude1), Number(ps.latitude1)]);
-      topRightText = toStringHDMS([
-        Number(ps.longitude2),
-        Number(ps.latitude2),
-      ]);
+      const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
+      topLeftText = toStringHDMS([Number(longitude1), Number(latitude1)]);
+      topRightText = toStringHDMS([Number(longitude2), Number(latitude2)]);
     }
     return (
       <div>
