@@ -383,6 +383,36 @@ class TestSearch(DatamartTest):
             {'datamart.test.agg', 'datamart.test.lazo'},
         )
 
+    def test_search_temporal_resolution(self):
+        """Search restricted on temporal resolution."""
+        response = self.datamart_post(
+            '/search',
+            json={
+                'keywords': 'daily',
+                'variables': [{
+                    'type': 'temporal_variable',
+                    'granularity': 'hour',
+                }],
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertEqual({r['id'] for r in results}, set())
+
+        response = self.datamart_post(
+            '/search',
+            json={
+                'keywords': 'daily',
+                'variables': [{
+                    'type': 'temporal_variable',
+                    'granularity': 'day',
+                }],
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertEqual({r['id'] for r in results}, {'datamart.test.daily'})
+
 
 class TestDataSearch(DatamartTest):
     def test_basic_join(self):

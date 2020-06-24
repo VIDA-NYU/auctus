@@ -1075,8 +1075,14 @@ def parse_query_variables(data):
             raise ClientError("variable is missing property 'type'")
 
         # temporal variable
-        # TODO: handle 'granularity'
         if variable['type'] == 'temporal_variable':
+            filters = [
+                {
+                    'term': {
+                        'columns.semantic_types': types.DATE_TIME,
+                    },
+                }
+            ]
             if 'start' in variable or 'end' in variable:
                 if 'start' in variable:
                     start = parse_date(variable['start'])
@@ -1095,38 +1101,43 @@ def parse_query_variables(data):
                     end = datetime.utcnow().timestamp()
                     if start > end:
                         end = start + 1
+
                 if start > end:
                     raise ClientError("Invalid date range (start > end)")
-                output.append({
+
+                filters.append({
                     'nested': {
-                        'path': 'columns',
+                        'path': 'columns.coverage',
                         'query': {
-                            'bool': {
-                                'must': [
-                                    {
-                                        'term': {
-                                            'columns.semantic_types': types.DATE_TIME,
-                                        },
-                                    },
-                                    {
-                                        'nested': {
-                                            'path': 'columns.coverage',
-                                            'query': {
-                                                'range': {
-                                                    'columns.coverage.range': {
-                                                        'gte': start,
-                                                        'lte': end,
-                                                        'relation': 'intersects',
-                                                    }
-                                                },
-                                            },
-                                        },
-                                    },
-                                ],
+                            'range': {
+                                'columns.coverage.range': {
+                                    'gte': start,
+                                    'lte': end,
+                                    'relation': 'intersects',
+                                },
                             },
                         },
                     },
                 })
+            if 'granularity' in variable:
+                granularity = variable['granularity']
+
+                filters.append({
+                    'term': {
+                        'columns.temporal_resolution': granularity,
+                    },
+                })
+
+            output.append({
+                'nested': {
+                    'path': 'columns',
+                    'query': {
+                        'bool': {
+                            'must': filters,
+                        },
+                    },
+                },
+            })
 
         # geospatial variable
         # TODO: handle 'granularity'
