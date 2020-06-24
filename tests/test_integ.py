@@ -2024,6 +2024,7 @@ class TestUpload(DatamartTest):
             )
 
             # Check it's no longer in alternate index
+            time.sleep(1)
             with self.assertRaises(elasticsearch.NotFoundError):
                 es.get('pending', dataset_id)
         finally:
