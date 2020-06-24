@@ -100,6 +100,7 @@ export interface TemporalVariable {
   type: 'temporal_variable';
   start?: string;
   end?: string;
+  granularity?: string;
 }
 
 export interface GeoSpatialVariable {
