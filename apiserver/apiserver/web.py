@@ -173,6 +173,7 @@ class BaseHandler(RequestHandler):
     def read_format(self, default_format='csv'):
         format = self.get_query_argument('format', default_format)
         format_options = {}
+        format_ext = None
         for n, v in self.request.query_arguments.items():
             if n.startswith('format_'):
                 if len(v) != 1:
@@ -189,7 +190,9 @@ class BaseHandler(RequestHandler):
         elif format_options:
             self.send_error_json(400, "Invalid output options")
             raise HTTPError(400)
-        return format, format_options
+        if hasattr(writer_cls, 'extension'):
+            format_ext = writer_cls.extension
+        return format, format_options, format_ext
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
@@ -457,7 +460,7 @@ class RecursiveZipWriter(object):
 
 class BaseDownload(BaseHandler):
     async def send_dataset(self, dataset_id, metadata,
-                           format='csv', format_options=None):
+                           format='csv', format_options=None, format_ext=None):
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
@@ -489,14 +492,16 @@ class BaseDownload(BaseHandler):
             with stack:
                 type_ = None
                 if zipfile.is_zipfile(dataset_path):
+                    name = dataset_id + '.zip'
                     type_ = 'application/zip'
                     logger.info("Sending ZIP...")
                 else:
+                    name = dataset_id + (format_ext or '')
                     logger.info("Sending file...")
                 with open(dataset_path, 'rb') as fp:
                     return await self.send_file(
                         fp,
-                        name=dataset_id,
+                        name=name,
                         type_=type_,
                     )
 
@@ -504,7 +509,7 @@ class BaseDownload(BaseHandler):
 class DownloadId(BaseDownload, GracefulHandler):
     @PROM_DOWNLOAD.sync()
     def get(self, dataset_id):
-        format, format_options = self.read_format()
+        format, format_options, format_ext = self.read_format()
 
         # Get materialization data from Elasticsearch
         try:
@@ -514,7 +519,10 @@ class DownloadId(BaseDownload, GracefulHandler):
         except elasticsearch.NotFoundError:
             return self.send_error_json(404, "No such dataset")
 
-        return self.send_dataset(dataset_id, metadata, format, format_options)
+        return self.send_dataset(
+            dataset_id, metadata,
+            format, format_options, format_ext,
+        )
 
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
@@ -524,7 +532,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
 
         task = None
         data = None
-        format, format_options = self.read_format()
+        format, format_options, format_ext = self.read_format()
         if type_.startswith('application/json'):
             task = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -560,7 +568,8 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
 
         if not data:
             return await self.send_dataset(
-                task['id'], metadata, format, format_options,
+                task['id'], metadata,
+                format, format_options, format_ext,
             )
         else:
             # data
@@ -620,7 +629,10 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 return await self.finish()
             else:
                 with open(new_path, 'rb') as fp:
-                    return await self.send_file(fp)
+                    return await self.send_file(
+                        fp,
+                        name='augmentation' + (format_ext or ''),
+                    )
 
 
 class Metadata(BaseHandler, GracefulHandler):
@@ -659,7 +671,7 @@ class Metadata(BaseHandler, GracefulHandler):
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_AUGMENT.sync()
     async def post(self):
-        format, format_options = self.read_format('d3m')
+        format, format_options, format_ext = self.read_format('d3m')
 
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
@@ -797,7 +809,10 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 else:
                     # send the file
                     with open(path, 'rb') as fp:
-                        return await self.send_file(fp)
+                        return await self.send_file(
+                            fp,
+                            name='augmentation' + (format_ext or ''),
+                        )
         except AugmentationError as e:
             return await self.send_error_json(400, str(e))
 

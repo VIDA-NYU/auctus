@@ -134,6 +134,7 @@ class CsvWriter(object):
     """Writer for the ``csv`` format. Writes a CSV file at the provided path.
     """
     needs_metadata = False
+    extension = '.csv'
 
     def __init__(self, destination, format_options=None):
         self.destination = destination
