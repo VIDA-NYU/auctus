@@ -43,6 +43,7 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
     };
     this.source = new VectorSource({ wrapX: false });
     this.source.on('addfeature', evt => this.onSelectCoordinates(evt));
+    this.componentDidUpdate();
   }
 
   featureMatchesProps(feature: Feature): boolean {
@@ -154,7 +155,6 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
   }
 
   addInteractions(map: Map, mapSource: VectorSource) {
-    mapSource.clear();
     const draw = new Draw({
       source: mapSource,
       type: GeometryType.CIRCLE,
