@@ -62,8 +62,9 @@ class AugmentationOptions extends React.PureComponent<
 
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
-    const checked = this.state.checked;
-    checked[input.value] = !checked[input.value];
+    const checked = Object.assign({}, this.state.checked, {
+      [input.value]: !this.state.checked[input.value],
+    });
     this.setState({ checked: { ...checked } });
   }
 

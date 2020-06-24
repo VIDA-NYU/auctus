@@ -96,39 +96,45 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     filterId: string,
     state?: TemporalVariable | GeoSpatialVariable | RelatedFile | string[]
   ) {
-    const filter = this.state.filters.find(f => f.id === filterId);
-    if (filter) {
-      filter.state = state;
-      this.setState({ filters: [...this.state.filters] });
-    } else {
-      console.warn(
-        `Requested to update filter state with id=[${filterId} which does not exist.]`
-      );
-    }
+    this.setState(prevState => {
+      let found = false;
+      const filters = prevState.filters.map(filter => {
+        if (filter.id === filterId) {
+          found = true;
+          return { ...filter, state };
+        } else {
+          return filter;
+        }
+      });
+      if (!found) {
+        console.warn(
+          `Requested to update filter state with id=[${filterId} which does not exist.]`
+        );
+      }
+      return { filters };
+    });
   }
 
   handleAddFilter(filterType: FilterType) {
-    const filters = this.state.filters;
-    if (
-      filterType === FilterType.RELATED_FILE &&
-      filters.filter(f => f.type === FilterType.RELATED_FILE).length > 0
-    ) {
-      return;
-    }
-    if (
-      filterType === FilterType.SOURCE &&
-      filters.filter(f => f.type === FilterType.SOURCE).length > 0
-    ) {
-      return;
-    }
-    const filterId = generateRandomId();
-    filters.push({
-      id: filterId,
-      type: filterType,
-      hidden: false,
-      ...this.createFilterComponent(filterId, filterType),
+    this.setState(prevState => {
+      if (
+        filterType === FilterType.RELATED_FILE ||
+        filterType === FilterType.SOURCE
+      ) {
+        // Can only have one of those
+        if (prevState.filters.filter(f => f.type === filterType).length > 0) {
+          return { filters: prevState.filters }; // No change
+        }
+      }
+      const filterId = generateRandomId();
+      const filter = {
+        id: filterId,
+        type: filterType,
+        hidden: false,
+        ...this.createFilterComponent(filterId, filterType),
+      };
+      return { filters: [filter, ...prevState.filters] };
     });
-    this.setState({ filters: [...filters] });
   }
 
   submitQuery() {
@@ -157,10 +163,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       this.setState({
         searchQuery: query,
         searchState: SearchState.SEARCH_REQUESTING,
-        filters: this.state.filters.map(f => {
-          f.hidden = true;
-          return f;
-        }),
+        filters: this.state.filters.map(f => ({ ...f, hidden: true })),
       });
 
       api
@@ -240,52 +243,61 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     }
   }
 
-  toggleFilter(itemId: string) {
-    const filter = this.state.filters.find(f => f.id === itemId);
-    if (filter) {
-      filter.hidden = !filter.hidden;
-      this.setState({ filters: [...this.state.filters] });
-    }
+  toggleFilter(filterId: string) {
+    this.setState(prevState => {
+      const filters = this.state.filters.map(f => {
+        if (f.id === filterId) {
+          return { ...f, hidden: !f.hidden };
+        } else {
+          return f;
+        }
+      });
+      return { filters };
+    });
   }
 
   onSearchRelated(relatedFile: RelatedFile) {
-    const filters = this.state.filters;
-    const relatedFileFilters = filters.filter(
-      f => f.type === FilterType.RELATED_FILE
-    );
-    if (relatedFileFilters.length > 0) {
-      // Find index of the specific object using findIndex method
-      const objIndex = filters.findIndex(
-        obj => obj.id === relatedFileFilters[0].id
+    this.setState(prevState => {
+      const prevFilters = this.state.filters;
+      const relatedFileFilters = prevFilters.filter(
+        f => f.type === FilterType.RELATED_FILE
       );
-      // Update existing filter
-      const updatedObject = {
-        ...relatedFileFilters[0],
-        state: relatedFile,
-        ...this.createFilterComponent(
-          relatedFileFilters[0].id,
-          FilterType.RELATED_FILE,
-          relatedFile
-        ),
-      };
-      filters[objIndex] = updatedObject;
-    } else {
-      // Add new filter
-      const filterId = generateRandomId();
-      filters.push({
-        id: filterId,
-        type: FilterType.RELATED_FILE,
-        hidden: false,
-        state: relatedFile,
-        ...this.createFilterComponent(
-          filterId,
-          FilterType.RELATED_FILE,
-          relatedFile
-        ),
-      });
-    }
-    this.setState({ filters: [...filters] });
-    this.submitQuery();
+      let filters;
+      if (relatedFileFilters.length > 0) {
+        // Update existing filter
+        filters = prevFilters.map(filter => {
+          if (filter.id === relatedFileFilters[0].id) {
+            return {
+              ...relatedFileFilters[0],
+              state: relatedFile,
+              ...this.createFilterComponent(
+                relatedFileFilters[0].id,
+                FilterType.RELATED_FILE,
+                relatedFile
+              ),
+            };
+          } else {
+            return filter;
+          }
+        });
+      } else {
+        // Add new filter
+        const filterId = generateRandomId();
+        const filter: Filter = {
+          id: filterId,
+          type: FilterType.RELATED_FILE,
+          hidden: false,
+          state: relatedFile,
+          ...this.createFilterComponent(
+            filterId,
+            FilterType.RELATED_FILE,
+            relatedFile
+          ),
+        };
+        filters = [...prevFilters, filter];
+      }
+      return { filters };
+    }, this.submitQuery);
   }
 
   renderFilters() {

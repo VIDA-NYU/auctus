@@ -54,7 +54,7 @@ class GeoSpatialFilter extends PersistentComponent<
   }
 
   componentDidUpdate() {
-    // The OpenLayers map looses its selected state when the react component
+    // The OpenLayers map loses its selected state when the react component
     // is unmounted. Here we re-load the selected feature from the previous
     // component state.
     if (!this.map) {

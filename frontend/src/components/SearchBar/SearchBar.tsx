@@ -13,7 +13,6 @@ interface SearchBarProps {
 class SearchBar extends PersistentComponent<SearchBarProps> {
   constructor(props: SearchBarProps) {
     super(props);
-    this.state = { value: '' };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
