@@ -6,6 +6,7 @@ Incompatible changes:
 * Renamed docker-compose services to use dashes `-` instead of underscores `_`
 * Containers no longer run as root, change permissions on volumes to uid 998
 * Changed Elasticsearch index settings, use reindex API to update (`POST /_reindex`)
+* Changed Redis cache from Pickle to JSON, make sure to clear Redis on update
 
 Enhancements:
 * Remove latitude/longitude semantic types from unmatched columns
@@ -25,6 +26,8 @@ Enhancements:
 * Fix searching on column names
 * Detect named administrative areas via the datamart-geo database
 * Accept format parameters for augmentations (don't only return D3M format)
+* Automatically handle SPSS files
+* Convert search input the same as discovered datasets (so searching is possible from a TSV, Excel, or SPSS file)
 
 0.6 (2020-04-29)
 ================
