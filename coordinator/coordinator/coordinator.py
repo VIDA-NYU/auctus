@@ -1,6 +1,5 @@
 import aio_pika
 import asyncio
-import collections
 import elasticsearch
 import elasticsearch.helpers
 import itertools
@@ -168,33 +167,41 @@ class Coordinator(object):
                 self.recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
 
         # Count datasets per source
-        SIZE = 10000
-        sleep_in = SIZE
-        sources = collections.Counter()
-        versions = collections.Counter()
-        # TODO: Aggregation query?
-        hits = elasticsearch.helpers.scan(
-            self.elasticsearch,
+        sources = self.elasticsearch.search(
             index='datamart',
-            query={
-                'query': {
-                    'match_all': {},
+            body={
+                'aggs': {
+                    'sources': {
+                        'terms': {
+                            'field': 'source',
+                        },
+                    },
                 },
             },
-            size=SIZE,
-            scroll='30m',
-        )
-        for h in hits:
-            source = h['_source'].get('source', 'unknown')
-            sources[source] += 1
+            size=0,
+        )['aggregations']['sources']
+        sources = {
+            bucket['key']: bucket['doc_count']
+            for bucket in sources['buckets']
+        }
 
-            version = h['_source'].get('version', 'unknown')
-            versions[version] += 1
-
-            sleep_in -= 1
-            if sleep_in <= 0:
-                sleep_in = SIZE
-                time.sleep(5)
+        versions = self.elasticsearch.search(
+            index='datamart',
+            body={
+                'aggs': {
+                    'versions': {
+                        'terms': {
+                            'field': 'verison',
+                        },
+                    },
+                },
+            },
+            size=0,
+        )['aggregations']['versions']
+        versions = {
+            bucket['key']: bucket['doc_count']
+            for bucket in versions['buckets']
+        }
 
         # Update prometheus
         for source, count in sources.items():
