@@ -1076,7 +1076,7 @@ def parse_query_variables(data):
 
         # temporal variable
         # TODO: handle 'granularity'
-        if 'temporal_variable' in variable['type']:
+        if variable['type'] == 'temporal_variable':
             if 'start' in variable or 'end' in variable:
                 if 'start' in variable:
                     start = parse_date(variable['start'])
@@ -1130,11 +1130,13 @@ def parse_query_variables(data):
 
         # geospatial variable
         # TODO: handle 'granularity'
-        elif 'geospatial_variable' in variable['type']:
-            if ('latitude1' not in variable or
-                    'latitude2' not in variable or
-                    'longitude1' not in variable or
-                    'longitude2' not in variable):
+        elif variable['type'] == 'geospatial_variable':
+            if (
+                'latitude1' not in variable or
+                'latitude2' not in variable or
+                'longitude1' not in variable or
+                'longitude2' not in variable
+            ):
                 continue
             longitude1 = min(
                 float(variable['longitude1']),
@@ -1179,7 +1181,7 @@ def parse_query_variables(data):
         # tabular variable
         # TODO: handle 'relationship'
         #  for now, it assumes the relationship is 'contains'
-        elif 'tabular_variable' in variable['type']:
+        elif variable['type'] == 'tabular_variable':
             if 'columns' in variable:
                 for column_index in variable['columns']:
                     tabular_variables.append(column_index)
