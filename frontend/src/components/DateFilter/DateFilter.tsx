@@ -2,7 +2,7 @@ import React from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DateFilter.css';
-import { TemporalVariable } from '../../api/types';
+import { TemporalResolution, TemporalVariable } from '../../api/types';
 
 interface DateFilterProps {
   className?: string;
@@ -34,6 +34,14 @@ class DateFilter extends React.PureComponent<DateFilterProps> {
     });
   }
 
+  onGranularityChange(granularity: string) {
+    this.props.onDateFilterChange({
+      type: 'temporal_variable',
+      ...this.props.state,
+      granularity,
+    });
+  }
+
   formatDate(date?: Date) {
     return date ? date.toISOString().substring(0, 10) : undefined;
   }
@@ -62,6 +70,19 @@ class DateFilter extends React.PureComponent<DateFilterProps> {
             selected={this.parseDate(this.props.state?.end)}
             onChange={e => this.onEndDateChange(e)}
           />
+        </div>
+        <div className="d-inline">
+          <span className="ml-2 mr-1">Granularity: </span>
+          <select
+            value={this.props.state?.granularity}
+            onChange={e => this.onGranularityChange(e.target.value)}
+          >
+            {Object.values(TemporalResolution).map(value => (
+              <option value={value} key={value}>
+                {value}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     );
