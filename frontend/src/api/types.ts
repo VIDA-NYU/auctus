@@ -140,3 +140,19 @@ export enum InfoBoxType {
   DETAIL = 'DETAIL',
   AUGMENTATION = 'AUGMENTATION',
 }
+
+export interface ProfileData {
+  columns: ColumnMetadata[];
+  nb_profiled_rows?: number;
+  nb_rows?: number;
+  sample: string;
+  size?: number;
+  token?: string;
+  version?: string;
+}
+
+export enum ProfilingStatus {
+  STOPPED = 'STOPPED',
+  RUNNING = 'RUNNING',
+  COMPLETE = 'COMPLETE',
+}

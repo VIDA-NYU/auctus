@@ -149,6 +149,26 @@ export function upload(data: UploadData) {
 
   return api.post('/upload', formData, config);
 }
+export function initialProfile(data: UploadData) {
+  const formData = new FormData();
+  if (data.description) {
+    formData.append('name', data.name);
+  }
+  if (data.address) {
+    formData.append('address', data.address);
+  } else if (data.file) {
+    formData.append('data', data.file);
+  }
+
+  const config: AxiosRequestConfig = {
+    maxRedirects: 0,
+    headers: {
+      'content-type': 'multipart/form-data',
+    },
+  };
+
+  return api.post('/profile', formData, config);
+}
 
 export interface RecentDiscovery {
   id: string;

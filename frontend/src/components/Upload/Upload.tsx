@@ -4,6 +4,9 @@ import * as Icon from 'react-feather';
 import * as api from '../../api/rest';
 import { SubmitButton } from '../ui/Button/Button';
 
+import { ProfileData, ProfilingStatus } from '../../api/types';
+import { ProfileDataset } from './ProfileDataset';
+
 interface Validation {
   valid: boolean;
   errors: {
@@ -19,6 +22,10 @@ interface UploadFormState {
   address?: string;
   validation: Validation;
   submitting: boolean;
+  profilingStatus: ProfilingStatus;
+  successProfiler?: boolean;
+  failedProfiler?: string;
+  profiledData?: ProfileData;
 }
 
 interface UploadFormProps {
@@ -33,6 +40,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     super(props);
     this.state = this.initialState();
     this.onFormSubmit = this.onFormSubmit.bind(this);
+    this.onProfileData = this.onProfileData.bind(this);
   }
 
   initialState() {
@@ -42,6 +50,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       description: '',
       validation: { valid: true, errors: {} },
       submitting: false,
+      profilingStatus: ProfilingStatus.STOPPED,
     };
   }
 
@@ -49,7 +58,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     e.preventDefault();
     const validation = this.validate();
     if (!validation.valid) {
-      this.setState({ validation });
+      this.setState({ validation, profilingStatus: ProfilingStatus.STOPPED });
     } else {
       this.setState({ submitting: true });
       const success = await this.props.onFormSubmit({
@@ -61,7 +70,10 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       if (success) {
         this.setState(this.initialState());
       } else {
-        this.setState({ submitting: false });
+        this.setState({
+          submitting: false,
+          profilingStatus: ProfilingStatus.STOPPED,
+        });
       }
     }
   }
@@ -94,6 +106,37 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     }
   }
 
+  async onProfileData() {
+    this.setState({ profilingStatus: ProfilingStatus.RUNNING });
+    try {
+      const result = await api.initialProfile({
+        file: this.getFile(),
+        address: this.state.address ? this.state.address : undefined,
+        name: this.state.name,
+      });
+      if (result.status === 200) {
+        this.setState({
+          successProfiler: true,
+          profiledData: result.data,
+          profilingStatus: ProfilingStatus.COMPLETE,
+        });
+        return true;
+      }
+      this.setState({
+        successProfiler: false,
+        failedProfiler: `Error ${result.status}: ${result.statusText}`,
+        profilingStatus: ProfilingStatus.COMPLETE,
+      });
+    } catch (e) {
+      this.setState({
+        successProfiler: false,
+        failedProfiler: `${e}`,
+        profilingStatus: ProfilingStatus.COMPLETE,
+      });
+    }
+    return false;
+  }
+
   render() {
     return (
       <form onSubmit={this.onFormSubmit}>
@@ -106,6 +149,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
                 this.state.validation.errors.file ? ' is-invalid' : ''
               }`}
               ref={this.fileInput}
+              onChange={this.onProfileData}
             />
             {this.state.validation.errors.file && (
               <div className="invalid-feedback">
@@ -159,6 +203,17 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             onChange={e => this.setState({ description: e.target.value })}
           />
         </FormGroup>
+        {this.state.profilingStatus !== ProfilingStatus.STOPPED &&
+          this.props.type === 'upload' && (
+            <FormGroup for="upload-sample" label="Dataset Sample">
+              <ProfileDataset
+                profilingStatus={this.state.profilingStatus}
+                profiledData={this.state.profiledData}
+                successProfiler={this.state.successProfiler}
+                failedProfiler={this.state.failedProfiler}
+              />
+            </FormGroup>
+          )}
         <FormGroup>
           <SubmitButton label="Upload" loading={this.state.submitting} />
         </FormGroup>
@@ -229,48 +284,50 @@ class Upload extends React.PureComponent<{}, UploadState> {
 
   render() {
     return (
-      <div className="container container-body">
-        <h1>Upload a new dataset</h1>
+      <div className="row" style={{ maxHeight: '96vh', overflowY: 'auto' }}>
+        <div className="container container-body">
+          <h1>Upload a new dataset</h1>
 
-        <p>
-          This form allows you to manually add new datasets to Auctus’ search
-          index. Uploaded datasets will be searchable by anybody using Auctus.
-        </p>
+          <p>
+            This form allows you to manually add new datasets to Auctus’ search
+            index. Uploaded datasets will be searchable by anybody using Auctus.
+          </p>
 
-        {this.state.failed && (
-          <div className="alert alert-danger" role="alert">
-            Unexpected error: failed to submit dataset ({this.state.failed}).
-          </div>
-        )}
-        {this.state.success && (
-          <div className="alert alert-success" role="alert">
-            File submitted successfully.
-          </div>
-        )}
+          {this.state.failed && (
+            <div className="alert alert-danger" role="alert">
+              Unexpected error: failed to submit dataset ({this.state.failed}).
+            </div>
+          )}
+          {this.state.success && (
+            <div className="alert alert-success" role="alert">
+              File submitted successfully.
+            </div>
+          )}
 
-        <Tabs>
-          <Tab
-            selected={this.state.state === 'upload'}
-            onClick={() => this.setState({ state: 'upload' })}
-          >
-            <Icon.File className="feather-lg" /> Upload
-          </Tab>
-          <Tab
-            selected={this.state.state === 'url'}
-            onClick={() => this.setState({ state: 'url' })}
-          >
-            <Icon.Link2 className="feather-lg" /> Direct URL
-          </Tab>
-        </Tabs>
+          <Tabs>
+            <Tab
+              selected={this.state.state === 'upload'}
+              onClick={() => this.setState({ state: 'upload' })}
+            >
+              <Icon.File className="feather-lg" /> Upload
+            </Tab>
+            <Tab
+              selected={this.state.state === 'url'}
+              onClick={() => this.setState({ state: 'url' })}
+            >
+              <Icon.Link2 className="feather-lg" /> Direct URL
+            </Tab>
+          </Tabs>
 
-        <TabContent>
-          <TabPane active={true} id="upload">
-            <UploadForm
-              type={this.state.state}
-              onFormSubmit={this.onFormSubmit}
-            />
-          </TabPane>
-        </TabContent>
+          <TabContent>
+            <TabPane active={true} id="upload">
+              <UploadForm
+                type={this.state.state}
+                onFormSubmit={this.onFormSubmit}
+              />
+            </TabPane>
+          </TabContent>
+        </div>
       </div>
     );
   }
