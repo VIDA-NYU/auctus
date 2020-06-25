@@ -29,10 +29,7 @@ import { aggregateResults } from '../../api/augmentation';
 interface Filter {
   id: string;
   type: FilterType;
-  title: string;
-  icon: Icon.Icon;
   hidden: boolean;
-  component: JSX.Element;
   state?: FilterVariables | RelatedFile | string[];
 }
 
@@ -131,7 +128,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         id: filterId,
         type: filterType,
         hidden: false,
-        ...this.createFilterComponent(filterId, filterType),
       };
       return { filters: [filter, ...prevState.filters] };
     });
@@ -186,63 +182,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     }
   }
 
-  createFilterComponent(
-    filterId: string,
-    filterType: FilterType,
-    relatedFile?: RelatedFile
-  ): { title: string; component: JSX.Element; icon: Icon.Icon } {
-    switch (filterType) {
-      case FilterType.TEMPORAL:
-        return {
-          title: 'Temporal',
-          icon: Icon.Calendar,
-          component: (
-            <DateFilter
-              key={`datefilter-${filterId}`}
-              onDateFilterChange={d => this.updateFilterState(filterId, d)}
-            />
-          ),
-        };
-      case FilterType.RELATED_FILE:
-        return {
-          title: 'Related File',
-          icon: Icon.File,
-          component: (
-            <RelatedFileFilter
-              key={`relatedfilefilter-${filterId}`}
-              onSelectedFileChange={f => this.updateFilterState(filterId, f)}
-              relatedFile={relatedFile}
-            />
-          ),
-        };
-      case FilterType.GEO_SPATIAL:
-        return {
-          title: 'Geo-Spatial',
-          icon: Icon.MapPin,
-          component: (
-            <GeoSpatialFilter
-              key={`geospatialfilter-${filterId}`}
-              onSelectCoordinates={c => this.updateFilterState(filterId, c)}
-            />
-          ),
-        };
-      case FilterType.SOURCE:
-        return {
-          title: 'Sources',
-          icon: Icon.Database,
-          component: (
-            <SourceFilter
-              key={`sourcefilter-${filterId}`}
-              sources={this.state.sources}
-              onSourcesChange={s => this.updateFilterState(filterId, s)}
-            />
-          ),
-        };
-      default:
-        throw new Error(`Received not supported filter type=[${filterType}]`);
-    }
-  }
-
   toggleFilter(filterId: string) {
     this.setState(prevState => {
       const filters = this.state.filters.map(f => {
@@ -270,11 +209,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             return {
               ...relatedFileFilters[0],
               state: relatedFile,
-              ...this.createFilterComponent(
-                relatedFileFilters[0].id,
-                FilterType.RELATED_FILE,
-                relatedFile
-              ),
             };
           } else {
             return filter;
@@ -288,11 +222,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           type: FilterType.RELATED_FILE,
           hidden: false,
           state: relatedFile,
-          ...this.createFilterComponent(
-            filterId,
-            FilterType.RELATED_FILE,
-            relatedFile
-          ),
         };
         filters = [...prevFilters, filter];
       }
@@ -302,30 +231,103 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   renderFilters() {
     return this.state.filters
-      .filter(f => !f.hidden)
-      .map(f => (
-        <FilterContainer
-          key={`filter-container-${f.id}`}
-          title={f.title}
-          onClose={() => this.removeFilter(f.id)}
-        >
-          {f.component}
-        </FilterContainer>
-      ));
+      .filter(filter => !filter.hidden)
+      .map(filter => {
+        let title = undefined,
+          component = undefined;
+        switch (filter.type) {
+          case FilterType.TEMPORAL:
+            title = 'Temporal';
+            component = (
+              <DateFilter
+                onDateFilterChange={d => this.updateFilterState(filter.id, d)}
+                state={filter.state as TemporalVariable | undefined}
+              />
+            );
+            break;
+          case FilterType.RELATED_FILE:
+            title = 'Related File';
+            component = (
+              <RelatedFileFilter
+                onSelectedFileChange={f => this.updateFilterState(filter.id, f)}
+                state={filter.state as RelatedFile | undefined}
+              />
+            );
+            break;
+          case FilterType.GEO_SPATIAL:
+            title = 'Geo-Spatial';
+            component = (
+              <GeoSpatialFilter
+                state={filter.state as GeoSpatialVariable | undefined}
+                onSelectCoordinates={c => this.updateFilterState(filter.id, c)}
+              />
+            );
+            break;
+          case FilterType.SOURCE:
+            title = 'Sources';
+            component = (
+              <SourceFilter
+                sources={this.state.sources}
+                checkedSources={filter.state as string[] | undefined}
+                onSourcesChange={s => this.updateFilterState(filter.id, s)}
+              />
+            );
+            break;
+          default:
+            throw new Error(
+              `Received not supported filter type=[${filter.type}]`
+            );
+        }
+        return (
+          <FilterContainer
+            key={`filter-container-${filter.id}`}
+            title={title}
+            onClose={() => this.removeFilter(filter.id)}
+          >
+            {component}
+          </FilterContainer>
+        );
+      });
   }
 
   renderCompactFilters() {
     return (
       <ChipGroup>
-        {this.state.filters.map(f => (
-          <Chip
-            key={`filter-chip-${f.id}`}
-            icon={f.icon}
-            label={f.title}
-            onClose={() => this.removeFilter(f.id)}
-            onEdit={() => this.toggleFilter(f.id)}
-          />
-        ))}
+        {this.state.filters.map(filter => {
+          let icon = undefined,
+            title = undefined;
+          switch (filter.type) {
+            case FilterType.TEMPORAL:
+              title = 'Temporal';
+              icon = Icon.Calendar;
+              break;
+            case FilterType.RELATED_FILE:
+              title = 'Related File';
+              icon = Icon.File;
+              break;
+            case FilterType.GEO_SPATIAL:
+              title = 'Geo-Spatial';
+              icon = Icon.MapPin;
+              break;
+            case FilterType.SOURCE:
+              title = 'Sources';
+              icon = Icon.Database;
+              break;
+            default:
+              throw new Error(
+                `Received not supported filter type=[${filter.type}]`
+              );
+          }
+          return (
+            <Chip
+              key={`filter-chip-${filter.id}`}
+              icon={icon}
+              label={title}
+              onClose={() => this.removeFilter(filter.id)}
+              onEdit={() => this.toggleFilter(filter.id)}
+            />
+          );
+        })}
       </ChipGroup>
     );
   }
@@ -351,7 +353,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                   </div>
                   <div className="ml-4">
                     <SearchBar
-                      key={'search-bar'}
                       value={this.state.query}
                       active={this.validQuery()}
                       onQueryChange={q => this.setState({ query: q })}
@@ -385,7 +386,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           <div>
             <VerticalLogo />
             <SearchBar
-              key={'search-bar'}
               value={this.state.query}
               active={this.validQuery()}
               onQueryChange={q => this.setState({ query: q })}

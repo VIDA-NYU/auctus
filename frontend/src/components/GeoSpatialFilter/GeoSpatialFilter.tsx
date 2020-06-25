@@ -5,6 +5,7 @@ import { toStringHDMS } from 'ol/coordinate';
 import { Draw } from 'ol/interaction';
 import { createBox } from 'ol/interaction/Draw';
 import GeometryType from 'ol/geom/GeometryType';
+import Polygon from 'ol/geom/Polygon';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource, OSM as OSMSource } from 'ol/source';
 import {
@@ -18,7 +19,6 @@ import { fromLonLat } from 'ol/proj';
 import { VectorSourceEvent } from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import { GeoSpatialVariable } from '../../api/types';
-import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 import {
   transformCoordinates,
   centralizeMapToFeature,
@@ -26,59 +26,81 @@ import {
 } from '../spatial-utils';
 import 'ol/ol.css';
 
-interface GeoSpatialFilterState {
-  selectedCoordinates?: {
-    topLeftText: string;
-    topRightText: string;
-  };
-  feature?: Feature;
-}
-
 interface GeoSpatialFilterProps {
+  state?: GeoSpatialVariable;
   onSelectCoordinates: (coordinates: GeoSpatialVariable) => void;
 }
 
-class GeoSpatialFilter extends PersistentComponent<
-  GeoSpatialFilterProps,
-  GeoSpatialFilterState
-> {
+class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
   mapId = generateRandomId();
   map?: Map;
-  source?: VectorSource;
+  source: VectorSource;
 
   constructor(props: GeoSpatialFilterProps) {
     super(props);
     this.state = {
       selectedCoordinates: undefined,
     };
+    this.source = new VectorSource({ wrapX: false });
+    this.source.on('addfeature', evt => this.onSelectCoordinates(evt));
+    this.componentDidUpdate();
+  }
+
+  featureMatchesProps(feature: Feature): boolean {
+    if (!this.props.state) {
+      return false;
+    }
+    const {
+      topLeftLat,
+      topLeftLon,
+      bottomRightLat,
+      bottomRightLon,
+    } = transformCoordinates(feature);
+    const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
+    return (
+      topLeftLat.toString() === latitude1 &&
+      topLeftLon.toString() === longitude1 &&
+      bottomRightLat.toString() === latitude2 &&
+      bottomRightLon.toString() === longitude2
+    );
   }
 
   componentDidUpdate() {
-    // The OpenLayers map loses its selected state when the react component
-    // is unmounted. Here we re-load the selected feature from the previous
-    // component state.
-    if (!this.map) {
-      return;
-    }
-    if (
-      this.source &&
-      this.source.getFeatures().length === 0 &&
-      this.state.feature
-    ) {
-      this.source.addFeature(this.state.feature);
-      centralizeMapToFeature(this.map, this.state.feature);
+    if (this.props.state) {
+      const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
+      const features = this.source.getFeatures();
+      if (features.length > 0) {
+        // Compare with props
+        if (this.featureMatchesProps(features[0])) {
+          return;
+        }
+      }
+
+      // Update selection to match props
+      this.source.clear();
+      const feature = new Feature({
+        geometry: new Polygon([
+          [
+            fromLonLat([Number(longitude1), Number(latitude1)], 'EPSG:3857'),
+            fromLonLat([Number(longitude2), Number(latitude1)], 'EPSG:3857'),
+            fromLonLat([Number(longitude2), Number(latitude2)], 'EPSG:3857'),
+            fromLonLat([Number(longitude1), Number(latitude2)], 'EPSG:3857'),
+          ],
+        ]),
+      });
+      this.source.addFeature(feature);
+      if (this.map) {
+        centralizeMapToFeature(this.map, feature);
+      }
+    } else {
+      this.source.clear();
     }
   }
 
   componentDidMount() {
-    super.componentDidMount();
-
     const openStreetMapTileLayer = new TileLayer({
       source: new OSMSource(),
     });
-
-    this.source = new VectorSource({ wrapX: false });
-    this.source.on('addfeature', evt => this.onSelectCoordinates(evt));
 
     const vectorLayer = new VectorLayer({ source: this.source });
     const map = new Map({
@@ -103,10 +125,7 @@ class GeoSpatialFilter extends PersistentComponent<
     map.getViewport().addEventListener('contextmenu', () => {
       // the 'contextmenu' event is triggered on right-button click
       // we use it to clear the current coordinates selection
-      if (this.source) {
-        this.source.clear();
-      }
-      this.setState({ selectedCoordinates: undefined });
+      this.source.clear();
     });
 
     this.addInteractions(map, this.source);
@@ -114,6 +133,11 @@ class GeoSpatialFilter extends PersistentComponent<
   }
 
   onSelectCoordinates(evt: VectorSourceEvent) {
+    // Ignore if it matches the props
+    if (this.featureMatchesProps(evt.feature)) {
+      return;
+    }
+
     const {
       topLeftLat,
       topLeftLon,
@@ -121,13 +145,6 @@ class GeoSpatialFilter extends PersistentComponent<
       bottomRightLon,
     } = transformCoordinates(evt.feature);
 
-    const topLeftText = toStringHDMS([topLeftLon, topLeftLat]);
-    const topRightText = toStringHDMS([bottomRightLon, bottomRightLat]);
-
-    this.setState({
-      selectedCoordinates: { topLeftText, topRightText },
-      feature: evt.feature,
-    });
     this.props.onSelectCoordinates({
       type: 'geospatial_variable',
       latitude1: topLeftLat.toString(),
@@ -138,7 +155,6 @@ class GeoSpatialFilter extends PersistentComponent<
   }
 
   addInteractions(map: Map, mapSource: VectorSource) {
-    mapSource.clear();
     const draw = new Draw({
       source: mapSource,
       type: GeometryType.CIRCLE,
@@ -163,6 +179,13 @@ class GeoSpatialFilter extends PersistentComponent<
       width: '100%',
       height: '400px',
     };
+    let topLeftText = undefined,
+      topRightText = undefined;
+    if (this.props.state) {
+      const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
+      topLeftText = toStringHDMS([Number(longitude1), Number(latitude1)]);
+      topRightText = toStringHDMS([Number(longitude2), Number(latitude2)]);
+    }
     return (
       <div>
         <div className="row">
@@ -171,15 +194,13 @@ class GeoSpatialFilter extends PersistentComponent<
               Left-click to start selection. Right-click to clear selection.
             </span>
             <div className="d-inline" style={{ float: 'right' }}>
-              {this.state.selectedCoordinates && (
+              {topLeftText && topRightText && (
                 <>
                   <span>
-                    Top Left:{' '}
-                    <code>{this.state.selectedCoordinates.topLeftText}</code>
+                    Top Left: <code>{topLeftText}</code>
                   </span>
                   <span className="ml-3">
-                    Bottom Right:{' '}
-                    <code>{this.state.selectedCoordinates.topRightText}</code>
+                    Bottom Right: <code>{topRightText}</code>
                   </span>
                 </>
               )}

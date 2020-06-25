@@ -2,26 +2,18 @@ import React from 'react';
 import Dropzone from 'react-dropzone';
 import { CardShadow, CardButton } from '../visus/Card/Card';
 import { formatSize } from '../../utils';
-import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 import { RelatedFile } from '../../api/types';
-
-interface RelatedFileFilterState {
-  relatedFile?: RelatedFile;
-}
 
 interface RelatedFileFilterProps {
   onSelectedFileChange: (relatedFile: RelatedFile) => void;
-  relatedFile?: RelatedFile;
+  state?: RelatedFile;
 }
 
-class RelatedFileFilter extends PersistentComponent<
-  RelatedFileFilterProps,
-  RelatedFileFilterState
-> {
+class RelatedFileFilter extends React.PureComponent<RelatedFileFilterProps> {
   constructor(props: RelatedFileFilterProps) {
     super(props);
-    if (props.relatedFile) {
-      this.state = { relatedFile: props.relatedFile };
+    if (props.state) {
+      this.state = { relatedFile: props.state };
     } else {
       this.state = { relatedFile: undefined };
     }
@@ -40,9 +32,7 @@ class RelatedFileFilter extends PersistentComponent<
 
   render() {
     const maxSize = 100 * 1024 * 1024; // maximum file size
-    const relatedFile = this.props.relatedFile
-      ? this.props.relatedFile
-      : this.state.relatedFile;
+    const relatedFile = this.props.state;
     if (!relatedFile) {
     } else if (relatedFile.kind === 'localFile') {
       return (

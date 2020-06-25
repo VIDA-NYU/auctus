@@ -1,64 +1,63 @@
 import React from 'react';
-import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 import * as Icon from 'react-feather';
-
-interface SourceFilterState {
-  checked: {
-    [source: string]: boolean;
-  };
-}
 
 interface SourceFilterProps {
   sources: string[];
-  onSourcesChange: (sources?: string[]) => void;
+  checkedSources?: string[];
+  onSourcesChange: (checkedSources: string[]) => void;
 }
 
-class SourceFilter extends PersistentComponent<
-  SourceFilterProps,
-  SourceFilterState
-> {
-  sources: string[];
-
-  constructor(props: SourceFilterProps) {
-    super(props);
-    const initialState: SourceFilterState = { checked: {} };
-    this.sources = props.sources;
-    this.sources.forEach(s => {
-      initialState.checked[s] = true;
-    });
-    this.state = initialState;
-  }
-
+class SourceFilter extends React.PureComponent<SourceFilterProps> {
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
-    const state = {
-      checked: {
-        ...this.state.checked,
-        [input.value]: !this.state.checked[input.value],
-      },
-    };
-    this.notifyChange(state);
+    let found = false;
+    const checkedSources = this.getCheckedSources().filter(s => {
+      if (s === input.value) {
+        found = true;
+        return false; // Remove it from checked (uncheck it)
+      } else {
+        return true;
+      }
+    });
+    if (!found) {
+      checkedSources.push(input.value); // Add it to checked
+    }
+    this.props.onSourcesChange(checkedSources);
   }
 
-  notifyChange(state: SourceFilterState) {
-    this.setState(state);
-    const checkedSources = Object.entries(state.checked)
-      .filter(c => c[1] === true)
-      .map(c => c[0]) as string[];
-    this.props.onSourcesChange(
-      checkedSources.length > 0 ? checkedSources : undefined
-    );
+  getCheckedSources() {
+    // If 'checkedSources' prop is undefined, consider all sources checked
+    return this.props.checkedSources === undefined
+      ? this.props.sources
+      : this.props.checkedSources;
   }
 
   setCheckedStateForAll(checked: boolean) {
-    const state: SourceFilterState = { checked: {} };
-    this.sources.forEach(s => {
-      state.checked[s] = checked;
-    });
-    this.notifyChange(state);
+    if (checked) {
+      this.props.onSourcesChange(this.props.sources);
+    } else {
+      this.props.onSourcesChange([]);
+    }
   }
 
   render() {
+    const sources: { [source: string]: boolean } = {};
+    this.props.sources.forEach(source => {
+      sources[source] = false;
+    });
+    this.getCheckedSources().forEach(source => {
+      sources[source] = true;
+    });
+    const sourcesList = Object.entries(sources);
+    sourcesList.sort((a, b) => {
+      if (a[0] < b[0]) {
+        return -1;
+      } else if (a[0] > b[0]) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
     return (
       <>
         <div className="mb-1 mt-1">
@@ -81,13 +80,13 @@ class SourceFilter extends PersistentComponent<
             Unselect all
           </button>
         </div>
-        {this.sources.map(source => (
+        {sourcesList.map(([source, checked]) => (
           <div className="form-check ml-2" key={`div-${source}`}>
             <input
               className="form-check-input"
               type="checkbox"
               value={source}
-              checked={this.state.checked[source]}
+              checked={checked}
               id={`check-box-${source}`}
               onChange={e => this.handleChange(e)}
             />
