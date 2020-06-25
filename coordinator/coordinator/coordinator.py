@@ -65,26 +65,6 @@ class Coordinator(object):
         os.makedirs('/cache/datasets', exist_ok=True)
         os.makedirs('/cache/aug', exist_ok=True)
 
-        # Load recent datasets from Elasticsearch
-        try:
-            recent = self.elasticsearch.search(
-                index='datamart',
-                body={
-                    'query': {
-                        'match_all': {},
-                    },
-                    'sort': [
-                        {'date': {'order': 'desc'}},
-                    ],
-                },
-                size=15,
-            )['hits']['hits']
-        except elasticsearch.ElasticsearchException:
-            logger.warning("Couldn't get recent datasets from Elasticsearch")
-        else:
-            for h in recent:
-                self.recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
-
         # Start AMQP coroutine
         log_future(
             asyncio.get_event_loop().create_task(self._amqp()),
@@ -165,8 +145,29 @@ class Coordinator(object):
                 del self.recent_discoveries[15:]
 
     def _update_statistics(self):
-        """Scan whole index to compute statistics.
+        """Periodically compute statistics.
         """
+        # Load recent datasets from Elasticsearch
+        try:
+            recent = self.elasticsearch.search(
+                index='datamart',
+                body={
+                    'query': {
+                        'match_all': {},
+                    },
+                    'sort': [
+                        {'date': {'order': 'desc'}},
+                    ],
+                },
+                size=15,
+            )['hits']['hits']
+        except elasticsearch.ElasticsearchException:
+            logger.warning("Couldn't get recent datasets from Elasticsearch")
+        else:
+            for h in recent:
+                self.recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
+
+        # Count datasets per source
         SIZE = 10000
         sleep_in = SIZE
         sources = collections.Counter()
