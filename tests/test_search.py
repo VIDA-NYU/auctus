@@ -99,6 +99,7 @@ class TestSearch(unittest.TestCase):
                             {
                                 'multi_match': {
                                     'query': 'food',
+                                    'operator': 'or', 
                                     'type': 'most_fields',
                                     'fields': ['id', 'description', 'name'],
                                 },
@@ -109,6 +110,7 @@ class TestSearch(unittest.TestCase):
                                     'query': {
                                         'multi_match': {
                                             'query': 'food',
+                                            'operator': 'or',
                                             'type': 'most_fields',
                                             'fields': ['columns.name'],
                                         },

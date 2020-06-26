@@ -153,13 +153,13 @@ class TestProfiler(DataTestCase):
                     'status': 'error',
                     'error': "Dataset has no rows",
                     'source': 'remi',
-                    'dataset_types': [], 
                     'date': lambda d: isinstance(d, str),
                     'metadata': {
                         'description': "A CSV with no rows to test " +
                                        "alternate index",
                         'source': 'remi',
                         'name': 'empty',
+                        'dataset_types': [], 
                         'size': 28,
                         'nb_rows': 0,
                         'nb_profiled_rows': 0,
