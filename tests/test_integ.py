@@ -236,7 +236,7 @@ class TestProfileQuery(DatamartTest):
         # Some fields like 'name', 'description' won't be there
         metadata = {k: v for k, v in metadata.items()
                     if k not in {'id', 'name', 'description', 'source',
-                                 'date', 'materialize', 'sample'}}
+                                 'date', 'materialize'}}
         # Plots are not computed, remove them too
         metadata['columns'] = [
             {k: v for k, v in col.items() if k != 'plot'}

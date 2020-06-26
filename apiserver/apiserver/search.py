@@ -1312,7 +1312,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
                         nominatim=self.application.nominatim,
                         geo_data=self.application.geo_data,
                         search=True,
-                        include_sample=False,
+                        include_sample=True,
                         coverage=True,
                     )
                 logger.info("Profiled in %.2fs", time.perf_counter() - start)
