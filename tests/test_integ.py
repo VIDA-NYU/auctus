@@ -2020,7 +2020,7 @@ basic_metadata = {
     "name": "basic",
     "description": "This is a very simple CSV with people",
     'source': 'remi',
-    'dataset_types': ['temporal', 'numerical'], 
+    'dataset_types': ['categorical', 'numerical'], 
     "size": 425,
     "nb_rows": 20,
     "nb_profiled_rows": 20,
