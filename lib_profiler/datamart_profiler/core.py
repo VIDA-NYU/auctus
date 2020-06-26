@@ -108,7 +108,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     if metadata is None:
         metadata = {}
-        metadata['dataset_types'] = []
         
     data_path = None
     if isinstance(data, pandas.DataFrame):
@@ -167,13 +166,14 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 metadata['nb_rows'] = 0
                 metadata['nb_profiled_rows'] = 0
                 metadata['columns'] = []
+                metadata['dataset_types'] = []
                 return metadata
 
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
 
     metadata['nb_profiled_rows'] = data.shape[0]
-    
+    metadata['dataset_types'] = []
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
     # Fix size if wrong
