@@ -423,8 +423,9 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
 
 class BaseDownload(BaseHandler):
-    async def send_dataset(self, dataset_id, metadata,
-                           format='csv', format_options=None, format_ext=None):
+    async def send_dataset(self, dataset_id, metadata):
+        format, format_options, format_ext = self.read_format()
+
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
@@ -464,8 +465,6 @@ class BaseDownload(BaseHandler):
 class DownloadId(BaseDownload, GracefulHandler):
     @PROM_DOWNLOAD.sync()
     def get(self, dataset_id):
-        format, format_options, format_ext = self.read_format()
-
         # Get materialization data from Elasticsearch
         try:
             metadata = self.application.elasticsearch.get(
@@ -474,10 +473,7 @@ class DownloadId(BaseDownload, GracefulHandler):
         except elasticsearch.NotFoundError:
             return self.send_error_json(404, "No such dataset")
 
-        return self.send_dataset(
-            dataset_id, metadata,
-            format, format_options, format_ext,
-        )
+        return self.send_dataset(dataset_id, metadata)
 
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
@@ -487,7 +483,6 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
 
         task = None
         data = None
-        format, format_options, format_ext = self.read_format()
         if type_.startswith('application/json'):
             task = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -522,11 +517,10 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         metadata = task['metadata']
 
         if not data:
-            return await self.send_dataset(
-                task['id'], metadata,
-                format, format_options, format_ext,
-            )
+            return await self.send_dataset(task['id'], metadata)
         else:
+            format, format_options, format_ext = self.read_format()
+
             # data
             try:
                 data_profile, _ = self.handle_data_parameter(data)
