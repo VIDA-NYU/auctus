@@ -2380,7 +2380,7 @@ geo_wkt_metadata = {
     "name": "geo_wkt",
     "description": "Simple CSV in WKT format",
     'source': 'remi',
-    'dataset_types': ['categorical', 'spatial', 'numerical'], 
+    'dataset_types': ['categorical', 'numerical', 'spatial'], 
     "size": 4708,
     "nb_rows": 100,
     "nb_profiled_rows": 100,
