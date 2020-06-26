@@ -201,6 +201,13 @@ class BaseHandler(RequestHandler):
 
         return self.validate_format(format, format_options)
 
+    @staticmethod
+    def serialize_format(format, format_options):
+        dct = {'format': format}
+        for k, v in format_options.items():
+            dct['format_' + k] = v
+        return urlencode(dct)
+
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
 
@@ -459,9 +466,14 @@ class BaseDownload(BaseHandler):
 
         materialize = metadata.get('materialize', {})
 
+        session_id = self.get_query_argument('session_id', None)
+
         # If there's a direct download URL
-        if ('direct_url' in materialize and
-                format == 'csv' and not materialize.get('convert')):
+        if (
+            'direct_url' in materialize
+            and not session_id
+            and format == 'csv' and not materialize.get('convert')
+        ):
             if format_options:
                 return await self.send_error_json(
                     400,
@@ -470,11 +482,25 @@ class BaseDownload(BaseHandler):
             # Redirect the client to it
             logger.info("Sending redirect to direct_url")
             return self.redirect(materialize['direct_url'])
-        else:
-            # We want to catch exceptions from get_dataset(), without catching
-            # exceptions from inside the with block
-            # https://docs.python.org/3/library/contextlib.html#catching-exceptions-from-enter-methods
-            stack = contextlib.ExitStack()
+
+        if session_id:
+            self.application.redis.rpush(
+                'session:' + session_id,
+                (dataset_id
+                 + '?' + self.serialize_format(format, format_options)),
+            )
+            ret = self.send_json({'success': "attached to session"})
+
+            # Kick off materialization now
+            with get_dataset(
+                metadata, dataset_id,
+                format=format, format_options=format_options,
+            ):
+                pass
+
+            return ret
+
+        with contextlib.ExitStack() as stack:
             try:
                 dataset_path = stack.enter_context(
                     get_dataset(
@@ -485,12 +511,12 @@ class BaseDownload(BaseHandler):
             except Exception:
                 await self.send_error_json(500, "Materializer reports failure")
                 raise
-            with stack:
-                logger.info("Sending file...")
-                return await self.send_file(
-                    dataset_path,
-                    dataset_id + (format_ext or ''),
-                )
+
+            logger.info("Sending file...")
+            return await self.send_file(
+                dataset_path,
+                dataset_id + (format_ext or ''),
+            )
 
 
 class DownloadId(BaseDownload, GracefulHandler):
