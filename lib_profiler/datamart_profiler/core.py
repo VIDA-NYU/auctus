@@ -12,12 +12,12 @@ import random
 import warnings
 
 from .numerical import mean_stddev, get_numerical_ranges
-from .profile_types import identify_types
+from .profile_types import identify_types, determine_column_type
 from .spatial import nominatim_resolve_all, pair_latlong_columns, \
     get_spatial_ranges, parse_wkt_column
 from .temporal import get_temporal_resolution
 from . import types
-
+from . import column_types
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     if metadata is None:
         metadata = {}
-
+        metadata['dataset_types'] = []
+        
     data_path = None
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
@@ -172,7 +173,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         data.shape[0], data.shape[1])
 
     metadata['nb_profiled_rows'] = data.shape[0]
-
+    
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
     # Fix size if wrong
@@ -218,11 +219,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
             # Identify types
             structural_type, semantic_types_dict, additional_meta = \
                 identify_types(array, column_meta['name'], geo_data)
-
+            
             updateColumn = [item for item in updated_columns if item.get('name') == column_meta['name']]
             if len(updateColumn) > 0:
                 structural_type = updateColumn[0]['structural_type']
                 semantic_types_dict = updateColumn[0]['semantic_types']
+                
+            # Identify overall column type (numerical, categorial, spatial, or temporal) and add it to 'dataset_types'
+            column_type = determine_column_type(structural_type, semantic_types_dict)
+            if column_type and not column_type in metadata['dataset_types']:
+                metadata['dataset_types'].append(column_type)
+
             # Set structural type
             column_meta['structural_type'] = structural_type
             # Add semantic types to the ones already present
@@ -576,7 +583,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
-
+            if not column_types.SPATIAL in metadata['dataset_types']:
+                metadata['dataset_types'].append(column_types.SPATIAL)
     # Sample data
     if include_sample:
         rand = numpy.random.RandomState(RANDOM_SEED)
@@ -590,6 +598,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
         sample = sample.applymap(truncate_string)  # Truncate long values
         metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
 
+
+    # Determine dataset_types based on the profiling of columns
+    
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
     return metadata
