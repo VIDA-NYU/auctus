@@ -25,7 +25,7 @@ import zipfile
 from datamart_augmentation.augmentation import AugmentationError, augment
 from datamart_core.common import setup_logging, hash_json, log_future, json2msg
 from datamart_core.fscache import cache_get_or_set
-from datamart_core.materialize import get_dataset
+from datamart_core.materialize import get_dataset, make_zip_recursive
 from datamart_core.prom import PromMeasureRequest
 from datamart_geo import GeoData
 from datamart_materialize import get_writer, make_writer
@@ -138,26 +138,27 @@ class BaseHandler(RequestHandler):
         self.set_status(status)
         return self.send_json({'error': message})
 
-    async def send_file(self, fp, name=None, type_=None):
-        if not type_:
+    async def send_file(self, path, name):
+        if zipfile.is_zipfile(path):
+            type_ = 'application/zip'
+            name += '.zip'
+        else:
             type_ = 'application/octet-stream'
         self.set_header('Content-Type', type_)
         self.set_header('X-Content-Type-Options', 'nosniff')
-        if name:
-            self.set_header('Content-Disposition',
-                            'attachment; filename="%s"' % name)
-        else:
-            self.set_header('Content-Disposition', 'attachment')
+        self.set_header('Content-Disposition',
+                        'attachment; filename="%s"' % name)
         logger.info("Sending file...")
-        BUFSIZE = 40960
-        buf = fp.read(BUFSIZE)
-        while buf:
-            self.write(buf)
-            if len(buf) != BUFSIZE:
-                break
+        with open(path, 'rb') as fp:
+            BUFSIZE = 40960
             buf = fp.read(BUFSIZE)
-            await self.flush()
-        return await self.finish()
+            while buf:
+                self.write(buf)
+                if len(buf) != BUFSIZE:
+                    break
+                buf = fp.read(BUFSIZE)
+                await self.flush()
+            return await self.finish()
 
     def prepare(self):
         super(BaseHandler, self).prepare()
@@ -421,43 +422,6 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         return self.send_json(results)
 
 
-class RecursiveZipWriter(object):
-    def __init__(self, write, flush):
-        self._write = write
-        self._flush = flush
-        self._zip = zipfile.ZipFile(self, 'w')
-
-    async def write_recursive(self, src, dst=''):
-        if os.path.isdir(src):
-            for name in os.listdir(src):
-                await self.write_recursive(
-                    os.path.join(src, name),
-                    dst + '/' + name if dst else name,
-                )
-        else:
-            await self.write_file(src, dst)
-
-    def write(self, data):
-        self._write(data)
-        return len(data)
-
-    def flush(self):
-        return
-
-    async def write_file(self, src, dst):
-        CHUNKSIZE = 8192
-        with open(src, 'rb') as s_fp, self._zip.open(dst, 'w') as d_fp:
-            while True:
-                chunk = s_fp.read(CHUNKSIZE)
-                d_fp.write(chunk)
-                await self._flush()
-                if len(chunk) != CHUNKSIZE:
-                    return
-
-    def close(self):
-        self._zip.close()
-
-
 class BaseDownload(BaseHandler):
     async def send_dataset(self, dataset_id, metadata,
                            format='csv', format_options=None, format_ext=None):
@@ -490,20 +454,11 @@ class BaseDownload(BaseHandler):
                 await self.send_error_json(500, "Materializer reports failure")
                 raise
             with stack:
-                type_ = None
-                if zipfile.is_zipfile(dataset_path):
-                    name = dataset_id + '.zip'
-                    type_ = 'application/zip'
-                    logger.info("Sending ZIP...")
-                else:
-                    name = dataset_id + (format_ext or '')
-                    logger.info("Sending file...")
-                with open(dataset_path, 'rb') as fp:
-                    return await self.send_file(
-                        fp,
-                        name=name,
-                        type_=type_,
-                    )
+                logger.info("Sending file...")
+                return await self.send_file(
+                    dataset_path,
+                    dataset_id + (format_ext or ''),
+                )
 
 
 class DownloadId(BaseDownload, GracefulHandler):
@@ -615,24 +570,19 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                         return_only_datamart_data=True
                     )
 
-                if os.path.isdir(new_path):
-                    # send a zip file
-                    self.set_header('Content-Type', 'application/zip')
-                    self.set_header(
-                        'Content-Disposition',
-                        'attachment; filename="augmentation.zip"')
-                    logger.info("Sending ZIP...")
-                    writer = RecursiveZipWriter(self.write, self.flush)
-                    await writer.write_recursive(new_path)
-                    writer.close()
-                    shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-                    return await self.finish()
-                else:
-                    with open(new_path, 'rb') as fp:
-                        return await self.send_file(
-                            fp,
-                            name='augmentation' + (format_ext or ''),
-                        )
+                    # ZIP result if it's a directory
+                    if os.path.isdir(new_path):
+                        logger.info("Result is a directory, creating ZIP file")
+                        zip_name = new_path + '.zip'
+                        with zipfile.ZipFile(zip_name, 'w') as zip_:
+                            make_zip_recursive(zip_, new_path)
+                        shutil.rmtree(new_path)
+                        os.rename(zip_name, new_path)
+
+            return await self.send_file(
+                new_path,
+                name='augmentation' + (format_ext or ''),
+            )
 
 
 class Metadata(BaseHandler, GracefulHandler):
@@ -793,26 +743,22 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                     columns=columns,
                 )
 
+                # ZIP result if it's a directory
+                if os.path.isdir(cache_temp):
+                    logger.info("Result is a directory, creating ZIP file")
+                    zip_name = cache_temp + '.zip'
+                    with zipfile.ZipFile(zip_name, 'w') as zip_:
+                        make_zip_recursive(zip_, cache_temp)
+                    shutil.rmtree(cache_temp)
+                    os.rename(zip_name, cache_temp)
+
         try:
             with cache_get_or_set('/cache/aug', key, create_aug) as path:
-                if os.path.isdir(path):
-                    # send a zip file
-                    self.set_header('Content-Type', 'application/zip')
-                    self.set_header(
-                        'Content-Disposition',
-                        'attachment; filename="augmentation.zip"')
-                    logger.info("Sending ZIP...")
-                    writer = RecursiveZipWriter(self.write, self.flush)
-                    await writer.write_recursive(path)
-                    writer.close()
-                    return await self.finish()
-                else:
-                    # send the file
-                    with open(path, 'rb') as fp:
-                        return await self.send_file(
-                            fp,
-                            name='augmentation' + (format_ext or ''),
-                        )
+                # send the file
+                return await self.send_file(
+                    path,
+                    name='augmentation' + (format_ext or ''),
+                )
         except AugmentationError as e:
             return await self.send_error_json(400, str(e))
 
