@@ -84,6 +84,74 @@ class TestSearch(unittest.TestCase):
             ],
         )
         self.assertEqual(vars, [])
+        
+    def test_dataset_types(self):
+        main, sup_funcs, sup_filters, vars = parse_query({
+            'keywords': ['food'],
+            'dataset_types': ['temporal', 'spatial'],
+        })
+        self.assertEqual(
+            main,
+            [
+                {
+                    'bool': {
+                        'should': [
+                            {
+                                'multi_match': {
+                                    'query': 'food',
+                                    'type': 'most_fields',
+                                    'fields': ['id', 'description', 'name'],
+                                },
+                            },
+                            {
+                                'nested': {
+                                    'path': 'columns',
+                                    'query': {
+                                        'multi_match': {
+                                            'query': 'food',
+                                            'type': 'most_fields',
+                                            'fields': ['columns.name'],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+                {
+                    'bool': {
+                        'filter': [
+                            {
+                                'terms': {
+                                    'dataset_types': ['temporal', 'spatial'],
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
+        )
+        self.assertEqual(
+            sup_funcs,
+            [
+                {
+                    'filter': {
+                        'multi_match': {
+                            'query': 'food',
+                            'type': 'most_fields',
+                            'fields': [
+                                'dataset_id',
+                                'dataset_description',
+                                'dataset_name',
+                                'name',
+                            ],
+                        },
+                    },
+                    'weight': 10,
+                },
+            ],
+        )
+        self.assertEqual(vars, [])
 
     def test_ranges(self):
         main, sup_funcs, sup_filters, vars = parse_query({
