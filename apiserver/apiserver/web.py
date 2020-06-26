@@ -601,7 +601,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             task = search_results[0]
 
             with tempfile.TemporaryDirectory(prefix='datamart_aug_') as tmp:
-                new_path = os.path.join(tmp.name, 'dataset')
+                new_path = os.path.join(tmp, 'dataset')
                 with get_dataset(metadata, task['id'], format='csv') as newdata:
                     # perform augmentation
                     logger.info("Performing half-augmentation with supplied data")
@@ -615,24 +615,24 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                         return_only_datamart_data=True
                     )
 
-            if os.path.isdir(new_path):
-                # send a zip file
-                self.set_header('Content-Type', 'application/zip')
-                self.set_header(
-                    'Content-Disposition',
-                    'attachment; filename="augmentation.zip"')
-                logger.info("Sending ZIP...")
-                writer = RecursiveZipWriter(self.write, self.flush)
-                await writer.write_recursive(new_path)
-                writer.close()
-                shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-                return await self.finish()
-            else:
-                with open(new_path, 'rb') as fp:
-                    return await self.send_file(
-                        fp,
-                        name='augmentation' + (format_ext or ''),
-                    )
+                if os.path.isdir(new_path):
+                    # send a zip file
+                    self.set_header('Content-Type', 'application/zip')
+                    self.set_header(
+                        'Content-Disposition',
+                        'attachment; filename="augmentation.zip"')
+                    logger.info("Sending ZIP...")
+                    writer = RecursiveZipWriter(self.write, self.flush)
+                    await writer.write_recursive(new_path)
+                    writer.close()
+                    shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
+                    return await self.finish()
+                else:
+                    with open(new_path, 'rb') as fp:
+                        return await self.send_file(
+                            fp,
+                            name='augmentation' + (format_ext or ''),
+                        )
 
 
 class Metadata(BaseHandler, GracefulHandler):
