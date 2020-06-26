@@ -4,6 +4,7 @@ import re
 import regex
 
 from . import types
+from . import column_types
 from .temporal import parse_date
 
 
@@ -202,3 +203,29 @@ def identify_types(array, name, geo_data):
             structural_type = types.TEXT
 
     return structural_type, semantic_types_dict, column_meta
+
+def determine_column_type(column_structural_type, column_semantic_types):
+    """Determines the type of a column (see column_types.py) based on combinations of 
+    its structural and semantic types. Useful to determine the overall types 
+    associated to a dataset.
+    """
+    if (column_structural_type == types.INTEGER or column_structural_type == types.FLOAT) and not column_semantic_types:
+        return column_types.NUMERICAL
+    
+    if (column_structural_type == types.TEXT and not types.DATE_TIME in column_semantic_types) or \
+       (column_structural_type == types.INTEGER and types.BOOLEAN in column_semantic_types):
+        return column_types.CATEGORICAL
+    
+    if types.LATITUDE in column_semantic_types or \
+       types.LONGITUDE in column_semantic_types or \
+       types.GEO_POINT in column_semantic_types or \
+       types.GEO_POLYGON in column_semantic_types or \
+       types.ADDRESS in column_semantic_types or \
+       types.ADMIN in column_semantic_types:
+        return column_types.SPATIAL
+    
+    if types.DATE_TIME in column_semantic_types:
+        return column_types.TEMPORAL
+    
+    return None
+
