@@ -164,6 +164,7 @@ class TestProfiler(DataTestCase):
                     'status': 'error',
                     'error': "Dataset has no rows",
                     'source': 'remi',
+                    'dataset_types': [], 
                     'date': lambda d: isinstance(d, str),
                     'metadata': {
                         'description': "A CSV with no rows to test " +
