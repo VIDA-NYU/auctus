@@ -945,6 +945,7 @@ class SessionNew(BaseHandler):
             session.pop('format', 'csv'),
             session.pop('format_options', {}),
         )
+        system_name = session.pop('system_name', 'TA3')
         if session:
             return self.send_error_json(
                 400,
@@ -959,6 +960,7 @@ class SessionNew(BaseHandler):
             'session_id': session_id,
             'format': format,
             'format_options': format_options,
+            'system_name': system_name,
         }
         if data_token:
             session['data_token'] = data_token
