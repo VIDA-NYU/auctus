@@ -4,7 +4,7 @@ import * as Icon from 'react-feather';
 import * as api from '../../api/rest';
 import { SubmitButton } from '../ui/Button/Button';
 
-import { ProfileData, ProfilingStatus } from '../../api/types';
+import { ProfileData, ProfilingStatus, ColumnMetadata } from '../../api/types';
 import { ProfileDataset } from './ProfileDataset';
 
 interface Validation {
@@ -23,9 +23,9 @@ interface UploadFormState {
   validation: Validation;
   submitting: boolean;
   profilingStatus: ProfilingStatus;
-  successProfiler?: boolean;
   failedProfiler?: string;
   profiledData?: ProfileData;
+  columnsName: string[];
 }
 
 interface UploadFormProps {
@@ -51,6 +51,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       validation: { valid: true, errors: {} },
       submitting: false,
       profilingStatus: ProfilingStatus.STOPPED,
+      columnsName: [],
     };
   }
 
@@ -61,11 +62,17 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       this.setState({ validation, profilingStatus: ProfilingStatus.STOPPED });
     } else {
       this.setState({ submitting: true });
+      const modifiedColumns = this.state.profiledData?.columns.filter(col =>
+        this.state.columnsName.includes(col.name)
+      );
       const success = await this.props.onFormSubmit({
         file: this.getFile(),
         address: this.state.address ? this.state.address : undefined,
         name: this.state.name,
         description: this.state.description,
+        updatedColumns: JSON.stringify({
+          columns: modifiedColumns ? modifiedColumns : [],
+        }),
       });
       if (success) {
         this.setState(this.initialState());
@@ -116,25 +123,40 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       });
       if (result.status === 200) {
         this.setState({
-          successProfiler: true,
           profiledData: result.data,
-          profilingStatus: ProfilingStatus.COMPLETE,
+          profilingStatus: ProfilingStatus.SUCCESSED,
         });
         return true;
       }
       this.setState({
-        successProfiler: false,
         failedProfiler: `Error ${result.status}: ${result.statusText}`,
-        profilingStatus: ProfilingStatus.COMPLETE,
+        profilingStatus: ProfilingStatus.ERROR,
       });
     } catch (e) {
       this.setState({
-        successProfiler: false,
         failedProfiler: `${e}`,
-        profilingStatus: ProfilingStatus.COMPLETE,
+        profilingStatus: ProfilingStatus.ERROR,
       });
     }
     return false;
+  }
+
+  updateColumnType(value: string, column: ColumnMetadata) {
+    if (this.state.profiledData) {
+      const modifiedColumns: ColumnMetadata[] = this.state.profiledData.columns.map(
+        (col: ColumnMetadata) => {
+          if (col.name === column.name) {
+            return { ...col, structural_type: 'http://schema.org/' + value };
+          } else {
+            return { ...col };
+          }
+        }
+      );
+      this.setState({
+        columnsName: [...this.state.columnsName, column.name],
+        profiledData: { ...this.state.profiledData, columns: modifiedColumns },
+      });
+    }
   }
 
   render() {
@@ -204,13 +226,14 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
           />
         </FormGroup>
         {this.state.profilingStatus !== ProfilingStatus.STOPPED &&
-          this.props.type === 'upload' && (
+          this.props.type === 'upload' &&
+          this.fileInput.current && (
             <FormGroup for="upload-sample" label="Dataset Sample">
               <ProfileDataset
                 profilingStatus={this.state.profilingStatus}
                 profiledData={this.state.profiledData}
-                successProfiler={this.state.successProfiler}
                 failedProfiler={this.state.failedProfiler}
+                onEdit={(value, column) => this.updateColumnType(value, column)}
               />
             </FormGroup>
           )}

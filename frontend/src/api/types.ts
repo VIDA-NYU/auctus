@@ -154,5 +154,6 @@ export interface ProfileData {
 export enum ProfilingStatus {
   STOPPED = 'STOPPED',
   RUNNING = 'RUNNING',
-  COMPLETE = 'COMPLETE',
+  SUCCESSED = 'SUCCESSED',
+  ERROR = 'ERROR',
 }

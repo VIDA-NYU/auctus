@@ -124,6 +124,7 @@ export interface UploadData {
   description?: string;
   address?: string;
   file?: File;
+  updatedColumns?: string;
 }
 
 export function upload(data: UploadData) {
@@ -139,6 +140,9 @@ export function upload(data: UploadData) {
   } else if (data.file) {
     formData.append('file', data.file);
   }
+  if (data.updatedColumns) {
+    formData.append('columns', data.updatedColumns);
+  }
 
   const config: AxiosRequestConfig = {
     maxRedirects: 0,
@@ -151,9 +155,6 @@ export function upload(data: UploadData) {
 }
 export function initialProfile(data: UploadData) {
   const formData = new FormData();
-  if (data.description) {
-    formData.append('name', data.name);
-  }
   if (data.address) {
     formData.append('address', data.address);
   } else if (data.file) {

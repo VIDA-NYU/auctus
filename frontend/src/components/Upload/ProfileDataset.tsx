@@ -29,7 +29,10 @@ function SemanticTypeBadge(props: { type: string }) {
   return <span className={spanClass}>{label}</span>;
 }
 
-function TypeBadges(props: { column: ColumnMetadata }) {
+function TypeBadges(props: {
+  column: ColumnMetadata;
+  onEdit: (value: string) => void;
+}) {
   const typeData = [
     'String',
     'Integer',
@@ -47,9 +50,9 @@ function TypeBadges(props: { column: ColumnMetadata }) {
         // id="settings-max-time-unit"
         // style={{ maxWidth: '200px' }}
         value={typeName(props.column.structural_type)}
-        // onChange={e => {
-        //   this.updateDataTypes(element.name, e.target.value);
-        // }}
+        onChange={e => {
+          props.onEdit(e.target.value);
+        }}
       >
         {typeData.map(unit => (
           <option key={unit} value={unit}>
@@ -71,14 +74,32 @@ function TypeBadges(props: { column: ColumnMetadata }) {
 }
 
 // Compact view.
-function TableCompactDetailView(props: { tableProps: TableProps }) {
-  const { columns, data, hit } = props.tableProps;
-  const { getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
+
+interface TableProps {
+  columns: Array<Column<string[]>>;
+  data: string[][];
+  profiledData: ProfileData;
+  onEdit: (value: string, column: ColumnMetadata) => void;
+}
+
+function Table(props: TableProps) {
+  const { columns, data, profiledData } = props;
+  const {
+    headerGroups,
+    rows,
+    getTableProps,
+    getTableBodyProps,
+    prepareRow,
+  } = useTable({
     columns,
     data,
   });
   return (
-    <>
+    <table
+      {...getTableProps()}
+      className="table table-hover small"
+      style={{ height: 100 }}
+    >
       <thead>
         {headerGroups.map((headerGroup, i) => (
           <tr {...headerGroup.getHeaderGroupProps()}>
@@ -95,7 +116,14 @@ function TableCompactDetailView(props: { tableProps: TableProps }) {
               >
                 {column.render('Header')}
                 <br />
-                {hit && <TypeBadges column={hit.columns[i]} />}
+                {
+                  <TypeBadges
+                    column={profiledData.columns[i]}
+                    onEdit={value => {
+                      props.onEdit(value, profiledData.columns[i]);
+                    }}
+                  />
+                }
               </th>
             ))}
           </tr>
@@ -113,29 +141,6 @@ function TableCompactDetailView(props: { tableProps: TableProps }) {
           );
         })}
       </tbody>
-    </>
-  );
-}
-
-interface TableProps {
-  columns: Array<Column<string[]>>;
-  data: string[][];
-  hit: ProfileData | undefined;
-}
-
-function Table(props: TableProps) {
-  const { columns, data } = props;
-  const { getTableProps } = useTable({
-    columns,
-    data,
-  });
-  return (
-    <table
-      {...getTableProps()}
-      className="table table-hover small"
-      style={{ height: 100 }}
-    >
-      <TableCompactDetailView tableProps={props} />
     </table>
   );
 }
@@ -143,22 +148,16 @@ function Table(props: TableProps) {
 interface ProfileDatasetProps {
   profilingStatus: ProfilingStatus;
   profiledData?: ProfileData;
-  successProfiler?: boolean;
   failedProfiler?: string;
+  onEdit: (value: string, column: ColumnMetadata) => void;
+}
+interface DataTable {
+  columns: Array<Column<string[]>>;
+  rows: string[][];
 }
 
 class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
-  renderErrorMessage(error?: string) {
-    return (
-      <>
-        <div className="text-danger mt-2 mb-4">
-          Unexpected error while profiling data {error && `(${error})`}
-        </div>
-      </>
-    );
-  }
-
-  getStringArrays(text: string) {
+  getSample(text: string): string[][] {
     const lines = text.split('\n');
     const result = [];
     const headers = lines[0].split(',');
@@ -170,31 +169,46 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
     return result;
   }
 
-  render() {
-    const {
-      profiledData,
-      profilingStatus,
-      successProfiler,
-      failedProfiler,
-    } = this.props;
-    const sample = profiledData
-      ? this.getStringArrays(profiledData.sample)
-      : [];
+  getDataTable(profiledData: ProfileData): DataTable {
+    const sample = this.getSample(profiledData.sample);
     const headers = sample[0];
     const rows = sample.slice(1, sample.length - 1);
-    const columns =
-      profiledData &&
-      headers.map((h, i) => ({
-        Header: h,
-        accessor: (row: string[]) => row[i],
-      }));
+    const columns = headers.map((h, i) => ({
+      Header: h,
+      accessor: (row: string[]) => row[i],
+    }));
+    return { columns, rows };
+  }
+
+  renderErrorMessage(error?: string) {
     return (
       <>
-        {successProfiler &&
-          profilingStatus === ProfilingStatus.COMPLETE &&
-          columns && (
+        <div className="text-danger mt-2 mb-4">
+          Unexpected error while profiling data {error && `(${error})`}
+        </div>
+      </>
+    );
+  }
+
+  render() {
+    const { profiledData, profilingStatus, failedProfiler } = this.props;
+
+    const dataTable = profiledData && this.getDataTable(profiledData);
+
+    return (
+      <>
+        {profilingStatus === ProfilingStatus.SUCCESSED &&
+          profiledData &&
+          dataTable && (
             <div style={{ maxHeight: 300, minHeight: 200, overflow: 'auto' }}>
-              <Table columns={columns} data={rows} hit={profiledData} />
+              <Table
+                columns={dataTable.columns}
+                data={dataTable.rows}
+                profiledData={profiledData}
+                onEdit={(value, updatedColumn) => {
+                  this.props.onEdit(value, updatedColumn);
+                }}
+              />
             </div>
           )}
         {profilingStatus === ProfilingStatus.RUNNING && (
@@ -202,7 +216,7 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
             <Loading message={`Profiling CSV file ...`} />
           </span>
         )}
-        {!successProfiler && failedProfiler && (
+        {profilingStatus === ProfilingStatus.ERROR && (
           <span className="mr-2">
             <>{this.renderErrorMessage(failedProfiler)}</>
           </span>
