@@ -234,6 +234,10 @@ class TestProfiler(DataTestCase):
             settings.pop('provided_name', None)
             settings.pop('uuid', None)
             settings.pop('version', None)
+<<<<<<< HEAD
+=======
+        self.assertEqual(actual, expected)
+>>>>>>> fixing index
 
         # Add custom fields
         for idx, prefix in [
