@@ -141,6 +141,7 @@ class TestSearch(unittest.TestCase):
                         'multi_match': {
                             'query': 'food',
                             'type': 'most_fields',
+                            'operator': 'or',
                             'fields': [
                                 'dataset_id',
                                 'dataset_description',
