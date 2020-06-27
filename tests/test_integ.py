@@ -2253,7 +2253,7 @@ geo_metadata = {
     "name": "geo",
     "description": "Another simple CSV with places",
     'source': 'remi',
-    'dataset_types': ['categorical', 'spatial'], 
+    'dataset_types': ['categorical', 'spatial', 'numerical'], 
     "size": 3910,
     "nb_rows": 100,
     "nb_profiled_rows": 100,
