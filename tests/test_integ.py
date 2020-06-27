@@ -2654,7 +2654,7 @@ dates_pivoted_metadata = {
     'name': 'dates pivoted',
     'description': 'Temporal dataset but in columns',
     'source': 'remi',
-    'dataset_types': ['temporal', 'categorical'],
+    'dataset_types': ['categorical', 'temporal'],
     'size': 525,
     'nb_rows': 24,
     'nb_profiled_rows': 24,
