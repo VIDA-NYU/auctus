@@ -214,7 +214,7 @@ def determine_column_type(column_structural_type, column_semantic_types):
        types.GEO_POINT in column_semantic_types or types.GEO_POINT in column_structural_type or \
        types.GEO_POLYGON in column_semantic_types or types.GEO_POLYGON in column_structural_type or \
        types.ADDRESS in column_semantic_types or types.ADDRESS in column_structural_type or \
-       types.ADMIN in column_semantic_types or type.ADMIN in column_structural_type:
+       types.ADMIN in column_semantic_types or types.ADMIN in column_structural_type:
         return column_types.SPATIAL
 
     if (column_structural_type == types.TEXT and not types.DATE_TIME in column_semantic_types) or \
