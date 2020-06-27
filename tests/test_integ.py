@@ -2152,7 +2152,7 @@ agg_metadata = {
     "name": "agg",
     "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
     'source': 'fernando',
-    'dataset_types': ['categorical', 'numerical'], 
+    'dataset_types': ['numerical', 'categorical'], 
     "size": 110,
     "nb_rows": 8,
     "nb_profiled_rows": 8,
