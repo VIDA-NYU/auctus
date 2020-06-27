@@ -219,9 +219,6 @@ class TestProfiler(DataTestCase):
             settings.pop('provided_name', None)
             settings.pop('uuid', None)
             settings.pop('version', None)
-        print('******')
-        print(actual)
-        print(expected)
         self.assertEqual(actual, expected)
 
 

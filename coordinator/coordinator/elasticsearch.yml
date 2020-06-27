@@ -41,6 +41,8 @@ datamart:
         index: false
       source:
         type: keyword
+      dataset_types:
+        type: keyword			
       size:
         type: long
       nb_rows:
