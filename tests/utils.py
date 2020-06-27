@@ -81,9 +81,9 @@ class DataTestCase(unittest.TestCase):
                 e = expected[k]
                 self.assertJson(a, e, '%s.%r' % (pos, k))
         else:
-            logger.info('****')
-            logger.info(actual)
-            logger.info(expected)
+            print('****')
+            print(actual)
+            print(expected)
             self.assertEqual(actual, expected, msg="at %s" % pos)
 
     def assertCsvEqualNoOrder(self, actual, expected_header, expected_data):
