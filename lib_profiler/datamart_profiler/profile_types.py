@@ -220,13 +220,13 @@ def determine_column_type(column_structural_type, column_semantic_types):
     if (column_structural_type == types.TEXT and not types.DATE_TIME in column_semantic_types) or \
        (column_structural_type == types.INTEGER and types.BOOLEAN in column_semantic_types):
         return column_types.CATEGORICAL
-
-    # Note that the two lines below only get executed if the type hasn't been identified as spatial or categorial
-    if (column_structural_type == types.INTEGER or column_structural_type == types.FLOAT):
-        return column_types.NUMERICAL
             
-    if types.DATE_TIME in column_semantic_types:
+    if types.DATE_TIME in column_semantic_types or types.DATE_TIME in column_structural_types:
         return column_types.TEMPORAL
-    
+
+    # Note that the two lines below only get executed if the type hasn't been identified as spatial, categorial or temporal
+    if column_structural_type == types.INTEGER or column_structural_type == types.FLOAT:
+        return column_types.NUMERICAL
+
     return None
 

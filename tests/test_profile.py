@@ -598,7 +598,7 @@ class TestGeo(DataTestCase):
                 'size': 93,
                 'nb_rows': 5,
                 'nb_profiled_rows': 5,
-                'dataset_types': ['categorical', 'spatial'],
+                'dataset_types': ['spatial'],
                 'columns': [
                     {
                         'name': 'zero',
