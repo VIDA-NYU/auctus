@@ -209,21 +209,22 @@ def determine_column_type(column_structural_type, column_semantic_types):
     its structural and semantic types. Useful to determine the overall types 
     associated to a dataset.
     """
-    if (column_structural_type == types.INTEGER or column_structural_type == types.FLOAT) and not column_semantic_types:
-        return column_types.NUMERICAL
-    
+    if types.LATITUDE in column_semantic_types or types.LATITUDE in column_structural_type or \
+       types.LONGITUDE in column_semantic_types or types.LONGITUDE in column_structural_type or \
+       types.GEO_POINT in column_semantic_types or types.GEO_POINT in column_structural_type or \
+       types.GEO_POLYGON in column_semantic_types or types.GEO_POLYGON in column_structural_type or \
+       types.ADDRESS in column_semantic_types or types.ADDRESS in column_structural_type or \
+       types.ADMIN in column_semantic_types or type.ADMIN in column_structural_type:
+        return column_types.SPATIAL
+
     if (column_structural_type == types.TEXT and not types.DATE_TIME in column_semantic_types) or \
        (column_structural_type == types.INTEGER and types.BOOLEAN in column_semantic_types):
         return column_types.CATEGORICAL
-    
-    if types.LATITUDE in column_semantic_types or \
-       types.LONGITUDE in column_semantic_types or \
-       types.GEO_POINT in column_semantic_types or \
-       types.GEO_POLYGON in column_semantic_types or \
-       types.ADDRESS in column_semantic_types or \
-       types.ADMIN in column_semantic_types:
-        return column_types.SPATIAL
-    
+
+    # Note that the two lines below only get executed if the type hasn't been identified as spatial or categorial
+    if (column_structural_type == types.INTEGER or column_structural_type == types.FLOAT):
+        return column_types.NUMERICAL
+            
     if types.DATE_TIME in column_semantic_types:
         return column_types.TEMPORAL
     
