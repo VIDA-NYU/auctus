@@ -4,10 +4,8 @@ import { API_URL } from '../../config';
 import { formatSize } from '../../utils';
 import { SearchResult, RelatedFile } from '../../api/types';
 import { Description, DataTypes, DatasetColumns } from './Metadata';
-import { SearchQuery } from '../../api/rest';
 
 interface SearchHitProps {
-  searchQuery: SearchQuery;
   hit: SearchResult;
   selectedHit?: boolean;
   onSearchHitExpand: (hit: SearchResult) => void;
