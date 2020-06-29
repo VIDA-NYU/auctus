@@ -54,8 +54,8 @@ The structure for the ``zip`` file follows the D3M format:
 
 ..  _rest-download-get:
 
-``GET /download/id``
---------------------
+``GET /download/<id>``
+----------------------
 
 Downloads a dataset from DataMart, where id is the dataset identifier. It also accepts one query parameter, ``format``, as specified above.
 
@@ -92,3 +92,12 @@ When providing a URL, make sure it is a direct link to a file in a supported for
 The request will return the ID of the new dataset immediately, but profiling will happen in the background so the file will only appear in searches after a couple minutes::
 
     {"id": "datamart.upload.abcdef1234567890"}
+
+``POST /profile``
+-----------------
+
+Profile a dataset. Does not add it to the index.
+
+The computed metadata is returned, similar to using the :doc:`python/datamart-profiler` library directly.
+
+This endpoint expects one variable in the request body, ``data``, the contents of a file to be profiled in a supported file format (e.g. CSV, Excel, SPSS...)
