@@ -147,6 +147,7 @@ class Coordinator(object):
         """Periodically compute statistics.
         """
         # Load recent datasets from Elasticsearch
+        recent_discoveries = []
         try:
             recent = self.elasticsearch.search(
                 index='datamart',
@@ -164,7 +165,7 @@ class Coordinator(object):
             logger.warning("Couldn't get recent datasets from Elasticsearch")
         else:
             for h in recent:
-                self.recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
+                recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
 
         # Count datasets per source
         sources = self.elasticsearch.search(
@@ -214,7 +215,7 @@ class Coordinator(object):
         for version in self.profiler_versions_counts.keys() - versions.keys():
             PROM_PROFILED_VERSION.remove(version)
 
-        return sources, versions
+        return sources, versions, recent_discoveries
 
     async def update_statistics(self):
         """Periodically update statistics.
@@ -225,6 +226,7 @@ class Coordinator(object):
                 (
                     self.sources_counts,
                     self.profiler_versions_counts,
+                    self.recent_discoveries,
                 ) = await asyncio.get_event_loop().run_in_executor(
                     None,
                     self._update_statistics,
