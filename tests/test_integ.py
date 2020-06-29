@@ -1056,6 +1056,100 @@ class TestDownload(DatamartTest):
 
 
 class TestAugment(DatamartTest):
+    def check_basic_join(self, response):
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
+        self.assertEqual(
+            set(zip_.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip_.open('tables/learningData.csv') as table:
+            self.assertCsvEqualNoOrder(
+                table.read().decode('utf-8'),
+                'number,desk_faces,name,country,what',
+                [
+                    '5,west,james,canada,False',
+                    '4,south,john,usa,False',
+                    '7,west,michael,usa,True',
+                    '6,east,robert,usa,False',
+                    '11,,christopher,canada,True',
+                ],
+            )
+        with zip_.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            self.assertJson(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '167 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '4.0.0',
+                        'datasetVersion': '1.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'number',
+                                    'colType': 'integer',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'desk_faces',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 2,
+                                    'colName': 'name',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
+                                    'colName': 'country',
+                                    'colType': 'categorical',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 4,
+                                    'colName': 'what',
+                                    'colType': 'boolean',
+                                    'role': ['attribute'],
+                                },
+                            ],
+                            'isCollection': False,
+                            'resFormat': {'text/csv': ["csv"]},
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'join',
+                                'nb_rows_after': 5,
+                                'nb_rows_before': 5,
+                                'new_columns': ['name', 'country', 'what'],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
+            )
+
     def test_basic_join(self):
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
@@ -1086,98 +1180,52 @@ class TestAugment(DatamartTest):
                     'data': basic_aug,
                 },
             )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
-        self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+        self.check_basic_join(response)
+
+    def test_basic_join_data_token(self):
+        # Build task dictionary
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
         )
-        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
-        zip_.testzip()
-        self.assertEqual(
-            set(zip_.namelist()),
-            {'datasetDoc.json', 'tables/learningData.csv'},
-        )
-        with zip_.open('tables/learningData.csv') as table:
-            self.assertCsvEqualNoOrder(
-                table.read().decode('utf-8'),
-                'number,desk_faces,name,country,what',
-                [
-                    '5,west,james,canada,False',
-                    '4,south,john,usa,False',
-                    '7,west,michael,usa,True',
-                    '6,east,robert,usa,False',
-                    '11,,christopher,canada,True',
-                ],
-            )
-        with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
-            self.assertJson(
-                meta,
-                {
-                    'about': {
-                        'approximateSize': '167 B',
-                        'datasetID': lambda s: len(s) == 32,
-                        'datasetName': lambda s: len(s) == 32,
-                        'datasetSchemaVersion': '4.0.0',
-                        'datasetVersion': '1.0',
-                        'license': 'unknown',
-                        'redacted': False,
-                    },
-                    'dataResources': [
-                        {
-                            'columns': [
-                                {
-                                    'colIndex': 0,
-                                    'colName': 'number',
-                                    'colType': 'integer',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 1,
-                                    'colName': 'desk_faces',
-                                    'colType': 'string',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 2,
-                                    'colName': 'name',
-                                    'colType': 'string',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 3,
-                                    'colName': 'country',
-                                    'colType': 'categorical',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 4,
-                                    'colName': 'what',
-                                    'colType': 'boolean',
-                                    'role': ['attribute'],
-                                },
-                            ],
-                            'isCollection': False,
-                            'resFormat': {'text/csv': ["csv"]},
-                            'resID': 'learningData',
-                            'resPath': 'tables/learningData.csv',
-                            'resType': 'table',
-                        },
-                    ],
-                    'qualities': [
-                        {
-                            'qualName': 'augmentation_info',
-                            'qualValue': {
-                                'augmentation_type': 'join',
-                                'nb_rows_after': 5,
-                                'nb_rows_before': 5,
-                                'new_columns': ['name', 'country', 'what'],
-                                'removed_columns': [],
-                            },
-                            'qualValueType': 'dict',
-                        },
-                    ],
+        meta = meta.json()['metadata']
+        task = {
+            'id': 'datamart.test.basic',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['number']],
+                'right_columns': [[2]],
+                'right_columns_names': [['number']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        # Get data token
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/profile',
+                files={
+                    'data': basic_aug,
                 },
             )
+        self.assertTrue(
+            response.headers['Content-Type'].startswith('application/json')
+        )
+        token = response.json()['token']
+        self.assertEqual(len(token), 40)
+
+        response = self.datamart_post(
+            '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': token.encode('ascii'),
+            }
+        )
+        self.check_basic_join(response)
 
     def test_basic_join_auto(self):
         meta = self.datamart_get(
@@ -1205,98 +1253,7 @@ class TestAugment(DatamartTest):
                     'data': basic_aug,
                 },
             )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
-        self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
-        )
-        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
-        zip_.testzip()
-        self.assertEqual(
-            set(zip_.namelist()),
-            {'datasetDoc.json', 'tables/learningData.csv'},
-        )
-        with zip_.open('tables/learningData.csv') as table:
-            self.assertCsvEqualNoOrder(
-                table.read().decode('utf-8'),
-                'number,desk_faces,name,country,what',
-                [
-                    '5,west,james,canada,False',
-                    '4,south,john,usa,False',
-                    '7,west,michael,usa,True',
-                    '6,east,robert,usa,False',
-                    '11,,christopher,canada,True',
-                ],
-            )
-        with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
-            self.assertJson(
-                meta,
-                {
-                    'about': {
-                        'approximateSize': '167 B',
-                        'datasetID': lambda s: len(s) == 32,
-                        'datasetName': lambda s: len(s) == 32,
-                        'datasetSchemaVersion': '4.0.0',
-                        'datasetVersion': '1.0',
-                        'license': 'unknown',
-                        'redacted': False,
-                    },
-                    'dataResources': [
-                        {
-                            'columns': [
-                                {
-                                    'colIndex': 0,
-                                    'colName': 'number',
-                                    'colType': 'integer',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 1,
-                                    'colName': 'desk_faces',
-                                    'colType': 'string',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 2,
-                                    'colName': 'name',
-                                    'colType': 'string',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 3,
-                                    'colName': 'country',
-                                    'colType': 'categorical',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 4,
-                                    'colName': 'what',
-                                    'colType': 'boolean',
-                                    'role': ['attribute'],
-                                },
-                            ],
-                            'isCollection': False,
-                            'resFormat': {'text/csv': ["csv"]},
-                            'resID': 'learningData',
-                            'resPath': 'tables/learningData.csv',
-                            'resType': 'table',
-                        },
-                    ],
-                    'qualities': [
-                        {
-                            'qualName': 'augmentation_info',
-                            'qualValue': {
-                                'augmentation_type': 'join',
-                                'nb_rows_after': 5,
-                                'nb_rows_before': 5,
-                                'new_columns': ['name', 'country', 'what'],
-                                'removed_columns': [],
-                            },
-                            'qualValueType': 'dict',
-                        },
-                    ],
-                },
-            )
+        self.check_basic_join(response)
 
     def test_agg_join(self):
         meta = self.datamart_get(
