@@ -235,6 +235,28 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         elif data is not None:
             data = data.encode('utf-8')
 
+        if len(data) == 40:
+            try:
+                data_hash = data.decode('ascii')
+            except UnicodeDecodeError:
+                pass
+            else:
+                if _re_token.match(data_hash):
+                    data_profile = self.application.redis.get(
+                        'profile:' + data_hash
+                    )
+                    if data_profile:
+                        return self.send_json(dict(
+                            json.loads(data_profile),
+                            version=os.environ['DATAMART_VERSION'],
+                            token=data_hash,
+                        ))
+                    else:
+                        return self.send_error_json(
+                            404,
+                            "Data profile token expired",
+                        )
+
         if data is None:
             return self.send_error_json(
                 400,
