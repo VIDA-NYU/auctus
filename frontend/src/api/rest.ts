@@ -167,6 +167,11 @@ export async function profile(file: File | string): Promise<ProfileResult> {
   return response.data;
 }
 
+export async function metadata(datasetId: string): Promise<Metadata> {
+  const response = await api.get('/metadata/' + datasetId);
+  return response.data.metadata;
+}
+
 export interface RecentDiscovery {
   id: string;
   discoverer: string;
