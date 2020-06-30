@@ -63,7 +63,7 @@ def clear_caches():
             entries.append((cache, key, get_tree_size(path), stat.st_mtime))
 
     # Sort it by date
-    entries = sorted(entries, key=lambda e: e[3])
+    entries = sorted(entries, key=lambda e: -e[3])
 
     # Select entries to keep while staying under threshold
     keep = {cache: set() for cache in CACHES}
