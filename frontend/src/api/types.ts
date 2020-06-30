@@ -119,16 +119,20 @@ export interface QuerySpec {
   variables: FilterVariables[];
 }
 
-export interface RelatedToLocalFile {
+interface RelatedToFileBase {
+  kind: string;
+  name: string;
+  fileSize: number;
+}
+
+export interface RelatedToLocalFile extends RelatedToFileBase {
   kind: 'localFile';
   file: File;
 }
 
-export interface RelatedToSearchResult {
+export interface RelatedToSearchResult extends RelatedToFileBase {
   kind: 'searchResult';
   datasetId: string;
-  datasetName: string;
-  datasetSize: number;
 }
 
 export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;

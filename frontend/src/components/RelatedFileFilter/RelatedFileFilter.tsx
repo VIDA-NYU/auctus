@@ -13,7 +13,12 @@ class RelatedFileFilter extends React.PureComponent<RelatedFileFilterProps> {
   handleSelectedFile(acceptedFiles: File[]) {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      const relatedFile: RelatedFile = { kind: 'localFile', file };
+      const relatedFile: RelatedFile = {
+        kind: 'localFile',
+        file,
+        name: file.name,
+        fileSize: file.size,
+      };
       this.props.onSelectedFileChange(relatedFile);
     }
   }
@@ -21,27 +26,15 @@ class RelatedFileFilter extends React.PureComponent<RelatedFileFilterProps> {
   render() {
     const maxSize = 100 * 1024 * 1024; // maximum file size
     const relatedFile = this.props.state;
-    if (!relatedFile) {
-    } else if (relatedFile.kind === 'localFile') {
-      return (
-        <div>
-          <CardShadow height={'auto'}>
-            <span className="font-weight-bold">Selected file:</span>{' '}
-            {relatedFile.file.name} ({formatSize(relatedFile.file.size)})
-          </CardShadow>
-        </div>
-      );
-    } else if (relatedFile.kind === 'searchResult') {
+    if (relatedFile) {
       return (
         <div>
           <CardShadow height={'auto'}>
             <span className="font-weight-bold">Selected dataset:</span>{' '}
-            {relatedFile.datasetName} ({formatSize(relatedFile.datasetSize)})
+            {relatedFile.name} ({formatSize(relatedFile.fileSize)})
           </CardShadow>
         </div>
       );
-    } else {
-      throw new Error('Invalid RelatedFile argument');
     }
     return (
       <div>
