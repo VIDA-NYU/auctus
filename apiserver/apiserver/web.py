@@ -10,6 +10,7 @@ import logging
 import json
 import os
 import prometheus_client
+import re
 import redis
 import shutil
 import tempfile
@@ -23,8 +24,9 @@ import uuid
 import zipfile
 
 from datamart_augmentation.augmentation import AugmentationError, augment
-from datamart_core.common import setup_logging, hash_json, log_future, json2msg
-from datamart_core.fscache import cache_get_or_set
+from datamart_core.common import setup_logging, hash_json, contextdecorator, \
+    log_future, json2msg
+from datamart_core.fscache import cache_get, cache_get_or_set
 from datamart_core.materialize import get_dataset, make_zip_recursive
 from datamart_core.prom import PromMeasureRequest
 from datamart_geo import GeoData
@@ -253,6 +255,9 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         ))
 
 
+_re_token = re.compile(r'^[0-9a-f]{40}$')
+
+
 class Search(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_SEARCH.sync()
     def post(self):
@@ -290,7 +295,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 data_profile = data_profile.decode('utf-8')
             if data_profile is not None:
                 # Data profile can optionally be just the hash
-                if len(data_profile) == 40 and '{' not in data_profile:
+                if len(data_profile) == 40 and _re_token.match(data_profile):
                     data_profile = self.application.redis.get(
                         'profile:' + data_profile,
                     )
@@ -614,7 +619,8 @@ class Metadata(BaseHandler, GracefulHandler):
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_AUGMENT.sync()
-    async def post(self):
+    @contextdecorator(contextlib.ExitStack, 'stack')
+    async def post(self, stack):
         format, format_options, format_ext = self.read_format('d3m')
 
         type_ = self.request.headers.get('Content-type', '')
@@ -666,6 +672,25 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             if data_profile is None:
                 return await self.send_error_json(400, "No such dataset")
         elif data is not None:
+            if len(data) == 40:
+                try:
+                    data_token = data.decode('ascii')
+                except UnicodeDecodeError:
+                    pass
+                else:
+                    if _re_token.match(data_token):
+                        data = stack.enter_context(cache_get(
+                            '/cache/user_data',
+                            data_token,
+                        ))
+                        if data is None:
+                            return self.send_error_json(
+                                404,
+                                "Data token expired",
+                            )
+                        else:
+                            with open(data, 'rb') as fp:
+                                data = fp.read()
             try:
                 data_profile, data_hash = self.handle_data_parameter(data)
             except ClientError as e:

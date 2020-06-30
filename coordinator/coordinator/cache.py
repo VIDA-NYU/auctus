@@ -26,13 +26,21 @@ PROM_CACHE_AUGMENTATIONS_BYTES = prometheus_client.Gauge(
     'cache_augmentations_bytes',
     "Total size of augmentation results in cache",
 )
+PROM_CACHE_USER_DATASETS = prometheus_client.Gauge(
+    'cache_user_datasets_count',
+    "Number of user datasets in cache",
+)
+PROM_CACHE_USER_DATASETS_BYTES = prometheus_client.Gauge(
+    'cache_user_datasets_bytes',
+    "Total size of user datasets in cache",
+)
 
 
 CACHE_HIGH = os.environ.get('MAX_CACHE_BYTES')
 CACHE_HIGH = int(CACHE_HIGH, 10) if CACHE_HIGH else 100000000000  # 100 GB
 CACHE_LOW = CACHE_HIGH * 0.33
 
-CACHES = ('/cache/datasets', '/cache/aug')
+CACHES = ('/cache/datasets', '/cache/aug', '/cache/user_data')
 
 
 def get_tree_size(path):
@@ -80,35 +88,40 @@ def clear_caches():
         )
 
 
+def measure_cache_dir(dirname):
+    entries = 0
+    size_bytes = 0
+    for name in os.listdir(dirname):
+        path = os.path.join(dirname, name)
+        if not name.endswith('.cache'):
+            continue
+        entries += 1
+        size_bytes += get_tree_size(path)
+    return entries, size_bytes
+
+
 def check_cache():
     try:
         # Count datasets in cache
-        datasets = 0
-        datasets_bytes = 0
-        for name in os.listdir('/cache/datasets'):
-            path = os.path.join('/cache/datasets', name)
-            if not name.endswith('.cache'):
-                continue
-            datasets += 1
-            datasets_bytes += get_tree_size(path)
+        datasets, datasets_bytes = measure_cache_dir('/cache/datasets')
         PROM_CACHE_DATASETS.set(datasets)
         PROM_CACHE_DATASETS_BYTES.set(datasets_bytes)
         logger.info("%d datasets in cache, %d bytes",
                     datasets, datasets_bytes)
 
         # Count augmentations in cache
-        augmentations = 0
-        augmentations_bytes = 0
-        for name in os.listdir('/cache/aug'):
-            path = os.path.join('/cache/aug', name)
-            if not name.endswith('.cache'):
-                continue
-            augmentations += 1
-            augmentations_bytes += get_tree_size(path)
+        augmentations, augmentations_bytes = measure_cache_dir('/cache/aug')
         PROM_CACHE_AUGMENTATIONS.set(augmentations)
         PROM_CACHE_AUGMENTATIONS_BYTES.set(augmentations_bytes)
         logger.info("%d augmentations in cache, %d bytes",
                     augmentations, augmentations_bytes)
+
+        # Count user datasets in cache
+        user_datasets, user_data_bytes = measure_cache_dir('/cache/user_data')
+        PROM_CACHE_USER_DATASETS.set(user_datasets)
+        PROM_CACHE_USER_DATASETS_BYTES.set(user_data_bytes)
+        logger.info("%d user datasets in cache, %d bytes",
+                    user_datasets, user_data_bytes)
 
         # Remove from caches if max is reached
         if datasets_bytes + augmentations_bytes > CACHE_HIGH:

@@ -24,8 +24,10 @@ if __name__ == '__main__':
         sys.exit(2)
 
     if (
-            not os.path.isdir('/cache/datasets') or
-            not os.path.isdir('/cache/aug')):
+        not os.path.isdir('/cache/datasets') or
+        not os.path.isdir('/cache/aug') or
+        not os.path.isdir('/cache/user_data')
+    ):
         print(
             "Cache directories don't exist; are you not running this script "
             "inside Docker?",
@@ -34,3 +36,4 @@ if __name__ == '__main__':
         sys.exit(1)
     clear_cache('/cache/datasets', only_if_possible=only_if_possible)
     clear_cache('/cache/aug', only_if_possible=only_if_possible)
+    clear_cache('/cache/user_data', only_if_possible=only_if_possible)
