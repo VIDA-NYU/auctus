@@ -1,25 +1,84 @@
 import React from 'react';
 import Dropzone from 'react-dropzone';
 import { CardShadow, CardButton } from '../visus/Card/Card';
-import { formatSize } from '../../utils';
-import { RelatedFile } from '../../api/types';
+import { formatSize, shallowEqual } from '../../utils';
+import { Metadata, RelatedFile } from '../../api/types';
+import { ProfileResult, profile, metadata } from '../../api/rest';
+
+interface RelatedFileFilterState {
+  profile?: Metadata;
+}
 
 interface RelatedFileFilterProps {
   onSelectedFileChange: (relatedFile: RelatedFile) => void;
   state?: RelatedFile;
 }
 
-class RelatedFileFilter extends React.PureComponent<RelatedFileFilterProps> {
+class RelatedFileFilter extends React.PureComponent<
+  RelatedFileFilterProps,
+  RelatedFileFilterState
+> {
+  profileQuery?: Promise<ProfileResult | Metadata>;
+
+  constructor(props: RelatedFileFilterProps) {
+    super(props);
+    this.state = {};
+    if (props.state) {
+      this.getProfile(props.state);
+    }
+  }
+
+  getProfile(relatedFile: RelatedFile): Promise<ProfileResult | Metadata> {
+    let profileQuery: Promise<ProfileResult | Metadata>;
+    if (relatedFile.kind === 'localFile') {
+      profileQuery = profile(relatedFile.token);
+    } else if (relatedFile.kind === 'searchResult') {
+      profileQuery = metadata(relatedFile.datasetId);
+    } else {
+      throw new Error('Invalid RelatedFile prop');
+    }
+    this.profileQuery = profileQuery;
+    profileQuery.then(p => {
+      // Check that this is still the current query
+      // (JavaScript can't cancel promises)
+      if (this.profileQuery === profileQuery) {
+        this.setState({ profile: p });
+      }
+    });
+    return profileQuery;
+  }
+
+  componentDidUpdate(prevProps: RelatedFileFilterProps) {
+    if (!this.props.state) {
+      this.profileQuery = undefined;
+    } else if (
+      !prevProps.state ||
+      !shallowEqual(this.props.state, prevProps.state)
+    ) {
+      // Get profile for this file (asynchronously)
+      this.getProfile(this.props.state);
+    }
+  }
+
   handleSelectedFile(acceptedFiles: File[]) {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      const relatedFile: RelatedFile = {
-        kind: 'localFile',
-        file,
-        name: file.name,
-        fileSize: file.size,
-      };
-      this.props.onSelectedFileChange(relatedFile);
+      const profileQuery = profile(file);
+      this.profileQuery = profileQuery;
+      profileQuery.then(p => {
+        // Check that this is still the current query
+        // (JavaScript can't cancel promises)
+        if (this.profileQuery === profileQuery) {
+          const relatedFile: RelatedFile = {
+            kind: 'localFile',
+            token: p.token,
+            name: file.name,
+            fileSize: file.size,
+          };
+          this.props.onSelectedFileChange(relatedFile);
+          this.setState({ profile: p });
+        }
+      });
     }
   }
 
@@ -27,11 +86,16 @@ class RelatedFileFilter extends React.PureComponent<RelatedFileFilterProps> {
     const maxSize = 100 * 1024 * 1024; // maximum file size
     const relatedFile = this.props.state;
     if (relatedFile) {
+      let columns = '';
+      if (this.state.profile !== undefined) {
+        columns = this.state.profile.columns.map(c => c.name).join(', ');
+      }
       return (
         <div>
           <CardShadow height={'auto'}>
             <span className="font-weight-bold">Selected dataset:</span>{' '}
             {relatedFile.name} ({formatSize(relatedFile.fileSize)})
+            {columns ? ` (${columns})` : undefined}
           </CardShadow>
         </div>
       );

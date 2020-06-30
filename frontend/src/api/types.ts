@@ -127,7 +127,7 @@ interface RelatedToFileBase {
 
 export interface RelatedToLocalFile extends RelatedToFileBase {
   kind: 'localFile';
-  file: File;
+  token: string;
 }
 
 export interface RelatedToSearchResult extends RelatedToFileBase {

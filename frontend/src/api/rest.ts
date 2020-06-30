@@ -54,7 +54,7 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   formData.append('query', JSON.stringify(spec));
   if (q.relatedFile) {
     if (q.relatedFile.kind === 'localFile') {
-      formData.append('data', q.relatedFile.file);
+      formData.append('data_profile', q.relatedFile.token);
     } else if (q.relatedFile.kind === 'searchResult') {
       formData.append('data_id', q.relatedFile.datasetId);
     } else {
@@ -89,7 +89,7 @@ export function augment(
   const formData = new FormData();
   formData.append('task', JSON.stringify(task));
   if (data.kind === 'localFile') {
-    formData.append('data', data.file);
+    formData.append('data', data.token);
   } else if (data.kind === 'searchResult') {
     formData.append('data_id', data.datasetId);
   } else {
