@@ -19,6 +19,7 @@ class RelatedFileFilter extends React.PureComponent<
   RelatedFileFilterState
 > {
   profileQuery?: Promise<ProfileResult | Metadata>;
+  profileQueryFile?: RelatedFile;
 
   constructor(props: RelatedFileFilterProps) {
     super(props);
@@ -38,6 +39,7 @@ class RelatedFileFilter extends React.PureComponent<
       throw new Error('Invalid RelatedFile prop');
     }
     this.profileQuery = profileQuery;
+    this.profileQueryFile = relatedFile;
     profileQuery.then(p => {
       // Check that this is still the current query
       // (JavaScript can't cancel promises)
@@ -52,8 +54,8 @@ class RelatedFileFilter extends React.PureComponent<
     if (!this.props.state) {
       this.profileQuery = undefined;
     } else if (
-      !prevProps.state ||
-      !shallowEqual(this.props.state, prevProps.state)
+      !this.profileQueryFile ||
+      !shallowEqual(this.props.state, this.profileQueryFile)
     ) {
       // Get profile for this file (asynchronously)
       this.getProfile(this.props.state);
@@ -75,8 +77,9 @@ class RelatedFileFilter extends React.PureComponent<
             name: file.name,
             fileSize: file.size,
           };
-          this.props.onSelectedFileChange(relatedFile);
+          this.profileQueryFile = relatedFile;
           this.setState({ profile: p });
+          this.props.onSelectedFileChange(relatedFile);
         }
       });
     }
