@@ -10,23 +10,11 @@ interface RelatedFileFilterProps {
 }
 
 class RelatedFileFilter extends React.PureComponent<RelatedFileFilterProps> {
-  constructor(props: RelatedFileFilterProps) {
-    super(props);
-    if (props.state) {
-      this.state = { relatedFile: props.state };
-    } else {
-      this.state = { relatedFile: undefined };
-    }
-  }
-
   handleSelectedFile(acceptedFiles: File[]) {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       const relatedFile: RelatedFile = { kind: 'localFile', file };
-      this.setState({ relatedFile });
       this.props.onSelectedFileChange(relatedFile);
-    } else {
-      this.setState({ relatedFile: undefined });
     }
   }
 
