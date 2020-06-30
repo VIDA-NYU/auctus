@@ -2115,6 +2115,87 @@ class TestSession(DatamartTest):
             {'error': "Unrecognized key 'unknown_key'"},
         )
 
+    def test_download_csv(self):
+        session_id = self.datamart_post(
+            '/session/new',
+            json={'format': 'csv'},
+        ).json()['session_id']
+
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.basic'
+            + '?session_id=' + session_id
+        )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.agg'
+            + '?session_id=' + session_id
+        )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get('/session/' + session_id)
+        self.assertEqual(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'url': (os.environ['API_URL']
+                                + '/download/datamart.test.basic'
+                                + '?format=csv'),
+                    },
+                    {
+                        'url': (os.environ['API_URL']
+                                + '/download/datamart.test.agg'
+                                + '?format=csv'),
+                    },
+                ],
+            },
+        )
+
+    def test_download_d3m(self):
+        session_id = self.datamart_post(
+            '/session/new',
+            json={'format': 'd3m'},
+        ).json()['session_id']
+
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.basic'
+            + f'?session_id={session_id}&format=d3m'
+        )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.agg'
+            + f'?session_id={session_id}&format=d3m'
+        )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get('/session/' + session_id)
+        format_query = (
+            'format=d3m'
+            + '&format_version=4.0.0'
+            + '&format_need_d3mindex=False'
+        )
+        self.assertEqual(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'url': (
+                            os.environ['API_URL']
+                            + '/download/datamart.test.basic'
+                            + '?' + format_query
+                        ),
+                    },
+                    {
+                        'url': (os.environ['API_URL']
+                                + '/download/datamart.test.agg'
+                                + '?' + format_query),
+                    },
+                ],
+            },
+        )
+
 
 version = os.environ['DATAMART_VERSION']
 assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
