@@ -2196,6 +2196,128 @@ class TestSession(DatamartTest):
             },
         )
 
+    def test_augment_csv(self):
+        session_id = self.datamart_post(
+            '/session/new',
+            json={'format': 'csv'},
+        ).json()['session_id']
+
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.basic',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['number']],
+                'right_columns': [[2]],
+                'right_columns_names': [['number']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/augment'
+                + f'?session_id={session_id}&format=csv',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': basic_aug,
+                },
+            )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get('/session/' + session_id)
+        self.assertJson(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'url': lambda u: u.startswith(
+                            os.environ['API_URL'] + '/augment/'
+                        ),
+                    },
+                ],
+            },
+        )
+        result_id = response.json()['results'][0]['url'][-40:]
+
+        response = self.datamart_get(
+            '/augment/' + result_id,
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
+        )
+
+    def test_augment_d3m(self):
+        session_id = self.datamart_post(
+            '/session/new',
+            json={'format': 'd3m'},
+        ).json()['session_id']
+
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.basic',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['number']],
+                'right_columns': [[2]],
+                'right_columns_names': [['number']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/augment'
+                + f'?session_id={session_id}&format=d3m',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': basic_aug,
+                },
+            )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get('/session/' + session_id)
+        self.assertJson(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'url': lambda u: u.startswith(
+                            os.environ['API_URL'] + '/augment/'
+                        ),
+                    },
+                ],
+            },
+        )
+        result_id = response.json()['results'][0]['url'][-40:]
+
+        response = self.datamart_get(
+            '/augment/' + result_id,
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/zip',
+        )
+
 
 version = os.environ['DATAMART_VERSION']
 assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
