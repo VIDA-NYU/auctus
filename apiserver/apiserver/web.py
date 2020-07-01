@@ -486,7 +486,7 @@ class BaseDownload(BaseHandler):
         if session_id:
             self.application.redis.rpush(
                 'session:' + session_id,
-                (dataset_id
+                ('download:' + dataset_id
                  + '?' + self.serialize_format(format, format_options)),
             )
             ret = self.send_json({'success': "attached to session"})
@@ -688,6 +688,8 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
     async def post(self, stack):
         format, format_options, format_ext = self.read_format('d3m')
 
+        session_id = self.get_query_argument('session_id', None)
+
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
             return await self.send_error_json(
@@ -802,6 +804,14 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             format_options=format_options,
         )
 
+        ret = None
+        if session_id:
+            self.application.redis.rpush(
+                'session:' + session_id,
+                'aug:' + key,
+            )
+            ret = self.send_json({'success': "attached to session"})
+
         def create_aug(cache_temp):
             with contextlib.ExitStack() as stack:
                 # Get augmentation data
@@ -838,13 +848,29 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         try:
             with cache_get_or_set('/cache/aug', key, create_aug) as path:
-                # send the file
-                return await self.send_file(
-                    path,
-                    name='augmentation' + (format_ext or ''),
-                )
+                if session_id:
+                    # We already replied
+                    return await ret
+                else:
+                    # send the file
+                    return await self.send_file(
+                        path,
+                        name='augmentation' + (format_ext or ''),
+                    )
         except AugmentationError as e:
             return await self.send_error_json(400, str(e))
+
+
+class AugmentResult(BaseHandler):
+    async def get(self, key):
+        with cache_get('/cache/aug', key) as path:
+            if path:
+                return await self.send_file(
+                    path,
+                    name='augmentation',
+                )
+            else:
+                return self.send_error_json(404, "Data not in cache")
 
 
 class Upload(BaseHandler):
@@ -994,14 +1020,23 @@ class SessionGet(BaseHandler):
         )
 
         api_url = self.application.api_url
-        return self.send_json({
-            'results': [
-                {
-                    'url': api_url + '/download/' + id.decode('ascii'),
-                }
-                for id in datasets
-            ]
-        })
+        results = []
+        for record in datasets:
+            record = record.decode('utf-8')
+            if record.startswith('download:'):
+                record = record[9:]
+                results.append({
+                    'url': api_url + '/download/' + record,
+                })
+            elif record.startswith('aug:'):
+                record = record[4:]
+                results.append({
+                    'url': api_url + '/augment/' + record,
+                })
+            else:
+                logger.error("Error: invalid entry in session: %r", record)
+
+        return self.send_json({'results': results})
 
 
 class Statistics(BaseHandler):
@@ -1117,6 +1152,7 @@ def make_app(debug=False):
             URLSpec('/download', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
+            URLSpec('/augment/([^/]+)', AugmentResult, name='augment_result'),
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/session/new', SessionNew, name='session_new'),
             URLSpec('/session/([^/]+)', SessionGet, name='session_get'),
