@@ -74,17 +74,15 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       if (query) {
         this.fetchSearchResults(query);
       }
+    } else {
+      this.setState(this.initialState());
     }
   }
 
   componentDidUpdate(prevProps: SearchAppProps) {
     const { location } = this.props;
     if (location !== prevProps.location) {
-      if (location.search === '') {
-        this.resetQuery();
-      } else {
-        this.updateSearchStateFromUrlParams(this.props.location);
-      }
+      this.updateSearchStateFromUrlParams(this.props.location);
     }
   }
 
@@ -99,10 +97,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     } catch (e) {
       console.error('Unable to fetch list of sources:', e);
     }
-  }
-
-  resetQuery() {
-    this.setState(this.initialState());
   }
 
   removeFilter(filterId: string) {
@@ -377,11 +371,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               <div className="col-md">
                 <div className="d-flex flex-row mt-2 mb-1">
                   <div>
-                    <Link
-                      to="/"
-                      style={{ textDecoration: 'none' }}
-                      onClick={() => this.resetQuery()}
-                    >
+                    <Link to="/" style={{ textDecoration: 'none' }}>
                       <HorizontalLogo />
                     </Link>
                   </div>
