@@ -1,6 +1,11 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import { ProfileData, ColumnMetadata, ProfilingStatus } from '../../api/types';
+import {
+  ProfileData,
+  ColumnMetadata,
+  ProfilingStatus,
+  TypesCategory,
+} from '../../api/types';
 import { useTable, Column } from 'react-table';
 import { Loading } from '../visus/Loading/Loading';
 
@@ -14,84 +19,95 @@ const classMapping: { [key: string]: string } = {
   datetime: 'semtype-datetime',
 };
 
-function typeName(type: string) {
+function formatTypeName(type: string) {
   return type
     .replace('http://schema.org/', '')
     .replace('https://metadata.datadrivendiscovery.org/types/', '');
 }
 
-function SemanticTypeBadge(props: { type: string }) {
-  const label = typeName(props.type);
+function SemanticTypeBadge(props: { type: string; onRemove: () => void }) {
+  const label = formatTypeName(props.type);
   const semtypeClass = classMapping[label.toLowerCase()];
   const spanClass = semtypeClass
-    ? `badge badge-pill semtype ${semtypeClass}`
-    : 'badge badge-pill semtype';
-  return <span className={spanClass}>{label}</span>;
+    ? `inline-flex badge badge-pill semtype ${semtypeClass}`
+    : 'inline-flex badge badge-pill semtype';
+  return (
+    <span className={spanClass}>
+      {label}
+      <button
+        type="button"
+        title="Remove this annotation"
+        className="btn btn-link badge-button"
+        onClick={() => props.onRemove()}
+      >
+        <Icon.XCircle size={11} />
+      </button>
+    </span>
+  );
 }
 
 function TypeBadges(props: {
   column: ColumnMetadata;
-  onEdit: (value: string, type: string) => void;
+  onEdit: (value: string, type: TypesCategory) => void;
+  onRemove: (value: string) => void;
 }) {
   const structuralTypes = [
-    'Text',
-    'Integer',
-    'Float',
-    'GeoCoordinates',
-    'GeoShape',
-    'MissingData',
+    'http://schema.org/Text',
+    'http://schema.org/Integer',
+    'http://schema.org/Float',
+    'http://schema.org/GeoCoordinates',
+    'http://schema.org/GeoShape',
+    'https://metadata.datadrivendiscovery.org/types/MissingData',
   ];
   const semanticTypes = [
-    'Enumeration',
-    'DateTime',
-    'latitude',
-    'longitude',
-    'Boolean',
-    'Text',
-    'AdministrativeArea',
-    'identifier',
+    'http://schema.org/Enumeration',
+    'http://schema.org/DateTime',
+    'http://schema.org/latitude',
+    'http://schema.org/longitude',
+    'http://schema.org/Boolean',
+    'http://schema.org/Text',
+    'http://schema.org/AdministrativeArea',
+    'http://schema.org/identifier',
   ];
   return (
     <>
       <select
         className="bootstrap-select badge badge-pill badge-primary"
-        value={typeName(props.column.structural_type)}
+        value={props.column.structural_type}
         onChange={e => {
-          props.onEdit(e.target.value, 'structural');
+          props.onEdit(e.target.value, TypesCategory.STRUCTURAL);
         }}
       >
         {structuralTypes.map(unit => (
           <option key={unit} value={unit}>
-            {unit}
+            {formatTypeName(unit)}
           </option>
         ))}
       </select>
       {props.column.semantic_types.map(c => (
-        <SemanticTypeBadge type={c} key={`sem-type-badge-${c}`} />
+        <SemanticTypeBadge
+          type={c}
+          key={`sem-type-badge-${c}`}
+          onRemove={() => props.onRemove(c)}
+        />
       ))}
 
       <div>
         <div className="dropdown">
           <button type="button" className="btn btn-link">
-            <Icon.PlusCircle className="feather small" />
-            <span className="small">Add</span>
+            <span className="small">Annotate </span>
             <span className="caret"></span>
           </button>
           <div className="dropdown-content">
             {semanticTypes
-              .filter(
-                unit =>
-                  !props.column.semantic_types
-                    .map(unit => typeName(unit))
-                    .includes(unit)
-              )
+              .filter(unit => !props.column.semantic_types.includes(unit))
               .map(unit => (
                 <div
-                  key={unit}
+                  key={formatTypeName(unit)}
                   className="menu-link"
-                  onClick={() => props.onEdit(unit, 'semantic')}
+                  onClick={() => props.onEdit(unit, TypesCategory.SEMANTIC)}
                 >
-                  {unit}
+                  {formatTypeName(unit)}
                 </div>
               ))}
           </div>
@@ -107,7 +123,8 @@ interface TableProps {
   columns: Array<Column<string[]>>;
   data: string[][];
   profiledData: ProfileData;
-  onEdit: (value: string, type: string, column: ColumnMetadata) => void;
+  onEdit: (value: string, type: TypesCategory, column: ColumnMetadata) => void;
+  onRemove: (value: string, column: ColumnMetadata) => void;
 }
 
 function Table(props: TableProps) {
@@ -150,6 +167,9 @@ function Table(props: TableProps) {
                     onEdit={(value, type) => {
                       props.onEdit(value, type, profiledData.columns[i]);
                     }}
+                    onRemove={value =>
+                      props.onRemove(value, profiledData.columns[i])
+                    }
                   />
                 }
               </th>
@@ -177,7 +197,8 @@ interface ProfileDatasetProps {
   profilingStatus: ProfilingStatus;
   profiledData?: ProfileData;
   failedProfiler?: string;
-  onEdit: (value: string, type: string, column: ColumnMetadata) => void;
+  onEdit: (value: string, type: TypesCategory, column: ColumnMetadata) => void;
+  onRemove: (value: string, column: ColumnMetadata) => void;
 }
 interface DataTable {
   columns: Array<Column<string[]>>;
@@ -236,6 +257,9 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
                 onEdit={(value, type, updatedColumn) => {
                   this.props.onEdit(value, type, updatedColumn);
                 }}
+                onRemove={(value, updatedColumn) =>
+                  this.props.onRemove(value, updatedColumn)
+                }
               />
             </div>
           )}

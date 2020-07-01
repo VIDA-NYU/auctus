@@ -24,10 +24,18 @@
   }
   .dropdown:hover .dropdown-content {
     display: inline-block;
-}
+  }
+  .badge-button{
+    width: 12px;
+    height: 12px;
+    margin-top: -18px;
+    margin-left: 1px;
+    padding: 0px;
+  }
   
   .dropdown-content div:hover {background-color: #ddd;}
   
   .dropdown:hover .dropdown-content {display: block;}
   
   .dropdown:hover .dropbtn {background-color: #3e8e41;}
+  

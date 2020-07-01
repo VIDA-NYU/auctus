@@ -157,3 +157,13 @@ export enum ProfilingStatus {
   SUCCESSED = 'SUCCESSED',
   ERROR = 'ERROR',
 }
+
+export enum Annotation {
+  ADD = 'ADD',
+  REMOVE = 'REMOVE',
+}
+
+export enum TypesCategory {
+  STRUCTURAL = 'STRUCTURAL',
+  SEMANTIC = 'SEMANTIC',
+}

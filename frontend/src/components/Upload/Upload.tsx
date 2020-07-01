@@ -4,7 +4,13 @@ import * as Icon from 'react-feather';
 import * as api from '../../api/rest';
 import { SubmitButton } from '../ui/Button/Button';
 import './Upload.css';
-import { ProfileData, ProfilingStatus, ColumnMetadata } from '../../api/types';
+import {
+  ProfileData,
+  ProfilingStatus,
+  ColumnMetadata,
+  Annotation,
+  TypesCategory,
+} from '../../api/types';
 import { ProfileDataset } from './ProfileDataset';
 
 interface Validation {
@@ -141,24 +147,36 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     return false;
   }
 
-  updateColumnType(value: string, type: string, column: ColumnMetadata) {
+  updateColumnType(
+    value: string,
+    column: ColumnMetadata,
+    type: TypesCategory,
+    annotation: Annotation
+  ) {
     if (this.state.profiledData) {
       const modifiedColumns: ColumnMetadata[] = this.state.profiledData.columns.map(
         (col: ColumnMetadata) => {
           if (col.name === column.name) {
-            const valueType = 'http://schema.org/' + value;
-            if (type === 'structural') {
-              return { ...col, structural_type: valueType };
-            } else {
-              const semanticTypeAdded =
-                value === 'MissingData'
-                  ? 'https://metadata.datadrivendiscovery.org/types/' + value
-                  : valueType;
-              return {
-                ...col,
-                semantic_types: [...col.semantic_types, semanticTypeAdded],
-              };
+            if (type === TypesCategory.STRUCTURAL) {
+              return { ...col, structural_type: value };
             }
+            if (type === TypesCategory.SEMANTIC) {
+              if (annotation === Annotation.ADD) {
+                return {
+                  ...col,
+                  semantic_types: [...col.semantic_types, value],
+                };
+              }
+              if (annotation === Annotation.REMOVE) {
+                return {
+                  ...col,
+                  semantic_types: col.semantic_types.filter(
+                    item => item !== value
+                  ),
+                };
+              }
+            }
+            return { ...col };
           } else {
             return { ...col };
           }
@@ -172,6 +190,8 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
   }
 
   render() {
+    console.warn('columns');
+    console.warn(this.state.profiledData);
     return (
       <form onSubmit={this.onFormSubmit}>
         {this.props.type === 'upload' && (
@@ -246,7 +266,15 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
                 profiledData={this.state.profiledData}
                 failedProfiler={this.state.failedProfiler}
                 onEdit={(value, type, column) =>
-                  this.updateColumnType(value, type, column)
+                  this.updateColumnType(value, column, type, Annotation.ADD)
+                }
+                onRemove={(value, column) =>
+                  this.updateColumnType(
+                    value,
+                    column,
+                    TypesCategory.SEMANTIC,
+                    Annotation.REMOVE
+                  )
                 }
               />
             </FormGroup>
