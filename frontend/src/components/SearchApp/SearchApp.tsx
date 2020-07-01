@@ -72,7 +72,45 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     if (q) {
       const query: api.SearchQuery = JSON.parse(decodeURIComponent(q));
       if (query) {
-        this.fetchSearchResults(query);
+        // Update state to match
+        const filters: Filter[] = [];
+        if (query.filters) {
+          query.filters.forEach(v => {
+            let type;
+            if (v.type === 'geospatial_variable') {
+              type = FilterType.GEO_SPATIAL;
+            } else if (v.type === 'temporal_variable') {
+              type = FilterType.TEMPORAL;
+            } else {
+              console.error('Unrecognized query variable ', v);
+              return;
+            }
+            filters.push({
+              id: generateRandomId(),
+              type,
+              hidden: false,
+              state: v,
+            });
+          });
+        }
+        if (query.sources) {
+          filters.push({
+            id: generateRandomId(),
+            type: FilterType.SOURCE,
+            hidden: false,
+            state: query.sources,
+          });
+        }
+        this.setState(
+          {
+            query: query.query || '',
+            filters,
+          },
+          () => {
+            // Submit search
+            this.fetchSearchResults(query);
+          }
+        );
       }
     } else {
       this.setState(this.initialState());
