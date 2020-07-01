@@ -3,7 +3,7 @@ import { Tabs, Tab, TabContent, TabPane } from '../ui/Tabs/Tabs';
 import * as Icon from 'react-feather';
 import * as api from '../../api/rest';
 import { SubmitButton } from '../ui/Button/Button';
-
+import './Upload.css';
 import { ProfileData, ProfilingStatus, ColumnMetadata } from '../../api/types';
 import { ProfileDataset } from './ProfileDataset';
 
@@ -141,12 +141,24 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     return false;
   }
 
-  updateColumnType(value: string, column: ColumnMetadata) {
+  updateColumnType(value: string, type: string, column: ColumnMetadata) {
     if (this.state.profiledData) {
       const modifiedColumns: ColumnMetadata[] = this.state.profiledData.columns.map(
         (col: ColumnMetadata) => {
           if (col.name === column.name) {
-            return { ...col, structural_type: 'http://schema.org/' + value };
+            const valueType = 'http://schema.org/' + value;
+            if (type === 'structural') {
+              return { ...col, structural_type: valueType };
+            } else {
+              const semanticTypeAdded =
+                value === 'MissingData'
+                  ? 'https://metadata.datadrivendiscovery.org/types/' + value
+                  : valueType;
+              return {
+                ...col,
+                semantic_types: [...col.semantic_types, semanticTypeAdded],
+              };
+            }
           } else {
             return { ...col };
           }
@@ -233,7 +245,9 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
                 profilingStatus={this.state.profilingStatus}
                 profiledData={this.state.profiledData}
                 failedProfiler={this.state.failedProfiler}
-                onEdit={(value, column) => this.updateColumnType(value, column)}
+                onEdit={(value, type, column) =>
+                  this.updateColumnType(value, type, column)
+                }
               />
             </FormGroup>
           )}
@@ -326,7 +340,6 @@ class Upload extends React.PureComponent<{}, UploadState> {
               File submitted successfully.
             </div>
           )}
-
           <Tabs>
             <Tab
               selected={this.state.state === 'upload'}

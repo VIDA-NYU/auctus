@@ -31,43 +31,71 @@ function SemanticTypeBadge(props: { type: string }) {
 
 function TypeBadges(props: {
   column: ColumnMetadata;
-  onEdit: (value: string) => void;
+  onEdit: (value: string, type: string) => void;
 }) {
-  const typeData = [
-    'String',
+  const structuralTypes = [
+    'Text',
     'Integer',
     'Float',
-    'Categorical',
+    'GeoCoordinates',
+    'GeoShape',
+    'MissingData',
+  ];
+  const semanticTypes = [
+    'Enumeration',
     'DateTime',
-    'Text',
+    'latitude',
+    'longitude',
     'Boolean',
-    'Real',
+    'Text',
+    'AdministrativeArea',
+    'identifier',
   ];
   return (
     <>
       <select
         className="bootstrap-select badge badge-pill badge-primary"
-        // id="settings-max-time-unit"
-        // style={{ maxWidth: '200px' }}
         value={typeName(props.column.structural_type)}
         onChange={e => {
-          props.onEdit(e.target.value);
+          props.onEdit(e.target.value, 'structural');
         }}
       >
-        {typeData.map(unit => (
+        {structuralTypes.map(unit => (
           <option key={unit} value={unit}>
             {unit}
           </option>
         ))}
       </select>
-      {/* <span className="badge badge-pill badge-primary">
-          {typeName(props.column.structural_type)}
-        </span> */}
       {props.column.semantic_types.map(c => (
         <SemanticTypeBadge type={c} key={`sem-type-badge-${c}`} />
       ))}
+
       <div>
-        <Icon.PlusCircle className="feather" />
+        <div className="dropdown">
+          <button type="button" className="btn btn-link">
+            <Icon.PlusCircle className="feather small" />
+            <span className="small">Add</span>
+            <span className="caret"></span>
+          </button>
+          <div className="dropdown-content">
+            {semanticTypes
+              .filter(
+                unit =>
+                  !props.column.semantic_types
+                    .map(unit => typeName(unit))
+                    .includes(unit)
+              )
+              .map(unit => (
+                <div
+                  key={unit}
+                  className="menu-link"
+                  onClick={() => props.onEdit(unit, 'semantic')}
+                >
+                  {unit}
+                </div>
+              ))}
+          </div>
+        </div>
       </div>
     </>
   );
@@ -79,7 +107,7 @@ interface TableProps {
   columns: Array<Column<string[]>>;
   data: string[][];
   profiledData: ProfileData;
-  onEdit: (value: string, column: ColumnMetadata) => void;
+  onEdit: (value: string, type: string, column: ColumnMetadata) => void;
 }
 
 function Table(props: TableProps) {
@@ -119,8 +147,8 @@ function Table(props: TableProps) {
                 {
                   <TypeBadges
                     column={profiledData.columns[i]}
-                    onEdit={value => {
-                      props.onEdit(value, profiledData.columns[i]);
+                    onEdit={(value, type) => {
+                      props.onEdit(value, type, profiledData.columns[i]);
                     }}
                   />
                 }
@@ -149,7 +177,7 @@ interface ProfileDatasetProps {
   profilingStatus: ProfilingStatus;
   profiledData?: ProfileData;
   failedProfiler?: string;
-  onEdit: (value: string, column: ColumnMetadata) => void;
+  onEdit: (value: string, type: string, column: ColumnMetadata) => void;
 }
 interface DataTable {
   columns: Array<Column<string[]>>;
@@ -205,8 +233,8 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
                 columns={dataTable.columns}
                 data={dataTable.rows}
                 profiledData={profiledData}
-                onEdit={(value, updatedColumn) => {
-                  this.props.onEdit(value, updatedColumn);
+                onEdit={(value, type, updatedColumn) => {
+                  this.props.onEdit(value, type, updatedColumn);
                 }}
               />
             </div>
