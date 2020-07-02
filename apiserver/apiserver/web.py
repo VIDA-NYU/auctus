@@ -832,6 +832,10 @@ class Upload(BaseHandler):
             description = self.get_body_argument('description', None)
             if description:
                 metadata['description'] = description
+            updatedColumns = self.get_body_argument('updatedColumns', None)
+            if updatedColumns:
+                metadata['updatedColumns'] = json.loads(updatedColumns)
+
             dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
             # Write file to shared storage

@@ -190,8 +190,6 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
   }
 
   render() {
-    console.warn('columns');
-    console.warn(this.state.profiledData);
     return (
       <form onSubmit={this.onFormSubmit}>
         {this.props.type === 'upload' && (
