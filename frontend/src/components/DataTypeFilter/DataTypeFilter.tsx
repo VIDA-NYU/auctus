@@ -91,7 +91,7 @@ class DataTypeFilter extends PersistentComponent<
               className="form-check-label"
               htmlFor={`check-box-${datatype}`}
             >
-              {datatype}
+              {datatype.charAt(0).toUpperCase() + datatype.slice(1)}
             </label>
           </div>
         ))}
