@@ -204,10 +204,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Administrative areas
     resolved_admin_areas = {}
 
-    # check column metadata
+    # check updated columns by the user
     updated_columns = []
-    if metadata['updatedColumns']:
-        updated_columns = metadata['updatedColumns']['columns']
+    if metadata['updated_columns']:
+        updated_columns = metadata['updated_columns']['columns']
+
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
     with PROM_TYPES.time():

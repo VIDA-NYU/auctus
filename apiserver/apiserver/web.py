@@ -834,7 +834,7 @@ class Upload(BaseHandler):
                 metadata['description'] = description
             updatedColumns = self.get_body_argument('updatedColumns', None)
             if updatedColumns:
-                metadata['updatedColumns'] = json.loads(updatedColumns)
+                metadata['updated_columns'] = json.loads(updatedColumns)
 
             dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 

@@ -141,7 +141,7 @@ export function upload(data: UploadData) {
     formData.append('file', data.file);
   }
   if (data.updatedColumns) {
-    formData.append('columns', data.updatedColumns);
+    formData.append('updatedColumns', data.updatedColumns);
   }
 
   const config: AxiosRequestConfig = {
