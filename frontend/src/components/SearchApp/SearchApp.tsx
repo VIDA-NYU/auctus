@@ -15,6 +15,7 @@ import { SourceFilter } from '../SourceFilter/SourceFilter';
 import { SearchBar } from '../SearchBar/SearchBar';
 import { SearchState } from '../SearchResults/SearchState';
 import { SearchResults } from '../SearchResults/SearchResults';
+import { DataTypeFilter } from '../DataTypeFilter/DataTypeFilter';
 import {
   SearchResponse,
   FilterVariables,
@@ -118,6 +119,12 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     if (
       filterType === FilterType.SOURCE &&
       filters.filter(f => f.type === FilterType.SOURCE).length > 0
+    ) {
+      return;
+    }
+    if (
+      filterType === FilterType.TYPE &&
+      filters.filter(f => f.type === FilterType.TYPE).length > 0
     ) {
       return;
     }
@@ -232,6 +239,18 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               key={`sourcefilter-${filterId}`}
               sources={this.state.sources}
               onSourcesChange={s => this.updateFilterState(filterId, s)}
+            />
+          ),
+        };
+      case FilterType.TYPE:
+        return {
+          title: 'Data Type',
+          icon: Icon.Type,
+          component: (
+            <DataTypeFilter
+              key={`datatypefilter-${filterId}`}
+              datatypes={this.state.sources}
+              onDataTypeChange={s => this.updateFilterState(filterId, s)}
             />
           ),
         };
