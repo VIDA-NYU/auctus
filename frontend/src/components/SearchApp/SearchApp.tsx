@@ -44,6 +44,7 @@ interface SearchAppState {
   searchResponse?: SearchResponse;
   searchQuery?: api.SearchQuery;
   sources: string[];
+  dataTypes: string[];
 }
 
 interface SearchAppProps {}
@@ -62,6 +63,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       searchState: SearchState.CLEAN,
       filters: [],
       sources: api.DEFAULT_SOURCES,
+      dataTypes: api.DEFAULT_DATATYPES,
     };
   }
 
@@ -123,8 +125,8 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       return;
     }
     if (
-      filterType === FilterType.TYPE &&
-      filters.filter(f => f.type === FilterType.TYPE).length > 0
+      filterType === FilterType.DATA_TYPE &&
+      filters.filter(f => f.type === FilterType.DATA_TYPE).length > 0
     ) {
       return;
     }
@@ -143,6 +145,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       const filterVariables = this.state.filters
         .filter(f => f.type !== FilterType.RELATED_FILE)
         .filter(f => f.type !== FilterType.SOURCE)
+        .filter(f => f.type !== FilterType.DATA_TYPE)
         .filter(f => f && f.state)
         .map(f => f.state as FilterVariables);
 
@@ -153,11 +156,15 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       const sources: string[][] = this.state.filters
         .filter(f => f.type === FilterType.SOURCE)
         .map(f => f.state as string[]);
+      const dataTypes: string[][] = this.state.filters
+        .filter(f => f.type === FilterType.DATA_TYPE)
+        .map(f => f.state as string[]);
 
       const query: api.SearchQuery = {
         query: this.state.query,
         filters: filterVariables,
         sources: sources[0],
+        dataTypes: dataTypes[0],
         relatedFile: relatedFiles[0],
       };
 
@@ -169,7 +176,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           return f;
         }),
       });
-
       api
         .search(query)
         .then(response => {
@@ -242,14 +248,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             />
           ),
         };
-      case FilterType.TYPE:
+      case FilterType.DATA_TYPE:
         return {
           title: 'Data Type',
           icon: Icon.Type,
           component: (
             <DataTypeFilter
               key={`datatypefilter-${filterId}`}
-              datatypes={this.state.sources}
+              datatypes={this.state.dataTypes}
               onDataTypeChange={s => this.updateFilterState(filterId, s)}
             />
           ),

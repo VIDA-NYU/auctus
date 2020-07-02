@@ -23,6 +23,39 @@ export const DEFAULT_SOURCES = [
   'upload',
 ];
 
+/* Structural Types:
+MissingData
+Integer
+Float
+GeoCoordinates
+GeoShape
+Text
+
+Semantic Types:
+Enumeration
+DateTime
+latitude
+longitude
+Boolean
+Text
+AdministrativeArea
+identifier */
+export const DEFAULT_DATATYPES = [
+  'MissingData',
+  'Integer',
+  'Float',
+  'GeoCoordinates',
+  'GeoShape',
+  'Text',
+  'Enumeration',
+  'DateTime',
+  'latitude',
+  'longitude',
+  'Boolean',
+  'AdministrativeArea',
+  'identifier',
+];
+
 export enum RequestResult {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
@@ -37,6 +70,7 @@ export interface SearchQuery {
   query?: string;
   filters?: FilterVariables[];
   sources?: string[];
+  dataTypes?: string[];
   relatedFile?: RelatedFile;
 }
 
@@ -47,6 +81,9 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   };
   if (q.sources && q.sources.length > 0) {
     spec.source = q.sources;
+  }
+  if (q.dataTypes && q.dataTypes.length > 0) {
+    spec.dataType = q.dataTypes;
   }
 
   const formData = new FormData();
