@@ -116,7 +116,7 @@ export type FilterVariables = TemporalVariable | GeoSpatialVariable;
 export interface QuerySpec {
   keywords?: string;
   source?: string[];
-  dataType?: string[];
+  dataset_types?: string[];
   variables: FilterVariables[];
 }
 
