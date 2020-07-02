@@ -7,6 +7,7 @@ export enum FilterType {
   GEO_SPATIAL,
   RELATED_FILE,
   SOURCE,
+  TYPE,
 }
 
 interface AdvancedSearchBarProps {
@@ -50,6 +51,14 @@ class AdvancedSearchBar extends React.PureComponent<AdvancedSearchBarProps> {
         >
           <Icon.Database className="feather" />
           <span>Source</span>
+          <Icon.ChevronDown className="feather" />
+        </div>
+        <div
+          className="d-inline btn AdvancedSearchBar-item"
+          onClick={() => this.props.onAddFilter(FilterType.TYPE)}
+        >
+          <Icon.Type className="feather" />
+          <span>Data Type</span>
           <Icon.ChevronDown className="feather" />
         </div>
       </div>

@@ -17,6 +17,7 @@ import { SourceFilter } from '../SourceFilter/SourceFilter';
 import { SearchBar } from '../SearchBar/SearchBar';
 import { SearchState } from '../SearchResults/SearchState';
 import { SearchResults } from '../SearchResults/SearchResults';
+import { DataTypeFilter } from '../DataTypeFilter/DataTypeFilter';
 import {
   SearchResponse,
   FilterVariables,
@@ -228,7 +229,8 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     this.setState(prevState => {
       if (
         filterType === FilterType.RELATED_FILE ||
-        filterType === FilterType.SOURCE
+        filterType === FilterType.SOURCE ||
+				filterType === FilterType.TYPE
       ) {
         // Can only have one of those
         if (prevState.filters.filter(f => f.type === filterType).length > 0) {
@@ -374,6 +376,16 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 sources={this.state.sources}
                 checkedSources={filter.state as string[] | undefined}
                 onSourcesChange={s => this.updateFilterState(filter.id, s)}
+              />
+            );
+            break;
+					case FilterType.TYPE:
+            title = 'Data Type';
+            component = (
+              <DataTypeFilter
+                datatypes={this.state.sources}
+                checkedSources={filter.state as string[] | undefined}
+                onDataTypeChange={s => this.updateFilterState(filter.id, s)}
               />
             );
             break;
