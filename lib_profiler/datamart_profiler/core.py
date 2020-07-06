@@ -206,7 +206,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # check updated columns by the user
     updated_columns = []
-    if metadata['updated_columns']:
+    if 'updated_columns' in metadata:
         updated_columns = metadata['updated_columns']['columns']
 
     # Identify types
@@ -219,7 +219,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
             structural_type, semantic_types_dict, additional_meta = \
                 identify_types(array, column_meta['name'], geo_data)
 
-            updateColumn = [item for item in updated_columns if item.get('name')==column_meta['name']]
+            updateColumn = [item for item in updated_columns if item.get('name') == column_meta['name']]
             if len(updateColumn) > 0:
                 structural_type = updateColumn[0]['structural_type']
                 semantic_types_dict = updateColumn[0]['semantic_types']
