@@ -121,6 +121,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         state: query.sources,
       });
     }
+    if (query.relatedFile) {
+      filters.push({
+        id: generateRandomId(),
+        type: FilterType.RELATED_FILE,
+        hidden: false,
+        state: query.relatedFile,
+      });
+    }
     return { keywords: query.query || '', filters };
   }
 
