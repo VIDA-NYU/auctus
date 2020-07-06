@@ -194,6 +194,13 @@ export async function status(): Promise<Status> {
   return response.data;
 }
 
-export let sources: Promise<string[]> = status().then(response =>
-  Object.keys(response.sources_counts)
-);
+let sourcesPromise: Promise<string[]> | undefined = undefined;
+
+export function sources(): Promise<string[]> {
+  if (!sourcesPromise) {
+    sourcesPromise = status().then(response =>
+      Object.keys(response.sources_counts)
+    );
+  }
+  return sourcesPromise;
+}
