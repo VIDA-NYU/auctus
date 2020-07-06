@@ -867,13 +867,13 @@ class TestDownload(DatamartTest):
         response = self.datamart_post(
             '/download', allow_redirects=False,
             params={'format': 'd3m', 'format_version': '3.2.0'},
-            files={'task': json.dumps(
-                {
+            files={
+                'task': json.dumps({
                     'id': 'datamart.test.basic',
                     'score': 1.0,
                     'metadata': basic_meta
-                }
-            ).encode('utf-8')},
+                }).encode('utf-8'),
+            },
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
@@ -908,13 +908,13 @@ class TestDownload(DatamartTest):
         response = self.datamart_post(
             '/download', allow_redirects=False,
             # format defaults to csv
-            files={'task': json.dumps(
-                {
+            files={
+                'task': json.dumps({
                     'id': 'datamart.test.geo',
                     'score': 1.0,
                     'metadata': geo_meta
-                }
-            ).encode('utf-8')},
+                }).encode('utf-8'),
+            },
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
@@ -944,8 +944,8 @@ class TestDownload(DatamartTest):
         """Post invalid materialization information."""
         response = self.datamart_post(
             '/download', allow_redirects=False,
-            files={'task': json.dumps(
-                {
+            files={
+                'task': json.dumps({
                     'id': 'datamart.nonexistent',
                     'score': 0.0,
                     'metadata': {
@@ -954,8 +954,8 @@ class TestDownload(DatamartTest):
                             'identifier': 'datamart.nonexistent',
                         }
                     }
-                }
-            ).encode('utf-8')},
+                }).encode('utf-8'),
+            },
             check_status=False,
         )
         self.assertEqual(response.status_code, 500)
