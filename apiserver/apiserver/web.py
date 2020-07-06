@@ -540,8 +540,21 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         logger.info("Got POST download %s data",
                     "without" if data is None else "with")
 
-        # materialize augmentation data
-        metadata = task['metadata']
+        if 'metadata' in task:
+            metadata = task['metadata']
+        elif 'id' in task:
+            # Get materialization data from Elasticsearch
+            try:
+                metadata = self.application.elasticsearch.get(
+                    'datamart', task['id']
+                )['_source']
+            except elasticsearch.NotFoundError:
+                return await self.send_error_json(404, "No such dataset")
+        else:
+            return await self.send_error_json(
+                400,
+                "No metadata or ID specified",
+            )
 
         if not data:
             return await self.send_dataset(task['id'], metadata)

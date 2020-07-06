@@ -887,6 +887,18 @@ class TestDownload(DatamartTest):
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
+            files={
+                'task': json.dumps({
+                    'id': 'datamart.test.basic',
+                }).encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers['Location'],
+                         'http://test-discoverer:7000/basic.csv')
+
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
             params={'format': 'csv'},
             json={
                 'id': 'datamart.test.basic',
