@@ -66,6 +66,64 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     };
   }
 
+  static filtersToQuery(state: SearchAppState): api.SearchQuery {
+    const filterVariables = state.filters
+      .filter(f => f.type !== FilterType.RELATED_FILE)
+      .filter(f => f.type !== FilterType.SOURCE)
+      .filter(f => f && f.state)
+      .map(f => f.state as FilterVariables);
+
+    const relatedFiles: RelatedFile[] = state.filters
+      .filter(f => f.type === FilterType.RELATED_FILE)
+      .map(f => f.state as RelatedFile);
+
+    const sources: string[][] = state.filters
+      .filter(f => f.type === FilterType.SOURCE)
+      .map(f => f.state as string[]);
+
+    const query: api.SearchQuery = {
+      query: state.query,
+      filters: filterVariables,
+      sources: sources[0],
+      relatedFile: relatedFiles[0],
+    };
+    return query;
+  }
+
+  static queryToFilters(
+    query: api.SearchQuery
+  ): { keywords: string; filters: Filter[] } {
+    const filters: Filter[] = [];
+    if (query.filters) {
+      query.filters.forEach(v => {
+        let type;
+        if (v.type === 'geospatial_variable') {
+          type = FilterType.GEO_SPATIAL;
+        } else if (v.type === 'temporal_variable') {
+          type = FilterType.TEMPORAL;
+        } else {
+          console.error('Unrecognized query variable ', v);
+          return;
+        }
+        filters.push({
+          id: generateRandomId(),
+          type,
+          hidden: false,
+          state: v,
+        });
+      });
+    }
+    if (query.sources) {
+      filters.push({
+        id: generateRandomId(),
+        type: FilterType.SOURCE,
+        hidden: false,
+        state: query.sources,
+      });
+    }
+    return { keywords: query.query || '', filters };
+  }
+
   updateSearchStateFromUrlParams(location: Location) {
     const params = new URLSearchParams(location.search);
     const q = params.get('q');
@@ -73,37 +131,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       const query: api.SearchQuery = JSON.parse(decodeURIComponent(q));
       if (query) {
         // Update state to match
-        const filters: Filter[] = [];
-        if (query.filters) {
-          query.filters.forEach(v => {
-            let type;
-            if (v.type === 'geospatial_variable') {
-              type = FilterType.GEO_SPATIAL;
-            } else if (v.type === 'temporal_variable') {
-              type = FilterType.TEMPORAL;
-            } else {
-              console.error('Unrecognized query variable ', v);
-              return;
-            }
-            filters.push({
-              id: generateRandomId(),
-              type,
-              hidden: false,
-              state: v,
-            });
-          });
-        }
-        if (query.sources) {
-          filters.push({
-            id: generateRandomId(),
-            type: FilterType.SOURCE,
-            hidden: false,
-            state: query.sources,
-          });
-        }
+        const { keywords, filters } = SearchApp.queryToFilters(query);
         this.setState(
           {
-            query: query.query || '',
+            query: keywords,
             filters,
           },
           () => {
@@ -195,26 +226,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   submitQuery() {
     if (this.validQuery()) {
-      const filterVariables = this.state.filters
-        .filter(f => f.type !== FilterType.RELATED_FILE)
-        .filter(f => f.type !== FilterType.SOURCE)
-        .filter(f => f && f.state)
-        .map(f => f.state as FilterVariables);
-
-      const relatedFiles: RelatedFile[] = this.state.filters
-        .filter(f => f.type === FilterType.RELATED_FILE)
-        .map(f => f.state as RelatedFile);
-
-      const sources: string[][] = this.state.filters
-        .filter(f => f.type === FilterType.SOURCE)
-        .map(f => f.state as string[]);
-
-      const query: api.SearchQuery = {
-        query: this.state.query,
-        filters: filterVariables,
-        sources: sources[0],
-        relatedFile: relatedFiles[0],
-      };
+      const query = SearchApp.filtersToQuery(this.state);
 
       // pushes the query into the URL, which will trigger fetching the search results
       const q = encodeURIComponent(JSON.stringify(query));
