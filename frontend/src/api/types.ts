@@ -119,17 +119,24 @@ export interface QuerySpec {
   variables: FilterVariables[];
 }
 
-export interface RelatedToLocalFile {
-  kind: 'localFile';
-  file: File;
+interface RelatedToFileBase {
+  kind: string;
+  name: string;
+  fileSize: number;
 }
 
-export interface RelatedToSearchResult {
+export interface RelatedToLocalFile extends RelatedToFileBase {
+  kind: 'localFile';
+  token: string;
+}
+
+export interface RelatedToSearchResult extends RelatedToFileBase {
   kind: 'searchResult';
   datasetId: string;
-  datasetName: string;
-  datasetSize: number;
 }
+
+export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
+
 export interface NumericalDataVegaFormat {
   count: number;
   bin_start: number;
@@ -141,12 +148,11 @@ export interface TemporalDataVegaFormat {
   date_start: string;
   date_end: string;
 }
+
 export interface CategoricalDataVegaFormat {
   count: number;
   bin: string;
 }
-
-export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
 
 export enum InfoBoxType {
   DETAIL = 'DETAIL',
