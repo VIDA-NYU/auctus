@@ -204,9 +204,10 @@ def identify_types(array, name, geo_data):
 
     return structural_type, semantic_types_dict, column_meta
 
+
 def determine_column_type(column_structural_type, column_semantic_types):
-    """Determines the type of a column (see column_types.py) based on combinations of 
-    its structural and semantic types. Useful to determine the overall types 
+    """Determines the type of a column (see column_types.py) based on combinations of
+    its structural and semantic types. Useful to determine the overall types
     associated to a dataset.
     """
     if types.LATITUDE in column_semantic_types or types.LATITUDE in column_structural_type or \
@@ -217,10 +218,10 @@ def determine_column_type(column_structural_type, column_semantic_types):
        types.ADMIN in column_semantic_types or types.ADMIN in column_structural_type:
         return column_types.SPATIAL
 
-    if (column_structural_type == types.TEXT and not types.DATE_TIME in column_semantic_types) or \
+    if (column_structural_type == types.TEXT and types.DATE_TIME not in column_semantic_types) or \
        (column_structural_type == types.INTEGER and types.BOOLEAN in column_semantic_types):
         return column_types.CATEGORICAL
-            
+ 
     if types.DATE_TIME in column_semantic_types or types.DATE_TIME in column_structural_type:
         return column_types.TEMPORAL
 
@@ -229,4 +230,3 @@ def determine_column_type(column_structural_type, column_semantic_types):
         return column_types.NUMERICAL
 
     return None
-

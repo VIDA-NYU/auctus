@@ -84,7 +84,7 @@ class TestSearch(unittest.TestCase):
             ],
         )
         self.assertEqual(vars, [])
-        
+
     def test_dataset_types(self):
         main, sup_funcs, sup_filters, vars = parse_query({
             'keywords': ['food'],
