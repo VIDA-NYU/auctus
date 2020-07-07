@@ -42,7 +42,7 @@ datamart:
       source:
         type: keyword
       dataset_types:
-        type: keyword
+        type: keyword			
       size:
         type: long
       nb_rows:
