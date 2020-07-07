@@ -30,7 +30,11 @@ function HitInfoBox(props: {
       <div className="card-body d-flex flex-column">
         <h4>{hit.metadata.name}</h4>
         {infoBoxType === InfoBoxType.AUGMENTATION ? (
-          <AugmentationOptions hit={hit} searchQuery={searchQuery} />
+          <AugmentationOptions
+            hit={hit}
+            session={session}
+            searchQuery={searchQuery}
+          />
         ) : (
           <>
             <div className="mt-2">
