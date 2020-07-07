@@ -3,6 +3,7 @@ import { Link, match } from 'react-router-dom';
 import { History, Location } from 'history';
 import { generateRandomId } from '../../utils';
 import * as api from '../../api/rest';
+import { Session } from '../../api/types';
 import { VerticalLogo, HorizontalLogo } from '../Logo/Logo';
 import {
   AdvancedSearchBar,
@@ -41,6 +42,7 @@ interface SearchAppState {
   searchResponse?: SearchResponse;
   searchQuery?: api.SearchQuery;
   sources: string[];
+  session?: Session;
 }
 
 interface SearchAppProps {
@@ -154,6 +156,17 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     } else {
       this.setState(this.initialState());
     }
+    const s = params.get('session');
+    if (s) {
+      const session = JSON.parse(decodeURIComponent(s));
+      if (session.session_id) {
+        this.setState({
+          session: { ...session, system_name: session.system_name || 'TA3' },
+        });
+      }
+    } else {
+      this.setState({ session: undefined });
+    }
   }
 
   componentDidUpdate(prevProps: SearchAppProps) {
@@ -238,7 +251,12 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
       // pushes the query into the URL, which will trigger fetching the search results
       const q = encodeURIComponent(JSON.stringify(query));
-      this.props.history.push(`${this.props.match.url}?q=${q}`);
+      let url = `${this.props.match.url}?q=${q}`;
+      if (this.state.session) {
+        const s = encodeURIComponent(JSON.stringify(this.state.session));
+        url += `&session=${s}`;
+      }
+      this.props.history.push(url);
     }
   }
 
@@ -419,7 +437,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   render() {
-    const { searchQuery, searchState, searchResponse } = this.state;
+    const { searchQuery, searchState, searchResponse, session } = this.state;
 
     return (
       <>
@@ -429,7 +447,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               <div className="col-md">
                 <div className="d-flex flex-row mt-2 mb-1">
                   <div>
-                    <Link to="/" style={{ textDecoration: 'none' }}>
+                    <Link
+                      to={
+                        session
+                          ? `/?session=${JSON.stringify(this.state.session)}`
+                          : '/'
+                      }
+                      style={{ textDecoration: 'none' }}
+                    >
                       <HorizontalLogo />
                     </Link>
                   </div>
@@ -459,6 +484,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                   searchQuery={searchQuery}
                   searchState={searchState}
                   searchResponse={searchResponse}
+                  session={session}
                   onSearchRelated={this.onSearchRelated.bind(this)}
                 />
               </div>
