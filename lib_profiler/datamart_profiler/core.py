@@ -108,7 +108,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     if metadata is None:
         metadata = {}
- 
+
     data_path = None
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)

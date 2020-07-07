@@ -213,9 +213,12 @@ class TestProfiler(DataTestCase):
         )
         response.raise_for_status()
         actual = response.json()
+        print('*****')
+        print(actual)
         with pkg_resources.resource_stream(
                 'coordinator', 'elasticsearch.yml') as stream:
             expected = yaml.safe_load(stream)
+        print(expected)
         expected.pop('_refs', None)
 
         # Remove 'lazo' index
@@ -2484,7 +2487,7 @@ agg_metadata = {
     "name": "agg",
     "description": "Simple CSV with ids and salaries to test aggregation for numerical attributes",
     'source': 'fernando',
-    'dataset_types': ['numerical', 'categorical'], 
+    'dataset_types': ['numerical', 'categorical'],
     "size": 110,
     "nb_rows": 8,
     "nb_profiled_rows": 8,
@@ -2585,7 +2588,7 @@ geo_metadata = {
     "name": "geo",
     "description": "Another simple CSV with places",
     'source': 'remi',
-    'dataset_types': ['categorical', 'spatial', 'numerical'], 
+    'dataset_types': ['categorical', 'spatial', 'numerical'],
     "size": 3910,
     "nb_rows": 100,
     "nb_profiled_rows": 100,
@@ -2712,7 +2715,7 @@ geo_wkt_metadata = {
     "name": "geo_wkt",
     "description": "Simple CSV in WKT format",
     'source': 'remi',
-    'dataset_types': ['categorical', 'spatial', 'numerical'], 
+    'dataset_types': ['categorical', 'spatial', 'numerical'],
     "size": 4708,
     "nb_rows": 100,
     "nb_profiled_rows": 100,
@@ -2779,7 +2782,7 @@ lazo_metadata = {
     "name": "lazo",
     "description": "Simple CSV with states and years to test the Lazo index service",
     'source': 'fernando',
-    'dataset_types': ['categorical', 'temporal'], 
+    'dataset_types': ['categorical', 'temporal'],
     "size": 334,
     "nb_rows": 36,
     "nb_profiled_rows": 36,
@@ -2839,7 +2842,7 @@ daily_metadata = {
     'name': 'daily',
     'description': 'Temporal dataset with daily resolution',
     'source': 'remi',
-    'dataset_types': ['temporal', 'categorical'], 
+    'dataset_types': ['temporal', 'categorical'],
     'size': 388,
     'nb_rows': 30,
     "nb_profiled_rows": 30,
@@ -2911,7 +2914,7 @@ hourly_metadata = {
     'name': 'hourly',
     'description': 'Temporal dataset with hourly resolution',
     'source': 'remi',
-    'dataset_types': ['temporal', 'categorical'], 
+    'dataset_types': ['temporal', 'categorical'],
     'size': 1242,
     'nb_rows': 52,
     "nb_profiled_rows": 52,

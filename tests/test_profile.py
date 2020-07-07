@@ -205,7 +205,7 @@ class TestDates(DataTestCase):
             {
                 'nb_rows': 3,
                 'nb_profiled_rows': 3,
-                'dataset_types': ['temporal', 'numerical'], 
+                'dataset_types': ['temporal', 'numerical'],
                 'columns': [
                     {
                         'name': 'year',
@@ -503,7 +503,7 @@ class TestNominatim(DataTestCase):
                 'size': 142,
                 'nb_rows': 3,
                 'nb_profiled_rows': 3,
-                'dataset_types': ['categorical', 'spatial'], 
+                'dataset_types': ['categorical', 'spatial'],
                 'columns': [
                     {
                         'name': 'place',
