@@ -987,7 +987,7 @@ def parse_keyword_query_main_index(query_json):
                 ]
             }
         })
-        
+ 
     if 'dataset_types' in query_json:
         query_args_main.append({
             'bool': {
@@ -1000,7 +1000,7 @@ def parse_keyword_query_main_index(query_json):
                 ]
             }
         })
-        
+
     return query_args_main
 
 

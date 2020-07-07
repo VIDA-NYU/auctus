@@ -108,7 +108,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     if metadata is None:
         metadata = {}
-        
+ 
     data_path = None
     if isinstance(data, pandas.DataFrame):
         metadata['nb_rows'] = len(data)
@@ -217,7 +217,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
             # Identify overall column type (numerical, categorial, spatial, or temporal) and add it to 'dataset_types'
             column_type = determine_column_type(structural_type, semantic_types_dict)
-            if column_type and not column_type in metadata['dataset_types']:
+            if column_type and column_type not in metadata['dataset_types']:
                 metadata['dataset_types'].append(column_type)
             # Set structural type
             column_meta['structural_type'] = structural_type
@@ -572,7 +572,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
-            if not column_types.SPATIAL in metadata['dataset_types']:
+            if column_types.SPATIAL not in metadata['dataset_types']:
                 metadata['dataset_types'].append(column_types.SPATIAL)
     # Sample data
     if include_sample:
@@ -587,9 +587,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
         sample = sample.applymap(truncate_string)  # Truncate long values
         metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
 
-
     # Determine dataset_types based on the profiling of columns
-    
+
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
     return metadata
