@@ -1,5 +1,5 @@
 import React from 'react';
-import { SearchResult, InfoBoxType } from '../../api/types';
+import { SearchResult, InfoBoxType, Session } from '../../api/types';
 import { formatSize } from '../../utils';
 import {
   Description,
@@ -16,8 +16,9 @@ function HitInfoBox(props: {
   hit: SearchResult;
   searchQuery: SearchQuery;
   infoBoxType: InfoBoxType;
+  session?: Session;
 }) {
-  const { hit, searchQuery, infoBoxType } = props;
+  const { hit, searchQuery, infoBoxType, session } = props;
   return (
     <div
       className="col-md-8 px-0 pb-5 card shadow-sm ml-2"
@@ -49,7 +50,7 @@ function HitInfoBox(props: {
               <b>Size:</b> {formatSize(hit.metadata.size)}
             </div>
             <div className="mt-2">
-              <DownloadButtons hit={hit} />
+              <DownloadButtons hit={hit} session={session} />
             </div>
             <div className="mt-2">
               <SpatialCoverage hit={hit} />
