@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, match } from 'react-router-dom';
+import { History, Location } from 'history';
 import { generateRandomId } from '../../utils';
 import * as api from '../../api/rest';
 import { VerticalLogo, HorizontalLogo } from '../Logo/Logo';
@@ -42,7 +43,11 @@ interface SearchAppState {
   sources: string[];
 }
 
-interface SearchAppProps {}
+interface SearchAppProps {
+  history: History;
+  match: match;
+  location: Location;
+}
 
 class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   constructor(props: SearchAppProps) {
@@ -61,8 +66,106 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     };
   }
 
+  static filtersToQuery(state: SearchAppState): api.SearchQuery {
+    const filterVariables = state.filters
+      .filter(f => f.type !== FilterType.RELATED_FILE)
+      .filter(f => f.type !== FilterType.SOURCE)
+      .filter(f => f && f.state)
+      .map(f => f.state as FilterVariables);
+
+    const relatedFiles: RelatedFile[] = state.filters
+      .filter(f => f.type === FilterType.RELATED_FILE)
+      .map(f => f.state as RelatedFile);
+
+    const sources: string[][] = state.filters
+      .filter(f => f.type === FilterType.SOURCE)
+      .map(f => f.state as string[]);
+
+    const query: api.SearchQuery = {
+      query: state.query,
+      filters: filterVariables,
+      sources: sources[0],
+      relatedFile: relatedFiles[0],
+    };
+    return query;
+  }
+
+  static queryToFilters(
+    query: api.SearchQuery
+  ): { keywords: string; filters: Filter[] } {
+    const filters: Filter[] = [];
+    if (query.filters) {
+      query.filters.forEach(v => {
+        let type;
+        if (v.type === 'geospatial_variable') {
+          type = FilterType.GEO_SPATIAL;
+        } else if (v.type === 'temporal_variable') {
+          type = FilterType.TEMPORAL;
+        } else {
+          console.error('Unrecognized query variable ', v);
+          return;
+        }
+        filters.push({
+          id: generateRandomId(),
+          type,
+          hidden: false,
+          state: v,
+        });
+      });
+    }
+    if (query.sources) {
+      filters.push({
+        id: generateRandomId(),
+        type: FilterType.SOURCE,
+        hidden: false,
+        state: query.sources,
+      });
+    }
+    if (query.relatedFile) {
+      filters.push({
+        id: generateRandomId(),
+        type: FilterType.RELATED_FILE,
+        hidden: false,
+        state: query.relatedFile,
+      });
+    }
+    return { keywords: query.query || '', filters };
+  }
+
+  updateSearchStateFromUrlParams(location: Location) {
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    if (q) {
+      const query: api.SearchQuery = JSON.parse(decodeURIComponent(q));
+      if (query) {
+        // Update state to match
+        const { keywords, filters } = SearchApp.queryToFilters(query);
+        this.setState(
+          {
+            query: keywords,
+            filters,
+          },
+          () => {
+            // Submit search
+            this.fetchSearchResults(query);
+          }
+        );
+      }
+    } else {
+      this.setState(this.initialState());
+    }
+  }
+
+  componentDidUpdate(prevProps: SearchAppProps) {
+    const { location } = this.props;
+    if (location !== prevProps.location) {
+      this.updateSearchStateFromUrlParams(this.props.location);
+    }
+  }
+
   componentDidMount() {
     this.fetchSources();
+    this.updateSearchStateFromUrlParams(this.props.location);
   }
 
   async fetchSources() {
@@ -71,10 +174,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     } catch (e) {
       console.error('Unable to fetch list of sources:', e);
     }
-  }
-
-  resetQuery() {
-    this.setState(this.initialState());
   }
 
   removeFilter(filterId: string) {
@@ -135,51 +234,38 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   submitQuery() {
     if (this.validQuery()) {
-      const filterVariables = this.state.filters
-        .filter(f => f.type !== FilterType.RELATED_FILE)
-        .filter(f => f.type !== FilterType.SOURCE)
-        .filter(f => f && f.state)
-        .map(f => f.state as FilterVariables);
+      const query = SearchApp.filtersToQuery(this.state);
 
-      const relatedFiles: RelatedFile[] = this.state.filters
-        .filter(f => f.type === FilterType.RELATED_FILE)
-        .map(f => f.state as RelatedFile);
-
-      const sources: string[][] = this.state.filters
-        .filter(f => f.type === FilterType.SOURCE)
-        .map(f => f.state as string[]);
-
-      const query: api.SearchQuery = {
-        query: this.state.query,
-        filters: filterVariables,
-        sources: sources[0],
-        relatedFile: relatedFiles[0],
-      };
-
-      this.setState({
-        searchQuery: query,
-        searchState: SearchState.SEARCH_REQUESTING,
-        filters: this.state.filters.map(f => ({ ...f, hidden: true })),
-      });
-
-      api
-        .search(query)
-        .then(response => {
-          if (response.status === api.RequestResult.SUCCESS && response.data) {
-            this.setState({
-              searchState: SearchState.SEARCH_SUCCESS,
-              searchResponse: {
-                results: aggregateResults(response.data.results),
-              },
-            });
-          } else {
-            this.setState({ searchState: SearchState.SEARCH_FAILED });
-          }
-        })
-        .catch(() => {
-          this.setState({ searchState: SearchState.SEARCH_FAILED });
-        });
+      // pushes the query into the URL, which will trigger fetching the search results
+      const q = encodeURIComponent(JSON.stringify(query));
+      this.props.history.push(`${this.props.match.url}?q=${q}`);
     }
+  }
+
+  fetchSearchResults(query: api.SearchQuery) {
+    this.setState({
+      searchQuery: query,
+      searchState: SearchState.SEARCH_REQUESTING,
+      filters: this.state.filters.map(f => ({ ...f, hidden: true })),
+    });
+
+    api
+      .search(query)
+      .then(response => {
+        if (response.status === api.RequestResult.SUCCESS && response.data) {
+          this.setState({
+            searchState: SearchState.SEARCH_SUCCESS,
+            searchResponse: {
+              results: aggregateResults(response.data.results),
+            },
+          });
+        } else {
+          this.setState({ searchState: SearchState.SEARCH_FAILED });
+        }
+      })
+      .catch(() => {
+        this.setState({ searchState: SearchState.SEARCH_FAILED });
+      });
   }
 
   toggleFilter(filterId: string) {
@@ -343,11 +429,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               <div className="col-md">
                 <div className="d-flex flex-row mt-2 mb-1">
                   <div>
-                    <Link
-                      to="/"
-                      style={{ textDecoration: 'none' }}
-                      onClick={() => this.resetQuery()}
-                    >
+                    <Link to="/" style={{ textDecoration: 'none' }}>
                       <HorizontalLogo />
                     </Link>
                   </div>

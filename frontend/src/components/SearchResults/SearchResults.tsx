@@ -96,7 +96,6 @@ class SearchResults extends React.PureComponent<
             >
               {currentHits.map((hit, idx) => (
                 <SearchHit
-                  searchQuery={searchQuery}
                   hit={hit}
                   key={idx}
                   selectedHit={
