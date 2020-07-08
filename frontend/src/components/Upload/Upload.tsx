@@ -214,6 +214,7 @@ class Upload extends React.PureComponent<{}, UploadState> {
   }
 
   async onFormSubmit(data: api.UploadData) {
+    this.setState({ success: undefined, failed: undefined });
     try {
       const result = await api.upload(data);
       if (result.status === 200) {
