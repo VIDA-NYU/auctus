@@ -202,12 +202,9 @@ class TestProfiler(DataTestCase):
         )
         response.raise_for_status()
         actual = response.json()
-        print('*****')
-        print(actual)
         with pkg_resources.resource_stream(
                 'coordinator', 'elasticsearch.yml') as stream:
             expected = yaml.safe_load(stream)
-        print(expected)
         expected.pop('_refs', None)
         actual.pop('lazo', None)
         for index in expected.values():
