@@ -20,7 +20,6 @@ from datamart_profiler.temporal import temporal_aggregation_keys
 logger = logging.getLogger(__name__)
 
 
-BUF_SIZE = 128000
 PAGINATION_SIZE = 200
 TOP_K_SIZE = 50
 
