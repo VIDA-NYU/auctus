@@ -1,18 +1,11 @@
 from datetime import datetime
 import distance
-import hashlib
-import json
 import logging
-import os
-import tempfile
 import textwrap
 import time
-import tornado.web
 
 from datamart_core import types
-from datamart_core.fscache import cache_get_or_set
-from datamart_core.materialize import detect_format_convert_to_csv
-from datamart_profiler import process_dataset, parse_date
+from datamart_profiler import parse_date
 from datamart_profiler.temporal import temporal_aggregation_keys
 
 
@@ -1036,35 +1029,6 @@ def parse_keyword_query_sup_index(query_json):
     return query_sup_functions, query_sup_filters
 
 
-def parse_query(query_json, geo_data=None):
-    """Parses a Datamart query, turning it into an Elasticsearch query
-    over 'datamart' index as well as the supplementary indices
-    ('datamart_columns' and 'datamart_spatial_coverage').
-    """
-    query_args_main = parse_keyword_query_main_index(query_json)
-    query_sup_functions, query_sup_filters = \
-        parse_keyword_query_sup_index(query_json)
-
-    # tabular_variables
-    tabular_variables = []
-
-    # variables
-    variables_query = None
-    if 'variables' in query_json:
-        variables_query, tabular_variables = parse_query_variables(
-            query_json['variables'],
-            geo_data,
-        )
-
-    # TODO: for now, temporal and geospatial variables are ignored
-    #   for 'datamart_columns' and 'datamart_spatial_coverage' indices,
-    #   since we do not have information about a dataset in these indices
-    if variables_query:
-        query_args_main.extend(variables_query)
-
-    return query_args_main, query_sup_functions, query_sup_filters, list(set(tabular_variables))
-
-
 def parse_query_variables(data, geo_data=None):
     """Parses the variables of a Datamart query, turning it into an
     Elasticsearch query over 'datamart' index
@@ -1220,6 +1184,36 @@ def parse_query_variables(data, geo_data=None):
     return output, tabular_variables
 
 
+def parse_query(query_json, geo_data=None):
+    """Parses a Datamart query, turning it into an Elasticsearch query
+    over 'datamart' index as well as the supplementary indices
+    ('datamart_columns' and 'datamart_spatial_coverage').
+    """
+
+    query_args_main = parse_keyword_query_main_index(query_json)
+    query_sup_functions, query_sup_filters = \
+        parse_keyword_query_sup_index(query_json)
+
+    # tabular_variables
+    tabular_variables = []
+
+    # variables
+    variables_query = None
+    if 'variables' in query_json:
+        variables_query, tabular_variables = parse_query_variables(
+            query_json['variables'],
+            geo_data,
+        )
+
+    # TODO: for now, temporal and geospatial variables are ignored
+    #   for 'datamart_columns' and 'datamart_spatial_coverage' indices,
+    #   since we do not have information about a dataset in these indices
+    if variables_query:
+        query_args_main.extend(variables_query)
+
+    return query_args_main, query_sup_functions, query_sup_filters, list(set(tabular_variables))
+
+
 def get_augmentation_search_results(
     es, lazo_client, data_profile,
     query_args_main, query_sup_functions, query_sup_filters,
@@ -1272,86 +1266,3 @@ def get_augmentation_search_results(
         result['supplied_resource_id'] = None
 
     return results[:TOP_K_SIZE]  # top-50
-
-
-class ProfilePostedData(tornado.web.RequestHandler):
-    def handle_data_parameter(self, data):
-        """
-        Handles the 'data' parameter.
-
-        :param data: the input parameter
-        :return: (data, data_profile)
-          data: data as bytes (either the input or loaded from the input)
-          data_profile: the profiling (metadata) of the data
-        """
-
-        if not isinstance(data, bytes):
-            raise ValueError
-
-        # Use SHA1 of file as cache key
-        sha1 = hashlib.sha1(data)
-        data_hash = sha1.hexdigest()
-
-        data_profile = self.application.redis.get('profile:' + data_hash)
-
-        # Do format conversion
-        materialize = {}
-
-        def create_csv(cache_temp):
-            with open(cache_temp, 'wb') as fp:
-                fp.write(data)
-
-            def convert_dataset(func, path):
-                with tempfile.NamedTemporaryFile(
-                    prefix='.convert',
-                    dir='/cache/user_data',
-                ) as tmpfile:
-                    os.rename(path, tmpfile.name)
-                    with open(path, 'w', newline='') as dst:
-                        func(tmpfile.name, dst)
-                    return path
-
-            ret = detect_format_convert_to_csv(
-                cache_temp,
-                convert_dataset,
-                materialize,
-            )
-            assert ret == cache_temp
-
-        with cache_get_or_set(
-            '/cache/user_data',
-                data_hash,
-                create_csv,
-        ) as csv_path:
-            if data_profile is not None:
-                # This is here because we want to put the data in the cache
-                # even if the profile is already in Redis
-                logger.info("Found cached profile_data")
-                data_profile = json.loads(data_profile)
-            else:
-                logger.info("Profiling...")
-                start = time.perf_counter()
-                with open(csv_path, 'rb') as data:
-                    data_profile = process_dataset(
-                        data=data,
-                        lazo_client=self.application.lazo_client,
-                        nominatim=self.application.nominatim,
-                        geo_data=self.application.geo_data,
-                        search=True,
-                        include_sample=True,
-                        coverage=True,
-                    )
-                logger.info("Profiled in %.2fs", time.perf_counter() - start)
-
-                data_profile['materialize'] = materialize
-
-                self.application.redis.set(
-                    'profile:' + data_hash,
-                    json.dumps(
-                        data_profile,
-                        # Compact
-                        sort_keys=True, indent=None, separators=(',', ':'),
-                    ),
-                )
-
-        return data_profile, data_hash
