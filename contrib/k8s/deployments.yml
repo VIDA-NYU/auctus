@@ -242,6 +242,11 @@ spec:
             configMapKeyRef:
               name: config
               key: frontend_url
+        - name: CUSTOM_FIELDS
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: custom_fields
         ports:
         - containerPort: 8002
         volumeMounts:
