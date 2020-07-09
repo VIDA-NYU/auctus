@@ -378,7 +378,7 @@ class TestSearch(DatamartTest):
         # All datasets from given source
         response = self.datamart_post(
             '/search',
-            json={'source': ['fernando']},
+            json={'source': 'fernando'},
             schema=result_list_schema,
         )
         results = response.json()['results']
