@@ -388,8 +388,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             title = 'Data Type';
             component = (
               <DataTypeFilter
-                datatypes={this.state.sources}
-                datatypes={filter.state as string[] | undefined}
+                datatypes={this.state.dataTypes}
                 onDataTypeChange={s => this.updateFilterState(filter.id, s)}
               />
             );
