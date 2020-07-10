@@ -1,4 +1,3 @@
-import contextlib
 from datetime import datetime
 import distance
 import hashlib
@@ -12,6 +11,7 @@ import time
 import tornado.web
 
 from datamart_core import types
+from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import detect_format_convert_to_csv
 from datamart_profiler import process_dataset, parse_date
 from datamart_profiler.temporal import temporal_aggregation_keys
@@ -976,12 +976,15 @@ def parse_keyword_query_main_index(query_json):
         })
 
     if 'source' in query_json:
+        source = query_json['source']
+        if not isinstance(source, list):
+            source = [source]
         query_args_main.append({
             'bool': {
                 'filter': [
                     {
                         'terms': {
-                            'source': query_json['source'],
+                            'source': source,
                         }
                     }
                 ]
@@ -1075,8 +1078,14 @@ def parse_query_variables(data):
             raise ClientError("variable is missing property 'type'")
 
         # temporal variable
-        # TODO: handle 'granularity'
-        if 'temporal_variable' in variable['type']:
+        if variable['type'] == 'temporal_variable':
+            filters = [
+                {
+                    'term': {
+                        'columns.semantic_types': types.DATE_TIME,
+                    },
+                }
+            ]
             if 'start' in variable or 'end' in variable:
                 if 'start' in variable:
                     start = parse_date(variable['start'])
@@ -1095,46 +1104,53 @@ def parse_query_variables(data):
                     end = datetime.utcnow().timestamp()
                     if start > end:
                         end = start + 1
+
                 if start > end:
                     raise ClientError("Invalid date range (start > end)")
-                output.append({
+
+                filters.append({
                     'nested': {
-                        'path': 'columns',
+                        'path': 'columns.coverage',
                         'query': {
-                            'bool': {
-                                'must': [
-                                    {
-                                        'term': {
-                                            'columns.semantic_types': types.DATE_TIME,
-                                        },
-                                    },
-                                    {
-                                        'nested': {
-                                            'path': 'columns.coverage',
-                                            'query': {
-                                                'range': {
-                                                    'columns.coverage.range': {
-                                                        'gte': start,
-                                                        'lte': end,
-                                                        'relation': 'intersects',
-                                                    }
-                                                },
-                                            },
-                                        },
-                                    },
-                                ],
+                            'range': {
+                                'columns.coverage.range': {
+                                    'gte': start,
+                                    'lte': end,
+                                    'relation': 'intersects',
+                                },
                             },
                         },
                     },
                 })
+            if 'granularity' in variable:
+                granularity = variable['granularity']
+
+                filters.append({
+                    'term': {
+                        'columns.temporal_resolution': granularity,
+                    },
+                })
+
+            output.append({
+                'nested': {
+                    'path': 'columns',
+                    'query': {
+                        'bool': {
+                            'must': filters,
+                        },
+                    },
+                },
+            })
 
         # geospatial variable
         # TODO: handle 'granularity'
-        elif 'geospatial_variable' in variable['type']:
-            if ('latitude1' not in variable or
-                    'latitude2' not in variable or
-                    'longitude1' not in variable or
-                    'longitude2' not in variable):
+        elif variable['type'] == 'geospatial_variable':
+            if (
+                'latitude1' not in variable or
+                'latitude2' not in variable or
+                'longitude1' not in variable or
+                'longitude2' not in variable
+            ):
                 continue
             longitude1 = min(
                 float(variable['longitude1']),
@@ -1179,7 +1195,7 @@ def parse_query_variables(data):
         # tabular variable
         # TODO: handle 'relationship'
         #  for now, it assumes the relationship is 'contains'
-        elif 'tabular_variable' in variable['type']:
+        elif variable['type'] == 'tabular_variable':
             if 'columns' in variable:
                 for column_index in variable['columns']:
                     tabular_variables.append(column_index)
@@ -1265,34 +1281,38 @@ class ProfilePostedData(tornado.web.RequestHandler):
             logger.info("Found cached profile_data")
             data_profile = json.loads(data_profile)
         else:
+            # Do format conversion
             materialize = {}
-            with contextlib.ExitStack() as stack:
-                dataset_path = os.path.join(
-                    stack.enter_context(tempfile.TemporaryDirectory()),
-                    'dataset',
-                )
-                with open(dataset_path, 'wb') as fp:
+
+            def create_csv(cache_temp):
+                with open(cache_temp, 'wb') as fp:
                     fp.write(data)
 
                 def convert_dataset(func, path):
-                    with stack.pop_all():
-                        dst = os.path.join(
-                            stack.enter_context(tempfile.TemporaryDirectory()),
-                            'dataset',
-                        )
-                        with open(dst, 'w', newline='') as dst_fp:
-                            func(path, dst_fp)
-                        return dst
+                    with tempfile.NamedTemporaryFile(
+                        prefix='.convert',
+                        dir='/cache/user_data',
+                    ) as tmpfile:
+                        os.rename(path, tmpfile.name)
+                        with open(path, 'w', newline='') as dst:
+                            func(tmpfile.name, dst)
+                        return path
 
-                dataset_path = detect_format_convert_to_csv(
-                    dataset_path,
+                ret = detect_format_convert_to_csv(
+                    cache_temp,
                     convert_dataset,
                     materialize,
                 )
+                assert ret == cache_temp
 
+            with cache_get_or_set(
+                '/cache/user_data',
+                    data_hash,
+                    create_csv,
+            ) as csv_path:
                 logger.info("Profiling...")
                 start = time.perf_counter()
-                with open(dataset_path, 'rb') as data:
+                with open(csv_path, 'rb') as data:
                     data_profile = process_dataset(
                         data=data,
                         lazo_client=self.application.lazo_client,
@@ -1303,6 +1323,8 @@ class ProfilePostedData(tornado.web.RequestHandler):
                         coverage=True,
                     )
                 logger.info("Profiled in %.2fs", time.perf_counter() - start)
+
+                data_profile['materialize'] = materialize
 
             self.application.redis.set(
                 'profile:' + data_hash,

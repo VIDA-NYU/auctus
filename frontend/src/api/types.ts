@@ -6,6 +6,17 @@ export interface ColumnAggregations {
   [columnName: string]: string[];
 }
 
+// Keep in sync with datamart_profiler's temporal_aggregation_keys
+export enum TemporalResolution {
+  YEAR = 'year',
+  MONTH = 'month',
+  WEEK = 'week',
+  DAY = 'day',
+  HOUR = 'hour',
+  MINUTE = 'minute',
+  SECOND = 'second',
+}
+
 export interface AugmentationInfo {
   type: string;
   left_columns: number[][];
@@ -89,6 +100,7 @@ export interface TemporalVariable {
   type: 'temporal_variable';
   start?: string;
   end?: string;
+  granularity?: string;
 }
 
 export interface GeoSpatialVariable {
@@ -107,17 +119,24 @@ export interface QuerySpec {
   variables: FilterVariables[];
 }
 
-export interface RelatedToLocalFile {
-  kind: 'localFile';
-  file: File;
+interface RelatedToFileBase {
+  kind: string;
+  name: string;
+  fileSize: number;
 }
 
-export interface RelatedToSearchResult {
+export interface RelatedToLocalFile extends RelatedToFileBase {
+  kind: 'localFile';
+  token: string;
+}
+
+export interface RelatedToSearchResult extends RelatedToFileBase {
   kind: 'searchResult';
   datasetId: string;
-  datasetName: string;
-  datasetSize: number;
 }
+
+export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
+
 export interface NumericalDataVegaFormat {
   count: number;
   bin_start: number;
@@ -129,12 +148,11 @@ export interface TemporalDataVegaFormat {
   date_start: string;
   date_end: string;
 }
+
 export interface CategoricalDataVegaFormat {
   count: number;
   bin: string;
 }
-
-export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
 
 export enum InfoBoxType {
   DETAIL = 'DETAIL',
@@ -166,4 +184,11 @@ export enum Annotation {
 export enum TypesCategory {
   STRUCTURAL = 'STRUCTURAL',
   SEMANTIC = 'SEMANTIC',
+}
+
+export interface Session {
+  session_id: string;
+  format?: string;
+  format_options?: { [key: string]: string | number };
+  system_name: string;
 }

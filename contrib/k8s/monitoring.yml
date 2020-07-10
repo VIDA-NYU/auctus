@@ -137,7 +137,7 @@ spec:
   - protocol: TCP
     port: 9114
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: elasticsearch-exporter
@@ -148,17 +148,23 @@ spec:
   replicas: 1
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: datamart
+      what: elasticsearch-exporter
   template:
     metadata:
       labels:
         app: datamart
         what: elasticsearch-exporter
-    securityContext:
-      runAsNonRoot: true
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: elasticsearch-exporter
         image: justwatch/elasticsearch_exporter:1.1.0
+        securityContext:
+          runAsUser: 999
         args:
         - "--es.uri=http://elasticsearch:9200"
         - "--es.cluster_settings"
@@ -193,7 +199,7 @@ spec:
     requests:
       storage: 2Gi
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
@@ -204,6 +210,10 @@ spec:
   replicas: 1
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: datamart
+      what: prometheus
   template:
     metadata:
       labels:
@@ -224,6 +234,8 @@ spec:
       containers:
       - name: prometheus
         image: prom/prometheus
+        securityContext:
+          runAsUser: 65534 # "nobody" as set in image
         ports:
         - containerPort: 9090
         volumeMounts:
@@ -268,7 +280,7 @@ spec:
     requests:
       storage: 100Mi
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
@@ -279,6 +291,10 @@ spec:
   replicas: 1
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: datamart
+      what: grafana
   template:
     metadata:
       labels:
@@ -299,6 +315,8 @@ spec:
       containers:
       - name: grafana
         image: grafana/grafana
+        securityContext:
+          runAsUser: 472
         ports:
         - containerPort: 3000
         volumeMounts:

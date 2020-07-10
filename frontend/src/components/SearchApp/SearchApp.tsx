@@ -1,7 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, match } from 'react-router-dom';
+import { History, Location } from 'history';
 import { generateRandomId } from '../../utils';
 import * as api from '../../api/rest';
+import { Session } from '../../api/types';
 import { VerticalLogo, HorizontalLogo } from '../Logo/Logo';
 import {
   AdvancedSearchBar,
@@ -29,10 +31,7 @@ import { aggregateResults } from '../../api/augmentation';
 interface Filter {
   id: string;
   type: FilterType;
-  title: string;
-  icon: Icon.Icon;
   hidden: boolean;
-  component: JSX.Element;
   state?: FilterVariables | RelatedFile | string[];
 }
 
@@ -43,9 +42,14 @@ interface SearchAppState {
   searchResponse?: SearchResponse;
   searchQuery?: api.SearchQuery;
   sources: string[];
+  session?: Session;
 }
 
-interface SearchAppProps {}
+interface SearchAppProps {
+  history: History;
+  match: match;
+  location: Location;
+}
 
 class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   constructor(props: SearchAppProps) {
@@ -64,20 +68,125 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     };
   }
 
+  static filtersToQuery(state: SearchAppState): api.SearchQuery {
+    const filterVariables = state.filters
+      .filter(f => f.type !== FilterType.RELATED_FILE)
+      .filter(f => f.type !== FilterType.SOURCE)
+      .filter(f => f && f.state)
+      .map(f => f.state as FilterVariables);
+
+    const relatedFiles: RelatedFile[] = state.filters
+      .filter(f => f.type === FilterType.RELATED_FILE)
+      .map(f => f.state as RelatedFile);
+
+    const sources: string[][] = state.filters
+      .filter(f => f.type === FilterType.SOURCE)
+      .map(f => f.state as string[]);
+
+    const query: api.SearchQuery = {
+      query: state.query,
+      filters: filterVariables,
+      sources: sources[0],
+      relatedFile: relatedFiles[0],
+    };
+    return query;
+  }
+
+  static queryToFilters(
+    query: api.SearchQuery
+  ): { keywords: string; filters: Filter[] } {
+    const filters: Filter[] = [];
+    if (query.filters) {
+      query.filters.forEach(v => {
+        let type;
+        if (v.type === 'geospatial_variable') {
+          type = FilterType.GEO_SPATIAL;
+        } else if (v.type === 'temporal_variable') {
+          type = FilterType.TEMPORAL;
+        } else {
+          console.error('Unrecognized query variable ', v);
+          return;
+        }
+        filters.push({
+          id: generateRandomId(),
+          type,
+          hidden: false,
+          state: v,
+        });
+      });
+    }
+    if (query.sources) {
+      filters.push({
+        id: generateRandomId(),
+        type: FilterType.SOURCE,
+        hidden: false,
+        state: query.sources,
+      });
+    }
+    if (query.relatedFile) {
+      filters.push({
+        id: generateRandomId(),
+        type: FilterType.RELATED_FILE,
+        hidden: false,
+        state: query.relatedFile,
+      });
+    }
+    return { keywords: query.query || '', filters };
+  }
+
+  updateSearchStateFromUrlParams(location: Location) {
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    if (q) {
+      const query: api.SearchQuery = JSON.parse(decodeURIComponent(q));
+      if (query) {
+        // Update state to match
+        const { keywords, filters } = SearchApp.queryToFilters(query);
+        this.setState(
+          {
+            query: keywords,
+            filters,
+          },
+          () => {
+            // Submit search
+            this.fetchSearchResults(query);
+          }
+        );
+      }
+    } else {
+      this.setState(this.initialState());
+    }
+    const s = params.get('session');
+    if (s) {
+      const session = JSON.parse(decodeURIComponent(s));
+      if (session.session_id) {
+        this.setState({
+          session: { ...session, system_name: session.system_name || 'TA3' },
+        });
+      }
+    } else {
+      this.setState({ session: undefined });
+    }
+  }
+
+  componentDidUpdate(prevProps: SearchAppProps) {
+    const { location } = this.props;
+    if (location !== prevProps.location) {
+      this.updateSearchStateFromUrlParams(this.props.location);
+    }
+  }
+
   componentDidMount() {
     this.fetchSources();
+    this.updateSearchStateFromUrlParams(this.props.location);
   }
 
   async fetchSources() {
     try {
-      this.setState({ sources: await api.sources });
+      this.setState({ sources: await api.sources() });
     } catch (e) {
       console.error('Unable to fetch list of sources:', e);
     }
-  }
-
-  resetQuery() {
-    this.setState(this.initialState());
   }
 
   removeFilter(filterId: string) {
@@ -131,7 +240,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         id: filterId,
         type: filterType,
         hidden: false,
-        ...this.createFilterComponent(filterId, filterType),
       };
       return { filters: [filter, ...prevState.filters] };
     });
@@ -139,108 +247,43 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   submitQuery() {
     if (this.validQuery()) {
-      const filterVariables = this.state.filters
-        .filter(f => f.type !== FilterType.RELATED_FILE)
-        .filter(f => f.type !== FilterType.SOURCE)
-        .filter(f => f && f.state)
-        .map(f => f.state as FilterVariables);
+      const query = SearchApp.filtersToQuery(this.state);
 
-      const relatedFiles: RelatedFile[] = this.state.filters
-        .filter(f => f.type === FilterType.RELATED_FILE)
-        .map(f => f.state as RelatedFile);
-
-      const sources: string[][] = this.state.filters
-        .filter(f => f.type === FilterType.SOURCE)
-        .map(f => f.state as string[]);
-
-      const query: api.SearchQuery = {
-        query: this.state.query,
-        filters: filterVariables,
-        sources: sources[0],
-        relatedFile: relatedFiles[0],
-      };
-
-      this.setState({
-        searchQuery: query,
-        searchState: SearchState.SEARCH_REQUESTING,
-        filters: this.state.filters.map(f => ({ ...f, hidden: true })),
-      });
-
-      api
-        .search(query)
-        .then(response => {
-          if (response.status === api.RequestResult.SUCCESS && response.data) {
-            this.setState({
-              searchState: SearchState.SEARCH_SUCCESS,
-              searchResponse: {
-                results: aggregateResults(response.data.results),
-              },
-            });
-          } else {
-            this.setState({ searchState: SearchState.SEARCH_FAILED });
-          }
-        })
-        .catch(() => {
-          this.setState({ searchState: SearchState.SEARCH_FAILED });
-        });
+      // pushes the query into the URL, which will trigger fetching the search results
+      const q = encodeURIComponent(JSON.stringify(query));
+      let url = `${this.props.match.url}?q=${q}`;
+      if (this.state.session) {
+        const s = encodeURIComponent(JSON.stringify(this.state.session));
+        url += `&session=${s}`;
+      }
+      this.props.history.push(url);
     }
   }
 
-  createFilterComponent(
-    filterId: string,
-    filterType: FilterType,
-    relatedFile?: RelatedFile
-  ): { title: string; component: JSX.Element; icon: Icon.Icon } {
-    switch (filterType) {
-      case FilterType.TEMPORAL:
-        return {
-          title: 'Temporal',
-          icon: Icon.Calendar,
-          component: (
-            <DateFilter
-              key={`datefilter-${filterId}`}
-              onDateFilterChange={d => this.updateFilterState(filterId, d)}
-            />
-          ),
-        };
-      case FilterType.RELATED_FILE:
-        return {
-          title: 'Related File',
-          icon: Icon.File,
-          component: (
-            <RelatedFileFilter
-              key={`relatedfilefilter-${filterId}`}
-              onSelectedFileChange={f => this.updateFilterState(filterId, f)}
-              relatedFile={relatedFile}
-            />
-          ),
-        };
-      case FilterType.GEO_SPATIAL:
-        return {
-          title: 'Geo-Spatial',
-          icon: Icon.MapPin,
-          component: (
-            <GeoSpatialFilter
-              key={`geospatialfilter-${filterId}`}
-              onSelectCoordinates={c => this.updateFilterState(filterId, c)}
-            />
-          ),
-        };
-      case FilterType.SOURCE:
-        return {
-          title: 'Sources',
-          icon: Icon.Database,
-          component: (
-            <SourceFilter
-              key={`sourcefilter-${filterId}`}
-              sources={this.state.sources}
-              onSourcesChange={s => this.updateFilterState(filterId, s)}
-            />
-          ),
-        };
-      default:
-        throw new Error(`Received not supported filter type=[${filterType}]`);
-    }
+  fetchSearchResults(query: api.SearchQuery) {
+    this.setState({
+      searchQuery: query,
+      searchState: SearchState.SEARCH_REQUESTING,
+      filters: this.state.filters.map(f => ({ ...f, hidden: true })),
+    });
+
+    api
+      .search(query)
+      .then(response => {
+        if (response.status === api.RequestResult.SUCCESS && response.data) {
+          this.setState({
+            searchState: SearchState.SEARCH_SUCCESS,
+            searchResponse: {
+              results: aggregateResults(response.data.results),
+            },
+          });
+        } else {
+          this.setState({ searchState: SearchState.SEARCH_FAILED });
+        }
+      })
+      .catch(() => {
+        this.setState({ searchState: SearchState.SEARCH_FAILED });
+      });
   }
 
   toggleFilter(filterId: string) {
@@ -270,11 +313,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             return {
               ...relatedFileFilters[0],
               state: relatedFile,
-              ...this.createFilterComponent(
-                relatedFileFilters[0].id,
-                FilterType.RELATED_FILE,
-                relatedFile
-              ),
             };
           } else {
             return filter;
@@ -288,11 +326,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           type: FilterType.RELATED_FILE,
           hidden: false,
           state: relatedFile,
-          ...this.createFilterComponent(
-            filterId,
-            FilterType.RELATED_FILE,
-            relatedFile
-          ),
         };
         filters = [...prevFilters, filter];
       }
@@ -302,36 +335,109 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   renderFilters() {
     return this.state.filters
-      .filter(f => !f.hidden)
-      .map(f => (
-        <FilterContainer
-          key={`filter-container-${f.id}`}
-          title={f.title}
-          onClose={() => this.removeFilter(f.id)}
-        >
-          {f.component}
-        </FilterContainer>
-      ));
+      .filter(filter => !filter.hidden)
+      .map(filter => {
+        let title = undefined,
+          component = undefined;
+        switch (filter.type) {
+          case FilterType.TEMPORAL:
+            title = 'Temporal';
+            component = (
+              <DateFilter
+                onDateFilterChange={d => this.updateFilterState(filter.id, d)}
+                state={filter.state as TemporalVariable | undefined}
+              />
+            );
+            break;
+          case FilterType.RELATED_FILE:
+            title = 'Related File';
+            component = (
+              <RelatedFileFilter
+                onSelectedFileChange={f => this.updateFilterState(filter.id, f)}
+                state={filter.state as RelatedFile | undefined}
+              />
+            );
+            break;
+          case FilterType.GEO_SPATIAL:
+            title = 'Geo-Spatial';
+            component = (
+              <GeoSpatialFilter
+                state={filter.state as GeoSpatialVariable | undefined}
+                onSelectCoordinates={c => this.updateFilterState(filter.id, c)}
+              />
+            );
+            break;
+          case FilterType.SOURCE:
+            title = 'Sources';
+            component = (
+              <SourceFilter
+                sources={this.state.sources}
+                checkedSources={filter.state as string[] | undefined}
+                onSourcesChange={s => this.updateFilterState(filter.id, s)}
+              />
+            );
+            break;
+          default:
+            throw new Error(
+              `Received not supported filter type=[${filter.type}]`
+            );
+        }
+        return (
+          <FilterContainer
+            key={`filter-container-${filter.id}`}
+            title={title}
+            onClose={() => this.removeFilter(filter.id)}
+          >
+            {component}
+          </FilterContainer>
+        );
+      });
   }
 
   renderCompactFilters() {
     return (
       <ChipGroup>
-        {this.state.filters.map(f => (
-          <Chip
-            key={`filter-chip-${f.id}`}
-            icon={f.icon}
-            label={f.title}
-            onClose={() => this.removeFilter(f.id)}
-            onEdit={() => this.toggleFilter(f.id)}
-          />
-        ))}
+        {this.state.filters.map(filter => {
+          let icon = undefined,
+            title = undefined;
+          switch (filter.type) {
+            case FilterType.TEMPORAL:
+              title = 'Temporal';
+              icon = Icon.Calendar;
+              break;
+            case FilterType.RELATED_FILE:
+              title = 'Related File';
+              icon = Icon.File;
+              break;
+            case FilterType.GEO_SPATIAL:
+              title = 'Geo-Spatial';
+              icon = Icon.MapPin;
+              break;
+            case FilterType.SOURCE:
+              title = 'Sources';
+              icon = Icon.Database;
+              break;
+            default:
+              throw new Error(
+                `Received not supported filter type=[${filter.type}]`
+              );
+          }
+          return (
+            <Chip
+              key={`filter-chip-${filter.id}`}
+              icon={icon}
+              label={title}
+              onClose={() => this.removeFilter(filter.id)}
+              onEdit={() => this.toggleFilter(filter.id)}
+            />
+          );
+        })}
       </ChipGroup>
     );
   }
 
   render() {
-    const { searchQuery, searchState, searchResponse } = this.state;
+    const { searchQuery, searchState, searchResponse, session } = this.state;
 
     return (
       <>
@@ -342,16 +448,18 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 <div className="d-flex flex-row mt-2 mb-1">
                   <div>
                     <Link
-                      to="/"
+                      to={
+                        session
+                          ? `/?session=${JSON.stringify(this.state.session)}`
+                          : '/'
+                      }
                       style={{ textDecoration: 'none' }}
-                      onClick={() => this.resetQuery()}
                     >
                       <HorizontalLogo />
                     </Link>
                   </div>
                   <div className="ml-4">
                     <SearchBar
-                      key={'search-bar'}
                       value={this.state.query}
                       active={this.validQuery()}
                       onQueryChange={q => this.setState({ query: q })}
@@ -376,6 +484,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                   searchQuery={searchQuery}
                   searchState={searchState}
                   searchResponse={searchResponse}
+                  session={session}
                   onSearchRelated={this.onSearchRelated.bind(this)}
                 />
               </div>
@@ -385,7 +494,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           <div>
             <VerticalLogo />
             <SearchBar
-              key={'search-bar'}
               value={this.state.query}
               active={this.validQuery()}
               onQueryChange={q => this.setState({ query: q })}

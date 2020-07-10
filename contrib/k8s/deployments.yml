@@ -232,6 +232,21 @@ spec:
             configMapKeyRef:
               name: config
               key: nominatim_url
+        - name: API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: api_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: frontend_url
+        - name: CUSTOM_FIELDS
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: custom_fields
         ports:
         - containerPort: 8002
         volumeMounts:

@@ -10,6 +10,7 @@ import logging
 import json
 import os
 import prometheus_client
+import re
 import redis
 import shutil
 import tempfile
@@ -19,13 +20,15 @@ from tornado.routing import URLSpec
 import tornado.httputil
 import tornado.web
 from tornado.web import HTTPError, RequestHandler
+from urllib.parse import urlencode
 import uuid
 import zipfile
 
 from datamart_augmentation.augmentation import AugmentationError, augment
-from datamart_core.common import setup_logging, hash_json, log_future, json2msg
-from datamart_core.fscache import cache_get_or_set
-from datamart_core.materialize import get_dataset
+from datamart_core.common import setup_logging, hash_json, contextdecorator, \
+    log_future, json2msg
+from datamart_core.fscache import cache_get, cache_get_or_set
+from datamart_core.materialize import get_dataset, make_zip_recursive
 from datamart_core.prom import PromMeasureRequest
 from datamart_geo import GeoData
 from datamart_materialize import get_writer, make_writer
@@ -138,26 +141,27 @@ class BaseHandler(RequestHandler):
         self.set_status(status)
         return self.send_json({'error': message})
 
-    async def send_file(self, fp, name=None, type_=None):
-        if not type_:
+    async def send_file(self, path, name):
+        if zipfile.is_zipfile(path):
+            type_ = 'application/zip'
+            name += '.zip'
+        else:
             type_ = 'application/octet-stream'
         self.set_header('Content-Type', type_)
         self.set_header('X-Content-Type-Options', 'nosniff')
-        if name:
-            self.set_header('Content-Disposition',
-                            'attachment; filename="%s"' % name)
-        else:
-            self.set_header('Content-Disposition', 'attachment')
+        self.set_header('Content-Disposition',
+                        'attachment; filename="%s"' % name)
         logger.info("Sending file...")
-        BUFSIZE = 40960
-        buf = fp.read(BUFSIZE)
-        while buf:
-            self.write(buf)
-            if len(buf) != BUFSIZE:
-                break
+        with open(path, 'rb') as fp:
+            BUFSIZE = 40960
             buf = fp.read(BUFSIZE)
-            await self.flush()
-        return await self.finish()
+            while buf:
+                self.write(buf)
+                if len(buf) != BUFSIZE:
+                    break
+                buf = fp.read(BUFSIZE)
+                await self.flush()
+            return await self.finish()
 
     def prepare(self):
         super(BaseHandler, self).prepare()
@@ -170,10 +174,21 @@ class BaseHandler(RequestHandler):
         self.set_status(204)
         return self.finish()
 
+    def validate_format(self, format, format_options):
+        writer_cls = get_writer(format)
+        format_ext = None
+        if hasattr(writer_cls, 'parse_options'):
+            format_options = writer_cls.parse_options(format_options)
+        elif format_options:
+            self.send_error_json(400, "Invalid output options")
+            raise HTTPError(400)
+        if hasattr(writer_cls, 'extension'):
+            format_ext = writer_cls.extension
+        return format, format_options, format_ext
+
     def read_format(self, default_format='csv'):
         format = self.get_query_argument('format', default_format)
         format_options = {}
-        format_ext = None
         for n, v in self.request.query_arguments.items():
             if n.startswith('format_'):
                 if len(v) != 1:
@@ -184,15 +199,14 @@ class BaseHandler(RequestHandler):
                     raise HTTPError(400)
                 format_options[n[7:]] = self.decode_argument(v[0])
 
-        writer_cls = get_writer(format)
-        if hasattr(writer_cls, 'parse_options'):
-            format_options = writer_cls.parse_options(format_options)
-        elif format_options:
-            self.send_error_json(400, "Invalid output options")
-            raise HTTPError(400)
-        if hasattr(writer_cls, 'extension'):
-            format_ext = writer_cls.extension
-        return format, format_options, format_ext
+        return self.validate_format(format, format_options)
+
+    @staticmethod
+    def serialize_format(format, format_options):
+        dct = {'format': format}
+        for k, v in format_options.items():
+            dct['format_' + k] = v
+        return urlencode(dct)
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
@@ -232,6 +246,28 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
         elif data is not None:
             data = data.encode('utf-8')
 
+        if len(data) == 40:
+            try:
+                data_hash = data.decode('ascii')
+            except UnicodeDecodeError:
+                pass
+            else:
+                if _re_token.match(data_hash):
+                    data_profile = self.application.redis.get(
+                        'profile:' + data_hash
+                    )
+                    if data_profile:
+                        return self.send_json(dict(
+                            json.loads(data_profile),
+                            version=os.environ['DATAMART_VERSION'],
+                            token=data_hash,
+                        ))
+                    else:
+                        return self.send_error_json(
+                            404,
+                            "Data profile token expired",
+                        )
+
         if data is None:
             return self.send_error_json(
                 400,
@@ -250,6 +286,9 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
             version=os.environ['DATAMART_VERSION'],
             token=data_hash,
         ))
+
+
+_re_token = re.compile(r'^[0-9a-f]{40}$')
 
 
 class Search(BaseHandler, GracefulHandler, ProfilePostedData):
@@ -289,7 +328,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 data_profile = data_profile.decode('utf-8')
             if data_profile is not None:
                 # Data profile can optionally be just the hash
-                if len(data_profile) == 40 and '{' not in data_profile:
+                if len(data_profile) == 40 and _re_token.match(data_profile):
                     data_profile = self.application.redis.get(
                         'profile:' + data_profile,
                     )
@@ -421,51 +460,20 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         return self.send_json(results)
 
 
-class RecursiveZipWriter(object):
-    def __init__(self, write, flush):
-        self._write = write
-        self._flush = flush
-        self._zip = zipfile.ZipFile(self, 'w')
-
-    async def write_recursive(self, src, dst=''):
-        if os.path.isdir(src):
-            for name in os.listdir(src):
-                await self.write_recursive(
-                    os.path.join(src, name),
-                    dst + '/' + name if dst else name,
-                )
-        else:
-            await self.write_file(src, dst)
-
-    def write(self, data):
-        self._write(data)
-        return len(data)
-
-    def flush(self):
-        return
-
-    async def write_file(self, src, dst):
-        CHUNKSIZE = 8192
-        with open(src, 'rb') as s_fp, self._zip.open(dst, 'w') as d_fp:
-            while True:
-                chunk = s_fp.read(CHUNKSIZE)
-                d_fp.write(chunk)
-                await self._flush()
-                if len(chunk) != CHUNKSIZE:
-                    return
-
-    def close(self):
-        self._zip.close()
-
-
 class BaseDownload(BaseHandler):
-    async def send_dataset(self, dataset_id, metadata,
-                           format='csv', format_options=None, format_ext=None):
+    async def send_dataset(self, dataset_id, metadata):
+        format, format_options, format_ext = self.read_format()
+
         materialize = metadata.get('materialize', {})
 
+        session_id = self.get_query_argument('session_id', None)
+
         # If there's a direct download URL
-        if ('direct_url' in materialize and
-                format == 'csv' and not materialize.get('convert')):
+        if (
+            'direct_url' in materialize
+            and not session_id
+            and format == 'csv' and not materialize.get('convert')
+        ):
             if format_options:
                 return await self.send_error_json(
                     400,
@@ -474,11 +482,25 @@ class BaseDownload(BaseHandler):
             # Redirect the client to it
             logger.info("Sending redirect to direct_url")
             return self.redirect(materialize['direct_url'])
-        else:
-            # We want to catch exceptions from get_dataset(), without catching
-            # exceptions from inside the with block
-            # https://docs.python.org/3/library/contextlib.html#catching-exceptions-from-enter-methods
-            stack = contextlib.ExitStack()
+
+        if session_id:
+            self.application.redis.rpush(
+                'session:' + session_id,
+                ('download:' + dataset_id
+                 + '?' + self.serialize_format(format, format_options)),
+            )
+            ret = self.send_json({'success': "attached to session"})
+
+            # Kick off materialization now
+            with get_dataset(
+                metadata, dataset_id,
+                format=format, format_options=format_options,
+            ):
+                pass
+
+            return ret
+
+        with contextlib.ExitStack() as stack:
             try:
                 dataset_path = stack.enter_context(
                     get_dataset(
@@ -489,28 +511,17 @@ class BaseDownload(BaseHandler):
             except Exception:
                 await self.send_error_json(500, "Materializer reports failure")
                 raise
-            with stack:
-                type_ = None
-                if zipfile.is_zipfile(dataset_path):
-                    name = dataset_id + '.zip'
-                    type_ = 'application/zip'
-                    logger.info("Sending ZIP...")
-                else:
-                    name = dataset_id + (format_ext or '')
-                    logger.info("Sending file...")
-                with open(dataset_path, 'rb') as fp:
-                    return await self.send_file(
-                        fp,
-                        name=name,
-                        type_=type_,
-                    )
+
+            logger.info("Sending file...")
+            return await self.send_file(
+                dataset_path,
+                dataset_id + (format_ext or ''),
+            )
 
 
 class DownloadId(BaseDownload, GracefulHandler):
     @PROM_DOWNLOAD.sync()
     def get(self, dataset_id):
-        format, format_options, format_ext = self.read_format()
-
         # Get materialization data from Elasticsearch
         try:
             metadata = self.application.elasticsearch.get(
@@ -519,10 +530,7 @@ class DownloadId(BaseDownload, GracefulHandler):
         except elasticsearch.NotFoundError:
             return self.send_error_json(404, "No such dataset")
 
-        return self.send_dataset(
-            dataset_id, metadata,
-            format, format_options, format_ext,
-        )
+        return self.send_dataset(dataset_id, metadata)
 
 
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
@@ -532,7 +540,6 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
 
         task = None
         data = None
-        format, format_options, format_ext = self.read_format()
         if type_.startswith('application/json'):
             task = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -563,15 +570,27 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         logger.info("Got POST download %s data",
                     "without" if data is None else "with")
 
-        # materialize augmentation data
-        metadata = task['metadata']
+        if 'metadata' in task:
+            metadata = task['metadata']
+        elif 'id' in task:
+            # Get materialization data from Elasticsearch
+            try:
+                metadata = self.application.elasticsearch.get(
+                    'datamart', task['id']
+                )['_source']
+            except elasticsearch.NotFoundError:
+                return await self.send_error_json(404, "No such dataset")
+        else:
+            return await self.send_error_json(
+                400,
+                "No metadata or ID specified",
+            )
 
         if not data:
-            return await self.send_dataset(
-                task['id'], metadata,
-                format, format_options, format_ext,
-            )
+            return await self.send_dataset(task['id'], metadata)
         else:
+            format, format_options, format_ext = self.read_format()
+
             # data
             try:
                 data_profile, _ = self.handle_data_parameter(data)
@@ -601,7 +620,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             task = search_results[0]
 
             with tempfile.TemporaryDirectory(prefix='datamart_aug_') as tmp:
-                new_path = os.path.join(tmp.name, 'dataset')
+                new_path = os.path.join(tmp, 'dataset')
                 with get_dataset(metadata, task['id'], format='csv') as newdata:
                     # perform augmentation
                     logger.info("Performing half-augmentation with supplied data")
@@ -615,24 +634,19 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                         return_only_datamart_data=True
                     )
 
-            if os.path.isdir(new_path):
-                # send a zip file
-                self.set_header('Content-Type', 'application/zip')
-                self.set_header(
-                    'Content-Disposition',
-                    'attachment; filename="augmentation.zip"')
-                logger.info("Sending ZIP...")
-                writer = RecursiveZipWriter(self.write, self.flush)
-                await writer.write_recursive(new_path)
-                writer.close()
-                shutil.rmtree(os.path.abspath(os.path.join(new_path, '..')))
-                return await self.finish()
-            else:
-                with open(new_path, 'rb') as fp:
-                    return await self.send_file(
-                        fp,
-                        name='augmentation' + (format_ext or ''),
-                    )
+                    # ZIP result if it's a directory
+                    if os.path.isdir(new_path):
+                        logger.info("Result is a directory, creating ZIP file")
+                        zip_name = new_path + '.zip'
+                        with zipfile.ZipFile(zip_name, 'w') as zip_:
+                            make_zip_recursive(zip_, new_path)
+                        shutil.rmtree(new_path)
+                        os.rename(zip_name, new_path)
+
+            return await self.send_file(
+                new_path,
+                name='augmentation' + (format_ext or ''),
+            )
 
 
 class Metadata(BaseHandler, GracefulHandler):
@@ -670,8 +684,11 @@ class Metadata(BaseHandler, GracefulHandler):
 
 class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_AUGMENT.sync()
-    async def post(self):
+    @contextdecorator(contextlib.ExitStack, 'stack')
+    async def post(self, stack):
         format, format_options, format_ext = self.read_format('d3m')
+
+        session_id = self.get_query_argument('session_id', None)
 
         type_ = self.request.headers.get('Content-type', '')
         if not type_.startswith('multipart/form-data'):
@@ -722,6 +739,25 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             if data_profile is None:
                 return await self.send_error_json(400, "No such dataset")
         elif data is not None:
+            if len(data) == 40:
+                try:
+                    data_token = data.decode('ascii')
+                except UnicodeDecodeError:
+                    pass
+                else:
+                    if _re_token.match(data_token):
+                        data = stack.enter_context(cache_get(
+                            '/cache/user_data',
+                            data_token,
+                        ))
+                        if data is None:
+                            return self.send_error_json(
+                                404,
+                                "Data token expired",
+                            )
+                        else:
+                            with open(data, 'rb') as fp:
+                                data = fp.read()
             try:
                 data_profile, data_hash = self.handle_data_parameter(data)
             except ClientError as e:
@@ -768,6 +804,14 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             format_options=format_options,
         )
 
+        ret = None
+        if session_id:
+            self.application.redis.rpush(
+                'session:' + session_id,
+                'aug:' + key,
+            )
+            ret = self.send_json({'success': "attached to session"})
+
         def create_aug(cache_temp):
             with contextlib.ExitStack() as stack:
                 # Get augmentation data
@@ -793,33 +837,70 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                     columns=columns,
                 )
 
+                # ZIP result if it's a directory
+                if os.path.isdir(cache_temp):
+                    logger.info("Result is a directory, creating ZIP file")
+                    zip_name = cache_temp + '.zip'
+                    with zipfile.ZipFile(zip_name, 'w') as zip_:
+                        make_zip_recursive(zip_, cache_temp)
+                    shutil.rmtree(cache_temp)
+                    os.rename(zip_name, cache_temp)
+
         try:
             with cache_get_or_set('/cache/aug', key, create_aug) as path:
-                if os.path.isdir(path):
-                    # send a zip file
-                    self.set_header('Content-Type', 'application/zip')
-                    self.set_header(
-                        'Content-Disposition',
-                        'attachment; filename="augmentation.zip"')
-                    logger.info("Sending ZIP...")
-                    writer = RecursiveZipWriter(self.write, self.flush)
-                    await writer.write_recursive(path)
-                    writer.close()
-                    return await self.finish()
+                if session_id:
+                    # We already replied
+                    return await ret
                 else:
                     # send the file
-                    with open(path, 'rb') as fp:
-                        return await self.send_file(
-                            fp,
-                            name='augmentation' + (format_ext or ''),
-                        )
+                    return await self.send_file(
+                        path,
+                        name='augmentation' + (format_ext or ''),
+                    )
         except AugmentationError as e:
             return await self.send_error_json(400, str(e))
+
+
+class AugmentResult(BaseHandler):
+    async def get(self, key):
+        with cache_get('/cache/aug', key) as path:
+            if path:
+                return await self.send_file(
+                    path,
+                    name='augmentation',
+                )
+            else:
+                return self.send_error_json(404, "Data not in cache")
 
 
 class Upload(BaseHandler):
     @PROM_UPLOAD.async_()
     async def post(self):
+        metadata = dict(
+            name=self.get_body_argument('name', None),
+            source='upload',
+            materialize=dict(identifier='datamart.upload',
+                             date=datetime.utcnow().isoformat() + 'Z'),
+        )
+        description = self.get_body_argument('description', None)
+        if description:
+            metadata['description'] = description
+        for field, opts in self.application.custom_fields.items():
+            value = self.get_body_argument(field, None)
+            if value:
+                if 'type' in opts:
+                    type_ = opts['type']
+                    if type_ == 'integer':
+                        value = int(value)
+                    elif type_ == 'float':
+                        value = float(value)
+                metadata[field] = value
+            elif opts.get('required', False):
+                return await self.send_error_json(
+                    400,
+                    "Missing field %s" % field,
+                )
+
         if 'file' in self.request.files:
             file = self.request.files['file'][0]
             metadata = dict(
@@ -836,6 +917,7 @@ class Upload(BaseHandler):
             if updatedColumns:
                 metadata['updated_columns'] = json.loads(updatedColumns)
 
+            metadata['filename'] = file.filename
             dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
             # Write file to shared storage
@@ -858,17 +940,11 @@ class Upload(BaseHandler):
                     ),
                 )
 
-            # Metadata with 'direct_url' in materialization info
-            metadata = dict(
-                name=self.get_body_argument('name', None),
-                source='upload',
-                materialize=dict(identifier='datamart.url',
-                                 direct_url=address,
-                                 date=datetime.utcnow().isoformat() + 'Z'),
-            )
-            description = self.get_body_argument('description', None)
-            if description:
-                metadata['description'] = description
+            # Set identifier
+            metadata['materialize']['identifier'] = 'datamart.url'
+
+            # Set 'direct_url'
+            metadata['materialize']['direct_url'] = address
             dataset_id = 'datamart.url.%s' % uuid.uuid4().hex
         else:
             return await self.send_error_json(400, "No file")
@@ -902,11 +978,97 @@ class Upload(BaseHandler):
         return await self.send_json({'id': dataset_id})
 
 
+class SessionNew(BaseHandler):
+    def post(self):
+        # Read input
+        session = self.get_json()
+        data_token = session.pop('data_token', None)
+        if data_token is not None and (
+            not isinstance(data_token, str)
+            or not _re_token.match(data_token)
+        ):
+            return self.send_error_json(
+                400,
+                "Invalid data_token",
+            )
+        format, format_options, _ = self.validate_format(
+            session.pop('format', 'csv'),
+            session.pop('format_options', {}),
+        )
+        system_name = session.pop('system_name', 'TA3')
+        if session:
+            return self.send_error_json(
+                400,
+                "Unrecognized key %r" % next(iter(session)),
+            )
+
+        # Build an ID for the session
+        session_id = str(uuid.uuid4())
+
+        # Build our session object
+        session = {
+            'session_id': session_id,
+            'format': format,
+            'format_options': format_options,
+            'system_name': system_name,
+        }
+        if data_token:
+            session['data_token'] = data_token
+
+        # Build a link for the user's browser
+        session_json = json.dumps(
+            session,
+            # Compact
+            sort_keys=True, indent=None, separators=(',', ':'),
+        )
+        link_url = (
+            self.application.frontend_url
+            + '/?'
+            + urlencode({'session': session_json})
+        )
+
+        return self.send_json({
+            # Send the session ID to TA3, used to retrieve results
+            'session_id': session_id,
+            # Send the JSON info to the frontend
+            'link_url': link_url,
+        })
+
+
+class SessionGet(BaseHandler):
+    def get(self, session_id):
+        # Get session from Redis
+        datasets = self.application.redis.lrange(
+            'session:' + session_id,
+            0, -1,
+        )
+
+        api_url = self.application.api_url
+        results = []
+        for record in datasets:
+            record = record.decode('utf-8')
+            if record.startswith('download:'):
+                record = record[9:]
+                results.append({
+                    'url': api_url + '/download/' + record,
+                })
+            elif record.startswith('aug:'):
+                record = record[4:]
+                results.append({
+                    'url': api_url + '/augment/' + record,
+                })
+            else:
+                logger.error("Error: invalid entry in session: %r", record)
+
+        return self.send_json({'results': results})
+
+
 class Statistics(BaseHandler):
     def get(self):
         return self.send_json({
             'recent_discoveries': self.application.recent_discoveries,
             'sources_counts': self.application.sources_counts,
+            'custom_fields': self.application.custom_fields,
         })
 
 
@@ -933,12 +1095,37 @@ class Application(GracefulApplication):
 
         self.is_closing = False
 
+        self.frontend_url = os.environ['FRONTEND_URL']
+        self.api_url = os.environ['API_URL']
         self.elasticsearch = es
         self.redis = redis_client
         self.lazo_client = lazo
         self.nominatim = os.environ['NOMINATIM_URL']
         self.geo_data = GeoData.from_local_cache()
         self.channel = None
+
+        custom_fields = os.environ.get('CUSTOM_FIELDS', None)
+        if custom_fields:
+            custom_fields = json.loads(custom_fields)
+            if custom_fields:
+                for field, opts in custom_fields.items():
+                    opts.setdefault('label', field)
+                    opts.setdefault('required', False)
+                    opts.setdefault('type', 'text')
+                    if (
+                        not opts.keys() <= {'label', 'type', 'required'}
+                        or not isinstance(opts['label'], str)
+                        or not isinstance(opts['required'], bool)
+                        or not isinstance(opts['type'], str)
+                        or opts['type'] not in ('integer', 'text', 'keyword')
+                    ):
+                        raise ValueError("Invalid custom field %s" % field)
+
+                self.custom_fields = custom_fields
+                logger.info(
+                    "Custom fields: %s",
+                    ", ".join(self.custom_fields.keys()),
+                )
 
         self.geo_data.load_areas([0, 1, 2], bounds=True)
 
@@ -1013,7 +1200,10 @@ def make_app(debug=False):
             URLSpec('/download', Download, name='download'),
             URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
             URLSpec('/augment', Augment, name='augment'),
+            URLSpec('/augment/([^/]+)', AugmentResult, name='augment_result'),
             URLSpec('/upload', Upload, name='upload'),
+            URLSpec('/session/new', SessionNew, name='session_new'),
+            URLSpec('/session/([^/]+)', SessionGet, name='session_get'),
             URLSpec('/statistics', Statistics, name='statistics'),
             URLSpec('/version', Version, name='version'),
             URLSpec('/health', Health, name='health'),
@@ -1021,7 +1211,7 @@ def make_app(debug=False):
         debug=debug,
         es=es,
         redis_client=redis_client,
-        lazo=lazo_client
+        lazo=lazo_client,
     )
 
 

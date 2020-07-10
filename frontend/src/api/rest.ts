@@ -3,8 +3,10 @@ import {
   SearchResponse,
   SearchResult,
   FilterVariables,
+  Metadata,
   QuerySpec,
   RelatedFile,
+  Session,
 } from './types';
 import { API_URL } from '../config';
 
@@ -26,6 +28,12 @@ export const DEFAULT_SOURCES = [
 export enum RequestResult {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
+}
+
+export enum RequestStatus {
+  SUCCESS = 'SUCCESS',
+  ERROR = 'ERROR',
+  IN_PROGRESS = 'IN_PROGRESS',
 }
 
 export interface Response<T> {
@@ -53,7 +61,7 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   formData.append('query', JSON.stringify(spec));
   if (q.relatedFile) {
     if (q.relatedFile.kind === 'localFile') {
-      formData.append('data', q.relatedFile.file);
+      formData.append('data_profile', q.relatedFile.token);
     } else if (q.relatedFile.kind === 'searchResult') {
       formData.append('data_id', q.relatedFile.datasetId);
     } else {
@@ -81,14 +89,28 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
     });
 }
 
+export function downloadToSession(datasetId: string, session: Session) {
+  let url = `/download?session_id=${session.session_id}`;
+  if (session.format) {
+    url += `&format=${encodeURIComponent(session.format)}`;
+  }
+  if (session.format_options) {
+    Object.entries(session.format_options).forEach(([key, value]) => {
+      url += `&format_${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    });
+  }
+  return api.post(url, { id: datasetId }).then(() => {});
+}
+
 export function augment(
   data: RelatedFile,
-  task: SearchResult
+  task: SearchResult,
+  session?: Session
 ): Promise<Response<Blob>> {
   const formData = new FormData();
   formData.append('task', JSON.stringify(task));
   if (data.kind === 'localFile') {
-    formData.append('data', data.file);
+    formData.append('data', data.token);
   } else if (data.kind === 'searchResult') {
     formData.append('data_id', data.datasetId);
   } else {
@@ -101,8 +123,22 @@ export function augment(
       'content-type': 'multipart/form-data',
     },
   };
+  let url = '/augment';
+  if (session) {
+    url += `?session_id=${session.session_id}`;
+    if (session.format) {
+      url += `&format=${encodeURIComponent(session.format)}`;
+    }
+    if (session.format_options) {
+      Object.entries(session.format_options).forEach(([key, value]) => {
+        url += `&format_${encodeURIComponent(key)}=${encodeURIComponent(
+          value
+        )}`;
+      });
+    }
+  }
   return api
-    .post('/augment', formData, config)
+    .post(url, formData, config)
     .then((response: AxiosResponse) => {
       if (response.status !== 200) {
         throw new Error('Status ' + response.status);
@@ -119,12 +155,21 @@ export function augment(
     });
 }
 
+export interface CustomFields {
+  [id: string]: {
+    label: string;
+    required: boolean;
+    type: string;
+  };
+}
+
 export interface UploadData {
   name: string;
   description?: string;
   address?: string;
   file?: File;
   updatedColumns?: string;
+  customFields?: Map<string, string>;
 }
 
 export function upload(data: UploadData) {
@@ -142,6 +187,13 @@ export function upload(data: UploadData) {
   }
   if (data.updatedColumns) {
     formData.append('updatedColumns', data.updatedColumns);
+  }
+
+  // Custom fields
+  if (data.customFields) {
+    data.customFields.forEach((value, field) => {
+      formData.append(field, value);
+    });
   }
 
   const config: AxiosRequestConfig = {
@@ -171,6 +223,27 @@ export function initialProfile(data: UploadData) {
   return api.post('/profile', formData, config);
 }
 
+export interface ProfileResult extends Metadata {
+  token: string;
+}
+
+export async function profile(file: File | string): Promise<ProfileResult> {
+  const formData = new FormData();
+  formData.append('data', file);
+  const config = {
+    headers: {
+      'content-type': 'multipart/form-data',
+    },
+  };
+  const response = await api.post('/profile', formData, config);
+  return response.data;
+}
+
+export async function metadata(datasetId: string): Promise<Metadata> {
+  const response = await api.get('/metadata/' + datasetId);
+  return response.data.metadata;
+}
+
 export interface RecentDiscovery {
   id: string;
   discoverer: string;
@@ -186,6 +259,7 @@ export interface Status {
   sources_counts: {
     [source: string]: number;
   };
+  custom_fields?: CustomFields;
 }
 
 export async function status(): Promise<Status> {
@@ -193,6 +267,18 @@ export async function status(): Promise<Status> {
   return response.data;
 }
 
-export let sources: Promise<string[]> = status().then(response =>
-  Object.keys(response.sources_counts)
-);
+let statusPromise: Promise<Status> | undefined = undefined;
+
+export function sources(): Promise<string[]> {
+  if (!statusPromise) {
+    statusPromise = status();
+  }
+  return statusPromise.then(response => Object.keys(response.sources_counts));
+}
+
+export function customFields(): Promise<CustomFields> {
+  if (!statusPromise) {
+    statusPromise = status();
+  }
+  return statusPromise.then(response => response.custom_fields || {});
+}

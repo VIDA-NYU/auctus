@@ -50,7 +50,7 @@ spec:
     spec:
       initContainers:
       - name: download-data
-        image: mediagis/nominatim
+        image: remram/nominatim:3.3
         command:
         - "sh"
         - "-c"
@@ -63,8 +63,8 @@ spec:
           name: data
       containers:
       - name: nominatim
-        image: mediagis/nominatim
-        args: ["sh", "-c", "(cd /app/src/build && echo \"--- settings/settings.php\n+++ settings/settings.php\n@@ -106 +106 @@\n-@define('CONST_Search_BatchMode', false);\n+@define('CONST_Search_BatchMode', true);\n\" | patch -p0) && bash /app/start.sh"]
+        image: remram/nominatim:3.3
+        args: ["bash", "/app/start.sh"]
         ports:
         - containerPort: 5432
         - containerPort: 8080

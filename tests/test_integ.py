@@ -8,6 +8,7 @@ import re
 import requests
 import tempfile
 import time
+from urllib.parse import urlparse, urlunparse, parse_qs
 import yaml
 import zipfile
 
@@ -215,7 +216,11 @@ class TestProfiler(DataTestCase):
                 'coordinator', 'elasticsearch.yml') as stream:
             expected = yaml.safe_load(stream)
         expected.pop('_refs', None)
+
+        # Remove 'lazo' index
         actual.pop('lazo', None)
+
+        # Remove variable sections
         for index in expected.values():
             index.setdefault('aliases', {})
             hide_default_analyzers(index)
@@ -228,15 +233,29 @@ class TestProfiler(DataTestCase):
             settings.pop('provided_name', None)
             settings.pop('uuid', None)
             settings.pop('version', None)
-        self.assertEqual(actual, expected)
+
+        # Add custom fields
+        for idx, prefix in [
+            ('datamart', ''),
+            ('datamart_columns', 'dataset_'),
+            ('datamart_spatial_coverage', 'dataset_'),
+        ]:
+            props = expected[idx]['mappings']['properties']
+            props[prefix + 'specialId'] = {'type': 'integer'}
+            props[prefix + 'dept'] = {'type': 'keyword'}
+
+        self.assertJson(actual, expected)
 
 
 class TestProfileQuery(DatamartTest):
     def check_result(self, response, metadata, token):
         # Some fields like 'name', 'description' won't be there
         metadata = {k: v for k, v in metadata.items()
-                    if k not in {'id', 'name', 'description', 'source',
-                                 'date', 'materialize', 'sample'}}
+                    if k not in {'id', 'name', 'description',
+                                 'source', 'date'}}
+        metadata['materialize'] = {k: v
+                                   for k, v in metadata['materialize'].items()
+                                   if k == 'convert'}
         # Plots are not computed, remove them too
         metadata['columns'] = [
             {k: v for k, v in col.items() if k != 'plot'}
@@ -374,7 +393,7 @@ class TestSearch(DatamartTest):
         # All datasets from given source
         response = self.datamart_post(
             '/search',
-            json={'source': ['fernando']},
+            json={'source': 'fernando'},
             schema=result_list_schema,
         )
         results = response.json()['results']
@@ -382,6 +401,36 @@ class TestSearch(DatamartTest):
             {r['id'] for r in results},
             {'datamart.test.agg', 'datamart.test.lazo'},
         )
+
+    def test_search_temporal_resolution(self):
+        """Search restricted on temporal resolution."""
+        response = self.datamart_post(
+            '/search',
+            json={
+                'keywords': 'daily',
+                'variables': [{
+                    'type': 'temporal_variable',
+                    'granularity': 'hour',
+                }],
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertEqual({r['id'] for r in results}, set())
+
+        response = self.datamart_post(
+            '/search',
+            json={
+                'keywords': 'daily',
+                'variables': [{
+                    'type': 'temporal_variable',
+                    'granularity': 'day',
+                }],
+            },
+            schema=result_list_schema,
+        )
+        results = response.json()['results']
+        self.assertEqual({r['id'] for r in results}, {'datamart.test.daily'})
 
 
 class TestDataSearch(DatamartTest):
@@ -834,13 +883,13 @@ class TestDownload(DatamartTest):
         response = self.datamart_post(
             '/download', allow_redirects=False,
             params={'format': 'd3m', 'format_version': '3.2.0'},
-            files={'task': json.dumps(
-                {
+            files={
+                'task': json.dumps({
                     'id': 'datamart.test.basic',
                     'score': 1.0,
                     'metadata': basic_meta
-                }
-            ).encode('utf-8')},
+                }).encode('utf-8'),
+            },
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
@@ -851,6 +900,18 @@ class TestDownload(DatamartTest):
             json.load(zip_.open('datasetDoc.json')),
             basic_metadata_d3m('3.2.0'),
         )
+
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
+            files={
+                'task': json.dumps({
+                    'id': 'datamart.test.basic',
+                }).encode('utf-8'),
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers['Location'],
+                         'http://test-discoverer:7000/basic.csv')
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
@@ -875,13 +936,13 @@ class TestDownload(DatamartTest):
         response = self.datamart_post(
             '/download', allow_redirects=False,
             # format defaults to csv
-            files={'task': json.dumps(
-                {
+            files={
+                'task': json.dumps({
                     'id': 'datamart.test.geo',
                     'score': 1.0,
                     'metadata': geo_meta
-                }
-            ).encode('utf-8')},
+                }).encode('utf-8'),
+            },
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
@@ -911,8 +972,8 @@ class TestDownload(DatamartTest):
         """Post invalid materialization information."""
         response = self.datamart_post(
             '/download', allow_redirects=False,
-            files={'task': json.dumps(
-                {
+            files={
+                'task': json.dumps({
                     'id': 'datamart.nonexistent',
                     'score': 0.0,
                     'metadata': {
@@ -921,8 +982,8 @@ class TestDownload(DatamartTest):
                             'identifier': 'datamart.nonexistent',
                         }
                     }
-                }
-            ).encode('utf-8')},
+                }).encode('utf-8'),
+            },
             check_status=False,
         )
         self.assertEqual(response.status_code, 500)
@@ -1023,6 +1084,100 @@ class TestDownload(DatamartTest):
 
 
 class TestAugment(DatamartTest):
+    def check_basic_join(self, response):
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
+        self.assertEqual(
+            set(zip_.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip_.open('tables/learningData.csv') as table:
+            self.assertCsvEqualNoOrder(
+                table.read().decode('utf-8'),
+                'number,desk_faces,name,country,what',
+                [
+                    '5,west,james,canada,False',
+                    '4,south,john,usa,False',
+                    '7,west,michael,usa,True',
+                    '6,east,robert,usa,False',
+                    '11,,christopher,canada,True',
+                ],
+            )
+        with zip_.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            self.assertJson(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '167 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '4.0.0',
+                        'datasetVersion': '1.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'number',
+                                    'colType': 'integer',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'desk_faces',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 2,
+                                    'colName': 'name',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
+                                    'colName': 'country',
+                                    'colType': 'categorical',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 4,
+                                    'colName': 'what',
+                                    'colType': 'boolean',
+                                    'role': ['attribute'],
+                                },
+                            ],
+                            'isCollection': False,
+                            'resFormat': {'text/csv': ["csv"]},
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'join',
+                                'nb_rows_after': 5,
+                                'nb_rows_before': 5,
+                                'new_columns': ['name', 'country', 'what'],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
+            )
+
     def test_basic_join(self):
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
@@ -1053,98 +1208,52 @@ class TestAugment(DatamartTest):
                     'data': basic_aug,
                 },
             )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
-        self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
+        self.check_basic_join(response)
+
+    def test_basic_join_data_token(self):
+        # Build task dictionary
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
         )
-        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
-        zip_.testzip()
-        self.assertEqual(
-            set(zip_.namelist()),
-            {'datasetDoc.json', 'tables/learningData.csv'},
-        )
-        with zip_.open('tables/learningData.csv') as table:
-            self.assertCsvEqualNoOrder(
-                table.read().decode('utf-8'),
-                'number,desk_faces,name,country,what',
-                [
-                    '5,west,james,canada,False',
-                    '4,south,john,usa,False',
-                    '7,west,michael,usa,True',
-                    '6,east,robert,usa,False',
-                    '11,,christopher,canada,True',
-                ],
-            )
-        with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
-            self.assertJson(
-                meta,
-                {
-                    'about': {
-                        'approximateSize': '167 B',
-                        'datasetID': lambda s: len(s) == 32,
-                        'datasetName': lambda s: len(s) == 32,
-                        'datasetSchemaVersion': '4.0.0',
-                        'datasetVersion': '1.0',
-                        'license': 'unknown',
-                        'redacted': False,
-                    },
-                    'dataResources': [
-                        {
-                            'columns': [
-                                {
-                                    'colIndex': 0,
-                                    'colName': 'number',
-                                    'colType': 'integer',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 1,
-                                    'colName': 'desk_faces',
-                                    'colType': 'string',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 2,
-                                    'colName': 'name',
-                                    'colType': 'string',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 3,
-                                    'colName': 'country',
-                                    'colType': 'categorical',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 4,
-                                    'colName': 'what',
-                                    'colType': 'boolean',
-                                    'role': ['attribute'],
-                                },
-                            ],
-                            'isCollection': False,
-                            'resFormat': {'text/csv': ["csv"]},
-                            'resID': 'learningData',
-                            'resPath': 'tables/learningData.csv',
-                            'resType': 'table',
-                        },
-                    ],
-                    'qualities': [
-                        {
-                            'qualName': 'augmentation_info',
-                            'qualValue': {
-                                'augmentation_type': 'join',
-                                'nb_rows_after': 5,
-                                'nb_rows_before': 5,
-                                'new_columns': ['name', 'country', 'what'],
-                                'removed_columns': [],
-                            },
-                            'qualValueType': 'dict',
-                        },
-                    ],
+        meta = meta.json()['metadata']
+        task = {
+            'id': 'datamart.test.basic',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['number']],
+                'right_columns': [[2]],
+                'right_columns_names': [['number']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        # Get data token
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/profile',
+                files={
+                    'data': basic_aug,
                 },
             )
+        self.assertTrue(
+            response.headers['Content-Type'].startswith('application/json')
+        )
+        token = response.json()['token']
+        self.assertEqual(len(token), 40)
+
+        response = self.datamart_post(
+            '/augment',
+            files={
+                'task': json.dumps(task).encode('utf-8'),
+                'data': token.encode('ascii'),
+            }
+        )
+        self.check_basic_join(response)
 
     def test_basic_join_auto(self):
         meta = self.datamart_get(
@@ -1172,98 +1281,7 @@ class TestAugment(DatamartTest):
                     'data': basic_aug,
                 },
             )
-        self.assertEqual(response.headers['Content-Type'], 'application/zip')
-        self.assertTrue(
-            response.headers['Content-Disposition'].startswith('attachment')
-        )
-        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
-        zip_.testzip()
-        self.assertEqual(
-            set(zip_.namelist()),
-            {'datasetDoc.json', 'tables/learningData.csv'},
-        )
-        with zip_.open('tables/learningData.csv') as table:
-            self.assertCsvEqualNoOrder(
-                table.read().decode('utf-8'),
-                'number,desk_faces,name,country,what',
-                [
-                    '5,west,james,canada,False',
-                    '4,south,john,usa,False',
-                    '7,west,michael,usa,True',
-                    '6,east,robert,usa,False',
-                    '11,,christopher,canada,True',
-                ],
-            )
-        with zip_.open('datasetDoc.json') as meta_fp:
-            meta = json.load(meta_fp)
-            self.assertJson(
-                meta,
-                {
-                    'about': {
-                        'approximateSize': '167 B',
-                        'datasetID': lambda s: len(s) == 32,
-                        'datasetName': lambda s: len(s) == 32,
-                        'datasetSchemaVersion': '4.0.0',
-                        'datasetVersion': '1.0',
-                        'license': 'unknown',
-                        'redacted': False,
-                    },
-                    'dataResources': [
-                        {
-                            'columns': [
-                                {
-                                    'colIndex': 0,
-                                    'colName': 'number',
-                                    'colType': 'integer',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 1,
-                                    'colName': 'desk_faces',
-                                    'colType': 'string',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 2,
-                                    'colName': 'name',
-                                    'colType': 'string',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 3,
-                                    'colName': 'country',
-                                    'colType': 'categorical',
-                                    'role': ['attribute'],
-                                },
-                                {
-                                    'colIndex': 4,
-                                    'colName': 'what',
-                                    'colType': 'boolean',
-                                    'role': ['attribute'],
-                                },
-                            ],
-                            'isCollection': False,
-                            'resFormat': {'text/csv': ["csv"]},
-                            'resID': 'learningData',
-                            'resPath': 'tables/learningData.csv',
-                            'resType': 'table',
-                        },
-                    ],
-                    'qualities': [
-                        {
-                            'qualName': 'augmentation_info',
-                            'qualValue': {
-                                'augmentation_type': 'join',
-                                'nb_rows_after': 5,
-                                'nb_rows_before': 5,
-                                'new_columns': ['name', 'country', 'what'],
-                                'removed_columns': [],
-                            },
-                            'qualValueType': 'dict',
-                        },
-                    ],
-                },
-            )
+        self.check_basic_join(response)
 
     def test_agg_join(self):
         meta = self.datamart_get(
@@ -1949,6 +1967,8 @@ class TestUpload(DatamartTest):
                 'address': 'http://test-discoverer:7000/basic.csv',
                 'name': 'basic reupload',
                 'description': "sent through upload endpoint",
+                'specialId': 12,
+                'dept': "internal",
             },
             schema={
                 'type': 'object',
@@ -1981,6 +2001,8 @@ class TestUpload(DatamartTest):
                         'metadata': {
                             'name': 'basic reupload',
                             'description': 'sent through upload endpoint',
+                            'specialId': 12,
+                            'dept': "internal",
                             'source': 'upload',
                             'materialize': {
                                 'identifier': 'datamart.url',
@@ -2015,6 +2037,8 @@ class TestUpload(DatamartTest):
                     id=dataset_id,
                     name='basic reupload',
                     description="sent through upload endpoint",
+                    specialId=12,
+                    dept="internal",
                     source='upload',
                     materialize=dict(
                         basic_metadata['materialize'],
@@ -2024,6 +2048,7 @@ class TestUpload(DatamartTest):
             )
 
             # Check it's no longer in alternate index
+            time.sleep(1)
             with self.assertRaises(elasticsearch.NotFoundError):
                 es.get('pending', dataset_id)
         finally:
@@ -2040,6 +2065,279 @@ class TestUpload(DatamartTest):
                 dataset_id,
                 lazo_client,
             )
+
+
+class TestSession(DatamartTest):
+    def test_session_new(self):
+        def new_session(obj):
+            response = self.datamart_post(
+                '/session/new',
+                json=obj,
+            )
+            obj = response.json()
+            session_id = obj.pop('session_id')
+            link_url = obj.pop('link_url')
+            self.assertFalse(obj.keys())
+            link_url = urlparse(link_url)
+            self.assertEqual(
+                urlunparse(link_url[:4] + (('',) * 2)),
+                os.environ['FRONTEND_URL'] + '/',
+            )
+            query = parse_qs(link_url.query)
+            session, = query['session']
+            self.assertFalse(obj.keys())
+            return session_id, json.loads(session)
+
+        session_id, session_obj = new_session({})
+        self.assertEqual(
+            session_obj,
+            {
+                'format': 'csv',
+                'format_options': {},
+                'session_id': session_id,
+                'system_name': 'TA3',
+            },
+        )
+
+        session_id, session_obj = new_session({'data_token': 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3'})
+        self.assertEqual(
+            session_obj,
+            {
+                'format': 'csv',
+                'format_options': {},
+                'session_id': session_id,
+                'data_token': 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3',
+                'system_name': 'TA3',
+            },
+        )
+
+        session_id, session_obj = new_session({
+            'system_name': 'Modeler',
+            'format': 'd3m',
+        })
+        self.assertEqual(
+            session_obj,
+            {
+                'format': 'd3m',
+                'format_options': {'need_d3mindex': False, 'version': '4.0.0'},
+                'session_id': session_id,
+                'system_name': 'Modeler',
+            },
+        )
+
+        response = self.datamart_post(
+            '/session/new',
+            json={'unknown_key': 'value'},
+            check_status=False,
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            {'error': "Unrecognized key 'unknown_key'"},
+        )
+
+    def test_download_csv(self):
+        session_id = self.datamart_post(
+            '/session/new',
+            json={'format': 'csv'},
+        ).json()['session_id']
+
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.basic'
+            + '?session_id=' + session_id
+        )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.agg'
+            + '?session_id=' + session_id
+        )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get('/session/' + session_id)
+        self.assertEqual(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'url': (os.environ['API_URL']
+                                + '/download/datamart.test.basic'
+                                + '?format=csv'),
+                    },
+                    {
+                        'url': (os.environ['API_URL']
+                                + '/download/datamart.test.agg'
+                                + '?format=csv'),
+                    },
+                ],
+            },
+        )
+
+    def test_download_d3m(self):
+        session_id = self.datamart_post(
+            '/session/new',
+            json={'format': 'd3m'},
+        ).json()['session_id']
+
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.basic'
+            + f'?session_id={session_id}&format=d3m'
+        )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get(
+            '/download/' + 'datamart.test.agg'
+            + f'?session_id={session_id}&format=d3m'
+        )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get('/session/' + session_id)
+        format_query = (
+            'format=d3m'
+            + '&format_version=4.0.0'
+            + '&format_need_d3mindex=False'
+        )
+        self.assertEqual(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'url': (
+                            os.environ['API_URL']
+                            + '/download/datamart.test.basic'
+                            + '?' + format_query
+                        ),
+                    },
+                    {
+                        'url': (os.environ['API_URL']
+                                + '/download/datamart.test.agg'
+                                + '?' + format_query),
+                    },
+                ],
+            },
+        )
+
+    def test_augment_csv(self):
+        session_id = self.datamart_post(
+            '/session/new',
+            json={'format': 'csv'},
+        ).json()['session_id']
+
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.basic',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['number']],
+                'right_columns': [[2]],
+                'right_columns_names': [['number']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/augment'
+                + f'?session_id={session_id}&format=csv',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': basic_aug,
+                },
+            )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get('/session/' + session_id)
+        self.assertJson(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'url': lambda u: u.startswith(
+                            os.environ['API_URL'] + '/augment/'
+                        ),
+                    },
+                ],
+            },
+        )
+        result_id = response.json()['results'][0]['url'][-40:]
+
+        response = self.datamart_get(
+            '/augment/' + result_id,
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/octet-stream',
+        )
+
+    def test_augment_d3m(self):
+        session_id = self.datamart_post(
+            '/session/new',
+            json={'format': 'd3m'},
+        ).json()['session_id']
+
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.basic',
+            schema=metadata_schema,
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.basic',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0]],
+                'left_columns_names': [['number']],
+                'right_columns': [[2]],
+                'right_columns_names': [['number']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        with data('basic_aug.csv') as basic_aug:
+            response = self.datamart_post(
+                '/augment'
+                + f'?session_id={session_id}&format=d3m',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': basic_aug,
+                },
+            )
+        self.assertEqual(response.json(), {'success': "attached to session"})
+
+        response = self.datamart_get('/session/' + session_id)
+        self.assertJson(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'url': lambda u: u.startswith(
+                            os.environ['API_URL'] + '/augment/'
+                        ),
+                    },
+                ],
+            },
+        )
+        result_id = response.json()['results'][0]['url'][-40:]
+
+        response = self.datamart_get(
+            '/augment/' + result_id,
+        )
+        self.assertEqual(
+            response.headers['Content-Type'],
+            'application/zip',
+        )
 
 
 version = os.environ['DATAMART_VERSION']

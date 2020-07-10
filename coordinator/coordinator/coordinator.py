@@ -1,6 +1,5 @@
 import aio_pika
 import asyncio
-import collections
 import elasticsearch
 import elasticsearch.helpers
 import itertools
@@ -41,6 +40,20 @@ class Coordinator(object):
                 'coordinator', 'elasticsearch.yml') as stream:
             indices = yaml.safe_load(stream)
         indices.pop('_refs', None)
+        # Add custom fields
+        custom_fields = os.environ.get('CUSTOM_FIELDS', None)
+        if custom_fields:
+            custom_fields = json.loads(custom_fields)
+            if custom_fields:
+                for field, opts in custom_fields.items():
+                    for idx, name in [
+                        ('datamart', field),
+                        ('datamart_columns', 'dataset_' + field),
+                        ('datamart_spatial_coverage', 'dataset_' + field),
+                    ]:
+                        indices[idx]['mappings']['properties'][name] = {
+                            'type': opts['type'],
+                        }
         # Retry a few times, in case the Elasticsearch container is not yet up
         for i in itertools.count():
             try:
@@ -64,26 +77,7 @@ class Coordinator(object):
         # Create cache directories
         os.makedirs('/cache/datasets', exist_ok=True)
         os.makedirs('/cache/aug', exist_ok=True)
-
-        # Load recent datasets from Elasticsearch
-        try:
-            recent = self.elasticsearch.search(
-                index='datamart',
-                body={
-                    'query': {
-                        'match_all': {},
-                    },
-                    'sort': [
-                        {'date': {'order': 'desc'}},
-                    ],
-                },
-                size=15,
-            )['hits']['hits']
-        except elasticsearch.ElasticsearchException:
-            logger.warning("Couldn't get recent datasets from Elasticsearch")
-        else:
-            for h in recent:
-                self.recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
+        os.makedirs('/cache/user_data', exist_ok=True)
 
         # Start AMQP coroutine
         log_future(
@@ -165,35 +159,65 @@ class Coordinator(object):
                 del self.recent_discoveries[15:]
 
     def _update_statistics(self):
-        """Scan whole index to compute statistics.
+        """Periodically compute statistics.
         """
-        SIZE = 10000
-        sleep_in = SIZE
-        sources = collections.Counter()
-        versions = collections.Counter()
-        # TODO: Aggregation query?
-        hits = elasticsearch.helpers.scan(
-            self.elasticsearch,
+        # Load recent datasets from Elasticsearch
+        recent_discoveries = []
+        try:
+            recent = self.elasticsearch.search(
+                index='datamart',
+                body={
+                    'query': {
+                        'match_all': {},
+                    },
+                    'sort': [
+                        {'date': {'order': 'desc'}},
+                    ],
+                },
+                size=15,
+            )['hits']['hits']
+        except elasticsearch.ElasticsearchException:
+            logger.warning("Couldn't get recent datasets from Elasticsearch")
+        else:
+            for h in recent:
+                recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
+
+        # Count datasets per source
+        sources = self.elasticsearch.search(
             index='datamart',
-            query={
-                'query': {
-                    'match_all': {},
+            body={
+                'aggs': {
+                    'sources': {
+                        'terms': {
+                            'field': 'source',
+                        },
+                    },
                 },
             },
-            size=SIZE,
-            scroll='30m',
-        )
-        for h in hits:
-            source = h['_source'].get('source', 'unknown')
-            sources[source] += 1
+            size=0,
+        )['aggregations']['sources']
+        sources = {
+            bucket['key']: bucket['doc_count']
+            for bucket in sources['buckets']
+        }
 
-            version = h['_source'].get('version', 'unknown')
-            versions[version] += 1
-
-            sleep_in -= 1
-            if sleep_in <= 0:
-                sleep_in = SIZE
-                time.sleep(5)
+        versions = self.elasticsearch.search(
+            index='datamart',
+            body={
+                'aggs': {
+                    'versions': {
+                        'terms': {
+                            'field': 'verison',
+                        },
+                    },
+                },
+            },
+            size=0,
+        )['aggregations']['versions']
+        versions = {
+            bucket['key']: bucket['doc_count']
+            for bucket in versions['buckets']
+        }
 
         # Update prometheus
         for source, count in sources.items():
@@ -206,7 +230,7 @@ class Coordinator(object):
         for version in self.profiler_versions_counts.keys() - versions.keys():
             PROM_PROFILED_VERSION.remove(version)
 
-        return sources, versions
+        return sources, versions, recent_discoveries
 
     async def update_statistics(self):
         """Periodically update statistics.
@@ -217,6 +241,7 @@ class Coordinator(object):
                 (
                     self.sources_counts,
                     self.profiler_versions_counts,
+                    self.recent_discoveries,
                 ) = await asyncio.get_event_loop().run_in_executor(
                     None,
                     self._update_statistics,

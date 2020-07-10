@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export PATH="$HOME/bin:$PATH"
-
 cd "$(dirname "$(dirname "$0")")"
 
 set -eux
@@ -18,6 +16,7 @@ docker-compose up -d --force-recreate profiler apiserver apilb
 
 # Clear cache
 docker exec -ti $(basename "$(pwd)")_coordinator_1 sh -c 'rm -rf /cache/*/*'
+docker-compose exec redis redis-cli flushall
 
 # Clear index
 scripts/docker_purge_source.sh datamart.test
@@ -39,12 +38,9 @@ fi
 
 # Load .env
 set +x
-cat .env | while read l; do [ -z "$l" ] || [ "${l:0:1}" = \# ] || echo "export $l"; done >.env.sh && . .env.sh && rm .env.sh
+. scripts/load_env.sh
 set -x
-
-# Set other variables
 export DATAMART_VERSION=v0.0
-export DATAMART_GEO_DATA=$(pwd)/lib_geo/data
 
 # Run tests
 poetry run python tests
