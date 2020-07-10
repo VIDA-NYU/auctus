@@ -1150,6 +1150,7 @@ class Application(GracefulApplication):
         self.geo_data = GeoData.from_local_cache()
         self.channel = None
 
+        self.custom_fields = {}
         custom_fields = os.environ.get('CUSTOM_FIELDS', None)
         if custom_fields:
             custom_fields = json.loads(custom_fields)
