@@ -75,7 +75,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     const filterVariables = state.filters
       .filter(f => f.type !== FilterType.RELATED_FILE)
       .filter(f => f.type !== FilterType.SOURCE)
-			.filter(f => f.type !== FilterType.DATA_TYPE)
+      .filter(f => f.type !== FilterType.DATA_TYPE)
       .filter(f => f && f.state)
       .map(f => f.state as FilterVariables);
 
@@ -86,11 +86,11 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     const sources: string[][] = state.filters
       .filter(f => f.type === FilterType.SOURCE)
       .map(f => f.state as string[]);
-			
-    const data_types: string[][] = state.filters
+
+    const DataTypes: string[][] = state.filters
       .filter(f => f.type === FilterType.DATA_TYPE)
       .map(f => f.state as string[]);
-			
+
     const query: api.SearchQuery = {
       query: state.query,
       filters: filterVariables,
@@ -237,7 +237,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       if (
         filterType === FilterType.RELATED_FILE ||
         filterType === FilterType.SOURCE ||
-				filterType === FilterType.DATA_TYPE
+        filterType === FilterType.DATA_TYPE
       ) {
         // Can only have one of those
         if (prevState.filters.filter(f => f.type === filterType).length > 0) {
@@ -384,7 +384,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               />
             );
             break;
-					case FilterType.DATA_TYPE:
+          case FilterType.DATA_TYPE:
             title = 'Data Type';
             component = (
               <DataTypeFilter
