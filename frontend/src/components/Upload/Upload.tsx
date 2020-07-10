@@ -213,9 +213,9 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       customFields = (
         <>
           {Object.entries(this.state.customFields).map(([f, opts]) => (
-            <FormGroup for={`upload-${f}`} label={opts.label} key={f}>
+            <FormGroup for={`upload-${f}`} label={opts.label + ' *'} key={f}>
               <input
-                type="text"
+                type= {opts.type === "integer" ? "number" : "text"}
                 id={`upload-${f}`}
                 className="form-control"
                 value={this.state.customValues.get(f) || ''}
@@ -272,7 +272,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             )}
           </FormGroup>
         )}
-        <FormGroup for="upload-name" label="Name">
+        <FormGroup for="upload-name" label="Name *">
           <input
             type="text"
             id="upload-name"
@@ -321,6 +321,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             </FormGroup>
           )}
         {customFields}
+        <div style={{textAlign: 'right', opacity: 0.4, fontSize: "12px"}}>  * Indicates a required field</div>
         <FormGroup>
           <SubmitButton label="Upload" loading={this.state.submitting} />
         </FormGroup>
@@ -392,7 +393,7 @@ class Upload extends React.PureComponent<{}, UploadState> {
 
   render() {
     return (
-      <div className="row" style={{ maxHeight: '96vh', overflowY: 'auto' }}>
+      <div className="row" style={{ maxHeight: '86vh', overflowY: 'auto' }}>
         <div className="container container-body">
           <h1>Upload a new dataset</h1>
 
