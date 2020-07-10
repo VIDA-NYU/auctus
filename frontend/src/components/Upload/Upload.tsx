@@ -215,7 +215,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
           {Object.entries(this.state.customFields).map(([f, opts]) => (
             <FormGroup for={`upload-${f}`} label={opts.label + ' *'} key={f}>
               <input
-                type= {opts.type === "integer" ? "number" : "text"}
+                type={opts.type === 'integer' ? 'number' : 'text'}
                 id={`upload-${f}`}
                 className="form-control"
                 value={this.state.customValues.get(f) || ''}
@@ -321,7 +321,10 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             </FormGroup>
           )}
         {customFields}
-        <div style={{textAlign: 'right', opacity: 0.4, fontSize: "12px"}}>  * Indicates a required field</div>
+        <div style={{ textAlign: 'right', opacity: 0.4, fontSize: '12px' }}>
+          {' '}
+          * Indicates a required field
+        </div>
         <FormGroup>
           <SubmitButton label="Upload" loading={this.state.submitting} />
         </FormGroup>
