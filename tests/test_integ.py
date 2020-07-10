@@ -247,7 +247,7 @@ class TestProfiler(DataTestCase):
 
         self.assertJson(actual, expected)
 
-        
+
 class TestProfileQuery(DatamartTest):
     def check_result(self, response, metadata, token):
         # Some fields like 'name', 'description' won't be there
