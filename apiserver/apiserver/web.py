@@ -331,10 +331,7 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
 
         logger.info("Got profile")
 
-        try:
-            data_profile, data_hash = self.handle_data_parameter(data)
-        except ClientError as e:
-            return self.send_error_json(400, str(e))
+        data_profile, data_hash = self.handle_data_parameter(data)
 
         return self.send_json(dict(
             data_profile,
@@ -426,10 +423,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # parameter: data
         if data is not None:
-            try:
-                data_profile, _ = self.handle_data_parameter(data)
-            except ClientError as e:
-                return self.send_error_json(400, str(e))
+            data_profile, _ = self.handle_data_parameter(data)
 
         # parameter: data_id
         if data_id:
@@ -647,10 +641,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             format, format_options, format_ext = self.read_format()
 
             # data
-            try:
-                data_profile, _ = self.handle_data_parameter(data)
-            except ClientError as e:
-                return await self.send_error_json(400, str(e))
+            data_profile, _ = self.handle_data_parameter(data)
 
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
@@ -813,10 +804,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                         else:
                             with open(data, 'rb') as fp:
                                 data = fp.read()
-            try:
-                data_profile, data_hash = self.handle_data_parameter(data)
-            except ClientError as e:
-                return await self.send_error_json(400, str(e))
+            data_profile, data_hash = self.handle_data_parameter(data)
         else:
             return await self.send_error_json(400, "Missing 'data'")
 
