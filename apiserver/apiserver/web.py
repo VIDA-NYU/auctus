@@ -100,6 +100,17 @@ PROM_AUGMENT = PromMeasureRequest(
         buckets=BUCKETS,
     ),
 )
+PROM_AUGMENT_RESULT = PromMeasureRequest(
+    count=prometheus_client.Counter(
+        'req_augment_result_count',
+        "Augment result requests",
+    ),
+    time=prometheus_client.Histogram(
+        'req_augment_result_seconds',
+        "Augment result request time",
+        buckets=BUCKETS,
+    ),
+)
 PROM_UPLOAD = PromMeasureRequest(
     count=prometheus_client.Counter(
         'req_upload_count',
@@ -108,6 +119,50 @@ PROM_UPLOAD = PromMeasureRequest(
     time=prometheus_client.Histogram(
         'req_upload_seconds',
         "Upload request time",
+        buckets=BUCKETS,
+    ),
+)
+PROM_SESSION_NEW = PromMeasureRequest(
+    count=prometheus_client.Counter(
+        'req_session_new_count',
+        "New session requests",
+    ),
+    time=prometheus_client.Histogram(
+        'req_session_new_seconds',
+        "New session request time",
+        buckets=BUCKETS,
+    ),
+)
+PROM_SESSION_GET = PromMeasureRequest(
+    count=prometheus_client.Counter(
+        'req_session_get_count',
+        "Get session requests",
+    ),
+    time=prometheus_client.Histogram(
+        'req_session_get_seconds',
+        "Get session request time",
+        buckets=BUCKETS,
+    ),
+)
+PROM_STATISTICS = PromMeasureRequest(
+    count=prometheus_client.Counter(
+        'req_statistics_count',
+        "Statistics requests",
+    ),
+    time=prometheus_client.Histogram(
+        'req_statistics_seconds',
+        "Statistics request time",
+        buckets=BUCKETS,
+    ),
+)
+PROM_VERSION = PromMeasureRequest(
+    count=prometheus_client.Counter(
+        'req_version_count',
+        "Version requests",
+    ),
+    time=prometheus_client.Histogram(
+        'req_version_seconds',
+        "Version request time",
         buckets=BUCKETS,
     ),
 )
@@ -276,10 +331,7 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
 
         logger.info("Got profile")
 
-        try:
-            data_profile, data_hash = self.handle_data_parameter(data)
-        except ClientError as e:
-            return self.send_error_json(400, str(e))
+        data_profile, data_hash = self.handle_data_parameter(data)
 
         return self.send_json(dict(
             data_profile,
@@ -371,10 +423,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # parameter: data
         if data is not None:
-            try:
-                data_profile, _ = self.handle_data_parameter(data)
-            except ClientError as e:
-                return self.send_error_json(400, str(e))
+            data_profile, _ = self.handle_data_parameter(data)
 
         # parameter: data_id
         if data_id:
@@ -592,10 +641,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             format, format_options, format_ext = self.read_format()
 
             # data
-            try:
-                data_profile, _ = self.handle_data_parameter(data)
-            except ClientError as e:
-                return await self.send_error_json(400, str(e))
+            data_profile, _ = self.handle_data_parameter(data)
 
             # first, look for possible augmentation
             search_results = get_augmentation_search_results(
@@ -758,10 +804,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                         else:
                             with open(data, 'rb') as fp:
                                 data = fp.read()
-            try:
-                data_profile, data_hash = self.handle_data_parameter(data)
-            except ClientError as e:
-                return await self.send_error_json(400, str(e))
+            data_profile, data_hash = self.handle_data_parameter(data)
         else:
             return await self.send_error_json(400, "Missing 'data'")
 
@@ -862,6 +905,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
 
 class AugmentResult(BaseHandler):
+    @PROM_AUGMENT_RESULT.sync()
     async def get(self, key):
         with cache_get('/cache/aug', key) as path:
             if path:
@@ -979,6 +1023,7 @@ class Upload(BaseHandler):
 
 
 class SessionNew(BaseHandler):
+    @PROM_SESSION_NEW.sync()
     def post(self):
         # Read input
         session = self.get_json()
@@ -1036,6 +1081,7 @@ class SessionNew(BaseHandler):
 
 
 class SessionGet(BaseHandler):
+    @PROM_SESSION_GET.sync()
     def get(self, session_id):
         # Get session from Redis
         datasets = self.application.redis.lrange(
@@ -1064,6 +1110,7 @@ class SessionGet(BaseHandler):
 
 
 class Statistics(BaseHandler):
+    @PROM_STATISTICS.sync()
     def get(self):
         return self.send_json({
             'recent_discoveries': self.application.recent_discoveries,
@@ -1073,6 +1120,7 @@ class Statistics(BaseHandler):
 
 
 class Version(BaseHandler):
+    @PROM_VERSION.sync()
     def get(self):
         return self.send_json({
             'version': os.environ['DATAMART_VERSION'].lstrip('v'),
@@ -1104,6 +1152,7 @@ class Application(GracefulApplication):
         self.geo_data = GeoData.from_local_cache()
         self.channel = None
 
+        self.custom_fields = {}
         custom_fields = os.environ.get('CUSTOM_FIELDS', None)
         if custom_fields:
             custom_fields = json.loads(custom_fields)
