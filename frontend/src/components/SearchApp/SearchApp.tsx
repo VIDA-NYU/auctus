@@ -87,7 +87,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       .filter(f => f.type === FilterType.SOURCE)
       .map(f => f.state as string[]);
 
-    const DataTypes: string[][] = state.filters
+    const dataTypes: string[][] = state.filters
       .filter(f => f.type === FilterType.DATA_TYPE)
       .map(f => f.state as string[]);
 
@@ -95,6 +95,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       query: state.query,
       filters: filterVariables,
       sources: sources[0],
+      dataTypes: dataTypes[0],
       relatedFile: relatedFiles[0],
     };
     return query;
@@ -129,6 +130,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         type: FilterType.SOURCE,
         hidden: false,
         state: query.sources,
+      });
+    }
+    if (query.dataTypes) {
+      filters.push({
+        id: generateRandomId(),
+        type: FilterType.DATA_TYPE,
+        hidden: false,
+        state: query.dataTypes,
       });
     }
     if (query.relatedFile) {
