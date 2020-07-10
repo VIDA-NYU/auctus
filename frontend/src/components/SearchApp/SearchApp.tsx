@@ -389,7 +389,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             component = (
               <DataTypeFilter
                 datatypes={this.state.sources}
-                checkedSources={filter.state as string[] | undefined}
+                datatypes={filter.state as string[] | undefined}
                 onDataTypeChange={s => this.updateFilterState(filter.id, s)}
               />
             );
