@@ -43,11 +43,8 @@ interface SearchAppState {
   searchResponse?: SearchResponse;
   searchQuery?: api.SearchQuery;
   sources: string[];
-<<<<<<< HEAD
   session?: Session;
-=======
   dataTypes: string[];
->>>>>>> Sending data types (through the apiserver) as part of the search query.
 }
 
 interface SearchAppProps {
@@ -78,6 +75,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     const filterVariables = state.filters
       .filter(f => f.type !== FilterType.RELATED_FILE)
       .filter(f => f.type !== FilterType.SOURCE)
+			.filter(f => f.type !== FilterType.DATA_TYPE)
       .filter(f => f && f.state)
       .map(f => f.state as FilterVariables);
 
@@ -88,7 +86,11 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     const sources: string[][] = state.filters
       .filter(f => f.type === FilterType.SOURCE)
       .map(f => f.state as string[]);
-
+			
+    const data_types: string[][] = state.filters
+      .filter(f => f.type === FilterType.DATA_TYPE)
+      .map(f => f.state as string[]);
+			
     const query: api.SearchQuery = {
       query: state.query,
       filters: filterVariables,
@@ -231,12 +233,11 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   handleAddFilter(filterType: FilterType) {
-<<<<<<< HEAD
     this.setState(prevState => {
       if (
         filterType === FilterType.RELATED_FILE ||
         filterType === FilterType.SOURCE ||
-				filterType === FilterType.TYPE
+				filterType === FilterType.DATA_TYPE
       ) {
         // Can only have one of those
         if (prevState.filters.filter(f => f.type === filterType).length > 0) {
@@ -250,49 +251,12 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         hidden: false,
       };
       return { filters: [filter, ...prevState.filters] };
-=======
-    const filters = this.state.filters;
-    if (
-      filterType === FilterType.RELATED_FILE &&
-      filters.filter(f => f.type === FilterType.RELATED_FILE).length > 0
-    ) {
-      return;
-    }
-    if (
-      filterType === FilterType.SOURCE &&
-      filters.filter(f => f.type === FilterType.SOURCE).length > 0
-    ) {
-      return;
-    }
-    if (
-      filterType === FilterType.DATA_TYPE &&
-      filters.filter(f => f.type === FilterType.DATA_TYPE).length > 0
-    ) {
-      return;
-    }
-    const filterId = generateRandomId();
-    filters.push({
-      id: filterId,
-      type: filterType,
-      hidden: false,
-      ...this.createFilterComponent(filterId, filterType),
->>>>>>> Sending data types (through the apiserver) as part of the search query.
     });
   }
 
   submitQuery() {
     if (this.validQuery()) {
-<<<<<<< HEAD
       const query = SearchApp.filtersToQuery(this.state);
-=======
-      const filterVariables = this.state.filters
-        .filter(f => f.type !== FilterType.RELATED_FILE)
-        .filter(f => f.type !== FilterType.SOURCE)
-        .filter(f => f.type !== FilterType.DATA_TYPE)
-        .filter(f => f && f.state)
-        .map(f => f.state as FilterVariables);
->>>>>>> Sending data types (through the apiserver) as part of the search query.
-
       // pushes the query into the URL, which will trigger fetching the search results
       const q = encodeURIComponent(JSON.stringify(query));
       let url = `${this.props.match.url}?q=${q}`;
@@ -304,7 +268,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     }
   }
 
-<<<<<<< HEAD
   fetchSearchResults(query: api.SearchQuery) {
     this.setState({
       searchQuery: query,
@@ -330,23 +293,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         this.setState({ searchState: SearchState.SEARCH_FAILED });
       });
   }
-=======
-      const sources: string[][] = this.state.filters
-        .filter(f => f.type === FilterType.SOURCE)
-        .map(f => f.state as string[]);
-      const dataTypes: string[][] = this.state.filters
-        .filter(f => f.type === FilterType.DATA_TYPE)
-        .map(f => f.state as string[]);
-
-      const query: api.SearchQuery = {
-        query: this.state.query,
-        filters: filterVariables,
-        sources: sources[0],
-        dataTypes: dataTypes[0],
-        relatedFile: relatedFiles[0],
-      };
->>>>>>> Sending data types (through the apiserver) as part of the search query.
-
   toggleFilter(filterId: string) {
     this.setState(prevState => {
       const filters = this.state.filters.map(f => {
@@ -356,7 +302,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           return f;
         }
       });
-<<<<<<< HEAD
       return { filters };
     });
   }
@@ -376,18 +321,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               ...relatedFileFilters[0],
               state: relatedFile,
             };
-=======
-      api
-        .search(query)
-        .then(response => {
-          if (response.status === api.RequestResult.SUCCESS && response.data) {
-            this.setState({
-              searchState: SearchState.SEARCH_SUCCESS,
-              searchResponse: {
-                results: aggregateResults(response.data.results),
-              },
-            });
->>>>>>> Sending data types (through the apiserver) as part of the search query.
           } else {
             return filter;
           }
@@ -401,76 +334,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           hidden: false,
           state: relatedFile,
         };
-<<<<<<< HEAD
         filters = [...prevFilters, filter];
       }
       return { filters };
     }, this.submitQuery);
-=======
-      case FilterType.DATA_TYPE:
-        return {
-          title: 'Data Type',
-          icon: Icon.Type,
-          component: (
-            <DataTypeFilter
-              key={`datatypefilter-${filterId}`}
-              datatypes={this.state.dataTypes}
-              onDataTypeChange={s => this.updateFilterState(filterId, s)}
-            />
-          ),
-        };
-      default:
-        throw new Error(`Received not supported filter type=[${filterType}]`);
-    }
-  }
-
-  toggleFilter(itemId: string) {
-    const filter = this.state.filters.find(f => f.id === itemId);
-    if (filter) {
-      filter.hidden = !filter.hidden;
-      this.setState({ filters: [...this.state.filters] });
-    }
-  }
-
-  onSearchRelated(relatedFile: RelatedFile) {
-    const filters = this.state.filters;
-    const relatedFileFilters = filters.filter(
-      f => f.type === FilterType.RELATED_FILE
-    );
-    if (relatedFileFilters.length > 0) {
-      // Find index of the specific object using findIndex method
-      const objIndex = filters.findIndex(
-        obj => obj.id === relatedFileFilters[0].id
-      );
-      // Update existing filter
-      const updatedObject = {
-        ...relatedFileFilters[0],
-        state: relatedFile,
-        ...this.createFilterComponent(
-          relatedFileFilters[0].id,
-          FilterType.RELATED_FILE,
-          relatedFile
-        ),
-      };
-      filters[objIndex] = updatedObject;
-    } else {
-      // Add new filter
-      const filterId = generateRandomId();
-      filters.push({
-        id: filterId,
-        type: FilterType.RELATED_FILE,
-        hidden: false,
-        state: relatedFile,
-        ...this.createFilterComponent(
-          filterId,
-          FilterType.RELATED_FILE,
-          relatedFile
-        ),
-      });
-    }
-    this.setState({ filters: [...filters] });
-    this.submitQuery();
->>>>>>> Sending data types (through the apiserver) as part of the search query.
   }
 
   renderFilters() {
@@ -517,7 +384,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
               />
             );
             break;
-					case FilterType.TYPE:
+					case FilterType.DATA_TYPE:
             title = 'Data Type';
             component = (
               <DataTypeFilter

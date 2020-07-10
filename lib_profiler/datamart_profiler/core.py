@@ -219,12 +219,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
             # Identify types
             structural_type, semantic_types_dict, additional_meta = \
                 identify_types(array, column_meta['name'], geo_data)
-            
+
             updateColumn = [item for item in updated_columns if item.get('name') == column_meta['name']]
             if len(updateColumn) > 0:
                 structural_type = updateColumn[0]['structural_type']
                 semantic_types_dict = updateColumn[0]['semantic_types']
-                
+
             # Identify overall column type (numerical, categorial, spatial, or temporal) and add it to 'dataset_types'
             column_type = determine_column_type(structural_type, semantic_types_dict)
             if column_type and column_type not in metadata['dataset_types']:
