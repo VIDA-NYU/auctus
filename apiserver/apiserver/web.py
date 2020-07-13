@@ -555,8 +555,17 @@ class BaseDownload(BaseHandler):
                 logger.info("Attaching to session")
                 self.application.redis.rpush(
                     'session:' + session_id,
-                    ('download:' + dataset_id
-                     + '?' + self.serialize_format(format, format_options)),
+                    json.dumps(
+                        {
+                            'type': 'download',
+                            'url': (
+                                '/download/' + dataset_id + '?'
+                                + self.serialize_format(format, format_options)
+                            ),
+                        },
+                        # Compact
+                        sort_keys=True, indent=None, separators=(',', ':'),
+                    ),
                 )
                 return await self.send_json({'success': "attached to session"})
             else:
@@ -885,7 +894,14 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 if session_id:
                     self.application.redis.rpush(
                         'session:' + session_id,
-                        'aug:' + key,
+                        json.dumps(
+                            {
+                                'type': 'augmentation',
+                                'url': '/augment/' + key,
+                            },
+                            # Compact
+                            sort_keys=True, indent=None, separators=(',', ':'),
+                        )
                     )
                     return await self.send_json({
                         'success': "attached to session",
@@ -1088,19 +1104,11 @@ class SessionGet(BaseHandler):
         api_url = self.application.api_url
         results = []
         for record in datasets:
-            record = record.decode('utf-8')
-            if record.startswith('download:'):
-                record = record[9:]
-                results.append({
-                    'url': api_url + '/download/' + record,
-                })
-            elif record.startswith('aug:'):
-                record = record[4:]
-                results.append({
-                    'url': api_url + '/augment/' + record,
-                })
-            else:
-                logger.error("Error: invalid entry in session: %r", record)
+            record = json.loads(record.decode('utf-8'))
+            results.append({
+                'url': api_url + record['url'],
+                'type': record['type'],
+            })
 
         return self.send_json({'results': results})
 
