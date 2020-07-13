@@ -122,7 +122,7 @@ export interface QuerySpec {
 interface RelatedToFileBase {
   kind: string;
   name: string;
-  fileSize: number;
+  fileSize?: number;
 }
 
 export interface RelatedToLocalFile extends RelatedToFileBase {
