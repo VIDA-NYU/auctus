@@ -539,23 +539,6 @@ class BaseDownload(BaseHandler):
             logger.info("Sending redirect to direct_url")
             return self.redirect(materialize['direct_url'])
 
-        if session_id:
-            self.application.redis.rpush(
-                'session:' + session_id,
-                ('download:' + dataset_id
-                 + '?' + self.serialize_format(format, format_options)),
-            )
-            ret = self.send_json({'success': "attached to session"})
-
-            # Kick off materialization now
-            with get_dataset(
-                metadata, dataset_id,
-                format=format, format_options=format_options,
-            ):
-                pass
-
-            return ret
-
         with contextlib.ExitStack() as stack:
             try:
                 dataset_path = stack.enter_context(
@@ -568,11 +551,20 @@ class BaseDownload(BaseHandler):
                 await self.send_error_json(500, "Materializer reports failure")
                 raise
 
-            logger.info("Sending file...")
-            return await self.send_file(
-                dataset_path,
-                dataset_id + (format_ext or ''),
-            )
+            if session_id:
+                logger.info("Attaching to session")
+                self.application.redis.rpush(
+                    'session:' + session_id,
+                    ('download:' + dataset_id
+                     + '?' + self.serialize_format(format, format_options)),
+                )
+                return await self.send_json({'success': "attached to session"})
+            else:
+                logger.info("Sending file...")
+                return await self.send_file(
+                    dataset_path,
+                    dataset_id + (format_ext or ''),
+                )
 
 
 class DownloadId(BaseDownload, GracefulHandler):
@@ -854,14 +846,6 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             format_options=format_options,
         )
 
-        ret = None
-        if session_id:
-            self.application.redis.rpush(
-                'session:' + session_id,
-                'aug:' + key,
-            )
-            ret = self.send_json({'success': "attached to session"})
-
         def create_aug(cache_temp):
             with contextlib.ExitStack() as stack:
                 # Get augmentation data
@@ -899,8 +883,13 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         try:
             with cache_get_or_set('/cache/aug', key, create_aug) as path:
                 if session_id:
-                    # We already replied
-                    return await ret
+                    self.application.redis.rpush(
+                        'session:' + session_id,
+                        'aug:' + key,
+                    )
+                    return await self.send_json({
+                        'success': "attached to session",
+                    })
                 else:
                     # send the file
                     return await self.send_file(
