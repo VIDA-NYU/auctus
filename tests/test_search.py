@@ -90,6 +90,8 @@ class TestSearch(unittest.TestCase):
             'keywords': ['food'],
             'dataset_types': ['temporal', 'spatial'],
         })
+        print('*****************')
+        print(main)
         self.assertEqual(
             main,
             [
