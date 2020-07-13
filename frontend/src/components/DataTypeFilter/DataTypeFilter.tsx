@@ -1,60 +1,63 @@
 import React from 'react';
-import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
 import * as Icon from 'react-feather';
-
-interface DataTypeFilterState {
-  checked: {
-    [datatype: string]: boolean;
-  };
-}
 
 interface DataTypeFilterProps {
   datatypes: string[];
-  onDataTypeChange: (datatypes?: string[]) => void;
+  checkedDataTypes?: string[];
+  onDataTypeChange: (checkedDataTypes: string[]) => void;
 }
 
-class DataTypeFilter extends PersistentComponent<
-  DataTypeFilterProps,
-  DataTypeFilterState
-> {
-  datatypes: string[];
-
-  constructor(props: DataTypeFilterProps) {
-    super(props);
-    const initialState: DataTypeFilterState = { checked: {} };
-    this.datatypes = props.datatypes;
-    this.datatypes.forEach(s => {
-      initialState.checked[s] = true;
-    });
-    this.state = initialState;
-  }
-
+class DataTypeFilter extends React.PureComponent<DataTypeFilterProps> {
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
-    this.state.checked[input.value] = !this.state.checked[input.value];
-    const state = { checked: { ...this.state.checked } };
-    this.notifyChange(state);
+    let found = false;
+    const checkedDataTypes = this.getCheckedDataTypes().filter(s => {
+      if (s === input.value) {
+        found = true;
+        return false; // Remove it from checked (uncheck it)
+      } else {
+        return true;
+      }
+    });
+    if (!found) {
+      checkedDataTypes.push(input.value); // Add it to checked
+    }
+    this.props.onDataTypeChange(checkedDataTypes);
   }
 
-  notifyChange(state: DataTypeFilterState) {
-    this.setState(state);
-    const checkedDataTypes = Object.entries(state.checked)
-      .filter(c => c[1] === true)
-      .map(c => c[0]) as string[];
-    this.props.onDataTypeChange(
-      checkedDataTypes.length > 0 ? checkedDataTypes : undefined
-    );
+  getCheckedDataTypes() {
+    // If 'checkedDataTypes' prop is undefined, consider all data types checked
+    return this.props.checkedDataTypes === undefined
+      ? this.props.datatypes
+      : this.props.checkedDataTypes;
   }
 
   setCheckedStateForAll(checked: boolean) {
-    const state: DataTypeFilterState = { checked: {} };
-    this.datatypes.forEach(s => {
-      state.checked[s] = checked;
-    });
-    this.notifyChange(state);
+    if (checked) {
+      this.props.onDataTypeChange(this.props.datatypes);
+    } else {
+      this.props.onDataTypeChange([]);
+    }
   }
 
   render() {
+    const dataTypes: { [dataType: string]: boolean } = {};
+    this.props.datatypes.forEach(dataType => {
+      dataTypes[dataType] = false;
+    });
+    this.getCheckedDataTypes().forEach(dataType => {
+      dataTypes[dataType] = true;
+    });
+    const dataTypesList = Object.entries(dataTypes);
+    dataTypesList.sort((a, b) => {
+      if (a[0] < b[0]) {
+        return -1;
+      } else if (a[0] > b[0]) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
     return (
       <>
         <div className="mb-1 mt-1">
@@ -77,21 +80,21 @@ class DataTypeFilter extends PersistentComponent<
             Unselect all
           </button>
         </div>
-        {this.datatypes.map(datatype => (
-          <div className="form-check ml-2" key={`div-${datatype}`}>
+        {dataTypesList.map(([dataType, checked]) => (
+          <div className="form-check ml-2" key={`div-${dataType}`}>
             <input
               className="form-check-input"
               type="checkbox"
-              value={datatype}
-              checked={this.state.checked[datatype]}
-              id={`check-box-${datatype}`}
+              value={dataType}
+              checked={checked}
+              id={`check-box-${dataType}`}
               onChange={e => this.handleChange(e)}
             />
             <label
               className="form-check-label"
-              htmlFor={`check-box-${datatype}`}
+              htmlFor={`check-box-${dataType}`}
             >
-              {datatype.charAt(0).toUpperCase() + datatype.slice(1)}
+              {dataType.charAt(0).toUpperCase() + dataType.slice(1)}
             </label>
           </div>
         ))}

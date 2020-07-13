@@ -398,6 +398,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             component = (
               <DataTypeFilter
                 datatypes={this.state.dataTypes}
+                checkedDataTypes={filter.state as string[] | undefined}
                 onDataTypeChange={s => this.updateFilterState(filter.id, s)}
               />
             );
@@ -441,6 +442,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             case FilterType.SOURCE:
               title = 'Sources';
               icon = Icon.Database;
+              break;
+            case FilterType.DATA_TYPE:
+              title = 'Data Type';
+              icon = Icon.Type;
               break;
             default:
               throw new Error(
