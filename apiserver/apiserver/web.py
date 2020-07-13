@@ -181,7 +181,14 @@ class BaseHandler(RequestHandler):
         if not type_.startswith('application/json'):
             self.send_error_json(400, "Expected JSON")
             raise HTTPError(400)
-        return json.loads(self.request.body.decode('utf-8'))
+        try:
+            return json.loads(self.request.body.decode('utf-8'))
+        except UnicodeDecodeError:
+            self.send_error_json(400, "Invalid character encoding")
+            raise HTTPError(400)
+        except json.JSONDecodeError:
+            self.send_error_json(400, "Invalid JSON")
+            raise HTTPError(400)
 
     def send_json(self, obj):
         if isinstance(obj, list):
