@@ -179,7 +179,7 @@ class BaseHandler(RequestHandler):
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
         if not type_.startswith('application/json'):
-            self.send_error_json(404, "Expected JSON")
+            self.send_error_json(400, "Expected JSON")
             raise HTTPError(400)
         return json.loads(self.request.body.decode('utf-8'))
 
