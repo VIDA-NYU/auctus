@@ -4,6 +4,7 @@ import {
   SearchResult,
   FilterVariables,
   Metadata,
+  ColumnMetadata,
   QuerySpec,
   RelatedFile,
   Session,
@@ -168,7 +169,7 @@ export interface UploadData {
   description?: string;
   address?: string;
   file?: File;
-  updatedColumns?: string;
+  manualAnnotations?: { columns: ColumnMetadata[] };
   customFields: Map<string, string>;
 }
 
@@ -185,8 +186,11 @@ export function upload(data: UploadData) {
   } else if (data.file) {
     formData.append('file', data.file);
   }
-  if (data.updatedColumns) {
-    formData.append('updatedColumns', data.updatedColumns);
+  if (data.manualAnnotations) {
+    formData.append(
+      'manual_annotations',
+      JSON.stringify(data.manualAnnotations)
+    );
   }
 
   // Custom fields

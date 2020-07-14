@@ -93,9 +93,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
         address: this.state.address ? this.state.address : undefined,
         name: this.state.name,
         description: this.state.description,
-        updatedColumns: JSON.stringify({
-          columns: modifiedColumns ? modifiedColumns : [],
-        }),
+        manualAnnotations: { columns: modifiedColumns || [] },
         customFields: this.state.customValues,
       });
       if (success) {

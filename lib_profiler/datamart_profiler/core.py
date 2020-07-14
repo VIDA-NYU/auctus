@@ -206,8 +206,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # check updated columns by the user
     updated_columns = []
-    if 'updated_columns' in metadata:
-        updated_columns = metadata['updated_columns']['columns']
+    if 'manual_annotations' in metadata:
+        updated_columns = metadata['manual_annotations']['columns']
 
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))

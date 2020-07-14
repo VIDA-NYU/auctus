@@ -2291,7 +2291,7 @@ class TestUpload(DatamartTest):
                     'description': "Simple CSV file sent through upload endpoint. Support type annotations made by users.",
                     'specialId': 12,
                     'dept': "internal",
-                    'updatedColumns': json.dumps(updated_columns_test).encode('utf-8'),
+                    'manual_annotations': json.dumps(updated_columns_test),
                 },
                 schema={
                     'type': 'object',
@@ -2332,7 +2332,7 @@ class TestUpload(DatamartTest):
                                     'date': lambda d: isinstance(d, str),
                                 },
                                 'filename': 'file',
-                                'updated_columns': updated_columns_test,
+                                'manual_annotations': updated_columns_test,
                             },
                             'materialize': {
                                 'identifier': 'datamart.upload',
@@ -3013,7 +3013,7 @@ annotated_metadata = {
     "specialId": 12,
     "dept": "internal",
     "filename": "file",
-    "updated_columns": updated_columns_test,
+    "manual_annotations": updated_columns_test,
     "columns": [
         {
             "name": "id",
