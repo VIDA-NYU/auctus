@@ -143,6 +143,26 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     return { keywords: query.query || '', filters };
   }
 
+  static getDerivedStateFromProps(
+    props: SearchAppProps,
+    state: SearchAppState
+  ) {
+    const { location } = props;
+    const params = new URLSearchParams(location.search);
+    // Get session from URL
+    const s = params.get('session');
+    let session: Session | undefined = undefined;
+    if (s) {
+      session = JSON.parse(decodeURIComponent(s)) || undefined;
+      if (session && session.session_id) {
+        return {
+          session: { ...session, system_name: session.system_name || 'TA3' },
+        };
+      }
+    }
+    return { session: undefined };
+  }
+
   updateSearchStateFromUrlParams(location: Location) {
     const params = new URLSearchParams(location.search);
     const q = params.get('q');
@@ -161,20 +181,11 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             this.fetchSearchResults(query);
           }
         );
+      } else {
+        this.setState(this.initialState());
       }
     } else {
       this.setState(this.initialState());
-    }
-    const s = params.get('session');
-    if (s) {
-      const session = JSON.parse(decodeURIComponent(s));
-      if (session.session_id) {
-        this.setState({
-          session: { ...session, system_name: session.system_name || 'TA3' },
-        });
-      }
-    } else {
-      this.setState({ session: undefined });
     }
   }
 
