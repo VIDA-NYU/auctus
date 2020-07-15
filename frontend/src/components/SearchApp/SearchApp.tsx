@@ -496,6 +496,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                     />
                     <AdvancedSearchBar
                       onAddFilter={type => this.handleAddFilter(type)}
+                      relatedFileEnabled={!session?.data_token}
                     />
                   </div>
                 </div>
@@ -530,6 +531,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             />
             <AdvancedSearchBar
               onAddFilter={type => this.handleAddFilter(type)}
+              relatedFileEnabled={!session?.data_token}
             />
             <div style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
               {this.renderFilters()}
