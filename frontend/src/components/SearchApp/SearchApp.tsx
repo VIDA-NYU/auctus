@@ -170,7 +170,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       const query: api.SearchQuery = JSON.parse(decodeURIComponent(q));
       if (query) {
         // Update state to match
-        const { keywords, filters } = SearchApp.queryToFilters(query);
+        let { keywords, filters } = SearchApp.queryToFilters(query);
+        if (this.state.session?.data_token) {
+          filters = filters.filter(f => f.type !== FilterType.RELATED_FILE);
+        }
         this.setState(
           {
             query: keywords,
@@ -415,45 +418,51 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   renderCompactFilters() {
-    return (
-      <ChipGroup>
-        {this.state.filters.map(filter => {
-          let icon = undefined,
-            title = undefined;
-          switch (filter.type) {
-            case FilterType.TEMPORAL:
-              title = 'Temporal';
-              icon = Icon.Calendar;
-              break;
-            case FilterType.RELATED_FILE:
-              title = 'Related File';
-              icon = Icon.File;
-              break;
-            case FilterType.GEO_SPATIAL:
-              title = 'Geo-Spatial';
-              icon = Icon.MapPin;
-              break;
-            case FilterType.SOURCE:
-              title = 'Sources';
-              icon = Icon.Database;
-              break;
-            default:
-              throw new Error(
-                `Received not supported filter type=[${filter.type}]`
-              );
-          }
-          return (
-            <Chip
-              key={`filter-chip-${filter.id}`}
-              icon={icon}
-              label={title}
-              onClose={() => this.removeFilter(filter.id)}
-              onEdit={() => this.toggleFilter(filter.id)}
-            />
+    const filters = this.state.filters.map(filter => {
+      let icon = undefined,
+        title = undefined;
+      switch (filter.type) {
+        case FilterType.TEMPORAL:
+          title = 'Temporal';
+          icon = Icon.Calendar;
+          break;
+        case FilterType.RELATED_FILE:
+          title = 'Related File';
+          icon = Icon.File;
+          break;
+        case FilterType.GEO_SPATIAL:
+          title = 'Geo-Spatial';
+          icon = Icon.MapPin;
+          break;
+        case FilterType.SOURCE:
+          title = 'Sources';
+          icon = Icon.Database;
+          break;
+        default:
+          throw new Error(
+            `Received not supported filter type=[${filter.type}]`
           );
-        })}
-      </ChipGroup>
-    );
+      }
+      return (
+        <Chip
+          key={`filter-chip-${filter.id}`}
+          icon={icon}
+          label={title}
+          onClose={() => this.removeFilter(filter.id)}
+          onEdit={() => this.toggleFilter(filter.id)}
+        />
+      );
+    });
+    if (this.state.session?.data_token) {
+      filters.push(
+        <Chip
+          key={`filter-chip-session-file`}
+          icon={Icon.File}
+          label={`File From ${this.state.session.system_name}`}
+        />
+      );
+    }
+    return <ChipGroup>{filters}</ChipGroup>;
   }
 
   render() {
