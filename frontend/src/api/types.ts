@@ -163,5 +163,6 @@ export interface Session {
   session_id: string;
   format?: string;
   format_options?: { [key: string]: string | number };
+  data_token?: string;
   system_name: string;
 }

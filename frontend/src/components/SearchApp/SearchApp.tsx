@@ -75,9 +75,18 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       .filter(f => f && f.state)
       .map(f => f.state as FilterVariables);
 
-    const relatedFiles: RelatedFile[] = state.filters
+    let relatedFiles: RelatedFile[] = state.filters
       .filter(f => f.type === FilterType.RELATED_FILE)
       .map(f => f.state as RelatedFile);
+    if (state.session?.data_token) {
+      relatedFiles = [
+        {
+          kind: 'localFile',
+          name: 'session input',
+          token: state.session.data_token,
+        },
+      ];
+    }
 
     const sources: string[][] = state.filters
       .filter(f => f.type === FilterType.SOURCE)
