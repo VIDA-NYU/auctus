@@ -159,7 +159,7 @@ services:
       - ./volumes/datasets:/datasets
       - ./volumes/cache:/cache
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:v2.19.3
     cpu_shares: 100
     ports:
       - 9090:9090
