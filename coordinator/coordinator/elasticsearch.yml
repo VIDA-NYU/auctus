@@ -131,6 +131,14 @@ datamart:
             index: false
           type:
             type: keyword
+          geohashes4:
+            properties:
+              hash:
+                type: keyword
+                index: false
+              number:
+                type: integer
+                index: false
           # we want to query individual spatial ranges
           ranges:
             type: nested
@@ -318,6 +326,14 @@ datamart_spatial_coverage:
         index: false
       type:
         type: keyword
+      geohashes4:
+        properties:
+          hash:
+            type: keyword
+            index: false
+          number:
+            type: integer
+            index: false
       ranges:
         type: nested
         properties:

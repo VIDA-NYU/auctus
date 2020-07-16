@@ -38,6 +38,20 @@ def check_ranges(min_, max_):
     return check
 
 
+def check_geohashes(prefix):
+    def check(geohashes):
+        assert isinstance(geohashes, list)
+        for entry in geohashes:
+            assert entry.keys() == {'hash', 'number'}
+            assert isinstance(entry['number'], int)
+            assert entry['number'] > 0
+            assert entry['hash'].startswith(prefix)
+
+        return True
+
+    return check
+
+
 def check_geo_ranges(min_long, min_lat, max_long, max_lat):
     def check(ranges):
         assert len(ranges) == 3
@@ -280,7 +294,13 @@ class TestLatlongSelection(DataTestCase):
         )
         # Check pairs
         self.assertJson(
-            [{k: v for k, v in c.items() if k != 'ranges'} for c in metadata['spatial_coverage']],
+            [
+                {
+                    k: v for k, v in c.items()
+                    if k not in ('ranges', 'geohashes4')
+                }
+                for c in metadata['spatial_coverage']
+            ],
             [
                 {'type': 'latlong', 'column_names': ['to lat', 'to long'], 'column_indexes': [2, 1]},
                 {'type': 'latlong', 'column_names': ['from latitude', 'from longitude'], 'column_indexes': [0, 3]},
@@ -716,6 +736,11 @@ class TestNominatim(DataTestCase):
                         'column_names': ['loc'],
                         'column_indexes': [1],
                         'ranges': check_geo_ranges(-74.00, 40.69, -73.98, 40.73),
+                        'geohashes4': [
+                            {'hash': '1211302313301103', 'number': 1},
+                            {'hash': '1211302313301102', 'number': 1},
+                            {'hash': '1211302313300022', 'number': 1},
+                        ],
                     },
                 ],
             },
@@ -956,6 +981,7 @@ class TestGeo(DataTestCase):
                         "type": "point",
                         "column_names": ["coords"],
                         "column_indexes": [1],
+                        "geohashes4": check_geohashes('1211302313'),
                         "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
                     }
                 ],
@@ -1012,6 +1038,7 @@ class TestGeo(DataTestCase):
                         "type": "point_latlong",
                         "column_names": ["coords"],
                         "column_indexes": [1],
+                        "geohashes4": check_geohashes('1211302313'),
                         "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
                     }
                 ],
