@@ -169,7 +169,7 @@ export interface UploadData {
   address?: string;
   file?: File;
   updatedColumns?: string;
-  customFields?: Map<string, string>;
+  customFields: Map<string, string>;
 }
 
 export function upload(data: UploadData) {
@@ -204,23 +204,6 @@ export function upload(data: UploadData) {
   };
 
   return api.post('/upload', formData, config);
-}
-export function initialProfile(data: UploadData) {
-  const formData = new FormData();
-  if (data.address) {
-    formData.append('address', data.address);
-  } else if (data.file) {
-    formData.append('data', data.file);
-  }
-
-  const config: AxiosRequestConfig = {
-    maxRedirects: 0,
-    headers: {
-      'content-type': 'multipart/form-data',
-    },
-  };
-
-  return api.post('/profile', formData, config);
 }
 
 export interface ProfileResult extends Metadata {
