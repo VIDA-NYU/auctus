@@ -371,13 +371,15 @@ description = "Python client for Elasticsearch"
 name = "elasticsearch"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4"
-version = "7.6.0"
+version = "7.8.1"
 
 [package.dependencies]
+certifi = "*"
 urllib3 = ">=1.21.1"
 
 [package.extras]
-develop = ["requests (>=2.0.0,<3.0.0)", "nose", "coverage", "mock", "pyyaml", "nosexcover", "sphinx (<1.7)", "sphinx-rtd-theme", "black", "jinja2"]
+async = ["aiohttp (>=3,<4)", "yarl"]
+develop = ["requests (>=2.0.0,<3.0.0)", "coverage", "mock", "pyyaml", "pytest", "pytest-cov", "sphinx (<1.7)", "sphinx-rtd-theme", "black", "jinja2"]
 docs = ["sphinx (<1.7)", "sphinx-rtd-theme"]
 requests = ["requests (>=2.4.0,<3.0.0)"]
 
@@ -1075,8 +1077,8 @@ docutils = [
     {file = "docutils-0.16.tar.gz", hash = "sha256:c2de3a60e9e7d07be26b7f2b00ca0309c207e06c100f9cc2a94931fc75a478fc"},
 ]
 elasticsearch = [
-    {file = "elasticsearch-7.6.0-py2.py3-none-any.whl", hash = "sha256:f4bb05cfe55cf369bdcb4d86d0129d39d66a91fd9517b13cd4e4231fbfcf5c81"},
-    {file = "elasticsearch-7.6.0.tar.gz", hash = "sha256:d228b2d37ac0865f7631335268172dbdaa426adec1da3ed006dddf05134f89c8"},
+    {file = "elasticsearch-7.8.1-py2.py3-none-any.whl", hash = "sha256:2ffbd746fc7d2db08e5ede29c822483705f29c4bf43b0875c238637d5d843d44"},
+    {file = "elasticsearch-7.8.1.tar.gz", hash = "sha256:92b534931865a186906873f75ae0b91808ff5036b0f2b9269eb5f6dc09644b55"},
 ]
 entrypoints = [
     {file = "entrypoints-0.3-py2.py3-none-any.whl", hash = "sha256:589f874b313739ad35be6e0cd7efde2a4e9b6fea91edcc34e58ecbb8dbe56d19"},
