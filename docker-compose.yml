@@ -44,7 +44,7 @@ services:
       - 8080:15672
       - 5672:5672
   redis:
-    image: redis:5.0
+    image: redis:6.0
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     cpu_shares: 100
     ports:
