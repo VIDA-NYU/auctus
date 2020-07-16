@@ -959,21 +959,11 @@ class Upload(BaseHandler):
 
         if 'file' in self.request.files:
             file = self.request.files['file'][0]
-            metadata = dict(
-                filename=file.filename,
-                name=self.get_body_argument('name', None),
-                source='upload',
-                materialize=dict(identifier='datamart.upload',
-                                 date=datetime.utcnow().isoformat() + 'Z'),
-            )
-            description = self.get_body_argument('description', None)
-            if description:
-                metadata['description'] = description
+            metadata['filename'] = file.filename
             updatedColumns = self.get_body_argument('updatedColumns', None)
             if updatedColumns:
                 metadata['updated_columns'] = json.loads(updatedColumns)
 
-            metadata['filename'] = file.filename
             dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
             # Write file to shared storage

@@ -4,13 +4,7 @@ import * as Icon from 'react-feather';
 import * as api from '../../api/rest';
 import { SubmitButton } from '../ui/Button/Button';
 import './Upload.css';
-import {
-  ProfileData,
-  ProfilingStatus,
-  ColumnMetadata,
-  Annotation,
-  TypesCategory,
-} from '../../api/types';
+import { ColumnMetadata, Annotation, TypesCategory } from '../../api/types';
 import { ProfileDataset } from './ProfileDataset';
 
 interface Validation {
@@ -28,9 +22,9 @@ interface UploadFormState {
   address?: string;
   validation: Validation;
   submitting: boolean;
-  profilingStatus: ProfilingStatus;
+  profilingStatus?: api.RequestStatus;
   failedProfiler?: string;
-  profiledData?: ProfileData;
+  profiledData?: api.ProfileResult;
   columnsName: string[];
   customFields?: api.CustomFields;
   customValues: Map<string, string>;
@@ -72,7 +66,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       description: '',
       validation: { valid: true, errors: {} },
       submitting: false,
-      profilingStatus: ProfilingStatus.STOPPED,
+      profilingStatus: undefined,
       columnsName: [],
       customValues: new Map(),
     };
@@ -82,7 +76,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     e.preventDefault();
     const validation = this.validate();
     if (!validation.valid) {
-      this.setState({ validation, profilingStatus: ProfilingStatus.STOPPED });
+      this.setState({ validation });
     } else {
       this.setState({ submitting: true });
       const modifiedColumns = this.state.profiledData?.columns.filter(col =>
@@ -103,7 +97,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       } else {
         this.setState({
           submitting: false,
-          profilingStatus: ProfilingStatus.STOPPED,
+          profilingStatus: undefined,
         });
       }
     }
@@ -138,31 +132,26 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
   }
 
   async onProfileData() {
-    this.setState({ profilingStatus: ProfilingStatus.RUNNING });
-    try {
-      const result = await api.initialProfile({
-        file: this.getFile(),
-        address: this.state.address ? this.state.address : undefined,
-        name: this.state.name,
-      });
-      if (result.status === 200) {
-        this.setState({
-          profiledData: result.data,
-          profilingStatus: ProfilingStatus.SUCCESSED,
+    this.setState({ profilingStatus: api.RequestStatus.IN_PROGRESS });
+    const file = this.getFile();
+    if (file) {
+      const result = api.profile(file);
+      result
+        .then(data => {
+          this.setState({
+            profiledData: data,
+            profilingStatus: api.RequestStatus.SUCCESS,
+          });
+          return true;
+        })
+        .catch(err => {
+          // Handle failure
+          this.setState({
+            failedProfiler: `${err}`,
+            profilingStatus: api.RequestStatus.ERROR,
+          });
         });
-        return true;
-      }
-      this.setState({
-        failedProfiler: `Error ${result.status}: ${result.statusText}`,
-        profilingStatus: ProfilingStatus.ERROR,
-      });
-    } catch (e) {
-      this.setState({
-        failedProfiler: `${e}`,
-        profilingStatus: ProfilingStatus.ERROR,
-      });
     }
-    return false;
   }
 
   updateColumnType(
@@ -213,7 +202,11 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       customFields = (
         <>
           {Object.entries(this.state.customFields).map(([f, opts]) => (
-            <FormGroup for={`upload-${f}`} label={opts.label + ' *'} key={f}>
+            <FormGroup
+              for={`upload-${f}`}
+              label={opts.label + (opts.required ? ' *' : '')}
+              key={f}
+            >
               <input
                 type={opts.type === 'integer' ? 'number' : 'text'}
                 id={`upload-${f}`}
@@ -298,7 +291,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             onChange={e => this.setState({ description: e.target.value })}
           />
         </FormGroup>
-        {this.state.profilingStatus !== ProfilingStatus.STOPPED &&
+        {this.state.profilingStatus !== undefined &&
           this.props.type === 'upload' &&
           this.fileInput.current && (
             <FormGroup for="upload-sample" label="Dataset Sample">
