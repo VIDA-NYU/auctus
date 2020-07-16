@@ -2268,7 +2268,7 @@ class TestSession(DatamartTest):
                         'url': lambda u: u.startswith(
                             os.environ['API_URL'] + '/augment/'
                         ),
-                        'type': 'augmentation',
+                        'type': 'join',
                     },
                 ],
             },
@@ -2330,7 +2330,7 @@ class TestSession(DatamartTest):
                         'url': lambda u: u.startswith(
                             os.environ['API_URL'] + '/augment/'
                         ),
-                        'type': 'augmentation',
+                        'type': 'join',
                     },
                 ],
             },

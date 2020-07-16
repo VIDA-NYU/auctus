@@ -896,7 +896,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                         'session:' + session_id,
                         json.dumps(
                             {
-                                'type': 'augmentation',
+                                'type': task['augmentation']['type'],
                                 'url': '/augment/' + key,
                             },
                             # Compact
