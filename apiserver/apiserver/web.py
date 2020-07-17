@@ -24,7 +24,8 @@ from urllib.parse import urlencode
 import uuid
 import zipfile
 
-from datamart_augmentation.augmentation import AugmentationError, augment
+from datamart_augmentation import AugmentationError
+from datamart_core.augment import augment
 from datamart_core.common import setup_logging, hash_json, contextdecorator, \
     log_future, json2msg
 from datamart_core.fscache import cache_get, cache_get_or_set
