@@ -1,5 +1,4 @@
 import logging
-import pandas
 import time
 import uuid
 
@@ -36,7 +35,7 @@ def augment(data, newdata, metadata, task, writer,
     start = time.perf_counter()
     if task['augmentation']['type'] == 'join':
         output_metadata = join(
-            pandas.read_csv(data, error_bad_lines=False),
+            data,
             newdata,
             metadata,
             task['metadata'],

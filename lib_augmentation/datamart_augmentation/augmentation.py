@@ -322,13 +322,27 @@ def join(
     return_only_datamart_data=False,
 ):
     """
-    Performs a join between original_data (pandas.DataFrame)
+    Performs a join between original_data (pandas.DataFrame or path to CSV)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
 
     The result is written to the writer object.
 
     Returns the metadata for the result.
     """
+
+    if isinstance(original_data, pd.DataFrame):
+        pass
+    elif hasattr(original_data, 'read'):
+        original_data = pd.read_csv(
+            original_data,
+            error_bad_lines=False,
+            dtype=str,
+        )
+    else:
+        raise TypeError(
+            "join() argument 1 should be a path (str) or a DataFrame, got "
+            "%r" % type(original_data)
+        )
 
     augment_data_columns = [col['name'] for col in augment_metadata['columns']]
 
