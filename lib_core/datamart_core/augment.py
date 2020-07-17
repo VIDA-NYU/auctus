@@ -50,7 +50,7 @@ def augment(data, newdata, metadata, task, writer,
         )
     elif task['augmentation']['type'] == 'union':
         output_metadata = union(
-            pandas.read_csv(data, error_bad_lines=False, dtype=str),
+            data,
             newdata,
             metadata,
             task['metadata'],
