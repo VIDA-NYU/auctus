@@ -325,7 +325,9 @@ def join(
     Performs a join between original_data (pandas.DataFrame)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
 
-    Returns the new pandas.DataFrame object.
+    The result is written to the writer object.
+
+    Returns the metadata for the result.
     """
 
     augment_data_columns = [col['name'] for col in augment_metadata['columns']]
@@ -531,7 +533,9 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
     Performs a union between original_data (pandas.DataFrame)
     and augment_data_path (path to CSV file) using columns.
 
-    Returns the new pandas.DataFrame object.
+    The result is streamed to the writer object.
+
+    Returns the metadata for the result.
     """
 
     augment_data_columns = [col['name'] for col in augment_metadata['columns']]
