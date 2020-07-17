@@ -273,6 +273,7 @@ def perform_aggregations(
                     else funcs
                 )
         else:
+            # TODO: Use metadata here, cast before aggregating
             if ('int' in str(data.dtypes[column]) or
                     'float' in str(data.dtypes[column])):
                 agg_functions[column] = ['mean', 'sum', 'max', 'min']
@@ -372,6 +373,7 @@ def join(
     augment_data_chunks = pd.read_csv(
         augment_data_path,
         error_bad_lines=False,
+        dtype=str,
         chunksize=CHUNK_SIZE_ROWS,
     )
     try:
