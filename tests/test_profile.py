@@ -352,6 +352,15 @@ class TestTemporalResolutions(unittest.TestCase):
             ]),
             'year',
         )
+        self.assertEqual(
+            get_res([
+                '2017-01-01',
+                '2018-04-01',
+                '2018-07-01',
+                '2018-12-31',
+            ]),
+            'quarter',
+        )
 
 
 class TestTypes(unittest.TestCase):

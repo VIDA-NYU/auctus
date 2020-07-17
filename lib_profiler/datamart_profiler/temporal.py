@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 # Keep in sync with frontend's TemporalResolution
 temporal_aggregation_keys = {
     'year': '%Y',
+    'quarter': lambda dt: pandas.Timestamp(
+        year=dt.year,
+        month=((dt.month - 1) // 3) * 3 + 1,
+        day=1,
+    ),
     'month': '%Y-%m',
     'week': lambda dt: (
         # Simply using "%Y-%W" doesn't work at year boundaries
