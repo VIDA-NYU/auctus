@@ -584,6 +584,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
         augment_data_chunks = pd.read_csv(
             augment_data_path,
             error_bad_lines=False,
+            dtype=str,
             chunksize=CHUNK_SIZE_ROWS,
         )
         for augment_data in augment_data_chunks:
