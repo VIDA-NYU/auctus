@@ -4,7 +4,6 @@ import logging
 import numpy as np
 import pandas as pd
 import time
-import uuid
 
 from datamart_materialize import types
 from datamart_profiler.temporal import get_temporal_resolution, \
@@ -323,11 +322,27 @@ def join(
     return_only_datamart_data=False,
 ):
     """
-    Performs a join between original_data (pandas.DataFrame)
+    Performs a join between original_data (pandas.DataFrame or path to CSV)
     and augment_data (pandas.DataFrame) using left_columns and right_columns.
 
-    Returns the new pandas.DataFrame object.
+    The result is written to the writer object.
+
+    Returns the metadata for the result.
     """
+
+    if isinstance(original_data, pd.DataFrame):
+        pass
+    elif hasattr(original_data, 'read'):
+        original_data = pd.read_csv(
+            original_data,
+            error_bad_lines=False,
+            dtype=str,
+        )
+    else:
+        raise TypeError(
+            "join() argument 1 should be a path (str) or a DataFrame, got "
+            "%r" % type(original_data)
+        )
 
     augment_data_columns = [col['name'] for col in augment_metadata['columns']]
 
@@ -389,7 +404,7 @@ def join(
     join_ = []
     # Iterate over chunks of augment data
     for i, augment_data in enumerate(
-            itertools.chain([first_augment_data], augment_data_chunks)
+        itertools.chain([first_augment_data], augment_data_chunks)
     ):
         # Convert data types
         augment_data = set_data_index(
@@ -529,58 +544,88 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
           left_columns, right_columns,
           return_only_datamart_data=False):
     """
-    Performs a union between original_data (pandas.DataFrame)
+    Performs a union between original_data (pandas.DataFrame or path to CSV)
     and augment_data_path (path to CSV file) using columns.
 
-    Returns the new pandas.DataFrame object.
+    The result is streamed to the writer object.
+
+    Returns the metadata for the result.
     """
+
+    if isinstance(original_data, pd.DataFrame):
+        original_data = iter((original_data,))
+    elif hasattr(original_data, 'read'):
+        original_data = iter(pd.read_csv(
+            original_data,
+            error_bad_lines=False,
+            dtype=str,
+            chunksize=CHUNK_SIZE_ROWS,
+        ))
+    else:
+        raise TypeError(
+            "union() argument 1 should be a path (str) or a DataFrame, got "
+            "%r" % type(original_data)
+        )
+
+    first_original_data = next(original_data)
 
     augment_data_columns = [col['name'] for col in augment_metadata['columns']]
 
     logger.info(
         "Performing union, original_data: %r, augment_data: %r, "
         "left_columns: %r, right_columns: %r",
-        original_data.columns, augment_data_columns,
+        first_original_data.columns, augment_data_columns,
         left_columns, right_columns,
     )
 
     # Column renaming
     rename = dict()
     for left, right in zip(left_columns, right_columns):
-        rename[augment_data_columns[right[0]]] = original_data.columns[left[0]]
+        rename[augment_data_columns[right[0]]] = \
+            first_original_data.columns[left[0]]
 
     # Missing columns will be created as NaN
     missing_columns = list(
-        set(original_data.columns) - set(augment_data_columns)
+        set(first_original_data.columns) - set(augment_data_columns)
     )
 
     # Sequential d3mIndex if needed, picking up from the last value
     # FIXME: Generated d3mIndex might collide with other splits?
     d3m_index = None
-    if 'd3mIndex' in original_data.columns:
-        d3m_index = int(original_data['d3mIndex'].max() + 1)
+    if 'd3mIndex' in first_original_data.columns:
+        d3m_index = int(first_original_data['d3mIndex'].max()) + 1
 
     logger.info("renaming: %r, missing_columns: %r", rename, missing_columns)
 
     # Streaming union
     start = time.perf_counter()
     with WriteCounter(writer.open_file('w')) as fout:
+        orig_rows = 0
+        # Write header
+        fout.write(','.join(first_original_data.columns) + '\n')
         # Write original data
-        fout.write(','.join(original_data.columns) + '\n')
-        total_rows = 0
         if not return_only_datamart_data:
-            original_data.to_csv(
-                fout,
-                header=False,
-                index=False,
-                line_terminator='\r\n',
-            )
-            total_rows += len(original_data)
+            for chunk in itertools.chain([first_original_data], original_data):
+                chunk.to_csv(
+                    fout,
+                    header=False,
+                    index=False,
+                    line_terminator='\r\n',
+                )
+                orig_rows += len(chunk)
+                if d3m_index is not None:
+                    d3m_index = max(
+                        d3m_index,
+                        int(chunk['d3mIndex'].max()) + 1,
+                    )
+
+        total_rows = orig_rows
 
         # Iterate on chunks of augment data
         augment_data_chunks = pd.read_csv(
             augment_data_path,
             error_bad_lines=False,
+            dtype=str,
             chunksize=CHUNK_SIZE_ROWS,
         )
         for augment_data in augment_data_chunks:
@@ -600,7 +645,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
                 augment_data[name] = np.nan
 
             # Reorder columns
-            augment_data = augment_data[original_data.columns]
+            augment_data = augment_data[first_original_data.columns]
 
             # Add to CSV output
             augment_data.to_csv(
@@ -622,69 +667,10 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             qualValue=dict(
                 new_columns=[],
                 removed_columns=[],
-                nb_rows_before=original_data.shape[0],
+                nb_rows_before=orig_rows,
                 nb_rows_after=total_rows,
                 augmentation_type='union'
             ),
             qualValueType='dict'
         )],
     }
-
-
-def augment(data, newdata, metadata, task, writer,
-            columns=None, return_only_datamart_data=False):
-    """
-    Augments original data based on the task.
-
-    :param data: the data to be augmented, as binary file object.
-    :param newdata: the path to the CSV file to augment with.
-    :param metadata: the metadata of the data to be augmented.
-    :param task: the augmentation task.
-    :param writer: Writer on which to save the files.
-    :param columns: a list of column indices from newdata that will be added to data
-    :param return_only_datamart_data: only returns the portion of newdata that matches
-      well with data.
-    """
-
-    if 'id' not in task:
-        raise AugmentationError("Dataset id for the augmentation task not provided")
-
-    # TODO: add support for combining multiple columns before an augmentation
-    #   e.g.: [['street number', 'street', 'city']] and [['address']]
-    #   currently, Datamart does not support such cases
-    #   this means that spatial joins (with GPS) are not supported for now
-
-    # Perform augmentation
-    start = time.perf_counter()
-    if task['augmentation']['type'] == 'join':
-        output_metadata = join(
-            pd.read_csv(data, error_bad_lines=False),
-            newdata,
-            metadata,
-            task['metadata'],
-            writer,
-            task['augmentation']['left_columns'],
-            task['augmentation']['right_columns'],
-            columns=columns,
-            agg_functions=task['augmentation'].get('agg_functions'),
-            temporal_resolution=task['augmentation'].get('temporal_resolution'),  # look
-            return_only_datamart_data=return_only_datamart_data,
-        )
-    elif task['augmentation']['type'] == 'union':
-        output_metadata = union(
-            pd.read_csv(data, error_bad_lines=False),
-            newdata,
-            metadata,
-            task['metadata'],
-            writer,
-            task['augmentation']['left_columns'],
-            task['augmentation']['right_columns'],
-            return_only_datamart_data=return_only_datamart_data,
-        )
-    else:
-        raise AugmentationError("Augmentation task not provided")
-    logger.info("Total augmentation: %.4fs", time.perf_counter() - start)
-
-    # Write out the metadata
-    writer.set_metadata(uuid.uuid4().hex, output_metadata)
-    return writer.finish()
