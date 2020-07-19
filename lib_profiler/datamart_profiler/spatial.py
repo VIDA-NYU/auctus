@@ -28,8 +28,8 @@ MAX_NOMINATIM_REQUESTS = 200
 NOMINATIM_BATCH_SIZE = 30
 NOMINATIM_MIN_SPLIT_BATCH_SIZE = 6  # Batches >=this are divided on failure
 
-LATITUDE = ('latitude', 'lat')
-LONGITUDE = ('longitude', 'long', 'lon', 'lng')
+LATITUDE = ('latitude', 'lat', 'ycoord', 'y_coord')
+LONGITUDE = ('longitude', 'long', 'lon', 'lng', 'xcoord', 'x_coord')
 
 
 PROM_NOMINATIM_REQS = prometheus_client.Counter(
