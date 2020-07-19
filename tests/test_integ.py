@@ -718,6 +718,54 @@ class TestDataSearch(DatamartTest):
             ]
         )
 
+    def test_geo_join(self):
+        with data('geo_aug.csv') as geo_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': geo_aug,
+                },
+                schema=result_list_schema,
+            )
+        results = response.json()['results']
+        results = [r for r in results if r['augmentation']['type'] == 'join']
+        results = sorted(results, key=lambda r: r['id'])
+        self.assertJson(
+            results,
+            [
+                {
+                    'id': 'datamart.test.geo',
+                    'metadata': geo_metadata,
+                    'd3m_dataset_description': geo_metadata_d3m('4.0.0'),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0, 1]],
+                        'left_columns_names': [['lat', 'long']],
+                        'right_columns': [[1, 2]],
+                        'right_columns_names': [['lat', 'long']],
+                        'type': 'join',
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None,
+                },
+                {
+                    'id': 'datamart.test.geo_wkt',
+                    'metadata': geo_wkt_metadata,
+                    'd3m_dataset_description': lambda d: isinstance(d, dict),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0, 1]],
+                        'left_columns_names': [['lat', 'long']],
+                        'right_columns': [[1]],
+                        'right_columns_names': [['coords']],
+                        'type': 'join',
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None,
+                }
+            ],
+        )
+
     def test_temporal_daily_join(self):
         with data('daily_aug.csv') as daily_aug:
             response = self.datamart_post(
