@@ -1786,6 +1786,171 @@ class TestAugment(DatamartTest):
                 },
             )
 
+    def test_geo_join(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.geo',
+            schema=metadata_schema,
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.geo',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0, 1]],
+                'left_columns_names': [['lat', 'long']],
+                'right_columns': [[1, 2]],
+                'right_columns_names': [['lat', 'long']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        with data('geo_aug.csv') as geo_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': geo_aug,
+                },
+            )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
+        self.assertEqual(
+            set(zip_.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip_.open('tables/learningData.csv') as table:
+            table_lines = table.read().decode('utf-8').splitlines(False)
+            # Truncate fields to work around rounding errors
+            # FIXME: Deal with rounding errors
+            table_lines = [
+                ','.join(
+                    e[:8] if e[0] < 'a' or e[0] > 'z' else e
+                    for e in line.split(',')
+                )
+                for line in table_lines
+            ]
+            self.assertCsvEqualNoOrder(
+                '\n'.join(table_lines[0:6]),
+                'lat,long,id,letter,id_r,mean height,sum height,max height,min height',
+                [
+                    '40.73279,-73.9985,place100,a,'
+                    + 'place00,50.24088,351.6862,85.77256,27.97864',
+                    '40.72970,-73.9978,place101,b,'
+                    + 'place01,42.57717,425.7717,67.62636,17.53429',
+                    '40.73266,-73.9975,place102,c,'
+                    + 'place06,50.03064,250.1532,79.72296,23.72270',
+                    '40.73117,-74.0018,place103,d,'
+                    + 'place08,49.40183,395.2146,84.19146,5.034845',
+                    '40.69427,-73.9898,place104,e,'
+                    + 'place59,47.73903,286.4341,93.16298,11.71055',
+                ],
+            )
+        with zip_.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            self.assertJson(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '998 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '4.0.0',
+                        'datasetVersion': '1.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'lat',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'long',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 2,
+                                    'colName': 'id',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
+                                    'colName': 'letter',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 4,
+                                    'colName': 'id_r',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 5,
+                                    'colName': 'mean height',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 6,
+                                    'colName': 'sum height',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 7,
+                                    'colName': 'max height',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 8,
+                                    'colName': 'min height',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                }
+                            ],
+                            'isCollection': False,
+                            'resFormat': {'text/csv': ["csv"]},
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'join',
+                                'nb_rows_after': 10,
+                                'nb_rows_before': 10,
+                                'new_columns': [
+                                    'id_r', 'mean height', 'sum height',
+                                    'max height', 'min height',
+                                ],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
+            )
+
     def test_temporal_daily_join(self):
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.daily',
