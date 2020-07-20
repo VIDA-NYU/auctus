@@ -403,8 +403,8 @@ def join(
     start = time.perf_counter()
     join_ = []
     # Iterate over chunks of augment data
-    for i, augment_data in enumerate(
-        itertools.chain([first_augment_data], augment_data_chunks)
+    for augment_data in itertools.chain(
+            [first_augment_data], augment_data_chunks
     ):
         # Convert data types
         augment_data = set_data_index(
