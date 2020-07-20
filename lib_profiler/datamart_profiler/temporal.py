@@ -56,7 +56,7 @@ def get_temporal_resolution(values):
     return 'second'
 
 
-_defaults = datetime(1985, 1, 1), datetime(2005, 6, 15)
+_defaults = datetime(1985, 1, 1), datetime(2005, 6, 1)
 
 
 def parse_date(string):
