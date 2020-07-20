@@ -3,9 +3,11 @@ import itertools
 import logging
 import numpy as np
 import pandas as pd
+from sklearn.neighbors._kd_tree import KDTree
 import time
 
 from datamart_materialize import types
+from datamart_profiler.spatial import median_smallest_distance
 from datamart_profiler.temporal import get_temporal_resolution, \
     temporal_aggregation_keys
 
@@ -313,6 +315,37 @@ def perform_aggregations(
 CHUNK_SIZE_ROWS = 10000
 
 
+def _tree_nearest(tree, max_dist):
+    def transform(df):
+        # Convert to numeric numpy array
+        points = pd.DataFrame({
+            'x': pd.to_numeric(
+                df.iloc[:, 0],
+                errors='coerce',
+                downcast='float',
+            ),
+            'y': pd.to_numeric(
+                df.iloc[:, 1],
+                errors='coerce',
+                downcast='float',
+            ),
+        }).values
+        # Run input through tree
+        dist, indices = tree.query(points, return_distance=True)
+        indices = indices.reshape((-1,))
+        dist = dist.reshape((-1,))
+
+        # Build array of transformed coordinates
+        coords = tree.get_arrays()[0]
+        res = coords[indices]
+
+        # Discard points too far
+        res[dist >= max_dist] = np.nan
+        return res
+
+    return transform
+
+
 def join(
     original_data, augment_data_path, original_metadata, augment_metadata,
     writer,
@@ -349,12 +382,48 @@ def join(
     # only converting data types for columns involved in augmentation
     original_join_columns_idx = []
     augment_join_columns_idx = []
+    augment_columns_transform = []
     for left, right in zip(left_columns, right_columns):
-        if len(left) > 1 or len(right) > 1:
+        if len(left) == 2 and len(right) == 2:
+            # Spatial augmentation
+            # Get those columns
+            points = original_data.iloc[:, left]
+            # De-duplicate
+            points = pd.DataFrame(list(
+                set(tuple(p) for p in points.values)
+            ))
+            # Convert to numeric numpy array
+            points = pd.DataFrame({
+                'x': pd.to_numeric(
+                    points.iloc[:, 0],
+                    errors='coerce',
+                    downcast='float',
+                ),
+                'y': pd.to_numeric(
+                    points.iloc[:, 1],
+                    errors='coerce',
+                    downcast='float',
+                ),
+            }).values
+            # Build KDTree
+            tree = KDTree(points)
+            # Compute max distance for nearest join
+            max_dist = 2 * median_smallest_distance(points, tree)
+            logger.info("Using nearest spatial join, max=%r", max_dist)
+            # Store transformation
+            augment_columns_transform.append((
+                right,
+                _tree_nearest(tree, max_dist),
+            ))
+
+            original_join_columns_idx.extend(left)
+            augment_join_columns_idx.extend(right)
+        elif len(left) > 1 or len(right) > 1:
             raise AugmentationError("Datamart currently does not support "
                                     "combination of columns for augmentation.")
-        original_join_columns_idx.append(left[0])
-        augment_join_columns_idx.append(right[0])
+        else:
+            original_join_columns_idx.append(left[0])
+            augment_join_columns_idx.append(right[0])
 
     original_data = set_data_index(
         original_data,
@@ -406,6 +475,10 @@ def join(
     for augment_data in itertools.chain(
             [first_augment_data], augment_data_chunks
     ):
+        # Run transforms
+        for cols, transform in augment_columns_transform:
+            augment_data.iloc[:, cols] = transform(augment_data.iloc[:, cols])
+
         # Convert data types
         augment_data = set_data_index(
             augment_data,
