@@ -65,9 +65,10 @@ temporal_resolutions_priorities = {
 def _transform_index(level, func):
     def inner(index):
         if isinstance(index, pd.MultiIndex):
-            return index.set_levels(
-                [index.levels[i] if i != level
-                 else func(index.levels[i])
+            old_index = index.to_frame()
+            return pd.MultiIndex.from_arrays(
+                [old_index.iloc[:, i] if i != level
+                 else func(old_index.iloc[:, i])
                  for i in range(len(index.levels))]
             )
         else:
@@ -78,9 +79,10 @@ def _transform_index(level, func):
 
 def _transform_data_index(data, level, func):
     if isinstance(data.index, pd.MultiIndex):
-        data.index = data.index.set_levels(
-            [data.index.levels[i] if i != level
-             else func(data.index.levels[i])
+        old_index = data.index.to_frame()
+        data.index = pd.MultiIndex.from_arrays(
+            [old_index.iloc[:, i] if i != level
+             else func(old_index.iloc[:, i])
              for i in range(len(data.index.levels))]
         )
     else:
@@ -152,10 +154,14 @@ def match_temporal_resolutions(input_data, companion_data, temporal_resolution=N
             else:
                 funcs.append(lambda x: x)
 
-        return lambda idx: idx.set_levels(
-            func(lvl)
-            for lvl, func in zip(idx.levels, funcs)
-        )
+        def transform(index):
+            old_index = index.to_frame()
+            return pd.MultiIndex.from_arrays(
+                func(old_index.iloc[:, lvl])
+                for lvl, func in zip(range(len(index.levels)), funcs)
+            )
+
+        return transform
     elif (isinstance(input_data.index, pd.DatetimeIndex)
           and isinstance(companion_data.index, pd.DatetimeIndex)):
         return match_column_temporal_resolutions(
