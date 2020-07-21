@@ -173,6 +173,10 @@ def match_column_temporal_resolutions(index_1, index_2, level,
     """Matches the resolutions between the dataset indices.
     """
 
+    if isinstance(index_1, pd.MultiIndex):
+        index_1 = index_1.levels[level]
+        index_2 = index_2.levels[level]
+
     if not (index_1.is_all_dates and index_2.is_all_dates):
         return lambda idx: idx
 
