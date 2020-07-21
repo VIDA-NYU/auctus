@@ -122,6 +122,9 @@ def set_data_index(data, columns, columns_metadata, drop=False):
                 lambda idx: idx.str.lower(),
             )
 
+    # Names of multiindex have to match for join() to work
+    data.index.names = ['%04d' % i for i in range(len(data.index.names))]
+
     return data
 
 
