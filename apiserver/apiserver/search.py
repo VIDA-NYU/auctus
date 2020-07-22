@@ -701,11 +701,6 @@ def get_joinable_datasets(
                 'right_columns_names': right_columns_names,
             }
         )
-        logger.info(
-            "Temporal resolutions: left=%r right=%r",
-            left_temporal_resolution,
-            right_temporal_resolution,
-        )
         if left_temporal_resolution and right_temporal_resolution:
             # Keep in sync with lib_augmentation's match_column_temporal_resolutions
             if (
