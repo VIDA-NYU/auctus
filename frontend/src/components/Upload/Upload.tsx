@@ -4,8 +4,14 @@ import * as Icon from 'react-feather';
 import * as api from '../../api/rest';
 import { SubmitButton } from '../ui/Button/Button';
 import './Upload.css';
-import { ColumnMetadata, Annotation, TypesCategory } from '../../api/types';
+import {
+  ColumnMetadata,
+  Annotation,
+  TypesCategory,
+  ColumnType,
+} from '../../api/types';
 import { ProfileDataset } from './ProfileDataset';
+import { isSubstrInclude } from '../../utils';
 
 interface Validation {
   valid: boolean;
@@ -154,6 +160,58 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     }
   }
 
+  addAnnotation(col: ColumnMetadata, value: string): ColumnMetadata {
+    if (value.includes(ColumnType.DATE_TIME) && value.includes('-')) {
+      return {
+        ...col,
+        semantic_types: [...col.semantic_types, value.split('-')[0]],
+        temporal_resolution: value.split('-')[1].toLowerCase(),
+      };
+    } else if (
+      value.includes(ColumnType.LATITUDE) ||
+      value.includes(ColumnType.LONGITUDE)
+    ) {
+      return {
+        ...col,
+        semantic_types: [...col.semantic_types, value.split('-')[0]],
+        latlong_pair: value.substring(
+          value.lastIndexOf('-(pair') + '-(pair'.length,
+          value.lastIndexOf(')')
+        ),
+      };
+    } else {
+      return {
+        ...col,
+        semantic_types: [...col.semantic_types, value],
+      };
+    }
+  }
+
+  removeAnnotation(col: ColumnMetadata, value: string): ColumnMetadata {
+    const updatedColumn: ColumnMetadata = {
+      ...col,
+      semantic_types: col.semantic_types.filter(item => item !== value),
+    };
+    if (
+      value.includes(ColumnType.DATE_TIME) &&
+      'temporal_resolution' in updatedColumn
+    ) {
+      delete updatedColumn['temporal_resolution'];
+    }
+    if (
+      !(
+        isSubstrInclude(col['semantic_types'], ColumnType.LATITUDE) &&
+        isSubstrInclude(col['semantic_types'], ColumnType.LONGITUDE)
+      ) &&
+      (value.includes(ColumnType.LATITUDE) ||
+        value.includes(ColumnType.LONGITUDE)) &&
+      'latlong_pair' in updatedColumn
+    ) {
+      delete updatedColumn['latlong_pair'];
+    }
+    return updatedColumn;
+  }
+
   updateColumnType(
     value: string,
     column: ColumnMetadata,
@@ -169,18 +227,10 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             }
             if (type === TypesCategory.SEMANTIC) {
               if (annotation === Annotation.ADD) {
-                return {
-                  ...col,
-                  semantic_types: [...col.semantic_types, value],
-                };
+                return this.addAnnotation(col, value);
               }
               if (annotation === Annotation.REMOVE) {
-                return {
-                  ...col,
-                  semantic_types: col.semantic_types.filter(
-                    item => item !== value
-                  ),
-                };
+                return this.removeAnnotation(col, value);
               }
             }
             return { ...col };

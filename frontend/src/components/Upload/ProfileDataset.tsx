@@ -1,9 +1,15 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import { ColumnMetadata, TypesCategory } from '../../api/types';
+import {
+  ColumnMetadata,
+  TypesCategory,
+  ColumnType,
+  TemporalResolution,
+} from '../../api/types';
 import { useTable, Column } from 'react-table';
 import { Loading } from '../visus/Loading/Loading';
 import { RequestStatus, ProfileResult } from '../../api/rest';
+import { isSubstrInclude, updateLatLonDropdown } from '../../utils';
 
 const classMapping: { [key: string]: string } = {
   text: 'semtype-text',
@@ -21,15 +27,30 @@ function formatTypeName(type: string) {
     .replace('https://metadata.datadrivendiscovery.org/types/', '');
 }
 
-function SemanticTypeBadge(props: { type: string; onRemove: () => void }) {
+function SemanticTypeBadge(props: {
+  type: string;
+  column: ColumnMetadata;
+  onRemove: () => void;
+}) {
   const label = formatTypeName(props.type);
   const semtypeClass = classMapping[label.toLowerCase()];
   const spanClass = semtypeClass
     ? `inline-flex badge badge-pill semtype ${semtypeClass}`
     : 'inline-flex badge badge-pill semtype';
+  const tempResolution =
+    label.toLowerCase() === 'datetime' && props.column.temporal_resolution
+      ? ' ' + props.column.temporal_resolution
+      : '';
+  const latlonPair =
+    (label.toLowerCase() === 'latitude' ||
+      label.toLowerCase() === 'longitude') &&
+    props.column.latlong_pair
+      ? '-(pair' + props.column.latlong_pair + ')'
+      : '';
+
   return (
     <span className={spanClass}>
-      {label}
+      {label + tempResolution.toUpperCase() + latlonPair}
       <button
         type="button"
         title="Remove this annotation"
@@ -44,27 +65,71 @@ function SemanticTypeBadge(props: { type: string; onRemove: () => void }) {
 
 function TypeBadges(props: {
   column: ColumnMetadata;
+  columns: ColumnMetadata[];
   onEdit: (value: string, type: TypesCategory) => void;
   onRemove: (value: string) => void;
 }) {
   const structuralTypes = [
-    'http://schema.org/Text',
-    'http://schema.org/Integer',
-    'http://schema.org/Float',
-    'http://schema.org/GeoCoordinates',
-    'http://schema.org/GeoShape',
-    'https://metadata.datadrivendiscovery.org/types/MissingData',
+    ColumnType.TEXT,
+    ColumnType.INTEGER,
+    ColumnType.FLOAT,
+    ColumnType.GEO_POINT,
+    ColumnType.GEO_POLYGON,
+    ColumnType.MISSING_DATA,
   ];
-  const semanticTypes = [
-    'http://schema.org/Enumeration',
-    'http://schema.org/DateTime',
-    'http://schema.org/latitude',
-    'http://schema.org/longitude',
-    'http://schema.org/Boolean',
-    'http://schema.org/Text',
-    'http://schema.org/AdministrativeArea',
-    'http://schema.org/identifier',
+  let semanticTypes = [
+    ColumnType.CATEGORICAL,
+    ColumnType.DATE_TIME,
+    ColumnType.DATE_TIME + '-' + TemporalResolution.YEAR.toUpperCase(),
+    ColumnType.DATE_TIME + '-' + TemporalResolution.MONTH.toUpperCase(),
+    ColumnType.DATE_TIME + '-' + TemporalResolution.DAY.toUpperCase(),
+    ColumnType.LATITUDE + '-(pair1)',
+    ColumnType.LONGITUDE + '-(pair1)',
+    ColumnType.BOOLEAN,
+    ColumnType.TEXT,
+    ColumnType.ADMIN,
+    ColumnType.ID,
   ];
+
+  const usedLat: string[] = [];
+  const usedLon: string[] = [];
+  props.columns.forEach(col => {
+    if (
+      isSubstrInclude(col['semantic_types'], ColumnType.LATITUDE) &&
+      col['latlong_pair']
+    ) {
+      usedLat.push(col['latlong_pair']);
+    }
+    if (
+      isSubstrInclude(col['semantic_types'], ColumnType.LONGITUDE) &&
+      col['latlong_pair']
+    ) {
+      usedLon.push(col['latlong_pair']);
+    }
+  });
+  const semanticTypesLat = updateLatLonDropdown(
+    usedLat,
+    usedLon,
+    props.column,
+    true
+  );
+  const semanticTypesLon = updateLatLonDropdown(
+    usedLon,
+    usedLat,
+    props.column,
+    false
+  );
+
+  if (usedLat.length > 0 || usedLon.length > 0) {
+    const semanticTypesTemp = semanticTypes
+      .filter(unit => !unit.includes(ColumnType.LONGITUDE))
+      .filter(unit => !unit.includes(ColumnType.LATITUDE))
+      .concat(semanticTypesLat, semanticTypesLon);
+    semanticTypes = semanticTypesTemp.filter((item, pos) => {
+      return semanticTypesTemp.indexOf(item) === pos;
+    });
+  }
+
   return (
     <>
       <select
@@ -83,6 +148,7 @@ function TypeBadges(props: {
       {props.column.semantic_types.map(c => (
         <SemanticTypeBadge
           type={c}
+          column={props.column}
           key={`sem-type-badge-${c}`}
           onRemove={() => props.onRemove(c)}
         />
@@ -97,6 +163,15 @@ function TypeBadges(props: {
           <div className="dropdown-content">
             {semanticTypes
               .filter(unit => !props.column.semantic_types.includes(unit))
+              .filter(
+                unit =>
+                  !(
+                    isSubstrInclude(
+                      props.column.semantic_types,
+                      ColumnType.DATE_TIME
+                    ) && unit.includes(ColumnType.DATE_TIME)
+                  )
+              )
               .map(unit => (
                 <div
                   key={formatTypeName(unit)}
@@ -160,6 +235,7 @@ function Table(props: TableProps) {
                 {
                   <TypeBadges
                     column={profiledData.columns[i]}
+                    columns={profiledData.columns}
                     onEdit={(value, type) => {
                       props.onEdit(value, type, profiledData.columns[i]);
                     }}
