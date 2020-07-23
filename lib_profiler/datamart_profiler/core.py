@@ -216,13 +216,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
             logger.info("Processing column %d...", column_idx)
             array = data.iloc[:, column_idx]
             # Identify types
-            structural_type, semantic_types_dict, additional_meta = \
-                identify_types(array, column_meta['name'], geo_data)
-
             updateColumn = [item for item in updated_columns if item.get('name') == column_meta['name']]
-            if len(updateColumn) > 0:
-                structural_type = updateColumn[0]['structural_type']
-                semantic_types_dict = updateColumn[0]['semantic_types']
+
+            structural_type, semantic_types_dict, additional_meta = \
+                identify_types(array, column_meta['name'], geo_data, updateColumn)
             # Set structural type
             column_meta['structural_type'] = structural_type
             # Add semantic types to the ones already present
@@ -272,12 +269,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
                 # Get lat/long columns
                 if types.LATITUDE in semantic_types_dict:
-                    columns_lat.append(
-                        (column_meta['name'], numerical_values)
-                    )
+                        columns_lat.append(
+                            (column_meta['name'], numerical_values, column_meta['latlong_pair'] if 'latlong_pair' in column_meta else None)
+                        )
                 elif types.LONGITUDE in semantic_types_dict:
                     columns_long.append(
-                        (column_meta['name'], numerical_values)
+                        (column_meta['name'], numerical_values, column_meta['latlong_pair'] if 'latlong_pair' in column_meta else None)
                     )
                 elif coverage:
                     ranges = get_numerical_ranges(
@@ -306,9 +303,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         column_meta['coverage'] = ranges
 
                 # Get temporal resolution
-                column_meta['temporal_resolution'] = get_temporal_resolution(
-                    semantic_types_dict[types.DATE_TIME],
-                )
+                if 'temporal_resolution' not in column_meta:
+                    column_meta['temporal_resolution'] = get_temporal_resolution(
+                        semantic_types_dict[types.DATE_TIME],
+                    )
 
                 # Compute histogram from temporal values
                 if plots and 'plot' not in column_meta:
@@ -487,13 +485,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
             # Remove semantic type from unpaired columns
             for col in columns:
-                if col['name'] in missed_lat:
+                if col['name'] in missed_lat and 'latlong_pair' not in col:
                     col['semantic_types'].remove(types.LATITUDE)
-                if col['name'] in missed_long:
+                if col['name'] in missed_long and 'latlong_pair' not in col:
                     col['semantic_types'].remove(types.LONGITUDE)
 
             # Compute ranges from lat/long pairs
-            for (name_lat, values_lat), (name_long, values_long) in pairs:
+            for (name_lat, values_lat, annot_pair), (name_long, values_long, annot_pair) in pairs:
                 values = []
                 for lat, long in zip(values_lat, values_long):
                     if (lat and long and  # Ignore None and 0
