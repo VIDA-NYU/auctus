@@ -75,27 +75,30 @@ class TestLatlongSelection(DataTestCase):
         )
 
     def test_pairing(self):
-        """Test pairing latitude and longitude columns by name."""
+        """Test pairing latitude and longitude columns by name or matching pairs defined by the user."""
         pairs, (missed_lat, missed_long) = spatial.pair_latlong_columns(
             [
-                ('Pickup_latitude', 1),
-                ('lat', 7),
-                ('dropoff_latitude', 2),
-                ('latitude_place', 8),
+                ('Pickup_latitude', 1, None),
+                ('lat', 7, None),
+                ('dropoff_latitude', 2, None),
+                ('latitude_place', 8, None),
+                ('y_coord', 8, '1'),
             ],
             [
-                ('long', 5),
-                ('dropoff_Longitude', 3),
-                ('pickup_longitude', 4),
-                ('other_Longitude', 6),
+                ('long', 5, None),
+                ('dropoff_Longitude', 3, None),
+                ('pickup_longitude', 4, None),
+                ('other_Longitude', 6, None),
+                ('x_coord', 8, '1'),
             ],
         )
         self.assertEqual(
             pairs,
             [
-                (('lat', 7), ('long', 5)),
-                (('dropoff_latitude', 2), ('dropoff_Longitude', 3)),
-                (('Pickup_latitude', 1), ('pickup_longitude', 4)),
+                (('lat', 7, None), ('long', 5, None)),
+                (('dropoff_latitude', 2, None), ('dropoff_Longitude', 3, None)),
+                (('Pickup_latitude', 1, None), ('pickup_longitude', 4, None)),
+                (('y_coord', 8, '1'), ('x_coord', 8, '1')),
             ],
         )
         self.assertEqual(
