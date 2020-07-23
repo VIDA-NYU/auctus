@@ -269,9 +269,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
                 # Get lat/long columns
                 if types.LATITUDE in semantic_types_dict:
-                        columns_lat.append(
-                            (column_meta['name'], numerical_values, column_meta['latlong_pair'] if 'latlong_pair' in column_meta else None)
-                        )
+                    columns_lat.append(
+                        (column_meta['name'], numerical_values, column_meta['latlong_pair'] if 'latlong_pair' in column_meta else None)
+                    )
                 elif types.LONGITUDE in semantic_types_dict:
                     columns_long.append(
                         (column_meta['name'], numerical_values, column_meta['latlong_pair'] if 'latlong_pair' in column_meta else None)

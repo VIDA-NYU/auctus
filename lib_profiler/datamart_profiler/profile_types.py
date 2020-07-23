@@ -52,10 +52,11 @@ MAX_UNCLEAN = 0.02  # 2%
 # Maximum number of different values for categorical columns
 MAX_CATEGORICAL_RATIO = 0.10  # 10%
 
+
 def regular_exp_count(array, num_total):
     # Let you check/count how many instances match a structure of a data type
     types = ['num_float', 'num_int', 'num_bool', 'num_empty', 'num_point', 'num_geo_combined', 'num_polygon', 'num_text']
-    re_count = {el:0 for el in types}
+    re_count = {el: 0 for el in types}
 
     for elem in array:
         if not elem:
@@ -77,6 +78,7 @@ def regular_exp_count(array, num_total):
 
     return re_count
 
+
 def unclean_values_ratio(c_type, re_count, num_total):
     ratio = 0
     if c_type == types.INTEGER:
@@ -96,6 +98,7 @@ def unclean_values_ratio(c_type, re_count, num_total):
             (num_total - re_count['num_empty'] - re_count['num_bool']) / num_total
     return ratio
 
+
 def parse_dates(array):
     parsed_dates = []
     for elem in array:
@@ -103,6 +106,7 @@ def parse_dates(array):
         if elem is not None:
             parsed_dates.append(elem)
     return parsed_dates
+
 
 def identify_structural_type(re_count, num_total, threshold):
     if re_count['num_empty'] == num_total:
@@ -121,6 +125,7 @@ def identify_structural_type(re_count, num_total, threshold):
         structural_type = types.TEXT
 
     return structural_type
+
 
 def get_dates(array, resolution):
     dates = []
@@ -145,11 +150,12 @@ def get_dates(array, resolution):
             pass
     return dates
 
+
 def identify_types(array, name, geo_data, updateColumn):
     num_total = len(array)
     column_meta = {}
     # Human-In-the-Loop feedback
-    is_HIL_feedback = True if len(updateColumn) > 0  else False
+    is_HIL_feedback = True if len(updateColumn) > 0 else False
 
     # This function let you check/count how many instances match a structure of particular data type
     re_count = regular_exp_count(array, num_total)
@@ -171,14 +177,14 @@ def identify_types(array, name, geo_data, updateColumn):
     semantic_types_dict = {}
     if is_HIL_feedback:
         semantic_types = updateColumn[0]['semantic_types']
-        semantic_types_dict = {el:None for el in semantic_types}
+        semantic_types_dict = {el: None for el in semantic_types}
 
         for el in semantic_types:
             if el == types.BOOLEAN:
                 column_meta['unclean_values_ratio'] = \
                     unclean_values_ratio(types.BOOLEAN, re_count, num_total)
             if (el == types.LATITUDE or el == types.LONGITUDE) and 'latlong_pair' in updateColumn[0]:
-                    column_meta['latlong_pair'] = updateColumn[0]['latlong_pair']
+                column_meta['latlong_pair'] = updateColumn[0]['latlong_pair']
             if el == types.DATE_TIME:
                 if 'temporal_resolution' in updateColumn[0]:
                     resolution = updateColumn[0]['temporal_resolution']
