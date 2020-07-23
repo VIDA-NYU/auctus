@@ -66,6 +66,8 @@ export interface ColumnMetadata {
   mean?: number;
   stddev?: number;
   plot?: PlotVega;
+  temporal_resolution?: string;
+  latlong_pair?: string;
 }
 
 export interface PlotVega {
@@ -174,4 +176,21 @@ export interface Session {
   format?: string;
   format_options?: { [key: string]: string | number };
   system_name: string;
+}
+
+export enum ColumnType {
+  MISSING_DATA = 'https://metadata.datadrivendiscovery.org/types/MissingData',
+  INTEGER = 'http://schema.org/Integer',
+  FLOAT = 'http://schema.org/Float',
+  TEXT = 'http://schema.org/Text',
+  BOOLEAN = 'http://schema.org/Boolean',
+  LATITUDE = 'http://schema.org/latitude',
+  LONGITUDE = 'http://schema.org/longitude',
+  DATE_TIME = 'http://schema.org/DateTime',
+  ADDRESS = 'http://schema.org/address',
+  ADMIN = 'http://schema.org/AdministrativeArea',
+  ID = 'http://schema.org/identifier',
+  CATEGORICAL = 'http://schema.org/Enumeration',
+  GEO_POINT = 'http://schema.org/GeoCoordinates',
+  GEO_POLYGON = 'http://schema.org/GeoShape',
 }
