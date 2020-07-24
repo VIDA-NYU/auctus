@@ -167,7 +167,8 @@ def identify_types(array, name, geo_data, updateColumn):
         column_meta['unclean_values_ratio'] = unclean_values_ratio(structural_type, re_count, num_total)
     else:
         structural_type = identify_structural_type(re_count, num_total, threshold)
-        column_meta['unclean_values_ratio'] = unclean_values_ratio(structural_type, re_count, num_total)
+        if structural_type != types.MISSING_DATA and structural_type != types.TEXT:
+            column_meta['unclean_values_ratio'] = unclean_values_ratio(structural_type, re_count, num_total)
 
     # compute missing values ratio
     if structural_type != types.MISSING_DATA and re_count['num_empty'] > 0:
