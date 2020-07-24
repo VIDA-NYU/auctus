@@ -53,6 +53,7 @@ export interface Metadata {
   nb_profiled_rows: number;
   sample: string;
   source: string;
+	dataset_types: string[];
   version: string;
   spatial_coverage?: SpatialCoverage[];
 }

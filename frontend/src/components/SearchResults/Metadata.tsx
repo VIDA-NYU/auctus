@@ -30,13 +30,22 @@ export function SpatialCoverage(props: { hit: SearchResult }) {
 
 export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
   const { hit, label } = props;
-  const isTemporal =
-    hit.metadata.columns
-      .map(c => c.semantic_types)
+/*  const isTemporal =
+	  hit.metadata
+      .map(m => m.dataset_types)
       .flat()
-      .filter(t => t === 'http://schema.org/DateTime').length > 0;
+      .filter(t => t === 'temporal').length > 0;
+
   const isSpatial =
-    hit.metadata.spatial_coverage && hit.metadata.spatial_coverage.length > 0;
+    hit.metadata
+      .map(m => m.dataset_types)
+      .flat()
+      .filter(s => s === 'spatial').length > 0;
+*/
+
+  const isTemporal = hit.metadata.dataset_types.includes('temporal');
+  const isSpatial = hit.metadata.dataset_types.includes('spatial');
+
   return (
     <>
       {(isSpatial || isTemporal) && (
