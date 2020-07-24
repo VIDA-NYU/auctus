@@ -4,7 +4,7 @@ while read line; do
   if [ "$line" != "" -a "${line:0:1}" != "#" ]; then
     var="$(echo "$line" | sed 's/^\([^=]\+\)=\(.*\)$/\1/')"
     val="$(echo "$line" | sed 's/^\([^=]\+\)=\(.*\)$/\2/')"
-    eval "export $var=${val@Q}"
+    export "$var"="$val"
   fi
 done <.env
 export DATAMART_VERSION=$(git describe)
