@@ -9,6 +9,8 @@ import {
   BadgeGroup,
   SpatialBadge,
   TemporalBadge,
+	NumericalBadge,
+	CategoricalBadge,
   ColumnBadge,
 } from '../Badges/Badges';
 
@@ -30,30 +32,22 @@ export function SpatialCoverage(props: { hit: SearchResult }) {
 
 export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
   const { hit, label } = props;
-/*  const isTemporal =
-	  hit.metadata
-      .map(m => m.dataset_types)
-      .flat()
-      .filter(t => t === 'temporal').length > 0;
-
-  const isSpatial =
-    hit.metadata
-      .map(m => m.dataset_types)
-      .flat()
-      .filter(s => s === 'spatial').length > 0;
-*/
 
   const isTemporal = hit.metadata.dataset_types.includes('temporal');
   const isSpatial = hit.metadata.dataset_types.includes('spatial');
+	const isNumerical = hit.metadata.dataset_types.includes('numerical');
+  const isCategorical = hit.metadata.dataset_types.includes('categorical');
 
   return (
     <>
-      {(isSpatial || isTemporal) && (
+      {(isSpatial || isTemporal || isNumerical || isCategorical) && (
         <div className="mt-2">
           <BadgeGroup>
             {label && <b>Data Types:</b>}
             {isSpatial && <SpatialBadge />}
             {isTemporal && <TemporalBadge />}
+            {isNumerical && <NumericalBadge />}
+            {isCategorical && <CategoricalBadge />}						
           </BadgeGroup>
         </div>
       )}

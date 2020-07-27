@@ -65,6 +65,22 @@ export function TemporalBadge() {
   );
 }
 
+export function NumericalBadge() {
+  return (
+    <span className="badge badge-number badge-pill">
+      <Icon.Hash className="feather-xs" /> Numerical
+    </span>
+  );
+}
+
+export function CategoricalBadge() {
+  return (
+    <span className="badge badge-categorical badge-pill">
+      <Icon.List className="feather-xs" /> Categorical
+    </span>
+  );
+}
+
 export function SimpleColumnBadge(props: { name: string }) {
   return <span className={`badge badge-pill badge-column`}>{props.name}</span>;
 }
