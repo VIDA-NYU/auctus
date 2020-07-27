@@ -595,8 +595,6 @@ def join(
 
     # Build a dict of information about all columns
     columns_metadata = dict()
-    for column in original_metadata['columns']:
-        columns_metadata[column['name']] = column
     for column in augment_metadata['columns']:
         names = [
             column['name'],
@@ -614,6 +612,8 @@ def join(
                     or 'max' in name or 'min' in name):
                 column_metadata['structural_type'] = types.FLOAT
             columns_metadata[name] = column_metadata
+    for column in original_metadata['columns']:
+        columns_metadata[column['name']] = column
 
     # Then construct column metadata by looking them up in the dict
     columns_metadata = [columns_metadata[name] for name in join_.columns]
