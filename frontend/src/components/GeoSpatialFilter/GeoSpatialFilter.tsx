@@ -109,7 +109,16 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
       // Add in the following map controls
       controls: DefaultControls().extend([
         new ZoomSlider(),
-        new MousePosition(),
+        new MousePosition({
+          projection: 'EPSG:4326',
+          coordinateFormat: ([x, y]) => {
+            x += 180;
+            x = x % 360;
+            x = (x + 360) % 360; // second pass for negative remainders
+            x -= 180;
+            return `${x.toFixed(4)} ${y.toFixed(4)}`;
+          },
+        }),
         new ScaleLine(),
         new OverviewMap(),
       ]),
