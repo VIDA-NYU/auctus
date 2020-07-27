@@ -18,7 +18,7 @@ from .utils import DataTestCase, data
 
 def check_ranges(min_, max_):
     def check(ranges):
-        assert len(ranges) == 3
+        assert 2 <= len(ranges) <= 3
         for rg in ranges:
             assert rg.keys() == {'range'}
             rg = rg['range']
