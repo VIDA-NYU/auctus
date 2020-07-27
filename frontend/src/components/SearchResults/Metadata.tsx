@@ -9,8 +9,8 @@ import {
   BadgeGroup,
   SpatialBadge,
   TemporalBadge,
-	NumericalBadge,
-	CategoricalBadge,
+  NumericalBadge,
+  CategoricalBadge,
   ColumnBadge,
 } from '../Badges/Badges';
 
@@ -35,7 +35,7 @@ export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
 
   const isTemporal = hit.metadata.dataset_types.includes('temporal');
   const isSpatial = hit.metadata.dataset_types.includes('spatial');
-	const isNumerical = hit.metadata.dataset_types.includes('numerical');
+  const isNumerical = hit.metadata.dataset_types.includes('numerical');
   const isCategorical = hit.metadata.dataset_types.includes('categorical');
 
   return (
@@ -47,7 +47,7 @@ export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
             {isSpatial && <SpatialBadge />}
             {isTemporal && <TemporalBadge />}
             {isNumerical && <NumericalBadge />}
-            {isCategorical && <CategoricalBadge />}						
+            {isCategorical && <CategoricalBadge />}
           </BadgeGroup>
         </div>
       )}
