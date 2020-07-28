@@ -1,4 +1,3 @@
-import copy
 import itertools
 import logging
 import numpy as np
@@ -359,6 +358,9 @@ def _tree_nearest(tree, max_dist):
     return transform
 
 
+KEEP_COLUMN_FIELDS = {'name', 'structural_type', 'semantic_types'}
+
+
 def join(
     original_data, augment_data_path, original_metadata, augment_metadata,
     writer,
@@ -596,21 +598,26 @@ def join(
     # Build a dict of information about all columns
     columns_metadata = dict()
     for column in augment_metadata['columns']:
-        names = [
-            column['name'],
-            column['name'] + '_r'
-        ]
-        # agg names
-        all_names = itertools.chain(names, (
-            agg + ' ' + name
-            for agg, name in itertools.product(AGGREGATION_FUNCTIONS, names)
-        ))
-        for name in all_names:
-            column_metadata = copy.deepcopy(column)
+        for name, agg in itertools.chain(
+            [(column['name'], None), (column['name'] + '_r', None)],
+            zip(
+                itertools.repeat(column['name']),
+                AGGREGATION_FUNCTIONS,
+            ),
+        ):
+            column_metadata = {
+                k: v for k, v in column.items()
+                if k in KEEP_COLUMN_FIELDS
+            }
+            if agg is not None:
+                name = agg + ' ' + name
             column_metadata['name'] = name
-            if ('sum' in name or 'mean' in name
-                    or 'max' in name or 'min' in name):
+            if agg in {'sum', 'mean'}:
                 column_metadata['structural_type'] = types.FLOAT
+                column_metadata['semantic_types'] = []
+            elif agg == 'count':
+                column_metadata['structural_type'] = types.INTEGER
+                column_metadata['semantic_types'] = []
             columns_metadata[name] = column_metadata
     for column in original_metadata['columns']:
         columns_metadata[column['name']] = column
@@ -746,7 +753,10 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
     logger.info("Union completed in %.4fs", time.perf_counter() - start)
 
     return {
-        'columns': original_metadata['columns'],
+        'columns': [
+            {k: v for k, v in col.items() if k in KEEP_COLUMN_FIELDS}
+            for col in original_metadata['columns']
+        ],
         'size': size,
         'qualities': [dict(
             qualName='augmentation_info',

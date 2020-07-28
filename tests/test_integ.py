@@ -1468,7 +1468,7 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 2,
                                     'colName': 'count work',
-                                    'colType': 'boolean',
+                                    'colType': 'integer',
                                     'role': ['attribute'],
                                 },
                                 {
@@ -1486,7 +1486,7 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 5,
                                     'colName': 'max salary',
-                                    'colType': 'real',
+                                    'colType': 'integer',
                                     'role': ['attribute'],
                                 },
                             ],
@@ -1627,13 +1627,13 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 3,
                                     'colName': 'max year',
-                                    'colType': 'real',
+                                    'colType': 'integer',
                                     'role': ['attribute'],
                                 },
                                 {
                                     'colIndex': 4,
                                     'colName': 'min year',
-                                    'colType': 'real',
+                                    'colType': 'integer',
                                     'role': ['attribute'],
                                 },
                             ],
