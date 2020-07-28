@@ -729,6 +729,102 @@ class TestJoin(DataTestCase):
             },
         )
 
+    def test_spatial_temporal(self):
+        """Join on both space and time columns."""
+        with setup_augmentation('spatiotemporal_aug.csv', 'spatiotemporal.csv') as (
+            orig_data, aug_data, orig_meta, aug_meta, result, writer,
+        ):
+            output_metadata = join(
+                orig_data,
+                aug_data,
+                orig_meta,
+                aug_meta,
+                writer,
+                [[1, 2], [0]],
+                [[1, 2], [0]],
+                agg_functions={
+                    'color': ['first', 'count'],
+                },
+            )
+
+            with open(result) as table:
+                self.assertCsvEqualNoOrder(
+                    table.read(),
+                    'date,latitude,longitude,first color,count color',
+                    [
+                        '2006-06-20T06:00:00,43.237,6.072,green,2',
+                        '2006-06-20T06:00:00,43.238,6.072,red,1',
+                        '2006-06-20T06:00:00,43.237,6.073,orange,2',
+                        '2006-06-20T06:00:00,43.238,6.073,red,6',
+                        '2006-06-20T07:00:00,43.237,6.072,orange,1',
+                        '2006-06-20T07:00:00,43.238,6.072,,0',
+                        '2006-06-20T07:00:00,43.237,6.073,yellow,4',
+                        '2006-06-20T07:00:00,43.238,6.073,blue,4',
+                        '2006-06-20T08:00:00,43.237,6.072,green,2',
+                        '2006-06-20T08:00:00,43.238,6.072,green,2',
+                        '2006-06-20T08:00:00,43.237,6.073,red,6',
+                        '2006-06-20T08:00:00,43.238,6.073,green,2',
+                    ],
+                )
+
+        self.assertJson(
+            output_metadata,
+            {
+                'size': 544,
+                'columns': [
+                    {
+                        'name': 'date',
+                        'structural_type': 'http://schema.org/Text',
+                        'semantic_types': ['http://schema.org/DateTime'],
+                        'num_distinct_values': 3,
+                        'mean': 1150786816.0,
+                        'stddev': lambda n: round(n, 3) == 2926.324,
+                        'coverage': check_ranges(1150783232.0, 1150790400.0),
+                        'temporal_resolution': 'hour',
+                    },
+                    {
+                        'name': 'latitude',
+                        'structural_type': 'http://schema.org/Float',
+                        'semantic_types': ['http://schema.org/latitude'],
+                        'unclean_values_ratio': 0.0,
+                        'mean': lambda n: round(n, 3) == 43.238,
+                        'stddev': lambda n: round(n, 5) == 0.00050,
+                    },
+                    {
+                        'name': 'longitude',
+                        'structural_type': 'http://schema.org/Float',
+                        'semantic_types': ['http://schema.org/longitude'],
+                        'unclean_values_ratio': 0.0,
+                        'mean': lambda n: round(n, 3) == 6.073,
+                        'stddev': lambda n: round(n, 5) == 0.00050,
+                    },
+                    {
+                        'name': 'first color',
+                        'structural_type': 'http://schema.org/Text',
+                        'semantic_types': ['http://schema.org/Enumeration'],
+                    },
+                    {
+                        'name': 'count color',
+                        'structural_type': 'http://schema.org/Integer',
+                        'semantic_types': [],
+                    },
+                ],
+                'qualities': [
+                    {
+                        'qualName': 'augmentation_info',
+                        'qualValueType': 'dict',
+                        'qualValue': {
+                            'new_columns': ['first color', 'count color'],
+                            'removed_columns': [],
+                            'nb_rows_before': 12,
+                            'nb_rows_after': 12,
+                            'augmentation_type': 'join',
+                        },
+                    },
+                ],
+            },
+        )
+
 
 class TestUnion(DataTestCase):
     def test_geo_union(self):
