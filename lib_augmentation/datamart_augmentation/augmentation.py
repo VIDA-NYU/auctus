@@ -1,11 +1,12 @@
-import copy
 import itertools
 import logging
 import numpy as np
 import pandas as pd
+from sklearn.neighbors._kd_tree import KDTree
 import time
 
 from datamart_materialize import types
+from datamart_profiler.spatial import median_smallest_distance
 from datamart_profiler.temporal import get_temporal_resolution, \
     temporal_aggregation_keys
 
@@ -63,11 +64,14 @@ temporal_resolutions_priorities = {
 def _transform_index(level, func):
     def inner(index):
         if isinstance(index, pd.MultiIndex):
-            return index.set_levels(
-                [index.levels[i] if i != level
-                 else func(index.levels[i])
+            old_index = index.to_frame()
+            return pd.MultiIndex.from_arrays(
+                [old_index.iloc[:, i] if i != level
+                 else func(old_index.iloc[:, i])
                  for i in range(len(index.levels))]
             )
+        elif isinstance(index, pd.Series):
+            return func(pd.Index(index))
         else:
             return func(index)
 
@@ -76,9 +80,10 @@ def _transform_index(level, func):
 
 def _transform_data_index(data, level, func):
     if isinstance(data.index, pd.MultiIndex):
-        data.index = data.index.set_levels(
-            [data.index.levels[i] if i != level
-             else func(data.index.levels[i])
+        old_index = data.index.to_frame()
+        data.index = pd.MultiIndex.from_arrays(
+            [old_index.iloc[:, i] if i != level
+             else func(old_index.iloc[:, i])
              for i in range(len(data.index.levels))]
         )
     else:
@@ -120,6 +125,9 @@ def set_data_index(data, columns, columns_metadata, drop=False):
                 lambda idx: idx.str.lower(),
             )
 
+    # Names of multiindex have to match for join() to work
+    data.index.names = ['%04d' % i for i in range(len(data.index.names))]
+
     return data
 
 
@@ -147,10 +155,14 @@ def match_temporal_resolutions(input_data, companion_data, temporal_resolution=N
             else:
                 funcs.append(lambda x: x)
 
-        return lambda idx: idx.set_levels(
-            func(lvl)
-            for lvl, func in zip(idx.levels, funcs)
-        )
+        def transform(index):
+            old_index = index.to_frame()
+            return pd.MultiIndex.from_arrays(
+                func(old_index.iloc[:, lvl])
+                for lvl, func in zip(range(len(index.levels)), funcs)
+            )
+
+        return transform
     elif (isinstance(input_data.index, pd.DatetimeIndex)
           and isinstance(companion_data.index, pd.DatetimeIndex)):
         return match_column_temporal_resolutions(
@@ -167,6 +179,12 @@ def match_column_temporal_resolutions(index_1, index_2, level,
                                       temporal_resolution=None):
     """Matches the resolutions between the dataset indices.
     """
+
+    col = ''
+    if isinstance(index_1, pd.MultiIndex):
+        index_1 = index_1.levels[level]
+        index_2 = index_2.levels[level]
+        col = " (level %d)" % level
 
     if not (index_1.is_all_dates and index_2.is_all_dates):
         return lambda idx: idx
@@ -189,7 +207,11 @@ def match_column_temporal_resolutions(index_1, index_2, level,
         if (temporal_resolutions_priorities[resolution_1] >
                 temporal_resolutions_priorities[resolution_2]):
             # Change resolution of second index to the first's
-            logger.info("Temporal alignment: right to '%s'", resolution_1)
+            logger.info(
+                "Temporal alignment: right to '%s'%s",
+                resolution_1,
+                col,
+            )
             key = temporal_aggregation_keys[resolution_1]
             if isinstance(key, str):
                 return _transform_index(level, lambda idx: idx.strftime(key))
@@ -197,7 +219,11 @@ def match_column_temporal_resolutions(index_1, index_2, level,
                 return _transform_index(level, lambda idx: idx.map(key))
         else:
             # Change resolution of first index to the second's
-            logger.info("Temporal alignment: left to '%s'", resolution_2)
+            logger.info(
+                "Temporal alignment: left to '%s'%s",
+                resolution_2,
+                col,
+            )
             key = temporal_aggregation_keys[resolution_2]
             if isinstance(key, str):
                 return _transform_index(level, lambda idx: idx.strftime(key))
@@ -313,6 +339,40 @@ def perform_aggregations(
 CHUNK_SIZE_ROWS = 10000
 
 
+def _tree_nearest(tree, max_dist):
+    def transform(df):
+        # Convert to numeric numpy array
+        points = pd.DataFrame({
+            'x': pd.to_numeric(
+                df.iloc[:, 0],
+                errors='coerce',
+                downcast='float',
+            ),
+            'y': pd.to_numeric(
+                df.iloc[:, 1],
+                errors='coerce',
+                downcast='float',
+            ),
+        }).values
+        # Run input through tree
+        dist, indices = tree.query(points, return_distance=True)
+        indices = indices.reshape((-1,))
+        dist = dist.reshape((-1,))
+
+        # Build array of transformed coordinates
+        coords = tree.get_arrays()[0]
+        res = coords[indices]
+
+        # Discard points too far
+        res[dist >= max_dist] = np.nan
+        return res
+
+    return transform
+
+
+KEEP_COLUMN_FIELDS = {'name', 'structural_type', 'semantic_types'}
+
+
 def join(
     original_data, augment_data_path, original_metadata, augment_metadata,
     writer,
@@ -349,12 +409,48 @@ def join(
     # only converting data types for columns involved in augmentation
     original_join_columns_idx = []
     augment_join_columns_idx = []
+    augment_columns_transform = []
     for left, right in zip(left_columns, right_columns):
-        if len(left) > 1 or len(right) > 1:
+        if len(left) == 2 and len(right) == 2:
+            # Spatial augmentation
+            # Get those columns
+            points = original_data.iloc[:, left]
+            # De-duplicate
+            points = pd.DataFrame(list(
+                set(tuple(p) for p in points.values)
+            ))
+            # Convert to numeric numpy array
+            points = pd.DataFrame({
+                'x': pd.to_numeric(
+                    points.iloc[:, 0],
+                    errors='coerce',
+                    downcast='float',
+                ),
+                'y': pd.to_numeric(
+                    points.iloc[:, 1],
+                    errors='coerce',
+                    downcast='float',
+                ),
+            }).values
+            # Build KDTree
+            tree = KDTree(points)
+            # Compute max distance for nearest join
+            max_dist = 2 * median_smallest_distance(points, tree)
+            logger.info("Using nearest spatial join, max=%r", max_dist)
+            # Store transformation
+            augment_columns_transform.append((
+                right,
+                _tree_nearest(tree, max_dist),
+            ))
+
+            original_join_columns_idx.extend(left)
+            augment_join_columns_idx.extend(right)
+        elif len(left) > 1 or len(right) > 1:
             raise AugmentationError("Datamart currently does not support "
                                     "combination of columns for augmentation.")
-        original_join_columns_idx.append(left[0])
-        augment_join_columns_idx.append(right[0])
+        else:
+            original_join_columns_idx.append(left[0])
+            augment_join_columns_idx.append(right[0])
 
     original_data = set_data_index(
         original_data,
@@ -406,6 +502,10 @@ def join(
     for augment_data in itertools.chain(
             [first_augment_data], augment_data_chunks
     ):
+        # Run transforms
+        for cols, transform in augment_columns_transform:
+            augment_data.iloc[:, cols] = transform(augment_data.iloc[:, cols])
+
         # Convert data types
         augment_data = set_data_index(
             augment_data,
@@ -509,25 +609,30 @@ def join(
 
     # Build a dict of information about all columns
     columns_metadata = dict()
+    for column in augment_metadata['columns']:
+        for name, agg in itertools.chain(
+            [(column['name'], None), (column['name'] + '_r', None)],
+            zip(
+                itertools.repeat(column['name']),
+                AGGREGATION_FUNCTIONS,
+            ),
+        ):
+            column_metadata = {
+                k: v for k, v in column.items()
+                if k in KEEP_COLUMN_FIELDS
+            }
+            if agg is not None:
+                name = agg + ' ' + name
+            column_metadata['name'] = name
+            if agg in {'sum', 'mean'}:
+                column_metadata['structural_type'] = types.FLOAT
+                column_metadata['semantic_types'] = []
+            elif agg == 'count':
+                column_metadata['structural_type'] = types.INTEGER
+                column_metadata['semantic_types'] = []
+            columns_metadata[name] = column_metadata
     for column in original_metadata['columns']:
         columns_metadata[column['name']] = column
-    for column in augment_metadata['columns']:
-        names = [
-            column['name'],
-            column['name'] + '_r'
-        ]
-        # agg names
-        all_names = itertools.chain(names, (
-            agg + ' ' + name
-            for agg, name in itertools.product(AGGREGATION_FUNCTIONS, names)
-        ))
-        for name in all_names:
-            column_metadata = copy.deepcopy(column)
-            column_metadata['name'] = name
-            if ('sum' in name or 'mean' in name
-                    or 'max' in name or 'min' in name):
-                column_metadata['structural_type'] = types.FLOAT
-            columns_metadata[name] = column_metadata
 
     # Then construct column metadata by looking them up in the dict
     columns_metadata = [columns_metadata[name] for name in join_.columns]
@@ -660,7 +765,10 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
     logger.info("Union completed in %.4fs", time.perf_counter() - start)
 
     return {
-        'columns': original_metadata['columns'],
+        'columns': [
+            {k: v for k, v in col.items() if k in KEEP_COLUMN_FIELDS}
+            for col in original_metadata['columns']
+        ],
         'size': size,
         'qualities': [dict(
             qualName='augmentation_info',
