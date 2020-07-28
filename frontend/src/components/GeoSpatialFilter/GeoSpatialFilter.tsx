@@ -39,9 +39,6 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
 
   constructor(props: GeoSpatialFilterProps) {
     super(props);
-    this.state = {
-      selectedCoordinates: undefined,
-    };
     this.source = new VectorSource({ wrapX: true });
     this.source.on('addfeature', evt => this.onSelectCoordinates(evt));
     this.componentDidUpdate();
