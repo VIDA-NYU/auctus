@@ -180,9 +180,11 @@ def match_column_temporal_resolutions(index_1, index_2, level,
     """Matches the resolutions between the dataset indices.
     """
 
+    col = ''
     if isinstance(index_1, pd.MultiIndex):
         index_1 = index_1.levels[level]
         index_2 = index_2.levels[level]
+        col = " (level %d)" % level
 
     if not (index_1.is_all_dates and index_2.is_all_dates):
         return lambda idx: idx
@@ -205,7 +207,11 @@ def match_column_temporal_resolutions(index_1, index_2, level,
         if (temporal_resolutions_priorities[resolution_1] >
                 temporal_resolutions_priorities[resolution_2]):
             # Change resolution of second index to the first's
-            logger.info("Temporal alignment: right to '%s'", resolution_1)
+            logger.info(
+                "Temporal alignment: right to '%s'%s",
+                resolution_1,
+                col,
+            )
             key = temporal_aggregation_keys[resolution_1]
             if isinstance(key, str):
                 return _transform_index(level, lambda idx: idx.strftime(key))
@@ -213,7 +219,11 @@ def match_column_temporal_resolutions(index_1, index_2, level,
                 return _transform_index(level, lambda idx: idx.map(key))
         else:
             # Change resolution of first index to the second's
-            logger.info("Temporal alignment: left to '%s'", resolution_2)
+            logger.info(
+                "Temporal alignment: left to '%s'%s",
+                resolution_2,
+                col,
+            )
             key = temporal_aggregation_keys[resolution_2]
             if isinstance(key, str):
                 return _transform_index(level, lambda idx: idx.strftime(key))
