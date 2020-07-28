@@ -70,6 +70,8 @@ def _transform_index(level, func):
                  else func(old_index.iloc[:, i])
                  for i in range(len(index.levels))]
             )
+        elif isinstance(index, pd.Series):
+            return func(pd.Index(index))
         else:
             return func(index)
 
