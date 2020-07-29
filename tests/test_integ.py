@@ -2067,6 +2067,116 @@ class TestUpload(DatamartTest):
             )
 
 
+    def test_upload_human_in_the_loop(self):
+        with data('basic_annotated.csv') as basic_annotated:
+            response = self.datamart_post(
+                '/upload',
+                files={
+                    'file': basic_annotated,
+                },
+                data={
+                    'name': 'basic annotated features',
+                    'description': "Simple CSV file sent through upload endpoint. Support type annotations made by users.",
+                    'specialId': 12,
+                    'dept': "internal",
+                    'updatedColumns': json.dumps(updated_columns_test).encode('utf-8'),
+                },
+                schema={
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                    },
+                    'required': ['id'],
+                    'additionalProperties': False,
+                },
+            )
+            record = response.json()
+            self.assertEqual(record.keys(), {'id'})
+            dataset_id = record['id']
+            self.assertTrue(dataset_id.startswith('datamart.upload.'))
+
+            es = elasticsearch.Elasticsearch(
+                os.environ['ELASTICSEARCH_HOSTS'].split(',')
+            )
+
+            try:
+                # Check it's in the alternate index
+                try:
+                    pending = es.get('pending', dataset_id)['_source']
+                    self.assertJson(
+                        pending,
+                        {
+                            'status': 'queued',
+                            'date': lambda d: isinstance(d, str),
+                            'source': 'upload',
+                            'metadata': {
+                                'name': 'basic annotated features',
+                                'description': 'Simple CSV file sent through upload endpoint. Support type annotations made by users.',
+                                'specialId': 12,
+                                'dept': "internal",
+                                'source': 'upload',
+                                'materialize': {
+                                    'identifier': 'datamart.upload',
+                                    'date': lambda d: isinstance(d, str),
+                                },
+                                'filename': 'file',
+                                'updated_columns': updated_columns_test,
+                            },
+                            'materialize': {
+                                'identifier': 'datamart.upload',
+                                'date': lambda d: isinstance(d, str),
+                            },
+                        },
+                    )
+                finally:
+                    # Wait for it to be indexed
+                    for _ in range(10):
+                        try:
+                            record = es.get('datamart', dataset_id)['_source']
+                        except elasticsearch.NotFoundError:
+                            pass
+                        else:
+                            break
+                        time.sleep(2)
+                    else:
+                        self.fail("Dataset didn't make it to index")
+                self.assertJson(
+                    record,
+                    dict(
+                        annotated_metadata,
+                        id=dataset_id,
+                        name='basic annotated features',
+                        description="Simple CSV file sent through upload endpoint. Support type annotations made by users.",
+                        specialId=12,
+                        dept="internal",
+                        source='upload',
+                        materialize=dict(
+                            annotated_metadata['materialize'],
+                            identifier='datamart.upload',
+                        ),
+                    ),
+                )
+
+                # Check it's no longer in alternate index
+                time.sleep(1)
+                with self.assertRaises(elasticsearch.NotFoundError):
+                    es.get('pending', dataset_id)
+            finally:
+                import lazo_index_service
+                from datamart_core.common import delete_dataset_from_index
+
+                time.sleep(3)  # Deleting won't work immediately
+                lazo_client = lazo_index_service.LazoIndexClient(
+                    host=os.environ['LAZO_SERVER_HOST'],
+                    port=int(os.environ['LAZO_SERVER_PORT'])
+                )
+                delete_dataset_from_index(
+                    es,
+                    dataset_id,
+                    lazo_client,
+                )
+
+
 class TestSession(DatamartTest):
     def test_session_new(self):
         def new_session(obj):
@@ -2578,6 +2688,218 @@ agg_metadata = {
     "date": lambda d: isinstance(d, str),
     "version": version
 }
+
+
+updated_columns_test = {
+      "columns": [
+        {
+          "coverage": [
+            {
+              "range": {
+                "gte": 40.722948,
+                "lte": 40.723674
+              }
+            },
+            {
+              "range": {
+                "gte": 40.726559,
+                "lte": 40.730824
+              }
+            },
+            {
+              "range": {
+                "gte": 40.732466,
+                "lte": 40.735108
+              }
+            }
+          ],
+          "mean": 40.729443687499995,
+          "name": "lt_coord",
+          "semantic_types": [
+            "http://schema.org/latitude"
+          ],
+          "stddev": 0.0036102731149926445,
+          "structural_type": "http://schema.org/Float",
+          "unclean_values_ratio": 0.0,
+          "latlong_pair": "1"
+        },
+        {
+          "coverage": [
+            {
+              "range": {
+                "gte": -74.005837,
+                "lte": -74.000678
+              }
+            },
+            {
+              "range": {
+                "gte": -74.000077,
+                "lte": -73.996833
+              }
+            },
+            {
+              "range": {
+                "gte": -73.993186,
+                "lte": -73.991001
+              }
+            }
+          ],
+          "mean": -73.999644625,
+          "name": "lg_coord",
+          "semantic_types": [
+            "http://schema.org/longitude"
+          ],
+          "stddev": 0.0038596233604310352,
+          "structural_type": "http://schema.org/Float",
+          "unclean_values_ratio": 0.0,
+          "latlong_pair": "1"
+        },
+        {
+          "coverage": [
+            {
+              "range": {
+                "gte": 1,
+                "lte": 4
+              }
+            },
+            {
+              "range": {
+                "gte": 5,
+                "lte": 8
+              }
+            },
+            {
+              "range": {
+                "gte": 9,
+                "lte": 12
+              }
+            }
+          ],
+          "mean": 7.875,
+          "name": "stmo",
+          "num_distinct_values": 11,
+          "semantic_types": [
+            "http://schema.org/DateTime"
+          ],
+          "stddev": 3.4798527267687636,
+          "structural_type": "http://schema.org/Integer",
+          "unclean_values_ratio": 0.0,
+          "temporal_resolution": "month"
+        }
+      ]
+    }
+
+
+annotated_metadata = {
+    "id": "datamart.upload.updatedcolumn",
+    "name": "basic annotated features",
+    "description": "Simple CSV file sent through upload endpoint. Support type annotations made by users.",
+    "source": "upload",
+    "size": 696,
+    "nb_rows": 16,
+    "nb_profiled_rows": 16,
+
+    "specialId": 12,
+    "dept": "internal",
+    "filename": "file",
+
+    "updated_columns": updated_columns_test,
+
+    "columns": [
+      {
+        "name": "id",
+        "structural_type": "http://schema.org/Text",
+        "semantic_types": [],
+        "num_distinct_values": 16
+      },
+      {
+        "name": "lt_coord",
+        "structural_type": "http://schema.org/Float",
+        "semantic_types": lambda l: "http://schema.org/latitude" in l,
+        "unclean_values_ratio": 0.0,
+        "latlong_pair": "1",
+        "mean": lambda n: round(n, 3) == 40.729,
+        "stddev": lambda n: round(n, 4) == 0.0036,
+        "plot": check_plot('histogram_numerical'),
+      },
+      {
+        "name": "lg_coord",
+        "structural_type": "http://schema.org/Float",
+        "semantic_types": lambda l: "http://schema.org/longitude" in l,
+        "unclean_values_ratio": 0.0,
+        "latlong_pair": "1",
+        "mean": lambda n: round(n, 3) == -74.000,
+        "stddev": lambda n: round(n, 5) == 0.00386,
+        "plot": check_plot('histogram_numerical'),
+      },
+      {
+        "name": "height",
+        "structural_type": "http://schema.org/Float",
+        "semantic_types": [],
+        "unclean_values_ratio": 0.0,
+        "mean": lambda n: round(n, 3) == 50.503,
+        "stddev": lambda n: round(n, 2) == 18.75,
+        "plot": check_plot('histogram_numerical'),
+        "coverage": check_ranges(12.0, 86.0),
+      },
+      {
+        "name": "stmo",
+        "structural_type": "http://schema.org/Integer",
+        "semantic_types": [
+          "http://schema.org/DateTime"
+        ],
+        "unclean_values_ratio": 0.0,
+        "temporal_resolution": "month",
+        "mean": lambda n: round(n, 3) == 7.875,
+        "stddev": lambda n: round(n, 2) == 3.48,
+        "plot": check_plot('histogram_numerical'),
+        "coverage": (
+            lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                {
+                    "range": {
+                    "gte": 1,
+                    "lte": 4
+                    },
+                },
+                {
+                    "range": {
+                    "gte": 5,
+                    "lte": 8
+                    },
+                },
+                {
+                    "range": {
+                    "gte": 9,
+                    "lte": 12
+                    },
+                },
+            ]
+        ),
+      }
+    ],
+    "spatial_coverage": [
+      {
+        "lat": "lt_coord",
+        "lon": "lg_coord",
+        "ranges": check_geo_ranges(-74.006, 40.7229, -73.990, 40.7352)
+      }
+    ],
+    "sample": "id,lt_coord,lg_coord,height,stmo\r\nplace00,40.734746,-74.000077,85.772569,10\r\n" +
+              "place01,40.728026,-73.998869,58.730197,10\r\nplace02,40.728278,-74.005837,51.929949,11\r\n" +
+              "place03,40.726640,-73.993186,12.730146,9\r\nplace04,40.732466,-74.004689,44.452236,5\r\n" +
+              "place05,40.722948,-74.001501,42.904820,12\r\nplace06,40.735108,-73.996996,48.345170,1\r\n" +
+              "place07,40.727577,-74.002853,37.459986,2\r\nplace08,40.730824,-74.002225,49.123637,4\r\n" +
+              "place09,40.729115,-74.001726,40.455639,6\r\nplace10,40.734259,-73.996833,23.722705,6\r\n" +
+              "place11,40.723674,-73.991001,67.692448,7\r\nplace12,40.728896,-73.998542,67.626361,8\r\n" +
+              "place13,40.728711,-74.002426,84.191461,12\r\nplace14,40.733272,-73.996875,51.000673,12\r\n" +
+              "place15,40.726559,-74.000678,41.906452,11\r\n",
+    "materialize": {
+      "identifier": "datamart.upload",
+      "date": lambda d: isinstance(d, str)
+    },
+    "date": lambda d: isinstance(d, str),
+    "version": version
+  }
 
 
 geo_metadata = {
