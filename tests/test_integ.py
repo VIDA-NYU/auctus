@@ -2066,7 +2066,6 @@ class TestUpload(DatamartTest):
                 lazo_client,
             )
 
-
     def test_upload_human_in_the_loop(self):
         with data('basic_annotated.csv') as basic_annotated:
             response = self.datamart_post(
@@ -2691,103 +2690,103 @@ agg_metadata = {
 
 
 updated_columns_test = {
-      "columns": [
+    "columns": [
         {
-          "coverage": [
-            {
-              "range": {
-                "gte": 40.722948,
-                "lte": 40.723674
-              }
-            },
-            {
-              "range": {
-                "gte": 40.726559,
-                "lte": 40.730824
-              }
-            },
-            {
-              "range": {
-                "gte": 40.732466,
-                "lte": 40.735108
-              }
-            }
-          ],
-          "mean": 40.729443687499995,
-          "name": "lt_coord",
-          "semantic_types": [
-            "http://schema.org/latitude"
-          ],
-          "stddev": 0.0036102731149926445,
-          "structural_type": "http://schema.org/Float",
-          "unclean_values_ratio": 0.0,
-          "latlong_pair": "1"
+            "coverage": [
+                {
+                    "range": {
+                        "gte": 40.722948,
+                        "lte": 40.723674
+                    }
+                },
+                {
+                    "range": {
+                        "gte": 40.726559,
+                        "lte": 40.730824
+                    }
+                },
+                {
+                    "range": {
+                        "gte": 40.732466,
+                        "lte": 40.735108
+                    }
+                }
+            ],
+            "mean": 40.729443687499995,
+            "name": "lt_coord",
+            "semantic_types": [
+                "http://schema.org/latitude"
+            ],
+            "stddev": 0.0036102731149926445,
+            "structural_type": "http://schema.org/Float",
+            "unclean_values_ratio": 0.0,
+            "latlong_pair": "1"
         },
         {
-          "coverage": [
-            {
-              "range": {
-                "gte": -74.005837,
-                "lte": -74.000678
-              }
-            },
-            {
-              "range": {
-                "gte": -74.000077,
-                "lte": -73.996833
-              }
-            },
-            {
-              "range": {
-                "gte": -73.993186,
-                "lte": -73.991001
-              }
-            }
-          ],
-          "mean": -73.999644625,
-          "name": "lg_coord",
-          "semantic_types": [
-            "http://schema.org/longitude"
-          ],
-          "stddev": 0.0038596233604310352,
-          "structural_type": "http://schema.org/Float",
-          "unclean_values_ratio": 0.0,
-          "latlong_pair": "1"
+            "coverage": [
+                {
+                    "range": {
+                        "gte": -74.005837,
+                        "lte": -74.000678
+                    }
+                },
+                {
+                    "range": {
+                        "gte": -74.000077,
+                        "lte": -73.996833
+                    }
+                },
+                {
+                    "range": {
+                        "gte": -73.993186,
+                        "lte": -73.991001
+                    }
+                }
+            ],
+            "mean": -73.999644625,
+            "name": "lg_coord",
+            "semantic_types": [
+                "http://schema.org/longitude"
+            ],
+            "stddev": 0.0038596233604310352,
+            "structural_type": "http://schema.org/Float",
+            "unclean_values_ratio": 0.0,
+            "latlong_pair": "1"
         },
         {
-          "coverage": [
-            {
-              "range": {
-                "gte": 1,
-                "lte": 4
-              }
-            },
-            {
-              "range": {
-                "gte": 5,
-                "lte": 8
-              }
-            },
-            {
-              "range": {
-                "gte": 9,
-                "lte": 12
-              }
-            }
-          ],
-          "mean": 7.875,
-          "name": "stmo",
-          "num_distinct_values": 11,
-          "semantic_types": [
-            "http://schema.org/DateTime"
-          ],
-          "stddev": 3.4798527267687636,
-          "structural_type": "http://schema.org/Integer",
-          "unclean_values_ratio": 0.0,
-          "temporal_resolution": "month"
+            "coverage": [
+                {
+                    "range": {
+                        "gte": 1,
+                        "lte": 4
+                    }
+                },
+                {
+                    "range": {
+                        "gte": 5,
+                        "lte": 8
+                    }
+                },
+                {
+                    "range": {
+                        "gte": 9,
+                        "lte": 12
+                    }
+                }
+            ],
+            "mean": 7.875,
+            "name": "stmo",
+            "num_distinct_values": 11,
+            "semantic_types": [
+                "http://schema.org/DateTime"
+            ],
+            "stddev": 3.4798527267687636,
+            "structural_type": "http://schema.org/Integer",
+            "unclean_values_ratio": 0.0,
+            "temporal_resolution": "month"
         }
-      ]
-    }
+    ]
+}
 
 
 annotated_metadata = {
@@ -2798,91 +2797,88 @@ annotated_metadata = {
     "size": 696,
     "nb_rows": 16,
     "nb_profiled_rows": 16,
-
     "specialId": 12,
     "dept": "internal",
     "filename": "file",
-
     "updated_columns": updated_columns_test,
-
     "columns": [
-      {
-        "name": "id",
-        "structural_type": "http://schema.org/Text",
-        "semantic_types": [],
-        "num_distinct_values": 16
-      },
-      {
-        "name": "lt_coord",
-        "structural_type": "http://schema.org/Float",
-        "semantic_types": lambda l: "http://schema.org/latitude" in l,
-        "unclean_values_ratio": 0.0,
-        "latlong_pair": "1",
-        "mean": lambda n: round(n, 3) == 40.729,
-        "stddev": lambda n: round(n, 4) == 0.0036,
-        "plot": check_plot('histogram_numerical'),
-      },
-      {
-        "name": "lg_coord",
-        "structural_type": "http://schema.org/Float",
-        "semantic_types": lambda l: "http://schema.org/longitude" in l,
-        "unclean_values_ratio": 0.0,
-        "latlong_pair": "1",
-        "mean": lambda n: round(n, 3) == -74.000,
-        "stddev": lambda n: round(n, 5) == 0.00386,
-        "plot": check_plot('histogram_numerical'),
-      },
-      {
-        "name": "height",
-        "structural_type": "http://schema.org/Float",
-        "semantic_types": [],
-        "unclean_values_ratio": 0.0,
-        "mean": lambda n: round(n, 3) == 50.503,
-        "stddev": lambda n: round(n, 2) == 18.75,
-        "plot": check_plot('histogram_numerical'),
-        "coverage": check_ranges(12.0, 86.0),
-      },
-      {
-        "name": "stmo",
-        "structural_type": "http://schema.org/Integer",
-        "semantic_types": [
-          "http://schema.org/DateTime"
-        ],
-        "unclean_values_ratio": 0.0,
-        "temporal_resolution": "month",
-        "mean": lambda n: round(n, 3) == 7.875,
-        "stddev": lambda n: round(n, 2) == 3.48,
-        "plot": check_plot('histogram_numerical'),
-        "coverage": (
-            lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
-                {
-                    "range": {
-                    "gte": 1,
-                    "lte": 4
+        {
+            "name": "id",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": [],
+            "num_distinct_values": 16
+        },
+        {
+            "name": "lt_coord",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: "http://schema.org/latitude" in l,
+            "unclean_values_ratio": 0.0,
+            "latlong_pair": "1",
+            "mean": lambda n: round(n, 3) == 40.729,
+            "stddev": lambda n: round(n, 4) == 0.0036,
+            "plot": check_plot('histogram_numerical'),
+        },
+        {
+            "name": "lg_coord",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: "http://schema.org/longitude" in l,
+            "unclean_values_ratio": 0.0,
+            "latlong_pair": "1",
+            "mean": lambda n: round(n, 3) == -74.000,
+            "stddev": lambda n: round(n, 5) == 0.00386,
+            "plot": check_plot('histogram_numerical'),
+        },
+        {
+            "name": "height",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": [],
+            "unclean_values_ratio": 0.0,
+            "mean": lambda n: round(n, 3) == 50.503,
+            "stddev": lambda n: round(n, 2) == 18.75,
+            "plot": check_plot('histogram_numerical'),
+            "coverage": check_ranges(12.0, 86.0),
+        },
+        {
+            "name": "stmo",
+            "structural_type": "http://schema.org/Integer",
+            "semantic_types": [
+            "http://schema.org/DateTime"
+            ],
+            "unclean_values_ratio": 0.0,
+            "temporal_resolution": "month",
+            "mean": lambda n: round(n, 3) == 7.875,
+            "stddev": lambda n: round(n, 2) == 3.48,
+            "plot": check_plot('histogram_numerical'),
+            "coverage": (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {
+                        "range": {
+                            "gte": 1,
+                            "lte": 4
+                        },
                     },
-                },
-                {
-                    "range": {
-                    "gte": 5,
-                    "lte": 8
+                    {
+                        "range": {
+                            "gte": 5,
+                            "lte": 8
+                        },
                     },
-                },
-                {
-                    "range": {
-                    "gte": 9,
-                    "lte": 12
+                    {
+                        "range": {
+                            "gte": 9,
+                            "lte": 12
+                        },
                     },
-                },
-            ]
-        ),
-      }
+                ]
+            ),
+        }
     ],
     "spatial_coverage": [
-      {
-        "lat": "lt_coord",
-        "lon": "lg_coord",
-        "ranges": check_geo_ranges(-74.006, 40.7229, -73.990, 40.7352)
-      }
+        {
+            "lat": "lt_coord",
+            "lon": "lg_coord",
+            "ranges": check_geo_ranges(-74.006, 40.7229, -73.990, 40.7352)
+        }
     ],
     "sample": "id,lt_coord,lg_coord,height,stmo\r\nplace00,40.734746,-74.000077,85.772569,10\r\n" +
               "place01,40.728026,-73.998869,58.730197,10\r\nplace02,40.728278,-74.005837,51.929949,11\r\n" +
@@ -2894,12 +2890,12 @@ annotated_metadata = {
               "place13,40.728711,-74.002426,84.191461,12\r\nplace14,40.733272,-73.996875,51.000673,12\r\n" +
               "place15,40.726559,-74.000678,41.906452,11\r\n",
     "materialize": {
-      "identifier": "datamart.upload",
-      "date": lambda d: isinstance(d, str)
+        "identifier": "datamart.upload",
+        "date": lambda d: isinstance(d, str)
     },
     "date": lambda d: isinstance(d, str),
     "version": version
-  }
+}
 
 
 geo_metadata = {
