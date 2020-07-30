@@ -2280,18 +2280,18 @@ class TestUpload(DatamartTest):
             )
 
     def test_upload_human_in_the_loop(self):
-        with data('basic_annotated.csv') as basic_annotated:
+        with data('annotated.csv') as annotated:
             response = self.datamart_post(
                 '/upload',
                 files={
-                    'file': basic_annotated,
+                    'file': annotated,
                 },
                 data={
                     'name': 'basic annotated features',
                     'description': "Simple CSV file sent through upload endpoint. Support type annotations made by users.",
                     'specialId': 12,
                     'dept': "internal",
-                    'manual_annotations': json.dumps(updated_columns_test),
+                    'manual_annotations': json.dumps(annotated_annotations),
                 },
                 schema={
                     'type': 'object',
@@ -2332,7 +2332,7 @@ class TestUpload(DatamartTest):
                                     'date': lambda d: isinstance(d, str),
                                 },
                                 'filename': 'file',
-                                'manual_annotations': updated_columns_test,
+                                'manual_annotations': annotated_annotations,
                             },
                             'materialize': {
                                 'identifier': 'datamart.upload',
@@ -2902,7 +2902,7 @@ agg_metadata = {
 }
 
 
-updated_columns_test = {
+annotated_annotations = {
     "columns": [
         {
             "coverage": [
@@ -3013,7 +3013,7 @@ annotated_metadata = {
     "specialId": 12,
     "dept": "internal",
     "filename": "file",
-    "manual_annotations": updated_columns_test,
+    "manual_annotations": annotated_annotations,
     "columns": [
         {
             "name": "id",
