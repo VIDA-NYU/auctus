@@ -168,7 +168,8 @@ export interface UploadData {
   description?: string;
   address?: string;
   file?: File;
-  customFields: Map<string, string>;
+  updatedColumns?: string;
+  customFields?: Map<string, string>;
 }
 
 export function upload(data: UploadData) {
@@ -184,11 +185,16 @@ export function upload(data: UploadData) {
   } else if (data.file) {
     formData.append('file', data.file);
   }
+  if (data.updatedColumns) {
+    formData.append('updatedColumns', data.updatedColumns);
+  }
 
   // Custom fields
-  data.customFields.forEach((value, field) => {
-    formData.append(field, value);
-  });
+  if (data.customFields) {
+    data.customFields.forEach((value, field) => {
+      formData.append(field, value);
+    });
+  }
 
   const config: AxiosRequestConfig = {
     maxRedirects: 0,
@@ -198,6 +204,23 @@ export function upload(data: UploadData) {
   };
 
   return api.post('/upload', formData, config);
+}
+export function initialProfile(data: UploadData) {
+  const formData = new FormData();
+  if (data.address) {
+    formData.append('address', data.address);
+  } else if (data.file) {
+    formData.append('data', data.file);
+  }
+
+  const config: AxiosRequestConfig = {
+    maxRedirects: 0,
+    headers: {
+      'content-type': 'multipart/form-data',
+    },
+  };
+
+  return api.post('/profile', formData, config);
 }
 
 export interface ProfileResult extends Metadata {

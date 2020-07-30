@@ -3,6 +3,15 @@ import { Tabs, Tab, TabContent, TabPane } from '../ui/Tabs/Tabs';
 import * as Icon from 'react-feather';
 import * as api from '../../api/rest';
 import { SubmitButton } from '../ui/Button/Button';
+import './Upload.css';
+import {
+  ProfileData,
+  ProfilingStatus,
+  ColumnMetadata,
+  Annotation,
+  TypesCategory,
+} from '../../api/types';
+import { ProfileDataset } from './ProfileDataset';
 
 interface Validation {
   valid: boolean;
@@ -19,6 +28,10 @@ interface UploadFormState {
   address?: string;
   validation: Validation;
   submitting: boolean;
+  profilingStatus: ProfilingStatus;
+  failedProfiler?: string;
+  profiledData?: ProfileData;
+  columnsName: string[];
   customFields?: api.CustomFields;
   customValues: Map<string, string>;
 }
@@ -49,6 +62,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       });
     });
     this.onFormSubmit = this.onFormSubmit.bind(this);
+    this.onProfileData = this.onProfileData.bind(this);
   }
 
   initialState() {
@@ -58,6 +72,8 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       description: '',
       validation: { valid: true, errors: {} },
       submitting: false,
+      profilingStatus: ProfilingStatus.STOPPED,
+      columnsName: [],
       customValues: new Map(),
     };
   }
@@ -66,20 +82,29 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     e.preventDefault();
     const validation = this.validate();
     if (!validation.valid) {
-      this.setState({ validation });
+      this.setState({ validation, profilingStatus: ProfilingStatus.STOPPED });
     } else {
       this.setState({ submitting: true });
+      const modifiedColumns = this.state.profiledData?.columns.filter(col =>
+        this.state.columnsName.includes(col.name)
+      );
       const success = await this.props.onFormSubmit({
         file: this.getFile(),
         address: this.state.address ? this.state.address : undefined,
         name: this.state.name,
         description: this.state.description,
+        updatedColumns: JSON.stringify({
+          columns: modifiedColumns ? modifiedColumns : [],
+        }),
         customFields: this.state.customValues,
       });
       if (success) {
         this.setState(this.initialState());
       } else {
-        this.setState({ submitting: false });
+        this.setState({
+          submitting: false,
+          profilingStatus: ProfilingStatus.STOPPED,
+        });
       }
     }
   }
@@ -112,15 +137,85 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     }
   }
 
+  async onProfileData() {
+    this.setState({ profilingStatus: ProfilingStatus.RUNNING });
+    try {
+      const result = await api.initialProfile({
+        file: this.getFile(),
+        address: this.state.address ? this.state.address : undefined,
+        name: this.state.name,
+      });
+      if (result.status === 200) {
+        this.setState({
+          profiledData: result.data,
+          profilingStatus: ProfilingStatus.SUCCESSED,
+        });
+        return true;
+      }
+      this.setState({
+        failedProfiler: `Error ${result.status}: ${result.statusText}`,
+        profilingStatus: ProfilingStatus.ERROR,
+      });
+    } catch (e) {
+      this.setState({
+        failedProfiler: `${e}`,
+        profilingStatus: ProfilingStatus.ERROR,
+      });
+    }
+    return false;
+  }
+
+  updateColumnType(
+    value: string,
+    column: ColumnMetadata,
+    type: TypesCategory,
+    annotation: Annotation
+  ) {
+    if (this.state.profiledData) {
+      const modifiedColumns: ColumnMetadata[] = this.state.profiledData.columns.map(
+        (col: ColumnMetadata) => {
+          if (col.name === column.name) {
+            if (type === TypesCategory.STRUCTURAL) {
+              return { ...col, structural_type: value };
+            }
+            if (type === TypesCategory.SEMANTIC) {
+              if (annotation === Annotation.ADD) {
+                return {
+                  ...col,
+                  semantic_types: [...col.semantic_types, value],
+                };
+              }
+              if (annotation === Annotation.REMOVE) {
+                return {
+                  ...col,
+                  semantic_types: col.semantic_types.filter(
+                    item => item !== value
+                  ),
+                };
+              }
+            }
+            return { ...col };
+          } else {
+            return { ...col };
+          }
+        }
+      );
+      this.setState({
+        columnsName: [...this.state.columnsName, column.name],
+        profiledData: { ...this.state.profiledData, columns: modifiedColumns },
+      });
+    }
+  }
+
   render() {
     let customFields = <p>Loading custom fields...</p>;
     if (this.state.customFields !== undefined) {
       customFields = (
         <>
           {Object.entries(this.state.customFields).map(([f, opts]) => (
-            <FormGroup for={`upload-${f}`} label={opts.label} key={f}>
+            <FormGroup for={`upload-${f}`} label={opts.label + ' *'} key={f}>
               <input
-                type="text"
+                type={opts.type === 'integer' ? 'number' : 'text'}
                 id={`upload-${f}`}
                 className="form-control"
                 value={this.state.customValues.get(f) || ''}
@@ -149,6 +244,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
                 this.state.validation.errors.file ? ' is-invalid' : ''
               }`}
               ref={this.fileInput}
+              onChange={this.onProfileData}
             />
             {this.state.validation.errors.file && (
               <div className="invalid-feedback">
@@ -176,7 +272,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             )}
           </FormGroup>
         )}
-        <FormGroup for="upload-name" label="Name">
+        <FormGroup for="upload-name" label="Name *">
           <input
             type="text"
             id="upload-name"
@@ -202,7 +298,33 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             onChange={e => this.setState({ description: e.target.value })}
           />
         </FormGroup>
+        {this.state.profilingStatus !== ProfilingStatus.STOPPED &&
+          this.props.type === 'upload' &&
+          this.fileInput.current && (
+            <FormGroup for="upload-sample" label="Dataset Sample">
+              <ProfileDataset
+                profilingStatus={this.state.profilingStatus}
+                profiledData={this.state.profiledData}
+                failedProfiler={this.state.failedProfiler}
+                onEdit={(value, type, column) =>
+                  this.updateColumnType(value, column, type, Annotation.ADD)
+                }
+                onRemove={(value, column) =>
+                  this.updateColumnType(
+                    value,
+                    column,
+                    TypesCategory.SEMANTIC,
+                    Annotation.REMOVE
+                  )
+                }
+              />
+            </FormGroup>
+          )}
         {customFields}
+        <div style={{ textAlign: 'right', opacity: 0.4, fontSize: '12px' }}>
+          {' '}
+          * Indicates a required field
+        </div>
         <FormGroup>
           <SubmitButton label="Upload" loading={this.state.submitting} />
         </FormGroup>
@@ -274,48 +396,49 @@ class Upload extends React.PureComponent<{}, UploadState> {
 
   render() {
     return (
-      <div className="container container-body">
-        <h1>Upload a new dataset</h1>
+      <div className="row" style={{ maxHeight: '86vh', overflowY: 'auto' }}>
+        <div className="container container-body">
+          <h1>Upload a new dataset</h1>
 
-        <p>
-          This form allows you to manually add new datasets to Auctus’ search
-          index. Uploaded datasets will be searchable by anybody using Auctus.
-        </p>
+          <p>
+            This form allows you to manually add new datasets to Auctus’ search
+            index. Uploaded datasets will be searchable by anybody using Auctus.
+          </p>
 
-        {this.state.failed && (
-          <div className="alert alert-danger" role="alert">
-            Unexpected error: failed to submit dataset ({this.state.failed}).
-          </div>
-        )}
-        {this.state.success && (
-          <div className="alert alert-success" role="alert">
-            File submitted successfully.
-          </div>
-        )}
+          {this.state.failed && (
+            <div className="alert alert-danger" role="alert">
+              Unexpected error: failed to submit dataset ({this.state.failed}).
+            </div>
+          )}
+          {this.state.success && (
+            <div className="alert alert-success" role="alert">
+              File submitted successfully.
+            </div>
+          )}
+          <Tabs>
+            <Tab
+              selected={this.state.state === 'upload'}
+              onClick={() => this.setState({ state: 'upload' })}
+            >
+              <Icon.File className="feather-lg" /> Upload
+            </Tab>
+            <Tab
+              selected={this.state.state === 'url'}
+              onClick={() => this.setState({ state: 'url' })}
+            >
+              <Icon.Link2 className="feather-lg" /> Direct URL
+            </Tab>
+          </Tabs>
 
-        <Tabs>
-          <Tab
-            selected={this.state.state === 'upload'}
-            onClick={() => this.setState({ state: 'upload' })}
-          >
-            <Icon.File className="feather-lg" /> Upload
-          </Tab>
-          <Tab
-            selected={this.state.state === 'url'}
-            onClick={() => this.setState({ state: 'url' })}
-          >
-            <Icon.Link2 className="feather-lg" /> Direct URL
-          </Tab>
-        </Tabs>
-
-        <TabContent>
-          <TabPane active={true} id="upload">
-            <UploadForm
-              type={this.state.state}
-              onFormSubmit={this.onFormSubmit}
-            />
-          </TabPane>
-        </TabContent>
+          <TabContent>
+            <TabPane active={true} id="upload">
+              <UploadForm
+                type={this.state.state}
+                onFormSubmit={this.onFormSubmit}
+              />
+            </TabPane>
+          </TabContent>
+        </div>
       </div>
     );
   }
