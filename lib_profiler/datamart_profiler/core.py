@@ -184,8 +184,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Set column names
     for column_meta, name in zip(columns, data.columns):
-        if 'name' not in column_meta:
-            column_meta['name'] = name
+        if 'name' in column_meta and column_meta['name'] != name:
+            raise ValueError("Column names don't match")
+        column_meta['name'] = name
 
     if data.shape[0] == 0:
         logger.info("0 rows, returning early")
