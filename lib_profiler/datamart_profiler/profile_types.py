@@ -54,7 +54,7 @@ MAX_UNCLEAN = 0.02  # 2%
 MAX_CATEGORICAL_RATIO = 0.10  # 10%
 
 
-def regular_exp_count(array, num_total):
+def regular_exp_count(array):
     # Let you check/count how many instances match a structure of a data type
     types = ['num_float', 'num_int', 'num_bool', 'num_empty', 'num_point', 'num_geo_combined', 'num_polygon', 'num_text']
     re_count = {el: 0 for el in types}
@@ -157,7 +157,7 @@ def identify_types(array, name, geo_data, manual=None):
     column_meta = {}
 
     # This function let you check/count how many instances match a structure of particular data type
-    re_count = regular_exp_count(array, num_total)
+    re_count = regular_exp_count(array)
 
     # Identify structural type and compute unclean values ratio
     threshold = max(1, (1.0 - MAX_UNCLEAN) * (num_total - re_count['num_empty']))
