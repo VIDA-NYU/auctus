@@ -207,11 +207,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Get manual updates from the user
     manual_columns = {}
+    manual_latlong_pairs = {}
     if 'manual_annotations' in metadata:
         if 'columns' in metadata['manual_annotations']:
             manual_columns = {
                 col['name']: col
                 for col in metadata['manual_annotations']['columns']
+            }
+            manual_latlong_pairs = {
+                col['name']: col['latlong_pair']
+                for col in metadata['manual_annotations']['columns']
+                if 'latlong_pair' in col
             }
 
     # Identify types
@@ -280,13 +286,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     columns_lat.append((
                         column_meta['name'],
                         numerical_values,
-                        column_meta.get('latlong_pair'),
+                        manual_latlong_pairs.get(column_meta['name']),
                     ))
                 elif types.LONGITUDE in semantic_types_dict:
                     columns_long.append((
                         column_meta['name'],
                         numerical_values,
-                        column_meta.get('latlong_pair'),
+                        manual_latlong_pairs.get(column_meta['name']),
                     ))
                 elif coverage:
                     ranges = get_numerical_ranges(
@@ -497,9 +503,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
             # Remove semantic type from unpaired columns
             for col in columns:
-                if col['name'] in missed_lat and 'latlong_pair' not in col:
+                if col['name'] in missed_lat:
                     col['semantic_types'].remove(types.LATITUDE)
-                if col['name'] in missed_long and 'latlong_pair' not in col:
+                if col['name'] in missed_long:
                     col['semantic_types'].remove(types.LONGITUDE)
 
             # Compute ranges from lat/long pairs

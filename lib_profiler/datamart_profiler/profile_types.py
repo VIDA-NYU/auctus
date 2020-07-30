@@ -183,8 +183,6 @@ def identify_types(array, name, geo_data, manual=None):
             if el == types.BOOLEAN:
                 column_meta['unclean_values_ratio'] = \
                     unclean_values_ratio(types.BOOLEAN, re_count, num_total)
-            if (el == types.LATITUDE or el == types.LONGITUDE) and 'latlong_pair' in manual:
-                column_meta['latlong_pair'] = manual['latlong_pair']
             if el == types.DATE_TIME:
                 if 'temporal_resolution' in manual:
                     resolution = manual['temporal_resolution']
