@@ -152,19 +152,17 @@ def get_dates(array, resolution):
     return dates
 
 
-def identify_types(array, name, geo_data, updateColumn):
+def identify_types(array, name, geo_data, manual=None):
     num_total = len(array)
     column_meta = {}
-    # Human-In-the-Loop feedback
-    is_HIL_feedback = True if len(updateColumn) > 0 else False
 
     # This function let you check/count how many instances match a structure of particular data type
     re_count = regular_exp_count(array, num_total)
 
     # Identify structural type and compute unclean values ratio
     threshold = max(1, (1.0 - MAX_UNCLEAN) * (num_total - re_count['num_empty']))
-    if is_HIL_feedback:
-        structural_type = updateColumn[0]['structural_type']
+    if manual:
+        structural_type = manual['structural_type']
         column_meta['unclean_values_ratio'] = unclean_values_ratio(structural_type, re_count, num_total)
     else:
         structural_type = identify_structural_type(re_count, num_total, threshold)
@@ -177,19 +175,19 @@ def identify_types(array, name, geo_data, updateColumn):
 
     # TODO: structural or semantic types?
     semantic_types_dict = {}
-    if is_HIL_feedback:
-        semantic_types = updateColumn[0]['semantic_types']
+    if manual:
+        semantic_types = manual['semantic_types']
         semantic_types_dict = {el: None for el in semantic_types}
 
         for el in semantic_types:
             if el == types.BOOLEAN:
                 column_meta['unclean_values_ratio'] = \
                     unclean_values_ratio(types.BOOLEAN, re_count, num_total)
-            if (el == types.LATITUDE or el == types.LONGITUDE) and 'latlong_pair' in updateColumn[0]:
-                column_meta['latlong_pair'] = updateColumn[0]['latlong_pair']
+            if (el == types.LATITUDE or el == types.LONGITUDE) and 'latlong_pair' in manual:
+                column_meta['latlong_pair'] = manual['latlong_pair']
             if el == types.DATE_TIME:
-                if 'temporal_resolution' in updateColumn[0]:
-                    resolution = updateColumn[0]['temporal_resolution']
+                if 'temporal_resolution' in manual:
+                    resolution = manual['temporal_resolution']
                     dates = get_dates(array, resolution)
                     column_meta['temporal_resolution'] = resolution
                 else:

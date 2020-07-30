@@ -204,10 +204,14 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Administrative areas
     resolved_admin_areas = {}
 
-    # check updated columns by the user
-    updated_columns = []
+    # Get manual updates from the user
+    manual_columns = {}
     if 'manual_annotations' in metadata:
-        updated_columns = metadata['manual_annotations']['columns']
+        if 'columns' in metadata['manual_annotations']:
+            manual_columns = {
+                col['name']: col
+                for col in metadata['manual_annotations']['columns']
+            }
 
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
@@ -216,10 +220,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
             logger.info("Processing column %d...", column_idx)
             array = data.iloc[:, column_idx]
             # Identify types
-            updateColumn = [item for item in updated_columns if item.get('name') == column_meta['name']]
+            if column_meta['name'] in manual_columns:
+                manual = manual_columns[column_meta['name']]
+            else:
+                manual = None
 
             structural_type, semantic_types_dict, additional_meta = \
-                identify_types(array, column_meta['name'], geo_data, updateColumn)
+                identify_types(array, column_meta['name'], geo_data, manual)
             # Set structural type
             column_meta['structural_type'] = structural_type
             # Add semantic types to the ones already present
@@ -269,13 +276,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
                 # Get lat/long columns
                 if types.LATITUDE in semantic_types_dict:
-                    columns_lat.append(
-                        (column_meta['name'], numerical_values, column_meta['latlong_pair'] if 'latlong_pair' in column_meta else None)
-                    )
+                    columns_lat.append((
+                        column_meta['name'],
+                        numerical_values,
+                        column_meta.get('latlong_pair'),
+                    ))
                 elif types.LONGITUDE in semantic_types_dict:
-                    columns_long.append(
-                        (column_meta['name'], numerical_values, column_meta['latlong_pair'] if 'latlong_pair' in column_meta else None)
-                    )
+                    columns_long.append((
+                        column_meta['name'],
+                        numerical_values,
+                        column_meta.get('latlong_pair'),
+                    ))
                 elif coverage:
                     ranges = get_numerical_ranges(
                         [x for x in numerical_values if x is not None]
