@@ -9,6 +9,7 @@ export interface ColumnAggregations {
 // Keep in sync with datamart_profiler's temporal_aggregation_keys
 export enum TemporalResolution {
   YEAR = 'year',
+  QUARTER = 'quarter',
   MONTH = 'month',
   WEEK = 'week',
   DAY = 'day',
@@ -124,7 +125,7 @@ export interface QuerySpec {
 interface RelatedToFileBase {
   kind: string;
   name: string;
-  fileSize: number;
+  fileSize?: number;
 }
 
 export interface RelatedToLocalFile extends RelatedToFileBase {
@@ -175,6 +176,7 @@ export interface Session {
   session_id: string;
   format?: string;
   format_options?: { [key: string]: string | number };
+  data_token?: string;
   system_name: string;
 }
 

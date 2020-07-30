@@ -24,7 +24,8 @@ from urllib.parse import urlencode
 import uuid
 import zipfile
 
-from datamart_augmentation.augmentation import AugmentationError, augment
+from datamart_augmentation import AugmentationError
+from datamart_core.augment import augment
 from datamart_core.common import setup_logging, hash_json, contextdecorator, \
     log_future, json2msg
 from datamart_core.fscache import cache_get, cache_get_or_set
@@ -896,7 +897,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                         'session:' + session_id,
                         json.dumps(
                             {
-                                'type': 'augmentation',
+                                'type': task['augmentation']['type'],
                                 'url': '/augment/' + key,
                             },
                             # Compact
@@ -1142,7 +1143,13 @@ class Application(GracefulApplication):
         self.elasticsearch = es
         self.redis = redis_client
         self.lazo_client = lazo
-        self.nominatim = os.environ['NOMINATIM_URL']
+        if os.environ.get('NOMINATIM_URL'):
+            self.nominatim = os.environ['NOMINATIM_URL']
+        else:
+            self.nominatim = None
+            logger.warning(
+                "$NOMINATIM_URL is not set, not resolving URLs"
+            )
         self.geo_data = GeoData.from_local_cache()
         self.channel = None
 

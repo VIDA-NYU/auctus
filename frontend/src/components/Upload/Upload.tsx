@@ -258,7 +258,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
               key={f}
             >
               <input
-                type={opts.type === 'integer' ? 'number' : 'text'}
+                type="text"
                 id={`upload-${f}`}
                 className="form-control"
                 value={this.state.customValues.get(f) || ''}
@@ -315,7 +315,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             )}
           </FormGroup>
         )}
-        <FormGroup for="upload-name" label="Name *">
+        <FormGroup for="upload-name" label="Name">
           <input
             type="text"
             id="upload-name"
@@ -364,10 +364,6 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             </FormGroup>
           )}
         {customFields}
-        <div style={{ textAlign: 'right', opacity: 0.4, fontSize: '12px' }}>
-          {' '}
-          * Indicates a required field
-        </div>
         <FormGroup>
           <SubmitButton label="Upload" loading={this.state.submitting} />
         </FormGroup>
@@ -439,49 +435,48 @@ class Upload extends React.PureComponent<{}, UploadState> {
 
   render() {
     return (
-      <div className="row" style={{ maxHeight: '86vh', overflowY: 'auto' }}>
-        <div className="container container-body">
-          <h1>Upload a new dataset</h1>
+      <div className="container container-body">
+        <h1>Upload a new dataset</h1>
 
-          <p>
-            This form allows you to manually add new datasets to Auctus’ search
-            index. Uploaded datasets will be searchable by anybody using Auctus.
-          </p>
+        <p>
+          This form allows you to manually add new datasets to Auctus’ search
+          index. Uploaded datasets will be searchable by anybody using Auctus.
+        </p>
 
-          {this.state.failed && (
-            <div className="alert alert-danger" role="alert">
-              Unexpected error: failed to submit dataset ({this.state.failed}).
-            </div>
-          )}
-          {this.state.success && (
-            <div className="alert alert-success" role="alert">
-              File submitted successfully.
-            </div>
-          )}
-          <Tabs>
-            <Tab
-              selected={this.state.state === 'upload'}
-              onClick={() => this.setState({ state: 'upload' })}
-            >
-              <Icon.File className="feather-lg" /> Upload
-            </Tab>
-            <Tab
-              selected={this.state.state === 'url'}
-              onClick={() => this.setState({ state: 'url' })}
-            >
-              <Icon.Link2 className="feather-lg" /> Direct URL
-            </Tab>
-          </Tabs>
+        {this.state.failed && (
+          <div className="alert alert-danger" role="alert">
+            Unexpected error: failed to submit dataset ({this.state.failed}).
+          </div>
+        )}
+        {this.state.success && (
+          <div className="alert alert-success" role="alert">
+            File submitted successfully.
+          </div>
+        )}
 
-          <TabContent>
-            <TabPane active={true} id="upload">
-              <UploadForm
-                type={this.state.state}
-                onFormSubmit={this.onFormSubmit}
-              />
-            </TabPane>
-          </TabContent>
-        </div>
+        <Tabs>
+          <Tab
+            selected={this.state.state === 'upload'}
+            onClick={() => this.setState({ state: 'upload' })}
+          >
+            <Icon.File className="feather-lg" /> Upload
+          </Tab>
+          <Tab
+            selected={this.state.state === 'url'}
+            onClick={() => this.setState({ state: 'url' })}
+          >
+            <Icon.Link2 className="feather-lg" /> Direct URL
+          </Tab>
+        </Tabs>
+
+        <TabContent>
+          <TabPane active={true} id="upload">
+            <UploadForm
+              type={this.state.state}
+              onFormSubmit={this.onFormSubmit}
+            />
+          </TabPane>
+        </TabContent>
       </div>
     );
   }

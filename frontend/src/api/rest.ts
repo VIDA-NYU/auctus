@@ -190,11 +190,9 @@ export function upload(data: UploadData) {
   }
 
   // Custom fields
-  if (data.customFields) {
-    data.customFields.forEach((value, field) => {
-      formData.append(field, value);
-    });
-  }
+  data.customFields.forEach((value, field) => {
+    formData.append(field, value);
+  });
 
   const config: AxiosRequestConfig = {
     maxRedirects: 0,

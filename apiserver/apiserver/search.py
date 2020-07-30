@@ -163,9 +163,12 @@ JOIN_RESULT_SOURCE_FIELDS = [
     # General
     'dataset_id', 'name',
     # Column indices
+    # Keep in sync, search code for 279a32
     'index',
     'lat_index', 'lon_index', 'lat', 'lon',
     'address_index', 'address',
+    'point_index', 'point',
+    'admin_index', 'admin',
     # To determine temporal resolution of join
     'temporal_resolution',
 ]
@@ -698,11 +701,6 @@ def get_joinable_datasets(
                 'right_columns_names': right_columns_names,
             }
         )
-        logger.info(
-            "Temporal resolutions: left=%r right=%r",
-            left_temporal_resolution,
-            right_temporal_resolution,
-        )
         if left_temporal_resolution and right_temporal_resolution:
             # Keep in sync with lib_augmentation's match_column_temporal_resolutions
             if (
@@ -1056,7 +1054,7 @@ def parse_query(query_json):
     #   for 'datamart_columns' and 'datamart_spatial_coverage' indices,
     #   since we do not have information about a dataset in these indices
     if variables_query:
-        query_args_main.append(variables_query)
+        query_args_main.extend(variables_query)
 
     return query_args_main, query_sup_functions, query_sup_filters, list(set(tabular_variables))
 
