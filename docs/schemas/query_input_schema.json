@@ -101,6 +101,10 @@
             "geospatial_variable"
           ]
         },
+        "area_name":{
+          "type": "string",
+          "description": "A named administrative area."
+        },
         "latitude1":{
           "type": "number",
           "description": "The latitude of the top left point."
