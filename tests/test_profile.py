@@ -209,16 +209,16 @@ class TestDates(DataTestCase):
                 'columns': [
                     {
                         'name': 'year',
-                        'structural_type': 'http://schema.org/Integer',
+                        'structural_type': 'http://schema.org/Text',
                         'semantic_types': ['http://schema.org/DateTime'],
                         'unclean_values_ratio': 0.0,
                         'num_distinct_values': 3,
-                        'mean': 2005.0,
-                        'stddev': lambda n: round(n, 3) == 0.816,
+                        'mean': 1104508800.0,
+                        'stddev': lambda n: round(n, 3) == 25784316.871,
                         'coverage': [
-                            year_rng(2004),
-                            year_rng(2005),
-                            year_rng(2006),
+                            year_rng(1072915200.0),
+                            year_rng(1104537600.0),
+                            year_rng(1136073600.0),
                         ],
                         'temporal_resolution': 'year',
                     },

@@ -167,6 +167,7 @@ def identify_types(array, name, geo_data):
                 except ValueError:
                     pass
             if len(dates) >= threshold:
+                structural_type = types.TEXT
                 semantic_types_dict[types.DATE_TIME] = dates
 
     # Identify lat/long

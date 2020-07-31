@@ -1627,13 +1627,13 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 3,
                                     'colName': 'max year',
-                                    'colType': 'integer',
+                                    'colType': 'dateTime',
                                     'role': ['attribute'],
                                 },
                                 {
                                     'colIndex': 4,
                                     'colName': 'min year',
-                                    'colType': 'integer',
+                                    'colType': 'dateTime',
                                     'role': ['attribute'],
                                 },
                             ],
@@ -3003,30 +3003,30 @@ lazo_metadata = {
         },
         {
             "name": "year",
-            "structural_type": "http://schema.org/Integer",
+            "structural_type": "http://schema.org/Text",
             "semantic_types": ["http://schema.org/DateTime"],
             "unclean_values_ratio": 0.0,
             'num_distinct_values': 2,
-            "mean": lambda n: round(n, 2) == 1990.11,
-            "stddev": lambda n: round(n, 4) == 0.3143,
+            "mean": 634656000.0,
+            "stddev": lambda n: round(n, 2) == 9910808.65,
             "coverage": (
                 lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
                     {
                         "range": {
-                            "gte": 1990.0,
-                            "lte": 1990.0
+                            "gte": 631152000.0,
+                            "lte": 631152000.0
                         }
                     },
                     {
                         "range": {
-                            "gte": 1991.0,
-                            "lte": 1991.0
+                            "gte": 662688000.0,
+                            "lte": 662688000.0
                         }
                     }
                 ]
             ),
             "temporal_resolution": "year",
-            "plot": check_plot('histogram_numerical'),
+            "plot": check_plot('histogram_temporal'),
         }
     ],
     "materialize": {
