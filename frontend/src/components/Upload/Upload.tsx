@@ -159,13 +159,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
   }
 
   addAnnotation(col: ColumnMetadata, value: string): ColumnMetadata {
-    if (value.includes(ColumnType.DATE_TIME) && value.includes('-')) {
-      return {
-        ...col,
-        semantic_types: [...col.semantic_types, value.split('-')[0]],
-        temporal_resolution: value.split('-')[1].toLowerCase(),
-      };
-    } else if (
+    if (
       value.includes(ColumnType.LATITUDE) ||
       value.includes(ColumnType.LONGITUDE)
     ) {
@@ -190,12 +184,6 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       ...col,
       semantic_types: col.semantic_types.filter(item => item !== value),
     };
-    if (
-      value.includes(ColumnType.DATE_TIME) &&
-      'temporal_resolution' in updatedColumn
-    ) {
-      delete updatedColumn['temporal_resolution'];
-    }
     if (
       !(
         isSubstrInclude(col['semantic_types'], ColumnType.LATITUDE) &&
