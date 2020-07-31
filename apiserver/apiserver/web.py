@@ -216,6 +216,9 @@ class BaseHandler(RequestHandler):
                         'attachment; filename="%s"' % name)
         logger.info("Sending file...")
         with open(path, 'rb') as fp:
+            self.set_header('Content-Length', fp.seek(0, 2))
+            fp.seek(0, 0)
+
             BUFSIZE = 40960
             buf = fp.read(BUFSIZE)
             while buf:
