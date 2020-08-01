@@ -121,6 +121,9 @@ datamart:
           convert:
             type: object
             enabled: false
+      manual_annotations:
+        type: object
+        enabled: false
 datamart_columns:
   settings:
     <<: *analyzer
