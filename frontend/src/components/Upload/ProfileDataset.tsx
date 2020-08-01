@@ -1,11 +1,6 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import {
-  ColumnMetadata,
-  TypesCategory,
-  ColumnType,
-  TemporalResolution,
-} from '../../api/types';
+import { ColumnMetadata, TypesCategory, ColumnType } from '../../api/types';
 import { useTable, Column } from 'react-table';
 import { Loading } from '../visus/Loading/Loading';
 import { RequestStatus, ProfileResult } from '../../api/rest';
@@ -37,10 +32,6 @@ function SemanticTypeBadge(props: {
   const spanClass = semtypeClass
     ? `inline-flex badge badge-pill semtype ${semtypeClass}`
     : 'inline-flex badge badge-pill semtype';
-  const tempResolution =
-    label.toLowerCase() === 'datetime' && props.column.temporal_resolution
-      ? ' ' + props.column.temporal_resolution
-      : '';
   const latlonPair =
     (label.toLowerCase() === 'latitude' ||
       label.toLowerCase() === 'longitude') &&
@@ -50,7 +41,7 @@ function SemanticTypeBadge(props: {
 
   return (
     <span className={spanClass}>
-      {label + tempResolution.toUpperCase() + latlonPair}
+      {label + latlonPair}
       <button
         type="button"
         title="Remove this annotation"
@@ -80,9 +71,6 @@ function TypeBadges(props: {
   let semanticTypes = [
     ColumnType.CATEGORICAL,
     ColumnType.DATE_TIME,
-    ColumnType.DATE_TIME + '-' + TemporalResolution.YEAR.toUpperCase(),
-    ColumnType.DATE_TIME + '-' + TemporalResolution.MONTH.toUpperCase(),
-    ColumnType.DATE_TIME + '-' + TemporalResolution.DAY.toUpperCase(),
     ColumnType.LATITUDE + '-(pair1)',
     ColumnType.LONGITUDE + '-(pair1)',
     ColumnType.BOOLEAN,

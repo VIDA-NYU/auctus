@@ -128,30 +128,6 @@ def identify_structural_type(re_count, num_total, threshold):
     return structural_type
 
 
-def get_dates(array, resolution):
-    dates = []
-    for el in array:
-        try:
-            if resolution == 'year':
-                dates.append(datetime(
-                    int(el), 1, 1,
-                    tzinfo=dateutil.tz.UTC,
-                ))
-            if resolution == 'month':
-                dates.append(datetime(
-                    0, int(el), 1,
-                    tzinfo=dateutil.tz.UTC,
-                ))
-            if resolution == 'day':
-                dates.append(datetime(
-                    0, 0, int(el),
-                    tzinfo=dateutil.tz.UTC,
-                ))
-        except ValueError:
-            pass
-    return dates
-
-
 def identify_types(array, name, geo_data, manual=None):
     num_total = len(array)
     column_meta = {}
@@ -184,12 +160,7 @@ def identify_types(array, name, geo_data, manual=None):
                 column_meta['unclean_values_ratio'] = \
                     unclean_values_ratio(types.BOOLEAN, re_count, num_total)
             if el == types.DATE_TIME:
-                if 'temporal_resolution' in manual:
-                    resolution = manual['temporal_resolution']
-                    dates = get_dates(array, resolution)
-                    column_meta['temporal_resolution'] = resolution
-                else:
-                    dates = parse_dates(array)
+                dates = parse_dates(array)
                 semantic_types_dict[types.DATE_TIME] = dates
             if el == types.ADMIN:
                 if geo_data is not None:
@@ -254,7 +225,15 @@ def identify_types(array, name, geo_data, manual=None):
 
             # Identify years
             if name.strip().lower() == 'year':
-                dates = get_dates(array, 'year')
+                dates = []
+                for year in array:
+                    try:
+                        dates.append(datetime(
+                            int(year), 1, 1,
+                            tzinfo=dateutil.tz.UTC,
+                        ))
+                    except ValueError:
+                        pass
                 if len(dates) >= threshold:
                     semantic_types_dict[types.DATE_TIME] = dates
 

@@ -2965,38 +2965,6 @@ annotated_annotations = {
             "structural_type": "http://schema.org/Float",
             "unclean_values_ratio": 0.0,
             "latlong_pair": "1"
-        },
-        {
-            "coverage": [
-                {
-                    "range": {
-                        "gte": 1,
-                        "lte": 4
-                    }
-                },
-                {
-                    "range": {
-                        "gte": 5,
-                        "lte": 8
-                    }
-                },
-                {
-                    "range": {
-                        "gte": 9,
-                        "lte": 12
-                    }
-                }
-            ],
-            "mean": 7.875,
-            "name": "stmo",
-            "num_distinct_values": 11,
-            "semantic_types": [
-                "http://schema.org/DateTime"
-            ],
-            "stddev": 3.4798527267687636,
-            "structural_type": "http://schema.org/Integer",
-            "unclean_values_ratio": 0.0,
-            "temporal_resolution": "month"
         }
     ]
 }
@@ -3052,11 +3020,9 @@ annotated_metadata = {
         {
             "name": "stmo",
             "structural_type": "http://schema.org/Integer",
-            "semantic_types": [
-                "http://schema.org/DateTime"
-            ],
+            "semantic_types": [],
             "unclean_values_ratio": 0.0,
-            "temporal_resolution": "month",
+            'num_distinct_values': 11,
             "mean": lambda n: round(n, 3) == 7.875,
             "stddev": lambda n: round(n, 2) == 3.48,
             "plot": check_plot('histogram_numerical'),
