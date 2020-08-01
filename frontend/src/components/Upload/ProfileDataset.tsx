@@ -1,10 +1,6 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import {
-  ColumnMetadata,
-  TypesCategory,
-  ColumnType,
-} from '../../api/types';
+import { ColumnMetadata, TypesCategory, ColumnType } from '../../api/types';
 import { useTable, Column } from 'react-table';
 import { Loading } from '../visus/Loading/Loading';
 import { RequestStatus, ProfileResult } from '../../api/rest';
