@@ -964,6 +964,20 @@ class Upload(BaseHandler):
         if 'file' in self.request.files:
             file = self.request.files['file'][0]
             metadata['filename'] = file.filename
+            manual_annotations = self.get_body_argument(
+                'manual_annotations',
+                None,
+            )
+            if manual_annotations:
+                try:
+                    manual_annotations = json.loads(manual_annotations)
+                except json.JSONDecodeError:
+                    return await self.send_error_json(
+                        400,
+                        "Invalid manual annotations",
+                    )
+                metadata['manual_annotations'] = manual_annotations
+
             dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
             # Write file to shared storage

@@ -148,6 +148,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
     """
     DISCARD_DATASET_FIELDS = [
         'columns', 'sample', 'materialize', 'spatial_coverage',
+        'manual_annotations',
     ]
     DISCARD_COLUMN_FIELDS = ['plot']
 
