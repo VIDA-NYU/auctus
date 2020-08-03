@@ -233,6 +233,7 @@ class TestProfiler(DataTestCase):
             settings.pop('provided_name', None)
             settings.pop('uuid', None)
             settings.pop('version', None)
+            settings.pop('blocks', None)
 
         # Add custom fields
         for idx, prefix in [
