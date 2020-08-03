@@ -22,6 +22,9 @@ LONGITUDE = 'http://schema.org/longitude'
 #: A specific instant in time (not partial ones such as "July 4" or "12am")
 DATE_TIME = 'http://schema.org/DateTime'
 
+#: A year number
+DATE_TIME_YEAR = 'http://metadata.auctus.vida-nyu.org/Year'
+
 #: The street address of a location
 ADDRESS = 'http://schema.org/address'
 
