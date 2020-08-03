@@ -267,7 +267,10 @@ class TestProfileQuery(DatamartTest):
             dct.keys() == {'cardinality', 'hash_values', 'n_permutations'}
         )
         for column in metadata['columns']:
-            if column['structural_type'] == 'http://schema.org/Text':
+            if (
+                column['structural_type'] == 'http://schema.org/Text'
+                and 'http://schema.org/DateTime' not in column['semantic_types']
+            ):
                 column['lazo'] = check_lazo
         # Expect token
         metadata['token'] = token
@@ -295,7 +298,7 @@ class TestProfileQuery(DatamartTest):
         self.check_result(
             response,
             other_formats_metadata('xls'),
-            '87ef93cd71b93b0a1a6956a0281dbb8db69feb48',
+            'c6e8b9c5f634cb3b1c47b158d569a4f70462fca4',
         )
 
 
@@ -3541,7 +3544,7 @@ other_formats_metadata = lambda fmt: {
     'name': lambda v: isinstance(v, str),
     'description': lambda v: isinstance(v, str),
     'source': 'remi',
-    'size': 53,
+    'size': 138,
     'nb_rows': 4,
     'nb_profiled_rows': 4,
     'columns': [
@@ -3583,6 +3586,23 @@ other_formats_metadata = lambda fmt: {
             ),
             'plot': check_plot('histogram_numerical'),
         },
+        {
+            'name': 'date',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': ['http://schema.org/DateTime'],
+            'num_distinct_values': 4,
+            'mean': 777211200.0,
+            'stddev': 303122413.10203373,
+            'coverage': (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {'range': {'gte': 473385600.0, 'lte': 473385600.0}},
+                    {'range': {'gte': 631152000.0, 'lte': 725846400.0}},
+                    {'range': {'gte': 1278460800.0, 'lte': 1278460800.0}},
+                ]
+            ),
+            'temporal_resolution': 'year',
+            'plot': check_plot('histogram_temporal'),
+        },
     ],
     'materialize': {
         'direct_url': lambda v: isinstance(v, str),
@@ -3590,8 +3610,9 @@ other_formats_metadata = lambda fmt: {
         'date': lambda d: isinstance(d, str),
         'convert': [{'identifier': fmt}],
     },
-    'sample': 'name,age\r\nC++,38.0\r\nPython,30.0\r\nRust,9.0\r\nLua,27.0\r' +
-              '\n',
+    'sample': 'name,age,date\r\nC++,38.0,1985-01-01T00:00:00\r\nPython,30.0,' +
+              '1990-01-01T00:00:00\r\nRust,9.0,2010-07-07T00:00:00\r\nLua,27' +
+              '.0,1993-01-01T00:00:00\r\n',
     'date': lambda d: isinstance(d, str),
     'version': version
 }
