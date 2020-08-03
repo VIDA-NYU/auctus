@@ -75,6 +75,8 @@ datamart:
             type: long
           temporal_resolution:
             type: keyword
+          admin_area_level:
+            type: long
           # Numerical summaries
           mean:
             type: float
@@ -175,6 +177,8 @@ datamart_columns:
         type: long
       temporal_resolution:
         type: keyword
+      admin_area_level:
+        type: long
       # Numerical summaries
       mean:
         type: float
