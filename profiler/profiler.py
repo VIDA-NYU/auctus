@@ -2,6 +2,7 @@ import aio_pika
 import asyncio
 import contextlib
 from datetime import datetime
+import defusedxml
 import elasticsearch
 import itertools
 import lazo_index_service
@@ -34,6 +35,10 @@ PROM_DOWNLOADING = prometheus_client.Gauge(
 PROM_PROFILING = prometheus_client.Gauge(
     'profile_profiling_count', "Number of datasets currently profiling",
 )
+
+
+# https://xlrd.readthedocs.io/en/latest/vulnerabilities.html
+defusedxml.defuse_stdlib()
 
 
 @contextlib.contextmanager
