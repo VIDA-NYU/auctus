@@ -237,6 +237,7 @@ def identify_types(array, name, geo_data, manual=None):
                 if len(dates) >= threshold:
                     structural_type = types.TEXT
                     semantic_types_dict[types.DATE_TIME] = dates
+                    semantic_types_dict[types.DATE_TIME_YEAR] = None
 
         # Identify lat/long
         if structural_type == types.FLOAT:

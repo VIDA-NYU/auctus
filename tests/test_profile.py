@@ -213,7 +213,10 @@ class TestDates(DataTestCase):
                     {
                         'name': 'year',
                         'structural_type': 'http://schema.org/Text',
-                        'semantic_types': ['http://schema.org/DateTime'],
+                        'semantic_types': [
+                            'http://schema.org/DateTime',
+                            'http://metadata.auctus.vida-nyu.org/Year',
+                        ],
                         'unclean_values_ratio': 0.0,
                         'num_distinct_values': 3,
                         'mean': 1104508800.0,

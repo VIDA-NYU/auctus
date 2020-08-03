@@ -3290,7 +3290,10 @@ lazo_metadata = {
         {
             "name": "year",
             "structural_type": "http://schema.org/Text",
-            "semantic_types": ["http://schema.org/DateTime"],
+            "semantic_types": [
+                "http://schema.org/DateTime",
+                "http://metadata.auctus.vida-nyu.org/Year",
+            ],
             "unclean_values_ratio": 0.0,
             'num_distinct_values': 2,
             "mean": 634656000.0,
