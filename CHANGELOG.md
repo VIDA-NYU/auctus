@@ -1,11 +1,11 @@
-0.7 (TBD)
-=========
+0.7 (2020-08-04)
+================
 
 Incompatible changes:
 * Add a Zenodo discovery plugin (can be configured with a keyword)
 * Renamed docker-compose services to use dashes `-` instead of underscores `_`
 * Containers no longer run as root, change permissions on volumes to uid 998
-* Changed Elasticsearch index settings, use reindex API to update (`POST /_reindex`)
+* Changed Elasticsearch index settings, use `scripts/es_reindex.sh` to update
 * Changed Redis cache from Pickle to JSON, make sure to clear Redis on update
 
 Enhancements:
@@ -40,6 +40,7 @@ Enhancements:
 * Implement joins on multiple columns (e.g. spatio-temporal)
 * Re-license Datamart under Apache-2.0
 * Allow searching by named spatial area in API
+* Decode dates in Excel files, from the floating-point number of days format
 
 0.6 (2020-04-29)
 ================
