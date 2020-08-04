@@ -947,7 +947,7 @@ def parse_keyword_query_main_index(query_json):
                             'operator': 'or',
                             'type': 'most_fields',
                             'fields': [
-                                'id',
+                                'id^10',
                                 'description',
                                 'name',
                             ],
@@ -1010,7 +1010,7 @@ def parse_keyword_query_sup_index(query_json):
                     'operator': 'or',
                     'type': 'most_fields',
                     'fields': [
-                        'dataset_id',
+                        'dataset_id^10',
                         'dataset_description',
                         'dataset_name',
                         'name',
