@@ -1,3 +1,4 @@
+import collections
 from datetime import datetime
 import dateutil.tz
 import re
@@ -56,26 +57,25 @@ MAX_CATEGORICAL_RATIO = 0.10  # 10%
 
 def regular_exp_count(array):
     # Let you check/count how many instances match a structure of a data type
-    types = ['num_float', 'num_int', 'num_bool', 'num_empty', 'num_point', 'num_geo_combined', 'num_polygon', 'num_text']
-    re_count = {el: 0 for el in types}
+    re_count = collections.Counter()
 
     for elem in array:
         if not elem:
-            re_count['num_empty'] += 1
+            re_count['empty'] += 1
         elif _re_int.match(elem):
-            re_count['num_int'] += 1
+            re_count['int'] += 1
         elif _re_float.match(elem):
-            re_count['num_float'] += 1
+            re_count['float'] += 1
         elif _re_wkt_point.match(elem):
-            re_count['num_point'] += 1
+            re_count['point'] += 1
         elif _re_geo_combined.match(elem):
-            re_count['num_geo_combined'] += 1
+            re_count['geo_combined'] += 1
         elif _re_wkt_polygon.match(elem):
-            re_count['num_polygon'] += 1
+            re_count['polygon'] += 1
         elif len(_re_whitespace.findall(elem)) >= 4:
-            re_count['num_text'] += 1
+            re_count['text'] += 1
         if elem.lower() in ('0', '1', 'true', 'false', 'y', 'n', 'yes', 'no'):
-            re_count['num_bool'] += 1
+            re_count['bool'] += 1
 
     return re_count
 
@@ -84,19 +84,19 @@ def unclean_values_ratio(c_type, re_count, num_total):
     ratio = 0
     if c_type == types.INTEGER:
         ratio = \
-            (num_total - re_count['num_empty'] - re_count['num_int']) / num_total
+            (num_total - re_count['empty'] - re_count['int']) / num_total
     if c_type == types.FLOAT:
         ratio = \
-            (num_total - re_count['num_empty'] - re_count['num_int'] - re_count['num_float']) / num_total
+            (num_total - re_count['empty'] - re_count['int'] - re_count['float']) / num_total
     if c_type == types.GEO_POINT:
         ratio = \
-            (num_total - re_count['num_empty'] - re_count['num_point']) / num_total
+            (num_total - re_count['empty'] - re_count['point']) / num_total
     if c_type == types.GEO_POLYGON:
         ratio = \
-            (num_total - re_count['num_empty'] - re_count['num_polygon']) / num_total
+            (num_total - re_count['empty'] - re_count['polygon']) / num_total
     if c_type == types.BOOLEAN:
         ratio = \
-            (num_total - re_count['num_empty'] - re_count['num_bool']) / num_total
+            (num_total - re_count['empty'] - re_count['bool']) / num_total
     return ratio
 
 
@@ -110,17 +110,17 @@ def parse_dates(array):
 
 
 def identify_structural_type(re_count, num_total, threshold):
-    if re_count['num_empty'] == num_total:
+    if re_count['empty'] == num_total:
         structural_type = types.MISSING_DATA
-    elif re_count['num_int'] >= threshold:
+    elif re_count['int'] >= threshold:
         structural_type = types.INTEGER
-    elif re_count['num_int'] + re_count['num_float'] >= threshold:
+    elif re_count['int'] + re_count['float'] >= threshold:
         structural_type = types.FLOAT
-    elif re_count['num_point'] >= threshold or re_count['num_geo_combined'] >= threshold:
+    elif re_count['point'] >= threshold or re_count['geo_combined'] >= threshold:
         structural_type = types.GEO_POINT
-    elif re_count['num_polygon'] >= threshold:
+    elif re_count['polygon'] >= threshold:
         structural_type = types.GEO_POLYGON
-    elif re_count['num_polygon'] >= threshold:
+    elif re_count['polygon'] >= threshold:
         structural_type = types.GEO_POLYGON
     else:
         structural_type = types.TEXT
@@ -136,7 +136,7 @@ def identify_types(array, name, geo_data, manual=None):
     re_count = regular_exp_count(array)
 
     # Identify structural type and compute unclean values ratio
-    threshold = max(1, (1.0 - MAX_UNCLEAN) * (num_total - re_count['num_empty']))
+    threshold = max(1, (1.0 - MAX_UNCLEAN) * (num_total - re_count['empty']))
     if manual:
         structural_type = manual['structural_type']
         column_meta['unclean_values_ratio'] = unclean_values_ratio(structural_type, re_count, num_total)
@@ -146,8 +146,8 @@ def identify_types(array, name, geo_data, manual=None):
             column_meta['unclean_values_ratio'] = unclean_values_ratio(structural_type, re_count, num_total)
 
     # compute missing values ratio
-    if structural_type != types.MISSING_DATA and re_count['num_empty'] > 0:
-        column_meta['missing_values_ratio'] = re_count['num_empty'] / num_total
+    if structural_type != types.MISSING_DATA and re_count['empty'] > 0:
+        column_meta['missing_values_ratio'] = re_count['empty'] / num_total
 
     # TODO: structural or semantic types?
     semantic_types_dict = {}
@@ -175,9 +175,9 @@ def identify_types(array, name, geo_data, manual=None):
                     semantic_types_dict[types.CATEGORICAL] = values
     else:
         # Identify booleans
-        num_bool = re_count['num_bool']
-        num_text = re_count['num_text']
-        num_empty = re_count['num_empty']
+        num_bool = re_count['bool']
+        num_text = re_count['text']
+        num_empty = re_count['empty']
 
         if num_bool >= threshold:
             semantic_types_dict[types.BOOLEAN] = None
