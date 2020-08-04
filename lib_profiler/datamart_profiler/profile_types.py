@@ -44,6 +44,13 @@ _re_geo_combined = regex.compile(
     r'-?[0-9]{1,3}\.[0-9]{1,15}'
     r'\)$'
 )
+_re_other_point = re.compile(
+    r'^POINT ?\('
+    r'-?[0-9]{1,3}\.[0-9]{1,15}'
+    r', ?'
+    r'-?[0-9]{1,3}\.[0-9]{1,15}'
+    r'\)$'
+)
 _re_whitespace = re.compile(r'\s')
 
 
@@ -70,6 +77,8 @@ def regular_exp_count(array):
             re_count['point'] += 1
         elif _re_geo_combined.match(elem):
             re_count['geo_combined'] += 1
+        elif _re_other_point.match(elem):
+            re_count['other_point'] += 1
         elif _re_wkt_polygon.match(elem):
             re_count['polygon'] += 1
         elif len(_re_whitespace.findall(elem)) >= 4:
@@ -116,7 +125,7 @@ def identify_structural_type(re_count, num_total, threshold):
         structural_type = types.INTEGER
     elif re_count['int'] + re_count['float'] >= threshold:
         structural_type = types.FLOAT
-    elif re_count['point'] >= threshold or re_count['geo_combined'] >= threshold:
+    elif re_count['point'] >= threshold or re_count['geo_combined'] >= threshold or re_count['other_point'] >= threshold:
         structural_type = types.GEO_POINT
     elif re_count['polygon'] >= threshold:
         structural_type = types.GEO_POLYGON
