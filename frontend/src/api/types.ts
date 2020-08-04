@@ -85,9 +85,6 @@ export interface SearchResult {
   // join_columns: Array<[string, string]>;
   metadata: Metadata;
   augmentation?: AugmentationInfo;
-  supplied_id: string | null;
-  supplied_resource_id: string | null;
-  d3m_dataset_description: {};
   sample: string[][];
 }
 
