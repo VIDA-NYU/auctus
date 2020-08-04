@@ -3544,7 +3544,7 @@ other_formats_metadata = lambda fmt: {
     'name': lambda v: isinstance(v, str),
     'description': lambda v: isinstance(v, str),
     'source': 'remi',
-    'size': 138,
+    'size': 130,
     'nb_rows': 4,
     'nb_profiled_rows': 4,
     'columns': [
@@ -3610,9 +3610,9 @@ other_formats_metadata = lambda fmt: {
         'date': lambda d: isinstance(d, str),
         'convert': [{'identifier': fmt}],
     },
-    'sample': 'name,age,date\r\nC++,38.0,1985-01-01T00:00:00\r\nPython,30.0,' +
-              '1990-01-01T00:00:00\r\nRust,9.0,2010-07-07T00:00:00\r\nLua,27' +
-              '.0,1993-01-01T00:00:00\r\n',
+    'sample': 'name,age,date\r\nC++,38,1985-01-01T00:00:00\r\nPython,30,1990' +
+              '-01-01T00:00:00\r\nRust,9,2010-07-07T00:00:00\r\nLua,27,1993-' +
+              '01-01T00:00:00\r\n',
     'date': lambda d: isinstance(d, str),
     'version': version
 }

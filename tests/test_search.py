@@ -20,7 +20,7 @@ class TestSearch(unittest.TestCase):
                                     'query': 'green taxi',
                                     'operator': 'or',
                                     'type': 'most_fields',
-                                    'fields': ['id', 'description', 'name'],
+                                    'fields': ['id^10', 'description', 'name'],
                                 },
                             },
                             {
@@ -62,7 +62,7 @@ class TestSearch(unittest.TestCase):
                             'operator': 'or',
                             'type': 'most_fields',
                             'fields': [
-                                'dataset_id',
+                                'dataset_id^10',
                                 'dataset_description',
                                 'dataset_name',
                                 'name',
@@ -115,7 +115,7 @@ class TestSearch(unittest.TestCase):
                                     'query': 'green taxi',
                                     'operator': 'or',
                                     'type': 'most_fields',
-                                    'fields': ['id', 'description', 'name'],
+                                    'fields': ['id^10', 'description', 'name'],
                                 },
                             },
                             {
