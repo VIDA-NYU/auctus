@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import * as api from '../../api/rest';
 import { TemporalBadge, SpatialBadge, BadgeGroup } from '../Badges/Badges';
 import moment from 'moment';
@@ -47,7 +48,16 @@ class Statistics extends React.PureComponent<{}, StatisticsState> {
             >
               <div className="d-flex w-100 justify-content-between">
                 <div className="d-flex flex-column">
-                  <h5 className="mb-0">{d.name}</h5>
+                  <h5 className="mb-0">
+                    <Link
+                      to={`/?q=${encodeURIComponent(
+                        JSON.stringify({ query: d.id })
+                      )}`}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      {d.name}
+                    </Link>
+                  </h5>
                   <span className="small">{d.discoverer}</span>
                   <span>
                     <b>Dataset ID:</b> {d.id}
