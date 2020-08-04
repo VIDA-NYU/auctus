@@ -17,13 +17,16 @@ def xls_to_csv(source_filename, dest_fileobj):
     for row_num in range(sheet.nrows):
         values = sheet.row_values(row_num)
 
-        # Decode dates into ISO-8601 strings
         for col_num, cell_type in enumerate(sheet.row_types(row_num)):
             if cell_type == xlrd.sheet.XL_CELL_DATE:
+                # Decode dates into ISO-8601 strings
                 values[col_num] = xlrd.xldate_as_datetime(
                     values[col_num],
                     datemode,
                 ).isoformat()
+            elif cell_type == xlrd.sheet.XL_CELL_NUMBER:
+                # Avoid forced decimal point on integers
+                values[col_num] = '{0:g}'.format(values[col_num])
 
         writer.writerow(values)
 
