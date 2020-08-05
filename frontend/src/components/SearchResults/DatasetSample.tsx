@@ -348,7 +348,7 @@ class DatasetSample extends React.PureComponent<
     const { hit } = this.props;
     const sample = hit.sample;
     const headers = sample[0];
-    const rows = sample.slice(1, sample.length - 1);
+    const rows = sample.slice(1, sample.length);
 
     const columns = headers.map((h, i) => ({
       Header: h,
