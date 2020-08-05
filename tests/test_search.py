@@ -15,8 +15,8 @@ class TestSearch(unittest.TestCase):
                 {
                     'multi_match': {
                         'query': 'green taxi',
-                        'operator': 'or',
-                        'type': 'most_fields',
+                        'operator': 'and',
+                        'type': 'cross_fields',
                         'fields': ['id^10', 'description', 'name', 'attribute_keywords'],
                     },
                 },
@@ -40,8 +40,8 @@ class TestSearch(unittest.TestCase):
                     'filter': {
                         'multi_match': {
                             'query': 'green taxi',
-                            'operator': 'or',
-                            'type': 'most_fields',
+                            'operator': 'and',
+                            'type': 'cross_fields',
                             'fields': [
                                 'dataset_id^10',
                                 'dataset_description',
@@ -79,8 +79,8 @@ class TestSearch(unittest.TestCase):
                 {
                     'multi_match': {
                         'query': 'food',
-                        'operator': 'or',
-                        'type': 'most_fields',
+                        'operator': 'and',
+                        'type': 'cross_fields',
                         'fields': [
                             'id^10',
                             'description',
@@ -109,8 +109,8 @@ class TestSearch(unittest.TestCase):
                     'filter': {
                         'multi_match': {
                             'query': 'food',
-                            'type': 'most_fields',
-                            'operator': 'or',
+                            'type': 'cross_fields',
+                            'operator': 'and',
                             'fields': [
                                 'dataset_id^10',
                                 'dataset_description',
@@ -161,8 +161,8 @@ class TestSearch(unittest.TestCase):
                 {
                     'multi_match': {
                         'query': 'green taxi',
-                        'operator': 'or',
-                        'type': 'most_fields',
+                        'operator': 'and',
+                        'type': 'cross_fields',
                         'fields': ['id^10', 'description', 'name', 'attribute_keywords'],
                     },
                 },
