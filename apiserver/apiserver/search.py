@@ -7,7 +7,6 @@ import os
 import tempfile
 import textwrap
 import time
-
 import tornado.web
 
 from datamart_core import types
@@ -939,36 +938,16 @@ def parse_keyword_query_main_index(query_json):
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
         query_args_main.append({
-            'bool': {
-                'should': [
-                    {
-                        'multi_match': {
-                            'query': keywords,
-                            'operator': 'or',
-                            'type': 'most_fields',
-                            'fields': [
-                                'id^10',
-                                'description',
-                                'name',
-                            ],
-                        },
-                    },
-                    {
-                        'nested': {
-                            'path': 'columns',
-                            'query': {
-                                'multi_match': {
-                                    'query': keywords,
-                                    'operator': 'or',
-                                    'type': 'most_fields',
-                                    'fields': [
-                                        'columns.name',
-                                    ],
-                                },
-                            },
-                        },
-                    },
-                ]
+            'multi_match': {
+                'query': keywords,
+                'operator': 'or',
+                'type': 'most_fields',
+                'fields': [
+                    'id^10',
+                    'description',
+                    'name',
+                    'attribute_keywords',
+                ],
             },
         })
 
@@ -1030,6 +1009,7 @@ def parse_keyword_query_sup_index(query_json):
                         'dataset_description',
                         'dataset_name',
                         'name',
+                        'dataset_attribute_keywords',
                     ],
                 },
             },
