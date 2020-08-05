@@ -864,7 +864,6 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         key = hash_json(
             task=task,
             supplied_data=data_hash or data_id,
-            version=os.environ['DATAMART_VERSION'],
             columns=columns,
             format=format,
             format_options=format_options,
