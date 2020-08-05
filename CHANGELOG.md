@@ -1,3 +1,11 @@
+0.8 (TBD)
+=========
+
+Incompatible changes:
+
+Enhancements:
+* Add a search box on the map for the spatial filter
+
 0.7 (2020-08-04)
 ================
 
