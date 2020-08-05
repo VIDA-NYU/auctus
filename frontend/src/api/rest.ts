@@ -267,3 +267,12 @@ export function customFields(): Promise<CustomFields> {
   }
   return statusPromise.then(response => response.custom_fields || {});
 }
+
+export async function searchLocation(
+  query: string
+): Promise<Array<{ boundingbox: number[] }>> {
+  const formData = new FormData();
+  formData.append('q', query);
+  const response = await api.post('/location', formData);
+  return response.data.results;
+}

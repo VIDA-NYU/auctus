@@ -2672,6 +2672,27 @@ class TestSession(DatamartTest):
         )
 
 
+class TestLocation(DatamartTest):
+    def test_search(self):
+        response = self.datamart_post('/location', data={'q': 'Italy'})
+        self.assertJson(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'area': 'Q38',
+                        'boundingbox': [
+                            lambda n: round(n, 4) == 6.6027,
+                            lambda n: round(n, 4) == 18.5174,
+                            lambda n: round(n, 4) == 35.4892,
+                            lambda n: round(n, 4) == 47.0852,
+                        ],
+                    }
+                ]
+            },
+        )
+
+
 version = os.environ['DATAMART_VERSION']
 assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
 
