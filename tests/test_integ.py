@@ -2320,6 +2320,8 @@ class TestUpload(DatamartTest):
                 # Check it's in the alternate index
                 try:
                     pending = es.get('pending', dataset_id)['_source']
+                    print('**** PENDING ****')
+                    print(pending)
                     self.assertJson(
                         pending,
                         {
