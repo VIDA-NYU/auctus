@@ -400,7 +400,7 @@ def join(
         )
     else:
         raise TypeError(
-            "join() argument 1 should be a path (str) or a DataFrame, got "
+            "join() argument 1 should be a file or a DataFrame, got "
             "%r" % type(original_data)
         )
 
@@ -668,7 +668,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
         ))
     else:
         raise TypeError(
-            "union() argument 1 should be a path (str) or a DataFrame, got "
+            "union() argument 1 should be a file or a DataFrame, got "
             "%r" % type(original_data)
         )
 
