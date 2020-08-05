@@ -2326,6 +2326,7 @@ class TestUpload(DatamartTest):
                             'status': 'queued',
                             'date': lambda d: isinstance(d, str),
                             'source': 'upload',
+                            'dataset_types': [],
                             'metadata': {
                                 'name': 'basic annotated features',
                                 'description': 'Simple CSV file sent through upload endpoint. Support type annotations made by users.',
@@ -3574,6 +3575,7 @@ other_formats_metadata = lambda fmt: {
     'name': lambda v: isinstance(v, str),
     'description': lambda v: isinstance(v, str),
     'source': 'remi',
+    'dataset_types': ['categorical', 'numerical', 'temporal'],
     'size': 130,
     'nb_rows': 4,
     'nb_profiled_rows': 4,
