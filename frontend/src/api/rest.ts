@@ -4,6 +4,7 @@ import {
   SearchResult,
   FilterVariables,
   Metadata,
+  ColumnMetadata,
   QuerySpec,
   RelatedFile,
   Session,
@@ -179,8 +180,8 @@ export interface UploadData {
   description?: string;
   address?: string;
   file?: File;
-  updatedColumns?: string;
-  customFields?: Map<string, string>;
+  manualAnnotations?: { columns: ColumnMetadata[] };
+  customFields: Map<string, string>;
 }
 
 export function upload(data: UploadData) {
@@ -196,16 +197,17 @@ export function upload(data: UploadData) {
   } else if (data.file) {
     formData.append('file', data.file);
   }
-  if (data.updatedColumns) {
-    formData.append('updatedColumns', data.updatedColumns);
+  if (data.manualAnnotations) {
+    formData.append(
+      'manual_annotations',
+      JSON.stringify(data.manualAnnotations)
+    );
   }
 
   // Custom fields
-  if (data.customFields) {
-    data.customFields.forEach((value, field) => {
-      formData.append(field, value);
-    });
-  }
+  data.customFields.forEach((value, field) => {
+    formData.append(field, value);
+  });
 
   const config: AxiosRequestConfig = {
     maxRedirects: 0,
@@ -215,23 +217,6 @@ export function upload(data: UploadData) {
   };
 
   return api.post('/upload', formData, config);
-}
-export function initialProfile(data: UploadData) {
-  const formData = new FormData();
-  if (data.address) {
-    formData.append('address', data.address);
-  } else if (data.file) {
-    formData.append('data', data.file);
-  }
-
-  const config: AxiosRequestConfig = {
-    maxRedirects: 0,
-    headers: {
-      'content-type': 'multipart/form-data',
-    },
-  };
-
-  return api.post('/profile', formData, config);
 }
 
 export interface ProfileResult extends Metadata {
@@ -292,4 +277,13 @@ export function customFields(): Promise<CustomFields> {
     statusPromise = status();
   }
   return statusPromise.then(response => response.custom_fields || {});
+}
+
+export async function searchLocation(
+  query: string
+): Promise<Array<{ boundingbox: number[] }>> {
+  const formData = new FormData();
+  formData.append('q', query);
+  const response = await api.post('/location', formData);
+  return response.data.results;
 }

@@ -9,6 +9,7 @@ export interface ColumnAggregations {
 // Keep in sync with datamart_profiler's temporal_aggregation_keys
 export enum TemporalResolution {
   YEAR = 'year',
+  QUARTER = 'quarter',
   MONTH = 'month',
   WEEK = 'week',
   DAY = 'day',
@@ -67,6 +68,8 @@ export interface ColumnMetadata {
   mean?: number;
   stddev?: number;
   plot?: PlotVega;
+  temporal_resolution?: string;
+  latlong_pair?: string;
 }
 
 export interface PlotVega {
@@ -83,9 +86,6 @@ export interface SearchResult {
   // join_columns: Array<[string, string]>;
   metadata: Metadata;
   augmentation?: AugmentationInfo;
-  supplied_id: string | null;
-  supplied_resource_id: string | null;
-  d3m_dataset_description: {};
   sample: string[][];
 }
 
@@ -124,7 +124,7 @@ export interface QuerySpec {
 interface RelatedToFileBase {
   kind: string;
   name: string;
-  fileSize: number;
+  fileSize?: number;
 }
 
 export interface RelatedToLocalFile extends RelatedToFileBase {
@@ -161,23 +161,6 @@ export enum InfoBoxType {
   AUGMENTATION = 'AUGMENTATION',
 }
 
-export interface ProfileData {
-  columns: ColumnMetadata[];
-  nb_profiled_rows?: number;
-  nb_rows?: number;
-  sample: string;
-  size?: number;
-  token?: string;
-  version?: string;
-}
-
-export enum ProfilingStatus {
-  STOPPED = 'STOPPED',
-  RUNNING = 'RUNNING',
-  SUCCESSED = 'SUCCESSED',
-  ERROR = 'ERROR',
-}
-
 export enum Annotation {
   ADD = 'ADD',
   REMOVE = 'REMOVE',
@@ -192,5 +175,23 @@ export interface Session {
   session_id: string;
   format?: string;
   format_options?: { [key: string]: string | number };
+  data_token?: string;
   system_name: string;
+}
+
+export enum ColumnType {
+  MISSING_DATA = 'https://metadata.datadrivendiscovery.org/types/MissingData',
+  INTEGER = 'http://schema.org/Integer',
+  FLOAT = 'http://schema.org/Float',
+  TEXT = 'http://schema.org/Text',
+  BOOLEAN = 'http://schema.org/Boolean',
+  LATITUDE = 'http://schema.org/latitude',
+  LONGITUDE = 'http://schema.org/longitude',
+  DATE_TIME = 'http://schema.org/DateTime',
+  ADDRESS = 'http://schema.org/address',
+  ADMIN = 'http://schema.org/AdministrativeArea',
+  ID = 'http://schema.org/identifier',
+  CATEGORICAL = 'http://schema.org/Enumeration',
+  GEO_POINT = 'http://schema.org/GeoCoordinates',
+  GEO_POLYGON = 'http://schema.org/GeoShape',
 }

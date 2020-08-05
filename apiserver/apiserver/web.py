@@ -24,7 +24,8 @@ from urllib.parse import urlencode
 import uuid
 import zipfile
 
-from datamart_augmentation.augmentation import AugmentationError, augment
+from datamart_augmentation import AugmentationError
+from datamart_core.augment import augment
 from datamart_core.common import setup_logging, hash_json, contextdecorator, \
     log_future, json2msg
 from datamart_core.fscache import cache_get, cache_get_or_set
@@ -144,6 +145,17 @@ PROM_SESSION_GET = PromMeasureRequest(
         buckets=BUCKETS,
     ),
 )
+PROM_LOCATION = PromMeasureRequest(
+    count=prometheus_client.Counter(
+        'req_location_count',
+        "Location search requests",
+    ),
+    time=prometheus_client.Histogram(
+        'req_location_seconds',
+        "Location search request time",
+        buckets=BUCKETS,
+    ),
+)
 PROM_STATISTICS = PromMeasureRequest(
     count=prometheus_client.Counter(
         'req_statistics_count',
@@ -181,7 +193,14 @@ class BaseHandler(RequestHandler):
         if not type_.startswith('application/json'):
             self.send_error_json(400, "Expected JSON")
             raise HTTPError(400)
-        return json.loads(self.request.body.decode('utf-8'))
+        try:
+            return json.loads(self.request.body.decode('utf-8'))
+        except UnicodeDecodeError:
+            self.send_error_json(400, "Invalid character encoding")
+            raise HTTPError(400)
+        except json.JSONDecodeError:
+            self.send_error_json(400, "Invalid JSON")
+            raise HTTPError(400)
 
     def send_json(self, obj):
         if isinstance(obj, list):
@@ -208,6 +227,9 @@ class BaseHandler(RequestHandler):
                         'attachment; filename="%s"' % name)
         logger.info("Sending file...")
         with open(path, 'rb') as fp:
+            self.set_header('Content-Length', fp.seek(0, 2))
+            fp.seek(0, 0)
+
             BUFSIZE = 40960
             buf = fp.read(BUFSIZE)
             while buf:
@@ -445,7 +467,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     query_args_main,
                     query_sup_functions, query_sup_filters,
                     tabular_variables,
-                ) = parse_query(query)
+                ) = parse_query(query, self.application.geo_data)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
 
@@ -532,23 +554,6 @@ class BaseDownload(BaseHandler):
             logger.info("Sending redirect to direct_url")
             return self.redirect(materialize['direct_url'])
 
-        if session_id:
-            self.application.redis.rpush(
-                'session:' + session_id,
-                ('download:' + dataset_id
-                 + '?' + self.serialize_format(format, format_options)),
-            )
-            ret = self.send_json({'success': "attached to session"})
-
-            # Kick off materialization now
-            with get_dataset(
-                metadata, dataset_id,
-                format=format, format_options=format_options,
-            ):
-                pass
-
-            return ret
-
         with contextlib.ExitStack() as stack:
             try:
                 dataset_path = stack.enter_context(
@@ -561,11 +566,29 @@ class BaseDownload(BaseHandler):
                 await self.send_error_json(500, "Materializer reports failure")
                 raise
 
-            logger.info("Sending file...")
-            return await self.send_file(
-                dataset_path,
-                dataset_id + (format_ext or ''),
-            )
+            if session_id:
+                logger.info("Attaching to session")
+                self.application.redis.rpush(
+                    'session:' + session_id,
+                    json.dumps(
+                        {
+                            'type': 'download',
+                            'url': (
+                                '/download/' + dataset_id + '?'
+                                + self.serialize_format(format, format_options)
+                            ),
+                        },
+                        # Compact
+                        sort_keys=True, indent=None, separators=(',', ':'),
+                    ),
+                )
+                return await self.send_json({'success': "attached to session"})
+            else:
+                logger.info("Sending file...")
+                return await self.send_file(
+                    dataset_path,
+                    dataset_id + (format_ext or ''),
+                )
 
 
 class DownloadId(BaseDownload, GracefulHandler):
@@ -847,14 +870,6 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             format_options=format_options,
         )
 
-        ret = None
-        if session_id:
-            self.application.redis.rpush(
-                'session:' + session_id,
-                'aug:' + key,
-            )
-            ret = self.send_json({'success': "attached to session"})
-
         def create_aug(cache_temp):
             with contextlib.ExitStack() as stack:
                 # Get augmentation data
@@ -892,8 +907,20 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
         try:
             with cache_get_or_set('/cache/aug', key, create_aug) as path:
                 if session_id:
-                    # We already replied
-                    return await ret
+                    self.application.redis.rpush(
+                        'session:' + session_id,
+                        json.dumps(
+                            {
+                                'type': task['augmentation']['type'],
+                                'url': '/augment/' + key,
+                            },
+                            # Compact
+                            sort_keys=True, indent=None, separators=(',', ':'),
+                        )
+                    )
+                    return await self.send_json({
+                        'success': "attached to session",
+                    })
                 else:
                     # send the file
                     return await self.send_file(
@@ -947,21 +974,21 @@ class Upload(BaseHandler):
 
         if 'file' in self.request.files:
             file = self.request.files['file'][0]
-            metadata = dict(
-                filename=file.filename,
-                name=self.get_body_argument('name', None),
-                source='upload',
-                materialize=dict(identifier='datamart.upload',
-                                 date=datetime.utcnow().isoformat() + 'Z'),
-            )
-            description = self.get_body_argument('description', None)
-            if description:
-                metadata['description'] = description
-            updatedColumns = self.get_body_argument('updatedColumns', None)
-            if updatedColumns:
-                metadata['updated_columns'] = json.loads(updatedColumns)
-
             metadata['filename'] = file.filename
+            manual_annotations = self.get_body_argument(
+                'manual_annotations',
+                None,
+            )
+            if manual_annotations:
+                try:
+                    manual_annotations = json.loads(manual_annotations)
+                except json.JSONDecodeError:
+                    return await self.send_error_json(
+                        400,
+                        "Invalid manual annotations",
+                    )
+                metadata['manual_annotations'] = manual_annotations
+
             dataset_id = 'datamart.upload.%s' % uuid.uuid4().hex
 
             # Write file to shared storage
@@ -1092,21 +1119,33 @@ class SessionGet(BaseHandler):
         api_url = self.application.api_url
         results = []
         for record in datasets:
-            record = record.decode('utf-8')
-            if record.startswith('download:'):
-                record = record[9:]
-                results.append({
-                    'url': api_url + '/download/' + record,
-                })
-            elif record.startswith('aug:'):
-                record = record[4:]
-                results.append({
-                    'url': api_url + '/augment/' + record,
-                })
-            else:
-                logger.error("Error: invalid entry in session: %r", record)
+            record = json.loads(record.decode('utf-8'))
+            results.append({
+                'url': api_url + record['url'],
+                'type': record['type'],
+            })
 
         return self.send_json({'results': results})
+
+
+class LocationSearch(BaseHandler):
+    @PROM_LOCATION.sync()
+    def post(self):
+        query = self.get_body_argument('q').strip()
+        geo_data = self.application.geo_data
+        areas = geo_data.resolve_names([query.lower()])
+        areas = [area for area in areas if area is not None]
+        if areas and areas[0]:
+            bounds = geo_data.get_bounds(areas[0].area)
+            logger.info("Resolved area %r to %r", query, areas[0].area)
+            return self.send_json({'results': [
+                {
+                    'area': areas[0].area,
+                    'boundingbox': bounds,
+                }
+            ]})
+        else:
+            return self.send_json({'results': []})
 
 
 class Statistics(BaseHandler):
@@ -1148,7 +1187,13 @@ class Application(GracefulApplication):
         self.elasticsearch = es
         self.redis = redis_client
         self.lazo_client = lazo
-        self.nominatim = os.environ['NOMINATIM_URL']
+        if os.environ.get('NOMINATIM_URL'):
+            self.nominatim = os.environ['NOMINATIM_URL']
+        else:
+            self.nominatim = None
+            logger.warning(
+                "$NOMINATIM_URL is not set, not resolving URLs"
+            )
         self.geo_data = GeoData.from_local_cache()
         self.channel = None
 
@@ -1253,6 +1298,7 @@ def make_app(debug=False):
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/session/new', SessionNew, name='session_new'),
             URLSpec('/session/([^/]+)', SessionGet, name='session_get'),
+            URLSpec('/location', LocationSearch, name='location_search'),
             URLSpec('/statistics', Statistics, name='statistics'),
             URLSpec('/version', Version, name='version'),
             URLSpec('/health', Health, name='health'),

@@ -12,7 +12,7 @@ req = [
     'pandas',
     'prometheus_client',
     'python-dateutil',
-    'scikit-learn',
+    'scikit-learn>=0.22,<0.24',
     'regex',
     'requests',
     'datamart-geo==0.1',
@@ -20,7 +20,7 @@ req = [
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
 setup(name='datamart_profiler',
-      version='0.6.2',
+      version='0.7',
       packages=['datamart_profiler'],
       install_requires=req,
       description="Data profiling library for Datamart",
@@ -35,12 +35,12 @@ setup(name='datamart_profiler',
           'Tracker': 'https://gitlab.com/ViDA-NYU/datamart/datamart/issues',
       },
       long_description=description,
-      license='BSD-3-Clause',
+      license='Apache-2.0',
       keywords=['datamart'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Science/Research',
-          'Natural Language :: English',
+          'License :: OSI Approved :: Apache Software License',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 3 :: Only',
           'Topic :: Scientific/Engineering :: Information Analysis'])

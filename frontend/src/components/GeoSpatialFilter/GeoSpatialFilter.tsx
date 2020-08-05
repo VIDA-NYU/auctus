@@ -19,11 +19,14 @@ import { fromLonLat } from 'ol/proj';
 import { VectorSourceEvent } from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import { GeoSpatialVariable } from '../../api/types';
+import { searchLocation } from '../../api/rest';
 import {
   transformCoordinates,
   centralizeMapToFeature,
   MyMapBrowserEvent,
+  wrapLongitude,
 } from '../spatial-utils';
+import { SearchBar } from '../SearchBar/SearchBar';
 import 'ol/ol.css';
 
 interface GeoSpatialFilterProps {
@@ -31,7 +34,14 @@ interface GeoSpatialFilterProps {
   onSelectCoordinates: (coordinates: GeoSpatialVariable) => void;
 }
 
-class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
+interface GeoSpatialFilterState {
+  search: string;
+}
+
+class GeoSpatialFilter extends React.PureComponent<
+  GeoSpatialFilterProps,
+  GeoSpatialFilterState
+> {
   mapId = generateRandomId();
   map?: Map;
   source: VectorSource;
@@ -39,11 +49,12 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
   constructor(props: GeoSpatialFilterProps) {
     super(props);
     this.state = {
-      selectedCoordinates: undefined,
+      search: '',
     };
-    this.source = new VectorSource({ wrapX: false });
+    this.source = new VectorSource({ wrapX: true });
     this.source.on('addfeature', evt => this.onSelectCoordinates(evt));
     this.componentDidUpdate();
+    this.onSearchSubmit = this.onSearchSubmit.bind(this);
   }
 
   featureMatchesProps(feature: Feature): boolean {
@@ -109,7 +120,18 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
       // Add in the following map controls
       controls: DefaultControls().extend([
         new ZoomSlider(),
-        new MousePosition(),
+        new MousePosition({
+          projection: 'EPSG:4326',
+          coordinateFormat: c => {
+            if (c === undefined) {
+              return '';
+            } else {
+              let [x, y] = c;
+              x = wrapLongitude(x);
+              return `${x.toFixed(4)} ${y.toFixed(4)}`;
+            }
+          },
+        }),
         new ScaleLine(),
         new OverviewMap(),
       ]),
@@ -138,12 +160,15 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
       return;
     }
 
-    const {
+    let {
       topLeftLat,
       topLeftLon,
       bottomRightLat,
       bottomRightLon,
     } = transformCoordinates(evt.feature);
+
+    topLeftLon = wrapLongitude(topLeftLon);
+    bottomRightLon = wrapLongitude(bottomRightLon);
 
     this.props.onSelectCoordinates({
       type: 'geospatial_variable',
@@ -174,6 +199,23 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
     map.addInteraction(draw);
   }
 
+  onSearchSubmit() {
+    searchLocation(this.state.search)
+      .then(results => {
+        if (results.length > 0) {
+          const [minLon, maxLon, minLat, maxLat] = results[0].boundingbox;
+          this.props.onSelectCoordinates({
+            type: 'geospatial_variable',
+            latitude1: maxLat.toString(),
+            longitude1: minLon.toString(),
+            latitude2: minLat.toString(),
+            longitude2: maxLon.toString(),
+          });
+        }
+      })
+      .catch(e => alert('Error from search server'));
+  }
+
   render() {
     const style = {
       width: '100%',
@@ -190,6 +232,15 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
       <div>
         <div className="row">
           <div className="col-md-12" style={{ fontSize: '.9rem' }}>
+            <div className="col-md-6 p-0">
+              <SearchBar
+                active
+                value={this.state.search}
+                onQueryChange={search => this.setState({ search })}
+                onSubmitQuery={this.onSearchSubmit}
+                placeholder="Search Map"
+              />
+            </div>
             <span className="d-inline">
               Left-click to start selection. Right-click to clear selection.
             </span>

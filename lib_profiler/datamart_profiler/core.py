@@ -185,8 +185,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Set column names
     for column_meta, name in zip(columns, data.columns):
-        if 'name' not in column_meta:
-            column_meta['name'] = name
+        if 'name' in column_meta and column_meta['name'] != name:
+            raise ValueError("Column names don't match")
+        column_meta['name'] = name
 
     if data.shape[0] == 0:
         logger.info("0 rows, returning early")
@@ -205,10 +206,20 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Administrative areas
     resolved_admin_areas = {}
 
-    # check updated columns by the user
-    updated_columns = []
-    if 'updated_columns' in metadata:
-        updated_columns = metadata['updated_columns']['columns']
+    # Get manual updates from the user
+    manual_columns = {}
+    manual_latlong_pairs = {}
+    if 'manual_annotations' in metadata:
+        if 'columns' in metadata['manual_annotations']:
+            manual_columns = {
+                col['name']: col
+                for col in metadata['manual_annotations']['columns']
+            }
+            manual_latlong_pairs = {
+                col['name']: col['latlong_pair']
+                for col in metadata['manual_annotations']['columns']
+                if 'latlong_pair' in col
+            }
 
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
@@ -217,13 +228,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
             logger.info("Processing column %d...", column_idx)
             array = data.iloc[:, column_idx]
             # Identify types
-            structural_type, semantic_types_dict, additional_meta = \
-                identify_types(array, column_meta['name'], geo_data)
+            if column_meta['name'] in manual_columns:
+                manual = manual_columns[column_meta['name']]
+            else:
+                manual = None
 
-            updateColumn = [item for item in updated_columns if item.get('name') == column_meta['name']]
-            if len(updateColumn) > 0:
-                structural_type = updateColumn[0]['structural_type']
-                semantic_types_dict = updateColumn[0]['semantic_types']
+            structural_type, semantic_types_dict, additional_meta = \
+                identify_types(array, column_meta['name'], geo_data, manual)
 
             # Identify overall column type (numerical, categorial, spatial, or temporal) and add it to 'dataset_types'
             column_type = determine_column_type(structural_type, semantic_types_dict)
@@ -279,13 +290,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
                 # Get lat/long columns
                 if types.LATITUDE in semantic_types_dict:
-                    columns_lat.append(
-                        (column_meta['name'], numerical_values)
-                    )
+                    columns_lat.append((
+                        column_meta['name'],
+                        numerical_values,
+                        manual_latlong_pairs.get(column_meta['name']),
+                    ))
                 elif types.LONGITUDE in semantic_types_dict:
-                    columns_long.append(
-                        (column_meta['name'], numerical_values)
-                    )
+                    columns_long.append((
+                        column_meta['name'],
+                        numerical_values,
+                        manual_latlong_pairs.get(column_meta['name']),
+                    ))
                 elif coverage:
                     ranges = get_numerical_ranges(
                         [x for x in numerical_values if x is not None]
@@ -422,7 +437,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
     if lazo_client and columns_textual:
         # Indexing with lazo
         if not search:
-            # TODO: Remove previous data from lazo
             logger.info("Indexing textual data with Lazo...")
             try:
                 if data_path:
@@ -500,7 +514,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     col['semantic_types'].remove(types.LONGITUDE)
 
             # Compute ranges from lat/long pairs
-            for (name_lat, values_lat), (name_long, values_long) in pairs:
+            for (name_lat, values_lat, annot_pair), (name_long, values_long, annot_pair) in pairs:
                 values = []
                 for lat, long in zip(values_lat, values_long):
                     if (lat and long and  # Ignore None and 0

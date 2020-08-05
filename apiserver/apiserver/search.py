@@ -163,9 +163,12 @@ JOIN_RESULT_SOURCE_FIELDS = [
     # General
     'dataset_id', 'name',
     # Column indices
+    # Keep in sync, search code for 279a32
     'index',
     'lat_index', 'lon_index', 'lat', 'lon',
     'address_index', 'address',
+    'point_index', 'point',
+    'admin_index', 'admin',
     # To determine temporal resolution of join
     'temporal_resolution',
 ]
@@ -698,11 +701,6 @@ def get_joinable_datasets(
                 'right_columns_names': right_columns_names,
             }
         )
-        logger.info(
-            "Temporal resolutions: left=%r right=%r",
-            left_temporal_resolution,
-            right_temporal_resolution,
-        )
         if left_temporal_resolution and right_temporal_resolution:
             # Keep in sync with lib_augmentation's match_column_temporal_resolutions
             if (
@@ -949,7 +947,7 @@ def parse_keyword_query_main_index(query_json):
                             'operator': 'or',
                             'type': 'most_fields',
                             'fields': [
-                                'id',
+                                'id^10',
                                 'description',
                                 'name',
                             ],
@@ -1025,7 +1023,7 @@ def parse_keyword_query_sup_index(query_json):
                     'operator': 'or',
                     'type': 'most_fields',
                     'fields': [
-                        'dataset_id',
+                        'dataset_id^10',
                         'dataset_description',
                         'dataset_name',
                         'name',
@@ -1045,7 +1043,7 @@ def parse_keyword_query_sup_index(query_json):
     return query_sup_functions, query_sup_filters
 
 
-def parse_query(query_json):
+def parse_query(query_json, geo_data=None):
     """Parses a Datamart query, turning it into an Elasticsearch query
     over 'datamart' index as well as the supplementary indices
     ('datamart_columns' and 'datamart_spatial_coverage').
@@ -1061,19 +1059,20 @@ def parse_query(query_json):
     variables_query = None
     if 'variables' in query_json:
         variables_query, tabular_variables = parse_query_variables(
-            query_json['variables']
+            query_json['variables'],
+            geo_data,
         )
 
     # TODO: for now, temporal and geospatial variables are ignored
     #   for 'datamart_columns' and 'datamart_spatial_coverage' indices,
     #   since we do not have information about a dataset in these indices
     if variables_query:
-        query_args_main.append(variables_query)
+        query_args_main.extend(variables_query)
 
     return query_args_main, query_sup_functions, query_sup_filters, list(set(tabular_variables))
 
 
-def parse_query_variables(data):
+def parse_query_variables(data, geo_data=None):
     """Parses the variables of a Datamart query, turning it into an
     Elasticsearch query over 'datamart' index
     """
@@ -1156,29 +1155,43 @@ def parse_query_variables(data):
         # geospatial variable
         # TODO: handle 'granularity'
         elif variable['type'] == 'geospatial_variable':
-            if (
-                'latitude1' not in variable or
-                'latitude2' not in variable or
-                'longitude1' not in variable or
-                'longitude2' not in variable
+            if 'area_name' in variable and geo_data:
+                areas = geo_data.resolve_names([variable['area_name']])
+                if areas and areas[0]:
+                    bounds = geo_data.get_bounds(areas[0].area)
+                    longitude1, longitude2, latitude1, latitude2 = bounds
+                    logger.info(
+                        "Resolved area %r to %r",
+                        variable['area_name'],
+                        areas[0].area,
+                    )
+                else:
+                    logger.warning("Unknown area %r", variable['area_name'])
+                    continue
+            elif (
+                'latitude1' in variable and
+                'latitude2' in variable and
+                'longitude1' in variable and
+                'longitude2' in variable
             ):
+                longitude1 = min(
+                    float(variable['longitude1']),
+                    float(variable['longitude2'])
+                )
+                longitude2 = max(
+                    float(variable['longitude1']),
+                    float(variable['longitude2'])
+                )
+                latitude1 = min(
+                    float(variable['latitude1']),
+                    float(variable['latitude2'])
+                )
+                latitude2 = max(
+                    float(variable['latitude1']),
+                    float(variable['latitude2'])
+                )
+            else:
                 continue
-            longitude1 = min(
-                float(variable['longitude1']),
-                float(variable['longitude2'])
-            )
-            longitude2 = max(
-                float(variable['longitude1']),
-                float(variable['longitude2'])
-            )
-            latitude1 = max(
-                float(variable['latitude1']),
-                float(variable['latitude2'])
-            )
-            latitude2 = min(
-                float(variable['latitude1']),
-                float(variable['latitude2'])
-            )
             output.append({
                 'nested': {
                     'path': 'spatial_coverage.ranges',
@@ -1190,8 +1203,8 @@ def parse_query_variables(data):
                                         'shape': {
                                             'type': 'envelope',
                                             'coordinates': [
-                                                [longitude1, latitude1],
-                                                [longitude2, latitude2],
+                                                [longitude1, latitude2],
+                                                [longitude2, latitude1],
                                             ],
                                         },
                                         'relation': 'intersects'
@@ -1288,39 +1301,41 @@ class ProfilePostedData(tornado.web.RequestHandler):
 
         data_profile = self.application.redis.get('profile:' + data_hash)
 
-        if data_profile is not None:
-            logger.info("Found cached profile_data")
-            data_profile = json.loads(data_profile)
-        else:
-            # Do format conversion
-            materialize = {}
+        # Do format conversion
+        materialize = {}
 
-            def create_csv(cache_temp):
-                with open(cache_temp, 'wb') as fp:
-                    fp.write(data)
+        def create_csv(cache_temp):
+            with open(cache_temp, 'wb') as fp:
+                fp.write(data)
 
-                def convert_dataset(func, path):
-                    with tempfile.NamedTemporaryFile(
-                        prefix='.convert',
-                        dir='/cache/user_data',
-                    ) as tmpfile:
-                        os.rename(path, tmpfile.name)
-                        with open(path, 'w', newline='') as dst:
-                            func(tmpfile.name, dst)
-                        return path
+            def convert_dataset(func, path):
+                with tempfile.NamedTemporaryFile(
+                    prefix='.convert',
+                    dir='/cache/user_data',
+                ) as tmpfile:
+                    os.rename(path, tmpfile.name)
+                    with open(path, 'w', newline='') as dst:
+                        func(tmpfile.name, dst)
+                    return path
 
-                ret = detect_format_convert_to_csv(
-                    cache_temp,
-                    convert_dataset,
-                    materialize,
-                )
-                assert ret == cache_temp
+            ret = detect_format_convert_to_csv(
+                cache_temp,
+                convert_dataset,
+                materialize,
+            )
+            assert ret == cache_temp
 
-            with cache_get_or_set(
-                '/cache/user_data',
-                    data_hash,
-                    create_csv,
-            ) as csv_path:
+        with cache_get_or_set(
+            '/cache/user_data',
+                data_hash,
+                create_csv,
+        ) as csv_path:
+            if data_profile is not None:
+                # This is here because we want to put the data in the cache
+                # even if the profile is already in Redis
+                logger.info("Found cached profile_data")
+                data_profile = json.loads(data_profile)
+            else:
                 logger.info("Profiling...")
                 start = time.perf_counter()
                 with open(csv_path, 'rb') as data:
@@ -1337,13 +1352,13 @@ class ProfilePostedData(tornado.web.RequestHandler):
 
                 data_profile['materialize'] = materialize
 
-            self.application.redis.set(
-                'profile:' + data_hash,
-                json.dumps(
-                    data_profile,
-                    # Compact
-                    sort_keys=True, indent=None, separators=(',', ':'),
-                ),
-            )
+                self.application.redis.set(
+                    'profile:' + data_hash,
+                    json.dumps(
+                        data_profile,
+                        # Compact
+                        sort_keys=True, indent=None, separators=(',', ':'),
+                    ),
+                )
 
         return data_profile, data_hash

@@ -79,9 +79,18 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       .filter(f => f && f.state)
       .map(f => f.state as FilterVariables);
 
-    const relatedFiles: RelatedFile[] = state.filters
+    let relatedFiles: RelatedFile[] = state.filters
       .filter(f => f.type === FilterType.RELATED_FILE)
       .map(f => f.state as RelatedFile);
+    if (state.session?.data_token) {
+      relatedFiles = [
+        {
+          kind: 'localFile',
+          name: 'session input',
+          token: state.session.data_token,
+        },
+      ];
+    }
 
     const sources: string[][] = state.filters
       .filter(f => f.type === FilterType.SOURCE)
@@ -151,6 +160,26 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     return { keywords: query.query || '', filters };
   }
 
+  static getDerivedStateFromProps(
+    props: SearchAppProps,
+    state: SearchAppState
+  ) {
+    const { location } = props;
+    const params = new URLSearchParams(location.search);
+    // Get session from URL
+    const s = params.get('session');
+    let session: Session | undefined = undefined;
+    if (s) {
+      session = JSON.parse(decodeURIComponent(s)) || undefined;
+      if (session && session.session_id) {
+        return {
+          session: { ...session, system_name: session.system_name || 'TA3' },
+        };
+      }
+    }
+    return { session: undefined };
+  }
+
   updateSearchStateFromUrlParams(location: Location) {
     const params = new URLSearchParams(location.search);
     const q = params.get('q');
@@ -158,7 +187,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       const query: api.SearchQuery = JSON.parse(decodeURIComponent(q));
       if (query) {
         // Update state to match
-        const { keywords, filters } = SearchApp.queryToFilters(query);
+        let { keywords, filters } = SearchApp.queryToFilters(query);
+        if (this.state.session?.data_token) {
+          filters = filters.filter(f => f.type !== FilterType.RELATED_FILE);
+        }
         this.setState(
           {
             query: keywords,
@@ -169,24 +201,20 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             this.fetchSearchResults(query);
           }
         );
+      } else {
+        this.setState(this.initialState());
       }
     } else {
       this.setState(this.initialState());
     }
-    const s = params.get('session');
-    if (s) {
-      const session = JSON.parse(decodeURIComponent(s));
-      if (session.session_id) {
-        this.setState({
-          session: { ...session, system_name: session.system_name || 'TA3' },
-        });
-      }
-    } else {
-      this.setState({ session: undefined });
-    }
   }
 
   componentDidUpdate(prevProps: SearchAppProps) {
+    if (this.state.searchQuery) {
+      document.body.classList.add('searchresults');
+    } else {
+      document.body.classList.remove('searchresults');
+    }
     const { location } = this.props;
     if (location !== prevProps.location) {
       this.updateSearchStateFromUrlParams(this.props.location);
@@ -195,7 +223,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   componentDidMount() {
     this.fetchSources();
+    if (this.state.searchQuery) {
+      document.body.classList.add('searchresults');
+    }
     this.updateSearchStateFromUrlParams(this.props.location);
+  }
+
+  componentWillUnmount() {
+    document.body.classList.remove('searchresults');
   }
 
   async fetchSources() {
@@ -421,49 +456,56 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   renderCompactFilters() {
-    return (
-      <ChipGroup>
-        {this.state.filters.map(filter => {
-          let icon = undefined,
-            title = undefined;
-          switch (filter.type) {
-            case FilterType.TEMPORAL:
-              title = 'Temporal';
-              icon = Icon.Calendar;
-              break;
-            case FilterType.RELATED_FILE:
-              title = 'Related File';
-              icon = Icon.File;
-              break;
-            case FilterType.GEO_SPATIAL:
-              title = 'Geo-Spatial';
-              icon = Icon.MapPin;
-              break;
-            case FilterType.SOURCE:
-              title = 'Sources';
-              icon = Icon.Database;
-              break;
-            case FilterType.DATA_TYPE:
-              title = 'Data Type';
-              icon = Icon.Type;
-              break;
-            default:
-              throw new Error(
-                `Received not supported filter type=[${filter.type}]`
-              );
-          }
-          return (
-            <Chip
-              key={`filter-chip-${filter.id}`}
-              icon={icon}
-              label={title}
-              onClose={() => this.removeFilter(filter.id)}
-              onEdit={() => this.toggleFilter(filter.id)}
-            />
+
+    const filters = this.state.filters.map(filter => {
+      let icon = undefined,
+        title = undefined;
+      switch (filter.type) {
+        case FilterType.TEMPORAL:
+          title = 'Temporal';
+          icon = Icon.Calendar;
+          break;
+        case FilterType.RELATED_FILE:
+          title = 'Related File';
+          icon = Icon.File;
+          break;
+        case FilterType.GEO_SPATIAL:
+          title = 'Geo-Spatial';
+          icon = Icon.MapPin;
+          break;
+        case FilterType.SOURCE:
+          title = 'Sources';
+          icon = Icon.Database;
+          break;
+        case FilterType.DATA_TYPE:
+          title = 'Data Type';
+          icon = Icon.Type;
+          break;					
+        default:
+          throw new Error(
+            `Received not supported filter type=[${filter.type}]`
           );
-        })}
-      </ChipGroup>
-    );
+      }
+      return (
+        <Chip
+          key={`filter-chip-${filter.id}`}
+          icon={icon}
+          label={title}
+          onClose={() => this.removeFilter(filter.id)}
+          onEdit={() => this.toggleFilter(filter.id)}
+        />
+      );
+    });
+    if (this.state.session?.data_token) {
+      filters.push(
+        <Chip
+          key={`filter-chip-session-file`}
+          icon={Icon.File}
+          label={`File From ${this.state.session.system_name}`}
+        />
+      );
+    }
+    return <ChipGroup>{filters}</ChipGroup>;
   }
 
   render() {
@@ -497,6 +539,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                     />
                     <AdvancedSearchBar
                       onAddFilter={type => this.handleAddFilter(type)}
+                      relatedFileEnabled={!session?.data_token}
                     />
                   </div>
                 </div>
@@ -531,6 +574,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             />
             <AdvancedSearchBar
               onAddFilter={type => this.handleAddFilter(type)}
+              relatedFileEnabled={!session?.data_token}
             />
             <div style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
               {this.renderFilters()}

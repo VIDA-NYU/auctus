@@ -77,6 +77,8 @@ datamart:
             type: long
           temporal_resolution:
             type: keyword
+          admin_area_level:
+            type: long
           # Numerical summaries
           mean:
             type: float
@@ -123,6 +125,9 @@ datamart:
           convert:
             type: object
             enabled: false
+      manual_annotations:
+        type: object
+        enabled: false
 datamart_columns:
   settings:
     <<: *analyzer
@@ -176,6 +181,8 @@ datamart_columns:
         type: long
       temporal_resolution:
         type: keyword
+      admin_area_level:
+        type: long
       # Numerical summaries
       mean:
         type: float
@@ -227,6 +234,7 @@ datamart_spatial_coverage:
         index: false
       name:
         type: text
+      # Keep in sync, search code for 279a32
       lat:
         type: text
         index: false
@@ -249,6 +257,12 @@ datamart_spatial_coverage:
         type: text
         index: false
       point_index:
+        type: integer
+        index: false
+      admin:
+        type: text
+        index: false
+      admin_index:
         type: integer
         index: false
       ranges:

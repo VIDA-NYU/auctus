@@ -234,6 +234,7 @@ class TestProfiler(DataTestCase):
             settings.pop('provided_name', None)
             settings.pop('uuid', None)
             settings.pop('version', None)
+            settings.pop('blocks', None)
 
         # Add custom fields
         for idx, prefix in [
@@ -267,7 +268,10 @@ class TestProfileQuery(DatamartTest):
             dct.keys() == {'cardinality', 'hash_values', 'n_permutations'}
         )
         for column in metadata['columns']:
-            if column['structural_type'] == 'http://schema.org/Text':
+            if (
+                column['structural_type'] == 'http://schema.org/Text'
+                and 'http://schema.org/DateTime' not in column['semantic_types']
+            ):
                 column['lazo'] = check_lazo
         # Expect token
         metadata['token'] = token
@@ -295,7 +299,7 @@ class TestProfileQuery(DatamartTest):
         self.check_result(
             response,
             other_formats_metadata('xls'),
-            '87ef93cd71b93b0a1a6956a0281dbb8db69feb48',
+            'c6e8b9c5f634cb3b1c47b158d569a4f70462fca4',
         )
 
 
@@ -717,6 +721,54 @@ class TestDataSearch(DatamartTest):
                     'supplied_resource_id': None
                 }
             ]
+        )
+
+    def test_geo_join(self):
+        with data('geo_aug.csv') as geo_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'data': geo_aug,
+                },
+                schema=result_list_schema,
+            )
+        results = response.json()['results']
+        results = [r for r in results if r['augmentation']['type'] == 'join']
+        results = sorted(results, key=lambda r: r['id'])
+        self.assertJson(
+            results,
+            [
+                {
+                    'id': 'datamart.test.geo',
+                    'metadata': geo_metadata,
+                    'd3m_dataset_description': geo_metadata_d3m('4.0.0'),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0, 1]],
+                        'left_columns_names': [['lat', 'long']],
+                        'right_columns': [[1, 2]],
+                        'right_columns_names': [['lat', 'long']],
+                        'type': 'join',
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None,
+                },
+                {
+                    'id': 'datamart.test.geo_wkt',
+                    'metadata': geo_wkt_metadata,
+                    'd3m_dataset_description': lambda d: isinstance(d, dict),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0, 1]],
+                        'left_columns_names': [['lat', 'long']],
+                        'right_columns': [[1]],
+                        'right_columns_names': [['coords']],
+                        'type': 'join',
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None,
+                }
+            ],
         )
 
     def test_temporal_daily_join(self):
@@ -1421,7 +1473,7 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 2,
                                     'colName': 'count work',
-                                    'colType': 'boolean',
+                                    'colType': 'integer',
                                     'role': ['attribute'],
                                 },
                                 {
@@ -1439,7 +1491,7 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 5,
                                     'colName': 'max salary',
-                                    'colType': 'real',
+                                    'colType': 'integer',
                                     'role': ['attribute'],
                                 },
                             ],
@@ -1580,13 +1632,13 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 3,
                                     'colName': 'max year',
-                                    'colType': 'real',
+                                    'colType': 'dateTime',
                                     'role': ['attribute'],
                                 },
                                 {
                                     'colIndex': 4,
                                     'colName': 'min year',
-                                    'colType': 'real',
+                                    'colType': 'dateTime',
                                     'role': ['attribute'],
                                 },
                             ],
@@ -1680,7 +1732,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '3798 B',
+                        'approximateSize': '3442 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1731,6 +1783,171 @@ class TestAugment(DatamartTest):
                                 'nb_rows_after': 110,
                                 'nb_rows_before': 10,
                                 'new_columns': [],
+                                'removed_columns': [],
+                            },
+                            'qualValueType': 'dict',
+                        },
+                    ],
+                },
+            )
+
+    def test_geo_join(self):
+        meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.geo',
+            schema=metadata_schema,
+        )
+        meta = meta.json()['metadata']
+
+        task = {
+            'id': 'datamart.test.geo',
+            'metadata': meta,
+            'score': 1.0,
+            'augmentation': {
+                'left_columns': [[0, 1]],
+                'left_columns_names': [['lat', 'long']],
+                'right_columns': [[1, 2]],
+                'right_columns_names': [['lat', 'long']],
+                'type': 'join'
+            },
+            'supplied_id': None,
+            'supplied_resource_id': None
+        }
+
+        with data('geo_aug.csv') as geo_aug:
+            response = self.datamart_post(
+                '/augment',
+                files={
+                    'task': json.dumps(task).encode('utf-8'),
+                    'data': geo_aug,
+                },
+            )
+        self.assertEqual(response.headers['Content-Type'], 'application/zip')
+        self.assertTrue(
+            response.headers['Content-Disposition'].startswith('attachment')
+        )
+        zip_ = zipfile.ZipFile(io.BytesIO(response.content))
+        zip_.testzip()
+        self.assertEqual(
+            set(zip_.namelist()),
+            {'datasetDoc.json', 'tables/learningData.csv'},
+        )
+        with zip_.open('tables/learningData.csv') as table:
+            table_lines = table.read().decode('utf-8').splitlines(False)
+            # Truncate fields to work around rounding errors
+            # FIXME: Deal with rounding errors
+            table_lines = [
+                ','.join(
+                    e[:8] if e[0] < 'a' or e[0] > 'z' else e
+                    for e in line.split(',')
+                )
+                for line in table_lines
+            ]
+            self.assertCsvEqualNoOrder(
+                '\n'.join(table_lines[0:6]),
+                'lat,long,id,letter,id_r,mean height,sum height,max height,min height',
+                [
+                    '40.73279,-73.9985,place100,a,'
+                    + 'place00,50.24088,351.6862,85.77256,27.97864',
+                    '40.72970,-73.9978,place101,b,'
+                    + 'place01,42.57717,425.7717,67.62636,17.53429',
+                    '40.73266,-73.9975,place102,c,'
+                    + 'place06,50.03064,250.1532,79.72296,23.72270',
+                    '40.73117,-74.0018,place103,d,'
+                    + 'place08,49.40183,395.2146,84.19146,5.034845',
+                    '40.69427,-73.9898,place104,e,'
+                    + 'place59,47.73903,286.4341,93.16298,11.71055',
+                ],
+            )
+        with zip_.open('datasetDoc.json') as meta_fp:
+            meta = json.load(meta_fp)
+            self.assertJson(
+                meta,
+                {
+                    'about': {
+                        'approximateSize': '998 B',
+                        'datasetID': lambda s: len(s) == 32,
+                        'datasetName': lambda s: len(s) == 32,
+                        'datasetSchemaVersion': '4.0.0',
+                        'datasetVersion': '1.0',
+                        'license': 'unknown',
+                        'redacted': False,
+                    },
+                    'dataResources': [
+                        {
+                            'columns': [
+                                {
+                                    'colIndex': 0,
+                                    'colName': 'lat',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 1,
+                                    'colName': 'long',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 2,
+                                    'colName': 'id',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 3,
+                                    'colName': 'letter',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 4,
+                                    'colName': 'id_r',
+                                    'colType': 'string',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 5,
+                                    'colName': 'mean height',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 6,
+                                    'colName': 'sum height',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 7,
+                                    'colName': 'max height',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                },
+                                {
+                                    'colIndex': 8,
+                                    'colName': 'min height',
+                                    'colType': 'real',
+                                    'role': ['attribute'],
+                                }
+                            ],
+                            'isCollection': False,
+                            'resFormat': {'text/csv': ["csv"]},
+                            'resID': 'learningData',
+                            'resPath': 'tables/learningData.csv',
+                            'resType': 'table',
+                        },
+                    ],
+                    'qualities': [
+                        {
+                            'qualName': 'augmentation_info',
+                            'qualValue': {
+                                'augmentation_type': 'join',
+                                'nb_rows_after': 10,
+                                'nb_rows_before': 10,
+                                'new_columns': [
+                                    'id_r', 'mean height', 'sum height',
+                                    'max height', 'min height',
+                                ],
                                 'removed_columns': [],
                             },
                             'qualValueType': 'dict',
@@ -2067,6 +2284,115 @@ class TestUpload(DatamartTest):
                 lazo_client,
             )
 
+    def test_upload_human_in_the_loop(self):
+        with data('annotated.csv') as annotated:
+            response = self.datamart_post(
+                '/upload',
+                files={
+                    'file': annotated,
+                },
+                data={
+                    'name': 'basic annotated features',
+                    'description': "Simple CSV file sent through upload endpoint. Support type annotations made by users.",
+                    'specialId': 12,
+                    'dept': "internal",
+                    'manual_annotations': json.dumps(annotated_annotations),
+                },
+                schema={
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                    },
+                    'required': ['id'],
+                    'additionalProperties': False,
+                },
+            )
+            record = response.json()
+            self.assertEqual(record.keys(), {'id'})
+            dataset_id = record['id']
+            self.assertTrue(dataset_id.startswith('datamart.upload.'))
+
+            es = elasticsearch.Elasticsearch(
+                os.environ['ELASTICSEARCH_HOSTS'].split(',')
+            )
+
+            try:
+                # Check it's in the alternate index
+                try:
+                    pending = es.get('pending', dataset_id)['_source']
+                    self.assertJson(
+                        pending,
+                        {
+                            'status': 'queued',
+                            'date': lambda d: isinstance(d, str),
+                            'source': 'upload',
+                            'metadata': {
+                                'name': 'basic annotated features',
+                                'description': 'Simple CSV file sent through upload endpoint. Support type annotations made by users.',
+                                'specialId': 12,
+                                'dept': "internal",
+                                'source': 'upload',
+                                'materialize': {
+                                    'identifier': 'datamart.upload',
+                                    'date': lambda d: isinstance(d, str),
+                                },
+                                'filename': 'file',
+                                'manual_annotations': annotated_annotations,
+                            },
+                            'materialize': {
+                                'identifier': 'datamart.upload',
+                                'date': lambda d: isinstance(d, str),
+                            },
+                        },
+                    )
+                finally:
+                    # Wait for it to be indexed
+                    for _ in range(10):
+                        try:
+                            record = es.get('datamart', dataset_id)['_source']
+                        except elasticsearch.NotFoundError:
+                            pass
+                        else:
+                            break
+                        time.sleep(2)
+                    else:
+                        self.fail("Dataset didn't make it to index")
+                self.assertJson(
+                    record,
+                    dict(
+                        annotated_metadata,
+                        id=dataset_id,
+                        name='basic annotated features',
+                        description="Simple CSV file sent through upload endpoint. Support type annotations made by users.",
+                        specialId=12,
+                        dept="internal",
+                        source='upload',
+                        materialize=dict(
+                            annotated_metadata['materialize'],
+                            identifier='datamart.upload',
+                        ),
+                    ),
+                )
+
+                # Check it's no longer in alternate index
+                time.sleep(1)
+                with self.assertRaises(elasticsearch.NotFoundError):
+                    es.get('pending', dataset_id)
+            finally:
+                import lazo_index_service
+                from datamart_core.common import delete_dataset_from_index
+
+                time.sleep(3)  # Deleting won't work immediately
+                lazo_client = lazo_index_service.LazoIndexClient(
+                    host=os.environ['LAZO_SERVER_HOST'],
+                    port=int(os.environ['LAZO_SERVER_PORT'])
+                )
+                delete_dataset_from_index(
+                    es,
+                    dataset_id,
+                    lazo_client,
+                )
+
 
 class TestSession(DatamartTest):
     def test_session_new(self):
@@ -2164,11 +2490,13 @@ class TestSession(DatamartTest):
                         'url': (os.environ['API_URL']
                                 + '/download/datamart.test.basic'
                                 + '?format=csv'),
+                        'type': 'download',
                     },
                     {
                         'url': (os.environ['API_URL']
                                 + '/download/datamart.test.agg'
                                 + '?format=csv'),
+                        'type': 'download',
                     },
                 ],
             },
@@ -2208,11 +2536,13 @@ class TestSession(DatamartTest):
                             + '/download/datamart.test.basic'
                             + '?' + format_query
                         ),
+                        'type': 'download',
                     },
                     {
                         'url': (os.environ['API_URL']
                                 + '/download/datamart.test.agg'
                                 + '?' + format_query),
+                        'type': 'download',
                     },
                 ],
             },
@@ -2265,6 +2595,7 @@ class TestSession(DatamartTest):
                         'url': lambda u: u.startswith(
                             os.environ['API_URL'] + '/augment/'
                         ),
+                        'type': 'join',
                     },
                 ],
             },
@@ -2326,6 +2657,7 @@ class TestSession(DatamartTest):
                         'url': lambda u: u.startswith(
                             os.environ['API_URL'] + '/augment/'
                         ),
+                        'type': 'join',
                     },
                 ],
             },
@@ -2338,6 +2670,27 @@ class TestSession(DatamartTest):
         self.assertEqual(
             response.headers['Content-Type'],
             'application/zip',
+        )
+
+
+class TestLocation(DatamartTest):
+    def test_search(self):
+        response = self.datamart_post('/location', data={'q': 'Italy'})
+        self.assertJson(
+            response.json(),
+            {
+                'results': [
+                    {
+                        'area': 'Q38',
+                        'boundingbox': [
+                            lambda n: round(n, 4) == 6.6027,
+                            lambda n: round(n, 4) == 18.5174,
+                            lambda n: round(n, 4) == 35.4892,
+                            lambda n: round(n, 4) == 47.0852,
+                        ],
+                    }
+                ]
+            },
         )
 
 
@@ -2577,6 +2930,179 @@ agg_metadata = {
 }
 
 
+annotated_annotations = {
+    "columns": [
+        {
+            "coverage": [
+                {
+                    "range": {
+                        "gte": 40.722948,
+                        "lte": 40.723674
+                    }
+                },
+                {
+                    "range": {
+                        "gte": 40.726559,
+                        "lte": 40.730824
+                    }
+                },
+                {
+                    "range": {
+                        "gte": 40.732466,
+                        "lte": 40.735108
+                    }
+                }
+            ],
+            "mean": 40.729443687499995,
+            "name": "lt_coord",
+            "semantic_types": [
+                "http://schema.org/latitude"
+            ],
+            "stddev": 0.0036102731149926445,
+            "structural_type": "http://schema.org/Float",
+            "unclean_values_ratio": 0.0,
+            "latlong_pair": "1"
+        },
+        {
+            "coverage": [
+                {
+                    "range": {
+                        "gte": -74.005837,
+                        "lte": -74.000678
+                    }
+                },
+                {
+                    "range": {
+                        "gte": -74.000077,
+                        "lte": -73.996833
+                    }
+                },
+                {
+                    "range": {
+                        "gte": -73.993186,
+                        "lte": -73.991001
+                    }
+                }
+            ],
+            "mean": -73.999644625,
+            "name": "lg_coord",
+            "semantic_types": [
+                "http://schema.org/longitude"
+            ],
+            "stddev": 0.0038596233604310352,
+            "structural_type": "http://schema.org/Float",
+            "unclean_values_ratio": 0.0,
+            "latlong_pair": "1"
+        }
+    ]
+}
+
+
+annotated_metadata = {
+    "id": "datamart.upload.updatedcolumn",
+    "name": "basic annotated features",
+    "description": "Simple CSV file sent through upload endpoint. Support type annotations made by users.",
+    "source": "upload",
+    "size": 696,
+    "nb_rows": 16,
+    "nb_profiled_rows": 16,
+    "specialId": 12,
+    "dept": "internal",
+    "filename": "file",
+    "manual_annotations": annotated_annotations,
+    "columns": [
+        {
+            "name": "id",
+            "structural_type": "http://schema.org/Text",
+            "semantic_types": [],
+            "num_distinct_values": 16
+        },
+        {
+            "name": "lt_coord",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: "http://schema.org/latitude" in l,
+            "unclean_values_ratio": 0.0,
+            "mean": lambda n: round(n, 3) == 40.729,
+            "stddev": lambda n: round(n, 4) == 0.0036,
+            "plot": check_plot('histogram_numerical'),
+        },
+        {
+            "name": "lg_coord",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": lambda l: "http://schema.org/longitude" in l,
+            "unclean_values_ratio": 0.0,
+            "mean": lambda n: round(n, 3) == -74.000,
+            "stddev": lambda n: round(n, 5) == 0.00386,
+            "plot": check_plot('histogram_numerical'),
+        },
+        {
+            "name": "height",
+            "structural_type": "http://schema.org/Float",
+            "semantic_types": [],
+            "unclean_values_ratio": 0.0,
+            "mean": lambda n: round(n, 3) == 50.503,
+            "stddev": lambda n: round(n, 2) == 18.75,
+            "plot": check_plot('histogram_numerical'),
+            "coverage": check_ranges(12.0, 86.0),
+        },
+        {
+            "name": "stmo",
+            "structural_type": "http://schema.org/Integer",
+            "semantic_types": [],
+            "unclean_values_ratio": 0.0,
+            'num_distinct_values': 11,
+            "mean": lambda n: round(n, 3) == 7.875,
+            "stddev": lambda n: round(n, 2) == 3.48,
+            "plot": check_plot('histogram_numerical'),
+            "coverage": (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {
+                        "range": {
+                            "gte": 1,
+                            "lte": 4
+                        },
+                    },
+                    {
+                        "range": {
+                            "gte": 5,
+                            "lte": 8
+                        },
+                    },
+                    {
+                        "range": {
+                            "gte": 9,
+                            "lte": 12
+                        },
+                    },
+                ]
+            ),
+        }
+    ],
+    "spatial_coverage": [
+        {
+            "lat": "lt_coord",
+            "lon": "lg_coord",
+            "ranges": check_geo_ranges(-74.006, 40.7229, -73.990, 40.7352)
+        }
+    ],
+    "sample": "id,lt_coord,lg_coord,height,stmo\r\nplace00,40.734746,-74.000077,85.772569,10\r\n" +
+              "place01,40.728026,-73.998869,58.730197,10\r\nplace02,40.728278,-74.005837,51.929949,11\r\n" +
+              "place03,40.726640,-73.993186,12.730146,9\r\nplace04,40.732466,-74.004689,44.452236,5\r\n" +
+              "place05,40.722948,-74.001501,42.904820,12\r\nplace06,40.735108,-73.996996,48.345170,1\r\n" +
+              "place07,40.727577,-74.002853,37.459986,2\r\nplace08,40.730824,-74.002225,49.123637,4\r\n" +
+              "place09,40.729115,-74.001726,40.455639,6\r\nplace10,40.734259,-73.996833,23.722705,6\r\n" +
+              "place11,40.723674,-73.991001,67.692448,7\r\nplace12,40.728896,-73.998542,67.626361,8\r\n" +
+              "place13,40.728711,-74.002426,84.191461,12\r\nplace14,40.733272,-73.996875,51.000673,12\r\n" +
+              "place15,40.726559,-74.000678,41.906452,11\r\n",
+    "materialize": {
+        "identifier": "datamart.upload",
+        "date": lambda d: isinstance(d, str)
+    },
+    "date": lambda d: isinstance(d, str),
+    "version": version
+}
+
+
 geo_metadata = {
     "id": "datamart.test.geo",
     "name": "geo",
@@ -2790,30 +3316,30 @@ lazo_metadata = {
         },
         {
             "name": "year",
-            "structural_type": "http://schema.org/Integer",
+            "structural_type": "http://schema.org/Text",
             "semantic_types": ["http://schema.org/DateTime"],
             "unclean_values_ratio": 0.0,
             'num_distinct_values': 2,
-            "mean": lambda n: round(n, 2) == 1990.11,
-            "stddev": lambda n: round(n, 4) == 0.3143,
+            "mean": 634656000.0,
+            "stddev": lambda n: round(n, 2) == 9910808.65,
             "coverage": (
                 lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
                     {
                         "range": {
-                            "gte": 1990.0,
-                            "lte": 1990.0
+                            "gte": 631152000.0,
+                            "lte": 631152000.0
                         }
                     },
                     {
                         "range": {
-                            "gte": 1991.0,
-                            "lte": 1991.0
+                            "gte": 662688000.0,
+                            "lte": 662688000.0
                         }
                     }
                 ]
             ),
             "temporal_resolution": "year",
-            "plot": check_plot('histogram_numerical'),
+            "plot": check_plot('histogram_temporal'),
         }
     ],
     "materialize": {
@@ -3048,8 +3574,7 @@ other_formats_metadata = lambda fmt: {
     'name': lambda v: isinstance(v, str),
     'description': lambda v: isinstance(v, str),
     'source': 'remi',
-    'dataset_types': ['categorical', 'numerical'],
-    'size': 53,
+    'size': 130,
     'nb_rows': 4,
     'nb_profiled_rows': 4,
     'columns': [
@@ -3091,6 +3616,23 @@ other_formats_metadata = lambda fmt: {
             ),
             'plot': check_plot('histogram_numerical'),
         },
+        {
+            'name': 'date',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': ['http://schema.org/DateTime'],
+            'num_distinct_values': 4,
+            'mean': 777211200.0,
+            'stddev': 303122413.10203373,
+            'coverage': (
+                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
+                    {'range': {'gte': 473385600.0, 'lte': 473385600.0}},
+                    {'range': {'gte': 631152000.0, 'lte': 725846400.0}},
+                    {'range': {'gte': 1278460800.0, 'lte': 1278460800.0}},
+                ]
+            ),
+            'temporal_resolution': 'year',
+            'plot': check_plot('histogram_temporal'),
+        },
     ],
     'materialize': {
         'direct_url': lambda v: isinstance(v, str),
@@ -3098,8 +3640,9 @@ other_formats_metadata = lambda fmt: {
         'date': lambda d: isinstance(d, str),
         'convert': [{'identifier': fmt}],
     },
-    'sample': 'name,age\r\nC++,38.0\r\nPython,30.0\r\nRust,9.0\r\nLua,27.0\r' +
-              '\n',
+    'sample': 'name,age,date\r\nC++,38,1985-01-01T00:00:00\r\nPython,30,1990' +
+              '-01-01T00:00:00\r\nRust,9,2010-07-07T00:00:00\r\nLua,27,1993-' +
+              '01-01T00:00:00\r\n',
     'date': lambda d: isinstance(d, str),
     'version': version
 }
