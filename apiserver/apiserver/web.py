@@ -145,6 +145,17 @@ PROM_SESSION_GET = PromMeasureRequest(
         buckets=BUCKETS,
     ),
 )
+PROM_LOCATION = PromMeasureRequest(
+    count=prometheus_client.Counter(
+        'req_location_count',
+        "Location search requests",
+    ),
+    time=prometheus_client.Histogram(
+        'req_location_seconds',
+        "Location search request time",
+        buckets=BUCKETS,
+    ),
+)
 PROM_STATISTICS = PromMeasureRequest(
     count=prometheus_client.Counter(
         'req_statistics_count',
@@ -1117,6 +1128,26 @@ class SessionGet(BaseHandler):
         return self.send_json({'results': results})
 
 
+class LocationSearch(BaseHandler):
+    @PROM_LOCATION.sync()
+    def post(self):
+        query = self.get_body_argument('q').strip()
+        geo_data = self.application.geo_data
+        areas = geo_data.resolve_names([query.lower()])
+        areas = [area for area in areas if area is not None]
+        if areas and areas[0]:
+            bounds = geo_data.get_bounds(areas[0].area)
+            logger.info("Resolved area %r to %r", query, areas[0].area)
+            return self.send_json({'results': [
+                {
+                    'area': areas[0].area,
+                    'boundingbox': bounds,
+                }
+            ]})
+        else:
+            return self.send_json({'results': []})
+
+
 class Statistics(BaseHandler):
     @PROM_STATISTICS.sync()
     def get(self):
@@ -1267,6 +1298,7 @@ def make_app(debug=False):
             URLSpec('/upload', Upload, name='upload'),
             URLSpec('/session/new', SessionNew, name='session_new'),
             URLSpec('/session/([^/]+)', SessionGet, name='session_get'),
+            URLSpec('/location', LocationSearch, name='location_search'),
             URLSpec('/statistics', Statistics, name='statistics'),
             URLSpec('/version', Version, name='version'),
             URLSpec('/health', Health, name='health'),
