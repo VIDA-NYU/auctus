@@ -2320,15 +2320,12 @@ class TestUpload(DatamartTest):
                 # Check it's in the alternate index
                 try:
                     pending = es.get('pending', dataset_id)['_source']
-                    print('**** PENDING ****')
-                    print(pending)
                     self.assertJson(
                         pending,
                         {
                             'status': 'queued',
                             'date': lambda d: isinstance(d, str),
                             'source': 'upload',
-                            'dataset_types': [],
                             'metadata': {
                                 'name': 'basic annotated features',
                                 'description': 'Simple CSV file sent through upload endpoint. Support type annotations made by users.',
@@ -2370,6 +2367,7 @@ class TestUpload(DatamartTest):
                         specialId=12,
                         dept="internal",
                         source='upload',
+                        dataset_types=[],
                         materialize=dict(
                             annotated_metadata['materialize'],
                             identifier='datamart.upload',

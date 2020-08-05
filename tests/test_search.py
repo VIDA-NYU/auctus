@@ -90,8 +90,6 @@ class TestSearch(unittest.TestCase):
             'keywords': ['food'],
             'dataset_types': ['temporal', 'spatial'],
         })
-        print('****** main **************')
-        print(main)
         self.assertEqual(
             main,
             [
@@ -103,7 +101,7 @@ class TestSearch(unittest.TestCase):
                                     'query': 'food',
                                     'operator': 'or',
                                     'type': 'most_fields',
-                                    'fields': ['id', 'description', 'name'],
+                                    'fields': ['id^10', 'description', 'name'],
                                 },
                             },
                             {
