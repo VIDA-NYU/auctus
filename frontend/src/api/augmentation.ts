@@ -12,7 +12,7 @@ function mergeJoinColumns(
   const leftColumnsNames = [];
   const rightColumns = [];
   const rightColumnsNames = [];
-  const length = auginfo1.left_columns[0].length;
+  const length = auginfo1.left_columns.length;
   for (let i = 0; i < length; i++) {
     if (
       !auginfo1.left_columns[i] ||
@@ -29,7 +29,7 @@ function mergeJoinColumns(
     rightColumns.push(auginfo1.right_columns[i]);
     rightColumnsNames.push(auginfo1.right_columns_names[i]);
   }
-  for (let i = 0; i < auginfo2.left_columns[0].length; i++) {
+  for (let i = 0; i < auginfo2.left_columns.length; i++) {
     if (
       !auginfo2.left_columns[i] ||
       !auginfo2.left_columns_names[i] ||
