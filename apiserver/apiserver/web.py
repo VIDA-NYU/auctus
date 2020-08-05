@@ -876,11 +876,12 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 newdata = stack.enter_context(
                     get_dataset(metadata, task['id'], format='csv'),
                 )
-                # Get  input data if it's a reference to a dataset
+                # Get input data if it's a reference to a dataset
                 if data_id:
-                    data_file = stack.enter_context(
+                    path = stack.enter_context(
                         get_dataset(data_profile, data_id, format='csv'),
                     )
+                    data_file = stack.enter_context(open(path, 'rb'))
                 else:
                     data_file = io.BytesIO(data)
                 # Perform augmentation
