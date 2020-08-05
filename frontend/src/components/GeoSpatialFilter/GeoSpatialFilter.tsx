@@ -19,6 +19,7 @@ import { fromLonLat } from 'ol/proj';
 import { VectorSourceEvent } from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import { GeoSpatialVariable } from '../../api/types';
+import { searchLocation } from '../../api/rest';
 import {
   transformCoordinates,
   centralizeMapToFeature,
@@ -36,12 +37,15 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
   mapId = generateRandomId();
   map?: Map;
   source: VectorSource;
+  searchRef: React.RefObject<HTMLInputElement>;
 
   constructor(props: GeoSpatialFilterProps) {
     super(props);
     this.source = new VectorSource({ wrapX: true });
     this.source.on('addfeature', evt => this.onSelectCoordinates(evt));
     this.componentDidUpdate();
+    this.onSearch = this.onSearch.bind(this);
+    this.searchRef = React.createRef();
   }
 
   featureMatchesProps(feature: Feature): boolean {
@@ -186,6 +190,26 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
     map.addInteraction(draw);
   }
 
+  onSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (this.searchRef.current && this.searchRef.current.value) {
+      searchLocation(this.searchRef.current.value)
+        .then(results => {
+          if (results.length > 0) {
+            const [minLon, maxLon, minLat, maxLat] = results[0].boundingbox;
+            this.props.onSelectCoordinates({
+              type: 'geospatial_variable',
+              latitude1: maxLat.toString(),
+              longitude1: minLon.toString(),
+              latitude2: minLat.toString(),
+              longitude2: maxLon.toString(),
+            });
+          }
+        })
+        .catch(e => alert('Error from search server'));
+    }
+  }
+
   render() {
     const style = {
       width: '100%',
@@ -202,6 +226,14 @@ class GeoSpatialFilter extends React.PureComponent<GeoSpatialFilterProps> {
       <div>
         <div className="row">
           <div className="col-md-12" style={{ fontSize: '.9rem' }}>
+            <form onSubmit={this.onSearch} className="form-inline">
+              <input name="location" ref={this.searchRef} className="mb-2" />
+              <input
+                type="submit"
+                className="btn btn-secondary ml-sm-2 mb-2"
+                value="Search"
+              />
+            </form>
             <span className="d-inline">
               Left-click to start selection. Right-click to clear selection.
             </span>
