@@ -988,8 +988,8 @@ def parse_keyword_query_main_index(query_json):
             }
         })
 
-    if 'dataset_types' in query_json:
-        dataset_types = query_json['dataset_types']
+    if 'types' in query_json:
+        dataset_types = query_json['types']
         if not isinstance(dataset_types, list):
             dataset_types = [dataset_types]
         query_args_main.append({
@@ -997,7 +997,7 @@ def parse_keyword_query_main_index(query_json):
                 'filter': [
                     {
                         'terms': {
-                            'dataset_types': dataset_types,
+                            'types': dataset_types,
                         }
                     }
                 ]
