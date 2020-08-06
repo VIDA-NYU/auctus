@@ -44,7 +44,7 @@ function HitInfoBox(props: {
               <b>Source:</b> {hit.metadata.source}
             </div>
             <Description hit={hit} label={true} />
-            {'dataset_types' in hit.metadata && (
+            {'types' in hit.metadata && (
               <DataTypes hit={hit} label={true} />
             )}
             <DatasetColumns

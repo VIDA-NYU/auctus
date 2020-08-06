@@ -54,7 +54,7 @@ export interface Metadata {
   nb_profiled_rows: number;
   sample: string;
   source: string;
-  dataset_types: string[];
+  types: string[];
   version: string;
   spatial_coverage?: SpatialCoverage[];
 }
@@ -117,7 +117,7 @@ export type FilterVariables = TemporalVariable | GeoSpatialVariable;
 export interface QuerySpec {
   keywords?: string;
   source?: string[];
-  dataset_types?: string[];
+  types?: string[];
   variables: FilterVariables[];
 }
 

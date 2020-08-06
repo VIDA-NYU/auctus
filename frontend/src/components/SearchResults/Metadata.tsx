@@ -33,10 +33,10 @@ export function SpatialCoverage(props: { hit: SearchResult }) {
 export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
   const { hit, label } = props;
 
-  const isTemporal = hit.metadata.dataset_types.includes('temporal');
-  const isSpatial = hit.metadata.dataset_types.includes('spatial');
-  const isNumerical = hit.metadata.dataset_types.includes('numerical');
-  const isCategorical = hit.metadata.dataset_types.includes('categorical');
+  const isTemporal = hit.metadata.types.includes('temporal');
+  const isSpatial = hit.metadata.types.includes('spatial');
+  const isNumerical = hit.metadata.types.includes('numerical');
+  const isCategorical = hit.metadata.types.includes('categorical');
 
   return (
     <>

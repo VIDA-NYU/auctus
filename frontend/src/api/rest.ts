@@ -61,7 +61,7 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
     spec.source = q.sources;
   }
   if (q.dataTypes && q.dataTypes.length > 0) {
-    spec.dataset_types = q.dataTypes;
+    spec.types = q.dataTypes;
   }
 
   const formData = new FormData();
