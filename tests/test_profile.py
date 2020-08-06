@@ -209,7 +209,7 @@ class TestDates(DataTestCase):
             {
                 'nb_rows': 3,
                 'nb_profiled_rows': 3,
-                'types': ['temporal', 'numerical'],
+                'types': ['numerical', 'temporal'],
                 'columns': [
                     {
                         'name': 'year',

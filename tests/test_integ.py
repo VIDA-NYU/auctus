@@ -2368,7 +2368,7 @@ class TestUpload(DatamartTest):
                         specialId=12,
                         dept="internal",
                         source='upload',
-                        types=['categorical', 'spatial', 'numerical'],
+                        types=['categorical', 'numerical', 'spatial'],
                         materialize=dict(
                             annotated_metadata['materialize'],
                             identifier='datamart.upload',

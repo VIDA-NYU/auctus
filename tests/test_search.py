@@ -88,7 +88,7 @@ class TestSearch(unittest.TestCase):
     def test_types(self):
         main, sup_funcs, sup_filters, vars = parse_query({
             'keywords': ['food'],
-            'types': ['temporal', 'spatial'],
+            'types': ['spatial', 'temporal'],
         })
         self.assertEqual(
             main,
@@ -125,7 +125,7 @@ class TestSearch(unittest.TestCase):
                         'filter': [
                             {
                                 'terms': {
-                                    'types': ['temporal', 'spatial'],
+                                    'types': ['spatial', 'temporal'],
                                 },
                             },
                         ],
