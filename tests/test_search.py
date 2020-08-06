@@ -160,7 +160,7 @@ class TestSearch(unittest.TestCase):
             [
                 {
                     'terms': {
-                        'types': ['spatial', 'temporal'],
+                        'dataset_types': ['spatial', 'temporal'],
                     },
                 },
             ],
