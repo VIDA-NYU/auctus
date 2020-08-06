@@ -2357,8 +2357,7 @@ class TestUpload(DatamartTest):
                         time.sleep(2)
                     else:
                         self.fail("Dataset didn't make it to index")
-                print('***** record')
-                print(record)
+                    
                 self.assertJson(
                     record,
                     dict(
@@ -2369,7 +2368,7 @@ class TestUpload(DatamartTest):
                         specialId=12,
                         dept="internal",
                         source='upload',
-                        dataset_types=[],
+                        dataset_types=['categorical', 'spatial', 'numerical'],
                         materialize=dict(
                             annotated_metadata['materialize'],
                             identifier='datamart.upload',
