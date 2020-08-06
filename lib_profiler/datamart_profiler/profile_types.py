@@ -282,7 +282,7 @@ def identify_types(array, name, geo_data, manual=None):
 
 def determine_dataset_type(column_structural_type, column_semantic_types):
     """Determines a dataset type  (see dataset_types.py) based on combinations of
-    a column's structural and semantic types. 
+    a column's structural and semantic types.
     """
     if types.LATITUDE in column_semantic_types or types.LATITUDE in column_structural_type or \
        types.LONGITUDE in column_semantic_types or types.LONGITUDE in column_structural_type or \
