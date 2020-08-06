@@ -41,7 +41,7 @@ datamart:
         index: false
       source:
         type: keyword
-      dataset_types:
+      types:
         type: keyword
       size:
         type: long
@@ -147,7 +147,7 @@ datamart_columns:
         type: keyword
       dataset_source:
         type: keyword
-      dataset_dataset_types:
+      dataset_types:
         type: keyword
       dataset_size:
         type: long
@@ -220,7 +220,7 @@ datamart_spatial_coverage:
         type: keyword
       dataset_source:
         type: keyword
-      dataset_dataset_types:
+      dataset_types:
         type: keyword
       dataset_size:
         type: long

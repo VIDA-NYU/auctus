@@ -5,7 +5,7 @@ import re
 import regex
 
 from . import types
-from . import column_types
+from . import dataset_types
 from .spatial import LATITUDE, LONGITUDE
 from .temporal import parse_date
 
@@ -280,10 +280,9 @@ def identify_types(array, name, geo_data, manual=None):
     return structural_type, semantic_types_dict, column_meta
 
 
-def determine_column_type(column_structural_type, column_semantic_types):
-    """Determines the type of a column (see column_types.py) based on combinations of
-    its structural and semantic types. Useful to determine the overall types
-    associated to a dataset.
+def determine_dataset_type(column_structural_type, column_semantic_types):
+    """Determines a dataset type  (see dataset_types.py) based on combinations of
+    a column's structural and semantic types. 
     """
     if types.LATITUDE in column_semantic_types or types.LATITUDE in column_structural_type or \
        types.LONGITUDE in column_semantic_types or types.LONGITUDE in column_structural_type or \
@@ -291,17 +290,17 @@ def determine_column_type(column_structural_type, column_semantic_types):
        types.GEO_POLYGON in column_semantic_types or types.GEO_POLYGON in column_structural_type or \
        types.ADDRESS in column_semantic_types or types.ADDRESS in column_structural_type or \
        types.ADMIN in column_semantic_types or types.ADMIN in column_structural_type:
-        return column_types.SPATIAL
+        return dataset_types.SPATIAL
 
     if (column_structural_type == types.TEXT and types.DATE_TIME not in column_semantic_types) or \
        (column_structural_type == types.INTEGER and types.BOOLEAN in column_semantic_types):
-        return column_types.CATEGORICAL
+        return dataset_types.CATEGORICAL
 
     if types.DATE_TIME in column_semantic_types or types.DATE_TIME in column_structural_type:
-        return column_types.TEMPORAL
+        return dataset_types.TEMPORAL
 
     # Note that the two lines below only get executed if the type hasn't been identified as spatial, categorial or temporal
     if column_structural_type == types.INTEGER or column_structural_type == types.FLOAT:
-        return column_types.NUMERICAL
+        return dataset_types.NUMERICAL
 
     return None

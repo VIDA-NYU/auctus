@@ -12,12 +12,12 @@ import random
 import warnings
 
 from .numerical import mean_stddev, get_numerical_ranges
-from .profile_types import identify_types, determine_column_type
+from .profile_types import identify_types, determine_dataset_type
 from .spatial import nominatim_resolve_all, pair_latlong_columns, \
     get_spatial_ranges, parse_wkt_column
 from .temporal import get_temporal_resolution
 from . import types
-from . import column_types
+from . import dataset_types
 
 logger = logging.getLogger(__name__)
 
@@ -166,14 +166,14 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 metadata['nb_rows'] = 0
                 metadata['nb_profiled_rows'] = 0
                 metadata['columns'] = []
-                metadata['dataset_types'] = []
+                metadata['types'] = set()
                 return metadata
 
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
 
     metadata['nb_profiled_rows'] = data.shape[0]
-    metadata['dataset_types'] = []
+    metadata['types'] = set()
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
     # Fix size if wrong
@@ -236,10 +236,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
             structural_type, semantic_types_dict, additional_meta = \
                 identify_types(array, column_meta['name'], geo_data, manual)
 
-            # Identify overall column type (numerical, categorial, spatial, or temporal) and add it to 'dataset_types'
-            column_type = determine_column_type(structural_type, semantic_types_dict)
-            if column_type and column_type not in metadata['dataset_types']:
-                metadata['dataset_types'].append(column_type)
+            # Identify a dataset type (numerical, categorial, spatial, or temporal) and add it to 'types'
+            dataset_type = determine_dataset_type(structural_type, semantic_types_dict)
+            if dataset_type:
+                metadata['types'].add(dataset_type)
 
             # Set structural type
             column_meta['structural_type'] = structural_type
@@ -597,8 +597,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
-            if column_types.SPATIAL not in metadata['dataset_types']:
-                metadata['dataset_types'].append(column_types.SPATIAL)
+            if dataset_types.SPATIAL not in metadata['types']:
+                metadata['types'].add(dataset_types.SPATIAL)
     # Sample data
     if include_sample:
         rand = numpy.random.RandomState(RANDOM_SEED)
@@ -612,6 +612,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
         sample = sample.applymap(truncate_string)  # Truncate long values
         metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
 
+    # Turn metadata types into a sorted list
+    metadata['types'] = sorted(list(metadata['types']))
     # Determine dataset_types based on the profiling of columns
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
