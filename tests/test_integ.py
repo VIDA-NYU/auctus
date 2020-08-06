@@ -157,6 +157,8 @@ class TestProfiler(DataTestCase):
         )['hits']['hits']
         hits = {h['_id']: h['_source'] for h in hits}
 
+        print('******** hits')
+        print(hits)
         self.assertJson(
             hits,
             {
