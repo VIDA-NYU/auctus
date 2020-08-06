@@ -143,7 +143,7 @@ class TestSearch(unittest.TestCase):
                             'type': 'most_fields',
                             'operator': 'or',
                             'fields': [
-                                'dataset_id',
+                                'dataset_id^10',
                                 'dataset_description',
                                 'dataset_name',
                                 'name',
