@@ -166,14 +166,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 metadata['nb_rows'] = 0
                 metadata['nb_profiled_rows'] = 0
                 metadata['columns'] = []
-                metadata['types'] = set()
+                metadata['types'] = []
                 return metadata
 
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
 
     metadata['nb_profiled_rows'] = data.shape[0]
-    metadata['types'] = set()
     # Get column dictionary
     columns = metadata.setdefault('columns', [])
     # Fix size if wrong
@@ -191,8 +190,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     if data.shape[0] == 0:
         logger.info("0 rows, returning early")
+        metadata['types'] = []
         return metadata
 
+    metadata['types'] = set()
     # Lat / Long
     columns_lat = []
     columns_long = []
