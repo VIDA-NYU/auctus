@@ -2357,7 +2357,7 @@ class TestUpload(DatamartTest):
                         time.sleep(2)
                     else:
                         self.fail("Dataset didn't make it to index")
-                    
+
                 self.assertJson(
                     record,
                     dict(
