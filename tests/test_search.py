@@ -155,6 +155,16 @@ class TestSearch(unittest.TestCase):
                 },
             ],
         )
+        self.assertEqual(
+            sup_filters,
+            [
+                {
+                    'terms': {
+                        'dataset_types': ['spatial', 'temporal'],
+                    },
+                },
+            ],
+        )
         self.assertEqual(vars, [])
 
     def test_ranges(self):
