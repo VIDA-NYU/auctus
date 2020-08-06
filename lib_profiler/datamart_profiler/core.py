@@ -614,7 +614,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Turn metadata types into a sorted list
     metadata['types'] = sorted(list(metadata['types']))
-    # Determine dataset_types based on the profiling of columns
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
