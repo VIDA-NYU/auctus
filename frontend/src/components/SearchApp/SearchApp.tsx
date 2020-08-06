@@ -44,7 +44,6 @@ interface SearchAppState {
   searchQuery?: api.SearchQuery;
   sources: string[];
   session?: Session;
-  dataTypes: string[];
 }
 
 interface SearchAppProps {
@@ -67,7 +66,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       searchState: SearchState.CLEAN,
       filters: [],
       sources: api.DEFAULT_SOURCES,
-      dataTypes: api.DEFAULT_DATATYPES,
     };
   }
 
@@ -432,7 +430,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             title = 'Data Type';
             component = (
               <DataTypeFilter
-                datatypes={this.state.dataTypes}
+                datatypes={api.DATATYPES}
                 checkedDataTypes={filter.state as string[] | undefined}
                 onDataTypeChange={s => this.updateFilterState(filter.id, s)}
               />
@@ -456,7 +454,6 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   renderCompactFilters() {
-
     const filters = this.state.filters.map(filter => {
       let icon = undefined,
         title = undefined;
@@ -480,7 +477,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         case FilterType.DATA_TYPE:
           title = 'Data Type';
           icon = Icon.Type;
-          break;					
+          break;
         default:
           throw new Error(
             `Received not supported filter type=[${filter.type}]`

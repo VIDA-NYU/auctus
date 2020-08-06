@@ -26,12 +26,7 @@ export const DEFAULT_SOURCES = [
   'upload',
 ];
 
-export const DEFAULT_DATATYPES = [
-  'numerical',
-  'categorical',
-  'spatial',
-  'temporal',
-];
+export const DATATYPES = ['numerical', 'categorical', 'spatial', 'temporal'];
 
 export enum RequestResult {
   SUCCESS = 'SUCCESS',
