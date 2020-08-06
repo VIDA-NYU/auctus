@@ -1048,7 +1048,7 @@ def parse_keyword_query_sup_index(query_json):
             'terms': {
                 'types': query_json['types'],
             }
-        })    
+        })
 
     return query_sup_functions, query_sup_filters
 
