@@ -400,7 +400,7 @@ def join(
         )
     else:
         raise TypeError(
-            "join() argument 1 should be a path (str) or a DataFrame, got "
+            "join() argument 1 should be a file or a DataFrame, got "
             "%r" % type(original_data)
         )
 
@@ -610,27 +610,25 @@ def join(
     # Build a dict of information about all columns
     columns_metadata = dict()
     for column in augment_metadata['columns']:
-        for name, agg in itertools.chain(
-            [(column['name'], None), (column['name'] + '_r', None)],
-            zip(
-                itertools.repeat(column['name']),
-                AGGREGATION_FUNCTIONS,
-            ),
+        for agg in itertools.chain(
+            (None,),
+            AGGREGATION_FUNCTIONS,
         ):
-            column_metadata = {
-                k: v for k, v in column.items()
-                if k in KEEP_COLUMN_FIELDS
-            }
-            if agg is not None:
-                name = agg + ' ' + name
-            column_metadata['name'] = name
-            if agg in {'sum', 'mean'}:
-                column_metadata['structural_type'] = types.FLOAT
-                column_metadata['semantic_types'] = []
-            elif agg == 'count':
-                column_metadata['structural_type'] = types.INTEGER
-                column_metadata['semantic_types'] = []
-            columns_metadata[name] = column_metadata
+            for name in (column['name'], column['name'] + '_r'):
+                column_metadata = {
+                    k: v for k, v in column.items()
+                    if k in KEEP_COLUMN_FIELDS
+                }
+                if agg is not None:
+                    name = agg + ' ' + name
+                column_metadata['name'] = name
+                if agg in {'sum', 'mean'}:
+                    column_metadata['structural_type'] = types.FLOAT
+                    column_metadata['semantic_types'] = []
+                elif agg == 'count':
+                    column_metadata['structural_type'] = types.INTEGER
+                    column_metadata['semantic_types'] = []
+                columns_metadata[name] = column_metadata
     for column in original_metadata['columns']:
         columns_metadata[column['name']] = column
 
@@ -668,7 +666,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
         ))
     else:
         raise TypeError(
-            "union() argument 1 should be a path (str) or a DataFrame, got "
+            "union() argument 1 should be a file or a DataFrame, got "
             "%r" % type(original_data)
         )
 
