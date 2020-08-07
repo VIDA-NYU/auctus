@@ -124,9 +124,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
           <span className="small">{hit.metadata.source}</span>
           <Description hit={hit} label={false} />
           <DatasetColumns columns={hit.metadata.columns} label={false} />
-          {'types' in hit.metadata && (
-            <DataTypes hit={hit} label={false} />
-          )}
+          {'types' in hit.metadata && <DataTypes hit={hit} label={false} />}
           <DownloadViewDetails
             hit={hit}
             session={session}
