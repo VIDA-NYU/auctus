@@ -1046,7 +1046,7 @@ def parse_keyword_query_sup_index(query_json):
     if 'types' in query_json:
         query_sup_filters.append({
             'terms': {
-                'types': query_json['types'],
+                'dataset_types': query_json['types'],
             }
         })
 
