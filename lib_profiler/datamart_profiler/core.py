@@ -166,7 +166,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 metadata['nb_rows'] = 0
                 metadata['nb_profiled_rows'] = 0
                 metadata['columns'] = []
-                metadata['types'] = set()
+                metadata['types'] = []
                 return metadata
 
             logger.info("Dataframe loaded, %d rows, %d columns",
