@@ -276,7 +276,7 @@ export function customFields(): Promise<CustomFields> {
 
 export async function searchLocation(
   query: string
-): Promise<Array<{ boundingbox: number[] }>> {
+): Promise<Array<{ boundingbox?: number[] }>> {
   const formData = new FormData();
   formData.append('q', query);
   const response = await api.post('/location', formData);

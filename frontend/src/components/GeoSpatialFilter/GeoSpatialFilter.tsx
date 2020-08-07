@@ -202,7 +202,7 @@ class GeoSpatialFilter extends React.PureComponent<
   onSearchSubmit() {
     searchLocation(this.state.search)
       .then(results => {
-        if (results.length > 0) {
+        if (results.length > 0 && results[0].boundingbox) {
           const [minLon, maxLon, minLat, maxLat] = results[0].boundingbox;
           this.props.onSelectCoordinates({
             type: 'geospatial_variable',
