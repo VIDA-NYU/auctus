@@ -110,7 +110,6 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
 
   render() {
     const { hit, selectedHit, session } = this.props;
-
     return (
       <div
         className="card mb-3 shadow-sm d-flex flex-row"

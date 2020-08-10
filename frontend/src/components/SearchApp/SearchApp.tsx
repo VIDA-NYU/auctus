@@ -299,6 +299,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   submitQuery() {
     if (this.validQuery()) {
       const query = SearchApp.filtersToQuery(this.state);
+
       // pushes the query into the URL, which will trigger fetching the search results
       const q = encodeURIComponent(JSON.stringify(query));
       let url = `${this.props.match.url}?q=${q}`;
@@ -335,6 +336,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         this.setState({ searchState: SearchState.SEARCH_FAILED });
       });
   }
+
   toggleFilter(filterId: string) {
     this.setState(prevState => {
       const filters = this.state.filters.map(f => {
