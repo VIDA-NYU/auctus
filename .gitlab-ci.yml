@@ -10,6 +10,7 @@ test:
   services:
     - docker:19.03.5-dind
   before_script:
+    - date
     - curl -Lo /tmp/docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-19.03.5.tgz && tar -xf /tmp/docker.tgz -C /usr/local && rm /tmp/docker.tgz && export PATH=/usr/local/docker:$PATH && export DOCKER_HOST=tcp://docker:2375
     - docker info
     - curl -Lo /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)"
@@ -19,9 +20,11 @@ test:
     # so exposed ports are at 'docker' not 'localhost', and
     # Docker containers can't reach the local runner!
   script:
+    - date
     - diff -u lib_core/datamart_core/types.py lib_profiler/datamart_profiler/types.py
     - diff -u lib_core/datamart_core/types.py lib_materialize/datamart_materialize/types.py
     - /root/.poetry/bin/poetry install
+    - date
     - |
       # Check READMEs
       find . -name README.rst | while read i; do
@@ -30,18 +33,22 @@ test:
 
     # Build base image, using the GitLab registry as a cache
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - date
     - |
       # Pull the base image so we don't have to build from scratch
       docker pull $CI_REGISTRY_IMAGE/base || true
+      echo "After pull: $(date)"
       # Update the base image (maybe)
       chmod 644 poetry.lock docker/install_deps.py
       touch -t 200001010000.00 poetry.lock docker/install_deps.py
       docker build -t datamart_base . \
         --cache-from=$CI_REGISTRY_IMAGE/base \
         -f base.Dockerfile
+      echo "After build: $(date)"
       # Push the updated image to the registry (might be no-op)
       docker tag datamart_base $CI_REGISTRY_IMAGE/base
       docker push $CI_REGISTRY_IMAGE/base
+    - date
 
     # Set up environment for testing
     - cp tests/ci.env .env
@@ -53,7 +60,9 @@ test:
 
     # Build images
     - python scripts/docker-compose-cached-build.py apiserver apilb coordinator profiler test-discoverer
+    - date
     - docker-compose pull rabbitmq  # Don't build it
+    - date
 
     # Bring services up
     - |
@@ -69,6 +78,7 @@ test:
       END
     - scripts/setup.sh
     - docker-compose up -d elasticsearch rabbitmq redis
+    - date
     - |
       # Wait for Elasticsearch to come up
       slept=0; while [ $slept -le 120 -a $(curl -s -o /dev/null -w "%{http_code}" http://docker:9200/) != 200 ]; do sleep 5; slept=$((slept + 5)); done
@@ -79,6 +89,7 @@ test:
         exit 1
       fi
     - docker-compose up -d coordinator lazo
+    - date
     - sleep 10
     - docker-compose up -d profiler apiserver apilb test-discoverer
     - |
@@ -91,6 +102,7 @@ test:
         docker-compose logs profiler
         exit 1
       fi
+    - date
     - docker-compose ps
     - docker-compose logs profiler
 
@@ -100,6 +112,7 @@ test:
       if ! python -Wd -m coverage run --branch tests/__main__.py; then docker-compose logs apiserver; docker-compose logs lazo; exit 1; fi
     - docker-compose logs apiserver
     - docker-compose logs lazo
+    - date
 
     # Generate coverage report
     - docker-compose down -t 30
