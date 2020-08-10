@@ -516,7 +516,7 @@ class TestNominatim(DataTestCase):
                 'size': 142,
                 'nb_rows': 3,
                 'nb_profiled_rows': 3,
-                'types': ['categorical', 'spatial'],
+                'types': ['spatial'],
                 'columns': [
                     {
                         'name': 'place',
