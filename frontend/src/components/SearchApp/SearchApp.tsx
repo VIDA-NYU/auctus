@@ -17,7 +17,7 @@ import { SourceFilter } from '../SourceFilter/SourceFilter';
 import { SearchBar } from '../SearchBar/SearchBar';
 import { SearchState } from '../SearchResults/SearchState';
 import { SearchResults } from '../SearchResults/SearchResults';
-import { DataTypeFilter } from '../DataTypeFilter/DataTypeFilter';
+import { DatasetTypeFilter } from '../DatasetTypeFilter/DatasetTypeFilter';
 import {
   SearchResponse,
   FilterVariables,
@@ -94,7 +94,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       .filter(f => f.type === FilterType.SOURCE)
       .map(f => f.state as string[]);
 
-    const dataTypes: string[][] = state.filters
+    const datasetTypes: string[][] = state.filters
       .filter(f => f.type === FilterType.DATA_TYPE)
       .map(f => f.state as string[]);
 
@@ -102,7 +102,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       query: state.query,
       filters: filterVariables,
       sources: sources[0],
-      dataTypes: dataTypes[0],
+      datasetTypes: datasetTypes[0],
       relatedFile: relatedFiles[0],
     };
     return query;
@@ -139,12 +139,12 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         state: query.sources,
       });
     }
-    if (query.dataTypes) {
+    if (query.datasetTypes) {
       filters.push({
         id: generateRandomId(),
         type: FilterType.DATA_TYPE,
         hidden: false,
-        state: query.dataTypes,
+        state: query.datasetTypes,
       });
     }
     if (query.relatedFile) {
@@ -431,10 +431,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           case FilterType.DATA_TYPE:
             title = 'Data Type';
             component = (
-              <DataTypeFilter
-                datatypes={api.DATATYPES}
-                checkedDataTypes={filter.state as string[] | undefined}
-                onDataTypeChange={s => this.updateFilterState(filter.id, s)}
+              <DatasetTypeFilter
+                datasetTypes={api.DATASET_TYPES}
+                checkedDatasetTypes={filter.state as string[] | undefined}
+                onDatasetTypeChange={s => this.updateFilterState(filter.id, s)}
               />
             );
             break;

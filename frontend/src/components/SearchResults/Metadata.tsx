@@ -30,7 +30,7 @@ export function SpatialCoverage(props: { hit: SearchResult }) {
   );
 }
 
-export function DataTypes(props: { hit: SearchResult; label?: boolean }) {
+export function DatasetTypes(props: { hit: SearchResult; label?: boolean }) {
   const { hit, label } = props;
 
   const isTemporal = hit.metadata.types.includes('temporal');

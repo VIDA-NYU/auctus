@@ -1,17 +1,17 @@
 import React from 'react';
 import * as Icon from 'react-feather';
 
-interface DataTypeFilterProps {
-  datatypes: string[];
-  checkedDataTypes?: string[];
-  onDataTypeChange: (checkedDataTypes: string[]) => void;
+interface DatasetTypeFilterProps {
+  datasetTypes: string[];
+  checkedDatasetTypes?: string[];
+  onDatasetTypeChange: (checkedDatasetTypes: string[]) => void;
 }
 
-class DataTypeFilter extends React.PureComponent<DataTypeFilterProps> {
+class DatasetTypeFilter extends React.PureComponent<DatasetTypeFilterProps> {
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     let found = false;
-    const checkedDataTypes = this.getCheckedDataTypes().filter(s => {
+    const checkedDatasetTypes = this.getCheckedDatasetTypes().filter(s => {
       if (s === input.value) {
         found = true;
         return false; // Remove it from checked (uncheck it)
@@ -20,36 +20,36 @@ class DataTypeFilter extends React.PureComponent<DataTypeFilterProps> {
       }
     });
     if (!found) {
-      checkedDataTypes.push(input.value); // Add it to checked
+      checkedDatasetTypes.push(input.value); // Add it to checked
     }
-    this.props.onDataTypeChange(checkedDataTypes);
+    this.props.onDatasetTypeChange(checkedDatasetTypes);
   }
 
-  getCheckedDataTypes() {
-    // If 'checkedDataTypes' prop is undefined, consider all data types checked
-    return this.props.checkedDataTypes === undefined
-      ? this.props.datatypes
-      : this.props.checkedDataTypes;
+  getCheckedDatasetTypes() {
+    // If 'checkedDatasetTypes' prop is undefined, consider all data types checked
+    return this.props.checkedDatasetTypes === undefined
+      ? this.props.datasetTypes
+      : this.props.checkedDatasetTypes;
   }
 
   setCheckedStateForAll(checked: boolean) {
     if (checked) {
-      this.props.onDataTypeChange(this.props.datatypes);
+      this.props.onDatasetTypeChange(this.props.datasetTypes);
     } else {
-      this.props.onDataTypeChange([]);
+      this.props.onDatasetTypeChange([]);
     }
   }
 
   render() {
-    const dataTypes: { [dataType: string]: boolean } = {};
-    this.props.datatypes.forEach(dataType => {
-      dataTypes[dataType] = false;
+    const datasetTypes: { [datasetType: string]: boolean } = {};
+    this.props.datasetTypes.forEach(datasetType => {
+      datasetTypes[datasetType] = false;
     });
-    this.getCheckedDataTypes().forEach(dataType => {
-      dataTypes[dataType] = true;
+    this.getCheckedDatasetTypes().forEach(datasetType => {
+      datasetTypes[datasetType] = true;
     });
-    const dataTypesList = Object.entries(dataTypes);
-    dataTypesList.sort((a, b) => {
+    const datasetTypesList = Object.entries(datasetTypes);
+    datasetTypesList.sort((a, b) => {
       if (a[0] < b[0]) {
         return -1;
       } else if (a[0] > b[0]) {
@@ -80,21 +80,18 @@ class DataTypeFilter extends React.PureComponent<DataTypeFilterProps> {
             Unselect all
           </button>
         </div>
-        {dataTypesList.map(([dataType, checked]) => (
-          <div className="form-check ml-2" key={`div-${dataType}`}>
+        {datasetTypesList.map(([type, checked]) => (
+          <div className="form-check ml-2" key={`div-${type}`}>
             <input
               className="form-check-input"
               type="checkbox"
-              value={dataType}
+              value={type}
               checked={checked}
-              id={`check-box-${dataType}`}
+              id={`check-box-${type}`}
               onChange={e => this.handleChange(e)}
             />
-            <label
-              className="form-check-label"
-              htmlFor={`check-box-${dataType}`}
-            >
-              {dataType.charAt(0).toUpperCase() + dataType.slice(1)}
+            <label className="form-check-label" htmlFor={`check-box-${type}`}>
+              {type.charAt(0).toUpperCase() + type.slice(1)}
             </label>
           </div>
         ))}
@@ -103,4 +100,4 @@ class DataTypeFilter extends React.PureComponent<DataTypeFilterProps> {
   }
 }
 
-export { DataTypeFilter };
+export { DatasetTypeFilter };

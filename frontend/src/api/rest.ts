@@ -26,7 +26,12 @@ export const DEFAULT_SOURCES = [
   'upload',
 ];
 
-export const DATATYPES = ['numerical', 'categorical', 'spatial', 'temporal'];
+export const DATASET_TYPES = [
+  'spatial',
+  'temporal',
+  'numerical',
+  'categorical',
+];
 
 export enum RequestResult {
   SUCCESS = 'SUCCESS',
@@ -48,7 +53,7 @@ export interface SearchQuery {
   query?: string;
   filters?: FilterVariables[];
   sources?: string[];
-  dataTypes?: string[];
+  datasetTypes?: string[];
   relatedFile?: RelatedFile;
 }
 
@@ -60,8 +65,8 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   if (q.sources && q.sources.length > 0) {
     spec.source = q.sources;
   }
-  if (q.dataTypes && q.dataTypes.length > 0) {
-    spec.types = q.dataTypes;
+  if (q.datasetTypes && q.datasetTypes.length > 0) {
+    spec.types = q.datasetTypes;
   }
 
   const formData = new FormData();
