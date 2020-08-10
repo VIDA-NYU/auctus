@@ -16,7 +16,7 @@ import yaml
 
 def main(services):
     with open('docker-compose.yml') as fp:
-        config = yaml.load(fp)
+        config = yaml.safe_load(fp)
 
     version = os.environ['DATAMART_VERSION']
 
