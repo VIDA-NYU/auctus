@@ -17,7 +17,7 @@ from .spatial import nominatim_resolve_all, pair_latlong_columns, \
     get_spatial_ranges, parse_wkt_column
 from .temporal import get_temporal_resolution
 from . import types
-from . import dataset_types
+
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +194,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
         metadata['types'] = []
         return metadata
 
-    metadata['types'] = set()
+    # Dataset types
+    dataset_types = set()
+
     # Lat / Long
     columns_lat = []
     columns_long = []
@@ -238,10 +240,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
             structural_type, semantic_types_dict, additional_meta = \
                 identify_types(array, column_meta['name'], geo_data, manual)
 
-            # Identify a dataset type (numerical, categorial, spatial, or temporal) and add it to 'types'
+            # Identify a dataset type (numerical, categorial, spatial, or temporal)
             dataset_type = determine_dataset_type(structural_type, semantic_types_dict)
             if dataset_type:
-                metadata['types'].add(dataset_type)
+                dataset_types.add(dataset_type)
 
             # Set structural type
             column_meta['structural_type'] = structural_type
@@ -599,8 +601,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
-            if dataset_types.SPATIAL not in metadata['types']:
-                metadata['types'].add(dataset_types.SPATIAL)
+            if types.DATASET_SPATIAL not in dataset_types:
+                dataset_types.add(types.DATASET_SPATIAL)
     # Sample data
     if include_sample:
         rand = numpy.random.RandomState(RANDOM_SEED)
@@ -614,8 +616,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         sample = sample.applymap(truncate_string)  # Truncate long values
         metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
 
-    # Turn metadata types into a sorted list
-    metadata['types'] = sorted(list(metadata['types']))
+    metadata['types'] = sorted(dataset_types)
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches

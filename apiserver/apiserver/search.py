@@ -1044,9 +1044,12 @@ def parse_keyword_query_sup_index(query_json):
         })
 
     if 'types' in query_json:
+        dataset_types = query_json['types']
+        if not isinstance(dataset_types, list):
+            dataset_types = [dataset_types]
         query_sup_filters.append({
             'terms': {
-                'dataset_types': query_json['types'],
+                'dataset_types': dataset_types,
             }
         })
 
