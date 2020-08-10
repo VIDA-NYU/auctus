@@ -52,7 +52,7 @@ test:
     - chown 998 cov
 
     # Build images
-    - python scripts/docker-compose-cached-build.py
+    - python scripts/docker-compose-cached-build.py apiserver apilb coordinator profiler test-discoverer
     - docker-compose pull rabbitmq  # Don't build it
 
     # Bring services up
