@@ -5,14 +5,7 @@ import { SearchResult, ColumnMetadata, Session } from '../../api/types';
 import { RequestStatus, downloadToSession } from '../../api/rest';
 import { generateRandomId } from '../../utils';
 import { GeoSpatialCoverageMap } from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
-import {
-  BadgeGroup,
-  SpatialBadge,
-  TemporalBadge,
-  NumericalBadge,
-  CategoricalBadge,
-  ColumnBadge,
-} from '../Badges/Badges';
+import { BadgeGroup, DatasetTypeBadge, ColumnBadge } from '../Badges/Badges';
 
 export function SpatialCoverage(props: { hit: SearchResult }) {
   const { spatial_coverage } = props.hit.metadata;
@@ -33,21 +26,13 @@ export function SpatialCoverage(props: { hit: SearchResult }) {
 export function DatasetTypes(props: { hit: SearchResult; label?: boolean }) {
   const { hit, label } = props;
 
-  const isTemporal = hit.metadata.types.includes('temporal');
-  const isSpatial = hit.metadata.types.includes('spatial');
-  const isNumerical = hit.metadata.types.includes('numerical');
-  const isCategorical = hit.metadata.types.includes('categorical');
-
   return (
     <>
-      {(isSpatial || isTemporal || isNumerical || isCategorical) && (
+      {hit.metadata.types.length > 0 && (
         <div className="mt-2">
           <BadgeGroup>
             {label && <b>Data Types:</b>}
-            {isSpatial && <SpatialBadge />}
-            {isTemporal && <TemporalBadge />}
-            {isNumerical && <NumericalBadge />}
-            {isCategorical && <CategoricalBadge />}
+            {hit.metadata.types.map(t => DatasetTypeBadge(t))}
           </BadgeGroup>
         </div>
       )}

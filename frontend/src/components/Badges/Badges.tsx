@@ -81,6 +81,21 @@ export function CategoricalBadge() {
   );
 }
 
+export function DatasetTypeBadge(type: string) {
+  if (type === 'spatial') {
+    return SpatialBadge();
+  } else if (type === 'temporal') {
+    return TemporalBadge();
+  } else if (type === 'numerical') {
+    return NumericalBadge();
+  } else if (type === 'categorical') {
+    return CategoricalBadge();
+  } else {
+    console.error('Invalid dataset type: ', type);
+    return <></>;
+  }
+}
+
 export function SimpleColumnBadge(props: { name: string }) {
   return <span className={`badge badge-pill badge-column`}>{props.name}</span>;
 }

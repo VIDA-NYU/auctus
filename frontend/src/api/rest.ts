@@ -246,8 +246,7 @@ export interface RecentDiscovery {
   discovered: Date;
   profiled: Date;
   name: string;
-  spatial?: boolean;
-  temporal?: boolean;
+  types?: string[];
 }
 
 export interface Status {
