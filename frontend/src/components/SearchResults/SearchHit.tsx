@@ -2,7 +2,12 @@ import * as React from 'react';
 import * as Icon from 'react-feather';
 import {API_URL} from '../../config';
 import {formatSize} from '../../utils';
-import {SearchResult, RelatedFile, Session} from '../../api/types';
+import {
+  SearchResult,
+  RelatedFile,
+  Session,
+  TabularVariable,
+} from '../../api/types';
 import {
   Description,
   DatasetTypes,
@@ -96,10 +101,21 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
   }
 
   onSearchRelated() {
+    // tabular variable
+    // TODO: handle 'relationship'
+    // for now, it assumes the relationship is 'contains'
+    const tabularVariables: TabularVariable = {
+      type: 'tabular_variable',
+      columns: Array.from(
+        new Array(this.props.hit.metadata.columns.length).keys()
+      ),
+      relationship: 'contains',
+    };
     const relatedFile: RelatedFile = {
       kind: 'searchResult',
       datasetId: this.props.hit.id,
       name: this.props.hit.metadata.name,
+      tabular_variables: tabularVariables,
     };
     this.props.onSearchRelated(relatedFile);
   }

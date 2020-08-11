@@ -4,7 +4,7 @@ import './Badges.css';
 import {IconAbc} from './IconAbc';
 import {ColumnMetadata} from '../../api/types';
 
-function columnType(column: ColumnMetadata) {
+export function columnType(column: ColumnMetadata) {
   switch (column.structural_type) {
     case 'http://schema.org/Integer':
     case 'http://schema.org/Float':

@@ -19,7 +19,7 @@ function HitInfoBox(props: {
   session?: Session;
 }) {
   const {hit, searchQuery, infoBoxType, session} = props;
-  var lastUpdatedDate = new Date(hit.metadata.date);
+  const lastUpdatedDate = new Date(hit.metadata.date);
   return (
     <div
       className="col-md-8 px-0 pb-5 card shadow-sm ml-2"
