@@ -58,7 +58,7 @@ export interface SearchQuery {
 }
 
 export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
-  const spec: QuerySpec = {
+  let spec: QuerySpec = {
     keywords: q.query,
     variables: q.filters ? [...q.filters] : [],
   };
@@ -70,16 +70,22 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   }
 
   const formData = new FormData();
-  formData.append('query', JSON.stringify(spec));
   if (q.relatedFile) {
     if (q.relatedFile.kind === 'localFile') {
       formData.append('data_profile', q.relatedFile.token);
+      if (q.relatedFile.tabular_variables) {
+        spec = {...spec, variables: [...spec.variables, q.relatedFile.tabular_variables]}
+      }
     } else if (q.relatedFile.kind === 'searchResult') {
       formData.append('data_id', q.relatedFile.datasetId);
+      if (q.relatedFile.tabular_variables) {
+        spec = {...spec, variables: [...spec.variables, q.relatedFile.tabular_variables]}
+      }
     } else {
       throw new Error('Invalid RelatedFile argument');
     }
   }
+  formData.append('query', JSON.stringify(spec));
   const config = {
     headers: {
       'content-type': 'multipart/form-data',

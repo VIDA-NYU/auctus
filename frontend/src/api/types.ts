@@ -119,7 +119,7 @@ export interface TabularVariable {
   relationship: string;
 }
 
-export type FilterVariables = TemporalVariable | GeoSpatialVariable;
+export type FilterVariables = TabularVariable | TemporalVariable | GeoSpatialVariable;
 
 export interface QuerySpec {
   keywords?: string;
