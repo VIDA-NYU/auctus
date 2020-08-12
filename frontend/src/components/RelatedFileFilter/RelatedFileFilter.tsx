@@ -4,7 +4,7 @@ import {CardShadow, CardButton} from '../visus/Card/Card';
 import {formatSize, shallowEqual} from '../../utils';
 import {Metadata, RelatedFile, TabularVariable} from '../../api/types';
 import {ProfileResult, profile, metadata} from '../../api/rest';
-import {BadgesRelatedFile} from './BadgesRelatedFile';
+import {RelatedFileColumnsSelector} from './RelatedFileColumnsSelector';
 
 interface RelatedFileFilterState {
   profile?: Metadata;
@@ -158,7 +158,7 @@ class RelatedFileFilter extends React.PureComponent<
               ? ` contains ${totalColumns} columns.`
               : undefined}
             {profile && selectedTabularVars && (
-              <BadgesRelatedFile
+              <RelatedFileColumnsSelector
                 profile={profile}
                 selectedTabularVars={selectedTabularVars}
                 onAdd={(c: string) => this.onAdd(c)}

@@ -183,6 +183,11 @@ export enum TypesCategory {
   SEMANTIC = 'SEMANTIC',
 }
 
+export enum BagdeButton {
+  ADD = 'ADD',
+  REMOVE = 'REMOVE',
+}
+
 export interface Session {
   session_id: string;
   format?: string;

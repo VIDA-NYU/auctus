@@ -1,0 +1,9 @@
+.label-button {
+    cursor: pointer;
+    text-decoration: underline;
+    background: transparent;
+    border: 0;
+}
+.danger {
+    color: #f44336;
+}

@@ -2,7 +2,7 @@ import React from 'react';
 import * as Icon from 'react-feather';
 import './Badges.css';
 import {IconAbc} from './IconAbc';
-import {ColumnMetadata} from '../../api/types';
+import {ColumnMetadata, BagdeButton} from '../../api/types';
 
 export function columnType(column: ColumnMetadata) {
   switch (column.structural_type) {
@@ -104,6 +104,8 @@ export function ColumnBadge(props: {
   column: ColumnMetadata;
   type?: 'categorical' | 'numerical';
   function?: string;
+  corner_button?: BagdeButton;
+  onEdit?: () => void;
 }) {
   let label = props.column.name;
   if (props.function) {
@@ -117,6 +119,26 @@ export function ColumnBadge(props: {
     <span className={`badge badge-pill ${badgeClass}`}>
       <BadgeIcon className="feather-xs-w" />
       {label}
+      {props.corner_button === BagdeButton.ADD && (
+        <button
+          type="button"
+          title="Add this column"
+          className="btn btn-link badge-corner-button"
+          onClick={() => props.onEdit && props.onEdit()}
+        >
+          <Icon.PlusCircle size={13} />
+        </button>
+      )}
+      {props.corner_button === BagdeButton.REMOVE && (
+        <button
+          type="button"
+          title="Remove this column"
+          className="btn btn-link badge-corner-button"
+          onClick={() => props.onEdit && props.onEdit()}
+        >
+          <Icon.XCircle size={13} />
+        </button>
+      )}
     </span>
   );
 }
