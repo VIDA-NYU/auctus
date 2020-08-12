@@ -42,9 +42,8 @@ export function ColumnBadgeRelatedFile(props: {
           title="Add this column"
           className="btn btn-link badge-button"
           onClick={() => props.onEdit()}
-          style={{marginRight: '-6px'}}
         >
-          <Icon.PlusCircle size={11} />
+          <Icon.PlusCircle size={13} />
         </button>
       ) : (
         <button
@@ -52,9 +51,8 @@ export function ColumnBadgeRelatedFile(props: {
           title="Remove this column"
           className="btn btn-link badge-button"
           onClick={() => props.onEdit()}
-          style={{marginRight: '-6px'}}
         >
-          <Icon.XCircle size={11} />
+          <Icon.XCircle size={13} />
         </button>
       )}
     </span>
@@ -89,7 +87,7 @@ export function BadgesRelatedFile(props: {
         <span className="small">
           {selectedTabularVars.columns.length === profile.columns.length
             ? 'All columns were selected.'
-            : 'Select which columns should be added to the search.'}
+            : 'Select which columns should be included in the search.'}
         </span>
         <BadgeGroup>
           {profile.columns
@@ -123,11 +121,11 @@ export function BadgesRelatedFile(props: {
           <span className="small">
             {' '}
             Select <b className="label danger"> at least one column </b> to be
-            added to the search.
+            included in the search.
           </span>
         ) : (
           <span className="small">
-            These columns will be added to the search.
+            These columns will be included in the search.
           </span>
         )}
         <BadgeGroup>

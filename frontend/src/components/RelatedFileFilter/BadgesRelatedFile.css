@@ -7,3 +7,16 @@
 .danger {
     color: #f44336;
 }
+.badge-button{
+    width: 12px;
+    height: 12px;
+    margin-top: -18px;
+    margin-left: 1px;
+    padding: 0px;
+    margin-right: -6px;
+}
+.badge-button svg{
+    color:#fdfdfe;
+    fill: #757575;
+    stroke-width: 2;
+}
