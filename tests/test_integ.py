@@ -2696,7 +2696,7 @@ class TestLocation(DatamartTest):
 
 
 version = os.environ['DATAMART_VERSION']
-assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7})?$', version)
+assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7,8})?$', version)
 
 
 basic_metadata = {
