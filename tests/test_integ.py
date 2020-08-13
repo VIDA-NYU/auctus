@@ -771,6 +771,61 @@ class TestDataSearch(DatamartTest):
             ],
         )
 
+    def test_basic_join_tabular_variable(self):
+        query = {
+            'variables': [{
+                'type': 'tabular_variable',
+                'columns': [0],
+                'relationship': 'contains',
+            }],
+        }
+
+        with data('geo_wkt.csv') as basic_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'query': json.dumps(query).encode('utf-8'),
+                    'data': basic_aug,
+                },
+                schema=result_list_schema,
+            )
+        results = response.json()['results']
+        self.assertJson(
+            results,
+            [
+                {
+                    'id': 'datamart.test.geo',
+                    'metadata': geo_metadata,
+                    'd3m_dataset_description': geo_metadata_d3m('4.0.0'),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['id']],
+                        'right_columns': [[0]],
+                        'right_columns_names': [['id']],
+                        'type': 'join'
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None
+                },
+                {
+                    'id': 'datamart.test.geo_wkt',
+                    'metadata': geo_wkt_metadata,
+                    'd3m_dataset_description': lambda d: isinstance(d, dict),
+                    'score': lambda n: isinstance(n, float) and n > 0.0,
+                    'augmentation': {
+                        'left_columns': [[0]],
+                        'left_columns_names': [['id']],
+                        'right_columns': [[0]],
+                        'right_columns_names': [['id']],
+                        'type': 'join',
+                    },
+                    'supplied_id': None,
+                    'supplied_resource_id': None,
+                },
+            ]
+        )
+
     def test_temporal_daily_join(self):
         with data('daily_aug.csv') as daily_aug:
             response = self.datamart_post(
