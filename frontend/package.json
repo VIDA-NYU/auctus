@@ -66,8 +66,9 @@
     "@types/node": "^12.12.29",
     "@types/react-datepicker": "^2.11.0",
     "canvas": "^2.6.1",
+    "eslint-plugin-react": "^7.20.6",
+    "gts": "2.0.2",
     "jest-canvas-mock": "^2.2.0",
-    "gts": "^1.1.2",
     "typescript": "~3.7.0"
   },
   "jest": {

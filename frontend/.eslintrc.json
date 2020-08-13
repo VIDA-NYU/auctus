@@ -1,0 +1,26 @@
+{
+  "extends": ["./node_modules/gts", "plugin:react/recommended"],
+  "env": {
+    "browser": true,
+    "node": false,
+    "jest": true
+  },
+  "rules": {
+    "node/no-unsupported-features/node-builtins": ["off"],
+    "node/no-extraneous-import": ["off"],
+    "node/no-unpublished-import": ["off"],
+    "react/prop-types": ["off"],
+    "prefer-const": [
+      "error",
+      {
+        "destructuring": "all",
+        "ignoreReadBeforeAssign": false
+      }
+    ]
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}
