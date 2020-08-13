@@ -2,12 +2,11 @@ import React from 'react';
 import {useDrop, useDrag, DragSourceMonitor} from 'react-dnd';
 import {DndProvider} from 'react-dnd';
 import Backend from 'react-dnd-html5-backend';
-import {ColumnBadge, BadgeGroup} from '../Badges/Badges';
+import {ColumnBadge, BadgeGroup, BagdeButton} from '../Badges/Badges';
 import {
   SearchResult,
   ColumnMetadata,
   ColumnAggregations,
-  BagdeButton,
 } from '../../api/types';
 import {FunctionBin} from './FunctionBin';
 
@@ -88,8 +87,8 @@ const BadgeBin: React.FC<BadgeBinProps> = ({
                 key={`badge-bin-${uniqueBinId}-column-${i}`}
                 column={c.column}
                 function={c.agg_function}
-                corner_button={BagdeButton.REMOVE}
-                onEdit={() => onRemoveColumn(c)}
+                cornerButton={BagdeButton.REMOVE}
+                onClick={() => onRemoveColumn(c)}
               />
             ))}
           </BadgeGroup>

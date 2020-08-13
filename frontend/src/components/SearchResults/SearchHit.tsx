@@ -115,7 +115,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
       kind: 'searchResult',
       datasetId: this.props.hit.id,
       name: this.props.hit.metadata.name,
-      tabular_variables: tabularVariables,
+      tabularVariables,
     };
     this.props.onSearchRelated(relatedFile);
   }

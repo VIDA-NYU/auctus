@@ -73,18 +73,18 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   if (q.relatedFile) {
     if (q.relatedFile.kind === 'localFile') {
       formData.append('data_profile', q.relatedFile.token);
-      if (q.relatedFile.tabular_variables) {
+      if (q.relatedFile.tabularVariables) {
         spec = {
           ...spec,
-          variables: [...spec.variables, q.relatedFile.tabular_variables],
+          variables: [...spec.variables, q.relatedFile.tabularVariables],
         };
       }
     } else if (q.relatedFile.kind === 'searchResult') {
       formData.append('data_id', q.relatedFile.datasetId);
-      if (q.relatedFile.tabular_variables) {
+      if (q.relatedFile.tabularVariables) {
         spec = {
           ...spec,
-          variables: [...spec.variables, q.relatedFile.tabular_variables],
+          variables: [...spec.variables, q.relatedFile.tabularVariables],
         };
       }
     } else {

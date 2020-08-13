@@ -2,7 +2,12 @@ import React from 'react';
 import * as Icon from 'react-feather';
 import './Badges.css';
 import {IconAbc} from './IconAbc';
-import {ColumnMetadata, BagdeButton} from '../../api/types';
+import {ColumnMetadata} from '../../api/types';
+
+export enum BagdeButton {
+  ADD = 'ADD',
+  REMOVE = 'REMOVE',
+}
 
 export function columnType(column: ColumnMetadata) {
   switch (column.structural_type) {
@@ -104,8 +109,8 @@ export function ColumnBadge(props: {
   column: ColumnMetadata;
   type?: 'categorical' | 'numerical';
   function?: string;
-  corner_button?: BagdeButton;
-  onEdit?: () => void;
+  cornerButton?: BagdeButton;
+  onClick?: () => void;
 }) {
   let label = props.column.name;
   if (props.function) {
@@ -119,22 +124,22 @@ export function ColumnBadge(props: {
     <span className={`badge badge-pill ${badgeClass}`}>
       <BadgeIcon className="feather-xs-w" />
       {label}
-      {props.corner_button === BagdeButton.ADD && (
+      {props.cornerButton === BagdeButton.ADD && (
         <button
           type="button"
           title="Add this column"
           className="btn btn-link badge-corner-button"
-          onClick={() => props.onEdit && props.onEdit()}
+          onClick={() => props.onClick && props.onClick()}
         >
           <Icon.PlusCircle size={13} />
         </button>
       )}
-      {props.corner_button === BagdeButton.REMOVE && (
+      {props.cornerButton === BagdeButton.REMOVE && (
         <button
           type="button"
           title="Remove this column"
           className="btn btn-link badge-corner-button"
-          onClick={() => props.onEdit && props.onEdit()}
+          onClick={() => props.onClick && props.onClick()}
         >
           <Icon.XCircle size={13} />
         </button>

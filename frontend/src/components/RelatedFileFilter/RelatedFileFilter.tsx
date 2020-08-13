@@ -48,7 +48,7 @@ class RelatedFileFilter extends React.PureComponent<
       if (this.profileQuery === profileQuery) {
         this.setState({
           profile: p,
-          selectedTabularVars: relatedFile.tabular_variables,
+          selectedTabularVars: relatedFile.tabularVariables,
         });
       }
     });
@@ -89,7 +89,7 @@ class RelatedFileFilter extends React.PureComponent<
             token: p.token,
             name: file.name,
             fileSize: file.size,
-            tabular_variables: tabularVariables,
+            tabularVariables,
           };
           this.profileQueryFile = relatedFile;
           this.setState({profile: p, selectedTabularVars: tabularVariables});
@@ -108,7 +108,7 @@ class RelatedFileFilter extends React.PureComponent<
       this.setState({selectedTabularVars: updatedTabularVars});
       const updatedRelatedFile: RelatedFile = {
         ...this.profileQueryFile,
-        tabular_variables: updatedTabularVars,
+        tabularVariables: updatedTabularVars,
       };
       this.props.onSelectedFileChange(updatedRelatedFile);
     }

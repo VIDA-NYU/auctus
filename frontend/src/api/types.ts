@@ -140,13 +140,13 @@ interface RelatedToFileBase {
 export interface RelatedToLocalFile extends RelatedToFileBase {
   kind: 'localFile';
   token: string;
-  tabular_variables?: TabularVariable;
+  tabularVariables?: TabularVariable;
 }
 
 export interface RelatedToSearchResult extends RelatedToFileBase {
   kind: 'searchResult';
   datasetId: string;
-  tabular_variables?: TabularVariable;
+  tabularVariables?: TabularVariable;
 }
 
 export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;
@@ -181,11 +181,6 @@ export enum Annotation {
 export enum TypesCategory {
   STRUCTURAL = 'STRUCTURAL',
   SEMANTIC = 'SEMANTIC',
-}
-
-export enum BagdeButton {
-  ADD = 'ADD',
-  REMOVE = 'REMOVE',
 }
 
 export interface Session {

@@ -1,6 +1,6 @@
 import React from 'react';
-import {Metadata, TabularVariable, BagdeButton} from '../../api/types';
-import {BadgeGroup, ColumnBadge} from '../Badges/Badges';
+import {Metadata, TabularVariable} from '../../api/types';
+import {BadgeGroup, ColumnBadge, BagdeButton} from '../Badges/Badges';
 import './RelatedFileColumnsSelector.css';
 
 export function RelatedFileColumnsSelector(props: {
@@ -43,9 +43,9 @@ export function RelatedFileColumnsSelector(props: {
             .map((c, i) => (
               <ColumnBadge
                 key={`badge-bin-${'uniqueBinId'}-column-${i}`}
-                corner_button={BagdeButton.ADD}
+                cornerButton={BagdeButton.ADD}
                 column={c}
-                onEdit={() => props.onAdd(c.name)}
+                onClick={() => props.onAdd(c.name)}
               />
             ))}
         </BadgeGroup>
@@ -80,9 +80,9 @@ export function RelatedFileColumnsSelector(props: {
                 c && (
                   <ColumnBadge
                     key={`badge-bin-${'uniqueBinId'}-column-${i}`}
-                    corner_button={BagdeButton.REMOVE}
+                    cornerButton={BagdeButton.REMOVE}
                     column={c}
-                    onEdit={() => props.onRemove(c.name)}
+                    onClick={() => props.onRemove(c.name)}
                   />
                 )
             )}
