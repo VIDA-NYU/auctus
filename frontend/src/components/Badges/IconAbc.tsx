@@ -1,4 +1,4 @@
-import React, { SVGAttributes } from 'react';
+import React, {SVGAttributes} from 'react';
 
 interface Props extends SVGAttributes<SVGElement> {
   color: string;
@@ -6,7 +6,7 @@ interface Props extends SVGAttributes<SVGElement> {
 }
 
 const IconAbc = (props: Props) => {
-  const { color, size, ...otherProps } = props;
+  const {color, size, ...otherProps} = props;
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -34,4 +34,4 @@ IconAbc.defaultProps = {
   size: '24',
 };
 
-export { IconAbc };
+export {IconAbc};

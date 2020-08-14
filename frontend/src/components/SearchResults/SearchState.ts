@@ -5,4 +5,4 @@ enum SearchState {
   SEARCH_FAILED,
 }
 
-export { SearchState };
+export {SearchState};

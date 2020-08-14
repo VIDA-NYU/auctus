@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import * as api from '../../api/rest';
-import { DatasetTypeBadge, BadgeGroup } from '../Badges/Badges';
+import {DatasetTypeBadge, BadgeGroup} from '../Badges/Badges';
 import moment from 'moment';
 
 interface StatisticsState {
@@ -31,9 +31,9 @@ class Statistics extends React.PureComponent<{}, StatisticsState> {
 
   async fetchStatus() {
     try {
-      this.setState({ status: await api.status(), failed: undefined });
+      this.setState({status: await api.status(), failed: undefined});
     } catch (e) {
-      this.setState({ failed: `${e}` });
+      this.setState({failed: `${e}`});
     }
   }
 
@@ -51,9 +51,9 @@ class Statistics extends React.PureComponent<{}, StatisticsState> {
                   <h5 className="mb-0">
                     <Link
                       to={`/?q=${encodeURIComponent(
-                        JSON.stringify({ query: d.id })
+                        JSON.stringify({query: d.id})
                       )}`}
-                      style={{ textDecoration: 'none' }}
+                      style={{textDecoration: 'none'}}
                     >
                       {d.name}
                     </Link>
@@ -97,4 +97,4 @@ class Statistics extends React.PureComponent<{}, StatisticsState> {
   }
 }
 
-export { Statistics };
+export {Statistics};

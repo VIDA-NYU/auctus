@@ -7,11 +7,11 @@ import {
   InfoBoxType,
   Session,
 } from '../../api/types';
-import { SearchHit } from './SearchHit';
-import { SearchState } from './SearchState';
-import { Loading } from '../visus/Loading/Loading';
-import { HitInfoBox } from './HitInfoBox';
-import { SearchQuery } from '../../api/rest';
+import {SearchHit} from './SearchHit';
+import {SearchState} from './SearchState';
+import {Loading} from '../visus/Loading/Loading';
+import {HitInfoBox} from './HitInfoBox';
+import {SearchQuery} from '../../api/rest';
 
 interface SearchResultsProps {
   searchQuery: SearchQuery;
@@ -34,7 +34,7 @@ class SearchResults extends React.PureComponent<
 
   constructor(props: SearchResultsProps) {
     super(props);
-    this.state = { selectedInfoBoxType: InfoBoxType.DETAIL };
+    this.state = {selectedInfoBoxType: InfoBoxType.DETAIL};
   }
 
   componentDidUpdate() {
@@ -50,7 +50,7 @@ class SearchResults extends React.PureComponent<
   }
 
   render() {
-    const { searchResponse, searchState, searchQuery, session } = this.props;
+    const {searchResponse, searchState, searchQuery, session} = this.props;
     const centeredDiv: React.CSSProperties = {
       width: 750,
       textAlign: 'center',
@@ -89,12 +89,12 @@ class SearchResults extends React.PureComponent<
           (page - 1) * k,
           page * k
         );
-        const { selectedHit, selectedInfoBoxType } = this.state;
+        const {selectedHit, selectedInfoBoxType} = this.state;
         return (
           <div className="d-flex flex-row">
             <div
               className="col-md-4 px-0 pb-5"
-              style={{ maxHeight: '90vh', overflowY: 'scroll' }}
+              style={{maxHeight: '90vh', overflowY: 'scroll'}}
             >
               {currentHits.map((hit, idx) => (
                 <SearchHit
@@ -139,4 +139,4 @@ class SearchResults extends React.PureComponent<
   }
 }
 
-export { SearchResults };
+export {SearchResults};

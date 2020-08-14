@@ -41,7 +41,7 @@ class SourceFilter extends React.PureComponent<SourceFilterProps> {
   }
 
   render() {
-    const sources: { [source: string]: boolean } = {};
+    const sources: {[source: string]: boolean} = {};
     this.props.sources.forEach(source => {
       sources[source] = false;
     });
@@ -100,4 +100,4 @@ class SourceFilter extends React.PureComponent<SourceFilterProps> {
   }
 }
 
-export { SourceFilter };
+export {SourceFilter};

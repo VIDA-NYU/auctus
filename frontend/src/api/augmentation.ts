@@ -1,4 +1,4 @@
-import { SearchResult, AugmentationInfo } from './types';
+import {SearchResult, AugmentationInfo} from './types';
 
 /**
  * Merges two augmentation infos into a single while merging their
@@ -58,7 +58,7 @@ function mergeJoinColumns(
 
 export function aggregateResults(results: SearchResult[]): SearchResult[] {
   const aggregatedResults: {
-    [key: string]: { firstRank: number; hit: SearchResult };
+    [key: string]: {firstRank: number; hit: SearchResult};
   } = {};
 
   results.forEach((hit, index) => {

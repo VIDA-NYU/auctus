@@ -61,4 +61,4 @@ class SearchBar extends React.PureComponent<SearchBarProps> {
   }
 }
 
-export { SearchBar };
+export {SearchBar};

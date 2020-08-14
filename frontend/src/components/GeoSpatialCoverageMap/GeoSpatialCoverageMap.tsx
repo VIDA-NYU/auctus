@@ -1,21 +1,21 @@
 import React from 'react';
-import { generateRandomId } from '../../utils';
-import { Map, View, Feature, Overlay } from 'ol/';
-import { toStringHDMS } from 'ol/coordinate';
-import { defaults as interactionDefaults } from 'ol/interaction';
-import { Select } from 'ol/interaction';
-import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
-import { Vector as VectorSource, OSM as OSMSource } from 'ol/source';
-import { transformExtent, transform } from 'ol/proj';
-import { SpatialCoverage } from '../../api/types';
-import { PersistentComponent } from '../visus/PersistentComponent/PersistentComponent';
+import {generateRandomId} from '../../utils';
+import {Map, View, Feature, Overlay} from 'ol/';
+import {toStringHDMS} from 'ol/coordinate';
+import {defaults as interactionDefaults} from 'ol/interaction';
+import {Select} from 'ol/interaction';
+import {Tile as TileLayer, Vector as VectorLayer} from 'ol/layer';
+import {Vector as VectorSource, OSM as OSMSource} from 'ol/source';
+import {transformExtent, transform} from 'ol/proj';
+import {SpatialCoverage} from '../../api/types';
+import {PersistentComponent} from '../visus/PersistentComponent/PersistentComponent';
 import Polygon from 'ol/geom/Polygon';
 import Style from 'ol/style/Style';
 import Stroke from 'ol/style/Stroke';
 import Fill from 'ol/style/Fill';
-import { click } from 'ol/events/condition';
+import {click} from 'ol/events/condition';
 import './GeoSpatialCoverageMap.css';
-import { transformCoordinates, centralizeMapToExtent } from '../spatial-utils';
+import {transformCoordinates, centralizeMapToExtent} from '../spatial-utils';
 import 'ol/ol.css';
 
 interface GeoSpatialCoverageMapProps {
@@ -81,7 +81,7 @@ class GeoSpatialCoverageMap extends PersistentComponent<
       'EPSG:4326',
       'EPSG:3857'
     );
-    return { extent, polygons };
+    return {extent, polygons};
   }
 
   componentDidMount() {
@@ -102,13 +102,13 @@ class GeoSpatialCoverageMap extends PersistentComponent<
   }
 
   setupMap() {
-    const { polygons, extent } = this.createPolygons(this.props.coverage);
+    const {polygons, extent} = this.createPolygons(this.props.coverage);
 
     const raster = new TileLayer({
       source: new OSMSource(),
     });
 
-    const source = new VectorSource({ wrapX: false });
+    const source = new VectorSource({wrapX: false});
 
     // drawing bounding boxes
     for (let j = 0; j < polygons.length; j++) {
@@ -149,7 +149,7 @@ class GeoSpatialCoverageMap extends PersistentComponent<
     });
 
     const map = new Map({
-      interactions: interactionDefaults({ mouseWheelZoom: false }),
+      interactions: interactionDefaults({mouseWheelZoom: false}),
       layers: [raster, vector],
       overlays: [overlay], // [overlays[index]],
       target: this.mapId, //'map-' + index,
@@ -212,7 +212,7 @@ class GeoSpatialCoverageMap extends PersistentComponent<
   }
 
   renderCoverageColumns(coverage: SpatialCoverage) {
-    const { lat, lon, address, point, admin } = coverage;
+    const {lat, lon, address, point, admin} = coverage;
     if (lat && lon) {
       return (
         <>
@@ -258,14 +258,14 @@ class GeoSpatialCoverageMap extends PersistentComponent<
   }
 
   render() {
-    const style = { width: '100%', height: '400px' };
+    const style = {width: '100%', height: '400px'};
     return (
-      <div style={{ display: 'block' }}>
+      <div style={{display: 'block'}}>
         <div className="mb-2 mt-2">
           {this.renderCoverageColumns(this.props.coverage)}
         </div>
         <div id={this.mapId} ref={this.mapRef} className="map" style={style} />
-        <span className="mb-3" style={{ fontSize: '0.9rem' }}>
+        <span className="mb-3" style={{fontSize: '0.9rem'}}>
           Left-click on bounding box to get more information.
         </span>
         <div ref={this.containerRef} className="ol-popup">
@@ -276,4 +276,4 @@ class GeoSpatialCoverageMap extends PersistentComponent<
   }
 }
 
-export { GeoSpatialCoverageMap };
+export {GeoSpatialCoverageMap};

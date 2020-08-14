@@ -61,10 +61,10 @@ interface CardAttrFieldProps {
 }
 
 const CardAttrField = styled.div<CardAttrFieldProps>`
-  font-weight: ${({ fontWeight }) => fontWeight || 'normal'};
-  text-align: ${({ textAlign }) => textAlign || 'right'};
-  width: ${({ width }) => width || '110px'};
-  padding: ${({ padding }) => padding || '0 15px'};
+  font-weight: ${({fontWeight}) => fontWeight || 'normal'};
+  text-align: ${({textAlign}) => textAlign || 'right'};
+  width: ${({width}) => width || '110px'};
+  padding: ${({padding}) => padding || '0 15px'};
 `;
 
 const CardAttrValue = styled.div`
@@ -84,4 +84,4 @@ export const CardButton = styled.div`
   cursor: pointer;
 `;
 
-export { Card, CardShadow, CardAttrField, CardAttrValue };
+export {Card, CardShadow, CardAttrField, CardAttrValue};

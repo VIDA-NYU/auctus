@@ -16,8 +16,8 @@ function VerticalLogo() {
   );
 }
 
-function HorizontalLogo(props: { onClick?: () => void }) {
-  const style = props.onClick ? { cursor: 'pointer' } : undefined;
+function HorizontalLogo(props: {onClick?: () => void}) {
+  const style = props.onClick ? {cursor: 'pointer'} : undefined;
   return (
     <div
       className="d-inline text-center logo-horizontal"
@@ -30,7 +30,7 @@ function HorizontalLogo(props: { onClick?: () => void }) {
   );
 }
 
-function CenteredHorizontalLogo(props: { onClick?: () => void }) {
+function CenteredHorizontalLogo(props: {onClick?: () => void}) {
   return (
     <div className="logo-centered-horizontal">
       <HorizontalLogo onClick={props.onClick} />
@@ -38,4 +38,4 @@ function CenteredHorizontalLogo(props: { onClick?: () => void }) {
   );
 }
 
-export { VerticalLogo, HorizontalLogo, CenteredHorizontalLogo };
+export {VerticalLogo, HorizontalLogo, CenteredHorizontalLogo};

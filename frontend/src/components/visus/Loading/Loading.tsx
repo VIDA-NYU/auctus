@@ -1,5 +1,5 @@
 import React from 'react';
-import { Spinner } from './Spinner';
+import {Spinner} from './Spinner';
 
 interface LoadingProps {
   message?: string;
@@ -16,4 +16,4 @@ class Loading extends React.PureComponent<LoadingProps> {
   }
 }
 
-export { Loading };
+export {Loading};

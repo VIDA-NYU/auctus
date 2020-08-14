@@ -1,6 +1,6 @@
 import React from 'react';
-import { SearchResult, InfoBoxType, Session } from '../../api/types';
-import { formatSize } from '../../utils';
+import {SearchResult, InfoBoxType, Session} from '../../api/types';
+import {formatSize} from '../../utils';
 import {
   Description,
   DatasetTypes,
@@ -8,9 +8,9 @@ import {
   DatasetColumns,
   SpatialCoverage,
 } from './Metadata';
-import { DatasetSample } from './DatasetSample';
-import { AugmentationOptions } from './AugmentationOptions';
-import { SearchQuery } from '../../api/rest';
+import {DatasetSample} from './DatasetSample';
+import {AugmentationOptions} from './AugmentationOptions';
+import {SearchQuery} from '../../api/rest';
 
 function HitInfoBox(props: {
   hit: SearchResult;
@@ -18,7 +18,7 @@ function HitInfoBox(props: {
   infoBoxType: InfoBoxType;
   session?: Session;
 }) {
-  const { hit, searchQuery, infoBoxType, session } = props;
+  const {hit, searchQuery, infoBoxType, session} = props;
   return (
     <div
       className="col-md-8 px-0 pb-5 card shadow-sm ml-2"
@@ -69,4 +69,4 @@ function HitInfoBox(props: {
   );
 }
 
-export { HitInfoBox };
+export {HitInfoBox};

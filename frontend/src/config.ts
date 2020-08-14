@@ -49,4 +49,4 @@ const API_URL = loadVariableFromHTML('api_url') || apiUrl;
 console.log('BASE_URL', BASE_URL);
 console.log('API_URL', API_URL);
 
-export { BASE_URL, API_URL };
+export {BASE_URL, API_URL};

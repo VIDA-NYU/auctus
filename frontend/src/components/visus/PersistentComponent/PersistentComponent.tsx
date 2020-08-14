@@ -1,13 +1,13 @@
-import { PureComponent } from 'react';
-import { shallowEqual } from '../../../utils';
+import {PureComponent} from 'react';
+import {shallowEqual} from '../../../utils';
 
 const cache = new Map<string, {}>();
 
 // Patch PureComponent type declaration so that we can access React internal
-// variables. We disable tslint here because the declaration has to match the
+// variables. We disable eslint here because the declaration has to match the
 // the declaration from @types/react package.
 declare module 'react' {
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   interface PureComponent<P = {}, S = {}, SS = any>
     extends React.Component<P, S, SS> {
     _reactInternalFiber: {

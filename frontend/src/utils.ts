@@ -1,9 +1,7 @@
-import { ColumnMetadata, ColumnType } from './api/types';
+import {ColumnMetadata, ColumnType} from './api/types';
 
 export function generateRandomId() {
-  return Math.random()
-    .toString(36)
-    .substr(2, 9);
+  return Math.random().toString(36).substr(2, 9);
 }
 
 export function formatSize(size: number) {
@@ -42,8 +40,8 @@ export function shallowEqual(a: object, b: object) {
     return false;
   }
 
-  const ao = a as { [key: string]: unknown };
-  const bo = b as { [key: string]: unknown };
+  const ao = a as {[key: string]: unknown};
+  const bo = b as {[key: string]: unknown};
   for (let i = 0; i < aKeys.length; i++) {
     const key = aKeys[i];
     if (ao[key] !== bo[key]) {

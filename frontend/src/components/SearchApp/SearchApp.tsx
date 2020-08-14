@@ -1,23 +1,23 @@
 import React from 'react';
-import { Link, match } from 'react-router-dom';
-import { History, Location } from 'history';
-import { generateRandomId } from '../../utils';
+import {Link, match} from 'react-router-dom';
+import {History, Location} from 'history';
+import {generateRandomId} from '../../utils';
 import * as api from '../../api/rest';
-import { Session } from '../../api/types';
-import { VerticalLogo, HorizontalLogo } from '../Logo/Logo';
+import {Session} from '../../api/types';
+import {VerticalLogo, HorizontalLogo} from '../Logo/Logo';
 import {
   AdvancedSearchBar,
   FilterType,
 } from '../AdvancedSearchBar/AdvancedSearchBar';
-import { DateFilter } from '../DateFilter/DateFilter';
-import { RelatedFileFilter } from '../RelatedFileFilter/RelatedFileFilter';
-import { GeoSpatialFilter } from '../GeoSpatialFilter/GeoSpatialFilter';
-import { FilterContainer } from '../FilterContainer/FilterContainer';
-import { SourceFilter } from '../SourceFilter/SourceFilter';
-import { SearchBar } from '../SearchBar/SearchBar';
-import { SearchState } from '../SearchResults/SearchState';
-import { SearchResults } from '../SearchResults/SearchResults';
-import { DatasetTypeFilter } from '../DatasetTypeFilter/DatasetTypeFilter';
+import {DateFilter} from '../DateFilter/DateFilter';
+import {RelatedFileFilter} from '../RelatedFileFilter/RelatedFileFilter';
+import {GeoSpatialFilter} from '../GeoSpatialFilter/GeoSpatialFilter';
+import {FilterContainer} from '../FilterContainer/FilterContainer';
+import {SourceFilter} from '../SourceFilter/SourceFilter';
+import {SearchBar} from '../SearchBar/SearchBar';
+import {SearchState} from '../SearchResults/SearchState';
+import {SearchResults} from '../SearchResults/SearchResults';
+import {DatasetTypeFilter} from '../DatasetTypeFilter/DatasetTypeFilter';
 import {
   SearchResponse,
   FilterVariables,
@@ -25,9 +25,9 @@ import {
   GeoSpatialVariable,
   RelatedFile,
 } from '../../api/types';
-import { Chip, ChipGroup } from '../Chip/Chip';
+import {Chip, ChipGroup} from '../Chip/Chip';
 import * as Icon from 'react-feather';
-import { aggregateResults } from '../../api/augmentation';
+import {aggregateResults} from '../../api/augmentation';
 
 interface Filter {
   id: string;
@@ -110,7 +110,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   static queryToFilters(
     query: api.SearchQuery
-  ): { keywords: string; filters: Filter[] } {
+  ): {keywords: string; filters: Filter[]} {
     const filters: Filter[] = [];
     if (query.filters) {
       query.filters.forEach(v => {
@@ -155,14 +155,11 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         state: query.relatedFile,
       });
     }
-    return { keywords: query.query || '', filters };
+    return {keywords: query.query || '', filters};
   }
 
-  static getDerivedStateFromProps(
-    props: SearchAppProps,
-    state: SearchAppState
-  ) {
-    const { location } = props;
+  static getDerivedStateFromProps(props: SearchAppProps) {
+    const {location} = props;
     const params = new URLSearchParams(location.search);
     // Get session from URL
     const s = params.get('session');
@@ -171,11 +168,11 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       session = JSON.parse(decodeURIComponent(s)) || undefined;
       if (session && session.session_id) {
         return {
-          session: { ...session, system_name: session.system_name || 'TA3' },
+          session: {...session, system_name: session.system_name || 'TA3'},
         };
       }
     }
-    return { session: undefined };
+    return {session: undefined};
   }
 
   updateSearchStateFromUrlParams(location: Location) {
@@ -185,7 +182,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       const query: api.SearchQuery = JSON.parse(decodeURIComponent(q));
       if (query) {
         // Update state to match
-        let { keywords, filters } = SearchApp.queryToFilters(query);
+        let {keywords, filters} = SearchApp.queryToFilters(query);
         if (this.state.session?.data_token) {
           filters = filters.filter(f => f.type !== FilterType.RELATED_FILE);
         }
@@ -213,7 +210,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     } else {
       document.body.classList.remove('searchresults');
     }
-    const { location } = this.props;
+    const {location} = this.props;
     if (location !== prevProps.location) {
       this.updateSearchStateFromUrlParams(this.props.location);
     }
@@ -233,7 +230,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   async fetchSources() {
     try {
-      this.setState({ sources: await api.sources() });
+      this.setState({sources: await api.sources()});
     } catch (e) {
       console.error('Unable to fetch list of sources:', e);
     }
@@ -260,7 +257,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       const filters = prevState.filters.map(filter => {
         if (filter.id === filterId) {
           found = true;
-          return { ...filter, state };
+          return {...filter, state};
         } else {
           return filter;
         }
@@ -270,7 +267,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
           `Requested to update filter state with id=[${filterId} which does not exist.]`
         );
       }
-      return { filters };
+      return {filters};
     });
   }
 
@@ -283,7 +280,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       ) {
         // Can only have one of those
         if (prevState.filters.filter(f => f.type === filterType).length > 0) {
-          return { filters: prevState.filters }; // No change
+          return {filters: prevState.filters}; // No change
         }
       }
       const filterId = generateRandomId();
@@ -292,7 +289,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         type: filterType,
         hidden: false,
       };
-      return { filters: [filter, ...prevState.filters] };
+      return {filters: [filter, ...prevState.filters]};
     });
   }
 
@@ -315,7 +312,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     this.setState({
       searchQuery: query,
       searchState: SearchState.SEARCH_REQUESTING,
-      filters: this.state.filters.map(f => ({ ...f, hidden: true })),
+      filters: this.state.filters.map(f => ({...f, hidden: true})),
     });
 
     api
@@ -329,29 +326,29 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             },
           });
         } else {
-          this.setState({ searchState: SearchState.SEARCH_FAILED });
+          this.setState({searchState: SearchState.SEARCH_FAILED});
         }
       })
       .catch(() => {
-        this.setState({ searchState: SearchState.SEARCH_FAILED });
+        this.setState({searchState: SearchState.SEARCH_FAILED});
       });
   }
 
   toggleFilter(filterId: string) {
-    this.setState(prevState => {
+    this.setState(() => {
       const filters = this.state.filters.map(f => {
         if (f.id === filterId) {
-          return { ...f, hidden: !f.hidden };
+          return {...f, hidden: !f.hidden};
         } else {
           return f;
         }
       });
-      return { filters };
+      return {filters};
     });
   }
 
   onSearchRelated(relatedFile: RelatedFile) {
-    this.setState(prevState => {
+    this.setState(() => {
       const prevFilters = this.state.filters;
       const relatedFileFilters = prevFilters.filter(
         f => f.type === FilterType.RELATED_FILE
@@ -380,7 +377,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         };
         filters = [...prevFilters, filter];
       }
-      return { filters };
+      return {filters};
     }, this.submitQuery);
   }
 
@@ -498,7 +495,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     if (this.state.session?.data_token) {
       filters.push(
         <Chip
-          key={`filter-chip-session-file`}
+          key={'filter-chip-session-file'}
           icon={Icon.File}
           label={`File From ${this.state.session.system_name}`}
         />
@@ -508,7 +505,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   render() {
-    const { searchQuery, searchState, searchResponse, session } = this.state;
+    const {searchQuery, searchState, searchResponse, session} = this.state;
 
     return (
       <>
@@ -524,7 +521,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                           ? `/?session=${JSON.stringify(this.state.session)}`
                           : '/'
                       }
-                      style={{ textDecoration: 'none' }}
+                      style={{textDecoration: 'none'}}
                     >
                       <HorizontalLogo />
                     </Link>
@@ -533,7 +530,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                     <SearchBar
                       value={this.state.query}
                       active={this.validQuery()}
-                      onQueryChange={q => this.setState({ query: q })}
+                      onQueryChange={q => this.setState({query: q})}
                       onSubmitQuery={() => this.submitQuery()}
                     />
                     <AdvancedSearchBar
@@ -544,7 +541,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 </div>
               </div>
             </div>
-            <div className="row" style={{ width: 780 }}>
+            <div className="row" style={{width: 780}}>
               <div className="col-md-12 mb-3">
                 {this.renderCompactFilters()}
               </div>
@@ -568,14 +565,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             <SearchBar
               value={this.state.query}
               active={this.validQuery()}
-              onQueryChange={q => this.setState({ query: q })}
+              onQueryChange={q => this.setState({query: q})}
               onSubmitQuery={() => this.submitQuery()}
             />
             <AdvancedSearchBar
               onAddFilter={type => this.handleAddFilter(type)}
               relatedFileEnabled={!session?.data_token}
             />
-            <div style={{ maxWidth: 1000, margin: '1.5rem auto' }}>
+            <div style={{maxWidth: 1000, margin: '1.5rem auto'}}>
               {this.renderFilters()}
             </div>
           </div>
@@ -585,4 +582,4 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 }
 
-export { SearchApp };
+export {SearchApp};

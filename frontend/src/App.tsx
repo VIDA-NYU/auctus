@@ -1,10 +1,10 @@
 import React from 'react';
-import { CenteredHorizontalLogo } from './components/Logo/Logo';
-import { MainMenu } from './components/MainMenu/MainMenu';
-import { BrowserRouter as Router, Link, Switch, Route } from 'react-router-dom';
-import { Upload } from './components/Upload/Upload';
-import { Statistics } from './components/Statistics/Statistics';
-import { SearchApp } from './components/SearchApp/SearchApp';
+import {CenteredHorizontalLogo} from './components/Logo/Logo';
+import {MainMenu} from './components/MainMenu/MainMenu';
+import {BrowserRouter as Router, Link, Switch, Route} from 'react-router-dom';
+import {Upload} from './components/Upload/Upload';
+import {Statistics} from './components/Statistics/Statistics';
+import {SearchApp} from './components/SearchApp/SearchApp';
 
 class App extends React.Component {
   render() {
@@ -14,10 +14,10 @@ class App extends React.Component {
           <Switch>
             <Route
               path="/upload"
-              render={routeProps => (
+              render={() => (
                 <>
                   <MainMenu />
-                  <Link to="/" style={{ textDecoration: 'none' }}>
+                  <Link to="/" style={{textDecoration: 'none'}}>
                     <CenteredHorizontalLogo />
                   </Link>
                   <Upload />
@@ -26,10 +26,10 @@ class App extends React.Component {
             />
             <Route
               path="/statistics"
-              render={routeProps => (
+              render={() => (
                 <>
                   <MainMenu />
-                  <Link to="/" style={{ textDecoration: 'none' }}>
+                  <Link to="/" style={{textDecoration: 'none'}}>
                     <CenteredHorizontalLogo />
                   </Link>
                   <Statistics />
@@ -56,4 +56,4 @@ class App extends React.Component {
   }
 }
 
-export { App };
+export {App};

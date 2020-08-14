@@ -1,13 +1,13 @@
 import React from 'react';
-import { generateRandomId } from '../../utils';
-import { Map, View, Feature } from 'ol/';
-import { toStringHDMS } from 'ol/coordinate';
-import { Draw } from 'ol/interaction';
-import { createBox } from 'ol/interaction/Draw';
+import {generateRandomId} from '../../utils';
+import {Map, View, Feature} from 'ol/';
+import {toStringHDMS} from 'ol/coordinate';
+import {Draw} from 'ol/interaction';
+import {createBox} from 'ol/interaction/Draw';
 import GeometryType from 'ol/geom/GeometryType';
 import Polygon from 'ol/geom/Polygon';
-import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
-import { Vector as VectorSource, OSM as OSMSource } from 'ol/source';
+import {Tile as TileLayer, Vector as VectorLayer} from 'ol/layer';
+import {Vector as VectorSource, OSM as OSMSource} from 'ol/source';
 import {
   ScaleLine,
   ZoomSlider,
@@ -15,18 +15,18 @@ import {
   OverviewMap,
   defaults as DefaultControls,
 } from 'ol/control';
-import { fromLonLat } from 'ol/proj';
-import { VectorSourceEvent } from 'ol/source/Vector';
+import {fromLonLat} from 'ol/proj';
+import {VectorSourceEvent} from 'ol/source/Vector';
 import MapBrowserEvent from 'ol/MapBrowserEvent';
-import { GeoSpatialVariable } from '../../api/types';
-import { searchLocation } from '../../api/rest';
+import {GeoSpatialVariable} from '../../api/types';
+import {searchLocation} from '../../api/rest';
 import {
   transformCoordinates,
   centralizeMapToFeature,
   MyMapBrowserEvent,
   wrapLongitude,
 } from '../spatial-utils';
-import { SearchBar } from '../SearchBar/SearchBar';
+import {SearchBar} from '../SearchBar/SearchBar';
 import 'ol/ol.css';
 
 interface GeoSpatialFilterProps {
@@ -51,7 +51,7 @@ class GeoSpatialFilter extends React.PureComponent<
     this.state = {
       search: '',
     };
-    this.source = new VectorSource({ wrapX: true });
+    this.source = new VectorSource({wrapX: true});
     this.source.on('addfeature', evt => this.onSelectCoordinates(evt));
     this.componentDidUpdate();
     this.onSearchSubmit = this.onSearchSubmit.bind(this);
@@ -67,7 +67,7 @@ class GeoSpatialFilter extends React.PureComponent<
       bottomRightLat,
       bottomRightLon,
     } = transformCoordinates(feature);
-    const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
+    const {latitude1, longitude1, latitude2, longitude2} = this.props.state;
     return (
       topLeftLat.toString() === latitude1 &&
       topLeftLon.toString() === longitude1 &&
@@ -78,7 +78,7 @@ class GeoSpatialFilter extends React.PureComponent<
 
   componentDidUpdate() {
     if (this.props.state) {
-      const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
+      const {latitude1, longitude1, latitude2, longitude2} = this.props.state;
       const features = this.source.getFeatures();
       if (features.length > 0) {
         // Compare with props
@@ -113,7 +113,7 @@ class GeoSpatialFilter extends React.PureComponent<
       source: new OSMSource(),
     });
 
-    const vectorLayer = new VectorLayer({ source: this.source });
+    const vectorLayer = new VectorLayer({source: this.source});
     const map = new Map({
       target: this.mapId,
       layers: [openStreetMapTileLayer, vectorLayer],
@@ -195,7 +195,7 @@ class GeoSpatialFilter extends React.PureComponent<
       },
     });
 
-    draw.on('drawstart', (e: DragEvent) => mapSource.clear());
+    draw.on('drawstart', () => mapSource.clear());
     map.addInteraction(draw);
   }
 
@@ -213,7 +213,7 @@ class GeoSpatialFilter extends React.PureComponent<
           });
         }
       })
-      .catch(e => alert('Error from search server'));
+      .catch(() => alert('Error from search server'));
   }
 
   render() {
@@ -224,19 +224,19 @@ class GeoSpatialFilter extends React.PureComponent<
     let topLeftText = undefined,
       topRightText = undefined;
     if (this.props.state) {
-      const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
+      const {latitude1, longitude1, latitude2, longitude2} = this.props.state;
       topLeftText = toStringHDMS([Number(longitude1), Number(latitude1)]);
       topRightText = toStringHDMS([Number(longitude2), Number(latitude2)]);
     }
     return (
       <div>
         <div className="row">
-          <div className="col-md-12" style={{ fontSize: '.9rem' }}>
+          <div className="col-md-12" style={{fontSize: '.9rem'}}>
             <div className="col-md-6 p-0">
               <SearchBar
                 active
                 value={this.state.search}
-                onQueryChange={search => this.setState({ search })}
+                onQueryChange={search => this.setState({search})}
                 onSubmitQuery={this.onSearchSubmit}
                 placeholder="Search Map"
               />
@@ -244,7 +244,7 @@ class GeoSpatialFilter extends React.PureComponent<
             <span className="d-inline">
               Left-click to start selection. Right-click to clear selection.
             </span>
-            <div className="d-inline" style={{ float: 'right' }}>
+            <div className="d-inline" style={{float: 'right'}}>
               {topLeftText && topRightText && (
                 <>
                   <span>
@@ -264,4 +264,4 @@ class GeoSpatialFilter extends React.PureComponent<
   }
 }
 
-export { GeoSpatialFilter };
+export {GeoSpatialFilter};

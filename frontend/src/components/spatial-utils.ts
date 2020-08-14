@@ -1,8 +1,8 @@
 import MapBrowserEvent from 'ol/MapBrowserEvent';
 import Geometry from 'ol/geom/Geometry';
-import { FeatureLike } from 'ol/Feature';
-import { Map } from 'ol';
-import { Extent } from 'ol/extent';
+import {FeatureLike} from 'ol/Feature';
+import {Map} from 'ol';
+import {Extent} from 'ol/extent';
 
 //
 // Following types are a temporary workaround to a bug in typings from the

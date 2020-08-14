@@ -1,11 +1,11 @@
 import React from 'react';
-import { useTable, Column, ColumnInstance, HeaderGroup } from 'react-table';
-import { SearchResult, ColumnMetadata } from '../../api/types';
+import {useTable, Column, ColumnInstance, HeaderGroup} from 'react-table';
+import {SearchResult, ColumnMetadata} from '../../api/types';
 import './DatasetSample.css';
-import { VegaLite } from 'react-vega';
-import { TopLevelSpec as VlSpec } from 'vega-lite';
+import {VegaLite} from 'react-vega';
+import {TopLevelSpec as VlSpec} from 'vega-lite';
 
-const classMapping: { [key: string]: string } = {
+const classMapping: {[key: string]: string} = {
   text: 'semtype-text',
   boolean: 'semtype-boolean',
   enumeration: 'semtype-enumeration',
@@ -27,7 +27,7 @@ function typeName(type: string) {
     .replace('https://metadata.datadrivendiscovery.org/types/', '');
 }
 
-function SemanticTypeBadge(props: { type: string; column?: ColumnMetadata }) {
+function SemanticTypeBadge(props: {type: string; column?: ColumnMetadata}) {
   const label = typeName(props.type);
   const semtypeClass = classMapping[label.toLowerCase()];
   const spanClass = semtypeClass
@@ -44,7 +44,7 @@ function SemanticTypeBadge(props: { type: string; column?: ColumnMetadata }) {
   );
 }
 
-function TypeBadges(props: { column: ColumnMetadata }) {
+function TypeBadges(props: {column: ColumnMetadata}) {
   return (
     <>
       <span className="badge badge-pill badge-primary">
@@ -72,7 +72,7 @@ function getEncoding(typePlot: string | undefined) {
       y: yContent,
       x: {
         title: null,
-        bin: { binned: true },
+        bin: {binned: true},
         field: 'bin_start',
         type: 'quantitative',
         axis: null,
@@ -81,8 +81,8 @@ function getEncoding(typePlot: string | undefined) {
         field: 'bin_end',
       },
       tooltip: [
-        { field: 'bin_start', title: 'start', type: 'quantitative' },
-        { field: 'bin_end', title: 'end', type: 'quantitative' },
+        {field: 'bin_start', title: 'start', type: 'quantitative'},
+        {field: 'bin_end', title: 'end', type: 'quantitative'},
       ],
     };
   } else if (typePlot === 'histogram_temporal') {
@@ -90,7 +90,7 @@ function getEncoding(typePlot: string | undefined) {
       y: yContent,
       x: {
         title: null,
-        bin: { binned: true },
+        bin: {binned: true},
         field: 'date_start',
         type: 'temporal',
         utc: true,
@@ -100,8 +100,8 @@ function getEncoding(typePlot: string | undefined) {
         field: 'date_end',
       },
       tooltip: [
-        { field: 'date_start', title: 'start', type: 'temporal' },
-        { field: 'date_end', title: 'end', type: 'temporal' },
+        {field: 'date_start', title: 'start', type: 'temporal'},
+        {field: 'date_end', title: 'end', type: 'temporal'},
       ],
     };
   } else if (typePlot === 'histogram_categorical') {
@@ -112,9 +112,9 @@ function getEncoding(typePlot: string | undefined) {
         field: 'bin',
         type: 'ordinal',
         axis: null,
-        sort: { order: 'descending', field: 'count' },
+        sort: {order: 'descending', field: 'count'},
       },
-      tooltip: { field: 'bin', type: 'ordinal' },
+      tooltip: {field: 'bin', type: 'ordinal'},
     };
   } else if (typePlot === 'histogram_text') {
     return {
@@ -127,12 +127,12 @@ function getEncoding(typePlot: string | undefined) {
         title: null,
         field: 'count',
         type: 'quantitative',
-        sort: { order: 'descending', field: 'count' },
+        sort: {order: 'descending', field: 'count'},
         axis: null,
       },
       tooltip: [
-        { field: 'bin', type: 'ordinal' },
-        { field: 'count', type: 'quantitative' },
+        {field: 'bin', type: 'ordinal'},
+        {field: 'count', type: 'quantitative'},
       ],
     };
   } else {
@@ -145,7 +145,7 @@ function getSpecification(typePlot: string | undefined): VlSpec {
   const specification = {
     width: '120',
     height: '120',
-    data: { name: 'values' },
+    data: {name: 'values'},
     description: 'A simple bar chart with embedded data.',
     encoding: getEncoding(typePlot),
     mark: 'bar',
@@ -162,7 +162,7 @@ function VegaPlot(props: {
   const plot = (
     <VegaLite
       spec={getSpecification(props.columnMetadata.plot?.type)}
-      data={{ values: dataVega }}
+      data={{values: dataVega}}
     />
   );
   const message = <p className="small">Nothing to show.</p>;
@@ -180,7 +180,7 @@ function VegaPlot(props: {
         scope="col"
         {...props.column.getHeaderProps()}
         className="text-center"
-        style={{ verticalAlign: 'middle' }}
+        style={{verticalAlign: 'middle'}}
       >
         {message}
       </th>
@@ -198,8 +198,8 @@ function TableColumnView(props: {
     <tbody>
       {props.headerGroups[0].headers.map((column, i) => {
         const columnStatistics = (
-          <td style={{ minWidth: 200 }}>
-            <ul style={{ listStyle: 'none', columnCount: 2, columnGap: 10 }}>
+          <td style={{minWidth: 200}}>
+            <ul style={{listStyle: 'none', columnCount: 2, columnGap: 10}}>
               {props.hit.metadata.columns[i].num_distinct_values && (
                 <li>Unique Values</li>
               )}
@@ -240,18 +240,22 @@ function TableColumnView(props: {
 }
 
 // Compact and Detail view share the same body content. Just the header will change.
-function TableCompactDetailView(props: { tableProps: TableProps }) {
-  const { columns, data, hit, typeView } = props.tableProps;
-  const { getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
+function TableCompactDetailView(props: {tableProps: TableProps}) {
+  const {columns, data, hit, typeView} = props.tableProps;
+  const {getTableBodyProps, headerGroups, rows, prepareRow} = useTable({
     columns,
     data,
   });
   return (
     <>
       <thead>
-        {headerGroups.map((headerGroup, i) => (
+        {headerGroups.map(headerGroup => (
+          // We disable eslint here because the props created by react-table
+          // functions used below already include the jsx-key.
+          // eslint-disable-next-line react/jsx-key
           <tr {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map((column, i) => (
+              // eslint-disable-next-line react/jsx-key
               <th
                 scope="col"
                 {...column.getHeaderProps()}
@@ -270,7 +274,8 @@ function TableCompactDetailView(props: { tableProps: TableProps }) {
           </tr>
         ))}
         {typeView === tableViews.DETAIL &&
-          headerGroups.map((headerGroup, i) => (
+          headerGroups.map(headerGroup => (
+            // eslint-disable-next-line react/jsx-key
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column, i) => (
                 <VegaPlot
@@ -283,12 +288,15 @@ function TableCompactDetailView(props: { tableProps: TableProps }) {
             </tr>
           ))}
       </thead>
+      {/* eslint-disable-next-line react/jsx-key */}
       <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
+        {rows.map(row => {
           prepareRow(row);
           return (
+            // eslint-disable-next-line react/jsx-key
             <tr {...row.getRowProps()}>
               {row.cells.map(cell => {
+                // eslint-disable-next-line react/jsx-key
                 return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>;
               })}
             </tr>
@@ -307,8 +315,8 @@ interface TableProps {
 }
 
 function Table(props: TableProps) {
-  const { columns, data, hit, typeView } = props;
-  const { getTableProps, headerGroups } = useTable({
+  const {columns, data, hit, typeView} = props;
+  const {getTableProps, headerGroups} = useTable({
     columns,
     data,
   });
@@ -338,14 +346,14 @@ class DatasetSample extends React.PureComponent<
 > {
   constructor(props: TableSampleProps) {
     super(props);
-    this.state = { typeView: tableViews.COMPACT };
+    this.state = {typeView: tableViews.COMPACT};
   }
   updateTypeView(view: tableViews) {
-    this.setState({ typeView: view });
+    this.setState({typeView: view});
   }
 
   render() {
-    const { hit } = this.props;
+    const {hit} = this.props;
     const sample = hit.sample;
     const headers = sample[0];
     const rows = sample.slice(1, sample.length);
@@ -363,7 +371,7 @@ class DatasetSample extends React.PureComponent<
             className="btn-group btn-group-sm"
             role="group"
             aria-label="Basic example"
-            style={{ float: 'initial', marginBottom: '-8px' }}
+            style={{float: 'initial', marginBottom: '-8px'}}
           >
             <button
               type="button"
@@ -407,4 +415,4 @@ class DatasetSample extends React.PureComponent<
   }
 }
 
-export { DatasetSample };
+export {DatasetSample};

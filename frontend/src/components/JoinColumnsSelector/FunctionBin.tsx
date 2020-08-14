@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDrop } from 'react-dnd';
+import {useDrop} from 'react-dnd';
 import * as Icon from 'react-feather';
 
 const ItemType = 'badge';
@@ -19,10 +19,10 @@ interface FunctionBinProps {
   label?: string;
 }
 
-const FunctionBin: React.FC<FunctionBinProps> = ({ fn, label }) => {
-  const [{ canDrop, isOver }, drop] = useDrop({
+const FunctionBin: React.FC<FunctionBinProps> = ({fn, label}) => {
+  const [{canDrop, isOver}, drop] = useDrop({
     accept: ItemType,
-    drop: () => ({ name: fn }),
+    drop: () => ({name: fn}),
     collect: monitor => ({
       isOver: monitor.isOver(),
       canDrop: monitor.canDrop(),
@@ -61,4 +61,4 @@ const FunctionBin: React.FC<FunctionBinProps> = ({ fn, label }) => {
   );
 };
 
-export { FunctionBin };
+export {FunctionBin};

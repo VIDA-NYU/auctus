@@ -1,7 +1,7 @@
 import React from 'react';
-import { Spinner } from '../../visus/Loading/Spinner';
+import {Spinner} from '../../visus/Loading/Spinner';
 
-const SubmitButton = (props: { label: string; loading: boolean }) => (
+const SubmitButton = (props: {label: string; loading: boolean}) => (
   <button type="submit" className="btn btn-primary" disabled={props.loading}>
     {props.loading && (
       <span className="mr-2">
@@ -12,4 +12,4 @@ const SubmitButton = (props: { label: string; loading: boolean }) => (
   </button>
 );
 
-export { SubmitButton };
+export {SubmitButton};

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Tabs, Tab, TabContent, TabPane } from '../ui/Tabs/Tabs';
+import {Tabs, Tab, TabContent, TabPane} from '../ui/Tabs/Tabs';
 import * as Icon from 'react-feather';
 import * as api from '../../api/rest';
-import { SubmitButton } from '../ui/Button/Button';
+import {SubmitButton} from '../ui/Button/Button';
 import './Upload.css';
 import {
   ColumnMetadata,
@@ -10,8 +10,8 @@ import {
   TypesCategory,
   ColumnType,
 } from '../../api/types';
-import { ProfileDataset } from './ProfileDataset';
-import { isSubstrInclude } from '../../utils';
+import {ProfileDataset} from './ProfileDataset';
+import {isSubstrInclude} from '../../utils';
 
 interface Validation {
   valid: boolean;
@@ -58,7 +58,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
           }
         });
 
-        return { customFields, customValues };
+        return {customFields, customValues};
       });
     });
     this.onFormSubmit = this.onFormSubmit.bind(this);
@@ -70,7 +70,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       address: '',
       name: '',
       description: '',
-      validation: { valid: true, errors: {} },
+      validation: {valid: true, errors: {}},
       submitting: false,
       profilingStatus: undefined,
       columnsName: [],
@@ -82,9 +82,9 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     e.preventDefault();
     const validation = this.validate();
     if (!validation.valid) {
-      this.setState({ validation });
+      this.setState({validation});
     } else {
-      this.setState({ submitting: true });
+      this.setState({submitting: true});
       const modifiedColumns = this.state.profiledData?.columns.filter(col =>
         this.state.columnsName.includes(col.name)
       );
@@ -93,7 +93,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
         address: this.state.address ? this.state.address : undefined,
         name: this.state.name,
         description: this.state.description,
-        manualAnnotations: { columns: modifiedColumns || [] },
+        manualAnnotations: {columns: modifiedColumns || []},
         customFields: this.state.customValues,
       });
       if (success) {
@@ -108,7 +108,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
   }
 
   validate(): Validation {
-    const errors: { [field: string]: string } = {};
+    const errors: {[field: string]: string} = {};
 
     if (this.props.type === 'upload' && !this.getFile()) {
       errors.file = 'File is required';
@@ -120,7 +120,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
       errors.name = 'Name is required';
     }
     const valid = errors.file || errors.name || errors.address ? false : true;
-    return { valid, errors };
+    return {valid, errors};
   }
 
   getFile() {
@@ -136,7 +136,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
   }
 
   async onProfileData() {
-    this.setState({ profilingStatus: api.RequestStatus.IN_PROGRESS });
+    this.setState({profilingStatus: api.RequestStatus.IN_PROGRESS});
     const file = this.getFile();
     if (file) {
       const result = api.profile(file);
@@ -209,7 +209,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
         (col: ColumnMetadata) => {
           if (col.name === column.name) {
             if (type === TypesCategory.STRUCTURAL) {
-              return { ...col, structural_type: value };
+              return {...col, structural_type: value};
             }
             if (type === TypesCategory.SEMANTIC) {
               if (annotation === Annotation.ADD) {
@@ -219,15 +219,15 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
                 return this.removeAnnotation(col, value);
               }
             }
-            return { ...col };
+            return {...col};
           } else {
-            return { ...col };
+            return {...col};
           }
         }
       );
       this.setState({
         columnsName: [...this.state.columnsName, column.name],
-        profiledData: { ...this.state.profiledData, columns: modifiedColumns },
+        profiledData: {...this.state.profiledData, columns: modifiedColumns},
       });
     }
   }
@@ -253,7 +253,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
                   this.setState(prevState => {
                     const customValues = new Map(prevState.customValues);
                     customValues.set(f, value);
-                    return { customValues };
+                    return {customValues};
                   });
                 }}
               />
@@ -292,7 +292,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
               }`}
               placeholder="Type here a URL that points to a CSV file"
               value={this.state.address}
-              onChange={e => this.setState({ address: e.target.value })}
+              onChange={e => this.setState({address: e.target.value})}
             />
             {this.state.validation.errors.address && (
               <div className="invalid-feedback">
@@ -310,7 +310,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             }`}
             placeholder="Type here the name of the dataset"
             value={this.state.name}
-            onChange={e => this.setState({ name: e.target.value })}
+            onChange={e => this.setState({name: e.target.value})}
           />
           {this.state.validation.errors.name && (
             <div className="invalid-feedback">
@@ -324,7 +324,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             id="upload-description"
             placeholder="Type here the dataset description"
             value={this.state.description}
-            onChange={e => this.setState({ description: e.target.value })}
+            onChange={e => this.setState({description: e.target.value})}
           />
         </FormGroup>
         {this.state.profilingStatus !== undefined &&
@@ -365,7 +365,7 @@ interface FormGroupProps {
 
 class FormGroup extends React.Component<FormGroupProps | {}> {
   hasLabel(props: FormGroupProps | {}): props is FormGroupProps {
-    return (this.props as FormGroupProps).for !== undefined;
+    return (props as FormGroupProps).for !== undefined;
   }
 
   render() {
@@ -400,21 +400,21 @@ interface UploadState {
 class Upload extends React.PureComponent<{}, UploadState> {
   constructor(props: {}) {
     super(props);
-    this.state = { state: 'upload' };
+    this.state = {state: 'upload'};
     this.onFormSubmit = this.onFormSubmit.bind(this);
   }
 
   async onFormSubmit(data: api.UploadData) {
-    this.setState({ success: undefined, failed: undefined });
+    this.setState({success: undefined, failed: undefined});
     try {
       const result = await api.upload(data);
       if (result.status === 200) {
-        this.setState({ success: true });
+        this.setState({success: true});
         return true;
       }
-      this.setState({ failed: `Error ${result.status}: ${result.statusText}` });
+      this.setState({failed: `Error ${result.status}: ${result.statusText}`});
     } catch (e) {
-      this.setState({ failed: `${e}` });
+      this.setState({failed: `${e}`});
     }
     return false;
   }
@@ -443,13 +443,13 @@ class Upload extends React.PureComponent<{}, UploadState> {
         <Tabs>
           <Tab
             selected={this.state.state === 'upload'}
-            onClick={() => this.setState({ state: 'upload' })}
+            onClick={() => this.setState({state: 'upload'})}
           >
             <Icon.File className="feather-lg" /> Upload
           </Tab>
           <Tab
             selected={this.state.state === 'url'}
-            onClick={() => this.setState({ state: 'url' })}
+            onClick={() => this.setState({state: 'url'})}
           >
             <Icon.Link2 className="feather-lg" /> Direct URL
           </Tab>
@@ -468,4 +468,4 @@ class Upload extends React.PureComponent<{}, UploadState> {
   }
 }
 
-export { Upload };
+export {Upload};

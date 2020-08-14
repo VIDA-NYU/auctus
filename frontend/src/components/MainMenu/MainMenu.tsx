@@ -1,10 +1,10 @@
 import * as React from 'react';
 import * as Icon from 'react-feather';
 import './MainMenu.css';
-import { DropdownMenu } from '../ui/DropdownMenu/DropdownMenu';
-import { Link as RouterLink } from 'react-router-dom';
+import {DropdownMenu} from '../ui/DropdownMenu/DropdownMenu';
+import {Link as RouterLink} from 'react-router-dom';
 
-function Link(props: { path: string; label: string; icon: Icon.Icon }) {
+function Link(props: {path: string; label: string; icon: Icon.Icon}) {
   const content = (
     <span className="text-oswald">
       <props.icon className="feather-lg mr-1" /> {props.label}
@@ -25,11 +25,11 @@ class MainMenu extends React.PureComponent {
   render() {
     return (
       <DropdownMenu>
-        {({ active, onClick }) => (
+        {({active, onClick}) => (
           <>
             <div className="d-flex flex-column main-menu">
               <div className="d-flex justify-content-end" onClick={onClick}>
-                <span style={{ cursor: 'pointer' }}>
+                <span style={{cursor: 'pointer'}}>
                   <Icon.Menu />
                 </span>
               </div>
@@ -60,4 +60,4 @@ class MainMenu extends React.PureComponent {
   }
 }
 
-export { MainMenu };
+export {MainMenu};
