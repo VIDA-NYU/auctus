@@ -100,4 +100,8 @@ The "statistics" page shows the number of datasets per source as well as a feed 
 Upload page
 -----------
 
-TODO
+The "upload dataset" page allows users to ingest their own datasets. After loading a data file, Auctus automatically infers the data types for each column using our datamart-profiler library. As any automated method for type inference, our profiler is not fool-proof and can derive incorrect results. To address this limitation, Auctus enables users to correct/refine the type information. Furthermore, users can provide additional annotations for the columns. Auctus also displays a sample of the dataset that can help the user to verify and confirm if the detected data type is correct, and understand what the ingested data looks like. Note that the option to correct/refine profiler results is only available through the "Upload" tab. 
+
+Additionally, Auctus provides support for custom metadata fields (e.g., the data source, grid size). Because such fields can vary widely for different applications and use cases, we defined a flexible configuration schema that allows users to customize the metadata fields required in different deployments. This schema configuration is provided at deployment time  and is then used to add the custom input fields in the interface so that the user can provide the required metadata.
+
+..  figure:: screenshots/upload.png
