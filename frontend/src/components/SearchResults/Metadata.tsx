@@ -6,6 +6,7 @@ import {RequestStatus, downloadToSession} from '../../api/rest';
 import {generateRandomId} from '../../utils';
 import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
 import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
+import {ButtonGroup} from '../ui/Button/Button';
 
 export function SpatialCoverage(props: {hit: SearchResult}) {
   const {spatial_coverage} = props.hit.metadata;
@@ -109,21 +110,21 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
     );
   }
   return (
-    <div className="mt-2">
+    <ButtonGroup>
       <b>Download: </b>
       <a
-        className="btn btn-sm btn-outline-primary ml-2"
+        className="btn btn-sm btn-outline-primary"
         href={`${API_URL}/download/${hit.id}`}
       >
         <Icon.Download className="feather" /> CSV
       </a>
       <a
-        className="btn btn-sm btn-outline-primary ml-2"
+        className="btn btn-sm btn-outline-primary"
         href={`${API_URL}/download/${hit.id}?format=d3m`}
       >
         <Icon.Download className="feather" /> D3M
       </a>
-    </div>
+    </ButtonGroup>
   );
 }
 

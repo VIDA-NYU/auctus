@@ -7,7 +7,7 @@ class FilterContainer extends React.PureComponent<{
 }> {
   render() {
     return (
-      <div className="mt-2 mb-3">
+      <div className="mt-2 mb-2">
         <div>
           <h6 className="d-inline">{this.props.title}</h6>
           <span

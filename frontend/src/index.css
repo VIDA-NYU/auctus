@@ -44,6 +44,22 @@
   cursor: pointer;
   padding: 0px;
 }
-body.searchresults {
+
+html, body, body #root, .container-vh-full {
   overflow: hidden;
+  height: 100%;
 }
+
+.container-vh-scroll {
+  overflow: scroll;
+  height: 100%;
+}
+
+.column-infobox {
+  max-width: 60%;
+}
+.column-search-hits {
+  min-width: 200px;
+  width: 40%;
+}
+

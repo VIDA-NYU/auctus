@@ -52,7 +52,7 @@ class SearchResults extends React.PureComponent<
   render() {
     const {searchResponse, searchState, searchQuery, session} = this.props;
     const centeredDiv: React.CSSProperties = {
-      width: 750,
+      width: 820,
       textAlign: 'center',
       marginTop: '1rem',
     };
@@ -91,43 +91,47 @@ class SearchResults extends React.PureComponent<
         );
         const {selectedHit, selectedInfoBoxType} = this.state;
         return (
-          <div className="d-flex flex-row">
-            <div
-              className="col-md-4 px-0 pb-5"
-              style={{maxHeight: '90vh', overflowY: 'scroll'}}
-            >
-              {currentHits.map((hit, idx) => (
-                <SearchHit
-                  hit={hit}
-                  key={idx}
-                  selectedHit={
-                    selectedHit && hit.id === selectedHit.id ? true : false
-                  }
-                  session={session}
-                  onSearchHitExpand={hit =>
-                    this.setState({
-                      selectedHit: hit,
-                      selectedInfoBoxType: InfoBoxType.DETAIL,
-                    })
-                  }
-                  onSearchRelated={this.props.onSearchRelated}
-                  onAugmentationOptions={hit =>
-                    this.setState({
-                      selectedHit: hit,
-                      selectedInfoBoxType: InfoBoxType.AUGMENTATION,
-                    })
-                  }
-                />
-              ))}
+          <div className="container-vh-full">
+            <div className="d-flex flex-row container-vh-full">
+              <div className="container-vh-scroll column-search-hits">
+                {currentHits.map((hit, idx) => (
+                  <SearchHit
+                    hit={hit}
+                    key={idx}
+                    selectedHit={
+                      selectedHit && hit.id === selectedHit.id ? true : false
+                    }
+                    session={session}
+                    onSearchHitExpand={hit =>
+                      this.setState({
+                        selectedHit: hit,
+                        selectedInfoBoxType: InfoBoxType.DETAIL,
+                      })
+                    }
+                    onSearchRelated={this.props.onSearchRelated}
+                    onAugmentationOptions={hit =>
+                      this.setState({
+                        selectedHit: hit,
+                        selectedInfoBoxType: InfoBoxType.AUGMENTATION,
+                      })
+                    }
+                  />
+                ))}
+              </div>
+              {selectedHit && (
+                <div
+                  className="container-vh-scroll column-infobox
+                    card shadow-sm ml-1"
+                >
+                  <HitInfoBox
+                    hit={selectedHit}
+                    searchQuery={searchQuery}
+                    infoBoxType={selectedInfoBoxType}
+                    session={session}
+                  />
+                </div>
+              )}
             </div>
-            {selectedHit && (
-              <HitInfoBox
-                hit={selectedHit}
-                searchQuery={searchQuery}
-                infoBoxType={selectedInfoBoxType}
-                session={session}
-              />
-            )}
           </div>
         );
       }

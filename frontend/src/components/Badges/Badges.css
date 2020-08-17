@@ -4,7 +4,7 @@
 }
 
 .badge-group > *:last-child {
-  margin-left: 0px;
+  margin-right: 0px;
 }
 
 .badge-column, .badge-numerical, .badge-textual {

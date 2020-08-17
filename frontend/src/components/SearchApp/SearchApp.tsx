@@ -218,14 +218,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   componentDidMount() {
     this.fetchSources();
-    if (this.state.searchQuery) {
-      document.body.classList.add('searchresults');
-    }
     this.updateSearchStateFromUrlParams(this.props.location);
-  }
-
-  componentWillUnmount() {
-    document.body.classList.remove('searchresults');
   }
 
   async fetchSources() {
@@ -501,66 +494,64 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         />
       );
     }
-    return <ChipGroup>{filters}</ChipGroup>;
+    return filters;
   }
 
   render() {
     const {searchQuery, searchState, searchResponse, session} = this.state;
-
+    const compactFilters = this.renderCompactFilters();
+    const filters = this.renderFilters();
+    const hasFilters = filters.length > 0 || compactFilters.length > 0;
     return (
       <>
         {searchQuery ? (
-          <>
-            <div className="row">
-              <div className="col-md">
-                <div className="d-flex flex-row mt-2 mb-1">
-                  <div>
-                    <Link
-                      to={
-                        session
-                          ? `/?session=${JSON.stringify(this.state.session)}`
-                          : '/'
-                      }
-                      style={{textDecoration: 'none'}}
-                    >
-                      <HorizontalLogo />
-                    </Link>
-                  </div>
-                  <div className="ml-4">
-                    <SearchBar
-                      value={this.state.query}
-                      active={this.validQuery()}
-                      onQueryChange={q => this.setState({query: q})}
-                      onSubmitQuery={() => this.submitQuery()}
-                    />
-                    <AdvancedSearchBar
-                      onAddFilter={type => this.handleAddFilter(type)}
-                      relatedFileEnabled={!session?.data_token}
-                    />
-                  </div>
+          <div className="d-flex flex-column container-vh-full">
+            <div className="">
+              <div className="d-flex flex-row mt-3">
+                <div>
+                  <Link
+                    to={
+                      session
+                        ? `/?session=${JSON.stringify(this.state.session)}`
+                        : '/'
+                    }
+                    style={{textDecoration: 'none'}}
+                  >
+                    <HorizontalLogo />
+                  </Link>
+                </div>
+                <div className="ml-4">
+                  <SearchBar
+                    value={this.state.query}
+                    active={this.validQuery()}
+                    onQueryChange={q => this.setState({query: q})}
+                    onSubmitQuery={() => this.submitQuery()}
+                  />
+                  <AdvancedSearchBar
+                    onAddFilter={type => this.handleAddFilter(type)}
+                    relatedFileEnabled={!session?.data_token}
+                  />
                 </div>
               </div>
+              {hasFilters && (
+                <div className="mt-1 mb-1" style={{maxWidth: 820}}>
+                  <ChipGroup>{compactFilters}</ChipGroup>
+                  {filters}
+                </div>
+              )}
             </div>
-            <div className="row" style={{width: 780}}>
-              <div className="col-md-12 mb-3">
-                {this.renderCompactFilters()}
-              </div>
-              <div className="col-md-12">{this.renderFilters()}</div>
+            <div className="container-vh-full mt-2 mb-2">
+              <SearchResults
+                searchQuery={searchQuery}
+                searchState={searchState}
+                searchResponse={searchResponse}
+                session={session}
+                onSearchRelated={this.onSearchRelated.bind(this)}
+              />
             </div>
-            <div className="row">
-              <div className="col-md-12">
-                <SearchResults
-                  searchQuery={searchQuery}
-                  searchState={searchState}
-                  searchResponse={searchResponse}
-                  session={session}
-                  onSearchRelated={this.onSearchRelated.bind(this)}
-                />
-              </div>
-            </div>
-          </>
+          </div>
         ) : (
-          <div>
+          <div className="container-vh-scroll">
             <VerticalLogo />
             <SearchBar
               value={this.state.query}

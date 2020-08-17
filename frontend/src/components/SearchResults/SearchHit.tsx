@@ -14,6 +14,7 @@ import {
   DatasetColumns,
   AddToSession,
 } from './Metadata';
+import {ButtonGroup} from '../ui/Button/Button';
 
 interface SearchHitProps {
   hit: SearchResult;
@@ -37,36 +38,40 @@ function DownloadViewDetails(props: {
 }) {
   return (
     <div className="mt-2">
-      {props.session ? (
-        <AddToSession hit={props.hit} session={props.session} />
-      ) : (
-        <a
-          className="btn btn-sm btn-outline-primary"
-          href={`${API_URL}/download/${props.hit.id}`}
-        >
-          <Icon.Download className="feather" /> Download
-        </a>
-      )}
-      <button
-        className="btn btn-sm btn-outline-primary ml-2"
-        onClick={props.onSearchHitExpand}
-      >
-        <Icon.Info className="feather" /> View Details
-      </button>
-      <button
-        className="btn btn-sm btn-outline-primary ml-2"
-        onClick={props.onSearchRelated}
-      >
-        <Icon.Search className="feather" /> Search Related
-      </button>
-      {!(!props.hit.augmentation || props.hit.augmentation.type === 'none') && (
+      <ButtonGroup>
+        {props.session ? (
+          <AddToSession hit={props.hit} session={props.session} />
+        ) : (
+          <a
+            className="btn btn-sm btn-outline-primary"
+            href={`${API_URL}/download/${props.hit.id}`}
+          >
+            <Icon.Download className="feather" /> Download
+          </a>
+        )}
         <button
-          className="btn btn-sm btn-outline-primary ml-2"
-          onClick={props.onAugmentationOptions}
+          className="btn btn-sm btn-outline-primary"
+          onClick={props.onSearchHitExpand}
         >
-          <Icon.PlusCircle className="feather" /> Augment Options
+          <Icon.Info className="feather" /> View Details
         </button>
-      )}
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={props.onSearchRelated}
+        >
+          <Icon.Search className="feather" /> Search Related
+        </button>
+        {!(
+          !props.hit.augmentation || props.hit.augmentation.type === 'none'
+        ) && (
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={props.onAugmentationOptions}
+          >
+            <Icon.PlusCircle className="feather" /> Augment Options
+          </button>
+        )}
+      </ButtonGroup>
     </div>
   );
 }
