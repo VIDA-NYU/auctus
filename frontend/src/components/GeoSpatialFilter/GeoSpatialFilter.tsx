@@ -221,11 +221,11 @@ class GeoSpatialFilter extends React.PureComponent<
       width: '100%',
       height: '400px',
     };
-    let topLeftText = undefined,
+    let bottomLeftText = undefined,
       topRightText = undefined;
     if (this.props.state) {
       const { latitude1, longitude1, latitude2, longitude2 } = this.props.state;
-      topLeftText = toStringHDMS([Number(longitude1), Number(latitude1)]);
+      bottomLeftText = toStringHDMS([Number(longitude1), Number(latitude1)]);
       topRightText = toStringHDMS([Number(longitude2), Number(latitude2)]);
     }
     return (
@@ -245,13 +245,13 @@ class GeoSpatialFilter extends React.PureComponent<
               Left-click to start selection. Right-click to clear selection.
             </span>
             <div className="d-inline" style={{ float: 'right' }}>
-              {topLeftText && topRightText && (
+              {bottomLeftText && topRightText && (
                 <>
                   <span>
-                    Top Left: <code>{topLeftText}</code>
+                    Bottom Left: <code>{bottomLeftText}</code>
                   </span>
                   <span className="ml-3">
-                    Bottom Right: <code>{topRightText}</code>
+                    Top Right: <code>{topRightText}</code>
                   </span>
                 </>
               )}
