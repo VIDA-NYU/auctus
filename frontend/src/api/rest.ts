@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
+import axios, {AxiosResponse, AxiosRequestConfig} from 'axios';
 import {
   SearchResponse,
   SearchResult,
@@ -9,7 +9,7 @@ import {
   RelatedFile,
   Session,
 } from './types';
-import { API_URL } from '../config';
+import {API_URL} from '../config';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -94,7 +94,7 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
         data: response.data,
       };
     })
-    .catch(error => {
+    .catch(() => {
       return {
         status: RequestResult.ERROR,
       };
@@ -111,7 +111,7 @@ export function downloadToSession(datasetId: string, session: Session) {
       url += `&format_${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
     });
   }
-  return api.post(url, { id: datasetId }).then(() => {});
+  return api.post(url, {id: datasetId}).then(() => {});
 }
 
 export function augment(
@@ -160,7 +160,7 @@ export function augment(
         data: response.data,
       };
     })
-    .catch(error => {
+    .catch(() => {
       return {
         status: RequestResult.ERROR,
       };
@@ -180,7 +180,7 @@ export interface UploadData {
   description?: string;
   address?: string;
   file?: File;
-  manualAnnotations?: { columns: ColumnMetadata[] };
+  manualAnnotations?: {columns: ColumnMetadata[]};
   customFields: Map<string, string>;
 }
 
@@ -280,7 +280,7 @@ export function customFields(): Promise<CustomFields> {
 
 export async function searchLocation(
   query: string
-): Promise<Array<{ boundingbox?: number[] }>> {
+): Promise<Array<{boundingbox?: number[]}>> {
   const formData = new FormData();
   formData.append('q', query);
   const response = await api.post('/location', formData);

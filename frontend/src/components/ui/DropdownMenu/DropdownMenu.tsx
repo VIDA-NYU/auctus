@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 interface Props {
-  children: (api: { onClick: () => void; active: boolean }) => JSX.Element;
+  children: (api: {onClick: () => void; active: boolean}) => JSX.Element;
 }
 
 interface State {
@@ -13,13 +13,13 @@ class DropdownMenu extends React.Component<Props, State> {
 
   constructor(props: Props) {
     super(props);
-    this.state = { active: false };
+    this.state = {active: false};
     this.toggleState = this.toggleState.bind(this);
     this.handleClickOutside = this.handleClickOutside.bind(this);
   }
 
   toggleState() {
-    this.setState({ active: !this.state.active });
+    this.setState({active: !this.state.active});
   }
 
   handleClickOutside(e: MouseEvent) {
@@ -50,4 +50,4 @@ class DropdownMenu extends React.Component<Props, State> {
   }
 }
 
-export { DropdownMenu };
+export {DropdownMenu};

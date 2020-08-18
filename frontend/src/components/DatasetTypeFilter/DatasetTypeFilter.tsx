@@ -41,7 +41,7 @@ class DatasetTypeFilter extends React.PureComponent<DatasetTypeFilterProps> {
   }
 
   render() {
-    const datasetTypes: { [datasetType: string]: boolean } = {};
+    const datasetTypes: {[datasetType: string]: boolean} = {};
     this.props.datasetTypes.forEach(datasetType => {
       datasetTypes[datasetType] = false;
     });
@@ -100,4 +100,4 @@ class DatasetTypeFilter extends React.PureComponent<DatasetTypeFilterProps> {
   }
 }
 
-export { DatasetTypeFilter };
+export {DatasetTypeFilter};

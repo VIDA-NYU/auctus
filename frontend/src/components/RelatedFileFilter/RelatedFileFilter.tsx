@@ -1,9 +1,9 @@
 import React from 'react';
 import Dropzone from 'react-dropzone';
-import { CardShadow, CardButton } from '../visus/Card/Card';
-import { formatSize, shallowEqual } from '../../utils';
-import { Metadata, RelatedFile } from '../../api/types';
-import { ProfileResult, profile, metadata } from '../../api/rest';
+import {CardShadow, CardButton} from '../visus/Card/Card';
+import {formatSize, shallowEqual} from '../../utils';
+import {Metadata, RelatedFile} from '../../api/types';
+import {ProfileResult, profile, metadata} from '../../api/rest';
 
 interface RelatedFileFilterState {
   profile?: Metadata;
@@ -44,13 +44,13 @@ class RelatedFileFilter extends React.PureComponent<
       // Check that this is still the current query
       // (JavaScript can't cancel promises)
       if (this.profileQuery === profileQuery) {
-        this.setState({ profile: p });
+        this.setState({profile: p});
       }
     });
     return profileQuery;
   }
 
-  componentDidUpdate(prevProps: RelatedFileFilterProps) {
+  componentDidUpdate() {
     if (!this.props.state) {
       this.profileQuery = undefined;
     } else if (
@@ -78,7 +78,7 @@ class RelatedFileFilter extends React.PureComponent<
             fileSize: file.size,
           };
           this.profileQueryFile = relatedFile;
-          this.setState({ profile: p });
+          this.setState({profile: p});
           this.props.onSelectedFileChange(relatedFile);
         }
       });
@@ -162,4 +162,4 @@ class RelatedFileFilter extends React.PureComponent<
   }
 }
 
-export { RelatedFileFilter };
+export {RelatedFileFilter};

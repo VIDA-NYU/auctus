@@ -1,14 +1,14 @@
 import React from 'react';
-import { useDrop, useDrag, DragSourceMonitor } from 'react-dnd';
-import { DndProvider } from 'react-dnd';
+import {useDrop, useDrag, DragSourceMonitor} from 'react-dnd';
+import {DndProvider} from 'react-dnd';
 import Backend from 'react-dnd-html5-backend';
-import { ColumnBadge, BadgeGroup } from '../Badges/Badges';
+import {ColumnBadge, BadgeGroup} from '../Badges/Badges';
 import {
   SearchResult,
   ColumnMetadata,
   ColumnAggregations,
 } from '../../api/types';
-import { FunctionBin } from './FunctionBin';
+import {FunctionBin} from './FunctionBin';
 
 const ItemType = 'badge';
 
@@ -28,8 +28,8 @@ interface BadgeBinProps {
   columns?: AggColumn[];
 }
 
-const BadgeBin: React.FC<BadgeBinProps> = ({ uniqueBinId, columns }) => {
-  const [{ canDrop, isOver, column }, drop] = useDrop({
+const BadgeBin: React.FC<BadgeBinProps> = ({uniqueBinId, columns}) => {
+  const [{canDrop, isOver, column}, drop] = useDrop({
     accept: ItemType,
     // drop: () => ({ name: 'BadgeBin' }),
     collect: monitor => ({
@@ -100,9 +100,9 @@ interface DraggableBadgeProps {
   onDrop: (column: ColumnMetadata, aggFunction: string) => void;
 }
 
-const DraggableBadge: React.FC<DraggableBadgeProps> = ({ column, onDrop }) => {
-  const [{ isDragging }, drag] = useDrag({
-    item: { column, type: ItemType },
+const DraggableBadge: React.FC<DraggableBadgeProps> = ({column, onDrop}) => {
+  const [{isDragging}, drag] = useDrag({
+    item: {column, type: ItemType},
     end: (item: ColumnMetadata | undefined, monitor: DragSourceMonitor) => {
       const dropResult = monitor.getDropResult();
       if (item && dropResult) {
@@ -115,7 +115,7 @@ const DraggableBadge: React.FC<DraggableBadgeProps> = ({ column, onDrop }) => {
   });
   const opacity = isDragging ? 0.4 : 1;
   return (
-    <div ref={drag} style={{ cursor: 'move', opacity }}>
+    <div ref={drag} style={{cursor: 'move', opacity}}>
       <ColumnBadge column={column} />
     </div>
   );
@@ -142,12 +142,12 @@ class JoinColumnsSelector extends React.Component<
 > {
   constructor(props: JoinColumnsSelectorProps) {
     super(props);
-    this.state = { columns: [] };
+    this.state = {columns: []};
   }
 
   addColumn(column: ColumnMetadata, aggFunction: string) {
     this.setState({
-      columns: [...this.state.columns, { column, agg_function: aggFunction }],
+      columns: [...this.state.columns, {column, agg_function: aggFunction}],
     });
   }
 
@@ -168,9 +168,9 @@ class JoinColumnsSelector extends React.Component<
       const functionNames = column.structural_type.endsWith('Text')
         ? STRING_AGG_FUNCTIONS // string column
         : NUMBER_AGG_FUNCTIONS; // number column
-      functions = functionNames.map(fn => ({ column, agg_function: fn }));
+      functions = functionNames.map(fn => ({column, agg_function: fn}));
     } else {
-      functions = [{ column, agg_function: aggFunction }];
+      functions = [{column, agg_function: aggFunction}];
     }
 
     functions = this.unique([...this.state.columns, ...functions]);
@@ -193,7 +193,7 @@ class JoinColumnsSelector extends React.Component<
   }
 
   render() {
-    const { hit, excludeColumns } = this.props;
+    const {hit, excludeColumns} = this.props;
     if (!hit.augmentation || hit.augmentation.type === 'none') {
       return null;
     }
@@ -222,4 +222,4 @@ class JoinColumnsSelector extends React.Component<
   }
 }
 
-export { JoinColumnsSelector };
+export {JoinColumnsSelector};

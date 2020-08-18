@@ -1,8 +1,8 @@
 import React from 'react';
 import * as Icon from 'react-feather';
 import './Badges.css';
-import { IconAbc } from './IconAbc';
-import { ColumnMetadata } from '../../api/types';
+import {IconAbc} from './IconAbc';
+import {ColumnMetadata} from '../../api/types';
 
 function columnType(column: ColumnMetadata) {
   switch (column.structural_type) {
@@ -12,23 +12,23 @@ function columnType(column: ColumnMetadata) {
         column.semantic_types.includes('http://schema.org/latitude') ||
         column.semantic_types.includes('http://schema.org/longitude')
       ) {
-        return { numerical: true, spatial: true };
+        return {numerical: true, spatial: true};
       }
-      return { numerical: true };
+      return {numerical: true};
     case 'http://schema.org/Text':
     default:
       if (column.semantic_types) {
         if (column.semantic_types.includes('http://schema.org/DateTime')) {
-          return { textual: true, temporal: true };
+          return {textual: true, temporal: true};
         }
         if (
           column.semantic_types.includes('http://schema.org/latitude') ||
           column.semantic_types.includes('http://schema.org/longitude')
         ) {
-          return { textual: true, spatial: true };
+          return {textual: true, spatial: true};
         }
       }
-      return { textual: true };
+      return {textual: true};
   }
 }
 
@@ -96,8 +96,8 @@ export function DatasetTypeBadge(type: string) {
   }
 }
 
-export function SimpleColumnBadge(props: { name: string }) {
-  return <span className={`badge badge-pill badge-column`}>{props.name}</span>;
+export function SimpleColumnBadge(props: {name: string}) {
+  return <span className={'badge badge-pill badge-column'}>{props.name}</span>;
 }
 
 export function ColumnBadge(props: {

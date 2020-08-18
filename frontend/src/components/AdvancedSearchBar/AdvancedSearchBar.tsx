@@ -17,7 +17,7 @@ interface AdvancedSearchBarProps {
 
 class AdvancedSearchBar extends React.PureComponent<AdvancedSearchBarProps> {
   render() {
-    const { relatedFileEnabled } = this.props;
+    const {relatedFileEnabled} = this.props;
     return (
       <div className="AdvancedSearchBar">
         <span className="d-inline text-oswald AdvancedSearchBar-title">
@@ -48,9 +48,7 @@ class AdvancedSearchBar extends React.PureComponent<AdvancedSearchBarProps> {
             <span>Related File</span>
             <Icon.ChevronDown className="feather" />
           </div>
-        ) : (
-          undefined
-        )}
+        ) : undefined}
         <div
           className="d-inline btn AdvancedSearchBar-item"
           onClick={() => this.props.onAddFilter(FilterType.SOURCE)}
@@ -72,4 +70,4 @@ class AdvancedSearchBar extends React.PureComponent<AdvancedSearchBarProps> {
   }
 }
 
-export { AdvancedSearchBar };
+export {AdvancedSearchBar};

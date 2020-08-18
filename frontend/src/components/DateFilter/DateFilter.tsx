@@ -2,7 +2,7 @@ import React from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DateFilter.css';
-import { TemporalResolution, TemporalVariable } from '../../api/types';
+import {TemporalResolution, TemporalVariable} from '../../api/types';
 
 interface DateFilterProps {
   className?: string;
@@ -89,4 +89,4 @@ class DateFilter extends React.PureComponent<DateFilterProps> {
   }
 }
 
-export { DateFilter };
+export {DateFilter};

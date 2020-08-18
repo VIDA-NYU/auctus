@@ -47,4 +47,4 @@ function ChipGroup(props: React.PropsWithChildren<{}>) {
   return <div className="chip-group">{props.children}</div>;
 }
 
-export { Chip, ChipGroup };
+export {Chip, ChipGroup};

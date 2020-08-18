@@ -1,14 +1,14 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import { API_URL } from '../../config';
-import { SearchResult, ColumnMetadata, Session } from '../../api/types';
-import { RequestStatus, downloadToSession } from '../../api/rest';
-import { generateRandomId } from '../../utils';
-import { GeoSpatialCoverageMap } from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
-import { BadgeGroup, DatasetTypeBadge, ColumnBadge } from '../Badges/Badges';
+import {API_URL} from '../../config';
+import {SearchResult, ColumnMetadata, Session} from '../../api/types';
+import {RequestStatus, downloadToSession} from '../../api/rest';
+import {generateRandomId} from '../../utils';
+import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
+import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
 
-export function SpatialCoverage(props: { hit: SearchResult }) {
-  const { spatial_coverage } = props.hit.metadata;
+export function SpatialCoverage(props: {hit: SearchResult}) {
+  const {spatial_coverage} = props.hit.metadata;
   if (!spatial_coverage) {
     return <></>;
   }
@@ -23,8 +23,8 @@ export function SpatialCoverage(props: { hit: SearchResult }) {
   );
 }
 
-export function DatasetTypes(props: { hit: SearchResult; label?: boolean }) {
-  const { hit, label } = props;
+export function DatasetTypes(props: {hit: SearchResult; label?: boolean}) {
+  const {hit, label} = props;
 
   return (
     <>
@@ -41,27 +41,27 @@ export function DatasetTypes(props: { hit: SearchResult; label?: boolean }) {
 }
 
 export class AddToSession extends React.PureComponent<
-  { hit: SearchResult; session: Session },
-  { result?: RequestStatus }
+  {hit: SearchResult; session: Session},
+  {result?: RequestStatus}
 > {
-  constructor(props: { hit: SearchResult; session: Session }) {
+  constructor(props: {hit: SearchResult; session: Session}) {
     super(props);
-    this.state = { result: undefined };
+    this.state = {result: undefined};
   }
 
   render() {
-    const { hit, session } = this.props;
+    const {hit, session} = this.props;
 
     const clicked = (e: React.MouseEvent) => {
       e.preventDefault();
       downloadToSession(hit.id, session).then(
-        () => this.setState({ result: RequestStatus.SUCCESS }),
-        () => this.setState({ result: RequestStatus.ERROR })
+        () => this.setState({result: RequestStatus.SUCCESS}),
+        () => this.setState({result: RequestStatus.ERROR})
       );
-      this.setState({ result: RequestStatus.IN_PROGRESS });
+      this.setState({result: RequestStatus.IN_PROGRESS});
     };
 
-    const { result } = this.state;
+    const {result} = this.state;
     if (result === undefined) {
       return (
         <button
@@ -99,11 +99,8 @@ export class AddToSession extends React.PureComponent<
   }
 }
 
-export function DownloadButtons(props: {
-  hit: SearchResult;
-  session?: Session;
-}) {
-  const { hit, session } = props;
+export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
+  const {hit, session} = props;
   if (session) {
     return (
       <div className="mt-2">
@@ -144,11 +141,11 @@ export class Description extends React.PureComponent<
 > {
   constructor(props: DescriptionProps) {
     super(props);
-    this.state = { hidden: true };
+    this.state = {hidden: true};
   }
   render() {
     const limitLenght = 100;
-    const { description } = this.props.hit.metadata;
+    const {description} = this.props.hit.metadata;
     const showLabel = this.props.label ? this.props.label : false;
     const displayedDescription =
       description && this.state.hidden
@@ -169,7 +166,7 @@ export class Description extends React.PureComponent<
                   background: 'transparent',
                   border: 0,
                 }}
-                onClick={() => this.setState({ hidden: !this.state.hidden })}
+                onClick={() => this.setState({hidden: !this.state.hidden})}
               >
                 {this.state.hidden ? 'Show more...' : 'Show less'}
               </button>
@@ -201,7 +198,7 @@ export class DatasetColumns extends React.PureComponent<
 
   constructor(props: ColumnsViewerProps) {
     super(props);
-    this.state = { hidden: true };
+    this.state = {hidden: true};
   }
 
   splitColumns(columns: ColumnMetadata[]) {
@@ -218,7 +215,7 @@ export class DatasetColumns extends React.PureComponent<
         characters += c.name.length + 9;
       }
     });
-    return { visibleColumns, hiddenColumns };
+    return {visibleColumns, hiddenColumns};
   }
 
   renderShowMoreButton(hiddenColumns: number) {
@@ -231,7 +228,7 @@ export class DatasetColumns extends React.PureComponent<
           background: 'transparent',
           border: 0,
         }}
-        onClick={() => this.setState({ hidden: !this.state.hidden })}
+        onClick={() => this.setState({hidden: !this.state.hidden})}
       >
         {this.state.hidden
           ? `Show ${hiddenColumns} more columns...`
@@ -241,7 +238,7 @@ export class DatasetColumns extends React.PureComponent<
   }
 
   render() {
-    const { visibleColumns, hiddenColumns } = this.splitColumns(
+    const {visibleColumns, hiddenColumns} = this.splitColumns(
       this.props.columns
     );
     const showLabel = this.props.label ? this.props.label : false;

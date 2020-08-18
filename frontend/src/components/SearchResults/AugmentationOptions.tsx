@@ -8,10 +8,10 @@ import {
   TemporalResolution,
 } from '../../api/types';
 import * as api from '../../api/rest';
-import { SearchQuery } from '../../api/rest';
-import { triggerFileDownload, cloneObject } from '../../utils';
-import { JoinColumnsSelector } from '../JoinColumnsSelector/JoinColumnsSelector';
-import { ColumnBadge, SimpleColumnBadge } from '../Badges/Badges';
+import {SearchQuery} from '../../api/rest';
+import {triggerFileDownload, cloneObject} from '../../utils';
+import {JoinColumnsSelector} from '../JoinColumnsSelector/JoinColumnsSelector';
+import {ColumnBadge, SimpleColumnBadge} from '../Badges/Badges';
 
 interface AugmentationOptionsProps {
   hit: SearchResult;
@@ -43,7 +43,7 @@ function getAugmentationColumns(aug?: AugmentationInfo) {
     const leftColumn = aug.left_columns_names[idx].join(', ');
     const rightColumn = aug.right_columns_names[idx].join(', ');
     const key = `${leftColumn}, ${rightColumn}`;
-    columns.push({ leftColumn, rightColumn, key, idx });
+    columns.push({leftColumn, rightColumn, key, idx});
   }
   return columns;
 }
@@ -94,7 +94,7 @@ class AugmentationOptions extends React.PureComponent<
     const checked = Object.assign({}, this.state.checked, {
       [input.value]: !this.state.checked[input.value],
     });
-    this.setState({ checked: { ...checked } });
+    this.setState({checked: {...checked}});
   }
 
   findIndexesOfCheckedColumn() {
@@ -156,11 +156,11 @@ class AugmentationOptions extends React.PureComponent<
 
     console.log('submit', task);
 
-    const { session } = this.props;
+    const {session} = this.props;
     api
       .augment(relatedFile, task, session)
       .then(response => {
-        this.setState({ result: api.RequestStatus.SUCCESS });
+        this.setState({result: api.RequestStatus.SUCCESS});
         if (!session) {
           const zipFile = response.data;
           if (zipFile) {
@@ -170,20 +170,20 @@ class AugmentationOptions extends React.PureComponent<
           }
         }
       })
-      .catch(() => this.setState({ result: api.RequestStatus.ERROR }));
-    this.setState({ result: api.RequestStatus.IN_PROGRESS });
+      .catch(() => this.setState({result: api.RequestStatus.ERROR}));
+    this.setState({result: api.RequestStatus.IN_PROGRESS});
   }
 
   renderAugmentButton(hit: SearchResult, type: string) {
-    const { session } = this.props;
-    const { result } = this.state;
+    const {session} = this.props;
+    const {result} = this.state;
     let btnActive = this.findIndexesOfCheckedColumn().length > 0;
-    let text = `Merge`;
+    let text = 'Merge';
     if (session) {
       if (result === undefined) {
         text = `Merge (${type}) & Add to ${session.system_name}`;
       } else if (result === api.RequestStatus.IN_PROGRESS) {
-        text = `Merging...`;
+        text = 'Merging...';
         btnActive = false;
       } else if (result === api.RequestStatus.SUCCESS) {
         text = `Added to ${session.system_name}!`;
@@ -195,10 +195,10 @@ class AugmentationOptions extends React.PureComponent<
       if (result === undefined) {
         text = `Merge (${type}) & Download`;
       } else if (result === api.RequestStatus.IN_PROGRESS) {
-        text = `Merging...`;
+        text = 'Merging...';
         btnActive = false;
       } else if (result === api.RequestStatus.SUCCESS) {
-        text = `Downloaded`;
+        text = 'Downloaded';
         // Keep button active, if user didn't save file
       } else if (result === api.RequestStatus.ERROR) {
         text = 'Error merging';
@@ -255,30 +255,30 @@ class AugmentationOptions extends React.PureComponent<
   }
 
   handleColumnSelectionChange(columnAggregations: ColumnAggregations) {
-    this.setState({ columnAggregations });
+    this.setState({columnAggregations});
   }
 
   handleTemporalResolutionChange(temporalResolution: TemporalResolution) {
-    this.setState({ temporalResolution });
+    this.setState({temporalResolution});
   }
 
   render() {
-    const { hit } = this.props;
+    const {hit} = this.props;
     if (!hit.augmentation || hit.augmentation.type === 'none') {
       return null;
     }
 
-    const { type } = hit.augmentation;
+    const {type} = hit.augmentation;
     const columns = getAugmentationColumns(hit.augmentation);
 
     return (
       <div className="d-flex flex-column mt-3">
         <h6>
           Augmentation{' '}
-          <span style={{ textTransform: 'uppercase' }}>({type})</span>
+          <span style={{textTransform: 'uppercase'}}>({type})</span>
         </h6>
         <b>
-          <span style={{ textTransform: 'capitalize' }}>{type}</span> on:
+          <span style={{textTransform: 'capitalize'}}>{type}</span> on:
         </b>
         {this.renderMergeColumns(columns, hit)}
         {this.state.temporalResolution ? (
@@ -289,9 +289,7 @@ class AugmentationOptions extends React.PureComponent<
               onChange={this.handleTemporalResolutionChange}
             />
           </>
-        ) : (
-          undefined
-        )}
+        ) : undefined}
         <div>
           {hit.augmentation && hit.augmentation.type === 'join' && (
             <JoinColumnsSelector
@@ -307,4 +305,4 @@ class AugmentationOptions extends React.PureComponent<
   }
 }
 
-export { AugmentationOptions };
+export {AugmentationOptions};

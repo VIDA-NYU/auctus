@@ -13,12 +13,12 @@ class FilterContainer extends React.PureComponent<{
           <span
             onClick={() => this.props.onClose()}
             className="d-inline text-muted ml-1"
-            style={{ cursor: 'pointer' }}
+            style={{cursor: 'pointer'}}
             title="Remove this filter"
           >
             <Icon.Trash2
               className="feather feather"
-              style={{ marginBottom: '2px' }}
+              style={{marginBottom: '2px'}}
             />
           </span>
         </div>
@@ -28,4 +28,4 @@ class FilterContainer extends React.PureComponent<{
   }
 }
 
-export { FilterContainer };
+export {FilterContainer};

@@ -49,4 +49,4 @@ class TabPane extends React.PureComponent<TabPaneProps> {
   }
 }
 
-export { Tabs, Tab, TabContent, TabPane };
+export {Tabs, Tab, TabContent, TabPane};

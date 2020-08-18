@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as Icon from 'react-feather';
-import { API_URL } from '../../config';
-import { formatSize } from '../../utils';
-import { SearchResult, RelatedFile, Session } from '../../api/types';
+import {API_URL} from '../../config';
+import {formatSize} from '../../utils';
+import {SearchResult, RelatedFile, Session} from '../../api/types';
 import {
   Description,
   DatasetTypes,
@@ -66,11 +66,11 @@ function DownloadViewDetails(props: {
   );
 }
 
-function HitTitle(props: { hit: SearchResult }) {
+function HitTitle(props: {hit: SearchResult}) {
   return (
     <span
       className="text-primary"
-      style={{ fontSize: '1.2rem', fontFamily: 'Source Sans Pro' }}
+      style={{fontSize: '1.2rem', fontFamily: 'Source Sans Pro'}}
     >
       {props.hit.metadata.name}{' '}
       <span className="small text-muted">
@@ -109,7 +109,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
   }
 
   render() {
-    const { hit, selectedHit, session } = this.props;
+    const {hit, selectedHit, session} = this.props;
     return (
       <div
         className="card mb-3 shadow-sm d-flex flex-row"
@@ -134,10 +134,10 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
         </div>
         <div
           className="d-flex align-items-stretch"
-          style={{ cursor: 'pointer' }}
+          style={{cursor: 'pointer'}}
           onClick={this.onSearchHitExpand}
         >
-          <div style={{ margin: 'auto 3px' }}>
+          <div style={{margin: 'auto 3px'}}>
             <Icon.ChevronRight className="feather feather-lg" />
           </div>
         </div>
@@ -146,4 +146,4 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
   }
 }
 
-export { SearchHit };
+export {SearchHit};

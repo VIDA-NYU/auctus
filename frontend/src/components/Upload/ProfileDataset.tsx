@@ -1,12 +1,12 @@
 import React from 'react';
 import * as Icon from 'react-feather';
-import { ColumnMetadata, TypesCategory, ColumnType } from '../../api/types';
-import { useTable, Column } from 'react-table';
-import { Loading } from '../visus/Loading/Loading';
-import { RequestStatus, ProfileResult } from '../../api/rest';
-import { isSubstrInclude, updateLatLonDropdown } from '../../utils';
+import {ColumnMetadata, TypesCategory, ColumnType} from '../../api/types';
+import {useTable, Column} from 'react-table';
+import {Loading} from '../visus/Loading/Loading';
+import {RequestStatus, ProfileResult} from '../../api/rest';
+import {isSubstrInclude, updateLatLonDropdown} from '../../utils';
 
-const classMapping: { [key: string]: string } = {
+const classMapping: {[key: string]: string} = {
   text: 'semtype-text',
   boolean: 'semtype-boolean',
   enumeration: 'semtype-enumeration',
@@ -187,7 +187,7 @@ interface TableProps {
 }
 
 function Table(props: TableProps) {
-  const { columns, data, profiledData } = props;
+  const {columns, data, profiledData} = props;
   const {
     headerGroups,
     rows,
@@ -202,12 +202,16 @@ function Table(props: TableProps) {
     <table
       {...getTableProps()}
       className="table table-hover small"
-      style={{ height: 100 }}
+      style={{height: 100}}
     >
       <thead>
-        {headerGroups.map((headerGroup, i) => (
+        {headerGroups.map(headerGroup => (
+          // We disable eslint here because the props created by react-table
+          // functions used below already include the jsx-key.
+          // eslint-disable-next-line react/jsx-key
           <tr {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map((column, i) => (
+              // eslint-disable-next-line react/jsx-key
               <th
                 scope="col"
                 {...column.getHeaderProps()}
@@ -237,12 +241,15 @@ function Table(props: TableProps) {
           </tr>
         ))}
       </thead>
-      <tbody {...getTableBodyProps()} style={{ height: 100 }}>
-        {rows.map((row, i) => {
+      {/* eslint-disable-next-line react/jsx-key */}
+      <tbody {...getTableBodyProps()} style={{height: 100}}>
+        {rows.map(row => {
           prepareRow(row);
           return (
+            // eslint-disable-next-line react/jsx-key
             <tr {...row.getRowProps()}>
               {row.cells.map(cell => {
+                // eslint-disable-next-line react/jsx-key
                 return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>;
               })}
             </tr>
@@ -286,7 +293,7 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
       Header: h,
       accessor: (row: string[]) => row[i],
     }));
-    return { columns, rows };
+    return {columns, rows};
   }
 
   renderErrorMessage(error?: string) {
@@ -300,7 +307,7 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
   }
 
   render() {
-    const { profiledData, profilingStatus, failedProfiler } = this.props;
+    const {profiledData, profilingStatus, failedProfiler} = this.props;
 
     const dataTable = profiledData && this.getDataTable(profiledData);
 
@@ -309,7 +316,7 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
         {profilingStatus === RequestStatus.SUCCESS &&
           profiledData &&
           dataTable && (
-            <div style={{ maxHeight: 300, minHeight: 200, overflow: 'auto' }}>
+            <div style={{maxHeight: 300, minHeight: 200, overflow: 'auto'}}>
               <Table
                 columns={dataTable.columns}
                 data={dataTable.rows}
@@ -325,7 +332,7 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
           )}
         {profilingStatus === RequestStatus.IN_PROGRESS && (
           <span className="mr-2">
-            <Loading message={`Profiling CSV file ...`} />
+            <Loading message={'Profiling CSV file ...'} />
           </span>
         )}
         {profilingStatus === RequestStatus.ERROR && (
@@ -338,4 +345,4 @@ class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
   }
 }
 
-export { ProfileDataset };
+export {ProfileDataset};
