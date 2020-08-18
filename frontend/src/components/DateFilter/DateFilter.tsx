@@ -74,6 +74,8 @@ class DateFilter extends React.PureComponent<DateFilterProps> {
         <div className="d-inline">
           <span className="ml-2 mr-1">Granularity: </span>
           <select
+            className="custom-select"
+            style={{width: 'fit-content'}}
             value={this.props.state?.granularity}
             onChange={e => this.onGranularityChange(e.target.value)}
           >
