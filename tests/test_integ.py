@@ -771,7 +771,7 @@ class TestDataSearch(DatamartTest):
             ],
         )
 
-    def test_basic_join_tabular_variable(self):
+    def test_geo_join_restrict_variables(self):
         query = {
             'variables': [{
                 'type': 'tabular_variable',
@@ -823,7 +823,30 @@ class TestDataSearch(DatamartTest):
                     'supplied_id': None,
                     'supplied_resource_id': None,
                 },
-            ]
+            ],
+        )
+
+        query = {
+            'variables': [{
+                'type': 'tabular_variable',
+                'columns': [2],
+                'relationship': 'contains',
+            }],
+        }
+
+        with data('geo_wkt.csv') as basic_aug:
+            response = self.datamart_post(
+                '/search',
+                files={
+                    'query': json.dumps(query).encode('utf-8'),
+                    'data': basic_aug,
+                },
+                schema=result_list_schema,
+            )
+        results = response.json()['results']
+        self.assertJson(
+            results,
+            [],
         )
 
     def test_temporal_daily_join(self):
