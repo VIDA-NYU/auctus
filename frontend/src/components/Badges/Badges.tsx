@@ -113,6 +113,7 @@ export function ColumnBadge(props: {
   onClick?: () => void;
 }) {
   let label = props.column.name;
+  const cornerButtonSize = 15;
   if (props.function) {
     label = `${props.function.toUpperCase()}(${label})`;
   }
@@ -121,7 +122,7 @@ export function ColumnBadge(props: {
   const BadgeIcon = iconForType(types);
 
   return (
-    <span className={`badge badge-pill ${badgeClass}`}>
+    <span className={`badge badge-pill ${badgeClass} m-1`}>
       <BadgeIcon className="feather-xs-w" />
       {label}
       {props.cornerButton === BagdeButton.ADD && (
@@ -131,7 +132,7 @@ export function ColumnBadge(props: {
           className="btn btn-link badge-corner-button"
           onClick={() => props.onClick && props.onClick()}
         >
-          <Icon.PlusCircle size={13} />
+          <Icon.PlusCircle size={cornerButtonSize} />
         </button>
       )}
       {props.cornerButton === BagdeButton.REMOVE && (
@@ -141,7 +142,7 @@ export function ColumnBadge(props: {
           className="btn btn-link badge-corner-button"
           onClick={() => props.onClick && props.onClick()}
         >
-          <Icon.XCircle size={13} />
+          <Icon.XCircle size={cornerButtonSize} />
         </button>
       )}
     </span>
