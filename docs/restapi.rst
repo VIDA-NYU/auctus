@@ -5,6 +5,10 @@ You can access Datamart through a REST API. In addition to the documentation bel
 
 There is also a :doc:`Python client library <python/datamart-rest>` for this API.
 
+The API is versioned, with the current version being ``v1``. The full paths for an API request would therefore be something like::
+
+    https://auctus.vida-nyu.org/api/v1/download/datamart.socrata.data-cityofnewyork-us.ht4t-wzcm
+
 ..  _rest-search:
 
 ``POST /search``

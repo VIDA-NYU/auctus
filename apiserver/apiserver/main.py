@@ -5,7 +5,7 @@ import os
 import prometheus_client
 import redis
 import tornado.ioloop
-from tornado.routing import URLSpec
+from tornado.routing import Rule, PathMatches, URLSpec
 import tornado.httputil
 import tornado.web
 
@@ -108,6 +108,17 @@ class Health(BaseHandler):
             return self.finish('ok')
 
 
+class ApiRule(Rule):
+    VERSIONS = {'1'}
+
+    def __init__(self, pattern, versions, target):
+        assert isinstance(versions, str)
+        assert set(versions).issubset(self.VERSIONS)
+        assert pattern[0] == '/'
+        matcher = PathMatches(f'/api/v[{versions}]{pattern}')
+        super(ApiRule, self).__init__(matcher, target)
+
+
 def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
@@ -120,20 +131,21 @@ def make_app(debug=False):
 
     return Application(
         [
-            URLSpec('/profile', Profile, name='profile'),
-            URLSpec('/search', Search, name='search'),
-            URLSpec('/download/([^/]+)', DownloadId, name='download_id'),
-            URLSpec('/download', Download, name='download'),
-            URLSpec('/metadata/([^/]+)', Metadata, name='metadata'),
-            URLSpec('/augment', Augment, name='augment'),
-            URLSpec('/augment/([^/]+)', AugmentResult, name='augment_result'),
-            URLSpec('/upload', Upload, name='upload'),
-            URLSpec('/session/new', SessionNew, name='session_new'),
-            URLSpec('/session/([^/]+)', SessionGet, name='session_get'),
-            URLSpec('/location', LocationSearch, name='location_search'),
-            URLSpec('/statistics', Statistics, name='statistics'),
-            URLSpec('/version', Version, name='version'),
-            URLSpec('/health', Health, name='health'),
+            ApiRule('/profile', '1', Profile),
+            ApiRule('/search', '1', Search),
+            ApiRule('/download/([^/]+)', '1', DownloadId),
+            ApiRule('/download', '1', Download),
+            ApiRule('/metadata/([^/]+)', '1', Metadata),
+            ApiRule('/augment', '1', Augment),
+            ApiRule('/augment/([^/]+)', '1', AugmentResult),
+            ApiRule('/upload', '1', Upload),
+            ApiRule('/session/new', '1', SessionNew),
+            ApiRule('/session/([^/]+)', '1', SessionGet),
+            ApiRule('/location', '1', LocationSearch),
+            ApiRule('/statistics', '1', Statistics),
+            ApiRule('/version', '1', Version),
+
+            URLSpec('/health', Health),
         ],
         debug=debug,
         es=es,
