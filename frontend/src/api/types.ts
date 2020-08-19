@@ -113,7 +113,16 @@ export interface GeoSpatialVariable {
   longitude2: string;
 }
 
-export type FilterVariables = TemporalVariable | GeoSpatialVariable;
+export interface TabularVariable {
+  type: 'tabular_variable';
+  columns: number[];
+  relationship: string;
+}
+
+export type FilterVariables =
+  | TabularVariable
+  | TemporalVariable
+  | GeoSpatialVariable;
 
 export interface QuerySpec {
   keywords?: string;
@@ -131,11 +140,13 @@ interface RelatedToFileBase {
 export interface RelatedToLocalFile extends RelatedToFileBase {
   kind: 'localFile';
   token: string;
+  tabularVariables?: TabularVariable;
 }
 
 export interface RelatedToSearchResult extends RelatedToFileBase {
   kind: 'searchResult';
   datasetId: string;
+  tabularVariables?: TabularVariable;
 }
 
 export type RelatedFile = RelatedToLocalFile | RelatedToSearchResult;

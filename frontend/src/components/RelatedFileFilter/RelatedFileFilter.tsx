@@ -2,11 +2,13 @@ import React from 'react';
 import Dropzone from 'react-dropzone';
 import {CardShadow, CardButton} from '../visus/Card/Card';
 import {formatSize, shallowEqual} from '../../utils';
-import {Metadata, RelatedFile} from '../../api/types';
+import {Metadata, RelatedFile, TabularVariable} from '../../api/types';
 import {ProfileResult, profile, metadata} from '../../api/rest';
+import {RelatedFileColumnsSelector} from './RelatedFileColumnsSelector';
 
 interface RelatedFileFilterState {
   profile?: Metadata;
+  selectedTabularVars?: TabularVariable;
 }
 
 interface RelatedFileFilterProps {
@@ -44,7 +46,10 @@ class RelatedFileFilter extends React.PureComponent<
       // Check that this is still the current query
       // (JavaScript can't cancel promises)
       if (this.profileQuery === profileQuery) {
-        this.setState({profile: p});
+        this.setState({
+          profile: p,
+          selectedTabularVars: relatedFile.tabularVariables,
+        });
       }
     });
     return profileQuery;
@@ -71,27 +76,75 @@ class RelatedFileFilter extends React.PureComponent<
         // Check that this is still the current query
         // (JavaScript can't cancel promises)
         if (this.profileQuery === profileQuery) {
+          // tabular variable
+          // TODO: handle 'relationship'
+          // for now, it assumes the relationship is 'contains'
+          const tabularVariables: TabularVariable = {
+            type: 'tabular_variable',
+            columns: Array.from(new Array(p.columns.length).keys()),
+            relationship: 'contains',
+          };
           const relatedFile: RelatedFile = {
             kind: 'localFile',
             token: p.token,
             name: file.name,
             fileSize: file.size,
+            tabularVariables,
           };
           this.profileQueryFile = relatedFile;
-          this.setState({profile: p});
+          this.setState({profile: p, selectedTabularVars: tabularVariables});
           this.props.onSelectedFileChange(relatedFile);
         }
       });
     }
   }
 
+  updateSelectedFile(colIndexes: number[]) {
+    if (this.state.selectedTabularVars && this.profileQueryFile) {
+      const updatedTabularVars = {
+        ...this.state.selectedTabularVars,
+        columns: colIndexes,
+      };
+      this.setState({selectedTabularVars: updatedTabularVars});
+      const updatedRelatedFile: RelatedFile = {
+        ...this.profileQueryFile,
+        tabularVariables: updatedTabularVars,
+      };
+      this.props.onSelectedFileChange(updatedRelatedFile);
+    }
+  }
+
+  onRemove(columnName: string) {
+    if (this.state.selectedTabularVars && this.state.profile) {
+      const index = this.state.profile.columns.findIndex(
+        el => el.name === columnName
+      );
+      const colIndexes = this.state.selectedTabularVars.columns.filter(
+        i => !(i === index)
+      );
+      this.updateSelectedFile(colIndexes);
+    }
+  }
+
+  onAdd(columnName: string) {
+    if (this.state.selectedTabularVars && this.state.profile) {
+      const index = this.state.profile.columns.findIndex(
+        el => el.name === columnName
+      );
+      const colIndexes = this.state.selectedTabularVars.columns;
+      colIndexes.push(index);
+      this.updateSelectedFile(colIndexes);
+    }
+  }
+
   render() {
     const maxSize = 100 * 1024 * 1024; // maximum file size
     const relatedFile = this.props.state;
+    const {profile, selectedTabularVars} = this.state;
     if (relatedFile) {
-      let columns = '';
-      if (this.state.profile !== undefined) {
-        columns = this.state.profile.columns.map(c => c.name).join(', ');
+      let totalColumns = 0;
+      if (profile !== undefined) {
+        totalColumns = profile.columns.length;
       }
       return (
         <div>
@@ -101,7 +154,20 @@ class RelatedFileFilter extends React.PureComponent<
             {relatedFile.fileSize !== undefined
               ? ' (' + formatSize(relatedFile.fileSize) + ')'
               : undefined}
-            {columns ? ` (${columns})` : undefined}
+            {totalColumns > 0
+              ? ` contains ${totalColumns} columns.`
+              : undefined}
+            {profile && selectedTabularVars && (
+              <RelatedFileColumnsSelector
+                profile={profile}
+                selectedTabularVars={selectedTabularVars}
+                onAdd={(c: string) => this.onAdd(c)}
+                onRemove={(c: string) => this.onRemove(c)}
+                onUpdateTabularVariables={(c: number[]) =>
+                  this.updateSelectedFile(c)
+                }
+              />
+            )}
           </CardShadow>
         </div>
       );

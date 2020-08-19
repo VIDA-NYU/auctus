@@ -19,6 +19,7 @@ function HitInfoBox(props: {
   session?: Session;
 }) {
   const {hit, searchQuery, infoBoxType, session} = props;
+  const lastUpdatedDate = new Date(hit.metadata.date);
   return (
     <div
       className="col-md-8 px-0 pb-5 card shadow-sm ml-2"
@@ -43,6 +44,9 @@ function HitInfoBox(props: {
             <div className="mt-2">
               <b>Source:</b> {hit.metadata.source}
             </div>
+            <div className="mt-2">
+              <b>Last Updated Date:</b> {lastUpdatedDate.toLocaleString()}
+            </div>
             <Description hit={hit} label={true} />
             {'types' in hit.metadata && <DatasetTypes hit={hit} label={true} />}
             <DatasetColumns
@@ -50,6 +54,9 @@ function HitInfoBox(props: {
               maxLength={200}
               label={true}
             />
+            <div className="mt-2">
+              <b>Rows:</b> {hit.metadata.nb_rows}
+            </div>
             <div className="mt-2">
               <b>Size:</b> {formatSize(hit.metadata.size)}
             </div>

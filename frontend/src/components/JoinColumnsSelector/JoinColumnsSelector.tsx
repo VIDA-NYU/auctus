@@ -2,7 +2,7 @@ import React from 'react';
 import {useDrop, useDrag, DragSourceMonitor} from 'react-dnd';
 import {DndProvider} from 'react-dnd';
 import Backend from 'react-dnd-html5-backend';
-import {ColumnBadge, BadgeGroup} from '../Badges/Badges';
+import {ColumnBadge, BadgeGroup, BagdeButton} from '../Badges/Badges';
 import {
   SearchResult,
   ColumnMetadata,
@@ -26,9 +26,14 @@ const badgeBinStyle = (background: string): React.CSSProperties => ({
 interface BadgeBinProps {
   uniqueBinId: string;
   columns?: AggColumn[];
+  onRemoveColumn(aggColumn: AggColumn): void;
 }
 
-const BadgeBin: React.FC<BadgeBinProps> = ({uniqueBinId, columns}) => {
+const BadgeBin: React.FC<BadgeBinProps> = ({
+  uniqueBinId,
+  columns,
+  onRemoveColumn,
+}) => {
   const [{canDrop, isOver, column}, drop] = useDrop({
     accept: ItemType,
     // drop: () => ({ name: 'BadgeBin' }),
@@ -82,6 +87,8 @@ const BadgeBin: React.FC<BadgeBinProps> = ({uniqueBinId, columns}) => {
                 key={`badge-bin-${uniqueBinId}-column-${i}`}
                 column={c.column}
                 function={c.agg_function}
+                cornerButton={BagdeButton.REMOVE}
+                onClick={() => onRemoveColumn(c)}
               />
             ))}
           </BadgeGroup>
@@ -151,6 +158,34 @@ class JoinColumnsSelector extends React.Component<
     });
   }
 
+  updateColumnAggregations(functions: AggColumn[]) {
+    const columnAggregations: ColumnAggregations = {};
+    functions.forEach(fn => {
+      columnAggregations[fn.column.name] =
+        columnAggregations[fn.column.name] || [];
+      columnAggregations[fn.column.name].push(fn.agg_function);
+    });
+    return columnAggregations;
+  }
+
+  removeColumn(aggColumn: AggColumn) {
+    const updatedColumns: AggColumn[] = this.state.columns.filter(
+      col =>
+        !(
+          col.column.name === aggColumn.column.name &&
+          col.agg_function === aggColumn.agg_function
+        )
+    );
+    this.setState(
+      {
+        columns: updatedColumns,
+      },
+      () => {
+        this.props.onChange(this.updateColumnAggregations(updatedColumns));
+      }
+    );
+  }
+
   unique(functions: AggColumn[]): AggColumn[] {
     const columns: {
       [key: string]: AggColumn;
@@ -174,13 +209,9 @@ class JoinColumnsSelector extends React.Component<
     }
 
     functions = this.unique([...this.state.columns, ...functions]);
-
-    const columnAggregations: ColumnAggregations = {};
-    functions.forEach(fn => {
-      columnAggregations[fn.column.name] =
-        columnAggregations[fn.column.name] || [];
-      columnAggregations[fn.column.name].push(fn.agg_function);
-    });
+    const columnAggregations: ColumnAggregations = this.updateColumnAggregations(
+      functions
+    );
 
     this.setState(
       {
@@ -215,7 +246,11 @@ class JoinColumnsSelector extends React.Component<
                 />
               ))}
           </BadgeGroup>
-          <BadgeBin columns={this.state.columns} uniqueBinId={hit.id} />
+          <BadgeBin
+            columns={this.state.columns}
+            uniqueBinId={hit.id}
+            onRemoveColumn={c => this.removeColumn(c)}
+          />
         </div>
       </DndProvider>
     );

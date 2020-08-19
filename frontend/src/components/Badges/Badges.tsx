@@ -4,7 +4,12 @@ import './Badges.css';
 import {IconAbc} from './IconAbc';
 import {ColumnMetadata} from '../../api/types';
 
-function columnType(column: ColumnMetadata) {
+export enum BagdeButton {
+  ADD = 'ADD',
+  REMOVE = 'REMOVE',
+}
+
+export function columnType(column: ColumnMetadata) {
   switch (column.structural_type) {
     case 'http://schema.org/Integer':
     case 'http://schema.org/Float':
@@ -104,8 +109,11 @@ export function ColumnBadge(props: {
   column: ColumnMetadata;
   type?: 'categorical' | 'numerical';
   function?: string;
+  cornerButton?: BagdeButton;
+  onClick?: () => void;
 }) {
   let label = props.column.name;
+  const cornerButtonSize = 15;
   if (props.function) {
     label = `${props.function.toUpperCase()}(${label})`;
   }
@@ -114,9 +122,29 @@ export function ColumnBadge(props: {
   const BadgeIcon = iconForType(types);
 
   return (
-    <span className={`badge badge-pill ${badgeClass}`}>
+    <span className={`badge badge-pill ${badgeClass} m-1`}>
       <BadgeIcon className="feather-xs-w" />
       {label}
+      {props.cornerButton === BagdeButton.ADD && (
+        <button
+          type="button"
+          title="Add this column"
+          className="btn btn-link badge-corner-button"
+          onClick={() => props.onClick && props.onClick()}
+        >
+          <Icon.PlusCircle size={cornerButtonSize} />
+        </button>
+      )}
+      {props.cornerButton === BagdeButton.REMOVE && (
+        <button
+          type="button"
+          title="Remove this column"
+          className="btn btn-link badge-corner-button"
+          onClick={() => props.onClick && props.onClick()}
+        >
+          <Icon.XCircle size={cornerButtonSize} />
+        </button>
+      )}
     </span>
   );
 }
