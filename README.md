@@ -83,7 +83,7 @@ $ docker-compose up -d --scale profiler=4 --scale apiserver=8 coordinator profil
 
 Ports:
 * The web interface is at http://localhost:8001
-* The API at http://localhost:8002 (behind HAProxy)
+* The API at http://localhost:8002/api/v1 (behind HAProxy)
 * Elasticsearch is at http://localhost:9200
 * The Lazo server is at http://localhost:50051
 * The RabbitMQ management interface is at http://localhost:8080
