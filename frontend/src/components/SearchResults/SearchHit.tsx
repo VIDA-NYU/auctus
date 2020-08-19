@@ -14,7 +14,7 @@ import {
   DatasetColumns,
   AddToSession,
 } from './Metadata';
-import {ButtonGroup} from '../ui/Button/Button';
+import {ButtonGroup, LinkButton} from '../ui/Button/Button';
 
 interface SearchHitProps {
   hit: SearchResult;
@@ -42,12 +42,9 @@ function DownloadViewDetails(props: {
         {props.session ? (
           <AddToSession hit={props.hit} session={props.session} />
         ) : (
-          <a
-            className="btn btn-sm btn-outline-primary"
-            href={`${API_URL}/download/${props.hit.id}`}
-          >
+          <LinkButton href={`${API_URL}/download/${props.hit.id}`}>
             <Icon.Download className="feather" /> Download
-          </a>
+          </LinkButton>
         )}
         <button
           className="btn btn-sm btn-outline-primary"

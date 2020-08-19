@@ -17,4 +17,12 @@ function ButtonGroup(props: React.PropsWithChildren<{}>) {
   return <div className="button-group">{props.children}</div>;
 }
 
-export {SubmitButton, ButtonGroup};
+function LinkButton(props: React.PropsWithChildren<{href: string}>) {
+  return (
+    <a className="btn btn-sm btn-outline-primary" href={props.href}>
+      {props.children}
+    </a>
+  );
+}
+
+export {SubmitButton, ButtonGroup, LinkButton};

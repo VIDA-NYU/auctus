@@ -9,3 +9,7 @@
 .button-group > *:last-child {
   margin-right: 0px;
 }
+
+.btn > .feather:first-child {
+  margin-right: 0.2rem;
+}

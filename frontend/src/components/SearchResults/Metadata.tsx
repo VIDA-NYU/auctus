@@ -6,7 +6,7 @@ import {RequestStatus, downloadToSession} from '../../api/rest';
 import {generateRandomId} from '../../utils';
 import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
 import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
-import {ButtonGroup} from '../ui/Button/Button';
+import {ButtonGroup, LinkButton} from '../ui/Button/Button';
 
 export function SpatialCoverage(props: {hit: SearchResult}) {
   const {spatial_coverage} = props.hit.metadata;
@@ -112,18 +112,12 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
   return (
     <ButtonGroup>
       <b>Download: </b>
-      <a
-        className="btn btn-sm btn-outline-primary"
-        href={`${API_URL}/download/${hit.id}`}
-      >
+      <LinkButton href={`${API_URL}/download/${hit.id}`}>
         <Icon.Download className="feather" /> CSV
-      </a>
-      <a
-        className="btn btn-sm btn-outline-primary"
-        href={`${API_URL}/download/${hit.id}?format=d3m`}
-      >
+      </LinkButton>
+      <LinkButton href={`${API_URL}/download/${hit.id}?format=d3m`}>
         <Icon.Download className="feather" /> D3M
-      </a>
+      </LinkButton>
     </ButtonGroup>
   );
 }
@@ -145,12 +139,12 @@ export class Description extends React.PureComponent<
     this.state = {hidden: true};
   }
   render() {
-    const limitLenght = 100;
+    const limitLength = 100;
     const {description} = this.props.hit.metadata;
     const showLabel = this.props.label ? this.props.label : false;
     const displayedDescription =
       description && this.state.hidden
-        ? description.substring(0, limitLenght - 3) + '...'
+        ? description.substring(0, limitLength - 3) + '...'
         : description;
     return (
       <div className="mt-2">
@@ -158,7 +152,7 @@ export class Description extends React.PureComponent<
         {description ? (
           <>
             {displayedDescription}
-            {description.length > limitLenght && (
+            {description.length > limitLength && (
               <button
                 className="text-muted small"
                 style={{
