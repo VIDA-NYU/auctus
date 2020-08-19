@@ -12,6 +12,7 @@ import {SearchState} from './SearchState';
 import {Loading} from '../visus/Loading/Loading';
 import {HitInfoBox} from './HitInfoBox';
 import {SearchQuery} from '../../api/rest';
+import './SearchResults.css';
 
 interface SearchResultsProps {
   searchQuery: SearchQuery;
@@ -47,6 +48,40 @@ class SearchResults extends React.PureComponent<
       });
     }
     this.lastSearchResponse = this.props.searchResponse;
+  }
+
+  renderSearchHits(
+    currentHits: SearchResult[],
+    selectedHit?: SearchResult,
+    session?: Session
+  ) {
+    return (
+      <div className="search-hits-group m-1">
+        {currentHits.map((hit, idx) => (
+          <SearchHit
+            hit={hit}
+            key={idx}
+            selectedHit={
+              selectedHit && hit.id === selectedHit.id ? true : false
+            }
+            session={session}
+            onSearchHitExpand={hit =>
+              this.setState({
+                selectedHit: hit,
+                selectedInfoBoxType: InfoBoxType.DETAIL,
+              })
+            }
+            onSearchRelated={this.props.onSearchRelated}
+            onAugmentationOptions={hit =>
+              this.setState({
+                selectedHit: hit,
+                selectedInfoBoxType: InfoBoxType.AUGMENTATION,
+              })
+            }
+          />
+        ))}
+      </div>
+    );
   }
 
   render() {
@@ -91,38 +126,12 @@ class SearchResults extends React.PureComponent<
         );
         const {selectedHit, selectedInfoBoxType} = this.state;
         return (
-          // <div className="container-vh-full">
           <div className="d-flex flex-row container-vh-full">
             <div className="container-vh-scroll column-search-hits">
-              {currentHits.map((hit, idx) => (
-                <SearchHit
-                  hit={hit}
-                  key={idx}
-                  selectedHit={
-                    selectedHit && hit.id === selectedHit.id ? true : false
-                  }
-                  session={session}
-                  onSearchHitExpand={hit =>
-                    this.setState({
-                      selectedHit: hit,
-                      selectedInfoBoxType: InfoBoxType.DETAIL,
-                    })
-                  }
-                  onSearchRelated={this.props.onSearchRelated}
-                  onAugmentationOptions={hit =>
-                    this.setState({
-                      selectedHit: hit,
-                      selectedInfoBoxType: InfoBoxType.AUGMENTATION,
-                    })
-                  }
-                />
-              ))}
+              {this.renderSearchHits(currentHits, selectedHit, session)}
             </div>
             {selectedHit && (
-              <div
-                className="container-vh-scroll column-infobox
-                    card shadow-sm ml-1"
-              >
+              <div className="container-vh-scroll column-infobox">
                 <HitInfoBox
                   hit={selectedHit}
                   searchQuery={searchQuery}
@@ -132,7 +141,6 @@ class SearchResults extends React.PureComponent<
               </div>
             )}
           </div>
-          // </div>
         );
       }
       case SearchState.CLEAN:

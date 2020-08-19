@@ -133,7 +133,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
     const {hit, selectedHit, session} = this.props;
     return (
       <div
-        className="card mb-3 shadow-sm d-flex flex-row"
+        className="card shadow-sm d-flex flex-row"
         style={{
           backgroundColor: selectedHit ? '#f5f4fa' : 'white',
           marginRight: 9,

@@ -1,0 +1,16 @@
+.column-infobox {
+  max-width: 60%;
+}
+
+.column-search-hits {
+  min-width: 200px;
+  width: 40%;
+}
+
+.search-hits-group > * {
+  margin-bottom: 1rem;
+}
+
+.search-hits-group > :last-child {
+  margin-bottom: 0;
+}

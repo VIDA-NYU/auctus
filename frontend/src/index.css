@@ -51,15 +51,6 @@ html, body, body #root, .container-vh-full {
 }
 
 .container-vh-scroll {
-  overflow: scroll;
+  overflow: auto;
   height: 100%;
 }
-
-.column-infobox {
-  max-width: 60%;
-}
-.column-search-hits {
-  min-width: 200px;
-  width: 40%;
-}
-
