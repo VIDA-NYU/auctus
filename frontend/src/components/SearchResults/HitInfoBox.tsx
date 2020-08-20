@@ -21,7 +21,7 @@ function HitInfoBox(props: {
   const {hit, searchQuery, infoBoxType, session} = props;
   const lastUpdatedDate = new Date(hit.metadata.date);
   return (
-    <div className="card shadow-sm m-1">
+    <div className="card shadow-sm">
       <div className="card-body d-flex flex-column">
         <h4>{hit.metadata.name}</h4>
         {infoBoxType === InfoBoxType.AUGMENTATION ? (

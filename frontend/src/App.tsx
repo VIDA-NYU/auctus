@@ -9,7 +9,7 @@ import {SearchApp} from './components/SearchApp/SearchApp';
 class App extends React.Component {
   render() {
     return (
-      <div className="container-vh-full ml-2 mr-2">
+      <div className="container-vh-full">
         <Router>
           <Switch>
             <Route

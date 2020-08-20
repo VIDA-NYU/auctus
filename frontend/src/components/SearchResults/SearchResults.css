@@ -1,14 +1,22 @@
 .column-infobox {
-  max-width: 60%;
+  width: 60%;
+  padding-right: .25rem;
+  padding-left: .5rem;
+}
+
+.column-infobox > * {
+  overflow: auto;
 }
 
 .column-search-hits {
-  min-width: 200px;
   width: 40%;
+  min-width: 200px;
+  padding-left: .5rem;
+  padding-right: .4rem;
 }
 
 .search-hits-group > * {
-  margin-bottom: 1rem;
+  margin-bottom: .5rem;
 }
 
 .search-hits-group > :last-child {

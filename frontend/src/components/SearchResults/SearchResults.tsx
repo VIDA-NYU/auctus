@@ -56,7 +56,7 @@ class SearchResults extends React.PureComponent<
     session?: Session
   ) {
     return (
-      <div className="search-hits-group m-1">
+      <div className="search-hits-group">
         {currentHits.map((hit, idx) => (
           <SearchHit
             hit={hit}
@@ -126,7 +126,7 @@ class SearchResults extends React.PureComponent<
         );
         const {selectedHit, selectedInfoBoxType} = this.state;
         return (
-          <div className="d-flex flex-row container-vh-full">
+          <div className="d-flex flex-row container-vh-full pt-1">
             <div className="container-vh-scroll column-search-hits">
               {this.renderSearchHits(currentHits, selectedHit, session)}
             </div>

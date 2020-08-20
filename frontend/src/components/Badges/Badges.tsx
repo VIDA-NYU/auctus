@@ -122,7 +122,7 @@ export function ColumnBadge(props: {
   const BadgeIcon = iconForType(types);
 
   return (
-    <span className={`badge badge-pill ${badgeClass} m-1`}>
+    <span className={`badge badge-pill ${badgeClass}`}>
       <BadgeIcon className="feather-xs-w" />
       {label}
       {props.cornerButton === BagdeButton.ADD && (

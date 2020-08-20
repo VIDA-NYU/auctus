@@ -374,7 +374,7 @@ class DatasetSample extends React.PureComponent<
           <div
             className="btn-group btn-group-sm"
             role="group"
-            aria-label="Basic example"
+            aria-label="Dataset samples table"
             style={{float: 'initial', marginBottom: '-8px'}}
           >
             <button

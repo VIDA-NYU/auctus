@@ -558,10 +558,12 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                   />
                 </div>
               </div>
+              <div className="mt-2 mr-2 ml-2">
+                <ChipGroup>{compactFilters}</ChipGroup>
+              </div>
               {hasExpandedFilters && (
-                <div className="mt-2">
-                  <ChipGroup>{compactFilters}</ChipGroup>
-                  <div className="mt-1 mb-1" style={{maxWidth: 820}}>
+                <div className="mt-2 mr-2 ml-2">
+                  <div className="mt-1 mb-1 ml-1" style={{maxWidth: 820}}>
                     {expandedFilters}
                   </div>
                 </div>

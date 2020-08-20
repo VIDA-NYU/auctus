@@ -133,7 +133,6 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
         className="card shadow-sm d-flex flex-row"
         style={{
           backgroundColor: selectedHit ? '#f5f4fa' : 'white',
-          marginRight: 9,
         }}
       >
         <div className="card-body d-flex flex-column">
