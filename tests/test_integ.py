@@ -94,7 +94,8 @@ class DatamartTest(DataTestCase):
                 **kwargs
             )
         else:
-            response.raise_for_status()
+            if response.status_code == 503:
+                response.raise_for_status()
         if check_status:
             self.assert_response(response)
         if schema is not None:
