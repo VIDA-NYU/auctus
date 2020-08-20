@@ -72,7 +72,7 @@ class DateFilter extends React.PureComponent<DateFilterProps> {
           />
         </div>
         <div className="d-inline">
-          <span className="ml-2 mr-1">Granularity: </span>
+          <span className="ml-2 mr-1">Resolution: </span>
           <select
             className="custom-select"
             style={{width: 'auto'}}
