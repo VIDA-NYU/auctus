@@ -62,7 +62,11 @@ class SearchResults extends React.PureComponent<
             hit={hit}
             key={idx}
             selectedHit={
-              selectedHit && hit.id === selectedHit.id ? true : false
+              selectedHit &&
+              hit.id === selectedHit.id &&
+              hit.augmentation?.type === selectedHit.augmentation?.type
+                ? true
+                : false
             }
             session={session}
             onSearchHitExpand={hit =>
