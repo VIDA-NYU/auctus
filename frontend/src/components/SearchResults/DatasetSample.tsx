@@ -4,6 +4,7 @@ import {SearchResult, ColumnMetadata} from '../../api/types';
 import './DatasetSample.css';
 import {VegaLite} from 'react-vega';
 import {TopLevelSpec as VlSpec} from 'vega-lite';
+import {BadgeGroup} from '../Badges/Badges';
 
 const classMapping: {[key: string]: string} = {
   text: 'semtype-text',
@@ -47,16 +48,18 @@ function SemanticTypeBadge(props: {type: string; column?: ColumnMetadata}) {
 function TypeBadges(props: {column: ColumnMetadata}) {
   return (
     <>
-      <span className="badge badge-pill badge-primary">
-        {typeName(props.column.structural_type)}
-      </span>
-      {props.column.semantic_types.map(c => (
-        <SemanticTypeBadge
-          type={c}
-          column={props.column}
-          key={`sem-type-badge-${c}`}
-        />
-      ))}
+      <BadgeGroup>
+        <span className="badge badge-pill badge-primary">
+          {typeName(props.column.structural_type)}
+        </span>
+        {props.column.semantic_types.map(c => (
+          <SemanticTypeBadge
+            type={c}
+            column={props.column}
+            key={`sem-type-badge-${c}`}
+          />
+        ))}
+      </BadgeGroup>
     </>
   );
 }
@@ -146,9 +149,9 @@ function getSpecification(typePlot: string | undefined): VlSpec {
     width: '120',
     height: '120',
     data: {name: 'values'},
-    description: 'A simple bar chart with embedded data.',
     encoding: getEncoding(typePlot),
     mark: 'bar',
+    background: 'transparent',
   };
   return specification as VlSpec;
 }
@@ -163,9 +166,10 @@ function VegaPlot(props: {
     <VegaLite
       spec={getSpecification(props.columnMetadata.plot?.type)}
       data={{values: dataVega}}
+      actions={false}
     />
   );
-  const message = <p className="small">Nothing to show.</p>;
+  const message = <p className="small text-muted">Nothing to show.</p>;
   if (dataVega) {
     return props.isHeader ? (
       <th scope="col" {...props.column.getHeaderProps()}>
@@ -201,10 +205,10 @@ function TableColumnView(props: {
           <td style={{minWidth: 200}}>
             <ul style={{listStyle: 'none', columnCount: 2, columnGap: 10}}>
               {props.hit.metadata.columns[i].num_distinct_values && (
-                <li>Unique Values</li>
+                <li>Unique Values:</li>
               )}
-              {props.hit.metadata.columns[i].stddev && <li>Std Deviation</li>}
-              {props.hit.metadata.columns[i].mean && <li>Mean</li>}
+              {props.hit.metadata.columns[i].stddev && <li>Std Deviation:</li>}
+              {props.hit.metadata.columns[i].mean && <li>Mean:</li>}
               {props.hit.metadata.columns[i].num_distinct_values && (
                 <li>{props.hit.metadata.columns[i].num_distinct_values}</li>
               )}
@@ -370,7 +374,7 @@ class DatasetSample extends React.PureComponent<
           <div
             className="btn-group btn-group-sm"
             role="group"
-            aria-label="Basic example"
+            aria-label="Dataset samples table"
             style={{float: 'initial', marginBottom: '-8px'}}
           >
             <button

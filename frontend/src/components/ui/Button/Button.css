@@ -1,0 +1,15 @@
+
+.button-group > * {
+  display: inline-flex;
+  margin-right: 0.25rem;
+  margin-bottom: 0.075rem;
+  margin-top: 0.075rem;
+}
+
+.button-group > *:last-child {
+  margin-right: 0px;
+}
+
+.btn > .feather:first-child {
+  margin-right: 0.2rem;
+}

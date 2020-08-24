@@ -265,7 +265,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     return (
       <form onSubmit={this.onFormSubmit}>
         {this.props.type === 'upload' && (
-          <FormGroup for="upload-file" label="CSV file">
+          <FormGroup for="upload-file" label="CSV file:">
             <input
               type="file"
               id="upload-file"
@@ -283,7 +283,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
           </FormGroup>
         )}
         {this.props.type === 'url' && (
-          <FormGroup for="url-address" label="URL to CSV file">
+          <FormGroup for="url-address" label="URL to CSV file:">
             <input
               type="text"
               id="url-address"
@@ -301,7 +301,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
             )}
           </FormGroup>
         )}
-        <FormGroup for="upload-name" label="Name">
+        <FormGroup for="upload-name" label="Name:">
           <input
             type="text"
             id="upload-name"
@@ -330,7 +330,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
         {this.state.profilingStatus !== undefined &&
           this.props.type === 'upload' &&
           this.fileInput.current && (
-            <FormGroup for="upload-sample" label="Dataset Sample">
+            <FormGroup for="upload-sample" label="Dataset Sample:">
               <ProfileDataset
                 profilingStatus={this.state.profilingStatus}
                 profiledData={this.state.profiledData}

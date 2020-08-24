@@ -218,14 +218,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   componentDidMount() {
     this.fetchSources();
-    if (this.state.searchQuery) {
-      document.body.classList.add('searchresults');
-    }
     this.updateSearchStateFromUrlParams(this.props.location);
-  }
-
-  componentWillUnmount() {
-    document.body.classList.remove('searchresults');
   }
 
   async fetchSources() {
@@ -501,80 +494,98 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
         />
       );
     }
-    return <ChipGroup>{filters}</ChipGroup>;
+    return filters;
+  }
+
+  renderLandingPage(session?: Session) {
+    return (
+      <>
+        <VerticalLogo />
+        <SearchBar
+          value={this.state.query}
+          active={this.validQuery()}
+          onQueryChange={q => this.setState({query: q})}
+          onSubmitQuery={() => this.submitQuery()}
+        />
+        <AdvancedSearchBar
+          onAddFilter={type => this.handleAddFilter(type)}
+          relatedFileEnabled={!session?.data_token}
+        />
+        <div style={{maxWidth: 1000, margin: '1.5rem auto'}}>
+          {this.renderFilters()}
+        </div>
+      </>
+    );
   }
 
   render() {
     const {searchQuery, searchState, searchResponse, session} = this.state;
-
+    const compactFilters = this.renderCompactFilters();
+    const expandedFilters = this.renderFilters();
+    const hasExpandedFilters = expandedFilters.length > 0;
     return (
       <>
         {searchQuery ? (
-          <>
-            <div className="row">
-              <div className="col-md">
-                <div className="d-flex flex-row mt-2 mb-1">
-                  <div>
-                    <Link
-                      to={
-                        session
-                          ? `/?session=${JSON.stringify(this.state.session)}`
-                          : '/'
-                      }
-                      style={{textDecoration: 'none'}}
-                    >
-                      <HorizontalLogo />
-                    </Link>
-                  </div>
-                  <div className="ml-4">
-                    <SearchBar
-                      value={this.state.query}
-                      active={this.validQuery()}
-                      onQueryChange={q => this.setState({query: q})}
-                      onSubmitQuery={() => this.submitQuery()}
-                    />
-                    <AdvancedSearchBar
-                      onAddFilter={type => this.handleAddFilter(type)}
-                      relatedFileEnabled={!session?.data_token}
-                    />
-                  </div>
+          <div
+            className={`d-flex flex-column ${
+              hasExpandedFilters ? 'container-vh-scroll' : 'container-vh-full'
+            }`}
+          >
+            <div className="">
+              <div className="d-flex flex-row mt-3">
+                <div>
+                  <Link
+                    to={
+                      session
+                        ? `/?session=${JSON.stringify(this.state.session)}`
+                        : '/'
+                    }
+                    style={{textDecoration: 'none'}}
+                  >
+                    <HorizontalLogo />
+                  </Link>
+                </div>
+                <div className="ml-4">
+                  <SearchBar
+                    value={this.state.query}
+                    active={this.validQuery()}
+                    onQueryChange={q => this.setState({query: q})}
+                    onSubmitQuery={() => this.submitQuery()}
+                  />
+                  <AdvancedSearchBar
+                    onAddFilter={type => this.handleAddFilter(type)}
+                    relatedFileEnabled={!session?.data_token}
+                  />
                 </div>
               </div>
-            </div>
-            <div className="row" style={{width: 780}}>
-              <div className="col-md-12 mb-3">
-                {this.renderCompactFilters()}
+              <div className="mt-2 mr-2 ml-2">
+                <ChipGroup>{compactFilters}</ChipGroup>
               </div>
-              <div className="col-md-12">{this.renderFilters()}</div>
+              {hasExpandedFilters && (
+                <div className="mt-2 mr-2 ml-2">
+                  <div className="mt-1 mb-1 ml-1" style={{maxWidth: 820}}>
+                    {expandedFilters}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="row">
-              <div className="col-md-12">
-                <SearchResults
-                  searchQuery={searchQuery}
-                  searchState={searchState}
-                  searchResponse={searchResponse}
-                  session={session}
-                  onSearchRelated={this.onSearchRelated.bind(this)}
-                />
-              </div>
+            <div
+              className={`${
+                hasExpandedFilters ? '' : 'container-vh-full'
+              } mt-2 mb-2`}
+            >
+              <SearchResults
+                searchQuery={searchQuery}
+                searchState={searchState}
+                searchResponse={searchResponse}
+                session={session}
+                onSearchRelated={this.onSearchRelated.bind(this)}
+              />
             </div>
-          </>
+          </div>
         ) : (
-          <div>
-            <VerticalLogo />
-            <SearchBar
-              value={this.state.query}
-              active={this.validQuery()}
-              onQueryChange={q => this.setState({query: q})}
-              onSubmitQuery={() => this.submitQuery()}
-            />
-            <AdvancedSearchBar
-              onAddFilter={type => this.handleAddFilter(type)}
-              relatedFileEnabled={!session?.data_token}
-            />
-            <div style={{maxWidth: 1000, margin: '1.5rem auto'}}>
-              {this.renderFilters()}
-            </div>
+          <div className="container-vh-scroll">
+            {this.renderLandingPage(session)}
           </div>
         )}
       </>

@@ -33,7 +33,7 @@
 
 .btn-sm .feather {
   width: 16px;
-  height: 18px;
+  height: 21px;
 }
 
 /* to be applied to buttons that should look like a simple link */
@@ -44,6 +44,13 @@
   cursor: pointer;
   padding: 0px;
 }
-body.searchresults {
+
+html, body, body #root, .container-vh-full {
   overflow: hidden;
+  height: 100%;
+}
+
+.container-vh-scroll {
+  overflow: auto;
+  height: 100%;
 }

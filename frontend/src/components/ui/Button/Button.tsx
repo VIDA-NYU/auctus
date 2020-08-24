@@ -1,5 +1,6 @@
 import React from 'react';
 import {Spinner} from '../../visus/Loading/Spinner';
+import './Button.css';
 
 const SubmitButton = (props: {label: string; loading: boolean}) => (
   <button type="submit" className="btn btn-primary" disabled={props.loading}>
@@ -12,4 +13,16 @@ const SubmitButton = (props: {label: string; loading: boolean}) => (
   </button>
 );
 
-export {SubmitButton};
+function ButtonGroup(props: React.PropsWithChildren<{}>) {
+  return <div className="button-group">{props.children}</div>;
+}
+
+function LinkButton(props: React.PropsWithChildren<{href: string}>) {
+  return (
+    <a className="btn btn-sm btn-outline-primary" href={props.href}>
+      {props.children}
+    </a>
+  );
+}
+
+export {SubmitButton, ButtonGroup, LinkButton};

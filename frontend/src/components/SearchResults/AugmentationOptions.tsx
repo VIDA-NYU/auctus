@@ -6,6 +6,7 @@ import {
   ColumnAggregations,
   Session,
   TemporalResolution,
+  AugmentationType,
 } from '../../api/types';
 import * as api from '../../api/rest';
 import {SearchQuery} from '../../api/rest';
@@ -20,6 +21,7 @@ interface AugmentationOptionsProps {
 }
 
 interface AugmentationOptionsState {
+  hit: SearchResult;
   checked: {
     [id: string]: boolean;
   };
@@ -53,16 +55,20 @@ function TemporalResolutionSelector(props: {
   onChange: (value: TemporalResolution) => void;
 }) {
   return (
-    <select
-      value={props.resolution}
-      onChange={e => props.onChange(e.target.value as TemporalResolution)}
-    >
-      {Object.values(TemporalResolution).map(value => (
-        <option value={value} key={value}>
-          {value}
-        </option>
-      ))}
-    </select>
+    <div>
+      <select
+        className="custom-select"
+        style={{width: 'auto'}}
+        value={props.resolution}
+        onChange={e => props.onChange(e.target.value as TemporalResolution)}
+      >
+        {Object.values(TemporalResolution).map(value => (
+          <option value={value} key={value}>
+            {value}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
@@ -72,21 +78,49 @@ class AugmentationOptions extends React.PureComponent<
 > {
   constructor(props: AugmentationOptionsProps) {
     super(props);
-    const initialState: AugmentationOptionsState = {
-      checked: {},
-      temporalResolution: props.hit.augmentation?.temporal_resolution,
-    };
-    const columns = getAugmentationColumns(props.hit.augmentation);
-    columns.forEach((c, index) => {
-      initialState.checked[c.idx.toString()] = index === 0 ? true : false;
-    });
-    this.state = initialState;
     this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(
       this
     );
     this.handleTemporalResolutionChange = this.handleTemporalResolutionChange.bind(
       this
     );
+    this.state = AugmentationOptions.initialState(props);
+  }
+
+  static initialState(props: AugmentationOptionsProps) {
+    const initialState: AugmentationOptionsState = {
+      hit: props.hit,
+      checked: {},
+      columnAggregations: undefined,
+      temporalResolution: props.hit.augmentation?.temporal_resolution,
+    };
+    if (props.hit.augmentation) {
+      const augmentation = props.hit.augmentation;
+      const columns = getAugmentationColumns(augmentation);
+      if (augmentation.type === 'join') {
+        columns.forEach((c, index) => {
+          initialState.checked[c.idx.toString()] = index === 0 ? true : false;
+        });
+      } else if (augmentation.type === 'union') {
+        columns.forEach(c => {
+          initialState.checked[c.idx.toString()] = true;
+        });
+      }
+    }
+    return initialState;
+  }
+
+  static getDerivedStateFromProps(
+    nextProps: AugmentationOptionsProps,
+    prevState: AugmentationOptionsState
+  ) {
+    if (
+      nextProps.hit.id === prevState.hit.id &&
+      nextProps.hit.augmentation?.type === prevState.hit.augmentation?.type
+    ) {
+      return null;
+    }
+    return AugmentationOptions.initialState(nextProps);
   }
 
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -174,7 +208,7 @@ class AugmentationOptions extends React.PureComponent<
     this.setState({result: api.RequestStatus.IN_PROGRESS});
   }
 
-  renderAugmentButton(hit: SearchResult, type: string) {
+  renderAugmentButton(hit: SearchResult, type: AugmentationType) {
     const {session} = this.props;
     const {result} = this.state;
     let btnActive = this.findIndexesOfCheckedColumn().length > 0;
@@ -233,6 +267,7 @@ class AugmentationOptions extends React.PureComponent<
       return (
         <div className="form-check ml-2" key={`div-aug-${i}`}>
           <input
+            key={`column-checkbox-${hit.id}-${c.key}`}
             className="form-check-input"
             type="checkbox"
             value={c.idx}
@@ -285,6 +320,7 @@ class AugmentationOptions extends React.PureComponent<
           <>
             <b>Temporal resolution:</b>
             <TemporalResolutionSelector
+              key={`temp-res-sel-${hit.id}`}
               resolution={this.state.temporalResolution}
               onChange={this.handleTemporalResolutionChange}
             />

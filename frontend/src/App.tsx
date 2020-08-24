@@ -9,31 +9,31 @@ import {SearchApp} from './components/SearchApp/SearchApp';
 class App extends React.Component {
   render() {
     return (
-      <div className="container-fluid">
+      <div className="container-vh-full">
         <Router>
           <Switch>
             <Route
               path="/upload"
               render={() => (
-                <>
+                <div className="container-vh-scroll">
                   <MainMenu />
                   <Link to="/" style={{textDecoration: 'none'}}>
                     <CenteredHorizontalLogo />
                   </Link>
                   <Upload />
-                </>
+                </div>
               )}
             />
             <Route
               path="/statistics"
               render={() => (
-                <>
+                <div className="container-vh-scroll">
                   <MainMenu />
                   <Link to="/" style={{textDecoration: 'none'}}>
                     <CenteredHorizontalLogo />
                   </Link>
                   <Statistics />
-                </>
+                </div>
               )}
             />
             <Route

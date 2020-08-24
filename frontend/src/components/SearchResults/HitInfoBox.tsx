@@ -21,13 +21,7 @@ function HitInfoBox(props: {
   const {hit, searchQuery, infoBoxType, session} = props;
   const lastUpdatedDate = new Date(hit.metadata.date);
   return (
-    <div
-      className="col-md-8 px-0 pb-5 card shadow-sm ml-2"
-      style={{
-        maxHeight: '90vh',
-        overflowY: 'scroll',
-      }}
-    >
+    <div className="card shadow-sm">
       <div className="card-body d-flex flex-column">
         <h4>{hit.metadata.name}</h4>
         {infoBoxType === InfoBoxType.AUGMENTATION ? (
@@ -48,7 +42,7 @@ function HitInfoBox(props: {
               <b>Last Updated Date:</b> {lastUpdatedDate.toLocaleString()}
             </div>
             <Description hit={hit} label={true} />
-            {'types' in hit.metadata && <DatasetTypes hit={hit} label={true} />}
+            <DatasetTypes hit={hit} label={true} />
             <DatasetColumns
               columns={hit.metadata.columns}
               maxLength={200}
