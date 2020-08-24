@@ -26,18 +26,19 @@ export function SpatialCoverage(props: {hit: SearchResult}) {
 
 export function DatasetTypes(props: {hit: SearchResult; label?: boolean}) {
   const {hit, label} = props;
-
+  const types = hit.metadata.types;
+  if (!(types && types.length > 0)) {
+    return null;
+  }
   return (
-    <>
-      {hit.metadata.types.length > 0 && (
-        <div className="mt-2">
-          <BadgeGroup>
-            {label && <b>Data Types:</b>}
-            {hit.metadata.types.map(t => DatasetTypeBadge(t))}
-          </BadgeGroup>
-        </div>
-      )}
-    </>
+    <div className="mt-2">
+      <BadgeGroup>
+        {label && <b>Data Types:</b>}
+        {hit.metadata.types.map(t => (
+          <DatasetTypeBadge type={t} key={`dt-badge-${hit.id}-${t}`} />
+        ))}
+      </BadgeGroup>
+    </div>
   );
 }
 

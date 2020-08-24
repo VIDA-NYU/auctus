@@ -42,7 +42,7 @@ function HitInfoBox(props: {
               <b>Last Updated Date:</b> {lastUpdatedDate.toLocaleString()}
             </div>
             <Description hit={hit} label={true} />
-            {'types' in hit.metadata && <DatasetTypes hit={hit} label={true} />}
+            <DatasetTypes hit={hit} label={true} />
             <DatasetColumns
               columns={hit.metadata.columns}
               maxLength={200}

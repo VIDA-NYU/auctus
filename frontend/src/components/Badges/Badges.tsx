@@ -86,7 +86,8 @@ export function CategoricalBadge() {
   );
 }
 
-export function DatasetTypeBadge(type: string) {
+export function DatasetTypeBadge(props: {type: string}) {
+  const {type} = props;
   if (type === 'spatial') {
     return SpatialBadge();
   } else if (type === 'temporal') {
@@ -97,7 +98,7 @@ export function DatasetTypeBadge(type: string) {
     return CategoricalBadge();
   } else {
     console.error('Invalid dataset type: ', type);
-    return <></>;
+    return null;
   }
 }
 

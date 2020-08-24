@@ -73,7 +73,11 @@ class Statistics extends React.PureComponent<{}, StatisticsState> {
                 </div>
               </div>
               {d.types && d.types.length > 0 && (
-                <BadgeGroup>{d.types.map(t => DatasetTypeBadge(t))}</BadgeGroup>
+                <BadgeGroup>
+                  {d.types.map(t => (
+                    <DatasetTypeBadge type={t} key={`dt-badge-${d.id}-${t}`} />
+                  ))}
+                </BadgeGroup>
               )}
             </div>
           ))}
