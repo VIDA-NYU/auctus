@@ -8,7 +8,6 @@ The version of Datamart that we host can be accessed at https://auctus.vida-nyu.
 On each page, clicking on the Auctus logo will bring you back to the search page. Other pages can be accessed using the drop-down menu in the top-right corner:
 
 ..  figure:: screenshots/menu.png
-    :scale: 75%
 
 ..  _searching:
 
