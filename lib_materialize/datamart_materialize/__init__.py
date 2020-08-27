@@ -7,7 +7,7 @@ import threading
 import time
 
 
-__version__ = '0.7'
+__version__ = '0.7.1'
 
 
 logger = logging.getLogger(__name__)
