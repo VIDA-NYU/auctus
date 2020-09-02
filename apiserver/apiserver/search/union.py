@@ -1,4 +1,4 @@
-import distance
+import stringdist
 import logging
 
 from .base import get_column_identifiers
@@ -19,7 +19,7 @@ def compute_levenshtein_sim(str1, str2):
     if str1 in str2 or str2 in str1:
         return 1
 
-    return 1 - distance.nlevenshtein(str1, str2, method=2)
+    return 1 - stringdist.levenshtein_norm(str1, str2)
 
 
 def get_columns_by_type(data_profile, filter_=()):
