@@ -51,7 +51,7 @@ _re_other_point = re.compile(
     r'-?[0-9]{1,3}\.[0-9]{1,15}'
     r'\)$'
 )
-_re_whitespace = re.compile(r'\s')
+_re_whitespace = re.compile(r'\s+')
 
 
 # Tolerable ratio of unclean data
