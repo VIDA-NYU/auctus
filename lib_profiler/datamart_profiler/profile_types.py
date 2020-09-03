@@ -81,7 +81,7 @@ def regular_exp_count(array):
             re_count['other_point'] += 1
         elif _re_wkt_polygon.match(elem):
             re_count['polygon'] += 1
-        elif len(_re_whitespace.findall(elem)) >= 4:
+        elif len(_re_whitespace.findall(elem)) >= 3:
             re_count['text'] += 1
         if elem.lower() in ('0', '1', 'true', 'false', 'y', 'n', 'yes', 'no'):
             re_count['bool'] += 1
