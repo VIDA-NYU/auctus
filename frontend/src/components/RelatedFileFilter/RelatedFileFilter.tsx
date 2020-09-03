@@ -5,10 +5,12 @@ import {formatSize, shallowEqual} from '../../utils';
 import {Metadata, RelatedFile, TabularVariable} from '../../api/types';
 import {ProfileResult, profile, metadata} from '../../api/rest';
 import {RelatedFileColumnsSelector} from './RelatedFileColumnsSelector';
+import {Loading} from '../visus/Loading/Loading';
 
 interface RelatedFileFilterState {
   profile?: Metadata;
   selectedTabularVars?: TabularVariable;
+  isLoadingData: boolean;
 }
 
 interface RelatedFileFilterProps {
@@ -25,7 +27,9 @@ class RelatedFileFilter extends React.PureComponent<
 
   constructor(props: RelatedFileFilterProps) {
     super(props);
-    this.state = {};
+    this.state = {
+      isLoadingData: false,
+    };
     if (props.state) {
       this.getProfile(props.state);
     }
@@ -70,6 +74,7 @@ class RelatedFileFilter extends React.PureComponent<
   handleSelectedFile(acceptedFiles: File[]) {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
+      this.setState({isLoadingData: true});
       const profileQuery = profile(file);
       this.profileQuery = profileQuery;
       profileQuery.then(p => {
@@ -92,9 +97,17 @@ class RelatedFileFilter extends React.PureComponent<
             tabularVariables,
           };
           this.profileQueryFile = relatedFile;
-          this.setState({profile: p, selectedTabularVars: tabularVariables});
+          this.setState({
+            profile: p,
+            selectedTabularVars: tabularVariables,
+            isLoadingData: false,
+          });
           this.props.onSelectedFileChange(relatedFile);
         }
+      });
+    } else {
+      this.setState({
+        isLoadingData: false,
       });
     }
   }
@@ -141,7 +154,16 @@ class RelatedFileFilter extends React.PureComponent<
     const maxSize = 100 * 1024 * 1024; // maximum file size
     const relatedFile = this.props.state;
     const {profile, selectedTabularVars} = this.state;
-    if (relatedFile) {
+    if (this.state.isLoadingData) {
+      return (
+        <div>
+          <CardShadow height={'auto'}>
+            <Loading message="Loading and profiling data..." />
+          </CardShadow>
+        </div>
+      );
+    }
+    if (relatedFile && !this.state.isLoadingData) {
       let totalColumns = 0;
       if (profile !== undefined) {
         totalColumns = profile.columns.length;
