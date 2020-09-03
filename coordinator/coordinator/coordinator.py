@@ -183,11 +183,11 @@ class Coordinator(object):
                     'sources': {
                         'terms': {
                             'field': 'source',
+                            'size': 100,
                         },
                     },
                 },
             },
-            size=0,
         )['aggregations']['sources']
         sources = {
             bucket['key']: bucket['doc_count']
