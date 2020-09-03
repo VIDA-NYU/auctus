@@ -323,9 +323,10 @@ class Profiler(object):
                         id=dataset_id,
                     )
                     try:
-                        self.es.delete(
-                            'datamart',
+                        delete_dataset_from_index(
+                            self.es,
                             dataset_id,
+                            self.lazo_client,
                         )
                     except elasticsearch.NotFoundError:
                         pass
