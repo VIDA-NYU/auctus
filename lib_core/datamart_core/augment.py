@@ -8,8 +8,7 @@ from datamart_augmentation import AugmentationError, join, union
 logger = logging.getLogger(__name__)
 
 
-def augment(data, newdata, metadata, task, writer,
-            columns=None, return_only_datamart_data=False):
+def augment(data, newdata, metadata, task, writer, columns=None):
     """
     Augments original data based on the task.
 
@@ -19,7 +18,6 @@ def augment(data, newdata, metadata, task, writer,
     :param task: the augmentation task.
     :param writer: Writer on which to save the files.
     :param columns: a list of column indices from newdata that will be added to data
-    :param return_only_datamart_data: only returns the portion of newdata that matches
       well with data.
     """
 
@@ -44,8 +42,7 @@ def augment(data, newdata, metadata, task, writer,
             task['augmentation']['right_columns'],
             columns=columns,
             agg_functions=task['augmentation'].get('agg_functions'),
-            temporal_resolution=task['augmentation'].get('temporal_resolution'),  # look
-            return_only_datamart_data=return_only_datamart_data,
+            temporal_resolution=task['augmentation'].get('temporal_resolution'),
         )
     elif task['augmentation']['type'] == 'union':
         output_metadata = union(
@@ -56,7 +53,6 @@ def augment(data, newdata, metadata, task, writer,
             writer,
             task['augmentation']['left_columns'],
             task['augmentation']['right_columns'],
-            return_only_datamart_data=return_only_datamart_data,
         )
     else:
         raise AugmentationError("Augmentation task not provided")
