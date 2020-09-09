@@ -144,7 +144,6 @@ elasticsearch = ">=7.0,<8.0"
 lazo-index-service = "0.6.1"
 prometheus_client = "*"
 redis = ">=3.4,<4.0"
-StringDist = "*"
 tornado = ">=5.0"
 
 [package.source]
@@ -1057,14 +1056,6 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
-name = "stringdist"
-version = "1.0.9"
-description = "This package provides the stringdist module, which includes several functions for calculating string distances. Under the hood, a C extension module is preferentially used for optimal performance, with an automatic fallback to a Python implementation."
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "threadpoolctl"
 version = "2.1.0"
 description = "threadpoolctl"
@@ -1759,9 +1750,6 @@ sphinxcontrib-qthelp = [
 sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.4.tar.gz", hash = "sha256:eaa0eccc86e982a9b939b2b82d12cc5d013385ba5eadcc7e4fed23f4405f77bc"},
     {file = "sphinxcontrib_serializinghtml-1.1.4-py2.py3-none-any.whl", hash = "sha256:f242a81d423f59617a8e5cf16f5d4d74e28ee9a66f9e5b637a18082991db5a9a"},
-]
-stringdist = [
-    {file = "StringDist-1.0.9.tar.gz", hash = "sha256:91e6d4a348223db094d029e7e3de9ce89c561738047555dfad60ff5ccb7a5b74"},
 ]
 threadpoolctl = [
     {file = "threadpoolctl-2.1.0-py3-none-any.whl", hash = "sha256:38b74ca20ff3bb42caca8b00055111d74159ee95c4370882bbff2b93d24da725"},

@@ -1,5 +1,5 @@
+from collections import Counter
 import logging
-import stringdist
 
 from .base import get_column_identifiers
 
@@ -12,14 +12,22 @@ PAGINATION_SIZE = 200
 
 def name_similarity(str1, str2):
     """
-    Compute the Levenshtein Similarity between two strings, if one string
-    is not contained in the other.
+    Compute the similarity between two strings using 3-grams.
     """
 
-    if str1 in str2 or str2 in str1:
-        return 1
+    # Compute 3-grams
+    if len(str1) < 3:
+        str1_grams = Counter([str1])
+    else:
+        str1_grams = Counter((str1[i:i + 3] for i in range(len(str1) - 2)))
+    if len(str2) < 3:
+        str2_grams = Counter([str2])
+    else:
+        str2_grams = Counter((str2[i:i + 3] for i in range(len(str2) - 2)))
 
-    return 1 - stringdist.levenshtein_norm(str1, str2)
+    shared = sum((str1_grams & str2_grams).values())
+
+    return shared / min(sum(str1_grams.values()), sum(str2_grams.values()))
 
 
 def get_columns_by_type(data_profile, filter_=()):

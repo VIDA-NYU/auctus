@@ -7,7 +7,6 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'aio-pika',
-    'StringDist',
     'elasticsearch~=7.0',
     'redis~=3.4',
     'lazo-index-service==0.6.1',
