@@ -3,22 +3,15 @@ import Dropzone from 'react-dropzone';
 import {CardShadow, CardButton} from '../visus/Card/Card';
 import {formatSize, shallowEqual} from '../../utils';
 import {Metadata, RelatedFile, TabularVariable} from '../../api/types';
-import {ProfileResult, profile, metadata} from '../../api/rest';
+import {ProfileResult, profile, metadata, RequestStatus} from '../../api/rest';
 import {RelatedFileColumnsSelector} from './RelatedFileColumnsSelector';
 import {Loading} from '../visus/Loading/Loading';
 import * as Icon from 'react-feather';
 
-enum LoadingState {
-  CLEAN,
-  LOADING_REQUESTING,
-  LOADING_SUCCESS,
-  LOADING_FAILED,
-}
-
 interface RelatedFileFilterState {
   profile?: Metadata;
   selectedTabularVars?: TabularVariable;
-  loadingState: LoadingState;
+  loadingState?: RequestStatus;
 }
 
 interface RelatedFileFilterProps {
@@ -36,7 +29,7 @@ class RelatedFileFilter extends React.PureComponent<
   constructor(props: RelatedFileFilterProps) {
     super(props);
     this.state = {
-      loadingState: LoadingState.CLEAN,
+      loadingState: undefined,
     };
     this.handleFailedLoading = this.handleFailedLoading.bind(this);
     if (props.state) {
@@ -82,14 +75,14 @@ class RelatedFileFilter extends React.PureComponent<
 
   handleFailedLoading() {
     this.setState({
-      loadingState: LoadingState.LOADING_FAILED,
+      loadingState: RequestStatus.ERROR,
     });
   }
 
   handleSelectedFile(acceptedFiles: File[]) {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      this.setState({loadingState: LoadingState.LOADING_REQUESTING});
+      this.setState({loadingState: RequestStatus.IN_PROGRESS});
       const profileQuery = profile(file);
       this.profileQuery = profileQuery;
       profileQuery
@@ -116,7 +109,7 @@ class RelatedFileFilter extends React.PureComponent<
             this.setState({
               profile: response,
               selectedTabularVars: tabularVariables,
-              loadingState: LoadingState.LOADING_SUCCESS,
+              loadingState: RequestStatus.SUCCESS,
             });
             this.props.onSelectedFileChange(relatedFile);
           } else {
@@ -173,7 +166,7 @@ class RelatedFileFilter extends React.PureComponent<
     const maxSize = 100 * 1024 * 1024; // maximum file size
     const relatedFile = this.props.state;
     const {profile, selectedTabularVars} = this.state;
-    if (this.state.loadingState === LoadingState.LOADING_REQUESTING) {
+    if (this.state.loadingState === RequestStatus.IN_PROGRESS) {
       return (
         <div>
           <CardShadow height={'auto'}>
@@ -182,7 +175,7 @@ class RelatedFileFilter extends React.PureComponent<
         </div>
       );
     }
-    if (this.state.loadingState === LoadingState.LOADING_FAILED) {
+    if (this.state.loadingState === RequestStatus.ERROR) {
       return (
         <div>
           <CardShadow height={'auto'}>
@@ -195,7 +188,7 @@ class RelatedFileFilter extends React.PureComponent<
               className="btn btn-sm btn-outline-primary mt-2"
               onClick={() =>
                 this.setState({
-                  loadingState: LoadingState.CLEAN,
+                  loadingState: undefined,
                 })
               }
             >
@@ -207,7 +200,8 @@ class RelatedFileFilter extends React.PureComponent<
     }
     if (
       relatedFile &&
-      this.state.loadingState === LoadingState.LOADING_SUCCESS
+      (this.state.loadingState === RequestStatus.SUCCESS ||
+        this.state.loadingState === undefined)
     ) {
       let totalColumns = 0;
       if (profile !== undefined) {
