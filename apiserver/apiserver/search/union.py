@@ -1,5 +1,5 @@
-import stringdist
 import logging
+import stringdist
 
 from .base import get_column_identifiers
 
@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 PAGINATION_SIZE = 200
 
 
-def compute_levenshtein_sim(str1, str2):
+def name_similarity(str1, str2):
     """
-    Computer the Levenshtein Similarity between two strings using 3-grams, if one string
+    Compute the Levenshtein Similarity between two strings, if one string
     is not contained in the other.
     """
 
@@ -152,7 +152,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
                     for column_hit in inner_hits['columns']['hits']['hits']:
                         column_offset = int(column_hit['_nested']['offset'])
                         column_name = columns[column_offset]['name']
-                        sim = compute_levenshtein_sim(att.lower(), column_name.lower())
+                        sim = name_similarity(att.lower(), column_name.lower())
                         column_pairs[dataset_name].append((att, column_name, sim, es_score))
 
                 if len(hits) != PAGINATION_SIZE:
