@@ -57,6 +57,16 @@ metadata_schema['properties'] = dict(
 
 
 class DatamartTest(DataTestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.es = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.es.close()
+
     def datamart_get(self, url, **kwargs):
         return self._request('get', url, **kwargs)
 
@@ -112,12 +122,9 @@ class DatamartTest(DataTestCase):
         response.raise_for_status()
 
 
-class TestProfiler(DataTestCase):
+class TestProfiler(DatamartTest):
     def test_basic(self):
-        es = elasticsearch.Elasticsearch(
-            os.environ['ELASTICSEARCH_HOSTS'].split(',')
-        )
-        hits = es.search(
+        hits = self.es.search(
             index='datamart',
             body={
                 'query': {
@@ -145,10 +152,7 @@ class TestProfiler(DataTestCase):
         )
 
     def test_alternate(self):
-        es = elasticsearch.Elasticsearch(
-            os.environ['ELASTICSEARCH_HOSTS'].split(',')
-        )
-        hits = es.search(
+        hits = self.es.search(
             index='pending',
             body={
                 'query': {
@@ -2281,14 +2285,10 @@ class TestUpload(DatamartTest):
         dataset_id = record['id']
         self.assertTrue(dataset_id.startswith('datamart.url.'))
 
-        es = elasticsearch.Elasticsearch(
-            os.environ['ELASTICSEARCH_HOSTS'].split(',')
-        )
-
         try:
             # Check it's in the alternate index
             try:
-                pending = es.get('pending', dataset_id)['_source']
+                pending = self.es.get('pending', dataset_id)['_source']
                 self.assertJson(
                     pending,
                     {
@@ -2318,7 +2318,7 @@ class TestUpload(DatamartTest):
                 # Wait for it to be indexed
                 for _ in range(10):
                     try:
-                        record = es.get('datamart', dataset_id)['_source']
+                        record = self.es.get('datamart', dataset_id)['_source']
                     except elasticsearch.NotFoundError:
                         pass
                     else:
@@ -2347,7 +2347,7 @@ class TestUpload(DatamartTest):
             # Check it's no longer in alternate index
             time.sleep(1)
             with self.assertRaises(elasticsearch.NotFoundError):
-                es.get('pending', dataset_id)
+                self.es.get('pending', dataset_id)
         finally:
             import lazo_index_service
             from datamart_core.common import delete_dataset_from_index
@@ -2358,7 +2358,7 @@ class TestUpload(DatamartTest):
                 port=int(os.environ['LAZO_SERVER_PORT'])
             )
             delete_dataset_from_index(
-                es,
+                self.es,
                 dataset_id,
                 lazo_client,
             )
@@ -2391,14 +2391,10 @@ class TestUpload(DatamartTest):
             dataset_id = record['id']
             self.assertTrue(dataset_id.startswith('datamart.upload.'))
 
-            es = elasticsearch.Elasticsearch(
-                os.environ['ELASTICSEARCH_HOSTS'].split(',')
-            )
-
             try:
                 # Check it's in the alternate index
                 try:
-                    pending = es.get('pending', dataset_id)['_source']
+                    pending = self.es.get('pending', dataset_id)['_source']
                     self.assertJson(
                         pending,
                         {
@@ -2428,7 +2424,7 @@ class TestUpload(DatamartTest):
                     # Wait for it to be indexed
                     for _ in range(10):
                         try:
-                            record = es.get('datamart', dataset_id)['_source']
+                            record = self.es.get('datamart', dataset_id)['_source']
                         except elasticsearch.NotFoundError:
                             pass
                         else:
@@ -2457,7 +2453,7 @@ class TestUpload(DatamartTest):
                 # Check it's no longer in alternate index
                 time.sleep(1)
                 with self.assertRaises(elasticsearch.NotFoundError):
-                    es.get('pending', dataset_id)
+                    self.es.get('pending', dataset_id)
             finally:
                 import lazo_index_service
                 from datamart_core.common import delete_dataset_from_index
@@ -2468,7 +2464,7 @@ class TestUpload(DatamartTest):
                     port=int(os.environ['LAZO_SERVER_PORT'])
                 )
                 delete_dataset_from_index(
-                    es,
+                    self.es,
                     dataset_id,
                     lazo_client,
                 )
