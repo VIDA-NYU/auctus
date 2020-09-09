@@ -3,6 +3,7 @@ from unittest import mock
 
 from apiserver.search import parse_query
 from apiserver.search import join
+from apiserver.search.union import name_similarity
 
 from .utils import DataTestCase
 
@@ -343,4 +344,26 @@ class TestAugmentation(DataTestCase):
                 },
                 size=50,
             ),
+        )
+
+    def test_name_similarity(self):
+        self.assertAlmostEqual(
+            name_similarity("temperature", "temperature"),
+            1.0,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            name_similarity("fridge temperature", "temperature"),
+            1.0,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            name_similarity("avg temperature", "temperature avg"),
+            0.77,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            name_similarity("avg temperature", "tempest"),
+            0.60,
+            places=2,
         )
