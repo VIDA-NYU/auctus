@@ -31,3 +31,17 @@
 #vg-tooltip-element {
   z-index: 2000;
 }
+
+.chip-btn-download {
+  margin-left: 0;
+  margin-bottom: 0.1rem!important;
+  margin-top: -3px;
+  color: rgb(0, 0, 0, 0.5);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chip-btn-download:hover {
+  color: rgb(0, 0, 0, 1.0);
+}

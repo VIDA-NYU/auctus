@@ -542,7 +542,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         # Private API for the frontend, don't want clients to rely on it
         if self.get_query_argument('_parse_sample', ''):
             for result in results:
-                sample = result['metadata'].get('sample', None)
+                sample = result['metadata'].pop('sample', None)
                 if sample:
                     result['sample'] = list(csv.reader(io.StringIO(sample)))
 
