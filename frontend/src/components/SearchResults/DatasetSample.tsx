@@ -5,6 +5,7 @@ import './DatasetSample.css';
 import {VegaLite} from 'react-vega';
 import {TopLevelSpec as VlSpec} from 'vega-lite';
 import {BadgeGroup} from '../Badges/Badges';
+import * as Icon from 'react-feather';
 
 const classMapping: {[key: string]: string} = {
   text: 'semtype-text',
@@ -354,6 +355,20 @@ class DatasetSample extends React.PureComponent<
     this.setState({typeView: view});
   }
 
+  downloadSampleData(hit: SearchResult) {
+    const sample = hit.sample;
+    const filename = 'sample_' + hit.id + '.csv';
+    const csvContent =
+      'data:text/csv;charset=utf-8,' + sample.map(e => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click(); // This will download the data file named 'filename.csv'.
+    document.body.removeChild(link);
+  }
+
   render() {
     const {hit} = this.props;
     const sample = hit.sample;
@@ -367,7 +382,16 @@ class DatasetSample extends React.PureComponent<
 
     return (
       <div className="mt-2">
-        <h6>Dataset Sample:</h6>
+        <div className="d-flex flex-row">
+          <h6>Dataset Sample (</h6>
+          <div
+            className="chip-btn-download"
+            onClick={() => this.downloadSampleData(hit)}
+          >
+            <Icon.Download className="feather" />
+          </div>
+          <h6>): </h6>
+        </div>
         <div>
           <div
             className="btn-group btn-group-sm"
