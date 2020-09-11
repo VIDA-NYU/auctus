@@ -564,11 +564,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     )
                     spatial_ranges = get_spatial_ranges(values)
                     if spatial_ranges:
-                        spatial_coverage.append({"lat": name_lat,
-                                                 "lat_index": column_indexes[name_lat],
-                                                 "lon": name_long,
-                                                 "lon_index": column_indexes[name_long],
-                                                 "ranges": spatial_ranges})
+                        spatial_coverage.append({
+                            'type': 'latlong',
+                            'column_names': [name_lat, name_long],
+                            'column_indexes': [column_indexes[name_lat], column_indexes[name_long]],
+                            'ranges': spatial_ranges,
+                        })
 
             # Compute ranges from WKT points
             for i, col in enumerate(columns):
@@ -582,9 +583,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 )
                 spatial_ranges = get_spatial_ranges(values)
                 if spatial_ranges:
-                    spatial_coverage.append({"point": name,
-                                             "point_index": i,
-                                             "ranges": spatial_ranges})
+                    spatial_coverage.append({
+                        'type': 'point',
+                        'column_names': [name],
+                        'column_indexes': [i],
+                        'ranges': spatial_ranges,
+                    })
 
             # Compute ranges from addresses
             for idx, values in resolved_addresses.items():
@@ -595,9 +599,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 )
                 spatial_ranges = get_spatial_ranges(values)
                 if spatial_ranges:
-                    spatial_coverage.append({"address": name,
-                                             "address_index": idx,
-                                             "ranges": spatial_ranges})
+                    spatial_coverage.append({
+                        'type': 'address',
+                        'column_names': [name],
+                        'column_indexes': [idx],
+                        'ranges': spatial_ranges,
+                    })
 
             # Compute ranges from administrative areas
             for idx, areas in resolved_admin_areas.items():
@@ -622,9 +629,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     and merged[3] - merged[2] > 0.01
                 ):
                     spatial_coverage.append({
-                        "admin": columns[idx]['name'],
-                        "admin_index": idx,
-                        "ranges": [
+                        'type': 'admin',
+                        'column_names': [columns[idx]['name']],
+                        'column_indexes': [idx],
+                        'ranges': [
                             {
                                 'range': {
                                     'type': 'envelope',

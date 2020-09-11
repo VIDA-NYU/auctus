@@ -104,16 +104,15 @@
             "type": "object",
             "description": "Keep in sync, search code for 279a32",
             "properties": {
-              "lat": {"type": "string"},
-              "lon": {"type": "string"},
-              "lat_index": {"type":  "number"},
-              "lon_index": {"type":  "number"},
-              "point": {"type": "string"},
-              "point_index": {"type":  "number"},
-              "address": {"type": "string"},
-              "address_index": {"type":  "number"},
-              "admin": {"type": "string"},
-              "admin_index": {"type":  "number"},
+              "type": {"type": "string"},
+              "column_names": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "column_indexes": {
+                "type": "array",
+                "items": {"type": "number"}
+              },
               "ranges": {
                 "$ref": "#/definitions/spatial_ranges"
               }

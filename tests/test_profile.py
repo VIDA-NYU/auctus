@@ -169,8 +169,8 @@ class TestLatlongSelection(DataTestCase):
         self.assertJson(
             [{k: v for k, v in c.items() if k != 'ranges'} for c in metadata['spatial_coverage']],
             [
-                {'lat': 'to lat', 'lat_index': 2, 'lon': 'to long', 'lon_index': 1},
-                {'lat': 'from latitude', 'lat_index': 0, 'lon': 'from longitude', 'lon_index': 3},
+                {'type': 'latlong', 'column_names': ['to lat', 'to long'], 'column_indexes': [2, 1]},
+                {'type': 'latlong', 'column_names': ['from latitude', 'from longitude'], 'column_indexes': [0, 3]},
             ],
         )
 
@@ -551,8 +551,9 @@ class TestNominatim(DataTestCase):
                 ],
                 'spatial_coverage': [
                     {
-                        'address': 'loc',
-                        'address_index': 1,
+                        'type': 'address',
+                        'column_names': ['loc'],
+                        'column_indexes': [1],
                         'ranges': check_geo_ranges(-74.00, 40.69, -73.98, 40.73),
                     },
                 ],
@@ -654,8 +655,9 @@ class TestGeo(DataTestCase):
                 ],
                 'spatial_coverage': [
                     {
-                        'admin': 'zero',
-                        'admin_index': 0,
+                        'type': 'admin',
+                        'column_names': ['zero'],
+                        'column_indexes': [0],
                         'ranges': [
                             {
                                 'range': {
@@ -669,8 +671,9 @@ class TestGeo(DataTestCase):
                         ],
                     },
                     {
-                        'admin': 'one',
-                        'admin_index': 1,
+                        'type': 'admin',
+                        'column_names': ['one'],
+                        'column_indexes': [1],
                         'ranges': [
                             {
                                 'range': {

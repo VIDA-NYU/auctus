@@ -22,10 +22,7 @@ JOIN_RESULT_SOURCE_FIELDS = [
     # Column indices
     # Keep in sync, search code for 279a32
     'index',
-    'lat_index', 'lon_index', 'lat', 'lon',
-    'address_index', 'address',
-    'point_index', 'point',
-    'admin_index', 'admin',
+    'column_names', 'column_indexes', 'type',
     # To determine temporal resolution of join
     'temporal_resolution',
 ]
@@ -82,39 +79,12 @@ def get_column_coverage(data_profile, filter_=()):
     if 'spatial_coverage' in data_profile:
         for spatial in data_profile['spatial_coverage']:
             # Keep in sync, search code for 279a32
-            if 'lat' in spatial:
-                if (
-                    filter_ and (
-                        spatial['lat_index'] not in filter_ or
-                        spatial['lon_index'] not in filter_
-                    )
-                ):
-                    continue
-                indexes = (spatial['lat_index'],
-                           spatial['lon_index'])
-            elif 'address' in spatial:
-                if (
-                    filter_ and
-                    spatial['address_index'] not in filter_
-                ):
-                    continue
-                indexes = (spatial['address_index'],)
-            elif 'point' in spatial:
-                if (
-                    filter_ and
-                    spatial['point_index'] not in filter_
-                ):
-                    continue
-                indexes = (spatial['point_index'],)
-            elif 'admin' in spatial:
-                if (
-                    filter_ and
-                    spatial['admin_index'] not in filter_
-                ):
-                    continue
-                indexes = (spatial['admin_index'],)
-            else:
-                raise ValueError("Invalid spatial_coverage")
+            indexes = tuple(spatial['column_indexes'])
+            if (
+                filter_ and
+                any(idx not in filter_ for idx in indexes)
+            ):
+                continue
             column_coverage[indexes] = {
                 'type': 'spatial',
                 'type_value': types.LATITUDE + ',' + types.LONGITUDE,
@@ -579,43 +549,13 @@ def get_joinable_datasets(
 
         source = result['_source']
         # Keep in sync, search code for 279a32
-        if 'index' in source:
+        if 'index' in source:  # column document
             right_columns.append([source['index']])
             right_columns_names.append([source['name']])
             right_temporal_resolution = source.get('temporal_resolution')
-        elif 'lat_index' in source and 'lon_index' in source:
-            right_columns.append([
-                source['lat_index'],
-                source['lon_index'],
-            ])
-            right_columns_names.append([
-                source['lat'],
-                source['lon'],
-            ])
-        elif 'address_index' in source:
-            right_columns.append([
-                source['address_index'],
-            ])
-            right_columns_names.append([
-                source['address'],
-            ])
-        elif 'point_index' in source:
-            right_columns.append([
-                source['point_index'],
-            ])
-            right_columns_names.append([
-                source['point'],
-            ])
-        elif 'admin_index' in source:
-            right_columns.append([
-                source['admin_index'],
-            ])
-            right_columns_names.append([
-                source['admin'],
-            ])
-        else:
-            logger.error("Invalid spatial_coverage")
-            continue
+        else:  # coverage document
+            right_columns.append(source['column_indexes'])
+            right_columns_names.append(source['column_names'])
 
         res = dict(
             id=dt,
