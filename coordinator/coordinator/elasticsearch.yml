@@ -103,12 +103,22 @@ datamart:
             type: text
           lon:
             type: text
+          lat_index:
+            type: integer
+          lon_index:
+            type: integer
           address:
             type: text
+          address_index:
+            type: integer
           point:
             type: text
+          point_index:
+            type: integer
           admin:
             type: text
+          admin_index:
+            type: integer
           # we want to query individual spatial ranges
           ranges:
             type: nested

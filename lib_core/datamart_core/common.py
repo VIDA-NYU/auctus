@@ -171,8 +171,6 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
         if key not in DISCARD_DATASET_FIELDS:
             common_dataset_metadata['dataset_' + key] = value
 
-    column_name_to_index = dict()
-
     # 'datamart_columns' index
     for column_index, column in enumerate(metadata['columns']):
         column_metadata = dict(column)
@@ -180,7 +178,6 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             column_metadata.pop(field, None)
         column_metadata.update(common_dataset_metadata)
         column_metadata['index'] = column_index
-        column_name_to_index[column_metadata['name']] = column_index
         if 'coverage' in column_metadata:
             for num_range in column_metadata['coverage']:
                 num_range['gte'] = num_range['range']['gte']
@@ -202,25 +199,15 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
                     spatial_coverage_metadata['lat'],
                     spatial_coverage_metadata['lon'],
                 ])
-                spatial_coverage_metadata['lat_index'] = \
-                    column_name_to_index[spatial_coverage_metadata['lat']]
-                spatial_coverage_metadata['lon_index'] = \
-                    column_name_to_index[spatial_coverage_metadata['lon']]
             elif 'address' in spatial_coverage_metadata:
                 spatial_coverage_metadata['name'] = \
                     spatial_coverage_metadata['address']
-                spatial_coverage_metadata['address_index'] = \
-                    column_name_to_index[spatial_coverage_metadata['address']]
             elif 'point' in spatial_coverage_metadata:
                 spatial_coverage_metadata['name'] = \
                     spatial_coverage_metadata['point']
-                spatial_coverage_metadata['point_index'] = \
-                    column_name_to_index[spatial_coverage_metadata['point']]
             elif 'admin' in spatial_coverage_metadata:
                 spatial_coverage_metadata['name'] = \
                     spatial_coverage_metadata['admin']
-                spatial_coverage_metadata['admin_index'] = \
-                    column_name_to_index[spatial_coverage_metadata['admin']]
             else:
                 raise ValueError("Invalid spatial_coverage")
             for spatial_range in spatial_coverage_metadata['ranges']:

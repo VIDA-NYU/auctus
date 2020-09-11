@@ -46,11 +46,6 @@ def get_column_coverage(data_profile, filter_=()):
         }
     """
 
-    column_index_mapping = {
-        column['name']: idx
-        for idx, column in enumerate(data_profile['columns'])
-    }
-
     column_coverage = dict()
 
     for column_index, column in enumerate(data_profile['columns']):
@@ -90,34 +85,34 @@ def get_column_coverage(data_profile, filter_=()):
             if 'lat' in spatial:
                 if (
                     filter_ and (
-                        column_index_mapping[spatial['lat']] not in filter_ or
-                        column_index_mapping[spatial['lon']] not in filter_
+                        spatial['lat_index'] not in filter_ or
+                        spatial['lon_index'] not in filter_
                     )
                 ):
                     continue
-                indexes = (column_index_mapping[spatial['lat']],
-                           column_index_mapping[spatial['lon']])
+                indexes = (spatial['lat_index'],
+                           spatial['lon_index'])
             elif 'address' in spatial:
                 if (
                     filter_ and
-                    column_index_mapping[spatial['address']] not in filter_
+                    spatial['address_index'] not in filter_
                 ):
                     continue
-                indexes = (column_index_mapping[spatial['address']],)
+                indexes = (spatial['address_index'],)
             elif 'point' in spatial:
                 if (
                     filter_ and
-                    column_index_mapping[spatial['point']] not in filter_
+                    spatial['point_index'] not in filter_
                 ):
                     continue
-                indexes = (column_index_mapping[spatial['point']],)
+                indexes = (spatial['point_index'],)
             elif 'admin' in spatial:
                 if (
                     filter_ and
-                    column_index_mapping[spatial['admin']] not in filter_
+                    spatial['admin_index'] not in filter_
                 ):
                     continue
-                indexes = (column_index_mapping[spatial['admin']],)
+                indexes = (spatial['admin_index'],)
             else:
                 raise ValueError("Invalid spatial_coverage")
             column_coverage[indexes] = {

@@ -106,9 +106,14 @@
             "properties": {
               "lat": {"type": "string"},
               "lon": {"type": "string"},
+              "lat_index": {"type":  "number"},
+              "lon_index": {"type":  "number"},
               "point": {"type": "string"},
+              "point_index": {"type":  "number"},
               "address": {"type": "string"},
+              "address_index": {"type":  "number"},
               "admin": {"type": "string"},
+              "admin_index": {"type":  "number"},
               "ranges": {
                 "$ref": "#/definitions/spatial_ranges"
               }

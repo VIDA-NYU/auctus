@@ -3162,7 +3162,9 @@ annotated_metadata = {
     "spatial_coverage": [
         {
             "lat": "lt_coord",
+            "lat_index": 1,
             "lon": "lg_coord",
+            "lon_index": 2,
             "ranges": check_geo_ranges(-74.006, 40.7229, -73.990, 40.7352)
         }
     ],
@@ -3234,7 +3236,9 @@ geo_metadata = {
     "spatial_coverage": [
         {
             "lat": "lat",
+            "lat_index": 1,
             "lon": "long",
+            "lon_index": 2,
             "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
         }
     ],
@@ -3350,6 +3354,7 @@ geo_wkt_metadata = {
     "spatial_coverage": [
         {
             "point": "coords",
+            "point_index": 1,
             "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
         }
     ],
