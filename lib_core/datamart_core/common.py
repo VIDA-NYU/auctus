@@ -5,7 +5,9 @@ import functools
 import hashlib
 import json
 import logging
+import os
 import re
+import sentry_sdk
 import sys
 import threading
 
@@ -39,6 +41,17 @@ def setup_logging(clear=True):
 
     logging.getLogger('elasticsearch').setLevel(logging.WARNING)
     logging.getLogger('elasticsearch').addFilter(filter_delete)
+
+    # Enable Sentry
+    if 'SENTRY_DSN' in os.environ:
+        from sentry_sdk.integrations.tornado import TornadoIntegration
+        logger.info("Initializing Sentry")
+        sentry_sdk.init(
+            dsn=os.environ['SENTRY_DSN'],
+            integrations=[TornadoIntegration()],
+            ignore_errors=[KeyboardInterrupt],
+            release='taguette@%s' % os.environ['DATAMART_VERSION'],
+        )
 
 
 def block_wait_future(future):
