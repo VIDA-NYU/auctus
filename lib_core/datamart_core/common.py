@@ -89,7 +89,8 @@ def log_future(future, logger, message="Exception in background task",
     def log(future):
         try:
             future.result()
-        except Exception:
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
             logger.exception(message)
         if should_never_exit:
             logger.critical("Critical task died, exiting")

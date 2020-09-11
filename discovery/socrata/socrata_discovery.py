@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import sentry_sdk
 import sodapy
 import time
 
@@ -55,7 +56,8 @@ class SocrataDiscoverer(Discoverer):
                 if last_update is None or last_update + interval < now:
                     try:
                         self.process_domain(domain)
-                    except Exception:
+                    except Exception as e:
+                        sentry_sdk.capture_exception(e)
                         logger.exception("Error processing %s", domain['url'])
                     self.last_update[domain['url']] = now
                     if sleep_until is None or sleep_until > now + interval:
@@ -77,7 +79,8 @@ class SocrataDiscoverer(Discoverer):
         for dataset in datasets:
             try:
                 valid = self.process_dataset(domain, dataset)
-            except Exception:
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.exception("Error processing dataset %s",
                                  dataset['resource']['id'])
             else:

@@ -4,6 +4,7 @@ import elasticsearch.helpers
 import logging
 import os
 import requests
+import sentry_sdk
 import time
 from urllib.parse import urlencode
 
@@ -26,7 +27,8 @@ class ZenodoDiscoverer(Discoverer):
 
             try:
                 self.get_datasets()
-            except Exception:
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.exception("Error getting datasets")
 
             sleep_until = now + self.CHECK_INTERVAL
