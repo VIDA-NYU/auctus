@@ -43,7 +43,7 @@ def setup_logging(clear=True):
     logging.getLogger('elasticsearch').addFilter(filter_delete)
 
     # Enable Sentry
-    if 'SENTRY_DSN' in os.environ:
+    if os.environ.get('SENTRY_DSN'):
         from sentry_sdk.integrations.tornado import TornadoIntegration
         logger.info("Initializing Sentry")
         sentry_sdk.init(
