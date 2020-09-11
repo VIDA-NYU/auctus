@@ -11,6 +11,7 @@ req = [
     'lazo-index-service==0.5.1',
     'prometheus_client',
     'prometheus_async',
+    'sentry-sdk',
 ]
 setup(name='datamart_core',
       version='0.0',

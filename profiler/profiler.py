@@ -9,6 +9,7 @@ import lazo_index_service
 import logging
 import os
 import prometheus_client
+import sentry_sdk
 import threading
 import time
 
@@ -342,6 +343,7 @@ class Profiler(object):
                         # We'll log, nack and retry
                         raise
                     else:
+                        sentry_sdk.capture_exception(e)
                         logger.exception("Error processing dataset %r",
                                          dataset_id)
                     # Move message to failed queue
