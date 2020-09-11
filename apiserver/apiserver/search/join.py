@@ -95,38 +95,38 @@ def get_column_coverage(data_profile, filter_=()):
                     )
                 ):
                     continue
-                names = (column_index_mapping[spatial['lat']],
-                         column_index_mapping[spatial['lon']])
+                indexes = (column_index_mapping[spatial['lat']],
+                           column_index_mapping[spatial['lon']])
             elif 'address' in spatial:
                 if (
                     filter_ and
                     column_index_mapping[spatial['address']] not in filter_
                 ):
                     continue
-                names = (column_index_mapping[spatial['address']],)
+                indexes = (column_index_mapping[spatial['address']],)
             elif 'point' in spatial:
                 if (
                     filter_ and
                     column_index_mapping[spatial['point']] not in filter_
                 ):
                     continue
-                names = (column_index_mapping[spatial['point']],)
+                indexes = (column_index_mapping[spatial['point']],)
             elif 'admin' in spatial:
                 if (
                     filter_ and
                     column_index_mapping[spatial['admin']] not in filter_
                 ):
                     continue
-                names = (column_index_mapping[spatial['admin']],)
+                indexes = (column_index_mapping[spatial['admin']],)
             else:
                 raise ValueError("Invalid spatial_coverage")
-            column_coverage[names] = {
+            column_coverage[indexes] = {
                 'type': 'spatial',
                 'type_value': types.LATITUDE + ',' + types.LONGITUDE,
                 'ranges': []
             }
             for range_ in spatial['ranges']:
-                column_coverage[names]['ranges'].append(
+                column_coverage[indexes]['ranges'].append(
                     range_['range']['coordinates']
                 )
 
