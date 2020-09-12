@@ -50,7 +50,7 @@ def setup_logging(clear=True):
             dsn=os.environ['SENTRY_DSN'],
             integrations=[TornadoIntegration()],
             ignore_errors=[KeyboardInterrupt],
-            release='taguette@%s' % os.environ['DATAMART_VERSION'],
+            release='auctus@%s' % os.environ['DATAMART_VERSION'],
         )
 
 
