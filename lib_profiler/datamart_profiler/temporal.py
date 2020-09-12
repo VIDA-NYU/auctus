@@ -18,6 +18,7 @@ temporal_aggregation_keys = {
         year=dt.year,
         month=((dt.month - 1) // 3) * 3 + 1,
         day=1,
+        tzinfo=dt.tzinfo,
     ),
     'month': '%Y-%m',
     'week': lambda dt: (
