@@ -176,7 +176,10 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             )
 
         if not data:
-            return await self.send_dataset(task['id'], metadata)
+            return await self.send_dataset(
+                task.get('id', 'unknown_id'),
+                metadata,
+            )
         else:
             format, format_options, format_ext = self.read_format()
 
@@ -192,7 +195,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 query_sup_functions=None,
                 query_sup_filters=None,
                 tabular_variables=None,
-                dataset_id=task['id'],
+                dataset_id=task.get('id', 'unknown_id'),
                 union=False
             )
 

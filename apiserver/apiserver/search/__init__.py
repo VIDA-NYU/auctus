@@ -8,7 +8,7 @@ import time
 
 from datamart_core import types
 from datamart_core.prom import PromMeasureRequest
-from datamart_profiler import parse_date
+from datamart_profiler.temporal import parse_date, temporal_aggregation_keys
 
 from ..base import BUCKETS, BaseHandler
 from ..enhance_metadata import enhance_metadata
@@ -36,6 +36,22 @@ PROM_SEARCH = PromMeasureRequest(
 )
 
 
+def validate_str_list(value, what):
+    """Validates that a value is either a string or a list of strings.
+
+    Returns a list of strings (with possibly one element) in both cases.
+    """
+    if isinstance(value, str):
+        return [value]
+    elif (
+        not isinstance(value, list)
+        or not all(isinstance(elem, str) for elem in value)
+    ):
+        raise ClientError("Invalid %s" % what)
+    else:
+        return value
+
+
 def parse_keyword_query_main_index(query_json):
     """Parses a Datamart keyword query, turning it into an
     Elasticsearch query over 'datamart' index.
@@ -43,9 +59,9 @@ def parse_keyword_query_main_index(query_json):
 
     query_args_main = list()
     if query_json.get('keywords'):
-        keywords = query_json['keywords']
-        if isinstance(keywords, list):
-            keywords = ' '.join(keywords)
+        keywords = ' '.join(
+            validate_str_list(query_json['keywords'], 'keywords')
+        )
         query_args_main.append({
             'multi_match': {
                 'query': keywords,
@@ -61,9 +77,7 @@ def parse_keyword_query_main_index(query_json):
         })
 
     if 'source' in query_json:
-        source = query_json['source']
-        if not isinstance(source, list):
-            source = [source]
+        source = validate_str_list(query_json['source'], 'source')
         query_args_main.append({
             'bool': {
                 'filter': [
@@ -77,9 +91,7 @@ def parse_keyword_query_main_index(query_json):
         })
 
     if 'types' in query_json:
-        dataset_types = query_json['types']
-        if not isinstance(dataset_types, list):
-            dataset_types = [dataset_types]
+        dataset_types = validate_str_list(query_json['types'], 'types')
         query_args_main.append({
             'bool': {
                 'filter': [
@@ -104,7 +116,9 @@ def parse_keyword_query_sup_index(query_json):
     query_sup_filters = list()
 
     if query_json.get('keywords'):
-        keywords = query_json['keywords']
+        keywords = ' '.join(
+            validate_str_list(query_json['keywords'], 'keywords')
+        )
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
         query_sup_functions.append({
@@ -126,9 +140,7 @@ def parse_keyword_query_sup_index(query_json):
         })
 
     if 'source' in query_json:
-        source = query_json['source']
-        if not isinstance(source, list):
-            source = [source]
+        source = validate_str_list(query_json['source'], 'source')
         query_sup_filters.append({
             'terms': {
                 'dataset_source': source,
@@ -136,7 +148,7 @@ def parse_keyword_query_sup_index(query_json):
         })
 
     if 'types' in query_json:
-        dataset_types = query_json['types']
+        dataset_types = validate_str_list(query_json['types'], 'types')
         if not isinstance(dataset_types, list):
             dataset_types = [dataset_types]
         query_sup_filters.append({
@@ -159,7 +171,13 @@ def parse_query_variables(data, geo_data=None):
     if not data:
         return output, tabular_variables
 
+    if not isinstance(data, list):
+        raise ClientError("Invalid variables")
+
     for variable in data:
+        if not isinstance(variable, dict):
+            raise ClientError("Invalid variable")
+
         if 'type' not in variable:
             raise ClientError("variable is missing property 'type'")
 
@@ -174,6 +192,8 @@ def parse_query_variables(data, geo_data=None):
             ]
             if 'start' in variable or 'end' in variable:
                 if 'start' in variable:
+                    if not isinstance(variable['start'], str):
+                        raise ClientError("Invalid variable start date")
                     start = parse_date(variable['start'])
                     if start is None:
                         raise ClientError("Invalid start date format")
@@ -182,6 +202,8 @@ def parse_query_variables(data, geo_data=None):
                     start = 0
 
                 if 'end' in variable:
+                    if not isinstance(variable['end'], str):
+                        raise ClientError("Invalid variable end date")
                     end = parse_date(variable['end'])
                     if end is None:
                         raise ClientError("Invalid end date format")
@@ -210,6 +232,11 @@ def parse_query_variables(data, geo_data=None):
                 })
             if 'granularity' in variable:
                 granularity = variable['granularity']
+                if (
+                    not isinstance(granularity, str)
+                    or granularity not in temporal_aggregation_keys
+                ):
+                    raise ClientError("Invalid temporal granularity")
 
                 filters.append({
                     'term': {
@@ -232,17 +259,20 @@ def parse_query_variables(data, geo_data=None):
         # TODO: handle 'granularity'
         elif variable['type'] == 'geospatial_variable':
             if 'area_name' in variable and geo_data:
-                areas = geo_data.resolve_names([variable['area_name']])
+                area_name = variable['area_name']
+                if not isinstance(area_name, str):
+                    raise ClientError("Invalid geospatial variable area")
+                areas = geo_data.resolve_names([area_name])
                 if areas and areas[0]:
                     bounds = geo_data.get_bounds(areas[0].area)
                     longitude1, longitude2, latitude1, latitude2 = bounds
                     logger.info(
                         "Resolved area %r to %r",
-                        variable['area_name'],
+                        area_name,
                         areas[0].area,
                     )
                 else:
-                    logger.warning("Unknown area %r", variable['area_name'])
+                    logger.warning("Unknown area %r", area_name)
                     continue
             elif (
                 'latitude1' in variable and
@@ -250,6 +280,13 @@ def parse_query_variables(data, geo_data=None):
                 'longitude1' in variable and
                 'longitude2' in variable
             ):
+                if not all(
+                    isinstance(variable[i], float)
+                    for i in (
+                        'latitude1', 'latitude2', 'longitude1', 'longitude2'
+                    )
+                ):
+                    raise ClientError("Invalid geospatial variable bounds")
                 longitude1 = min(
                     float(variable['longitude1']),
                     float(variable['longitude2'])
@@ -298,6 +335,8 @@ def parse_query_variables(data, geo_data=None):
         elif variable['type'] == 'tabular_variable':
             if 'columns' in variable:
                 for column_index in variable['columns']:
+                    if not isinstance(column_index, int):
+                        raise ClientError("Invalid tabular variable index")
                     tabular_variables.append(column_index)
 
     return output, tabular_variables
