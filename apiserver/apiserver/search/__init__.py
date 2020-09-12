@@ -126,9 +126,12 @@ def parse_keyword_query_sup_index(query_json):
         })
 
     if 'source' in query_json:
+        source = query_json['source']
+        if not isinstance(source, list):
+            source = [source]
         query_sup_filters.append({
             'terms': {
-                'dataset_source': query_json['source'],
+                'dataset_source': source,
             }
         })
 

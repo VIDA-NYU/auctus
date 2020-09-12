@@ -60,7 +60,7 @@ class TestSearch(unittest.TestCase):
             [
                 {
                     'terms': {
-                        'dataset_source': 'gov',
+                        'dataset_source': ['gov'],
                     },
                 },
             ],
