@@ -206,7 +206,7 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
         try:
             dialect = csv.Sniffer().sniff(fp.read(16384))
         except Exception as error:  # csv.Error, UnicodeDecodeError
-            logger.error("csv.Sniffer error: %s", error)
+            logger.warning("csv.Sniffer error: %s", error)
             dialect = csv.get_dialect('excel')
     if getattr(dialect, 'delimiter', '') == '\t':
         # Update metadata
