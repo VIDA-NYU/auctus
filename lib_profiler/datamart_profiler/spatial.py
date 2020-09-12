@@ -219,7 +219,7 @@ def _nominatim_batch(url, batch, locations, cache):
         locs = nominatim_query(url, q=list(batch.keys()))
     except requests.HTTPError as e:
         if (
-            e.response.status_code == 500
+            e.response.status_code in (500, 414)
             and len(batch) >= max(2, NOMINATIM_MIN_SPLIT_BATCH_SIZE)
         ):
             # Try smaller batch size
