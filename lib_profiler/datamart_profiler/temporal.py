@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Keep in sync with frontend's TemporalResolution
 temporal_aggregation_keys = {
     'year': '%Y',
-    'quarter': lambda dt: pandas.Timestamp(
+    'quarter': lambda dt: dt.__class__(
         year=dt.year,
         month=((dt.month - 1) // 3) * 3 + 1,
         day=1,
