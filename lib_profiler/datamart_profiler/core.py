@@ -489,7 +489,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                             columns[idx]['name'],
                         )
             except Exception:
-                logger.error("Error indexing textual attributes from %s", dataset_id)
+                logger.warning("Error indexing textual attributes from %s", dataset_id)
                 raise
         # Generating Lazo sketches for the search
         else:
