@@ -230,7 +230,7 @@ def _nominatim_batch(url, batch, locations, cache):
                 +
                 _nominatim_batch(url, dict(batch_list[mid:]), locations, cache)
             )
-        raise
+        raise e from None
 
     not_found = 0
     for location, (value, count) in zip(locs, batch.items()):
