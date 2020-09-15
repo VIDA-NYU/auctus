@@ -69,10 +69,10 @@ class GeoSpatialFilter extends React.PureComponent<
     } = transformCoordinates(feature);
     const {latitude1, longitude1, latitude2, longitude2} = this.props.state;
     return (
-      topLeftLat.toString() === latitude1 &&
-      topLeftLon.toString() === longitude1 &&
-      bottomRightLat.toString() === latitude2 &&
-      bottomRightLon.toString() === longitude2
+      topLeftLat === latitude1 &&
+      topLeftLon === longitude1 &&
+      bottomRightLat === latitude2 &&
+      bottomRightLon === longitude2
     );
   }
 
@@ -92,10 +92,10 @@ class GeoSpatialFilter extends React.PureComponent<
       const feature = new Feature({
         geometry: new Polygon([
           [
-            fromLonLat([Number(longitude1), Number(latitude1)], 'EPSG:3857'),
-            fromLonLat([Number(longitude2), Number(latitude1)], 'EPSG:3857'),
-            fromLonLat([Number(longitude2), Number(latitude2)], 'EPSG:3857'),
-            fromLonLat([Number(longitude1), Number(latitude2)], 'EPSG:3857'),
+            fromLonLat([longitude1, latitude1], 'EPSG:3857'),
+            fromLonLat([longitude2, latitude1], 'EPSG:3857'),
+            fromLonLat([longitude2, latitude2], 'EPSG:3857'),
+            fromLonLat([longitude1, latitude2], 'EPSG:3857'),
           ],
         ]),
       });
@@ -172,10 +172,10 @@ class GeoSpatialFilter extends React.PureComponent<
 
     this.props.onSelectCoordinates({
       type: 'geospatial_variable',
-      latitude1: topLeftLat.toString(),
-      longitude1: topLeftLon.toString(),
-      latitude2: bottomRightLat.toString(),
-      longitude2: bottomRightLon.toString(),
+      latitude1: topLeftLat,
+      longitude1: topLeftLon,
+      latitude2: bottomRightLat,
+      longitude2: bottomRightLon,
     });
   }
 
@@ -206,10 +206,10 @@ class GeoSpatialFilter extends React.PureComponent<
           const [minLon, maxLon, minLat, maxLat] = results[0].boundingbox;
           this.props.onSelectCoordinates({
             type: 'geospatial_variable',
-            latitude1: maxLat.toString(),
-            longitude1: minLon.toString(),
-            latitude2: minLat.toString(),
-            longitude2: maxLon.toString(),
+            latitude1: maxLat,
+            longitude1: minLon,
+            latitude2: minLat,
+            longitude2: maxLon,
           });
         }
       })
@@ -225,8 +225,8 @@ class GeoSpatialFilter extends React.PureComponent<
       topRightText = undefined;
     if (this.props.state) {
       const {latitude1, longitude1, latitude2, longitude2} = this.props.state;
-      bottomLeftText = toStringHDMS([Number(longitude1), Number(latitude1)]);
-      topRightText = toStringHDMS([Number(longitude2), Number(latitude2)]);
+      bottomLeftText = toStringHDMS([longitude1, latitude1]);
+      topRightText = toStringHDMS([longitude2, latitude2]);
     }
     return (
       <div>

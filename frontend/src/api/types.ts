@@ -108,10 +108,10 @@ export interface TemporalVariable {
 
 export interface GeoSpatialVariable {
   type: 'geospatial_variable';
-  latitude1: string;
-  longitude1: string;
-  latitude2: string;
-  longitude2: string;
+  latitude1: number;
+  longitude1: number;
+  latitude2: number;
+  longitude2: number;
 }
 
 export interface TabularVariable {
