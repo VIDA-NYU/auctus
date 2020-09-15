@@ -1,24 +1,16 @@
 import contextlib
 import elasticsearch
-import io
 import logging
 import json
-import os
 import prometheus_client
-import shutil
-import tempfile
-import zipfile
 
-from datamart_core.augment import augment
-from datamart_core.materialize import get_dataset, make_zip_recursive
+from datamart_core.materialize import get_dataset
 from datamart_core.prom import PromMeasureRequest
-from datamart_materialize import make_writer
 
 from .base import BUCKETS, BaseHandler
 from .enhance_metadata import enhance_metadata
 from .graceful_shutdown import GracefulHandler
 from .profile import ProfilePostedData
-from .search import get_augmentation_search_results
 
 
 logger = logging.getLogger(__name__)
@@ -128,7 +120,6 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         type_ = self.request.headers.get('Content-type', '')
 
         task = None
-        data = None
         if type_.startswith('application/json'):
             task = self.get_json()
         elif (type_.startswith('multipart/form-data') or
@@ -138,11 +129,6 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 task = self.request.files['task'][0].body.decode('utf-8')
             if task is not None:
                 task = json.loads(task)
-            data = self.get_body_argument('data', None)
-            if 'data' in self.request.files:
-                data = self.request.files['data'][0].body
-            elif data is not None:
-                data = data.encode('utf-8')
             if 'format' in self.request.files:
                 return await self.send_error_json(
                     400,
@@ -152,12 +138,9 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
         if task is None:
             return await self.send_error_json(
                 400,
-                "Either use multipart/form-data to send the 'data' file and "
-                "'task' JSON, or use application/json to send 'task' alone",
+                "Either use multipart/form-data to send a 'task' JSON file, "
+                "or use application/json",
             )
-
-        logger.info("Got POST download %s data",
-                    "without" if data is None else "with")
 
         if 'metadata' in task:
             metadata = task['metadata']
@@ -175,67 +158,10 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 "No metadata or ID specified",
             )
 
-        if not data:
-            return await self.send_dataset(
-                task.get('id', 'unknown_id'),
-                metadata,
-            )
-        else:
-            format, format_options, format_ext = self.read_format()
-
-            # data
-            data_profile, _ = self.handle_data_parameter(data)
-
-            # first, look for possible augmentation
-            search_results = get_augmentation_search_results(
-                es=self.application.elasticsearch,
-                lazo_client=self.application.lazo_client,
-                data_profile=data_profile,
-                query_args_main=None,
-                query_sup_functions=None,
-                query_sup_filters=None,
-                tabular_variables=None,
-                dataset_id=task.get('id', 'unknown_id'),
-                union=False
-            )
-
-            if not search_results:
-                return await self.send_error_json(
-                    400,
-                    "The Datamart dataset referenced by 'task' cannot augment "
-                    "'data'",
-                )
-
-            task = search_results[0]
-
-            with tempfile.TemporaryDirectory(prefix='datamart_aug_') as tmp:
-                new_path = os.path.join(tmp, 'dataset')
-                with get_dataset(metadata, task['id'], format='csv') as newdata:
-                    # perform augmentation
-                    logger.info("Performing half-augmentation with supplied data")
-                    writer = make_writer(new_path, format, format_options)
-                    augment(
-                        io.BytesIO(data),
-                        newdata,
-                        data_profile,
-                        task,
-                        writer,
-                        return_only_datamart_data=True
-                    )
-
-                    # ZIP result if it's a directory
-                    if os.path.isdir(new_path):
-                        logger.info("Result is a directory, creating ZIP file")
-                        zip_name = new_path + '.zip'
-                        with zipfile.ZipFile(zip_name, 'w') as zip_:
-                            make_zip_recursive(zip_, new_path)
-                        shutil.rmtree(new_path)
-                        os.rename(zip_name, new_path)
-
-            return await self.send_file(
-                new_path,
-                name='augmentation' + (format_ext or ''),
-            )
+        return await self.send_dataset(
+            task.get('id', 'unknown_id'),
+            metadata,
+        )
 
 
 class Metadata(BaseHandler, GracefulHandler):

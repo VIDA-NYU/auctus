@@ -379,7 +379,6 @@ def join(
     left_columns, right_columns,
     how='left', columns=None,
     agg_functions=None, temporal_resolution=None,
-    return_only_datamart_data=False,
 ):
     """
     Performs a join between original_data (pandas.DataFrame or path to CSV)
@@ -552,56 +551,38 @@ def join(
     # qualities
     qualities_list = []
 
-    if return_only_datamart_data:
-        # drop unique index
-        join_.drop([UNIQUE_INDEX_KEY], axis=1, inplace=True)
+    # map column names for the augmentation data
+    augment_columns_map = {
+        name: name + '_r' if name in intersection else name
+        for name in first_augment_data.columns
+    }
 
-        # drop columns from original data
-        drop_columns = list(intersection)
-        drop_columns.extend(set(original_data.columns).difference(intersection))
-        join_.drop(drop_columns, axis=1, inplace=True)
-        if intersection:
-            rename = dict()
-            for column in intersection:
-                rename[column + '_r'] = column
-            join_.rename(columns=rename, inplace=True)
+    # aggregations
+    join_ = perform_aggregations(
+        join_,
+        list(original_data.columns),
+        agg_functions,
+        augment_columns_map,
+    )
 
-        # drop rows with all null values
-        join_.dropna(axis=0, how='all', inplace=True)
+    # drop unique index
+    join_.drop([UNIQUE_INDEX_KEY], axis=1, inplace=True)
 
-    else:
-        # map column names for the augmentation data
-        augment_columns_map = {
-            name: name + '_r' if name in intersection else name
-            for name in first_augment_data.columns
-        }
-
-        # aggregations
-        join_ = perform_aggregations(
-            join_,
-            list(original_data.columns),
-            agg_functions,
-            augment_columns_map,
-        )
-
-        # drop unique index
-        join_.drop([UNIQUE_INDEX_KEY], axis=1, inplace=True)
-
-        original_columns_set = set(original_data.columns)
-        new_columns = [
-            col for col in join_.columns if col not in original_columns_set
-        ]
-        qualities_list.append(dict(
-            qualName='augmentation_info',
-            qualValue=dict(
-                new_columns=new_columns,
-                removed_columns=[],
-                nb_rows_before=original_data.shape[0],
-                nb_rows_after=join_.shape[0],
-                augmentation_type='join'
-            ),
-            qualValueType='dict'
-        ))
+    original_columns_set = set(original_data.columns)
+    new_columns = [
+        col for col in join_.columns if col not in original_columns_set
+    ]
+    qualities_list.append(dict(
+        qualName='augmentation_info',
+        qualValue=dict(
+            new_columns=new_columns,
+            removed_columns=[],
+            nb_rows_before=original_data.shape[0],
+            nb_rows_after=join_.shape[0],
+            augmentation_type='join'
+        ),
+        qualValueType='dict'
+    ))
 
     with WriteCounter(writer.open_file('w')) as fout:
         join_.to_csv(fout, index=False, line_terminator='\r\n')
@@ -644,8 +625,7 @@ def join(
 
 def union(original_data, augment_data_path, original_metadata, augment_metadata,
           writer,
-          left_columns, right_columns,
-          return_only_datamart_data=False):
+          left_columns, right_columns):
     """
     Performs a union between original_data (pandas.DataFrame or path to CSV)
     and augment_data_path (path to CSV file) using columns.
@@ -707,20 +687,19 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
         # Write header
         fout.write(','.join(first_original_data.columns) + '\n')
         # Write original data
-        if not return_only_datamart_data:
-            for chunk in itertools.chain([first_original_data], original_data):
-                chunk.to_csv(
-                    fout,
-                    header=False,
-                    index=False,
-                    line_terminator='\r\n',
+        for chunk in itertools.chain([first_original_data], original_data):
+            chunk.to_csv(
+                fout,
+                header=False,
+                index=False,
+                line_terminator='\r\n',
+            )
+            orig_rows += len(chunk)
+            if d3m_index is not None:
+                d3m_index = max(
+                    d3m_index,
+                    int(chunk['d3mIndex'].max()) + 1,
                 )
-                orig_rows += len(chunk)
-                if d3m_index is not None:
-                    d3m_index = max(
-                        d3m_index,
-                        int(chunk['d3mIndex'].max()) + 1,
-                    )
 
         total_rows = orig_rows
 
