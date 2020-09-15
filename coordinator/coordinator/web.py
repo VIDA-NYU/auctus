@@ -31,7 +31,7 @@ class BaseHandler(RequestHandler):
             [pkg_resources.resource_filename('coordinator',
                                              'templates')]
         ),
-        autoescape=jinja2.select_autoescape(['html'])
+        autoescape=jinja2.select_autoescape(('html', 'htm')),
     )
 
     @jinja2.contextfunction
