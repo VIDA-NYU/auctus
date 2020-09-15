@@ -1,3 +1,4 @@
+import asyncio
 import elasticsearch
 import lazo_index_service
 import logging
@@ -165,4 +166,6 @@ def main():
     app = make_app(debug)
     app.listen(8002, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
+    if debug:
+        asyncio.get_event_loop().set_debug(True)
     loop.start()

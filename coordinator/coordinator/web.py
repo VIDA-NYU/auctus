@@ -1,3 +1,4 @@
+import asyncio
 import elasticsearch
 import logging
 import jinja2
@@ -160,5 +161,7 @@ def main():
     app = make_app(debug)
     app.listen(8003, xheaders=True, max_buffer_size=2147483648)
     loop = tornado.ioloop.IOLoop.current()
+    if debug:
+        asyncio.get_event_loop().set_debug(True)
     check_cache()  # Schedules itself to run periodically
     loop.start()
