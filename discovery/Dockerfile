@@ -4,6 +4,8 @@ ENV TINI_VERSION v0.18.0
 RUN curl -Lo /tini https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini && \
     chmod +x /tini
 
+ENV PYTHONFAULTHANDLER=1
+
 RUN mkdir -p /usr/src/app/home && \
     useradd -d /usr/src/app/home -s /usr/sbin/nologin -u 998 appuser && \
     chown appuser /usr/src/app/home
