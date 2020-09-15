@@ -4,6 +4,7 @@ import logging
 import json
 import os
 from tornado.httpclient import AsyncHTTPClient
+from tornado.iostream import StreamClosedError
 from tornado.web import HTTPError, RequestHandler
 from urllib.parse import urlencode
 import zipfile
@@ -73,13 +74,16 @@ class BaseHandler(RequestHandler):
 
             BUFSIZE = 40960
             buf = fp.read(BUFSIZE)
-            while buf:
-                self.write(buf)
-                if len(buf) != BUFSIZE:
-                    break
-                buf = fp.read(BUFSIZE)
-                await self.flush()
-            return await self.finish()
+            try:
+                while buf:
+                    self.write(buf)
+                    if len(buf) != BUFSIZE:
+                        break
+                    buf = fp.read(BUFSIZE)
+                    await self.flush()
+                return await self.finish()
+            except StreamClosedError:
+                return
 
     def prepare(self):
         super(BaseHandler, self).prepare()
