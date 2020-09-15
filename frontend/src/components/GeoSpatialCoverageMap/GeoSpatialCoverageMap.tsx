@@ -213,49 +213,60 @@ class GeoSpatialCoverageMap extends PersistentComponent<
 
   renderCoverageColumns(coverage: SpatialCoverage) {
     // Keep in sync, search code for 279a32
-    const {lat, lon, address, point, admin} = coverage;
-    if (lat && lon) {
+    const {column_names, type} = coverage;
+    if (type === 'latlong' && column_names.length === 2) {
       return (
         <>
           <b>Latitude Column: </b>
-          <span className="badge badge-pill badge-secondary mr-1">{lat}</span>
+          <span className="badge badge-pill badge-secondary mr-1">
+            {column_names[0]}
+          </span>
           &nbsp;|&nbsp;&nbsp;
           <b>Longitude Column: </b>
-          <span className="badge badge-pill badge-secondary mr-1">{lon}</span>
+          <span className="badge badge-pill badge-secondary mr-1">
+            {column_names[1]}
+          </span>
         </>
       );
-    }
-    if (address) {
+    } else if (type === 'address' && column_names.length === 1) {
       return (
         <>
           <b>Address Column: </b>
           <span className="badge badge-pill badge-secondary mr-1">
-            {address}
+            {column_names[0]}
           </span>
         </>
       );
-    }
-    if (point) {
+    } else if (type === 'point' && column_names.length === 1) {
       return (
         <>
           <b>Point Column: </b>
-          <span className="badge badge-pill badge-secondary mr-1">{point}</span>
+          <span className="badge badge-pill badge-secondary mr-1">
+            {column_names[0]}
+          </span>
         </>
       );
-    }
-    if (admin) {
+    } else if (type === 'admin' && column_names.length === 1) {
       return (
         <>
           <b>Administrative Area Column: </b>
-          <span className="badge badge-pill badge-secondary mr-1">{admin}</span>
+          <span className="badge badge-pill badge-secondary mr-1">
+            {column_names[0]}
+          </span>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <b>Other Coverage: </b>
+          {column_names.map((n, i) => (
+            <span key={i} className="badge badge-pill badge-secondary mr-1">
+              {n}
+            </span>
+          ))}
         </>
       );
     }
-    return (
-      <>
-        <b>Other Coverage: </b>
-      </>
-    );
   }
 
   render() {

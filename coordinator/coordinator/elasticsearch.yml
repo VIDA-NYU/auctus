@@ -99,16 +99,14 @@ datamart:
         type: nested
         properties:
           # Keep in sync, search code for 279a32
-          lat:
+          column_names:
             type: text
-          lon:
-            type: text
-          address:
-            type: text
-          point:
-            type: text
-          admin:
-            type: text
+            index: false
+          column_indexes:
+            type: integer
+            index: false
+          type:
+            type: keyword
           # we want to query individual spatial ranges
           ranges:
             type: nested
@@ -241,36 +239,14 @@ datamart_spatial_coverage:
       name:
         type: text
       # Keep in sync, search code for 279a32
-      lat:
+      column_names:
         type: text
         index: false
-      lon:
-        type: text
-        index: false
-      lat_index:
+      column_indexes:
         type: integer
         index: false
-      lon_index:
-        type: integer
-        index: false
-      address:
-        type: text
-        index: false
-      address_index:
-        type: integer
-        index: false
-      point:
-        type: text
-        index: false
-      point_index:
-        type: integer
-        index: false
-      admin:
-        type: text
-        index: false
-      admin_index:
-        type: integer
-        index: false
+      type:
+        type: keyword
       ranges:
         type: nested
         properties:

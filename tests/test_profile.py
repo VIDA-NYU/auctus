@@ -169,8 +169,8 @@ class TestLatlongSelection(DataTestCase):
         self.assertJson(
             [{k: v for k, v in c.items() if k != 'ranges'} for c in metadata['spatial_coverage']],
             [
-                {'lat': 'to lat', 'lon': 'to long'},
-                {'lat': 'from latitude', 'lon': 'from longitude'},
+                {'type': 'latlong', 'column_names': ['to lat', 'to long'], 'column_indexes': [2, 1]},
+                {'type': 'latlong', 'column_names': ['from latitude', 'from longitude'], 'column_indexes': [0, 3]},
             ],
         )
 
@@ -551,7 +551,9 @@ class TestNominatim(DataTestCase):
                 ],
                 'spatial_coverage': [
                     {
-                        'address': 'loc',
+                        'type': 'address',
+                        'column_names': ['loc'],
+                        'column_indexes': [1],
                         'ranges': check_geo_ranges(-74.00, 40.69, -73.98, 40.73),
                     },
                 ],
@@ -653,7 +655,9 @@ class TestGeo(DataTestCase):
                 ],
                 'spatial_coverage': [
                     {
-                        'admin': 'zero',
+                        'type': 'admin',
+                        'column_names': ['zero'],
+                        'column_indexes': [0],
                         'ranges': [
                             {
                                 'range': {
@@ -667,7 +671,9 @@ class TestGeo(DataTestCase):
                         ],
                     },
                     {
-                        'admin': 'one',
+                        'type': 'admin',
+                        'column_names': ['one'],
+                        'column_indexes': [1],
                         'ranges': [
                             {
                                 'range': {

@@ -448,7 +448,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 if non_empty > 0:
                     unclean_ratio = 1.0 - len(locations) / non_empty
                     if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
-                        resolved_addresses[column_meta['name']] = locations
+                        resolved_addresses[column_idx] = locations
                         if types.ADDRESS not in column_meta['semantic_types']:
                             column_meta['semantic_types'].append(types.ADDRESS)
 
@@ -465,7 +465,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     if count >= threshold:
                         column_meta['admin_area_level'] = level
                         break
-                resolved_admin_areas[column_meta['name']] = areas
+                resolved_admin_areas[column_idx] = areas
+
+    column_indexes = {col['name']: idx for idx, col in enumerate(columns)}
 
     # Textual columns
     if lazo_client and columns_textual:
@@ -548,7 +550,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     col['semantic_types'].remove(types.LONGITUDE)
 
             # Compute ranges from lat/long pairs
-            for (name_lat, values_lat, annot_pair), (name_long, values_long, annot_pair) in pairs:
+            for (name_lat, values_lat, _), (name_long, values_long, _) in pairs:
                 values = []
                 for lat, long in zip(values_lat, values_long):
                     if (lat and long and  # Ignore None and 0
@@ -562,9 +564,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     )
                     spatial_ranges = get_spatial_ranges(values)
                     if spatial_ranges:
-                        spatial_coverage.append({"lat": name_lat,
-                                                 "lon": name_long,
-                                                 "ranges": spatial_ranges})
+                        spatial_coverage.append({
+                            'type': 'latlong',
+                            'column_names': [name_lat, name_long],
+                            'column_indexes': [column_indexes[name_lat], column_indexes[name_long]],
+                            'ranges': spatial_ranges,
+                        })
 
             # Compute ranges from WKT points
             for i, col in enumerate(columns):
@@ -578,22 +583,31 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 )
                 spatial_ranges = get_spatial_ranges(values)
                 if spatial_ranges:
-                    spatial_coverage.append({"point": name,
-                                             "ranges": spatial_ranges})
+                    spatial_coverage.append({
+                        'type': 'point',
+                        'column_names': [name],
+                        'column_indexes': [i],
+                        'ranges': spatial_ranges,
+                    })
 
             # Compute ranges from addresses
-            for name, values in resolved_addresses.items():
+            for idx, values in resolved_addresses.items():
+                name = columns[idx]['name']
                 logger.info(
                     "Computing spatial ranges address=%r (%d rows)",
                     name, len(values),
                 )
                 spatial_ranges = get_spatial_ranges(values)
                 if spatial_ranges:
-                    spatial_coverage.append({"address": name,
-                                             "ranges": spatial_ranges})
+                    spatial_coverage.append({
+                        'type': 'address',
+                        'column_names': [name],
+                        'column_indexes': [idx],
+                        'ranges': spatial_ranges,
+                    })
 
             # Compute ranges from administrative areas
-            for name, areas in resolved_admin_areas.items():
+            for idx, areas in resolved_admin_areas.items():
                 merged = None
                 for area in areas:
                     if area is None:
@@ -615,8 +629,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     and merged[3] - merged[2] > 0.01
                 ):
                     spatial_coverage.append({
-                        "admin": name,
-                        "ranges": [
+                        'type': 'admin',
+                        'column_names': [columns[idx]['name']],
+                        'column_indexes': [idx],
+                        'ranges': [
                             {
                                 'range': {
                                     'type': 'envelope',

@@ -3161,8 +3161,9 @@ annotated_metadata = {
     ],
     "spatial_coverage": [
         {
-            "lat": "lt_coord",
-            "lon": "lg_coord",
+            "type": "latlong",
+            "column_names": ["lt_coord", "lg_coord"],
+            "column_indexes": [1, 2],
             "ranges": check_geo_ranges(-74.006, 40.7229, -73.990, 40.7352)
         }
     ],
@@ -3233,8 +3234,9 @@ geo_metadata = {
     ],
     "spatial_coverage": [
         {
-            "lat": "lat",
-            "lon": "long",
+            "type": "latlong",
+            "column_names": ["lat", "long"],
+            "column_indexes": [1, 2],
             "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
         }
     ],
@@ -3349,7 +3351,9 @@ geo_wkt_metadata = {
     ],
     "spatial_coverage": [
         {
-            "point": "coords",
+            "type": "point",
+            "column_names": ["coords"],
+            "column_indexes": [1],
             "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
         }
     ],

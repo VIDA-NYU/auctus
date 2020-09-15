@@ -22,10 +22,7 @@ JOIN_RESULT_SOURCE_FIELDS = [
     # Column indices
     # Keep in sync, search code for 279a32
     'index',
-    'lat_index', 'lon_index', 'lat', 'lon',
-    'address_index', 'address',
-    'point_index', 'point',
-    'admin_index', 'admin',
+    'column_names', 'column_indexes', 'type',
     # To determine temporal resolution of join
     'temporal_resolution',
 ]
@@ -45,11 +42,6 @@ def get_column_coverage(data_profile, filter_=()):
             'ranges': list of ranges
         }
     """
-
-    column_index_mapping = {
-        column['name']: idx
-        for idx, column in enumerate(data_profile['columns'])
-    }
 
     column_coverage = dict()
 
@@ -87,46 +79,19 @@ def get_column_coverage(data_profile, filter_=()):
     if 'spatial_coverage' in data_profile:
         for spatial in data_profile['spatial_coverage']:
             # Keep in sync, search code for 279a32
-            if 'lat' in spatial:
-                if (
-                    filter_ and (
-                        column_index_mapping[spatial['lat']] not in filter_ or
-                        column_index_mapping[spatial['lon']] not in filter_
-                    )
-                ):
-                    continue
-                names = (column_index_mapping[spatial['lat']],
-                         column_index_mapping[spatial['lon']])
-            elif 'address' in spatial:
-                if (
-                    filter_ and
-                    column_index_mapping[spatial['address']] not in filter_
-                ):
-                    continue
-                names = (column_index_mapping[spatial['address']],)
-            elif 'point' in spatial:
-                if (
-                    filter_ and
-                    column_index_mapping[spatial['point']] not in filter_
-                ):
-                    continue
-                names = (column_index_mapping[spatial['point']],)
-            elif 'admin' in spatial:
-                if (
-                    filter_ and
-                    column_index_mapping[spatial['admin']] not in filter_
-                ):
-                    continue
-                names = (column_index_mapping[spatial['admin']],)
-            else:
-                raise ValueError("Invalid spatial_coverage")
-            column_coverage[names] = {
+            indexes = tuple(spatial['column_indexes'])
+            if (
+                filter_ and
+                any(idx not in filter_ for idx in indexes)
+            ):
+                continue
+            column_coverage[indexes] = {
                 'type': 'spatial',
                 'type_value': types.LATITUDE + ',' + types.LONGITUDE,
                 'ranges': []
             }
             for range_ in spatial['ranges']:
-                column_coverage[names]['ranges'].append(
+                column_coverage[indexes]['ranges'].append(
                     range_['range']['coordinates']
                 )
 
@@ -584,43 +549,13 @@ def get_joinable_datasets(
 
         source = result['_source']
         # Keep in sync, search code for 279a32
-        if 'index' in source:
+        if 'index' in source:  # column document
             right_columns.append([source['index']])
             right_columns_names.append([source['name']])
             right_temporal_resolution = source.get('temporal_resolution')
-        elif 'lat_index' in source and 'lon_index' in source:
-            right_columns.append([
-                source['lat_index'],
-                source['lon_index'],
-            ])
-            right_columns_names.append([
-                source['lat'],
-                source['lon'],
-            ])
-        elif 'address_index' in source:
-            right_columns.append([
-                source['address_index'],
-            ])
-            right_columns_names.append([
-                source['address'],
-            ])
-        elif 'point_index' in source:
-            right_columns.append([
-                source['point_index'],
-            ])
-            right_columns_names.append([
-                source['point'],
-            ])
-        elif 'admin_index' in source:
-            right_columns.append([
-                source['admin_index'],
-            ])
-            right_columns_names.append([
-                source['admin'],
-            ])
-        else:
-            logger.error("Invalid spatial_coverage")
-            continue
+        else:  # coverage document
+            right_columns.append(source['column_indexes'])
+            right_columns_names.append(source['column_names'])
 
         res = dict(
             id=dt,

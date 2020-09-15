@@ -32,11 +32,9 @@ export interface AugmentationInfo {
 
 export interface SpatialCoverage {
   // Keep in sync, search code for 279a32
-  lat?: string;
-  lon?: string;
-  address?: string;
-  point?: string;
-  admin?: string;
+  column_names: string[];
+  column_indexes: number[];
+  type: string;
   ranges: Array<{
     range: {
       coordinates: [[number, number], [number, number]];
