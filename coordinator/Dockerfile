@@ -24,6 +24,8 @@ COPY --chown=appuser lib_materialize lib_materialize
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_materialize
 COPY --chown=appuser coordinator coordinator
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/coordinator
+
+RUN python -m compileall /usr/src/app/
 ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"

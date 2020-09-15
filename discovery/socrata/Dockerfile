@@ -20,6 +20,8 @@ COPY --chown=appuser lib_core lib_core
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_core
 COPY --chown=appuser discovery/socrata /usr/src/app/socrata
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/socrata
+
+RUN python -m compileall /usr/src/app/
 ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"

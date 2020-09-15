@@ -31,6 +31,8 @@ COPY --chown=appuser lib_profiler lib_profiler
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_profiler
 COPY --chown=appuser apiserver apiserver
 RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/apiserver
+
+RUN python -m compileall /usr/src/app/
 ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
