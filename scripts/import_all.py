@@ -62,7 +62,7 @@ async def import_all(folder):
         print('.', end='', flush=True)
 
     for i, name in enumerate(lazo_docs):
-        if i % 50 == 0:
+        if i % 500 == 0:
             print(
                 "\nImporting to Lazo, %d/%d" % (i, len(lazo_docs)),
                 flush=True,
@@ -80,7 +80,8 @@ async def import_all(folder):
             print('X', end='', flush=True)
             time.sleep(10)  # If writing can't keep up, needs a real break
             add_dataset_to_lazo_storage(es, lazo_es_id, obj)
-        print('.', end='', flush=True)
+        if i % 10 == 0:
+            print('.', end='', flush=True)
 
 
 if __name__ == '__main__':
