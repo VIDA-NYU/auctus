@@ -40,7 +40,14 @@ def main():
         else:
             packages.append('%s==%s' % (package['name'], package['version']))
 
-    subprocess.check_call(['pip3', 'install', '--disable-pip-version-check'] + packages)
+    subprocess.check_call(
+        [
+            'pip3',
+            '--disable-pip-version-check',
+            '--no-cache-dir',
+            'install',
+        ] + packages,
+    )
 
 
 if __name__ == '__main__':

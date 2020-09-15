@@ -11,7 +11,7 @@ RUN mkdir -p /usr/src/app/home && \
     chown appuser /usr/src/app/home
 WORKDIR /usr/src/app
 RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python && $HOME/.poetry/bin/poetry config virtualenvs.create false
-RUN pip --disable-pip-version-check install toml
+RUN pip --disable-pip-version-check --no-cache-dir install toml
 COPY docker/install_deps.py poetry.lock /usr/src/app/
 RUN python -c "import json, toml; json.dump(toml.load(open('poetry.lock')), open('poetry.lock.json', 'w'))"
 RUN python3 install_deps.py poetry.lock.json
@@ -19,11 +19,11 @@ RUN python3 install_deps.py poetry.lock.json
 # CI: COPY .coveragerc /usr/src/app/
 
 COPY --chown=appuser lib_core lib_core
-RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_core
+RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/lib_core
 COPY --chown=appuser lib_materialize lib_materialize
-RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/lib_materialize
+RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/lib_materialize
 COPY --chown=appuser coordinator coordinator
-RUN pip --disable-pip-version-check install --no-deps -e /usr/src/app/coordinator
+RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/coordinator
 
 RUN python -m compileall /usr/src/app/
 ARG version
