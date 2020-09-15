@@ -58,7 +58,9 @@ def migrate(from_folder, to_folder):
             json.dump(obj, fp, sort_keys=True, indent=2)
 
     print("Copying lazo data...")
-    for f in lazo:
+    for i, f in enumerate(lazo):
+        if i % 1000 == 0:
+            print("% 5d / %5d files copied" % (i, len(lazo)))
         shutil.copy2(
             os.path.join(from_folder, f),
             os.path.join(to_folder, f),
