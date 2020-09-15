@@ -37,11 +37,8 @@ The ``Content-Type`` should be set to `multipart/form-data <https://developer.mo
 
 The following keys are accepted in the request body:
 
-* ``data``: a file in a supported file format (CSV, Excel, SPSS...)
 * ``task``: a JSON object that represents a query result, according to :ref:`the query results specification <schema-result>`
 * ``format``: indicates the format of the returned file
-
-If ``data`` is supplied, DataMart will return a dataset that augments well with ``data``, i.e., it will only return the portions of the dataset referenced by ``id`` that matches well with ``data``.
 
 Additionally, you can use the ``format`` query parameter to get the result in a specific format, for example ``/download?format=d3m``:
 
