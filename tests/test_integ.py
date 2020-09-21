@@ -3434,7 +3434,7 @@ lazo_metadata = {
         "direct_url": "http://test-discoverer:7000/lazo.csv",
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str),
-        "convert": [{'identifier': 'tsv'}],
+        "convert": [{'identifier': 'tsv', 'separator': '\t'}],
     },
     "sample": "state,year\r\nVA,1990\r\nKY,1990\r\nCA,1990\r\nWV,1990\r\nPR," +
               "1990\r\nNC,1990\r\nAL,1990\r\nNJ,1990\r\nCT,1990\r\nCO,1990\r" +

@@ -208,13 +208,19 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
         except Exception as error:  # csv.Error, UnicodeDecodeError
             logger.warning("csv.Sniffer error: %s", error)
             dialect = csv.get_dialect('excel')
-    if getattr(dialect, 'delimiter', '') == '\t':
+    if getattr(dialect, 'delimiter', ',') != ',':
         # Update metadata
-        logger.info("This is a TSV file")
-        materialize.setdefault('convert', []).append({'identifier': 'tsv'})
+        logger.info("Detected separator is %r", dialect.delimiter)
+        materialize.setdefault('convert', []).append({
+            'identifier': 'tsv',
+            'separator': dialect.delimiter,
+        })
 
         # Update file
-        dataset_path = convert_dataset(tsv_to_csv, dataset_path)
+        dataset_path = convert_dataset(
+            lambda s, d: tsv_to_csv(s, d, separator=dialect.delimiter),
+            dataset_path,
+        )
 
     # Check for pivoted temporal table
     with open(dataset_path, 'r') as fp:
