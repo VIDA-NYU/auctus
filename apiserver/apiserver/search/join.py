@@ -85,15 +85,14 @@ def get_column_coverage(data_profile, filter_=()):
                 any(idx not in filter_ for idx in indexes)
             ):
                 continue
+            ranges = [
+                rg['range']['coordinates']
+                for rg in spatial['ranges']
+            ]
             column_coverage[indexes] = {
                 'type': 'spatial',
-                'type_value': types.LATITUDE + ',' + types.LONGITUDE,
-                'ranges': []
+                'ranges': ranges,
             }
-            for range_ in spatial['ranges']:
-                column_coverage[indexes]['ranges'].append(
-                    range_['range']['coordinates']
-                )
 
     return column_coverage
 
@@ -456,7 +455,7 @@ def get_joinable_datasets(
     # numerical, temporal, and spatial attributes
     for column, coverage in column_coverage.items():
         type_ = coverage['type']
-        type_value = coverage['type_value']
+        type_value = coverage.get('type_value')
         if type_ == 'spatial':
             spatial_results = get_spatial_join_search_results(
                 es,
