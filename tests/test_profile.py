@@ -93,31 +93,31 @@ class TestLatlongSelection(DataTestCase):
         """Test pairing latitude and longitude columns by name or matching pairs defined by the user."""
         pairs, (missed_lat, missed_long) = spatial.pair_latlong_columns(
             [
-                LatLongColumn('Pickup_latitude', [1], None),
-                LatLongColumn('lat', [7], None),
-                LatLongColumn('dropoff_latitude', [2], None),
-                LatLongColumn('latitude_place', [8], None),
-                LatLongColumn('la_coord', [8], '1'),
+                LatLongColumn(0, 'Pickup_latitude', [1], None),
+                LatLongColumn(1, 'lat', [7], None),
+                LatLongColumn(2, 'dropoff_latitude', [2], None),
+                LatLongColumn(3, 'latitude_place', [8], None),
+                LatLongColumn(4, 'la_coord', [8], '1'),
             ],
             [
-                LatLongColumn('long', [5], None),
-                LatLongColumn('dropoff_Longitude', [3], None),
-                LatLongColumn('pickup_longitude', [4], None),
-                LatLongColumn('other_Longitude', [6], None),
-                LatLongColumn('lo_coord', [8], '1'),
+                LatLongColumn(5, 'long', [5], None),
+                LatLongColumn(6, 'dropoff_Longitude', [3], None),
+                LatLongColumn(7, 'pickup_longitude', [4], None),
+                LatLongColumn(8, 'other_Longitude', [6], None),
+                LatLongColumn(9, 'lo_coord', [8], '1'),
             ],
         )
         self.assertEqual(
             pairs,
             [
-                (LatLongColumn('lat', [7], None),
-                 LatLongColumn('long', [5], None)),
-                (LatLongColumn('dropoff_latitude', [2], None),
-                 LatLongColumn('dropoff_Longitude', [3], None)),
-                (LatLongColumn('Pickup_latitude', [1], None),
-                 LatLongColumn('pickup_longitude', [4], None)),
-                (LatLongColumn('la_coord', [8], '1'),
-                 LatLongColumn('lo_coord', [8], '1')),
+                (LatLongColumn(1, 'lat', [7], None),
+                 LatLongColumn(5, 'long', [5], None)),
+                (LatLongColumn(2, 'dropoff_latitude', [2], None),
+                 LatLongColumn(6, 'dropoff_Longitude', [3], None)),
+                (LatLongColumn(0, 'Pickup_latitude', [1], None),
+                 LatLongColumn(7, 'pickup_longitude', [4], None)),
+                (LatLongColumn(4, 'la_coord', [8], '1'),
+                 LatLongColumn(9, 'lo_coord', [8], '1')),
             ],
         )
         self.assertEqual(

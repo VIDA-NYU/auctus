@@ -114,6 +114,7 @@ def normalize_latlong_column_name(name, substrings):
 
 @dataclass
 class LatLongColumn(object):
+    index: int
     name: str
     values: list
     annot_pair: typing.Optional[str]

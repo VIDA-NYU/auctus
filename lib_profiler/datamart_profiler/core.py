@@ -326,6 +326,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 if types.LATITUDE in semantic_types_dict:
                     columns_lat.append(
                         LatLongColumn(
+                            index=column_idx,
                             name=column_meta['name'],
                             values=numerical_values,
                             annot_pair=manual_latlong_pairs.get(column_meta['name']),
@@ -334,6 +335,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 elif types.LONGITUDE in semantic_types_dict:
                     columns_long.append(
                         LatLongColumn(
+                            index=column_idx,
                             name=column_meta['name'],
                             values=numerical_values,
                             annot_pair=manual_latlong_pairs.get(column_meta['name']),
@@ -471,8 +473,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         break
                 resolved_admin_areas[column_idx] = areas
 
-    column_indexes = {col['name']: idx for idx, col in enumerate(columns)}
-
     # Textual columns
     if lazo_client and columns_textual:
         # Indexing with lazo
@@ -571,8 +571,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
                             'type': 'latlong',
                             'column_names': [col_lat.name, col_long.name],
                             'column_indexes': [
-                                column_indexes[col_lat.name],
-                                column_indexes[col_long.name],
+                                col_lat.index,
+                                col_long.index,
                             ],
                             'ranges': spatial_ranges,
                         })
