@@ -14,8 +14,8 @@ import warnings
 
 from .numerical import mean_stddev, get_numerical_ranges
 from .profile_types import identify_types, determine_dataset_type
-from .spatial import nominatim_resolve_all, pair_latlong_columns, \
-    get_spatial_ranges, parse_wkt_column
+from .spatial import LatLongColumn, nominatim_resolve_all, \
+    pair_latlong_columns, get_spatial_ranges, parse_wkt_column
 from .temporal import get_temporal_resolution
 from . import types
 
@@ -324,17 +324,21 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
                 # Get lat/long columns
                 if types.LATITUDE in semantic_types_dict:
-                    columns_lat.append((
-                        column_meta['name'],
-                        numerical_values,
-                        manual_latlong_pairs.get(column_meta['name']),
-                    ))
+                    columns_lat.append(
+                        LatLongColumn(
+                            name=column_meta['name'],
+                            values=numerical_values,
+                            annot_pair=manual_latlong_pairs.get(column_meta['name']),
+                        )
+                    )
                 elif types.LONGITUDE in semantic_types_dict:
-                    columns_long.append((
-                        column_meta['name'],
-                        numerical_values,
-                        manual_latlong_pairs.get(column_meta['name']),
-                    ))
+                    columns_long.append(
+                        LatLongColumn(
+                            name=column_meta['name'],
+                            values=numerical_values,
+                            annot_pair=manual_latlong_pairs.get(column_meta['name']),
+                        )
+                    )
                 elif coverage:
                     ranges = get_numerical_ranges(
                         [x for x in numerical_values if x is not None]
@@ -527,7 +531,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 logger.warning("Error getting Lazo sketches")
                 raise
 
-    # Lat / Long
     if coverage:
         logger.info("Computing spatial coverage...")
         spatial_coverage = []
@@ -550,9 +553,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     col['semantic_types'].remove(types.LONGITUDE)
 
             # Compute ranges from lat/long pairs
-            for (name_lat, values_lat, _), (name_long, values_long, _) in pairs:
+            for col_lat, col_long in pairs:
                 values = []
-                for lat, long in zip(values_lat, values_long):
+                for lat, long in zip(col_lat.values, col_long.values):
                     if (lat and long and  # Ignore None and 0
                             -90 < lat < 90 and -180 < long < 180):
                         values.append((lat, long))
@@ -560,14 +563,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 if len(values) > 1:
                     logger.info(
                         "Computing spatial ranges lat=%r long=%r (%d rows)",
-                        name_lat, name_long, len(values),
+                        col_lat.name, col_long.name, len(values),
                     )
                     spatial_ranges = get_spatial_ranges(values)
                     if spatial_ranges:
                         spatial_coverage.append({
                             'type': 'latlong',
-                            'column_names': [name_lat, name_long],
-                            'column_indexes': [column_indexes[name_lat], column_indexes[name_long]],
+                            'column_names': [col_lat.name, col_long.name],
+                            'column_indexes': [
+                                column_indexes[col_lat.name],
+                                column_indexes[col_long.name],
+                            ],
                             'ranges': spatial_ranges,
                         })
 

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 import logging
 import numpy
@@ -9,6 +10,7 @@ from sklearn.cluster import KMeans
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.neighbors._kd_tree import KDTree
 import time
+import typing
 from urllib.parse import urlencode
 
 from .warning_tools import ignore_warnings
@@ -110,28 +112,43 @@ def normalize_latlong_column_name(name, substrings):
     return name
 
 
+@dataclass
+class LatLongColumn(object):
+    name: str
+    values: list
+    annot_pair: typing.Optional[str]
+
+
 def pair_latlong_columns(columns_lat, columns_long):
     # Normalize latitude column names
     normalized_lat = {}
-    for i, (name, values_lat, annot_pair) in enumerate(columns_lat):
+    for i, col in enumerate(columns_lat):
         # check if a pair was defined by the user (human-in-the-loop)
-        name = annot_pair if annot_pair is not None else normalize_latlong_column_name(name, LATITUDE)
+        name = col.annot_pair
+        if name is None:
+            # Use normalized column name
+            name = normalize_latlong_column_name(col.name, LATITUDE)
         normalized_lat[name] = i
 
     # Go over normalized longitude column names and try to match
     pairs = []
     missed_long = []
-    for name, values_long, annot_pair in columns_long:
+    for col in columns_long:
         # check if a pair was defined by the user (human-in-the-loop)
-        norm_name = annot_pair if annot_pair is not None else normalize_latlong_column_name(name, LONGITUDE)
-        if norm_name in normalized_lat:
-            pairs.append((columns_lat[normalized_lat.pop(norm_name)],
-                          (name, values_long, annot_pair)))
+        name = col.annot_pair
+        if name is None:
+            # Use normalized column name
+            name = normalize_latlong_column_name(col.name, LONGITUDE)
+        if name in normalized_lat:
+            pairs.append((
+                columns_lat[normalized_lat.pop(name)],
+                col,
+            ))
         else:
-            missed_long.append(name)
+            missed_long.append(col.name)
 
     # Gather missed columns
-    missed_lat = [columns_lat[i][0] for i in sorted(normalized_lat.values())]
+    missed_lat = [columns_lat[i].name for i in sorted(normalized_lat.values())]
 
     return pairs, (missed_lat, missed_long)
 

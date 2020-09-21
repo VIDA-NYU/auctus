@@ -11,7 +11,7 @@ from datamart_profiler import process_dataset
 from datamart_profiler.core import expand_attribute_name
 from datamart_profiler import profile_types
 from datamart_profiler import spatial
-from datamart_profiler.spatial import LATITUDE, LONGITUDE
+from datamart_profiler.spatial import LATITUDE, LONGITUDE, LatLongColumn
 from datamart_profiler.temporal import get_temporal_resolution, parse_date
 
 from .utils import DataTestCase, data
@@ -93,27 +93,31 @@ class TestLatlongSelection(DataTestCase):
         """Test pairing latitude and longitude columns by name or matching pairs defined by the user."""
         pairs, (missed_lat, missed_long) = spatial.pair_latlong_columns(
             [
-                ('Pickup_latitude', 1, None),
-                ('lat', 7, None),
-                ('dropoff_latitude', 2, None),
-                ('latitude_place', 8, None),
-                ('la_coord', 8, '1'),
+                LatLongColumn('Pickup_latitude', [1], None),
+                LatLongColumn('lat', [7], None),
+                LatLongColumn('dropoff_latitude', [2], None),
+                LatLongColumn('latitude_place', [8], None),
+                LatLongColumn('la_coord', [8], '1'),
             ],
             [
-                ('long', 5, None),
-                ('dropoff_Longitude', 3, None),
-                ('pickup_longitude', 4, None),
-                ('other_Longitude', 6, None),
-                ('lo_coord', 8, '1'),
+                LatLongColumn('long', [5], None),
+                LatLongColumn('dropoff_Longitude', [3], None),
+                LatLongColumn('pickup_longitude', [4], None),
+                LatLongColumn('other_Longitude', [6], None),
+                LatLongColumn('lo_coord', [8], '1'),
             ],
         )
         self.assertEqual(
             pairs,
             [
-                (('lat', 7, None), ('long', 5, None)),
-                (('dropoff_latitude', 2, None), ('dropoff_Longitude', 3, None)),
-                (('Pickup_latitude', 1, None), ('pickup_longitude', 4, None)),
-                (('la_coord', 8, '1'), ('lo_coord', 8, '1')),
+                (LatLongColumn('lat', [7], None),
+                 LatLongColumn('long', [5], None)),
+                (LatLongColumn('dropoff_latitude', [2], None),
+                 LatLongColumn('dropoff_Longitude', [3], None)),
+                (LatLongColumn('Pickup_latitude', [1], None),
+                 LatLongColumn('pickup_longitude', [4], None)),
+                (LatLongColumn('la_coord', [8], '1'),
+                 LatLongColumn('lo_coord', [8], '1')),
             ],
         )
         self.assertEqual(
