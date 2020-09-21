@@ -194,7 +194,6 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             spatial_coverage_metadata.update(common_dataset_metadata)
             spatial_coverage_metadata.update(spatial_coverage)
             # Keep in sync, search code for 279a32
-            spatial_coverage_metadata['name'] = ' , '.join(spatial_coverage_metadata['column_names'])
             for spatial_range in spatial_coverage_metadata['ranges']:
                 coordinates = spatial_range['range']['coordinates']
                 spatial_range['min_lon'] = coordinates[0][0]

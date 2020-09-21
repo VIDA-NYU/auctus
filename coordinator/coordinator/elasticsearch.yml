@@ -236,8 +236,6 @@ datamart_spatial_coverage:
         index: false
       dataset_attribute_keywords:
         type: text
-      name:
-        type: text
       # Keep in sync, search code for 279a32
       column_names:
         type: text
