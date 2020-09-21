@@ -168,6 +168,7 @@ def get_numerical_join_search_results(
                         },
                         'script_score': {
                             'script': {
+                                'lang': 'painless',
                                 'params': {
                                     'gte': range_[0],
                                     'lte': range_[1],
@@ -274,6 +275,7 @@ def get_spatial_join_search_results(
                         },
                         'script_score': {
                             'script': {
+                                'lang': 'painless',
                                 'params': {
                                     'min_lon': range_[0][0],
                                     'max_lat': range_[0][1],
