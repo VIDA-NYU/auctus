@@ -5,7 +5,7 @@ from apiserver.search import parse_query
 
 class TestSearch(unittest.TestCase):
     def test_simple(self):
-        main, sup_funcs, sup_filters, vars = parse_query({
+        main, sup, sup_filters, vars = parse_query({
             'keywords': ['green', 'taxi'],
             'source': 'gov',
         })
@@ -34,24 +34,21 @@ class TestSearch(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            sup_funcs,
+            sup,
             [
                 {
-                    'filter': {
-                        'multi_match': {
-                            'query': 'green taxi',
-                            'operator': 'and',
-                            'type': 'cross_fields',
-                            'fields': [
-                                'dataset_id^10',
-                                'dataset_description',
-                                'dataset_name',
-                                'name',
-                                'dataset_attribute_keywords',
-                            ],
-                        },
+                    'multi_match': {
+                        'query': 'green taxi',
+                        'operator': 'and',
+                        'type': 'cross_fields',
+                        'fields': [
+                            'dataset_id^10',
+                            'dataset_description',
+                            'dataset_name',
+                            'name',
+                            'dataset_attribute_keywords',
+                        ],
                     },
-                    'weight': 10,
                 },
             ],
         )
@@ -68,7 +65,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(vars, [])
 
     def test_types(self):
-        main, sup_funcs, sup_filters, vars = parse_query({
+        main, sup, sup_filters, vars = parse_query({
             'keywords': ['food'],
             'types': ['spatial', 'temporal'],
         })
@@ -103,24 +100,21 @@ class TestSearch(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            sup_funcs,
+            sup,
             [
                 {
-                    'filter': {
-                        'multi_match': {
-                            'query': 'food',
-                            'type': 'cross_fields',
-                            'operator': 'and',
-                            'fields': [
-                                'dataset_id^10',
-                                'dataset_description',
-                                'dataset_name',
-                                'name',
-                                'dataset_attribute_keywords',
-                            ],
-                        },
+                    'multi_match': {
+                        'query': 'food',
+                        'type': 'cross_fields',
+                        'operator': 'and',
+                        'fields': [
+                            'dataset_id^10',
+                            'dataset_description',
+                            'dataset_name',
+                            'name',
+                            'dataset_attribute_keywords',
+                        ],
                     },
-                    'weight': 10,
                 },
             ],
         )
@@ -137,7 +131,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(vars, [])
 
     def test_ranges(self):
-        main, sup_funcs, sup_filters, vars = parse_query({
+        main, sup, sup_filters, vars = parse_query({
             'keywords': ['green', 'taxi'],
             'source': ['gov'],
             'variables': [

@@ -112,7 +112,7 @@ def parse_keyword_query_sup_index(query_json):
     Elasticsearch query over 'datamart_column' and
     'datamart_spatial_coverage' indices.
     """
-    query_sup_functions = list()
+    query_sup = list()
     query_sup_filters = list()
 
     if query_json.get('keywords'):
@@ -121,22 +121,19 @@ def parse_keyword_query_sup_index(query_json):
         )
         if isinstance(keywords, list):
             keywords = ' '.join(keywords)
-        query_sup_functions.append({
-            'filter': {
-                'multi_match': {
-                    'query': keywords,
-                    'operator': 'and',
-                    'type': 'cross_fields',
-                    'fields': [
-                        'dataset_id^10',
-                        'dataset_description',
-                        'dataset_name',
-                        'name',
-                        'dataset_attribute_keywords',
-                    ],
-                },
+        query_sup.append({
+            'multi_match': {
+                'query': keywords,
+                'operator': 'and',
+                'type': 'cross_fields',
+                'fields': [
+                    'dataset_id^10',
+                    'dataset_description',
+                    'dataset_name',
+                    'name',
+                    'dataset_attribute_keywords',
+                ],
             },
-            'weight': 10,
         })
 
     if 'source' in query_json:
@@ -157,7 +154,7 @@ def parse_keyword_query_sup_index(query_json):
             }
         })
 
-    return query_sup_functions, query_sup_filters
+    return query_sup, query_sup_filters
 
 
 def parse_query_variables(data, geo_data=None):
@@ -348,8 +345,7 @@ def parse_query(query_json, geo_data=None):
     ('datamart_columns' and 'datamart_spatial_coverage').
     """
     query_args_main = parse_keyword_query_main_index(query_json)
-    query_sup_functions, query_sup_filters = \
-        parse_keyword_query_sup_index(query_json)
+    query_sup, query_sup_filters = parse_keyword_query_sup_index(query_json)
 
     # tabular_variables
     tabular_variables = []
@@ -368,12 +364,12 @@ def parse_query(query_json, geo_data=None):
     if variables_query:
         query_args_main.extend(variables_query)
 
-    return query_args_main, query_sup_functions, query_sup_filters, list(set(tabular_variables))
+    return query_args_main, query_sup, query_sup_filters, list(set(tabular_variables))
 
 
 def get_augmentation_search_results(
     es, lazo_client, data_profile,
-    query_args_main, query_sup_functions, query_sup_filters,
+    query_args_main, query_sup, query_sup_filters,
     tabular_variables,
     dataset_id=None, join=True, union=True, ignore_datasets=None,
 ):
@@ -389,7 +385,7 @@ def get_augmentation_search_results(
             data_profile=data_profile,
             dataset_id=dataset_id,
             ignore_datasets=ignore_datasets,
-            query_sup_functions=query_sup_functions,
+            query_sup=query_sup,
             query_sup_filters=query_sup_filters,
             tabular_variables=tabular_variables,
         )
@@ -518,7 +514,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # parameter: query
         query_args_main = list()
-        query_sup_functions = list()
+        query_sup = list()
         query_sup_filters = list()
         tabular_variables = list()
         search_joins = search_unions = True
@@ -526,7 +522,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
             try:
                 (
                     query_args_main,
-                    query_sup_functions, query_sup_filters,
+                    query_sup, query_sup_filters,
                     tabular_variables,
                 ) = parse_query(query, self.application.geo_data)
             except ClientError as e:
@@ -585,7 +581,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 self.application.lazo_client,
                 data_profile,
                 query_args_main,
-                query_sup_functions,
+                query_sup,
                 query_sup_filters,
                 tabular_variables,
                 ignore_datasets=[data_id] if data_id is not None else [],

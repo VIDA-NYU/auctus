@@ -124,7 +124,7 @@ def get_lazo_sketches(data_profile, filter_=None):
 
 def get_numerical_join_search_results(
     es, type_, type_value, pivot_column, ranges, dataset_id=None, ignore_datasets=None,
-    query_sup_functions=None, query_sup_filters=None,
+    query_sup=None, query_sup_filters=None,
 ):
     """Retrieve numerical join search results that intersect with the input numerical ranges.
     """
@@ -203,18 +203,12 @@ def get_numerical_join_search_results(
             'includes': JOIN_RESULT_SOURCE_FIELDS
         },
         'query': {
-            'function_score': {
-                'query': {
-                    'bool': {
-                        'filter': filter_query,
-                        'should': should_query,
-                        'must_not': must_not_query,
-                        'minimum_should_match': 1
-                    }
-                },
-                'functions': query_sup_functions or [],
-                'score_mode': 'multiply',  # Multiply sup queries together
-                'boost_mode': 'multiply',  # Multiply numerical query (ranges) with sup query (keywords etc)
+            'bool': {
+                'filter': filter_query,
+                'must': query_sup or [],
+                'should': should_query,
+                'must_not': must_not_query,
+                'minimum_should_match': 1
             }
         }
     }
@@ -228,7 +222,7 @@ def get_numerical_join_search_results(
 
 def get_spatial_join_search_results(
     es, ranges, dataset_id=None, ignore_datasets=None,
-    query_sup_functions=None, query_sup_filters=None,
+    query_sup=None, query_sup_filters=None,
 ):
     """Retrieve spatial join search results that intersect
     with the input spatial ranges.
@@ -308,18 +302,12 @@ def get_spatial_join_search_results(
             'includes': JOIN_RESULT_SOURCE_FIELDS
         },
         'query': {
-            'function_score': {
-                'query': {
-                    'bool': {
-                        'filter': filter_query,
-                        'should': should_query,
-                        'must_not': must_not_query,
-                        'minimum_should_match': 1,
-                    }
-                },
-                'functions': query_sup_functions or [],
-                'score_mode': 'multiply',  # Multiply sup queries together
-                'boost_mode': 'multiply',  # Multiply spatial query (ranges) with sup query (keywords etc)
+            'bool': {
+                'filter': filter_query,
+                'must': query_sup or [],
+                'should': should_query,
+                'must_not': must_not_query,
+                'minimum_should_match': 1,
             }
         }
     }
@@ -333,7 +321,7 @@ def get_spatial_join_search_results(
 
 def get_textual_join_search_results(
     es, query_results,
-    query_sup_functions=None, query_sup_filters=None,
+    query_sup=None, query_sup_filters=None,
 ):
     """Combine Lazo textual search results with Elasticsearch
     (keyword search).
@@ -349,7 +337,7 @@ def get_textual_join_search_results(
         scores_per_dataset[d_id][name] = lazo_score
 
     # if there is no keyword query
-    if not (query_sup_functions or query_sup_filters):
+    if not (query_sup or query_sup_filters):
         results = list()
         for dataset_id in column_per_dataset:
             column_indices = get_column_identifiers(
@@ -403,17 +391,11 @@ def get_textual_join_search_results(
             'includes': JOIN_RESULT_SOURCE_FIELDS
         },
         'query': {
-            'function_score': {
-                'query': {
-                    'bool': {
-                        'filter': query_sup_filters or [],
-                        'should': should_query,
-                        'minimum_should_match': 1
-                    }
-                },
-                'functions': query_sup_functions,
-                'score_mode': 'multiply',  # Multiply sup queries together
-                'boost_mode': 'multiply',  # Multiply lazo score with sup query (keywords etc)
+            'bool': {
+                'filter': query_sup_filters or [],
+                'must': query_sup or [],
+                'should': should_query,
+                'minimum_should_match': 1
             }
         }
     }
@@ -427,7 +409,7 @@ def get_textual_join_search_results(
 
 def get_joinable_datasets(
     es, lazo_client, data_profile, dataset_id=None, ignore_datasets=None,
-    query_sup_functions=None, query_sup_filters=None,
+    query_sup=None, query_sup_filters=None,
     tabular_variables=(),
 ):
     """
@@ -438,7 +420,7 @@ def get_joinable_datasets(
     :param data_profile: Profiled input dataset.
     :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
     :param ignore_datasets: Identifiers of datasets to ignore.
-    :param query_sup_functions: list of query functions over sup index.
+    :param query_sup: list of queries over sup index.
     :param query_sup_filters: list of query filters over sup index.
     :param tabular_variables: specifies which columns to focus on for the search.
     """
@@ -462,7 +444,7 @@ def get_joinable_datasets(
                 coverage['ranges'],
                 dataset_id,
                 ignore_datasets,
-                query_sup_functions,
+                query_sup,
                 query_sup_filters,
             )
             for result in spatial_results:
@@ -478,7 +460,7 @@ def get_joinable_datasets(
                 coverage['ranges'],
                 dataset_id,
                 ignore_datasets,
-                query_sup_functions,
+                query_sup,
                 query_sup_filters,
             )
             for result in numerical_results:
@@ -511,7 +493,7 @@ def get_joinable_datasets(
         textual_results = get_textual_join_search_results(
             es,
             query_results,
-            query_sup_functions,
+            query_sup,
             query_sup_filters,
         )
         for result in textual_results:

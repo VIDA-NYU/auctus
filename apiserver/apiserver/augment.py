@@ -142,7 +142,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                 lazo_client=self.application.lazo_client,
                 data_profile=data_profile,
                 query_args_main=None,
-                query_sup_functions=None,
+                query_sup=None,
                 query_sup_filters=None,
                 tabular_variables=None,
                 dataset_id=task['id'],
