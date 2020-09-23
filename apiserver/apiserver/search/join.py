@@ -186,7 +186,7 @@ def get_numerical_join_search_results(
                                 ''')
                             }
                         },
-                        'boost_mode': 'replace'
+                        'boost_mode': 'replace',  # Set score to computed intersection
                     }
                 },
                 'inner_hits': {
@@ -194,7 +194,7 @@ def get_numerical_join_search_results(
                     'size': 100,
                     'name': 'range-{0}'.format(i)
                 },
-                'score_mode': 'sum'
+                'score_mode': 'sum',  # Sum the intersection from each range
             }
         })
 
@@ -213,8 +213,8 @@ def get_numerical_join_search_results(
                     }
                 },
                 'functions': query_sup_functions or [],
-                'score_mode': 'sum',
-                'boost_mode': 'multiply'
+                'score_mode': 'multiply',  # Multiply sup queries together
+                'boost_mode': 'multiply',  # Multiply numerical query (ranges) with sup query (keywords etc)
             }
         }
     }
@@ -291,7 +291,7 @@ def get_spatial_join_search_results(
                                 ''')
                             }
                         },
-                        'boost_mode': 'replace'
+                        'boost_mode': 'replace',  # Set score to computed intersection
                     }
                 },
                 'inner_hits': {
@@ -299,7 +299,7 @@ def get_spatial_join_search_results(
                     'size': 100,
                     'name': 'range-{0}'.format(i)
                 },
-                'score_mode': 'sum'
+                'score_mode': 'sum',  # Sum the intersection from each range
             }
         })
 
@@ -318,8 +318,8 @@ def get_spatial_join_search_results(
                     }
                 },
                 'functions': query_sup_functions or [],
-                'score_mode': 'sum',
-                'boost_mode': 'multiply'
+                'score_mode': 'multiply',  # Multiply sup queries together
+                'boost_mode': 'multiply',  # Multiply spatial query (ranges) with sup query (keywords etc)
             }
         }
     }
@@ -412,8 +412,8 @@ def get_textual_join_search_results(
                     }
                 },
                 'functions': query_sup_functions,
-                'score_mode': 'sum',
-                'boost_mode': 'multiply'
+                'score_mode': 'multiply',  # Multiply sup queries together
+                'boost_mode': 'multiply',  # Multiply lazo score with sup query (keywords etc)
             }
         }
     }
