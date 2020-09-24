@@ -24,6 +24,15 @@ LONGITUDE = 'http://schema.org/longitude'
 #: A specific instant in time (not partial ones such as "July 4" or "12am")
 DATE_TIME = 'http://schema.org/DateTime'
 
+#: A year number
+YEAR = 'year'
+
+#: A month number
+MONTH = 'month'
+
+#: A day number
+DAY = 'day'
+
 #: The street address of a location
 ADDRESS = 'http://schema.org/address'
 

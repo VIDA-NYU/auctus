@@ -270,20 +270,14 @@ def identify_types(array, name, geo_data, manual=None):
             # Count distinct values
             column_meta['num_distinct_values'] = len(distinct_values())
 
-            # Identify years
-            if name.strip().lower() == 'year':
-                dates = []
-                for year in array:
-                    try:
-                        dates.append(datetime(
-                            int(year), 1, 1,
-                            tzinfo=dateutil.tz.UTC,
-                        ))
-                    except ValueError:
-                        pass
-                if len(dates) >= threshold:
-                    structural_type = types.TEXT
-                    semantic_types_dict[types.DATE_TIME] = dates
+            # Identify years or months or days
+            n = name.strip().lower()
+            if n == 'year':
+                semantic_types_dict[types.YEAR] = None
+            elif n == 'month':
+                semantic_types_dict[types.MONTH] = None
+            elif n == 'day':
+                semantic_types_dict[types.DAY] = None
 
         # Identify lat/long
         if structural_type == types.FLOAT:
