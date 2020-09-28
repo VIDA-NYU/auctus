@@ -47,6 +47,14 @@
         }
       ]
     },
+    "augmentation_type": {
+      "type": "string",
+      "description": "Type of augmentation with the input data, ie join or union.",
+      "enum": [
+        "join",
+        "union"
+      ]
+    },
     "variables": {
       "type": "array",
       "description": "Describes a set of features (variables) that a matching dataset must have. Datasets with more features will be ranked higher.",
