@@ -18,10 +18,10 @@ export enum TemporalResolution {
   SECOND = 'second',
 }
 
-export type AugmentationType = 'join' | 'union' | 'none' | undefined;
+export type AugmentationType = 'join' | 'union' | 'none';
 
 export interface AugmentationInfo {
-  type: AugmentationType;
+  type?: AugmentationType;
   left_columns: number[][];
   left_columns_names: string[][];
   right_columns: number[][];
