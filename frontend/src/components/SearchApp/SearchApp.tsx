@@ -96,12 +96,15 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       .filter(f => f.type === FilterType.DATA_TYPE)
       .map(f => f.state as string[]);
 
+    const augmentationType = 'join'; // TODO: Need a control to pick
+
     const query: api.SearchQuery = {
       query: state.query,
       filters: filterVariables,
       sources: sources[0],
       datasetTypes: datasetTypes[0],
       relatedFile,
+      augmentationType: relatedFile && augmentationType,
     };
     return query;
   }

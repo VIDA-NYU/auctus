@@ -130,6 +130,7 @@ export interface QuerySpec {
   source?: string[];
   types?: string[];
   variables: FilterVariables[];
+  augmentation_type?: AugmentationType;
 }
 
 interface RelatedToFileBase {
