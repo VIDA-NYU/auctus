@@ -77,17 +77,15 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       .filter(f => f && f.state)
       .map(f => f.state as FilterVariables);
 
-    let relatedFiles: RelatedFile[] = state.filters
+    let relatedFile: RelatedFile = state.filters
       .filter(f => f.type === FilterType.RELATED_FILE)
-      .map(f => f.state as RelatedFile);
+      .map(f => f.state as RelatedFile)[0];
     if (state.session?.data_token) {
-      relatedFiles = [
-        {
-          kind: 'localFile',
-          name: 'session input',
-          token: state.session.data_token,
-        },
-      ];
+      relatedFile = {
+        kind: 'localFile',
+        name: 'session input',
+        token: state.session.data_token,
+      };
     }
 
     const sources: string[][] = state.filters
@@ -103,7 +101,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       filters: filterVariables,
       sources: sources[0],
       datasetTypes: datasetTypes[0],
-      relatedFile: relatedFiles[0],
+      relatedFile,
     };
     return query;
   }
