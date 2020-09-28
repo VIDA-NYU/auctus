@@ -33,6 +33,20 @@
         }
       ]
     },
+    "types": {
+      "description": "Types of datasets we are searching for.",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/dataset_type"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/dataset_type"
+          }
+        }
+      ]
+    },
     "variables": {
       "type": "array",
       "description": "Describes a set of features (variables) that a matching dataset must have. Datasets with more features will be ranked higher.",
@@ -55,6 +69,16 @@
     }
   },
   "definitions": {
+    "dataset_type": {
+      "type": "string",
+      "description": "Types of datasets.",
+      "enum": [
+        "numerical",
+        "categorical",
+        "spatial",
+        "temporal"
+      ]
+    },
     "temporal_variable": {
       "type": "object",
       "description": "Describes columns containing temporal information.",
