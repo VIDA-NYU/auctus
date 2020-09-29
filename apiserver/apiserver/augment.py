@@ -72,6 +72,8 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             return await self.send_error_json(400, "Missing 'task' JSON")
         task = json.loads(task)
 
+        # TODO: Validate 'task'
+
         data = self.get_body_argument('data', None)
         if data is not None:
             data = data.encode('utf-8')
