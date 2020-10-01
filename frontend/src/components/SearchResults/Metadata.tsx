@@ -144,7 +144,7 @@ export class Description extends React.PureComponent<
     const {description} = this.props.hit.metadata;
     const showLabel = this.props.label ? this.props.label : false;
     const displayedDescription =
-      description.length > limitLength && this.state.hidden
+      description && description.length > limitLength && this.state.hidden
         ? description.substring(0, limitLength - 3) + '...'
         : description;
     return (
