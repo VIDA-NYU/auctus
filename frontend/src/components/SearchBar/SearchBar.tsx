@@ -18,7 +18,7 @@ class SearchBar extends React.PureComponent<SearchBarProps> {
   }
 
   isActive() {
-    return this.props.active || this.props.value !== '';
+    return this.props.active;
   }
 
   handleChange(event: React.ChangeEvent<HTMLInputElement>) {

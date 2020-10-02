@@ -3,12 +3,15 @@ import Dropzone from 'react-dropzone';
 import {CardShadow, CardButton} from '../visus/Card/Card';
 import {formatSize, shallowEqual} from '../../utils';
 import {Metadata, RelatedFile, TabularVariable} from '../../api/types';
-import {ProfileResult, profile, metadata} from '../../api/rest';
+import {ProfileResult, profile, metadata, RequestStatus} from '../../api/rest';
 import {RelatedFileColumnsSelector} from './RelatedFileColumnsSelector';
+import {Loading} from '../visus/Loading/Loading';
+import * as Icon from 'react-feather';
 
 interface RelatedFileFilterState {
   profile?: Metadata;
   selectedTabularVars?: TabularVariable;
+  loadingState?: RequestStatus;
 }
 
 interface RelatedFileFilterProps {
@@ -25,7 +28,10 @@ class RelatedFileFilter extends React.PureComponent<
 
   constructor(props: RelatedFileFilterProps) {
     super(props);
-    this.state = {};
+    this.state = {
+      loadingState: undefined,
+    };
+    this.handleFailedLoading = this.handleFailedLoading.bind(this);
     if (props.state) {
       this.getProfile(props.state);
     }
@@ -67,35 +73,54 @@ class RelatedFileFilter extends React.PureComponent<
     }
   }
 
+  handleFailedLoading() {
+    this.setState({
+      loadingState: RequestStatus.ERROR,
+    });
+  }
+
   handleSelectedFile(acceptedFiles: File[]) {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
+      this.setState({loadingState: RequestStatus.IN_PROGRESS});
       const profileQuery = profile(file);
       this.profileQuery = profileQuery;
-      profileQuery.then(p => {
-        // Check that this is still the current query
-        // (JavaScript can't cancel promises)
-        if (this.profileQuery === profileQuery) {
-          // tabular variable
-          // TODO: handle 'relationship'
-          // for now, it assumes the relationship is 'contains'
-          const tabularVariables: TabularVariable = {
-            type: 'tabular_variable',
-            columns: Array.from(new Array(p.columns.length).keys()),
-            relationship: 'contains',
-          };
-          const relatedFile: RelatedFile = {
-            kind: 'localFile',
-            token: p.token,
-            name: file.name,
-            fileSize: file.size,
-            tabularVariables,
-          };
-          this.profileQueryFile = relatedFile;
-          this.setState({profile: p, selectedTabularVars: tabularVariables});
-          this.props.onSelectedFileChange(relatedFile);
-        }
-      });
+      profileQuery
+        .then(response => {
+          // Check that this is still the current query
+          // (JavaScript can't cancel promises)
+          if (this.profileQuery === profileQuery) {
+            // tabular variable
+            // TODO: handle 'relationship'
+            // for now, it assumes the relationship is 'contains'
+            const tabularVariables: TabularVariable = {
+              type: 'tabular_variable',
+              columns: Array.from(new Array(response.columns.length).keys()),
+              relationship: 'contains',
+            };
+            const relatedFile: RelatedFile = {
+              kind: 'localFile',
+              token: response.token,
+              name: file.name,
+              fileSize: file.size,
+              tabularVariables,
+            };
+            this.profileQueryFile = relatedFile;
+            this.setState({
+              profile: response,
+              selectedTabularVars: tabularVariables,
+              loadingState: RequestStatus.SUCCESS,
+            });
+            this.props.onSelectedFileChange(relatedFile);
+          } else {
+            this.handleFailedLoading();
+          }
+        })
+        .catch(() => {
+          this.handleFailedLoading();
+        });
+    } else {
+      this.handleFailedLoading();
     }
   }
 
@@ -141,7 +166,43 @@ class RelatedFileFilter extends React.PureComponent<
     const maxSize = 100 * 1024 * 1024; // maximum file size
     const relatedFile = this.props.state;
     const {profile, selectedTabularVars} = this.state;
-    if (relatedFile) {
+    if (this.state.loadingState === RequestStatus.IN_PROGRESS) {
+      return (
+        <div>
+          <CardShadow height={'auto'}>
+            <Loading message="Loading and profiling data..." />
+          </CardShadow>
+        </div>
+      );
+    }
+    if (this.state.loadingState === RequestStatus.ERROR) {
+      return (
+        <div>
+          <CardShadow height={'auto'}>
+            <span className="text-danger">
+              Failed to load or profile the data. Please try again, or load a
+              different file.
+            </span>
+            <br />
+            <button
+              className="btn btn-sm btn-outline-primary mt-2"
+              onClick={() =>
+                this.setState({
+                  loadingState: undefined,
+                })
+              }
+            >
+              <Icon.XCircle className="feather" /> Close
+            </button>
+          </CardShadow>
+        </div>
+      );
+    }
+    if (
+      relatedFile &&
+      (this.state.loadingState === RequestStatus.SUCCESS ||
+        this.state.loadingState === undefined)
+    ) {
       let totalColumns = 0;
       if (profile !== undefined) {
         totalColumns = profile.columns.length;
@@ -177,6 +238,7 @@ class RelatedFileFilter extends React.PureComponent<
         <CardShadow>
           <Dropzone
             multiple={false}
+            accept=".xls,.xlsx,.csv,.sav,.tsv,text/csv"
             minSize={0}
             maxSize={maxSize}
             onDrop={acceptedFiles => this.handleSelectedFile(acceptedFiles)}

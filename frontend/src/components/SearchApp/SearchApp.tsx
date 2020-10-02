@@ -236,8 +236,16 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   validQuery() {
-    if (this.state.query && this.state.query.length > 0) return true;
+    const relatedFiles: RelatedFile[] = this.state.filters
+      .filter(f => f.type === FilterType.RELATED_FILE)
+      .map(f => f.state as RelatedFile);
+
+    if (relatedFiles && relatedFiles.length > 0) {
+      if (relatedFiles.filter(f => f && f.kind).length > 0) return true;
+      return false;
+    }
     if (this.state.filters.filter(f => f.state).length > 0) return true;
+    if (this.state.query && this.state.query.length > 0) return true;
     return false;
   }
 
