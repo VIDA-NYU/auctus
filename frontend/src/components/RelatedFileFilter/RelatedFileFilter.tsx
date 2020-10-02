@@ -238,7 +238,7 @@ class RelatedFileFilter extends React.PureComponent<
         <CardShadow>
           <Dropzone
             multiple={false}
-            accept="text/csv"
+            accept=".xls,.xlsx,.csv,.sav,.tsv,text/csv"
             minSize={0}
             maxSize={maxSize}
             onDrop={acceptedFiles => this.handleSelectedFile(acceptedFiles)}
