@@ -1,4 +1,4 @@
-import {SearchResult, AugmentationInfo} from './types';
+import {SearchResult, AugmentationInfo, AugmentationType} from './types';
 
 /**
  * Merges two augmentation infos into a single while merging their
@@ -64,7 +64,7 @@ export function aggregateResults(results: SearchResult[]): SearchResult[] {
   results.forEach((hit, index) => {
     if (!hit.augmentation) {
       hit.augmentation = {
-        type: 'none',
+        type: AugmentationType.NONE,
         left_columns: [],
         left_columns_names: [],
         right_columns: [],
@@ -90,7 +90,7 @@ export function aggregateResults(results: SearchResult[]): SearchResult[] {
       // since we assume that unions appear only once in the search results,
       // so every time we find that a key already exists, the integration
       // type must be a 'join'.
-      if (currentAugInfo.type !== 'join') {
+      if (currentAugInfo.type !== AugmentationType.JOIN) {
         console.warn('Unexpected join type found while aggregating hits.');
       }
 

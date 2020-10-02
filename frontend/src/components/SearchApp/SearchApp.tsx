@@ -3,7 +3,7 @@ import {Link, match} from 'react-router-dom';
 import {History, Location} from 'history';
 import {generateRandomId} from '../../utils';
 import * as api from '../../api/rest';
-import {Session} from '../../api/types';
+import {Session, AugmentationType} from '../../api/types';
 import {VerticalLogo, HorizontalLogo} from '../Logo/Logo';
 import {
   AdvancedSearchBar,
@@ -44,6 +44,7 @@ interface SearchAppState {
   searchQuery?: api.SearchQuery;
   sources: string[];
   session?: Session;
+  selectedAugmentationType: AugmentationType;
 }
 
 interface SearchAppProps {
@@ -66,6 +67,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       searchState: SearchState.CLEAN,
       filters: [],
       sources: api.DEFAULT_SOURCES,
+      selectedAugmentationType: AugmentationType.JOIN,
     };
   }
 
@@ -96,15 +98,13 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       .filter(f => f.type === FilterType.DATA_TYPE)
       .map(f => f.state as string[]);
 
-    const augmentationType = 'join'; // TODO: Need a control to pick
-
     const query: api.SearchQuery = {
       query: state.query,
       filters: filterVariables,
       sources: sources[0],
       datasetTypes: datasetTypes[0],
       relatedFile,
-      augmentationType: relatedFile && augmentationType,
+      augmentationType: relatedFile && state.selectedAugmentationType,
     };
     return query;
   }
@@ -404,6 +404,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             component = (
               <RelatedFileFilter
                 onSelectedFileChange={f => this.updateFilterState(filter.id, f)}
+                onAugmentationTypeChange={type =>
+                  this.setState({selectedAugmentationType: type})
+                }
+                selectedAugmentationType={this.state.selectedAugmentationType}
                 state={filter.state as RelatedFile | undefined}
               />
             );
