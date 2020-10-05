@@ -2,9 +2,23 @@
 =========
 
 Incompatible changes:
+* Moved API endpoints under /api/v1. This will make local deployments match auctus.vida-nyu.org.
+* Updated spatial coverage format, files need to get re-profiled (or re-create ES index and use migrate-spatial-coverage.py script)
+* Removed "half-augmentation" flow (download the subset of a dataset that matches some input data), existed for feature-parity with ISI system, but unused
 
 Enhancements:
-* Add a search box on the map for the spatial filter
+* Added a search box on the map for the spatial filter
+* Added search by "dataset type", e.g. numerical/categorical/spatial/temporal, computed from the sum of column types
+* Let user select the temporal resolution of the join
+* Compute keywords from the attribute names (dealing with punctuation, camel case, ...)
+* Allow selecting which column of the input data to use in the search for possible joins
+* Added ability to download the dataset sample as CSV
+* Integrated with Sentry to track errors during queries and profiling, made the system more reliable by handling more edge cases
+* Added support for delimited files with a different delimited than comma or tab (for example, semicolon)
+* Show a spinner while profiling related data, prevent submitting the search before it's done
+
+Bugfixes:
+* Fix join result metadata, it previously contained some information relating to the dataset before join
 
 0.7 (2020-08-04)
 ================
