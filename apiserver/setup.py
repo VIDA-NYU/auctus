@@ -12,7 +12,7 @@ req = [
     'redis~=3.4',
     'lazo-index-service==0.5.1',
     'prometheus_client',
-    'tornado>=5.0',
+    'tornado==6.1b1',
     'datamart_augmentation',
     'datamart_core',
     'datamart_materialize',

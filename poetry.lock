@@ -130,7 +130,7 @@ elasticsearch = ">=7.0,<8.0"
 lazo-index-service = "0.5.1"
 prometheus_client = "*"
 redis = ">=3.4,<4.0"
-tornado = ">=5.0"
+tornado = "6.1b1"
 
 [package.source]
 reference = ""
@@ -173,7 +173,7 @@ datamart_core = "*"
 elasticsearch = ">=7.0,<8.0"
 jinja2 = "*"
 prometheus_client = "*"
-tornado = ">=5.0"
+tornado = "6.1b1"
 
 [package.source]
 reference = ""
@@ -963,7 +963,7 @@ description = "Tornado is a Python web framework and asynchronous networking lib
 name = "tornado"
 optional = false
 python-versions = ">= 3.5"
-version = "6.0.4"
+version = "6.1b1"
 
 [[package]]
 category = "main"
@@ -1516,15 +1516,39 @@ threadpoolctl = [
     {file = "threadpoolctl-2.1.0.tar.gz", hash = "sha256:ddc57c96a38beb63db45d6c159b5ab07b6bced12c45a1f07b2b92f272aebfa6b"},
 ]
 tornado = [
-    {file = "tornado-6.0.4-cp35-cp35m-win32.whl", hash = "sha256:5217e601700f24e966ddab689f90b7ea4bd91ff3357c3600fa1045e26d68e55d"},
-    {file = "tornado-6.0.4-cp35-cp35m-win_amd64.whl", hash = "sha256:c98232a3ac391f5faea6821b53db8db461157baa788f5d6222a193e9456e1740"},
-    {file = "tornado-6.0.4-cp36-cp36m-win32.whl", hash = "sha256:5f6a07e62e799be5d2330e68d808c8ac41d4a259b9cea61da4101b83cb5dc673"},
-    {file = "tornado-6.0.4-cp36-cp36m-win_amd64.whl", hash = "sha256:c952975c8ba74f546ae6de2e226ab3cc3cc11ae47baf607459a6728585bb542a"},
-    {file = "tornado-6.0.4-cp37-cp37m-win32.whl", hash = "sha256:2c027eb2a393d964b22b5c154d1a23a5f8727db6fda837118a776b29e2b8ebc6"},
-    {file = "tornado-6.0.4-cp37-cp37m-win_amd64.whl", hash = "sha256:5618f72e947533832cbc3dec54e1dffc1747a5cb17d1fd91577ed14fa0dc081b"},
-    {file = "tornado-6.0.4-cp38-cp38-win32.whl", hash = "sha256:22aed82c2ea340c3771e3babc5ef220272f6fd06b5108a53b4976d0d722bcd52"},
-    {file = "tornado-6.0.4-cp38-cp38-win_amd64.whl", hash = "sha256:c58d56003daf1b616336781b26d184023ea4af13ae143d9dda65e31e534940b9"},
-    {file = "tornado-6.0.4.tar.gz", hash = "sha256:0fe2d45ba43b00a41cd73f8be321a44936dc1aba233dee979f17a042b83eb6dc"},
+    {file = "tornado-6.1b1-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:f7e806e58befcac776990440d64e6f74d3b12b6645a003fd06f3ecb1d39b5bdb"},
+    {file = "tornado-6.1b1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:2d14b5ee9cf625d3c75af82cc5da985a93d063503e4cf75d731ddb3760c84b99"},
+    {file = "tornado-6.1b1-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:9295132e4c72eeb14248e96e3eb50ec365a2b84c71fc6f18ed66925154b58dcb"},
+    {file = "tornado-6.1b1-cp35-cp35m-manylinux2010_i686.whl", hash = "sha256:375c9bae8d349c2ec486f904e2bb659130ef077a4b24a725e22d7e77e271e293"},
+    {file = "tornado-6.1b1-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:247b9fec60c1796693888e74458a7f0dedc851803ad5e04efae7ecdc5b34b4e1"},
+    {file = "tornado-6.1b1-cp35-cp35m-manylinux2014_aarch64.whl", hash = "sha256:892347476232fd7cc7331c3dbe7974cc1df07da9c358078957a66a00299bfbf9"},
+    {file = "tornado-6.1b1-cp35-cp35m-win32.whl", hash = "sha256:a54be58c029371e24b4487f8552f8bf864b37d2bdb568aba2390759a323e6e76"},
+    {file = "tornado-6.1b1-cp35-cp35m-win_amd64.whl", hash = "sha256:4674327234f421487ba1ac606c9db1970afee2c213f998ddc65574bc37bf3f6b"},
+    {file = "tornado-6.1b1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:f74f3fa3a613f94158e47096085cb4c7e33fb9bff8e6d969a5695eb15bf78dbc"},
+    {file = "tornado-6.1b1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:5686d5aae448cbd597f0f1ab23348ee13ca70886f23d57bc39ab8363e41035a9"},
+    {file = "tornado-6.1b1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:0a74273ef4ea966c9aacd46ce993285c45457818401a930bfc439992bf53c9c2"},
+    {file = "tornado-6.1b1-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:04279c26bf1d9fb83e59f34c48fec694f0cfe5cbbaf40e7770d93852e9b7cdf2"},
+    {file = "tornado-6.1b1-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:46b207668427264f67695772e107d4892bd4eb9c122de2bdff984ba6afd0fb5f"},
+    {file = "tornado-6.1b1-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:dc3875b58432a7b4ae0e4adf348b5e82630f4d83735a46bc6f48150ddc342f66"},
+    {file = "tornado-6.1b1-cp36-cp36m-win32.whl", hash = "sha256:66c2e77f7363257fd2b48d20320aa032863002a69e04b4ef747129a78354709b"},
+    {file = "tornado-6.1b1-cp36-cp36m-win_amd64.whl", hash = "sha256:b36a32bce0b3c9d009baf7c8bff15698356c7478021d2042a3fb15ca5420c506"},
+    {file = "tornado-6.1b1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:511c6ffd6c81840fcca36c39ef07d05c32158d32498ec3958cf3380d6a26b9c8"},
+    {file = "tornado-6.1b1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:c50d6823a7ea80628f5ac707c753ec6f6da4e62f8f1804b4b64b42121764a3e5"},
+    {file = "tornado-6.1b1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:c1f366cfaa051e59d24cee3466c03f3c990afb322c06c56bf3c13092b722c7b8"},
+    {file = "tornado-6.1b1-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:c606c22836605db453c90c7736fd9d8d32ce6f434acf40faa808743baec1da25"},
+    {file = "tornado-6.1b1-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:53eb7b073fe6ec16e3233f4a58ac62f899e2f499f0f98113c2ac7a78c8b06fd2"},
+    {file = "tornado-6.1b1-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:c8c9ff1196551b6a19390ce67a3bab90b1d20fe4168cae1b8a0bbe3d9605eaad"},
+    {file = "tornado-6.1b1-cp37-cp37m-win32.whl", hash = "sha256:c4cfbec148715b246f993f9b39416373522ab9a6321ace4af559398357f1c9b9"},
+    {file = "tornado-6.1b1-cp37-cp37m-win_amd64.whl", hash = "sha256:0e6a5e9e1682e48bf076ca30744e42e54ea00bfb1c9a698210fd7bd96e2a630d"},
+    {file = "tornado-6.1b1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:c73b5b624302e27a7215c59378fd8f05181ea2c3660542fc84c30097cae0004f"},
+    {file = "tornado-6.1b1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:eed31f89ea52d26eff5619460b3dbf33bb5117f81a665d29e42c434bfc24c70b"},
+    {file = "tornado-6.1b1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:715daf876f6fe2c92cf7e219676b3e78a8736d4171bace7b0278f7b32192e150"},
+    {file = "tornado-6.1b1-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:001df7dd09364830afd90202264db0f477abf3f421ac64736235d29da69df9e9"},
+    {file = "tornado-6.1b1-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:11ab046456980fe0718fcce18f70e2d8cd43bc61607a249e15bde8809724e34a"},
+    {file = "tornado-6.1b1-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:2c8b8e9fb5fdf7db25dfa9f68e61593cc699ff2afe28b387c42ff56b988d8ce7"},
+    {file = "tornado-6.1b1-cp38-cp38-win32.whl", hash = "sha256:b32b3a4129807304632158625827311e3c5ab58f328f97ca894939a8ae548ca2"},
+    {file = "tornado-6.1b1-cp38-cp38-win_amd64.whl", hash = "sha256:4e83033258e366dd8c0c8949c4275c69023bea80e7d644968ced6014267d21bd"},
+    {file = "tornado-6.1b1.tar.gz", hash = "sha256:58444df74c89f67aa04c52f8912c9a87548c52d1bdf08c0e6b9e728e3637ec07"},
 ]
 urllib3 = [
     {file = "urllib3-1.25.9-py2.py3-none-any.whl", hash = "sha256:88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115"},

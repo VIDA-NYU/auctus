@@ -12,7 +12,7 @@ req = [
     'prometheus_client',
     'PyYaml',
     'jinja2',
-    'tornado>=5.0',
+    'tornado==6.1b1',
     'datamart_core',
 ]
 setup(name='datamart-coordinator-service',
