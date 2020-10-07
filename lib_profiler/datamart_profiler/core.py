@@ -1,6 +1,5 @@
 import collections
 import contextlib
-import re
 from datetime import datetime
 import logging
 import numpy
@@ -10,6 +9,7 @@ from pandas.errors import EmptyDataError
 import prometheus_client
 import string
 import random
+import re
 import warnings
 
 from .numerical import mean_stddev, get_numerical_ranges
@@ -204,20 +204,19 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     metadata['nb_profiled_rows'] = data.shape[0]
 
-    # Get column dictionary
-    columns = metadata.setdefault('columns', [])
-    # Fix size if wrong
-    if len(columns) != len(data.columns):
-        logger.info("Setting column names from header")
-        columns[:] = [{} for _ in data.columns]
+    if 'columns' in metadata:
+        columns = metadata['columns']
+        logger.info("Using provided columns info")
+        if len(columns) != len(data.columns):
+            raise ValueError("Column metadata doesn't match number of columns")
+        for column_meta, name in zip(columns, data.columns):
+            if 'name' in column_meta and column_meta['name'] != name:
+                raise ValueError("Column names don't match")
+            column_meta['name'] = name
     else:
-        logger.info("Keeping columns from discoverer")
-
-    # Set column names
-    for column_meta, name in zip(columns, data.columns):
-        if 'name' in column_meta and column_meta['name'] != name:
-            raise ValueError("Column names don't match")
-        column_meta['name'] = name
+        logger.info("Setting column names from header")
+        columns = [{'name': name} for name in data.columns]
+        metadata['columns'] = columns
 
     if data.shape[0] == 0:
         logger.info("0 rows, returning early")
