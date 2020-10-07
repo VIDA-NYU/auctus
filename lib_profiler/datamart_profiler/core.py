@@ -1,3 +1,4 @@
+import codecs
 import collections
 import contextlib
 import csv
@@ -175,9 +176,18 @@ def process_dataset(data, dataset_id=None, metadata=None,
                                 "a pandas.DataFrame")
 
             # Read column names
-            reader = csv.reader(data)
-            column_names = next(reader)
-            del reader
+            read_sample = data.read(4)
+            data.seek(0, 0)
+            if isinstance(read_sample, str):
+                reader = csv.reader(data)
+                column_names = next(reader)
+                del reader
+            else:
+                codec_reader = codecs.getreader('utf-8')(data)
+                reader = csv.reader(codec_reader)
+                column_names = next(reader)
+                del reader
+                del codec_reader
             data.seek(0, 0)
 
             # Load the data
