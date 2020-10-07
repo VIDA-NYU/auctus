@@ -1,5 +1,6 @@
 from datetime import datetime
 from dateutil.tz import UTC
+import io
 import pandas
 import random
 import requests
@@ -66,6 +67,18 @@ class TestNames(unittest.TestCase):
         self.assertEqual(
             list(expand_attribute_name('place')),
             ['place'],
+        )
+
+    def test_duplicate_column_names(self):
+        """Test reading a CSV with duplicate names."""
+        metadata = process_dataset(io.StringIO(textwrap.dedent('''\
+            one,two,one
+            a,1,c
+            d,2,f
+        ''')))
+        self.assertEqual(
+            [col['name'] for col in metadata['columns']],
+            ['one', 'two', 'one'],
         )
 
 

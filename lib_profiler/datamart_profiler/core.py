@@ -1,5 +1,6 @@
 import collections
 import contextlib
+import csv
 from datetime import datetime
 import logging
 import numpy
@@ -146,8 +147,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
         # https://github.com/pandas-dev/pandas/issues/25353 (nan as str 'nan')
         data = data.astype(object).fillna('').astype(str)
 
+        column_names = data.columns
+
         # FIXME: no sampling here!
     else:
+        column_names = None  # Avoids a warning
         with contextlib.ExitStack() as stack:
             if isinstance(data, (str, bytes)):
                 if not os.path.exists(data):
@@ -169,6 +173,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
             else:
                 raise TypeError("data should be a filename, a file object, or "
                                 "a pandas.DataFrame")
+
+            # Read column names
+            reader = csv.reader(data)
+            column_names = next(reader)
+            del reader
+            data.seek(0, 0)
 
             # Load the data
             try:
@@ -209,13 +219,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
         logger.info("Using provided columns info")
         if len(columns) != len(data.columns):
             raise ValueError("Column metadata doesn't match number of columns")
-        for column_meta, name in zip(columns, data.columns):
+        for column_meta, name in zip(columns, column_names):
             if 'name' in column_meta and column_meta['name'] != name:
                 raise ValueError("Column names don't match")
             column_meta['name'] = name
     else:
         logger.info("Setting column names from header")
-        columns = [{'name': name} for name in data.columns]
+        columns = [{'name': name} for name in column_names]
         metadata['columns'] = columns
 
     if data.shape[0] == 0:
