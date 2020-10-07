@@ -14,6 +14,6 @@ def spss_to_csv(source_filename, dest_fileobj):
 
 
 class SpssConverter(SimpleConverter):
-    """Adapter converting a TSV file to CSV.
+    """Adapter converting an SPSS file to CSV.
     """
     transform = staticmethod(spss_to_csv)
