@@ -134,7 +134,27 @@ class TestDiscoverer(Discoverer):
             dataset_id='excel',
         )
 
-        # Needs to be last, CI waits for it to test
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test-discoverer:7000/stata114.dta'),
+            {
+                # Omit name, should be set to 'stata114' automatically
+                'description': "Stata format 114 test",
+                'source': 'remi',
+            },
+            dataset_id='stata114',
+        )
+
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test-discoverer:7000/stata118.dta'),
+            {
+                # Omit name, should be set to 'stata118' automatically
+                'description': "Stata format 118 test",
+                'source': 'remi',
+            },
+            dataset_id='stata118',
+        )
 
         # Use URL for this one
         self.record_dataset(
