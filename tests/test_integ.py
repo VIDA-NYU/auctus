@@ -89,6 +89,10 @@ class DatamartTest(DataTestCase):
                 files[k] = v
             kwargs['files'] = files
 
+        if 'data' in kwargs:
+            if hasattr(kwargs['data'], 'read'):
+                kwargs['data'] = kwargs['data'].read()
+
         response = requests.request(
             method,
             os.environ['API_URL'] + url,
