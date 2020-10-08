@@ -4,7 +4,6 @@ import datamart_materialize
 import logging
 import os
 import prometheus_client
-import pyreadstat
 import shutil
 import xlrd
 import zipfile
@@ -14,6 +13,7 @@ from datamart_core.fscache import cache_get_or_set
 from datamart_materialize.excel import xls_to_csv
 from datamart_materialize.pivot import pivot_table
 from datamart_materialize.spss import spss_to_csv
+from datamart_materialize.stata import stata_to_csv
 from datamart_materialize.tsv import tsv_to_csv
 from datamart_profiler import parse_date
 
@@ -188,12 +188,24 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
         # Update file
         dataset_path = convert_dataset(xls_to_csv, dataset_path)
 
+    with open(dataset_path, 'rb') as fp:
+        magic = fp.read(16)
+
+    # Check for Stata file format
+    if magic[:11] == b'<stata_dta>' or magic[:4] in (
+        b'\x73\x01\x01\x00', b'\x73\x02\x01\x00',
+        b'\x72\x01\x01\x00', b'\x72\x02\x01\x00',
+        b'\x71\x01\x01\x01', b'\x71\x02\x01\x01',
+    ):
+        # Update metadata
+        logger.info("This is a Stata file")
+        materialize.setdefault('convert', []).append({'identifier': 'stata'})
+
+        # Update file
+        dataset_path = convert_dataset(stata_to_csv, dataset_path)
+
     # Check for SPSS file format
-    try:
-        pyreadstat.read_sav(dataset_path)
-    except pyreadstat.ReadstatError:
-        pass
-    else:
+    if magic[:4] in (b'\xC1\xE2\xC3\xC9', b'$FL2', b'$FL3'):
         # Update metadata
         logger.info("This is an SPSS file")
         materialize.setdefault('convert', []).append({'identifier': 'spss'})
