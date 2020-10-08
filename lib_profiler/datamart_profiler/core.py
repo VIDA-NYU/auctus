@@ -180,12 +180,18 @@ def process_dataset(data, dataset_id=None, metadata=None,
             data.seek(0, 0)
             if isinstance(read_sample, str):
                 reader = csv.reader(data)
-                column_names = next(reader)
+                try:
+                    column_names = next(reader)
+                except StopIteration:
+                    column_names = None
                 del reader
             else:
                 codec_reader = codecs.getreader('utf-8')(data)
                 reader = csv.reader(codec_reader)
-                column_names = next(reader)
+                try:
+                    column_names = next(reader)
+                except StopIteration:
+                    column_names = None
                 del reader
                 del codec_reader
             data.seek(0, 0)
