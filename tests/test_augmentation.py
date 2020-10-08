@@ -864,7 +864,7 @@ class TestUnion(DataTestCase):
         self.assertJson(
             output_metadata,
             {
-                'size': 3442,
+                'size': 3443,
                 'columns': [
                     {
                         'name': 'lat',

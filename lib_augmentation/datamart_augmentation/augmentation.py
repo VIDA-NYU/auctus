@@ -684,13 +684,13 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
     start = time.perf_counter()
     with WriteCounter(writer.open_file('w')) as fout:
         orig_rows = 0
-        # Write header
-        fout.write(','.join(first_original_data.columns) + '\n')
         # Write original data
-        for chunk in itertools.chain([first_original_data], original_data):
+        for i, chunk in enumerate(
+            itertools.chain([first_original_data], original_data)
+        ):
             chunk.to_csv(
                 fout,
-                header=False,
+                header=(i == 0),
                 index=False,
                 line_terminator='\r\n',
             )
