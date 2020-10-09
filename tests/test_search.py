@@ -349,21 +349,21 @@ class TestAugmentation(DataTestCase):
     def test_name_similarity(self):
         self.assertAlmostEqual(
             name_similarity("temperature", "temperature"),
-            1.0,
+            1.00,
             places=2,
         )
         self.assertAlmostEqual(
             name_similarity("fridge temperature", "temperature"),
-            1.0,
+            0.56,
             places=2,
         )
         self.assertAlmostEqual(
             name_similarity("avg temperature", "temperature avg"),
-            0.77,
+            0.625,
             places=2,
         )
         self.assertAlmostEqual(
-            name_similarity("avg temperature", "tempest"),
-            0.60,
+            name_similarity("temperature", "temperament"),
+            0.38,
             places=2,
         )

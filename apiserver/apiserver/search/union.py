@@ -27,7 +27,7 @@ def name_similarity(str1, str2):
 
     shared = sum((str1_grams & str2_grams).values())
 
-    return shared / min(sum(str1_grams.values()), sum(str2_grams.values()))
+    return shared / sum((str1_grams | str2_grams).values())
 
 
 def get_columns_by_type(data_profile, filter_=()):
