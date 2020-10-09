@@ -4,20 +4,32 @@ _refs:
       # https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-custom-analyzer.html
       analysis:
         analyzer:
-          default: &default_analyzer
+          default:
             type: custom
             tokenizer: standard
             char_filter:
             - html_strip
             filter:
             - lowercase
+            # No synonym filter for indexing
             - general_stemmer
           default_search:
-            <<: *default_analyzer
+            type: custom
+            tokenizer: standard
+            char_filter:
+            - html_strip
+            filter:
+            - lowercase
+            - synonym_filter  # Synonym filter for search only
+            - general_stemmer
         filter:
           general_stemmer:
             type: stemmer
             language: english
+          synonym_filter:
+            type: synonym
+            synonyms:
+            - "taxi, taxicab"
 
 datamart:
   settings:
