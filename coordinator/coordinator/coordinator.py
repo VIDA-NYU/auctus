@@ -58,7 +58,7 @@ class Coordinator(object):
             try:
                 for name, index in indices.items():
                     if not es.indices.exists(name):
-                        logger.info("Creating index '%r' in Elasticsearch",
+                        logger.info("Creating index %r in Elasticsearch",
                                     name)
                         es.indices.create(
                             name,

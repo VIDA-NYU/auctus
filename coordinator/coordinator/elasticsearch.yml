@@ -28,8 +28,7 @@ _refs:
             language: english
           synonym_filter:
             type: synonym
-            synonyms:
-            - "taxi, taxicab"
+            synonyms_path: "synonyms.txt"
 
 datamart:
   settings:

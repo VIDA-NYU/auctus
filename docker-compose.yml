@@ -20,6 +20,7 @@ services:
       - 127.0.0.1:9200:9200
     volumes:
       - ./volumes/elasticsearch:/usr/share/elasticsearch/data
+      - ./docker/synonyms.txt:/usr/share/elasticsearch/config/synonyms.txt
   elasticsearch-exporter:
     image: justwatch/elasticsearch_exporter:1.1.0
     restart: on-failure
