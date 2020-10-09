@@ -521,6 +521,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         query_sup_functions = list()
         query_sup_filters = list()
         tabular_variables = list()
+        search_joins = search_unions = True
         if query:
             try:
                 (
@@ -530,6 +531,16 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 ) = parse_query(query, self.application.geo_data)
             except ClientError as e:
                 return self.send_error_json(400, str(e))
+            if 'augmentation_type' in query:
+                if query['augmentation_type'] == 'join':
+                    search_unions = False
+                elif query['augmentation_type'] == 'union':
+                    search_joins = False
+                else:
+                    return self.send_error_json(
+                        400,
+                        "Unknown augmentation_type",
+                    )
 
         # At least one of them must be provided
         if not query_args_main and not data_profile:
@@ -578,6 +589,8 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 query_sup_filters,
                 tabular_variables,
                 ignore_datasets=[data_id] if data_id is not None else [],
+                join=search_joins,
+                union=search_unions,
             )
         results = [enhance_metadata(result) for result in results]
 

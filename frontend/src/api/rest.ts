@@ -8,6 +8,7 @@ import {
   QuerySpec,
   RelatedFile,
   Session,
+  AugmentationType,
 } from './types';
 import {API_URL} from '../config';
 
@@ -55,12 +56,14 @@ export interface SearchQuery {
   sources?: string[];
   datasetTypes?: string[];
   relatedFile?: RelatedFile;
+  augmentationType?: AugmentationType;
 }
 
 export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   let spec: QuerySpec = {
     keywords: q.query,
     variables: q.filters ? [...q.filters] : [],
+    augmentation_type: q.augmentationType,
   };
   if (q.sources && q.sources.length > 0) {
     spec.source = q.sources;

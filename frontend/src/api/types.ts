@@ -18,10 +18,14 @@ export enum TemporalResolution {
   SECOND = 'second',
 }
 
-export type AugmentationType = 'join' | 'union' | 'none' | undefined;
+export enum AugmentationType {
+  JOIN = 'join',
+  UNION = 'union',
+  NONE = 'none',
+}
 
 export interface AugmentationInfo {
-  type: AugmentationType;
+  type?: AugmentationType;
   left_columns: number[][];
   left_columns_names: string[][];
   right_columns: number[][];
@@ -130,6 +134,7 @@ export interface QuerySpec {
   source?: string[];
   types?: string[];
   variables: FilterVariables[];
+  augmentation_type?: AugmentationType;
 }
 
 interface RelatedToFileBase {

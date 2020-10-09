@@ -1,8 +1,13 @@
 import React from 'react';
 import Dropzone from 'react-dropzone';
 import {CardShadow, CardButton} from '../visus/Card/Card';
-import {formatSize, shallowEqual} from '../../utils';
-import {Metadata, RelatedFile, TabularVariable} from '../../api/types';
+import {formatSize, shallowEqual, capitalize} from '../../utils';
+import {
+  Metadata,
+  RelatedFile,
+  TabularVariable,
+  AugmentationType,
+} from '../../api/types';
 import {ProfileResult, profile, metadata, RequestStatus} from '../../api/rest';
 import {RelatedFileColumnsSelector} from './RelatedFileColumnsSelector';
 import {Loading} from '../visus/Loading/Loading';
@@ -16,6 +21,8 @@ interface RelatedFileFilterState {
 
 interface RelatedFileFilterProps {
   onSelectedFileChange: (relatedFile: RelatedFile) => void;
+  onAugmentationTypeChange: (type: AugmentationType) => void;
+  selectedAugmentationType: AugmentationType;
   state?: RelatedFile;
 }
 
@@ -218,6 +225,30 @@ class RelatedFileFilter extends React.PureComponent<
             {totalColumns > 0
               ? ` contains ${totalColumns} columns.`
               : undefined}
+            <div className="d-inline">
+              <span className="font-weight-bold ml-2 mr-1">
+                Augmentation Type:{' '}
+              </span>
+              <select
+                className="custom-select"
+                style={{width: 'auto'}}
+                value={this.props.selectedAugmentationType}
+                onChange={e =>
+                  this.props.onAugmentationTypeChange(
+                    e.target.value as AugmentationType
+                  )
+                }
+                defaultValue={AugmentationType.JOIN}
+              >
+                {Object.values(AugmentationType)
+                  .filter(f => f !== AugmentationType.NONE)
+                  .map(value => (
+                    <option value={value} key={value}>
+                      {capitalize(value)}
+                    </option>
+                  ))}
+              </select>
+            </div>
             {profile && selectedTabularVars && (
               <RelatedFileColumnsSelector
                 profile={profile}

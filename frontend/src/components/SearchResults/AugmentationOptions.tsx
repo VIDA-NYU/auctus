@@ -208,7 +208,7 @@ class AugmentationOptions extends React.PureComponent<
     this.setState({result: api.RequestStatus.IN_PROGRESS});
   }
 
-  renderAugmentButton(hit: SearchResult, type: AugmentationType) {
+  renderAugmentButton(hit: SearchResult, type?: AugmentationType) {
     const {session} = this.props;
     const {result} = this.state;
     let btnActive = this.findIndexesOfCheckedColumn().length > 0;

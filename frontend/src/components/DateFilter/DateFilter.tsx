@@ -3,12 +3,9 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DateFilter.css';
 import {TemporalResolution, TemporalVariable} from '../../api/types';
+import {capitalize} from '../../utils';
 
 const ANY_RESOLUTION = 'Any Resolution';
-
-function capitalize(word: string) {
-  return word.charAt(0).toUpperCase() + word.slice(1);
-}
 
 interface DateFilterProps {
   className?: string;
