@@ -307,9 +307,21 @@ class Profiler(object):
                             self.es.delete('pending', dataset_id)
                         except elasticsearch.NotFoundError:
                             pass
-                except DatasetTooBig:
+                except DatasetTooBig as e:
                     # Materializer reached size limit
-                    logger.info("Dataset over size limit: %r", dataset_id)
+                    if not e.limit:
+                        logger.info("Dataset over size limit: %r", dataset_id)
+                    elif e.actual:
+                        logger.info(
+                            "Dataset over size limit (%d > %d bytes): %r",
+                            e.actual, e.limit,
+                            dataset_id,
+                        )
+                    else:
+                        logger.info(
+                            "Dataset over size limit (%d bytes): %r",
+                            e.limit, dataset_id,
+                        )
                     message.ack()
                     self.es.index(
                         'pending',

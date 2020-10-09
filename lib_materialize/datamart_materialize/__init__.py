@@ -26,6 +26,10 @@ class DatasetTooBig(Exception):
     Some materializers can't tell the size of a dataset before they download
     it, so the only solution is to raise this error when it is reached.
     """
+    def __init__(self, *args, limit, actual=None):
+        super(Exception, self).__init__(*args)
+        self.limit = limit
+        self.actual = actual
 
 
 def _write_file(response, writer, size_limit=None):
@@ -38,7 +42,7 @@ def _write_file(response, writer, size_limit=None):
                 fp.write(chunk)
                 size += len(chunk)
                 if size_limit is not None and size > size_limit:
-                    raise DatasetTooBig
+                    raise DatasetTooBig(limit=size_limit)
 
 
 def _direct_download(url, writer, size_limit=None):
@@ -73,7 +77,10 @@ def _proxy_download(dataset_id, writer, proxy, size_limit=None):
         'Content-Length' in response.headers and
         int(response.headers['Content-Length']) > size_limit
     ):
-        raise DatasetTooBig
+        raise DatasetTooBig(
+            limit=size_limit,
+            actual=int(response.headers['Content-Length']),
+        )
     _write_file(response, writer, size_limit=size_limit)
 
 

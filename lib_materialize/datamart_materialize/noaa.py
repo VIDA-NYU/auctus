@@ -79,7 +79,7 @@ class NoaaMaterializer(object):
                     if time is not None:
                         writer.writerow([time, sum(values) / len(values)])
                         if size_limit is not None and fp.tell() > size_limit:
-                            raise DatasetTooBig
+                            raise DatasetTooBig(limit=size_limit)
                     time = row['date']
                     values = []
                 values.append(row['value'])
