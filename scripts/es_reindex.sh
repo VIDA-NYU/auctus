@@ -12,7 +12,7 @@ ES_SERVER="$(echo "$ELASTICSEARCH_HOSTS" | sed 's/,.*$//')"
 ES_SERVER="http://${ES_SERVER}"
 echo "Using Elasticsearch server $ES_SERVER" >&2
 
-echo "Checking connection to Docker" &>2
+echo "Checking connection to Docker" >&2
 if ! docker version &>/dev/null; then
   echo "Can't use Docker! We'll need to start the coordinator to re-create the indexes" >&2
   exit 1
