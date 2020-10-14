@@ -62,6 +62,9 @@ MAX_UNCLEAN = 0.02  # 2%
 MAX_CATEGORICAL_RATIO = 0.10  # 10%
 
 
+MAX_WRONG_LEVEL_ADMIN = 0.10  # 10%
+
+
 def regular_exp_count(array):
     # Let you check/count how many instances match a structure of a data type
     re_count = collections.Counter()
@@ -137,6 +140,28 @@ def identify_structural_type(re_count, num_total, threshold):
     return structural_type
 
 
+def guess_admin_level(admin_areas):
+    level_counter = collections.Counter()
+    # `area` is a list of lists of areas
+    # For each name in the original data, it contains a list of the
+    # areas that were found with that name
+    for areas_resolved in admin_areas:
+        # Count each possible admin level only once
+        levels = set(
+            area.type.value
+            for area in areas_resolved
+            if 0 <= area.type.value <= 5
+        )
+        level_counter.update(levels)
+    threshold = (1.0 - MAX_WRONG_LEVEL_ADMIN) * len(admin_areas)
+    threshold = max(3, threshold)
+    for level, count in sorted(level_counter.items()):
+        if count >= threshold:
+            return level
+    else:
+        return None
+
+
 def identify_types(array, name, geo_data, manual=None):
     num_total = len(array)
     column_meta = {}
@@ -174,8 +199,15 @@ def identify_types(array, name, geo_data, manual=None):
             if el == types.ADMIN:
                 if geo_data is not None:
                     resolved = geo_data.resolve_names_all(array)
-                    if sum(1 for r in resolved if r) > 0.7 * len(array):
-                        semantic_types_dict[types.ADMIN] = resolved
+                    resolved = [r for r in resolved if r]
+                    if resolved:
+                        level = guess_admin_level(resolved)
+                        if level is not None:
+                            resolved = [
+                                area for areas_list in resolved for area in areas_list
+                                if area.type.value == level
+                            ]
+                            semantic_types_dict[types.ADMIN] = level, resolved
             if el == types.CATEGORICAL or el == types.INTEGER:
                 # Count distinct values
                 values = set(e for e in array if e)
@@ -196,11 +228,19 @@ def identify_types(array, name, geo_data, manual=None):
         if structural_type == types.TEXT:
             categorical = False
 
+            # Administrative areas
             if geo_data is not None:
                 resolved = geo_data.resolve_names_all(array)
-                if sum(1 for r in resolved if r) > 0.7 * len(array):
-                    semantic_types_dict[types.ADMIN] = resolved
-                    categorical = True
+                resolved = [r for r in resolved if r]
+                if len(resolved) > 0.7 * len(array):
+                    level = guess_admin_level(resolved)
+                    if level is not None:
+                        resolved = [
+                            area for areas_list in resolved for area in areas_list
+                            if area.type.value == level
+                        ]
+                        semantic_types_dict[types.ADMIN] = level, resolved
+                        categorical = True
 
             if not categorical and num_text >= threshold:
                 # Free text

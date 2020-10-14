@@ -32,8 +32,6 @@ SAMPLE_ROWS = 20
 
 MAX_UNCLEAN_ADDRESSES = 0.20  # 20%
 
-MAX_WRONG_LEVEL_ADMIN = 0.10  # 10%
-
 
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
 
@@ -485,33 +483,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
             # Guess level of administrative areas
             if types.ADMIN in semantic_types_dict:
-                areas = semantic_types_dict[types.ADMIN]
-                level_counter = collections.Counter()
-                # `area` is a list of lists of areas
-                # For each name in the original data, it contains a list of the
-                # areas that were found with that name
-                for areas_resolved in areas:
-                    # Count each possible admin level only once
-                    levels = set(
-                        area.type.value
-                        for area in areas_resolved
-                        if 0 <= area.type.value <= 5
-                    )
-                    level_counter.update(levels)
-                threshold = (1.0 - MAX_WRONG_LEVEL_ADMIN) * len(areas)
-                threshold = max(3, threshold)
-                for level, count in sorted(level_counter.items()):
-                    if count >= threshold:
-                        column_meta['admin_area_level'] = level
-                        resolved_admin_areas[column_idx] = [
-                            area for areas_list in areas for area in areas_list
-                            if area.type.value == level
-                        ]
-                        break
-                else:
-                    resolved_admin_areas[column_idx] = [
-                        area for areas_list in areas for area in areas_list
-                    ]
+                level, areas = semantic_types_dict[types.ADMIN]
+                if level is not None:
+                    column_meta['admin_area_level'] = level
+                resolved_admin_areas[column_idx] = areas
 
     # Textual columns
     if lazo_client and columns_textual:
