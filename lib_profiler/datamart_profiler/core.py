@@ -487,18 +487,31 @@ def process_dataset(data, dataset_id=None, metadata=None,
             if types.ADMIN in semantic_types_dict:
                 areas = semantic_types_dict[types.ADMIN]
                 level_counter = collections.Counter()
-                for area in areas:
-                    if area is not None:
-                        level = area.type.value
-                        if 0 <= level <= 5:
-                            level_counter[level] += 1
+                # `area` is a list of lists of areas
+                # For each name in the original data, it contains a list of the
+                # areas that were found with that name
+                for areas_resolved in areas:
+                    # Count each possible admin level only once
+                    levels = set(
+                        area.type.value
+                        for area in areas_resolved
+                        if 0 <= area.type.value <= 5
+                    )
+                    level_counter.update(levels)
                 threshold = (1.0 - MAX_WRONG_LEVEL_ADMIN) * len(areas)
                 threshold = max(3, threshold)
-                for level, count in level_counter.items():
+                for level, count in sorted(level_counter.items()):
                     if count >= threshold:
                         column_meta['admin_area_level'] = level
+                        resolved_admin_areas[column_idx] = [
+                            area for areas_list in areas for area in areas_list
+                            if area.type.value == level
+                        ]
                         break
-                resolved_admin_areas[column_idx] = areas
+                else:
+                    resolved_admin_areas[column_idx] = [
+                        area for areas_list in areas for area in areas_list
+                    ]
 
     # Textual columns
     if lazo_client and columns_textual:

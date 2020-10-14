@@ -173,8 +173,8 @@ def identify_types(array, name, geo_data, manual=None):
                 semantic_types_dict[types.DATE_TIME] = dates
             if el == types.ADMIN:
                 if geo_data is not None:
-                    resolved = geo_data.resolve_names(array)
-                    if sum(1 for r in resolved if r is not None) > 0.7 * len(array):
+                    resolved = geo_data.resolve_names_all(array)
+                    if sum(1 for r in resolved if r) > 0.7 * len(array):
                         semantic_types_dict[types.ADMIN] = resolved
             if el == types.CATEGORICAL or el == types.INTEGER:
                 # Count distinct values
@@ -197,8 +197,8 @@ def identify_types(array, name, geo_data, manual=None):
             categorical = False
 
             if geo_data is not None:
-                resolved = geo_data.resolve_names(array)
-                if sum(1 for r in resolved if r is not None) > 0.7 * len(array):
+                resolved = geo_data.resolve_names_all(array)
+                if sum(1 for r in resolved if r) > 0.7 * len(array):
                     semantic_types_dict[types.ADMIN] = resolved
                     categorical = True
 
