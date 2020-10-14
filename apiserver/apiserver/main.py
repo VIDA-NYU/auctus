@@ -109,6 +109,10 @@ class Health(BaseHandler):
             return self.finish('ok')
 
 
+class CustomErrorHandler(tornado.web.ErrorHandler, BaseHandler):
+    pass
+
+
 class ApiRule(Rule):
     VERSIONS = {'1'}
 
@@ -152,6 +156,8 @@ def make_app(debug=False):
         es=es,
         redis_client=redis_client,
         lazo=lazo_client,
+        default_handler_class=CustomErrorHandler,
+        default_handler_args={"status_code": 404},
     )
 
 

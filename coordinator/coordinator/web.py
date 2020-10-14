@@ -10,7 +10,6 @@ from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
-from tornado.web import RequestHandler
 
 from datamart_core.common import setup_logging
 
@@ -21,7 +20,7 @@ from .coordinator import Coordinator
 logger = logging.getLogger(__name__)
 
 
-class BaseHandler(RequestHandler):
+class BaseHandler(tornado.web.RequestHandler):
     """Base class for all request handlers.
     """
     application: 'Application'
@@ -94,6 +93,10 @@ class Statistics(BaseHandler):
         })
 
 
+class CustomErrorHandler(tornado.web.ErrorHandler, BaseHandler):
+    pass
+
+
 class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
@@ -147,6 +150,8 @@ def make_app(debug=False):
         debug=debug,
         cookie_secret=secret,
         es=es,
+        default_handler_class=CustomErrorHandler,
+        default_handler_args={"status_code": 404},
     )
 
 
