@@ -1275,7 +1275,7 @@ class TestAugment(DatamartTest):
                                 {
                                     'colIndex': 1,
                                     'colName': 'desk_faces',
-                                    'colType': 'string',
+                                    'colType': 'categorical',
                                     'role': ['attribute'],
                                 },
                                 {
@@ -2763,7 +2763,8 @@ class TestLocation(DatamartTest):
             {
                 'results': [
                     {
-                        'area': 'Q38',
+                        'id': 3175395,
+                        'name': 'Italian Republic',
                         'boundingbox': [
                             lambda n: round(n, 4) == 6.6027,
                             lambda n: round(n, 4) == 18.5174,

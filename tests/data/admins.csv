@@ -1,6 +1,6 @@
-zero,one
-france,Brittany
-france,Guadeloupe
-france,Martinique
-germany,Bavaria
-germany,Hamburg
+zero,one,mixed
+france,Brittany,france
+france,Normandie,Normandie
+france,region occitanie,germany
+germany,Bavaria,Bavaria
+germany,Hamburg,Brittany
