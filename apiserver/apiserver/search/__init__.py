@@ -262,14 +262,14 @@ def parse_query_variables(data, geo_data=None):
                 area_name = variable['area_name']
                 if not isinstance(area_name, str):
                     raise ClientError("Invalid geospatial variable area")
-                areas = geo_data.resolve_names([area_name])
-                if areas and areas[0]:
-                    bounds = geo_data.get_bounds(areas[0].area)
+                area = geo_data.resolve_name(area_name)
+                if area is not None and area.bounds is not None:
+                    bounds = area.bounds
                     longitude1, longitude2, latitude1, latitude2 = bounds
                     logger.info(
                         "Resolved area %r to %r",
                         area_name,
-                        areas[0].area,
+                        area,
                     )
                 else:
                     logger.warning("Unknown area %r", area_name)

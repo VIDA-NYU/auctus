@@ -489,7 +489,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 level_counter = collections.Counter()
                 for area in areas:
                     if area is not None:
-                        level_counter[area.level] += 1
+                        level = area.type.value
+                        if 0 <= level <= 5:
+                            level_counter[level] += 1
                 threshold = (1.0 - MAX_WRONG_LEVEL_ADMIN) * len(areas)
                 threshold = max(3, threshold)
                 for level, count in level_counter.items():
@@ -643,7 +645,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 for area in areas:
                     if area is None:
                         continue
-                    new = geo_data.get_bounds(area.area)
+                    new = area.bounds
                     if new:
                         if merged is None:
                             merged = new
