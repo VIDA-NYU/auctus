@@ -298,7 +298,7 @@ class TestProfileQuery(DatamartTest):
         self.check_result(
             response,
             basic_metadata,
-            'cac18c69aff995773bed73273421365006e5e0b6',
+            'd99a8e42e65fb84e2ad800be35a8834b30828227',
         )
 
     def test_excel(self):
@@ -656,9 +656,9 @@ class TestDataSearch(DatamartTest):
                     'score': lambda n: isinstance(n, float) and n > 0.0,
                     'augmentation': {
                         'left_columns': [[0]],
-                        'left_columns_names': [['home_address']],
+                        'left_columns_names': [['favorite']],
                         'right_columns': [[0]],
-                        'right_columns_names': [['state']],
+                        'right_columns_names': [['dessert']],
                         'type': 'join'
                     },
                     'supplied_id': None,
@@ -1240,13 +1240,13 @@ class TestAugment(DatamartTest):
         with zip_.open('tables/learningData.csv') as table:
             self.assertCsvEqualNoOrder(
                 table.read().decode('utf-8'),
-                'number,desk_faces,name,country,what',
+                'number,desk_faces,name,color,what',
                 [
-                    '5,west,james,canada,False',
-                    '4,south,john,usa,False',
-                    '7,west,michael,usa,True',
-                    '6,east,robert,usa,False',
-                    '11,,christopher,canada,True',
+                    '5,west,james,green,False',
+                    '4,south,john,blue,False',
+                    '7,west,michael,blue,True',
+                    '6,east,robert,blue,False',
+                    '11,,christopher,green,True',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -1255,7 +1255,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '167 B',
+                        'approximateSize': '166 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1286,7 +1286,7 @@ class TestAugment(DatamartTest):
                                 },
                                 {
                                     'colIndex': 3,
-                                    'colName': 'country',
+                                    'colName': 'color',
                                     'colType': 'categorical',
                                     'role': ['attribute'],
                                 },
@@ -1311,7 +1311,7 @@ class TestAugment(DatamartTest):
                                 'augmentation_type': 'join',
                                 'nb_rows_after': 5,
                                 'nb_rows_before': 5,
-                                'new_columns': ['name', 'country', 'what'],
+                                'new_columns': ['name', 'color', 'what'],
                                 'removed_columns': [],
                             },
                             'qualValueType': 'dict',
@@ -1623,7 +1623,7 @@ class TestAugment(DatamartTest):
             'score': 1.0,
             'augmentation': {
                 'left_columns': [[0]],
-                'left_columns_names': [['home_address']],
+                'left_columns_names': [['favorite']],
                 'right_columns': [[0]],
                 'right_columns_names': [['state']],
                 'type': 'join'
@@ -1653,34 +1653,34 @@ class TestAugment(DatamartTest):
         with zip_.open('tables/learningData.csv') as table:
             self.assertCsvEqualNoOrder(
                 table.read().decode('utf-8'),
-                'home_address,mean year,sum year,max year,min year',
+                'favorite,mean year,sum year,max year,min year',
                 [
-                    'AZ,1990.0,1990.0,1990.0,1990.0',
-                    'Pa,1990.0,1990.0,1990.0,1990.0',
-                    'sd,,,,',
-                    'nj,1990.0,1990.0,1990.0,1990.0',
-                    'NH,,,,',
-                    'TX,1990.0,1990.0,1990.0,1990.0',
-                    'mS,1990.0,1990.0,1990.0,1990.0',
-                    'Tn,1990.0,1990.0,1990.0,1990.0',
-                    'WA,1990.0,1990.0,1990.0,1990.0',
-                    'va,1990.0,1990.0,1990.0,1990.0',
-                    'NY,1990.0,1990.0,1990.0,1990.0',
-                    'oh,1990.0,1990.0,1990.0,1990.0',
-                    'or,1990.0,1990.0,1990.0,1990.0',
-                    'IL,1990.0,1990.0,1990.0,1990.0',
-                    'MT,,,,',
-                    'hi,,,,',
-                    'Ca,1990.0,1990.0,1990.0,1990.0',
-                    'nC,1990.0,1990.0,1990.0,1990.0',
-                    'Ut,1991.0,1991.0,1991.0,1991.0',
-                    'sC,1991.0,1991.0,1991.0,1991.0',
-                    'La,1990.0,1990.0,1990.0,1990.0',
-                    'ME,1990.0,1990.0,1990.0,1990.0',
-                    'MI,1990.0,1990.0,1990.0,1990.0',
-                    'nE,1990.0,1990.0,1990.0,1990.0',
-                    'In,1990.0,1990.0,1990.0,1990.0',
-                    'ND,1990.0,1990.0,1990.0,1990.0',
+                    'Peanut Butter,1990.0,1990.0,1990.0,1990.0',
+                    'Ice cream,1990.0,1990.0,1990.0,1990.0',
+                    'flan,,,,',
+                    'orange,1990.0,1990.0,1990.0,1990.0',
+                    'kiwi,,,,',
+                    'coconut,1990.0,1990.0,1990.0,1990.0',
+                    'liquorICE,1990.0,1990.0,1990.0,1990.0',
+                    'MACaron,1990.0,1990.0,1990.0,1990.0',
+                    'pear,1990.0,1990.0,1990.0,1990.0',
+                    'CANDY,1990.0,1990.0,1990.0,1990.0',
+                    'pudding,1990.0,1990.0,1990.0,1990.0',
+                    'doughnut,1990.0,1990.0,1990.0,1990.0',
+                    'marzipan,1990.0,1990.0,1990.0,1990.0',
+                    'tart,1990.0,1990.0,1990.0,1990.0',
+                    'pecan pie,,,,',
+                    'souffle,,,,',
+                    'Pastry,1990.0,1990.0,1990.0,1990.0',
+                    'banana,1990.0,1990.0,1990.0,1990.0',
+                    'caramel,1991.0,1991.0,1991.0,1991.0',
+                    'milkshake,1991.0,1991.0,1991.0,1991.0',
+                    'Chocolate,1990.0,1990.0,1990.0,1990.0',
+                    'tiramisu,1990.0,1990.0,1990.0,1990.0',
+                    'tres leches,1990.0,1990.0,1990.0,1990.0',
+                    'calisson,1990.0,1990.0,1990.0,1990.0',
+                    'taffy,1990.0,1990.0,1990.0,1990.0',
+                    'lemon,1990.0,1990.0,1990.0,1990.0',
                 ],
             )
         with zip_.open('datasetDoc.json') as meta_fp:
@@ -1689,7 +1689,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '787 B',
+                        'approximateSize': '916 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -1702,7 +1702,7 @@ class TestAugment(DatamartTest):
                             'columns': [
                                 {
                                     'colIndex': 0,
-                                    'colName': 'home_address',
+                                    'colName': 'favorite',
                                     'colType': 'string',
                                     'role': ['attribute'],
                                 },
@@ -2144,11 +2144,11 @@ class TestAugment(DatamartTest):
                 table.read().decode('utf-8'),
                 'orig_date,color,rain',
                 [
-                    '2019-06-13T01:00:00,blue,no',
-                    '2019-06-13T02:00:00,blue,no',
-                    '2019-06-13T03:00:00,green,no',
-                    '2019-06-13T04:00:00,green,yes',
-                    '2019-06-13T05:00:00,blue,no',
+                    '2019-06-13T01:00:00,yellow,no',
+                    '2019-06-13T02:00:00,yellow,no',
+                    '2019-06-13T03:00:00,brown,no',
+                    '2019-06-13T04:00:00,brown,yes',
+                    '2019-06-13T05:00:00,yellow,no',
                 ],
             )
 
@@ -2198,8 +2198,8 @@ class TestAugment(DatamartTest):
                 table.read().decode('utf-8'),
                 'orig_date,color,rain',
                 [
-                    '2019-06-12,blue,no',
-                    '2019-06-13,green,no',
+                    '2019-06-12,pink,no',
+                    '2019-06-13,grey,no',
                 ],
             )
 
@@ -2786,10 +2786,10 @@ basic_metadata = {
     "description": "This is a very simple CSV with people",
     'source': 'remi',
     'types': ['categorical', 'numerical'],
-    "size": 425,
+    "size": 427,
     "nb_rows": 20,
     "nb_profiled_rows": 20,
-    "attribute_keywords": ["name", "country", "number", "what"],
+    "attribute_keywords": ["name", "color", "number", "what"],
     "columns": [
         {
             "name": "name",
@@ -2798,7 +2798,7 @@ basic_metadata = {
             "num_distinct_values": 20
         },
         {
-            "name": "country",
+            "name": "color",
             "structural_type": "http://schema.org/Text",
             "semantic_types": ["http://schema.org/Enumeration"],
             "num_distinct_values": 2,
@@ -2847,16 +2847,15 @@ basic_metadata = {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
-    "sample": "name,country,number,what\r\njames,canada,5,false\r\n" +
-              "john,usa,4,false\r\nrobert,usa,6,false\r\nmichael,usa,7,true" +
-              "\r\nwilliam,usa,7,true\r\ndavid,canada,5,false\r\n" +
-              "richard,canada,7,true\r\njoseph,usa,6,true\r\n" +
-              "thomas,usa,6,false\r\ncharles,usa,7,false\r\n" +
-              "christopher,canada,11,true\r\ndaniel,usa,5,false\r\n"
-              "matthew,canada,7,true\r\nanthony,canada,7,true\r\n" +
-              "donald,usa,6,true\r\nmark,usa,4,false\r\npaul,usa,4,false\r\n" +
-              "steven,usa,6,false\r\nandrew,canada,6,false\r\n" +
-              "kenneth,canada,7,true\r\n",
+    "sample": "name,color,number,what\r\njames,green,5,false\r\njohn,blue,4," +
+              "false\r\nrobert,blue,6,false\r\nmichael,blue,7,true\r\nwillia" +
+              "m,blue,7,true\r\ndavid,green,5,false\r\nrichard,green,7,true" +
+              "\r\njoseph,blue,6,true\r\nthomas,blue,6,false\r\ncharles,blue" +
+              ",7,false\r\nchristopher,green,11,true\r\ndaniel,blue,5,false" +
+              "\r\nmatthew,green,7,true\r\nanthony,green,7,true\r\ndonald,bl" +
+              "ue,6,true\r\nmark,blue,4,false\r\npaul,blue,4,false\r\nsteven" +
+              ",blue,6,false\r\nandrew,green,6,false\r\nkenneth,green,7,true" +
+              "\r\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -2868,7 +2867,7 @@ basic_metadata_d3m = lambda v: {
         'datasetName': 'basic',
         'description': 'This is a very simple CSV with people',
         'license': 'unknown',
-        'approximateSize': '425 B',
+        'approximateSize': '427 B',
         'datasetSchemaVersion': v,
         'redacted': False,
         'datasetVersion': '1.0',
@@ -2890,7 +2889,7 @@ basic_metadata_d3m = lambda v: {
                 },
                 {
                     'colIndex': 1,
-                    'colName': 'country',
+                    'colName': 'color',
                     'colType': 'categorical',
                     'role': ['attribute'],
                 },
@@ -3396,13 +3395,13 @@ lazo_metadata = {
     "description": "Simple CSV with states and years to test the Lazo index service",
     'source': 'fernando',
     'types': ['temporal'],
-    "size": 334,
+    "size": 523,
     "nb_rows": 36,
     "nb_profiled_rows": 36,
-    "attribute_keywords": ["state", "year"],
+    "attribute_keywords": ["dessert", "year"],
     "columns": [
         {
-            "name": "state",
+            "name": "dessert",
             "structural_type": "http://schema.org/Text",
             "semantic_types": [],
             "missing_values_ratio": lambda n: round(n, 4) == 0.0278,
@@ -3442,10 +3441,12 @@ lazo_metadata = {
         "date": lambda d: isinstance(d, str),
         "convert": [{'identifier': 'tsv', 'separator': '\t'}],
     },
-    "sample": "state,year\r\nVA,1990\r\nKY,1990\r\nCA,1990\r\nWV,1990\r\nPR," +
-              "1990\r\nNC,1990\r\nAL,1990\r\nNJ,1990\r\nCT,1990\r\nCO,1990\r" +
-              "\n,1990\r\nMN,1990\r\nOR,1990\r\nND,1990\r\nTN,1990\r\nGA,199" +
-              "0\r\nNM,1990\r\nAR,1990\r\nUT,1991\r\nSC,1991\r\n",
+    "sample": "dessert,year\r\ncandy,1990\r\ncookie,1990\r\npastry,1990\r\nj" +
+              "ello,1990\r\napple,1990\r\nbanana,1990\r\nfruitcake,1990\r\no" +
+              "range,1990\r\npetit four,1990\r\npop tart,1990\r\n,1990\r\nno" +
+              "ugat,1990\r\nmarzipan,1990\r\nlemon,1990\r\nmacaron,1990\r\ng" +
+              "ingerbread,1990\r\neclair,1990\r\nprofiterole,1990\r\ncaramel" +
+              ",1991\r\nmilkshake,1991\r\n",
     "date": lambda d: isinstance(d, str),
     "version": version
 }
@@ -3606,13 +3607,13 @@ dates_pivoted_metadata = {
     'description': 'Temporal dataset but in columns',
     'source': 'remi',
     'types': ['categorical', 'temporal'],
-    'size': 525,
+    'size': 511,
     'nb_rows': 24,
     'nb_profiled_rows': 24,
-    'attribute_keywords': ['country', 'date', 'value'],
+    'attribute_keywords': ['color', 'date', 'value'],
     'columns': [
         {
-            'name': 'country',
+            'name': 'color',
             'structural_type': 'http://schema.org/Text',
             'semantic_types': [
                 'http://schema.org/Enumeration',
@@ -3653,14 +3654,14 @@ dates_pivoted_metadata = {
             {'identifier': 'pivot', 'except_columns': [0]},
         ],
     },
-    'sample': "country,date,value\r\nfrance,2012-01-01,yes\r\nfrance,2012-02" +
-              "-01,no\r\nfrance,2012-03-01,no\r\nfrance,2012-04-01,yes\r\nfr" +
-              "ance,2012-06-01,yes\r\nfrance,2012-07-01,yes\r\nfrance,2012-0" +
-              "8-01,yes\r\nfrance,2012-09-01,yes\r\nfrance,2012-10-01,no\r\n" +
-              "france,2012-11-01,no\r\nusa,2012-01-01,no\r\nusa,2012-03-01,y" +
-              "es\r\nusa,2012-04-01,yes\r\nusa,2012-05-01,no\r\nusa,2012-06-" +
-              "01,no\r\nusa,2012-07-01,no\r\nusa,2012-09-01,no\r\nusa,2012-1" +
-              "0-01,yes\r\nusa,2012-11-01,yes\r\nusa,2012-12-01,no\r\n",
+    'sample': "color,date,value\r\ngreen,2012-01-01,yes\r\ngreen,2012-02-01," +
+              "no\r\ngreen,2012-03-01,no\r\ngreen,2012-04-01,yes\r\ngreen,20" +
+              "12-06-01,yes\r\ngreen,2012-07-01,yes\r\ngreen,2012-08-01,yes" +
+              "\r\ngreen,2012-09-01,yes\r\ngreen,2012-10-01,no\r\ngreen,2012" +
+              "-11-01,no\r\nred,2012-01-01,no\r\nred,2012-03-01,yes\r\nred,2" +
+              "012-04-01,yes\r\nred,2012-05-01,no\r\nred,2012-06-01,no\r\nre" +
+              "d,2012-07-01,no\r\nred,2012-09-01,no\r\nred,2012-10-01,yes\r" +
+              "\nred,2012-11-01,yes\r\nred,2012-12-01,no\r\n",
     'date': lambda d: isinstance(d, str),
     'version': version
 }
