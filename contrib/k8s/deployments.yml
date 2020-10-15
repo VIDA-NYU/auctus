@@ -41,6 +41,7 @@ spec:
         ports:
         - containerPort: 5672
         - containerPort: 15672
+        - containerPort: 15692
 ---
 apiVersion: apps/v1
 kind: Deployment

@@ -32,7 +32,7 @@ services:
     ports:
       - 9114
   rabbitmq:
-    image: quay.io/remram44/rabbitmq:3.7.8
+    image: quay.io/remram44/rabbitmq:3.8.9
     build:
       context: ./docker
       dockerfile: rabbitmq.dockerfile
@@ -41,8 +41,9 @@ services:
       - RABBITMQ_DEFAULT_PASS=${AMQP_PASSWORD}
     cpu_shares: 100
     ports:
-      - 127.0.0.1:8080:15672
-      - 127.0.0.1:5672:5672
+      - 127.0.0.1:8080:15672  # Management
+      - 127.0.0.1:8082:15692  # Metrics
+      - 127.0.0.1:5672:5672  # AMQP
   redis:
     image: redis:6.0
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]

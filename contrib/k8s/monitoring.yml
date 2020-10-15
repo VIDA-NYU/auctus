@@ -20,9 +20,9 @@ data:
       - targets: ["elasticsearch-scrape:9114"]
     - job_name: rabbitmq
       scrape_timeout: 5s
-      metrics_path: /api/metrics
+      metrics_path: /metrics
       static_configs:
-      - targets: ["rabbitmq-scrape:15672"]
+      - targets: ["rabbitmq-scrape:15692"]
     - job_name: apiserver
       dns_sd_configs:
       - names:
@@ -71,7 +71,7 @@ spec:
   clusterIP: None
   ports:
   - protocol: TCP
-    port: 15672
+    port: 15692
 ---
 apiVersion: v1
 kind: Service
