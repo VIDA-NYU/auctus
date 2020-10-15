@@ -5,6 +5,8 @@ Incompatible changes:
 * Moved API endpoints under /api/v1. This will make local deployments match auctus.vida-nyu.org.
 * Updated spatial coverage format, files need to get re-profiled (or re-create ES index and use migrate-spatial-coverage.py script)
 * Removed "half-augmentation" flow (download the subset of a dataset that matches some input data), existed for feature-parity with ISI system, but unused
+* Bind ports to localhost in docker-compose file
+* Updated RabbitMQ from 3.7 to 3.8, changes metrics location
 
 Enhancements:
 * Added a search box on the map for the spatial filter
@@ -16,6 +18,8 @@ Enhancements:
 * Integrated with Sentry to track errors during queries and profiling, made the system more reliable by handling more edge cases
 * Added support for delimited files with a different delimited than comma or tab (for example, semicolon)
 * Show a spinner while profiling related data, prevent submitting the search before it's done
+* Automatically handle Stata files
+* Choose between joins and unions when searching with a related file
 
 Bugfixes:
 * Fix join result metadata, it previously contained some information relating to the dataset before join
