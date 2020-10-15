@@ -87,6 +87,7 @@ Ports:
 * Elasticsearch is at http://localhost:9200
 * The Lazo server is at http://localhost:50051
 * The RabbitMQ management interface is at http://localhost:8080
+* The RabbitMQ metrics are at http://localhost:8082
 * The HAProxy statistics are at http://localhost:8081
 * Prometheus is at http://localhost:9090
 * Grafana is at http://localhost:3000

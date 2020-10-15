@@ -87,7 +87,7 @@ test:
       # Wait for profiling to end
       slept=30
       sleep 30
-      while [ $(curl -s http://docker:8080/api/metrics | sed -n '/^rabbitmq_queue_messages{.*queue="profile".* \([0-9]*\)$/s//\1/p') != 0 ]; do
+      while [ "$(curl -s http://docker:8082/metrics | sed -n '/^rabbitmq_queue_messages{.*queue="profile".* \([0-9]*\)$/s//\1/p')" != 0 ]; do
         sleep 5
         slept=$((slept + 5))
         if [ $slept -gt 240 ]; then
