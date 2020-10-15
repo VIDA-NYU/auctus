@@ -17,7 +17,7 @@ services:
         hard: -1
     cpu_shares: 100
     ports:
-      - 9200:9200
+      - 127.0.0.1:9200:9200
     volumes:
       - ./volumes/elasticsearch:/usr/share/elasticsearch/data
   elasticsearch-exporter:
@@ -41,8 +41,8 @@ services:
       - RABBITMQ_DEFAULT_PASS=${AMQP_PASSWORD}
     cpu_shares: 100
     ports:
-      - 8080:15672
-      - 5672:5672
+      - 127.0.0.1:8080:15672
+      - 127.0.0.1:5672:5672
   redis:
     image: redis:6.0
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
@@ -60,7 +60,7 @@ services:
       - ELASTICSEARCH_PORT=9200
     cpu_shares: 30
     ports:
-      - 50051:50051
+      - 127.0.0.1:50051:50051
       - 8000
     volumes:
       - ./volumes/datasets:/datasets
@@ -73,7 +73,7 @@ services:
       - API_URL=${API_URL}
     cpu_shares: 10
     ports:
-      - 8001:80
+      - 127.0.0.1:8001:80
   apiserver:
     build:
       context: .
@@ -108,8 +108,8 @@ services:
       dockerfile: haproxy.dockerfile
     restart: on-failure
     ports:
-      - 8002:80
-      - 8081:8000
+      - 127.0.0.1:8002:80
+      - 127.0.0.1:8081:8000
     cpu_shares: 100
     volumes:
       - ./docker/haproxy.conf:/usr/local/etc/haproxy/haproxy.cfg:ro
@@ -135,7 +135,7 @@ services:
     # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     cpu_shares: 100
     ports:
-      - 8003:8003
+      - 127.0.0.1:8003:8003
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
@@ -165,7 +165,7 @@ services:
     image: prom/prometheus:v2.19.3
     cpu_shares: 100
     ports:
-      - 9090:9090
+      - 127.0.0.1:9090:9090
     volumes:
       - ./volumes/prometheus:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -179,7 +179,7 @@ services:
       #- GF_SERVER_ROOT_URL=https://grafana.example.org/
     cpu_shares: 100
     ports:
-      - 3000:3000
+      - 127.0.0.1:3000:3000
     volumes:
       - ./volumes/grafana:/var/lib/grafana
   example-discoverer:

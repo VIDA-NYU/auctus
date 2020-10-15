@@ -48,6 +48,7 @@ test:
     - . scripts/load_env.sh
     - "sed -i 's/# CI: //' docker-compose.yml base.Dockerfile */Dockerfile"
     - "sed -i '/# NOTCI$/d' docker-compose.yml base.Dockerfile */Dockerfile"
+    - "sed -i 's/127\\.0\\.0\\.1:\\([0-9]\\+\\):\\([0-9]\\+\\)/\\1:\\2/' docker-compose.yml"
     - mkdir cov
     - chown 998 cov
 
