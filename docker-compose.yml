@@ -102,6 +102,7 @@ services:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
       - ./volumes/cache:/cache
+      - ./lib_geo/data:/usr/src/app/lib_geo/data
     mem_limit: 8000m
   apilb:
     build:
@@ -162,6 +163,7 @@ services:
       # CI: - ./cov:/cov
       - ./volumes/datasets:/datasets
       - ./volumes/cache:/cache
+      - ./lib_geo/data:/usr/src/app/lib_geo/data
   prometheus:
     image: prom/prometheus:v2.19.3
     cpu_shares: 100

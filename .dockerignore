@@ -3,6 +3,7 @@ volumes
 docs
 frontend/node_modules
 frontend/build
+lib_geo/data
 
 # Git
 **/.git

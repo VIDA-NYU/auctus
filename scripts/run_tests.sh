@@ -4,6 +4,9 @@ cd "$(dirname "$(dirname "$0")")"
 
 set -eux
 
+# Check lib_geo data
+test -e lib_geo/data/admins.sqlite3
+
 # Re-build and re-start services
 docker-compose build --build-arg version=v0.0 coordinator profiler apiserver test-discoverer
 docker-compose up -d coordinator
