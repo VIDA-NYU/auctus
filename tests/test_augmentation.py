@@ -44,20 +44,20 @@ class TestJoin(DataTestCase):
             with open(result) as table:
                 self.assertCsvEqualNoOrder(
                     table.read(),
-                    'number,desk_faces,name,country,what',
+                    'number,desk_faces,name,color,what',
                     [
-                        '5,west,james,canada,False',
-                        '4,south,john,usa,False',
-                        '7,west,michael,usa,True',
-                        '6,east,robert,usa,False',
-                        '11,,christopher,canada,True',
+                        '5,west,james,green,False',
+                        '4,south,john,blue,False',
+                        '7,west,michael,blue,True',
+                        '6,east,robert,blue,False',
+                        '11,,christopher,green,True',
                     ],
                 )
 
         self.assertJson(
             output_metadata,
             {
-                'size': 167,
+                'size': 166,
                 'columns': [
                     {
                         'name': 'number',
@@ -82,7 +82,7 @@ class TestJoin(DataTestCase):
                         'semantic_types': [],
                     },
                     {
-                        'name': 'country',
+                        'name': 'color',
                         'structural_type': 'http://schema.org/Text',
                         'semantic_types': ['http://schema.org/Enumeration'],
                     },
@@ -100,7 +100,7 @@ class TestJoin(DataTestCase):
                         'qualName': 'augmentation_info',
                         'qualValueType': 'dict',
                         'qualValue': {
-                            'new_columns': ['name', 'country', 'what'],
+                            'new_columns': ['name', 'color', 'what'],
                             'removed_columns': [],
                             'nb_rows_before': 5,
                             'nb_rows_after': 5,
@@ -517,18 +517,18 @@ class TestJoin(DataTestCase):
                     table.read(),
                     'orig_date,color,rain',
                     [
-                        '2019-06-13T01:00:00,blue,no',
-                        '2019-06-13T02:00:00,blue,no',
-                        '2019-06-13T03:00:00,green,no',
-                        '2019-06-13T04:00:00,green,yes',
-                        '2019-06-13T05:00:00,blue,no',
+                        '2019-06-13T01:00:00,yellow,no',
+                        '2019-06-13T02:00:00,yellow,no',
+                        '2019-06-13T03:00:00,brown,no',
+                        '2019-06-13T04:00:00,brown,yes',
+                        '2019-06-13T05:00:00,yellow,no',
                     ],
                 )
 
         self.assertJson(
             output_metadata,
             {
-                'size': 170,
+                'size': 176,
                 'columns': [
                     {
                         'name': 'orig_date',
@@ -591,15 +591,15 @@ class TestJoin(DataTestCase):
                     table.read(),
                     'orig_date,color,rain',
                     [
-                        '2019-06-12,blue,no',
-                        '2019-06-13,green,no',
+                        '2019-06-12,pink,no',
+                        '2019-06-13,grey,no',
                     ],
                 )
 
         self.assertJson(
             output_metadata,
             {
-                'size': 63,
+                'size': 62,
                 'columns': [
                     {
                         'name': 'orig_date',

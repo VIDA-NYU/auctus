@@ -204,12 +204,16 @@ url = "lib_core"
 
 [[package]]
 category = "main"
-description = "Datamart geographical data"
+description = "Geographical location data"
 develop = true
 name = "datamart-geo"
 optional = false
 python-versions = "*"
-version = "0.1"
+version = "0.2"
+
+[package.dependencies]
+ngram-search = "*"
+requests = "*"
 
 [package.source]
 reference = ""
@@ -264,7 +268,7 @@ python-versions = "*"
 version = "0.7.1"
 
 [package.dependencies]
-datamart-geo = "0.1"
+datamart-geo = "0.2"
 lazo-index-service = "0.5.1"
 numpy = "*"
 pandas = "*"
@@ -515,6 +519,14 @@ name = "multidict"
 optional = false
 python-versions = ">=3.5"
 version = "4.7.6"
+
+[[package]]
+category = "main"
+description = "Ngram-based indexing of strings into a binary file"
+name = "ngram-search"
+optional = false
+python-versions = "*"
+version = "0.1.1"
 
 [[package]]
 category = "main"
@@ -1245,6 +1257,9 @@ multidict = [
     {file = "multidict-4.7.6-cp38-cp38-win32.whl", hash = "sha256:5cf311a0f5ef80fe73e4f4c0f0998ec08f954a6ec72b746f3c179e37de1d210d"},
     {file = "multidict-4.7.6-cp38-cp38-win_amd64.whl", hash = "sha256:7388d2ef3c55a8ba80da62ecfafa06a1c097c18032a501ffd4cabbc52d7f2b19"},
     {file = "multidict-4.7.6.tar.gz", hash = "sha256:fbb77a75e529021e7c4a8d4e823d88ef4d23674a202be4f5addffc72cbb91430"},
+]
+ngram-search = [
+    {file = "ngram-search-0.1.1.tar.gz", hash = "sha256:819aad2750a119f25bdc956f6c4d03115ee2b1439ab6f8cd9771a5970726520d"},
 ]
 numpy = [
     {file = "numpy-1.19.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:63d971bb211ad3ca37b2adecdd5365f40f3b741a455beecba70fd0dde8b2a4cb"},

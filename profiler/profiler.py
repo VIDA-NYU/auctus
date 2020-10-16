@@ -171,8 +171,6 @@ class Profiler(object):
         self.geo_data = GeoData.from_local_cache()
         self.channel = None
 
-        self.geo_data.load_areas([0, 1, 2], bounds=True)
-
         self.loop = asyncio.get_event_loop()
         log_future(self.loop.create_task(self._run()), logger,
                    should_never_exit=True)

@@ -10,6 +10,9 @@ sudo(){
   fi
 }
 
+# Download lib_geo data
+python -m datamart_geo --update lib_geo/data/
+
 # Set up volume permissions
 mkdir -p volumes/datasets && sudo chown -R 998 volumes/datasets
 mkdir -p volumes/cache && sudo chown -R 998 volumes/cache

@@ -178,8 +178,6 @@ class Application(GracefulApplication):
                     ", ".join(self.custom_fields.keys()),
                 )
 
-        self.geo_data.load_areas([0, 1, 2], bounds=True)
-
         self.sources_counts = {}
         self.recent_discoveries = []
 

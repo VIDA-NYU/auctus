@@ -15,7 +15,7 @@ req = [
     'scikit-learn>=0.22,<0.24',
     'regex',
     'requests',
-    'datamart-geo==0.1',
+    'datamart-geo==0.2',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()

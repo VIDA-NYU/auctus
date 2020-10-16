@@ -630,7 +630,6 @@ class TestGeo(DataTestCase):
     @classmethod
     def setUpClass(cls):
         cls.geo_data = GeoData.from_local_cache()
-        cls.geo_data.load_areas([0, 1], bounds=True)
 
     def test_profile(self):
         with data('admins.csv', 'r') as data_fp:
@@ -643,11 +642,11 @@ class TestGeo(DataTestCase):
         self.assertJson(
             metadata,
             {
-                'size': 93,
+                'size': 146,
                 'nb_rows': 5,
                 'nb_profiled_rows': 5,
                 'types': ['spatial'],
-                'attribute_keywords': ['zero', 'one'],
+                'attribute_keywords': ['zero', 'one', 'mixed'],
                 'columns': [
                     {
                         'name': 'zero',
@@ -669,6 +668,12 @@ class TestGeo(DataTestCase):
                         'num_distinct_values': 5,
                         'admin_area_level': 1,
                     },
+                    {
+                        'name': 'mixed',
+                        'structural_type': 'http://schema.org/Text',
+                        'semantic_types': [],
+                        'num_distinct_values': 5,
+                    },
                 ],
                 'spatial_coverage': [
                     {
@@ -680,8 +685,8 @@ class TestGeo(DataTestCase):
                                 'range': {
                                     'type': 'envelope',
                                     'coordinates': [
-                                        [-61.79784095, 55.065334377],
-                                        [55.8545028, -21.370782159],
+                                        [-61.797841, 55.065334],
+                                        [55.854503, -21.370782],
                                     ],
                                 },
                             },
@@ -696,8 +701,8 @@ class TestGeo(DataTestCase):
                                 'range': {
                                     'type': 'envelope',
                                     'coordinates': [
-                                        [-61.79784, 53.72778],
-                                        [13.81686, 14.40811],
+                                        [8.97659, 50.56286],
+                                        [13.81686, 47.27112],
                                     ],
                                 },
                             },
