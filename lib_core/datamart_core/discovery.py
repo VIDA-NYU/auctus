@@ -239,7 +239,7 @@ class Discoverer(object):
         temp_dir = tempfile.mkdtemp(prefix=dir_name, dir='/datasets')
         try:
             yield temp_dir
-        except Exception:
+        except BaseException:
             shutil.rmtree(temp_dir)
             raise
         else:

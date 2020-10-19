@@ -81,7 +81,7 @@ class Upload(BaseHandler):
             try:
                 with open(os.path.join(dataset_dir, 'main.csv'), 'wb') as fp:
                     fp.write(file.body)
-            except Exception:
+            except BaseException:
                 shutil.rmtree(dataset_dir)
                 raise
         elif self.get_body_argument('address', None):
