@@ -1,4 +1,5 @@
 import asyncio
+import codecs
 import contextlib
 from datetime import datetime, timedelta
 import elasticsearch.helpers
@@ -199,7 +200,7 @@ class IsiDiscoverer(Discoverer):
         logger.info("Writing CSV")
         with self.write_to_shared_storage(dataset_id) as tmp:
             data.to_csv(
-                os.path.join(tmp, 'main.csv'),
+                codecs.getwriter('utf-8')(tmp),
                 index=True,
                 line_terminator='\r\n',
             )
