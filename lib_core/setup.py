@@ -8,7 +8,9 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'aio-pika',
     'elasticsearch~=7.0',
-    'lazo_index_service==0.7.0',
+    'lazo-index-service==0.7.0',
+    's3fs',
+    'gcsfs',
     'prometheus_client',
     'prometheus_async',
     'sentry-sdk',
