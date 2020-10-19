@@ -241,6 +241,7 @@ class Discoverer(object):
             yield temp_dir
         except Exception:
             shutil.rmtree(temp_dir)
+            raise
         else:
             try:
                 os.rename(temp_dir, dataset_dir)
