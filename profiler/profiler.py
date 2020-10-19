@@ -4,6 +4,7 @@ import contextlib
 from datetime import datetime
 import defusedxml
 import elasticsearch
+import io
 import itertools
 import lazo_index_service
 import logging
@@ -12,6 +13,7 @@ import prometheus_client
 import sentry_sdk
 import threading
 import time
+import traceback
 
 from datamart_core.common import setup_logging, add_dataset_to_index, \
     delete_dataset_from_index, delete_dataset_from_lazo, log_future, \
@@ -149,6 +151,21 @@ def materialize_and_process_dataset(
 
         metadata['materialize'] = materialize
         return metadata
+
+
+def exception_details(e):
+    # Format traceback
+    etype = type(e)
+    sio = io.StringIO()
+    traceback.print_exception(etype, e, e.__traceback__, None, sio)
+    tb = sio.getvalue()
+    sio.close()
+    tb = tb.rstrip('\n')
+    return {
+        'exception': str(e),
+        'exception_type': etype.__module__ + '.' + etype.__name__,
+        'traceback': tb
+    }
 
 
 class Profiler(object):
@@ -369,6 +386,7 @@ class Profiler(object):
                         dict(
                             status='error',
                             error="Error profiling dataset",
+                            error_details=exception_details(e),
                             metadata=metadata,
                             date=datetime.utcnow().isoformat(),
                             source=metadata['source'],

@@ -103,6 +103,17 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
+            dict(direct_url='http://test-discoverer:7000/invalid.bin'),
+            {
+                'name': 'Invalid, binary',
+                'description': "Some binary data that can't be parsed",
+                'source': 'remi',
+            },
+            dataset_id='invalid',
+        )
+
+        # Use URL for this one
+        self.record_dataset(
             dict(direct_url='http://test-discoverer:7000/dates_pivoted.csv'),
             {
                 'name': 'dates pivoted',

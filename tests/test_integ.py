@@ -202,6 +202,36 @@ class TestProfiler(DatamartTest):
                         'date': lambda d: isinstance(d, str),
                     },
                 },
+                'datamart.test.invalid': {
+                    'status': 'error',
+                    'error': 'Error profiling dataset',
+                    'error_details': {
+                        'exception_type': 'builtins.TypeError',
+                        'exception': '"delimiter" must be a 1-character string',
+                        'traceback': lambda s: (
+                            s.startswith('Traceback') and
+                            s.endswith('\nTypeError: "delimiter" must be '
+                                       'a 1-character string')
+                        ),
+                    },
+                    'metadata': {
+                        'name': 'Invalid, binary',
+                        'description': "Some binary data that can't be parsed",
+                        'source': 'remi',
+                        'materialize': {
+                            'identifier': 'datamart.test',
+                            'direct_url': 'http://test-discoverer:7000/invalid.bin',
+                            'date': lambda d: isinstance(d, str),
+                        },
+                    },
+                    'date': lambda d: isinstance(d, str),
+                    'source': 'remi',
+                    'materialize': {
+                        'identifier': 'datamart.test',
+                        'direct_url': 'http://test-discoverer:7000/invalid.bin',
+                        'date': lambda d: isinstance(d, str),
+                    },
+                },
             },
         )
 

@@ -282,6 +282,9 @@ pending:
       error:
         type: text
         index: false
+      error_details:
+        type: object
+        enabled: false
       metadata:
         type: object
         enabled: false

@@ -177,6 +177,8 @@ class Metadata(BaseHandler, GracefulHandler):
             except elasticsearch.NotFoundError:
                 return self.send_error_json(404, "No such dataset")
             else:
+                # Don't expose the details of the problem (e.g. stacktrace)
+                record.pop('error_details')
                 result = {
                     'id': dataset_id,
                     'status': record['status'],
