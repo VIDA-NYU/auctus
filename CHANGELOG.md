@@ -7,6 +7,9 @@ Incompatible changes:
 * Removed "half-augmentation" flow (download the subset of a dataset that matches some input data), existed for feature-parity with ISI system, but unused
 * Bind ports to localhost in docker-compose file
 * Updated RabbitMQ from 3.7 to 3.8, changes metrics location
+* datamart-geo needs a data volume, populate it with `python -m datamart_geo --update lib_geo/data/`
+* Synonym filter for Elasticsearch will only work if you re-configure the index
+* Changed default port numbers if using docker-compose, update your reverse-proxy if you're exposing RabbitMQ/HAproxy/Prometheus/Grafana
 
 Enhancements:
 * Added a search box on the map for the spatial filter
@@ -20,9 +23,13 @@ Enhancements:
 * Show a spinner while profiling related data, prevent submitting the search before it's done
 * Automatically handle Stata files
 * Choose between joins and unions when searching with a related file
+* New version of datamart-geo with more data
+* Configured a synonym filter in Elasticsearch
+* Store more information about indexing failure in the 'pending' index for easy retrieval
 
 Bugfixes:
 * Fix join result metadata, it previously contained some information relating to the dataset before join
+* Retry Lazo calls a second time to try and limit the number of `_InactiveRpcError`
 
 0.7 (2020-08-04)
 ================
