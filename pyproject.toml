@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "datamart"
-version = "0.7"
+version = "0.8"
 description = "Datamart system meta-package"
 
 license = "BSD-3-Clause"
