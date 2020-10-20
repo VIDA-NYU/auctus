@@ -8,8 +8,8 @@ metadata:
 data:
   elasticsearch.cluster_name: "docker-cluster"
   elasticsearch.heap_size: "4g"
-  api_url: http://192.168.99.100:30081/api/v1
-  frontend_url: http://192.168.99.100:30080
+  api_url: http://192.168.99.100:30002/api/v1
+  frontend_url: http://192.168.99.100:30001
   nominatim_url: http://nominatim:8080/
   custom_fields: ""
   redis.conf: |

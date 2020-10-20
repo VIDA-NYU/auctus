@@ -267,7 +267,7 @@ spec:
   ports:
   - protocol: TCP
     port: 3000
-    nodePort: 30030
+    nodePort: 30041
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
