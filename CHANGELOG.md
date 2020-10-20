@@ -1,5 +1,5 @@
-0.8 (TBD)
-=========
+0.8 (2020-10-20)
+================
 
 Incompatible changes:
 * Moved API endpoints under /api/v1. This will make local deployments match auctus.vida-nyu.org.
