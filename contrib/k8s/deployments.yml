@@ -334,6 +334,11 @@ spec:
             secretKeyRef:
               name: secrets
               key: amqp.password
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: admin.password
         - name: API_URL
           valueFrom:
             configMapKeyRef:
