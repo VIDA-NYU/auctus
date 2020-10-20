@@ -31,35 +31,6 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: datasets
-  labels:
-    type: local
-    app: auctus
-    what: datasets
-spec:
-  capacity:
-    storage: 5Gi
-  accessModes:
-  - ReadWriteMany
-  hostPath:
-    path: "/var/lib/auctus/prod/datasets"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: datasets
-spec:
-  storageClassName: ""
-  volumeName: datasets
-  accessModes:
-  - ReadWriteMany
-  resources:
-    requests:
-      storage: 5Gi
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
   name: cache
   labels:
     type: local

@@ -126,14 +126,9 @@ spec:
         ports:
         - containerPort: 50051
         volumeMounts:
-        - mountPath: /datasets
-          name: datasets
         - mountPath: /cache
           name: cache
       volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
       - name: cache
         persistentVolumeClaim:
           claimName: cache
@@ -251,8 +246,6 @@ spec:
         ports:
         - containerPort: 8002
         volumeMounts:
-        - mountPath: /datasets
-          name: datasets
         - mountPath: /cache
           name: cache
         - mountPath: /usr/src/app/lib_geo/data
@@ -264,9 +257,6 @@ spec:
           periodSeconds: 1
           failureThreshold: 2
       volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
       - name: cache
         persistentVolumeClaim:
           claimName: cache
@@ -302,15 +292,6 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-      initContainers:
-      - name: fix-permissions
-        image: busybox
-        securityContext:
-          runAsNonRoot: false
-        command: ["sh", "-c", "chown -R 998 /datasets"]
-        volumeMounts:
-        - mountPath: /datasets
-          name: datasets
       containers:
       - name: web
         image: auctus_coordinator
@@ -359,14 +340,9 @@ spec:
         ports:
         - containerPort: 8003
         volumeMounts:
-        - mountPath: /datasets
-          name: datasets
         - mountPath: /cache
           name: cache
       volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
       - name: cache
         persistentVolumeClaim:
           claimName: cache
@@ -475,16 +451,11 @@ spec:
               name: config
               key: nominatim_url
         volumeMounts:
-        - mountPath: /datasets
-          name: datasets
         - mountPath: /cache
           name: cache
         - mountPath: /usr/src/app/lib_geo/data
           name: geo-data
       volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
       - name: cache
         persistentVolumeClaim:
           claimName: cache
