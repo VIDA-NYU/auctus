@@ -5,7 +5,7 @@ from datamart_materialize.utils import SimpleConverter
 
 def stata_to_csv(source_filename, dest_fileobj):
     for i, chunk in enumerate(
-        pandas.read_stata(source_filename, iterator=True)
+        pandas.read_stata(source_filename, iterator=True, chunksize=1)
     ):
         chunk.to_csv(
             dest_fileobj,
