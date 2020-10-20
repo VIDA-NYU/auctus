@@ -132,8 +132,6 @@ def identify_structural_type(re_count, num_total, threshold):
         structural_type = types.GEO_POINT
     elif re_count['polygon'] >= threshold:
         structural_type = types.GEO_POLYGON
-    elif re_count['polygon'] >= threshold:
-        structural_type = types.GEO_POLYGON
     else:
         structural_type = types.TEXT
 
