@@ -17,7 +17,7 @@ services:
         hard: -1
     cpu_shares: 100
     ports:
-      - 127.0.0.1:9200:9200
+      - 127.0.0.1:8020:9200
     volumes:
       - ./volumes/elasticsearch:/usr/share/elasticsearch/data
       - ./docker/synonyms.txt:/usr/share/elasticsearch/config/synonyms.txt
@@ -42,9 +42,9 @@ services:
       - RABBITMQ_DEFAULT_PASS=${AMQP_PASSWORD}
     cpu_shares: 100
     ports:
-      - 127.0.0.1:8080:15672  # Management
-      - 127.0.0.1:8082:15692  # Metrics
-      - 127.0.0.1:5672:5672  # AMQP
+      - 127.0.0.1:8010:15672  # Management
+      - 127.0.0.1:8011:5672  # AMQP
+      - 127.0.0.1:8012:15692  # Metrics
   redis:
     image: redis:6.0
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
@@ -62,7 +62,7 @@ services:
       - ELASTICSEARCH_PORT=9200
     cpu_shares: 30
     ports:
-      - 127.0.0.1:50051:50051
+      - 127.0.0.1:8030:50051
       - 8000
     volumes:
       - ./volumes/datasets:/datasets
@@ -112,7 +112,7 @@ services:
     restart: on-failure
     ports:
       - 127.0.0.1:8002:80
-      - 127.0.0.1:8081:8000
+      - 127.0.0.1:8004:8000
     cpu_shares: 100
     volumes:
       - ./docker/haproxy.conf:/usr/local/etc/haproxy/haproxy.cfg:ro
@@ -169,7 +169,7 @@ services:
     image: prom/prometheus:v2.19.3
     cpu_shares: 100
     ports:
-      - 127.0.0.1:9090:9090
+      - 127.0.0.1:8040:9090
     volumes:
       - ./volumes/prometheus:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -183,7 +183,7 @@ services:
       #- GF_SERVER_ROOT_URL=https://grafana.example.org/
     cpu_shares: 100
     ports:
-      - 127.0.0.1:3000:3000
+      - 127.0.0.1:8041:3000
     volumes:
       - ./volumes/grafana:/var/lib/grafana
   example-discoverer:

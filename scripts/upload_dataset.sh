@@ -10,4 +10,4 @@ if [ "$#" != 3 ]; then
 fi
 exec curl -X POST \
     -F "file=@$1;filename=$(basename "$1")" -F "name=$2" -F "description=$3" \
-    http://localhost:8001/upload
+    http://localhost:8002/api/v1/upload

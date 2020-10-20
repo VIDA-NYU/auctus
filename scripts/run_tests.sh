@@ -34,7 +34,7 @@ docker-compose up -d --force-recreate test-discoverer
 (set +x
 slept=10
 sleep 10
-while [ "$(curl -s http://localhost:8082/metrics | sed -n '/^rabbitmq_queue_messages{.*queue="profile".* \([0-9]*\)$/s//\1/p')" != 0 ]; do
+while [ "$(curl -s http://localhost:8012/metrics | sed -n '/^rabbitmq_queue_messages{.*queue="profile".* \([0-9]*\)$/s//\1/p')" != 0 ]; do
   if [ $slept -gt 180 ]; then
     echo "Profiling didn't end after ${slept}s"
     exit 1
