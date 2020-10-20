@@ -3,7 +3,7 @@ name = "datamart"
 version = "0.8"
 description = "Datamart system meta-package"
 
-license = "BSD-3-Clause"
+license = "Apache-2.0"
 
 authors = [
     "Remi Rampin <remi.rampin@nyu.edu>",
