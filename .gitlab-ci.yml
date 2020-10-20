@@ -75,7 +75,7 @@ test:
     - docker-compose up -d elasticsearch rabbitmq redis
     - |
       # Wait for Elasticsearch to come up
-      slept=0; while [ $(curl -s -o /dev/null -w "%{http_code}" http://docker:9200/) != 200 ]; do
+      slept=0; while [ $(curl -s -o /dev/null -w "%{http_code}" http://docker:8020/) != 200 ]; do
         if [ $slept -gt 120 ]; then
           echo "Elasticsearch didn't come up after ${slept}s"
           exit 1
@@ -90,7 +90,7 @@ test:
       # Wait for profiling to end
       slept=30
       sleep 30
-      while [ "$(curl -s http://docker:8082/metrics | sed -n '/^rabbitmq_queue_messages{.*queue="profile".* \([0-9]*\)$/s//\1/p')" != 0 ]; do
+      while [ "$(curl -s http://docker:8012/metrics | sed -n '/^rabbitmq_queue_messages{.*queue="profile".* \([0-9]*\)$/s//\1/p')" != 0 ]; do
         sleep 5
         slept=$((slept + 5))
         if [ $slept -gt 240 ]; then
