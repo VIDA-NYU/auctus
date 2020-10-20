@@ -3,6 +3,7 @@ import collections
 import contextlib
 import csv
 from datetime import datetime
+from grpc._channel import _InactiveRpcError
 import logging
 import numpy
 import os
@@ -93,6 +94,14 @@ def expand_attribute_name(name):
         word.append(c)
 
     yield ''.join(word)
+
+
+def _lazo_retry(func):
+    try:
+        return func()
+    except _InactiveRpcError:
+        pass
+    return func()
 
 
 @PROM_PROFILE.time()
@@ -496,19 +505,23 @@ def process_dataset(data, dataset_id=None, metadata=None,
             try:
                 if data_path:
                     # if we have the path, send the path
-                    lazo_client.index_data_path(
-                        data_path,
-                        dataset_id,
-                        [columns[idx]['name'] for idx in columns_textual],
-                    )
+                    def call_lazo():
+                        lazo_client.index_data_path(
+                            data_path,
+                            dataset_id,
+                            [columns[idx]['name'] for idx in columns_textual],
+                        )
+                    _lazo_retry(call_lazo)
                 else:
                     # if path is not available, send the data instead
                     for idx in columns_textual:
-                        lazo_client.index_data(
-                            data.iloc[:, idx].values.tolist(),
-                            dataset_id,
-                            columns[idx]['name'],
-                        )
+                        def call_lazo():
+                            lazo_client.index_data(
+                                data.iloc[:, idx].values.tolist(),
+                                dataset_id,
+                                columns[idx]['name'],
+                            )
+                        _lazo_retry(call_lazo)
             except Exception:
                 logger.warning("Error indexing textual attributes from %s", dataset_id)
                 raise
@@ -518,22 +531,24 @@ def process_dataset(data, dataset_id=None, metadata=None,
             try:
                 if data_path:
                     # if we have the path, send the path
-                    lazo_sketches = lazo_client.get_lazo_sketch_from_data_path(
-                        data_path,
-                        "",
-                        [columns[idx]['name'] for idx in columns_textual],
-                    )
+                    def call_lazo():
+                        return lazo_client.get_lazo_sketch_from_data_path(
+                            data_path,
+                            "",
+                            [columns[idx]['name'] for idx in columns_textual],
+                        )
+                    lazo_sketches = _lazo_retry(call_lazo)
                 else:
                     # if path is not available, send the data instead
                     lazo_sketches = []
                     for idx in columns_textual:
-                        lazo_sketches.append(
-                            lazo_client.get_lazo_sketch_from_data(
+                        def call_lazo():
+                            return lazo_client.get_lazo_sketch_from_data(
                                 data.iloc[:, idx].values.tolist(),
                                 "",
                                 columns[idx]['name'],
                             )
-                        )
+                        lazo_sketches.append(_lazo_retry(call_lazo))
                 # saving sketches into metadata
                 for sketch, idx in zip(lazo_sketches, columns_textual):
                     n_permutations, hash_values, cardinality = sketch
