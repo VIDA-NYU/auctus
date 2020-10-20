@@ -5,7 +5,6 @@ import logging
 import os
 import prometheus_client
 import shutil
-import xlrd
 import zipfile
 
 from datamart_core.common import hash_json
@@ -175,21 +174,28 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
     :param materialize: Materialization info to be updated with the applied
         conversions.
     """
+    with open(dataset_path, 'rb') as fp:
+        magic = fp.read(16)
+
     # Check for Excel file format
-    try:
-        xlrd.open_workbook(dataset_path)
-    except xlrd.XLRDError:
-        pass
-    else:
+    is_excel = False
+    if magic[:4] == b'PK\x03\x04':  # 2007+
+        try:
+            zip = zipfile.ZipFile(dataset_path)
+        except zipfile.BadZipFile:
+            pass
+        else:
+            if any(info.filename.startswith('xl/') for info in zip.infolist()):
+                is_excel = True
+    elif magic[:8] == '\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1':  # 1997-2003
+        is_excel = True
+    if is_excel:
         # Update metadata
         logger.info("This is an Excel file")
         materialize.setdefault('convert', []).append({'identifier': 'xls'})
 
         # Update file
         dataset_path = convert_dataset(xls_to_csv, dataset_path)
-
-    with open(dataset_path, 'rb') as fp:
-        magic = fp.read(16)
 
     # Check for Stata file format
     if magic[:11] == b'<stata_dta>' or magic[:4] in (
