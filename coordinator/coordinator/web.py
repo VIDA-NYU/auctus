@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import elasticsearch
 import logging
 import jinja2
@@ -82,9 +83,17 @@ class BaseHandler(tornado.web.RequestHandler):
 class Index(BaseHandler):
     @tornado.web.authenticated
     def get(self):
+        recent_uploads = [
+            dict(
+                id=upload['id'],
+                name=upload['name'] or upload['id'],
+                discovered=datetime.fromisoformat(upload['discovered'].rstrip('Z')).strftime('%Y-%m-%d %H:%M:%S'),
+            )
+            for upload in self.coordinator.recent_uploads()
+        ]
         return self.render(
             'index.html',
-            recent_uploads=list(self.coordinator.recent_uploads()),
+            recent_uploads=recent_uploads,
         )
 
 

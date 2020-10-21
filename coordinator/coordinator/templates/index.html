@@ -2,5 +2,14 @@
 {% set active_page = "index" %}
 
 {% block contents %}
-<p>Nothing here, head over to the frontend...</p>
+<p>Recent uploads:</p>
+<ul>
+  {% if recent_uploads %}
+  {% for upload in recent_uploads %}
+  <li>{{ upload.name }}, {{ upload.discovered }}</li>
+  {% endfor %}
+  {% else %}
+  <li style="font-style: oblique;">No recent uploads</li>
+  {% endif %}
+</ul>
 {% endblock %}
