@@ -63,7 +63,8 @@ spec:
         - mountPath: /usr/share/elasticsearch/data
           name: data
         - name: synonyms
-          mountPath: /usr/share/elasticsearch/config/synonyms
+          mountPath: /usr/share/elasticsearch/config/synonyms/synonyms.txt
+          subPath: synonyms.txt
         readinessProbe:
           httpGet:
             scheme: HTTP

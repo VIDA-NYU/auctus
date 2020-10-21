@@ -90,12 +90,20 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/elasticsearch/data
           name: elasticsearch
+        - name: synonyms
+          mountPath: /usr/share/elasticsearch/config/synonyms/synonyms.txt
+          subPath: synonyms.txt
         readinessProbe:
           httpGet:
             scheme: HTTP
             path: /_cluster/health?local=true
             port: 9200
           initialDelaySeconds: 5
+      volumes:
+      - name: synonyms
+        persistentVolumeClaim:
+          claimName: es-synonyms
+          readOnly: true
   volumeClaimTemplates:
   - metadata:
       name: elasticsearch
