@@ -3,7 +3,7 @@ services:
   # Keep images in sync with scripts/minikube-load-images.sh
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.2
     restart: on-failure
     environment:
       - discovery.type=single-node
@@ -166,7 +166,7 @@ services:
       - ./volumes/cache:/cache
       - ./lib_geo/data:/usr/src/app/lib_geo/data
   prometheus:
-    image: prom/prometheus:v2.19.3
+    image: prom/prometheus:v2.22.0
     cpu_shares: 100
     ports:
       - 127.0.0.1:8040:9090

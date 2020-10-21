@@ -233,7 +233,7 @@ spec:
           name: data
       containers:
       - name: prometheus
-        image: prom/prometheus:v2.19.3
+        image: prom/prometheus:v2.22.0
         securityContext:
           runAsUser: 65534 # "nobody" as set in image
         ports:

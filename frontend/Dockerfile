@@ -8,7 +8,7 @@ COPY frontend /src/
 RUN npm run build
 
 
-FROM nginx:1.17
+FROM nginx:1.19
 
 COPY --from=build /src/build /var/www/html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
