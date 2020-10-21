@@ -24,7 +24,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: rabbitmq
-        image: remram/rabbitmq:3.7.8
+        image: quay.io/remram44/rabbitmq:3.8.9
         securityContext:
           runAsUser: 999
         env:
