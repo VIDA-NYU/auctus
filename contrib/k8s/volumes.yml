@@ -1,36 +1,78 @@
 ---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: datasets
+  labels:
+    type: local
+    app: datamart
+    what: datasets
+spec:
+  storageClassName: "manual"
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: "/var/lib/datamart/prod/datasets"
+---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: datasets
 spec:
-  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: datasets
+  storageClassName: "manual"
   accessModes:
   - ReadWriteMany
   resources:
     requests:
       storage: 5Gi
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: cache
+  labels:
+    type: local
+    app: datamart
+    what: cache
+spec:
+  storageClassName: "manual"
+  capacity:
+    storage: 55Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: "/var/lib/datamart/prod/cache"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: cache
 spec:
-  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: cache
+  storageClassName: "manual"
   accessModes:
   - ReadWriteMany
   resources:
     requests:
-      storage: 5Gi
+      storage: 55Gi
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: geo-data
 spec:
-  storageClassName: ""
   accessModes:
   - ReadOnlyMany
+  - ReadWriteOnce
   resources:
     requests:
       storage: 300Mi
@@ -40,9 +82,9 @@ apiVersion: v1
 metadata:
   name: es-synonyms
 spec:
-  storageClassName: ""
   accessModes:
   - ReadOnlyMany
+  - ReadWriteOnce
   resources:
     requests:
       storage: 5Mi

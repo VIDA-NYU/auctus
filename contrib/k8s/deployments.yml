@@ -273,6 +273,7 @@ spec:
       - name: geo-data
         persistentVolumeClaim:
           claimName: geo-data
+          readOnly: true
       terminationGracePeriodSeconds: 600
 ---
 apiVersion: apps/v1
@@ -431,3 +432,4 @@ spec:
       - name: geo-data
         persistentVolumeClaim:
           claimName: geo-data
+          readOnly: true

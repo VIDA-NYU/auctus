@@ -77,3 +77,4 @@ spec:
       - name: synonyms
         persistentVolumeClaim:
           claimName: es-synonyms
+          readOnly: true
