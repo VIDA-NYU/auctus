@@ -58,6 +58,7 @@ class Coordinator(object):
     def __init__(self, es):
         self.elasticsearch = es
         self._recent_discoveries = RecentList(NB_RECENT)
+        self._recent_uploads = RecentList(NB_RECENT)
 
         # Setup the indices from YAML file
         with pkg_resources.resource_stream(
@@ -122,6 +123,9 @@ class Coordinator(object):
     def recent_discoveries(self):
         return iter(self._recent_discoveries)
 
+    def recent_uploads(self):
+        return iter(self._recent_uploads)
+
     @staticmethod
     def build_discovery(dataset_id, metadata):
         materialize = metadata.get('materialize', {})
@@ -167,10 +171,22 @@ class Coordinator(object):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
             logger.info("Got dataset message: %r", dataset_id)
+
+            # Add to recent discoveries
             self._recent_discoveries.insert_or_replace(
                 dataset_id,
                 self.build_discovery(dataset_id, obj),
             )
+
+            # If an upload, add to recent uploads
+            if (
+                'materialize' in obj
+                and obj['materialize'].get('identifier') in ('datamart.upload', 'datamart.url')
+            ):
+                self._recent_uploads.insert_or_replace(
+                    dataset_id,
+                    self.build_discovery(dataset_id, obj),
+                )
 
     def _update_statistics(self):
         """Periodically compute statistics.
@@ -195,6 +211,34 @@ class Coordinator(object):
         else:
             for h in recent:
                 recent_discoveries.append((
+                    h['_id'],
+                    self.build_discovery(h['_id'], h['_source']),
+                ))
+
+        recent_uploads = []
+        try:
+            recent = self.elasticsearch.search(
+                index='datamart',
+                body={
+                    'query': {
+                        'bool': {
+                            'should': [
+                                {'term': {'materialize.identifier': id}}
+                                for id in ['datamart.upload', 'datamart.url']
+                            ],
+                        },
+                    },
+                    'sort': [
+                        {'date': {'order': 'desc'}},
+                    ],
+                },
+                size=NB_RECENT,
+            )['hits']['hits']
+        except elasticsearch.ElasticsearchException:
+            logger.warning("Couldn't get recent datasets from Elasticsearch")
+        else:
+            for h in recent:
+                recent_uploads.append((
                     h['_id'],
                     self.build_discovery(h['_id'], h['_source']),
                 ))
@@ -247,7 +291,7 @@ class Coordinator(object):
         for version in self.profiler_versions_counts.keys() - versions.keys():
             PROM_PROFILED_VERSION.remove(version)
 
-        return sources, versions, recent_discoveries
+        return sources, versions, recent_discoveries, recent_uploads
 
     async def update_statistics(self):
         """Periodically update statistics.
@@ -259,6 +303,7 @@ class Coordinator(object):
                     self.sources_counts,
                     self.profiler_versions_counts,
                     recent_discoveries,
+                    recent_uploads,
                 ) = await asyncio.get_event_loop().run_in_executor(
                     None,
                     self._update_statistics,
@@ -266,6 +311,10 @@ class Coordinator(object):
                 self._recent_discoveries = RecentList(
                     NB_RECENT,
                     recent_discoveries,
+                )
+                self._recent_uploads = RecentList(
+                    NB_RECENT,
+                    recent_uploads,
                 )
 
                 logger.info(
