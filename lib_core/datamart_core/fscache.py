@@ -164,10 +164,10 @@ def _lock(filepath, exclusive, timeout=None):
         if not started:
             return
         logger.debug("Releasing %s lock: %r", type_, filepath)
+        start = time.perf_counter()
         pipe.send('UNLOCK')
         proc.join(10)
         if proc.exitcode is None:
-            start = time.perf_counter()
             proc.join(3 * 60)
             logger.critical("Releasing %s lock took %.2fs: %r",
                             type_, time.perf_counter() - start, filepath)
