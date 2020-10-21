@@ -339,7 +339,10 @@ spec:
               name: config
               key: api_url
         - name: MAX_CACHE_BYTES
-          value: "100000000000"  # 100 GB
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: max_cache_bytes
         ports:
         - containerPort: 8003
         volumeMounts:
