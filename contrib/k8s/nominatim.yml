@@ -50,7 +50,7 @@ spec:
     spec:
       initContainers:
       - name: download-data
-        image: remram/nominatim:3.3
+        image: quay.io/remram44/nominatim:3.4
         command:
         - "sh"
         - "-c"
@@ -63,7 +63,7 @@ spec:
           name: data
       containers:
       - name: nominatim
-        image: remram/nominatim:3.3
+        image: quay.io/remram44/nominatim:3.4
         args: ["bash", "/app/start.sh"]
         ports:
         - containerPort: 5432
