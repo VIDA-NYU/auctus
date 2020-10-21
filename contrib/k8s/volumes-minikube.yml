@@ -94,3 +94,35 @@ spec:
   resources:
     requests:
       storage: 5Gi
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: es-synonyms
+  labels:
+    type: local
+    app: datamart
+    what: es-synonyms
+spec:
+  capacity:
+    storage: 5Mi
+  accessModes:
+  - ReadOnlyMany
+  hostPath:
+    path: "/var/lib/datamart/es-synonyms"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: es-synonyms
+spec:
+  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: es-synonyms
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 5Mi

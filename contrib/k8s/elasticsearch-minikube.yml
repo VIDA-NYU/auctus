@@ -62,6 +62,8 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/elasticsearch/data
           name: data
+        - name: synonyms
+          mountPath: /usr/share/elasticsearch/config/synonyms
         readinessProbe:
           httpGet:
             scheme: HTTP
@@ -72,3 +74,6 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: elasticsearch
+      - name: synonyms
+        persistentVolumeClaim:
+          claimName: es-synonyms

@@ -28,7 +28,7 @@ _refs:
             language: english
           synonym_filter:
             type: synonym
-            synonyms_path: "synonyms.txt"
+            synonyms_path: "synonyms/synonyms.txt"
 
 datamart:
   settings:

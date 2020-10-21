@@ -22,3 +22,15 @@ spec:
   resources:
     requests:
       storage: 5Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: es-synonyms
+spec:
+  storageClassName: ""
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 5Mi
