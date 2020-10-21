@@ -20,7 +20,7 @@ RUN python3 install_deps.py poetry.lock.json
 
 COPY --chown=appuser lib_core lib_core
 RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/lib_core
-COPY --chown=appuser discovery/example_discovery.py discovery/test_discovery.py /usr/src/app/discovery/
+COPY --chown=appuser discovery/test_discovery.py /usr/src/app/discovery/
 COPY tests/data /usr/src/app/tests/data
 
 RUN python -m compileall /usr/src/app/
@@ -28,5 +28,5 @@ ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
 USER 998
-ENTRYPOINT ["/tini", "--", "/bin/bash", "-c", "set -m; if [ \"$1\" = example ]; then exec python discovery/example_discovery.py; elif [ \"$1\" = testsuite ]; then exec python discovery/test_discovery.py; else exec \"$@\"; fi", "--"]
-CMD ["example"]
+ENTRYPOINT ["/tini", "--", "/bin/bash", "-c", "set -m; if [ \"$1\" = testsuite ]; then exec python discovery/test_discovery.py; else exec \"$@\"; fi", "--"]
+CMD ["testsuite"]

@@ -186,22 +186,6 @@ services:
       - 127.0.0.1:8041:3000
     volumes:
       - ./volumes/grafana:/var/lib/grafana
-  example-discoverer:
-    build:
-      context: .
-      dockerfile: discovery/Dockerfile
-    command: example
-    environment:
-      - ELASTICSEARCH_HOSTS=elasticsearch:9200
-      - AMQP_HOST=rabbitmq
-      - AMQP_PORT=5672
-      - AMQP_USER=${AMQP_USER}
-      - AMQP_PASSWORD=${AMQP_PASSWORD}
-      - LAZO_SERVER_HOST=lazo
-      - LAZO_SERVER_PORT=50051
-    cpu_shares: 10
-    volumes:
-      - ./volumes/datasets:/datasets
   test-discoverer:
     build:
       context: .
