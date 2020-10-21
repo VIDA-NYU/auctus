@@ -98,6 +98,38 @@ spec:
 kind: PersistentVolume
 apiVersion: v1
 metadata:
+  name: geo-data
+  labels:
+    type: local
+    app: datamart
+    what: geo-data
+spec:
+  capacity:
+    storage: 300Mi
+  accessModes:
+  - ReadOnlyMany
+  hostPath:
+    path: "/var/lib/datamart/geo-data"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: geo-data
+spec:
+  storageClassName: ""
+  selector:
+    matchLabels:
+      app: datamart
+      what: geo-data
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 300Mi
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
   name: es-synonyms
   labels:
     type: local

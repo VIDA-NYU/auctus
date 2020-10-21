@@ -255,6 +255,8 @@ spec:
           name: datasets
         - mountPath: /cache
           name: cache
+        - mountPath: /usr/src/app/lib_geo/data
+          name: geo-data
         readinessProbe:
           httpGet:
             path: /health
@@ -268,6 +270,9 @@ spec:
       - name: cache
         persistentVolumeClaim:
           claimName: cache
+      - name: geo-data
+        persistentVolumeClaim:
+          claimName: geo-data
       terminationGracePeriodSeconds: 600
 ---
 apiVersion: apps/v1
@@ -411,6 +416,8 @@ spec:
           name: datasets
         - mountPath: /cache
           name: cache
+        - mountPath: /usr/src/app/lib_geo/data
+          name: geo-data
       volumes:
       - name: datasets
         persistentVolumeClaim:
@@ -418,3 +425,6 @@ spec:
       - name: cache
         persistentVolumeClaim:
           claimName: cache
+      - name: geo-data
+        persistentVolumeClaim:
+          claimName: geo-data

@@ -26,6 +26,18 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
+  name: geo-data
+spec:
+  storageClassName: ""
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 300Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
   name: es-synonyms
 spec:
   storageClassName: ""
