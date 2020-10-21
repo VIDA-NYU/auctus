@@ -11,6 +11,7 @@ import logging
 import os
 import prometheus_client
 import sentry_sdk
+import socket
 import threading
 import time
 import traceback
@@ -411,7 +412,11 @@ class Profiler(object):
 def main():
     setup_logging()
     prometheus_client.start_http_server(8000)
-    logger.info("Startup: profiler %s", os.environ['DATAMART_VERSION'])
+    logger.info(
+        "Startup: profiler %s %s",
+        os.environ['DATAMART_VERSION'],
+        socket.gethostbyname(socket.gethostname()),
+    )
     Profiler()
     asyncio.get_event_loop().run_forever()
 

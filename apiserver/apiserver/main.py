@@ -5,6 +5,7 @@ import logging
 import os
 import prometheus_client
 import redis
+import socket
 import tornado.ioloop
 from tornado.routing import Rule, PathMatches, URLSpec
 import tornado.httputil
@@ -165,7 +166,11 @@ def main():
     setup_logging()
     debug = os.environ.get('DEBUG') not in (None, '', 'no', 'off', 'false')
     prometheus_client.start_http_server(8000)
-    logger.info("Startup: apiserver %s", os.environ['DATAMART_VERSION'])
+    logger.info(
+        "Startup: apiserver %s %s",
+        os.environ['DATAMART_VERSION'],
+        socket.gethostbyname(socket.gethostname()),
+    )
     if debug:
         logger.error("Debug mode is ON")
 
