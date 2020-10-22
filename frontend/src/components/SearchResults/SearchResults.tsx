@@ -13,6 +13,8 @@ import {Loading} from '../visus/Loading/Loading';
 import {HitInfoBox} from './HitInfoBox';
 import {SearchQuery} from '../../api/rest';
 import './SearchResults.css';
+import Pagination from './Pagination';
+import {Items} from './Pagination';
 
 interface SearchResultsProps {
   searchQuery: SearchQuery;
@@ -25,6 +27,9 @@ interface SearchResultsProps {
 interface SearchResultsState {
   selectedHit?: SearchResult;
   selectedInfoBoxType: InfoBoxType;
+  paginationItems?: Items[];
+  pageOfItems?: Items[];
+  updateScroll: boolean;
 }
 
 class SearchResults extends React.PureComponent<
@@ -32,17 +37,32 @@ class SearchResults extends React.PureComponent<
   SearchResultsState
 > {
   lastSearchResponse?: SearchResponse;
-
+  private divRef: React.RefObject<HTMLDivElement>;
   constructor(props: SearchResultsProps) {
     super(props);
-    this.state = {selectedInfoBoxType: InfoBoxType.DETAIL};
+    this.state = {
+      selectedInfoBoxType: InfoBoxType.DETAIL,
+      paginationItems: undefined,
+      pageOfItems: undefined,
+      updateScroll: false,
+    };
+    this.divRef = React.createRef<HTMLDivElement>();
+    this.onChangePage = this.onChangePage.bind(this);
   }
 
   componentDidUpdate() {
+    if (this.state.updateScroll) {
+      this.setState({updateScroll: false});
+    }
     if (this.lastSearchResponse !== this.props.searchResponse) {
       this.setState({
         selectedHit: this.props.searchResponse
           ? this.props.searchResponse.results[0]
+          : undefined,
+        paginationItems: this.props.searchResponse
+          ? Array.from(
+              new Array(this.props.searchResponse.results.length).keys()
+            ).map(i => ({id: i + 1, name: 'Item ' + (i + 1)}))
           : undefined,
         selectedInfoBoxType: InfoBoxType.DETAIL,
       });
@@ -88,6 +108,17 @@ class SearchResults extends React.PureComponent<
     );
   }
 
+  onChangePage(pageOfItems: Items[]) {
+    // update state with new page of items
+    this.setState({pageOfItems: pageOfItems, updateScroll: true});
+    if (this.divRef.current) {
+      this.divRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }
+  }
+
   render() {
     const {searchResponse, searchState, searchQuery, session} = this.props;
     const centeredDiv: React.CSSProperties = {
@@ -121,18 +152,39 @@ class SearchResults extends React.PureComponent<
           );
         }
 
-        // TODO: Implement proper results pagination
-        const page = 1;
-        const k = 20;
-        const currentHits = searchResponse.results.slice(
-          (page - 1) * k,
-          page * k
-        );
-        const {selectedHit, selectedInfoBoxType} = this.state;
+        const {
+          selectedHit,
+          selectedInfoBoxType,
+          pageOfItems,
+          paginationItems,
+        } = this.state;
+
+        const pageSize = 19; // total number of items that will be displayed
+        const startIdx = pageOfItems ? pageOfItems[0].id : 1;
+        const lastIdx = pageOfItems
+          ? pageOfItems[pageOfItems.length - 1].id
+          : pageSize;
+        const currentHits = searchResponse.results.slice(startIdx - 1, lastIdx);
+
         return (
           <div className="d-flex flex-row container-vh-full pt-1">
-            <div className="container-vh-scroll column-search-hits">
+            <div
+              ref={this.divRef}
+              className="container-vh-scroll column-search-hits"
+            >
               {this.renderSearchHits(currentHits, selectedHit, session)}
+              <hr />
+              <div className="container mt-2">
+                <div className="text-center">
+                  {paginationItems && (
+                    <Pagination
+                      items={paginationItems}
+                      onChangePage={this.onChangePage}
+                      pageSize={pageSize}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
             {selectedHit && (
               <div className="container-vh-scroll column-infobox">
