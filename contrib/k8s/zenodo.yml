@@ -1,0 +1,69 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: zenodo
+  labels:
+    app: datamart
+data:
+  zenodo.json: |
+    {
+      "keyword_query": "covid"
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zenodo
+  labels:
+    app: datamart
+    what: zenodo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: datamart
+      what: zenodo
+  template:
+    metadata:
+      labels:
+        app: datamart
+        what: zenodo
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: zenodo
+        image: datamart_zenodo
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: elasticsearch:9200
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: AMQP_PORT
+          value: "5672"
+        - name: AMQP_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: AMQP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
+        volumeMounts:
+        - name: config
+          mountPath: /usr/src/app/zenodo.json
+          subPath: zenodo.json
+      volumes:
+      - name: config
+        configMap:
+          name: zenodo
