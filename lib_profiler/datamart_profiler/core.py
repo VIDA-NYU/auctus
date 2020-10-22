@@ -302,10 +302,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
             structural_type, semantic_types_dict, additional_meta = \
                 identify_types(array, column_meta['name'], geo_data, manual)
 
-            # Identify a dataset type (numerical, categorial, spatial, or temporal)
+            # Identify a dataset type (numerical, categorical, spatial, or temporal)
             dataset_type = determine_dataset_type(structural_type, semantic_types_dict)
             if dataset_type:
                 dataset_types.add(dataset_type)
+
+            logger.info(
+                "Column type %s (%s, %s)",
+                dataset_type,
+                structural_type,
+                ', '.join(semantic_types_dict),
+            )
 
             # Set structural type
             column_meta['structural_type'] = structural_type
