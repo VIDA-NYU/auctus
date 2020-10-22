@@ -218,6 +218,8 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
+    volumes:
+      - ./docker/socrata.json:/usr/src/app/socrata.json
   zenodo:
     build:
       context: .
@@ -233,6 +235,8 @@ services:
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
       - ZENODO_TOKEN=${ZENODO_TOKEN}
+    volumes:
+      - ./docker/zenodo.json:/usr/src/app/zenodo.json
   uaz-indicators:
     build:
       context: .
