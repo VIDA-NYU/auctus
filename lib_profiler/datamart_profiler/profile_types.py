@@ -1,12 +1,16 @@
 import collections
 from datetime import datetime
 import dateutil.tz
+import logging
 import re
 import regex
 
 from . import types
 from .spatial import LATITUDE, LONGITUDE
 from .temporal import parse_date
+
+
+logger = logging.getLogger(__name__)
 
 
 _re_int = re.compile(
@@ -237,6 +241,7 @@ def identify_types(array, name, geo_data, manual=None):
                             area for areas_list in resolved for area in areas_list
                             if area.type.value == level
                         ]
+                        logger.info("Storing %d resolved areas", len(resolved))
                         semantic_types_dict[types.ADMIN] = level, resolved
                         categorical = True
 
@@ -253,6 +258,7 @@ def identify_types(array, name, geo_data, manual=None):
                     len(values) <= max_categorical or
                     types.BOOLEAN in semantic_types_dict
                 ):
+                    logger.info("Storing %d categorical values", len(values))
                     semantic_types_dict[types.CATEGORICAL] = values
         elif structural_type == types.INTEGER:
             # Identify ids
@@ -283,6 +289,7 @@ def identify_types(array, name, geo_data, manual=None):
                         pass
                 if len(dates) >= threshold:
                     structural_type = types.TEXT
+                    logger.info("Storing %d dates (years)", len(dates))
                     semantic_types_dict[types.DATE_TIME] = dates
 
         # Identify lat/long
@@ -308,6 +315,7 @@ def identify_types(array, name, geo_data, manual=None):
         parsed_dates = parse_dates(array)
 
         if len(parsed_dates) >= threshold:
+            logger.info("Storing %d dates", len(parsed_dates))
             semantic_types_dict[types.DATE_TIME] = parsed_dates
             if structural_type == types.INTEGER:
                 # 'YYYYMMDD' format means values can be parsed as integers, but
