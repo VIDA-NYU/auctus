@@ -1,7 +1,10 @@
 import collections
 from datetime import datetime
 import dateutil.tz
+import gc
 import logging
+import os
+import psutil
 import re
 import regex
 
@@ -232,11 +235,19 @@ def identify_types(array, name, geo_data, manual=None):
 
             # Administrative areas
             if geo_data is not None:
+                logger.info(
+                    "Memory usage before admin areas: %d",
+                    psutil.Process(os.getpid()).memory_info().rss,
+                )
                 resolved = geo_data.resolve_names_all(array)
                 resolved = [r for r in resolved if r]
                 if len(resolved) > 0.7 * len(array):
                     level = guess_admin_level(resolved)
                     if level is not None:
+                        logger.info(
+                            "Total areas %d",
+                            sum(len(areas_list) for areas_list in resolved),
+                        )
                         resolved = [
                             area for areas_list in resolved for area in areas_list
                             if area.type.value == level
@@ -244,6 +255,12 @@ def identify_types(array, name, geo_data, manual=None):
                         logger.info("Storing %d resolved areas", len(resolved))
                         semantic_types_dict[types.ADMIN] = level, resolved
                         categorical = True
+                gc.collect()
+                gc.collect()
+                logger.info(
+                    "Memory usage after admin areas: %d",
+                    psutil.Process(os.getpid()).memory_info().rss,
+                )
 
             if not categorical and num_text >= threshold:
                 # Free text
