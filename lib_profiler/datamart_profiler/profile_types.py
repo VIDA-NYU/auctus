@@ -248,6 +248,13 @@ def identify_types(array, name, geo_data, manual=None):
                             "Total areas %d",
                             sum(len(areas_list) for areas_list in resolved),
                         )
+                        gc.collect()
+                        gc.collect()
+                        logger.info(
+                            "Memory usage with areas, before refining level: %d %s",
+                            psutil.Process(os.getpid()).memory_info().rss,
+                            gc.get_stats(),
+                        )
                         resolved = [
                             area for areas_list in resolved for area in areas_list
                             if area.type.value == level
@@ -258,8 +265,9 @@ def identify_types(array, name, geo_data, manual=None):
                 gc.collect()
                 gc.collect()
                 logger.info(
-                    "Memory usage after admin areas: %d",
+                    "Memory usage after admin areas: %d %s",
                     psutil.Process(os.getpid()).memory_info().rss,
+                    gc.get_stats(),
                 )
 
             if not categorical and num_text >= threshold:
