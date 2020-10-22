@@ -10,6 +10,7 @@ import os
 import pandas
 from pandas.errors import EmptyDataError
 import prometheus_client
+import psutil
 import string
 import random
 import re
@@ -203,6 +204,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 del codec_reader
             data.seek(0, 0)
 
+            logger.info(
+                "Memory usage before load: %d",
+                psutil.Process(os.getpid()).memory_info().rss,
+            )
+
             # Load the data
             try:
                 if metadata['size'] > load_max_size:
@@ -234,6 +240,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
+
+            logger.info(
+                "Memory usage after load: %d",
+                psutil.Process(os.getpid()).memory_info().rss,
+            )
 
     metadata['nb_profiled_rows'] = data.shape[0]
 
@@ -503,6 +514,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 if level is not None:
                     column_meta['admin_area_level'] = level
                 resolved_admin_areas[column_idx] = areas
+
+            logger.info(
+                "Memory usage: %d",
+                psutil.Process(os.getpid()).memory_info().rss,
+            )
 
     # Textual columns
     if lazo_client and columns_textual:
