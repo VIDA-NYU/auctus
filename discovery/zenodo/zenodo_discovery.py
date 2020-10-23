@@ -23,18 +23,14 @@ class ZenodoDiscoverer(Discoverer):
 
     def __init__(self, *args, **kwargs):
         super(ZenodoDiscoverer, self).__init__(*args, **kwargs)
-        if os.path.exists('zenodo.json'):
-            with open('zenodo.json') as fp:
-                obj = json.load(fp)
-            self.keyword_query = obj.pop('keyword_query', '')
-            if obj:
-                logger.warning("Unknown keys in configuration: %s",
-                               ', '.join(obj))
-            logger.info("Loaded keyword from zenodo.json: %s",
-                        self.keyword_query)
-        else:
-            self.keyword_query = ''
-            logger.info("NOT using a keyword query")
+        with open('zenodo.json') as fp:
+            obj = json.load(fp)
+        self.keyword_query = obj.pop('keyword_query', '')
+        if obj:
+            logger.warning("Unknown keys in configuration: %s",
+                           ', '.join(obj))
+        logger.info("Loaded keyword from zenodo.json: %s",
+                    self.keyword_query)
 
     def main_loop(self):
         while True:
