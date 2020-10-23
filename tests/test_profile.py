@@ -642,7 +642,7 @@ class TestGeo(DataTestCase):
         self.assertJson(
             metadata,
             {
-                'size': 146,
+                'size': 145,
                 'nb_rows': 5,
                 'nb_profiled_rows': 5,
                 'types': ['spatial'],
@@ -655,7 +655,7 @@ class TestGeo(DataTestCase):
                             'http://schema.org/AdministrativeArea',
                             'http://schema.org/Enumeration',
                         ],
-                        'num_distinct_values': 2,
+                        'num_distinct_values': 3,
                         'admin_area_level': 0,
                     },
                     {

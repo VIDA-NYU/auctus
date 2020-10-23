@@ -198,7 +198,7 @@ def identify_types(array, name, geo_data, manual=None):
                 dates = parse_dates(array)
                 semantic_types_dict[types.DATE_TIME] = dates
             if el == types.ADMIN:
-                if geo_data is not None:
+                if geo_data is not None and len(distinct_values()) >= 3:
                     resolved = geo_data.resolve_names_all(array)
                     resolved = [r for r in resolved if r]
                     if resolved:
@@ -229,7 +229,7 @@ def identify_types(array, name, geo_data, manual=None):
             categorical = False
 
             # Administrative areas
-            if geo_data is not None:
+            if geo_data is not None and len(distinct_values()) >= 3:
                 resolved = geo_data.resolve_names_all(array)
                 resolved = [r for r in resolved if r]
                 if len(resolved) > 0.7 * len(array):
