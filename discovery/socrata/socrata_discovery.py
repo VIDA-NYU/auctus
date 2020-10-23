@@ -79,6 +79,8 @@ class SocrataDiscoverer(Discoverer):
                 if valid:
                     seen.add(dataset['resource']['id'])
 
+        logger.info("Discovered %d/%d datasets", len(seen), len(datasets))
+
         # Clean up the datasets we didn't see
         deleted = 0
         size = 10000
