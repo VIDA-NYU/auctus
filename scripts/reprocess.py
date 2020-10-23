@@ -36,16 +36,17 @@ async def freshen(datasets):
         aio_pika.ExchangeType.FANOUT,
     )
 
-    hits = [
-        es.get('datamart', d)
-        for d in datasets
-    ]
-    for h in hits:
-        obj = h['_source']
-        dataset_version = obj['version']
+    for dataset_id in datasets:
+        try:
+            obj = es.get('datamart', dataset_id)['_source']
+        except elasticsearch.NotFoundError:
+            obj = es.get('pending', dataset_id)['_source']['metadata']
+            dataset_version = None
+        else:
+            dataset_version = obj['version']
 
         logger.info("Reprocessing %s, version=%r",
-                    h['_id'], dataset_version)
+                    dataset_id, dataset_version)
         metadata = dict(name=obj['name'],
                         materialize=obj['materialize'],
                         source=obj.get('source', 'unknown'))
@@ -56,7 +57,7 @@ async def freshen(datasets):
         if obj.get('manual_annotations'):
             metadata['manual_annotations'] = obj['manual_annotations']
         await amqp_profile_exchange.publish(
-            json2msg(dict(id=h['_id'], metadata=metadata)),
+            json2msg(dict(id=dataset_id, metadata=metadata)),
             '',
         )
 
