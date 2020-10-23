@@ -27,8 +27,8 @@ SPATIAL_RANGE_DELTA_LAT = 0.0001
 
 MAX_ADDRESS_LENGTH = 90  # 90 characters
 MAX_NOMINATIM_REQUESTS = 200
-NOMINATIM_BATCH_SIZE = 30
-NOMINATIM_MIN_SPLIT_BATCH_SIZE = 6  # Batches >=this are divided on failure
+NOMINATIM_BATCH_SIZE = 20
+NOMINATIM_MIN_SPLIT_BATCH_SIZE = 2  # Batches >=this are divided on failure
 
 LATITUDE = ('latitude', 'lat', 'ycoord', 'y_coord')
 LONGITUDE = ('longitude', 'long', 'lon', 'lng', 'xcoord', 'x_coord')

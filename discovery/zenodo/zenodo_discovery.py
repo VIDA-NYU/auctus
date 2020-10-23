@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 import elasticsearch.helpers
+import json
 import logging
 import os
 import requests
@@ -18,8 +19,18 @@ logger = logging.getLogger(__name__)
 class ZenodoDiscoverer(Discoverer):
     CHECK_INTERVAL = timedelta(days=1)
     EXTENSIONS = ('.xls', '.xlsx', '.csv', '.sav')
-    KEYWORD_QUERY = ''
     FILE_TYPES = ['csv', 'xlsx', 'sav']
+
+    def __init__(self, *args, **kwargs):
+        super(ZenodoDiscoverer, self).__init__(*args, **kwargs)
+        with open('zenodo.json') as fp:
+            obj = json.load(fp)
+        self.keyword_query = obj.pop('keyword_query', '')
+        if obj:
+            logger.warning("Unknown keys in configuration: %s",
+                           ', '.join(obj))
+        logger.info("Loaded keyword from zenodo.json: %s",
+                    self.keyword_query)
 
     def main_loop(self):
         while True:
@@ -44,7 +55,7 @@ class ZenodoDiscoverer(Discoverer):
                 dict(
                     page=1,
                     size=200,
-                    q=self.KEYWORD_QUERY or '',
+                    q=self.keyword_query,
                     file_type=self.FILE_TYPES,
                     type='dataset',
                 ),

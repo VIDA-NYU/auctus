@@ -4,7 +4,6 @@ import elasticsearch
 import elasticsearch.helpers
 import json
 import logging
-import os
 import re
 import sentry_sdk
 import sodapy
@@ -26,23 +25,15 @@ def encode_domain(url):
 
 
 class SocrataDiscoverer(Discoverer):
-    DEFAULT_DOMAINS = [
-        {'url': 'data.cityofnewyork.us'},
-        {'url': 'finances.worldbank.org'},
-    ]
     CHECK_INTERVAL = timedelta(days=1)
 
     def __init__(self, *args, **kwargs):
         super(SocrataDiscoverer, self).__init__(*args, **kwargs)
 
-        if os.path.exists('socrata.json'):
-            with open('socrata.json') as fp:
-                self.domains = json.load(fp)
-            logger.info("Loaded %d domains from socrata.json",
-                        len(self.domains))
-        else:
-            self.domains = self.DEFAULT_DOMAINS
-            logger.info("Using default domains")
+        with open('socrata.json') as fp:
+            self.domains = json.load(fp)
+        logger.info("Loaded %d domains from socrata.json",
+                    len(self.domains))
 
         self.last_update = {}
 
