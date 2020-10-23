@@ -230,9 +230,9 @@ def identify_types(array, name, geo_data, manual=None):
 
             # Administrative areas
             if geo_data is not None and len(distinct_values()) >= 3:
-                resolved = geo_data.resolve_names_all(array)
+                resolved = geo_data.resolve_names_all(distinct_values())
                 resolved = [r for r in resolved if r]
-                if len(resolved) > 0.7 * len(array):
+                if len(resolved) > 0.7 * len(distinct_values()):
                     level = guess_admin_level(resolved)
                     if level is not None:
                         resolved = [
