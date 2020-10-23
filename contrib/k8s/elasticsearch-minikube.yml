@@ -44,7 +44,10 @@ spec:
           runAsUser: 1000
         env:
         - name: cluster.name
-          value: datamart-cluster
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: elasticsearch.cluster_name
         - name: ES_JAVA_OPTS
           value: -Des.enforce.bootstrap.checks=true
         - name: discovery.type

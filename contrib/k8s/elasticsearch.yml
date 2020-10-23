@@ -62,7 +62,10 @@ spec:
           runAsUser: 1000
         env:
         - name: cluster.name
-          value: datamart-cluster
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: elasticsearch.cluster_name
         - name: network.host
           value: "0.0.0.0"
         - name: ES_JAVA_OPTS

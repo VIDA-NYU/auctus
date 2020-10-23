@@ -6,7 +6,7 @@ metadata:
   labels:
     app: datamart
 data:
-  elasticsearch.cluster_name: "docker-cluster"
+  elasticsearch.cluster_name: "datamart-cluster"
   elasticsearch.heap_size: "4g"
   api_url: http://192.168.99.100:30002/api/v1
   frontend_url: http://192.168.99.100:30001
