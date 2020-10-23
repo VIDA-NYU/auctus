@@ -83,6 +83,7 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
@@ -127,6 +128,7 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
@@ -150,6 +152,7 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
@@ -211,6 +214,7 @@ services:
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
@@ -227,6 +231,7 @@ services:
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
@@ -244,6 +249,7 @@ services:
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
@@ -259,6 +265,7 @@ services:
       dockerfile: discovery/noaa/Dockerfile
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
