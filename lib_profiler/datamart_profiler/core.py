@@ -150,6 +150,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     data_path = None
     if isinstance(data, pandas.DataFrame):
+        # Turn indexes into regular columns
+        if (
+            data.index.dtype != numpy.int64
+            or not pandas.Index(numpy.arange(len(data))).equals(data.index)
+        ):
+            data = data.reset_index()
+
         metadata['nb_rows'] = len(data)
         # Change to object dtype first and do fillna() to work around bug
         # https://github.com/pandas-dev/pandas/issues/25353 (nan as str 'nan')

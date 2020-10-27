@@ -82,6 +82,46 @@ class TestNames(unittest.TestCase):
         )
 
 
+class TestIndex(unittest.TestCase):
+    DATA = pandas.DataFrame({
+        'a': [1, 1, 2, 2],
+        'b': [3, 4, 5, 6],
+        'c': [24, 35, 63, 57],
+    })
+
+    def test_no_index(self):
+        df = self.DATA
+        self.assertEqual(list(df.columns), ['a', 'b', 'c'])
+
+        metadata = process_dataset(df)
+        self.assertEqual(
+            [col['name'] for col in metadata['columns']],
+            ['a', 'b', 'c'],
+        )
+
+    def test_index(self):
+        df = self.DATA.set_index(['a'])
+        self.assertEqual(list(df.index.names), ['a'])
+        self.assertEqual(list(df.columns), ['b', 'c'])
+
+        metadata = process_dataset(df)
+        self.assertEqual(
+            [col['name'] for col in metadata['columns']],
+            ['a', 'b', 'c'],
+        )
+
+    def test_multi_index(self):
+        df = self.DATA.set_index(['a', 'b'])
+        self.assertEqual(list(df.index.names), ['a', 'b'])
+        self.assertEqual(list(df.columns), ['c'])
+
+        metadata = process_dataset(df)
+        self.assertEqual(
+            [col['name'] for col in metadata['columns']],
+            ['a', 'b', 'c'],
+        )
+
+
 class TestLatlongSelection(DataTestCase):
     def test_normalize_name(self):
         """Test normalizing column names."""
