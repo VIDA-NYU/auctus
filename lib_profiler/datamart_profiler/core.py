@@ -106,51 +106,13 @@ def _lazo_retry(func):
     return func()
 
 
-@PROM_PROFILE.time()
-def process_dataset(data, dataset_id=None, metadata=None,
-                    lazo_client=None, nominatim=None, geo_data=None,
-                    search=False, include_sample=False,
-                    coverage=True, plots=False, load_max_size=None, **kwargs):
-    """Compute all metafeatures from a dataset.
-
-    :param data: path to dataset, or file object, or DataFrame
-    :param dataset_id: id of the dataset
-    :param metadata: The metadata provided by the discovery plugin (might be
-        very limited).
-    :param lazo_client: client for the Lazo Index Server
-    :param nominatim: URL of the Nominatim server
-    :param geo_data: a datamart_geo.GeoData instance to use to resolve named
-        administrative territorial entities
-    :param search: True if this method is being called during the search
-        operation (and not for indexing).
-    :param include_sample: Set to True to include a few random rows to the
-        result. Useful to present to a user.
-    :param coverage: Whether to compute data ranges (using k-means)
-    :param plots: Whether to compute plots
-    :param load_max_size: Target size of the data to be analyzed. The data will
-        be randomly sampled if it is bigger. Defaults to `MAX_SIZE`, currently
-        50 MB. This is different from the sample data included in the result.
-    :return: JSON structure (dict)
-    """
-    if 'sample_size' in kwargs:
-        warnings.warn(
-            "Argument 'sample_size' is deprecated, use 'load_max_size'",
-            DeprecationWarning,
-        )
-        load_max_size = kwargs.pop('sample_size')
-    if kwargs:
-        raise TypeError(
-            "process_dataset() got unexpected keyword argument %r" %
-            next(iter(kwargs))
-        )
-
+def load_data(data, load_max_size=None):
     if not load_max_size:
         load_max_size = MAX_SIZE
 
-    if metadata is None:
-        metadata = {}
-
+    metadata = {}
     data_path = None
+
     if isinstance(data, pandas.DataFrame):
         # Turn indexes into regular columns
         if (
@@ -252,6 +214,56 @@ def process_dataset(data, dataset_id=None, metadata=None,
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
 
+    return data, data_path, metadata, column_names
+
+
+@PROM_PROFILE.time()
+def process_dataset(data, dataset_id=None, metadata=None,
+                    lazo_client=None, nominatim=None, geo_data=None,
+                    search=False, include_sample=False,
+                    coverage=True, plots=False, load_max_size=None, **kwargs):
+    """Compute all metafeatures from a dataset.
+
+    :param data: path to dataset, or file object, or DataFrame
+    :param dataset_id: id of the dataset
+    :param metadata: The metadata provided by the discovery plugin (might be
+        very limited).
+    :param lazo_client: client for the Lazo Index Server
+    :param nominatim: URL of the Nominatim server
+    :param geo_data: a datamart_geo.GeoData instance to use to resolve named
+        administrative territorial entities
+    :param search: True if this method is being called during the search
+        operation (and not for indexing).
+    :param include_sample: Set to True to include a few random rows to the
+        result. Useful to present to a user.
+    :param coverage: Whether to compute data ranges (using k-means)
+    :param plots: Whether to compute plots
+    :param load_max_size: Target size of the data to be analyzed. The data will
+        be randomly sampled if it is bigger. Defaults to `MAX_SIZE`, currently
+        50 MB. This is different from the sample data included in the result.
+    :return: JSON structure (dict)
+    """
+    if 'sample_size' in kwargs:
+        warnings.warn(
+            "Argument 'sample_size' is deprecated, use 'load_max_size'",
+            DeprecationWarning,
+        )
+        load_max_size = kwargs.pop('sample_size')
+    if kwargs:
+        raise TypeError(
+            "process_dataset() got unexpected keyword argument %r" %
+            next(iter(kwargs))
+        )
+
+    if metadata is None:
+        metadata = {}
+
+    # Load or prepare data for processing
+    data, data_path, file_metadata, column_names = load_data(
+        data,
+        load_max_size=load_max_size,
+    )
+    metadata.update(file_metadata)
     metadata['nb_profiled_rows'] = data.shape[0]
 
     if 'columns' in metadata:
