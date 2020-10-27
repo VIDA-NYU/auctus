@@ -92,7 +92,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 logger.info("Profiling...")
                 start = time.perf_counter()
                 with open(csv_path, 'rb') as data:
-                    data_profile = process_dataset(
+                    data_profile = dict(process_dataset(
                         data=data,
                         lazo_client=self.application.lazo_client,
                         nominatim=self.application.nominatim,
@@ -100,7 +100,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
                         search=True,
                         include_sample=True,
                         coverage=True,
-                    )
+                    ))
                 logger.info("Profiled in %.2fs", time.perf_counter() - start)
 
                 data_profile['materialize'] = materialize

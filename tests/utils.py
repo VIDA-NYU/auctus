@@ -1,3 +1,4 @@
+import collections
 import itertools
 import os
 import unittest
@@ -36,6 +37,9 @@ class DataTestCase(unittest.TestCase):
                         "Validation failed for %r at %s" % (actual, pos)
                     )
                 return
+
+        if isinstance(actual, collections.Mapping):
+            actual = dict(actual)
 
         if (
             not isinstance(actual, type(expected))

@@ -3,6 +3,7 @@ import collections
 import contextlib
 import csv
 from datetime import datetime
+from frozendict import frozendict
 from grpc._channel import _InactiveRpcError
 import logging
 import numpy
@@ -771,4 +772,4 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
-    return metadata
+    return frozendict(metadata)
