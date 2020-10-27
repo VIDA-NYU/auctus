@@ -217,6 +217,195 @@ def load_data(data, load_max_size=None):
     return data, data_path, metadata, column_names
 
 
+def process_column(
+    array, column_meta,
+    *,
+    manual=None,
+    plots=True,
+    coverage=True,
+    geo_data=None,
+    nominatim=None,
+):
+    # Identify types
+    structural_type, semantic_types_dict, additional_meta = \
+        identify_types(array, column_meta['name'], geo_data, manual)
+    logger.info(
+        "Column type %s [%s]",
+        structural_type,
+        ', '.join(semantic_types_dict),
+    )
+
+    # Set structural type
+    column_meta['structural_type'] = structural_type
+    # Add semantic types to the ones already present
+    sem_types = column_meta.setdefault('semantic_types', [])
+    for sem_type in semantic_types_dict:
+        if sem_type not in sem_types:
+            sem_types.append(sem_type)
+    # Insert additional metadata
+    column_meta.update(additional_meta)
+
+    # Compute ranges for numerical data
+    if structural_type in (types.INTEGER, types.FLOAT):
+        # Get numerical ranges
+        numerical_values = []
+        for e in array:
+            try:
+                e = float(e)
+            except ValueError:
+                pass
+            else:
+                if -3.4e38 < e < 3.4e38:  # Overflows in ES
+                    numerical_values.append(e)
+
+        column_meta['mean'], column_meta['stddev'] = \
+            mean_stddev(numerical_values)
+
+        # Compute histogram from numerical values
+        if plots:
+            counts, edges = numpy.histogram(
+                numerical_values,
+                bins=10,
+            )
+            counts = [int(i) for i in counts]
+            edges = [float(f) for f in edges]
+            column_meta['plot'] = {
+                "type": "histogram_numerical",
+                "data": [
+                    {
+                        "count": count,
+                        "bin_start": edges[i],
+                        "bin_end": edges[i + 1],
+                    }
+                    for i, count in enumerate(counts)
+                ]
+            }
+
+        ranges = get_numerical_ranges(numerical_values)
+        if ranges:
+            column_meta['coverage'] = ranges
+
+    # Compute ranges for temporal data
+    if (coverage or plots) and types.DATE_TIME in semantic_types_dict:
+        timestamps = numpy.empty(
+            len(semantic_types_dict[types.DATE_TIME]),
+            dtype='float32',
+        )
+        for j, dt in enumerate(
+                semantic_types_dict[types.DATE_TIME]):
+            timestamps[j] = dt.timestamp()
+        if 'mean' not in column_meta:
+            column_meta['mean'], column_meta['stddev'] = \
+                mean_stddev(timestamps)
+
+        # Get temporal ranges
+        if coverage and 'coverage' not in column_meta:
+            ranges = get_numerical_ranges(timestamps)
+            if ranges:
+                column_meta['coverage'] = ranges
+
+        # Get temporal resolution
+        column_meta['temporal_resolution'] = get_temporal_resolution(
+            semantic_types_dict[types.DATE_TIME],
+        )
+
+        # Compute histogram from temporal values
+        if plots and 'plot' not in column_meta:
+            counts, edges = numpy.histogram(timestamps, bins=10)
+            counts = [int(i) for i in counts]
+            column_meta['plot'] = {
+                "type": "histogram_temporal",
+                "data": [
+                    {
+                        "count": count,
+                        "date_start": datetime.utcfromtimestamp(
+                            edges[i],
+                        ).isoformat(),
+                        "date_end": datetime.utcfromtimestamp(
+                            edges[i + 1],
+                        ).isoformat(),
+                    }
+                    for i, count in enumerate(counts)
+                ]
+            }
+
+    # Compute histogram from categorical values
+    if plots and types.CATEGORICAL in semantic_types_dict:
+        counter = collections.Counter()
+        for value in array:
+            if not value:
+                continue
+            counter[value] += 1
+        counts = counter.most_common(5)
+        counts = sorted(counts)
+        column_meta['plot'] = {
+            "type": "histogram_categorical",
+            "data": [
+                {
+                    "bin": value,
+                    "count": count,
+                }
+                for value, count in counts
+            ]
+        }
+
+    # Compute histogram from textual values
+    if (
+        plots and types.TEXT in semantic_types_dict and
+        'plot' not in column_meta
+    ):
+        counter = collections.Counter()
+        for value in array:
+            for word in _re_word_split.split(value):
+                word = word.lower()
+                if word:
+                    counter[word] += 1
+        counts = counter.most_common(5)
+        column_meta['plot'] = {
+            "type": "histogram_text",
+            "data": [
+                {
+                    "bin": value,
+                    "count": count,
+                }
+                for value, count in counts
+            ]
+        }
+
+    # FIXME: Temporary
+    resolved_addresses = None
+    resolved_admin_areas = None
+
+    # Resolve addresses into coordinates
+    if (
+        nominatim is not None and
+        structural_type == types.TEXT and
+        types.TEXT in semantic_types_dict
+    ):
+        locations, non_empty = nominatim_resolve_all(
+            nominatim,
+            array,
+        )
+        if non_empty > 0:
+            unclean_ratio = 1.0 - len(locations) / non_empty
+            if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
+                resolved_addresses = locations
+                if types.ADDRESS not in column_meta['semantic_types']:
+                    column_meta['semantic_types'].append(types.ADDRESS)
+
+    # Guess level of administrative areas
+    if types.ADMIN in semantic_types_dict:
+        level, areas = semantic_types_dict[types.ADMIN]
+        if level is not None:
+            column_meta['admin_area_level'] = level
+        resolved_admin_areas = areas
+
+    return (
+        resolved_addresses,
+        resolved_admin_areas,
+    )
+
+
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client=None, nominatim=None, geo_data=None,
@@ -285,16 +474,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
         metadata['types'] = []
         return metadata
 
-    # Dataset types
-    dataset_types = set()
-
-    # Lat / Long
-    columns_lat = []
-    columns_long = []
-
-    # Textual columns
-    columns_textual = []
-
     # Addresses
     resolved_addresses = {}
 
@@ -303,17 +482,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Get manual updates from the user
     manual_columns = {}
-    manual_latlong_pairs = {}
     if 'manual_annotations' in metadata:
         if 'columns' in metadata['manual_annotations']:
             manual_columns = {
                 col['name']: col
                 for col in metadata['manual_annotations']['columns']
-            }
-            manual_latlong_pairs = {
-                col['name']: col['latlong_pair']
-                for col in metadata['manual_annotations']['columns']
-                if 'latlong_pair' in col
             }
 
     # Identify types
@@ -322,219 +495,43 @@ def process_dataset(data, dataset_id=None, metadata=None,
         for column_idx, column_meta in enumerate(columns):
             logger.info("Processing column %d...", column_idx)
             array = data.iloc[:, column_idx]
-            # Identify types
             if column_meta['name'] in manual_columns:
                 manual = manual_columns[column_meta['name']]
             else:
                 manual = None
-
-            structural_type, semantic_types_dict, additional_meta = \
-                identify_types(array, column_meta['name'], geo_data, manual)
-
-            # Identify a dataset type (numerical, categorical, spatial, or temporal)
-            dataset_type = determine_dataset_type(structural_type, semantic_types_dict)
-            if dataset_type:
-                dataset_types.add(dataset_type)
-
-            logger.info(
-                "Column type %s (%s, %s)",
-                dataset_type,
-                structural_type,
-                ', '.join(semantic_types_dict),
+            addresses, admins = process_column(
+                array, column_meta,
+                manual=manual,
+                plots=plots,
+                coverage=coverage,
+                geo_data=geo_data,
+                nominatim=nominatim,
             )
+            # FIXME: Temporary
+            if addresses is not None:
+                resolved_addresses[column_idx] = addresses
+            if admins is not None:
+                resolved_admin_areas[column_idx] = admins
 
-            # Set structural type
-            column_meta['structural_type'] = structural_type
-            # Add semantic types to the ones already present
-            sem_types = column_meta.setdefault('semantic_types', [])
-            for sem_type in semantic_types_dict:
-                if sem_type not in sem_types:
-                    sem_types.append(sem_type)
-            # Insert additional metadata
-            column_meta.update(additional_meta)
-
-            # Compute ranges for numerical data
-            if structural_type in (types.INTEGER, types.FLOAT):
-                # Get numerical ranges
-                numerical_values = []
-                for e in array:
-                    try:
-                        e = float(e)
-                    except ValueError:
-                        e = None
-                    else:
-                        if not (-3.4e38 < e < 3.4e38):  # Overflows in ES
-                            e = None
-                    numerical_values.append(e)
-
-                column_meta['mean'], column_meta['stddev'] = \
-                    mean_stddev(numerical_values)
-
-                # Compute histogram from numerical values
-                if plots:
-                    counts, edges = numpy.histogram(
-                        [v for v in numerical_values if v is not None],
-                        bins=10,
-                    )
-                    counts = [int(i) for i in counts]
-                    edges = [float(f) for f in edges]
-                    column_meta['plot'] = {
-                        "type": "histogram_numerical",
-                        "data": [
-                            {
-                                "count": count,
-                                "bin_start": edges[i],
-                                "bin_end": edges[i + 1],
-                            }
-                            for i, count in enumerate(counts)
-                        ]
-                    }
-
-                # Get lat/long columns
-                if types.LATITUDE in semantic_types_dict:
-                    columns_lat.append(
-                        LatLongColumn(
-                            index=column_idx,
-                            name=column_meta['name'],
-                            values=numerical_values,
-                            annot_pair=manual_latlong_pairs.get(column_meta['name']),
-                        )
-                    )
-                elif types.LONGITUDE in semantic_types_dict:
-                    columns_long.append(
-                        LatLongColumn(
-                            index=column_idx,
-                            name=column_meta['name'],
-                            values=numerical_values,
-                            annot_pair=manual_latlong_pairs.get(column_meta['name']),
-                        )
-                    )
-
-                if coverage:
-                    ranges = get_numerical_ranges(
-                        [x for x in numerical_values if x is not None]
-                    )
-                    if ranges:
-                        column_meta['coverage'] = ranges
-
-            # Compute ranges for temporal data
-            if (coverage or plots) and types.DATE_TIME in semantic_types_dict:
-                timestamps = numpy.empty(
-                    len(semantic_types_dict[types.DATE_TIME]),
-                    dtype='float32',
-                )
-                for j, dt in enumerate(
-                        semantic_types_dict[types.DATE_TIME]):
-                    timestamps[j] = dt.timestamp()
-                if 'mean' not in column_meta:
-                    column_meta['mean'], column_meta['stddev'] = \
-                        mean_stddev(timestamps)
-
-                # Get temporal ranges
-                if coverage and 'coverage' not in column_meta:
-                    ranges = get_numerical_ranges(timestamps)
-                    if ranges:
-                        column_meta['coverage'] = ranges
-
-                # Get temporal resolution
-                column_meta['temporal_resolution'] = get_temporal_resolution(
-                    semantic_types_dict[types.DATE_TIME],
-                )
-
-                # Compute histogram from temporal values
-                if plots and 'plot' not in column_meta:
-                    counts, edges = numpy.histogram(timestamps, bins=10)
-                    counts = [int(i) for i in counts]
-                    column_meta['plot'] = {
-                        "type": "histogram_temporal",
-                        "data": [
-                            {
-                                "count": count,
-                                "date_start": datetime.utcfromtimestamp(
-                                    edges[i],
-                                ).isoformat(),
-                                "date_end": datetime.utcfromtimestamp(
-                                    edges[i + 1],
-                                ).isoformat(),
-                            }
-                            for i, count in enumerate(counts)
-                        ]
-                    }
-
-            # Compute histogram from categorical values
-            if plots and types.CATEGORICAL in semantic_types_dict:
-                counter = collections.Counter()
-                for value in array:
-                    if not value:
-                        continue
-                    counter[value] += 1
-                counts = counter.most_common(5)
-                counts = sorted(counts)
-                column_meta['plot'] = {
-                    "type": "histogram_categorical",
-                    "data": [
-                        {
-                            "bin": value,
-                            "count": count,
-                        }
-                        for value, count in counts
-                    ]
-                }
-
-            # Compute histogram from textual values
-            if (
-                plots and types.TEXT in semantic_types_dict and
-                'plot' not in column_meta
-            ):
-                counter = collections.Counter()
-                for value in array:
-                    for word in _re_word_split.split(value):
-                        word = word.lower()
-                        if word:
-                            counter[word] += 1
-                counts = counter.most_common(5)
-                column_meta['plot'] = {
-                    "type": "histogram_text",
-                    "data": [
-                        {
-                            "bin": value,
-                            "count": count,
-                        }
-                        for value, count in counts
-                    ]
-                }
-
-            if (
-                structural_type == types.TEXT and
-                types.DATE_TIME not in semantic_types_dict
-            ):
-                columns_textual.append(column_idx)
-
-            # Resolve addresses into coordinates
-            if (
-                nominatim is not None and
-                structural_type == types.TEXT and
-                types.TEXT in semantic_types_dict
-            ):
-                locations, non_empty = nominatim_resolve_all(
-                    nominatim,
-                    array,
-                )
-                if non_empty > 0:
-                    unclean_ratio = 1.0 - len(locations) / non_empty
-                    if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
-                        resolved_addresses[column_idx] = locations
-                        if types.ADDRESS not in column_meta['semantic_types']:
-                            column_meta['semantic_types'].append(types.ADDRESS)
-
-            # Guess level of administrative areas
-            if types.ADMIN in semantic_types_dict:
-                level, areas = semantic_types_dict[types.ADMIN]
-                if level is not None:
-                    column_meta['admin_area_level'] = level
-                resolved_admin_areas[column_idx] = areas
+    # Identify the overall dataset types (numerical, categorical, spatial, or temporal)
+    dataset_types = set()
+    for column_meta in columns:
+        dataset_type = determine_dataset_type(
+            column_meta['structural_type'],
+            column_meta['semantic_types'],
+        )
+        if dataset_type:
+            dataset_types.add(dataset_type)
 
     # Textual columns
+    columns_textual = [
+        col_idx
+        for col_idx, col in enumerate(columns)
+        if (
+            col['structural_type'] == types.TEXT
+            and types.DATE_TIME not in col['semantic_types']
+        )
+    ]
     if lazo_client and columns_textual:
         # Indexing with lazo
         if not search:
@@ -598,41 +595,68 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 logger.warning("Error getting Lazo sketches")
                 raise
 
+    # Pair lat & long columns
+    columns_lat = [
+        LatLongColumn(
+            index=col_idx,
+            name=col['name'],
+            annot_pair=manual_columns.get(col['name'], {}).get('latlong_pair'),
+        )
+        for col_idx, col in enumerate(columns)
+        if types.LATITUDE in col['semantic_types']
+    ]
+    columns_long = [
+        LatLongColumn(
+            index=col_idx,
+            name=col['name'],
+            annot_pair=manual_columns.get(col['name'], {}).get('latlong_pair'),
+        )
+        for col_idx, col in enumerate(columns)
+        if types.LONGITUDE in col['semantic_types']
+    ]
+    latlong_pairs, (missed_lat, missed_long) = \
+        pair_latlong_columns(columns_lat, columns_long)
+
+    # Log missed columns
+    if missed_lat:
+        logger.warning("Unmatched latitude columns: %r", missed_lat)
+    if missed_long:
+        logger.warning("Unmatched longitude columns: %r", missed_long)
+
+    # Remove semantic type from unpaired columns
+    for col in columns:
+        if col['name'] in missed_lat:
+            col['semantic_types'].remove(types.LATITUDE)
+        if col['name'] in missed_long:
+            col['semantic_types'].remove(types.LONGITUDE)
+
     if coverage:
         logger.info("Computing spatial coverage...")
         spatial_coverage = []
         with PROM_SPATIAL.time():
-            # Pair lat & long columns
-            pairs, (missed_lat, missed_long) = \
-                pair_latlong_columns(columns_lat, columns_long)
-
-            # Log missed columns
-            if missed_lat:
-                logger.warning("Unmatched latitude columns: %r", missed_lat)
-            if missed_long:
-                logger.warning("Unmatched longitude columns: %r", missed_long)
-
-            # Remove semantic type from unpaired columns
-            for col in columns:
-                if col['name'] in missed_lat:
-                    col['semantic_types'].remove(types.LATITUDE)
-                if col['name'] in missed_long:
-                    col['semantic_types'].remove(types.LONGITUDE)
-
             # Compute ranges from lat/long pairs
-            for col_lat, col_long in pairs:
-                values = []
-                for lat, long in zip(col_lat.values, col_long.values):
-                    if (lat and long and  # Ignore None and 0
-                            -90 < lat < 90 and -180 < long < 180):
-                        values.append((lat, long))
+            for col_lat, col_long in latlong_pairs:
+                lat_values = data.iloc[:, col_lat.index]
+                lat_values = pandas.to_numeric(lat_values, errors='coerce')
+                long_values = data.iloc[:, col_long.index]
+                long_values = pandas.to_numeric(long_values, errors='coerce')
+                mask = (
+                    ~numpy.isnan(lat_values)
+                    & ~numpy.isnan(long_values)
+                    & (-90.0 < lat_values) & (lat_values < 90.0)
+                    & (-180.0 < long_values) & (long_values < 180.0)
+                )
 
-                if len(values) > 1:
+                if mask.any():
+                    lat_values = lat_values[mask]
+                    long_values = long_values[mask]
                     logger.info(
                         "Computing spatial ranges lat=%r long=%r (%d rows)",
-                        col_lat.name, col_long.name, len(values),
+                        col_lat.name, col_long.name, len(lat_values),
                     )
-                    spatial_ranges = get_spatial_ranges(values)
+                    spatial_ranges = get_spatial_ranges(
+                        numpy.array([lat_values, long_values]).T
+                    )
                     if spatial_ranges:
                         spatial_coverage.append({
                             'type': 'latlong',
