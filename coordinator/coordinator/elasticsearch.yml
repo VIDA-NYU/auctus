@@ -61,6 +61,8 @@ datamart:
       nb_profiled_rows:
         type: long
         index: false
+      average_row_size:
+        type: float
       version:
         type: keyword
         index: false
@@ -167,6 +169,8 @@ datamart_columns:
       dataset_nb_profiled_rows:
         type: long
         index: false
+      dataset_average_row_size:
+        type: float
       dataset_version:
         type: keyword
         index: false
@@ -242,6 +246,8 @@ datamart_spatial_coverage:
       dataset_nb_profiled_rows:
         type: long
         index: false
+      dataset_average_row_size:
+        type: float
       dataset_version:
         type: keyword
         index: false

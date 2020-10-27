@@ -213,11 +213,15 @@ def process_dataset(data, dataset_id=None, metadata=None,
             # Load the data
             try:
                 if metadata['size'] > load_max_size:
-                    # Sub-sample
                     logger.info("Counting rows...")
                     metadata['nb_rows'] = sum(1 for _ in data)
+                    if metadata['nb_rows'] > 0:
+                        metadata['average_row_size'] = (
+                            metadata['size'] / metadata['nb_rows']
+                        )
                     data.seek(0, 0)
 
+                    # Sub-sample
                     ratio = load_max_size / metadata['size']
                     logger.info("Loading dataframe, sample ratio=%r...", ratio)
                     rand = random.Random(RANDOM_SEED)
@@ -231,6 +235,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
                                            dtype=str, na_filter=False)
 
                     metadata['nb_rows'] = data.shape[0]
+                    if metadata['nb_rows'] > 0:
+                        metadata['average_row_size'] = (
+                            metadata['size'] / metadata['nb_rows']
+                        )
             except EmptyDataError:
                 logger.warning("Dataframe is empty!")
                 metadata['nb_rows'] = 0

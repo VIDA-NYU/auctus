@@ -588,6 +588,7 @@ class TestNominatim(DataTestCase):
                 'size': 142,
                 'nb_rows': 3,
                 'nb_profiled_rows': 3,
+                'average_row_size': lambda n: round(n, 2) == 47.33,
                 'types': ['spatial'],
                 'attribute_keywords': ['place', 'loc'],
                 'columns': [
@@ -685,6 +686,7 @@ class TestGeo(DataTestCase):
                 'size': 145,
                 'nb_rows': 5,
                 'nb_profiled_rows': 5,
+                'average_row_size': lambda n: round(n, 2) == 29.0,
                 'types': ['spatial'],
                 'attribute_keywords': ['zero', 'one', 'mixed'],
                 'columns': [
