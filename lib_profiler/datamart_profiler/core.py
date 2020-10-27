@@ -54,6 +54,91 @@ PROM_SPATIAL = prometheus_client.Histogram(
 _re_word_split = re.compile(r'\W+')
 
 
+class DataProfile(frozendict):
+    _html = None
+
+    READABLE_KEYS = {
+        'size': "Data size in bytes",
+        'nb_rows': "Number of rows",
+        'nb_profiled_rows': "Number of rows profiled (random sampling)",
+        'average_row_size': "Average size of a row, in bytes",
+    }
+
+    def _render_html(self):
+        info = []
+        # Known keys
+        described_keys = set()
+        for key, label in self.READABLE_KEYS.items():
+            if key not in self:
+                continue
+            value = self[key]
+            if not isinstance(value, (str, int, float)):
+                continue
+            if key == 'nb_profiled_rows' and value == self['nb_rows']:
+                # No need to show this, we profiled all of it
+                continue
+            info.append(f'''\
+                <tr>
+                    <td>{label}</td>
+                    <td colspan="2">{value}</td>
+                </tr>
+            ''')
+            described_keys.add(key)
+        # Other keys
+        for key, value in self.items():
+            if key in described_keys:
+                continue
+            if key in ('columns', 'spatial_coverage', 'sample'):
+                continue
+            if not isinstance(value, (str, int, float)):
+                continue
+            info.append(f'''\
+                <tr>
+                    <td>{key}</td>
+                    <td colspan="2">{value}</td>
+                </tr>
+            ''')
+        info = ''.join(info)
+
+        # Describe columns
+        columns = []
+        for column in self['columns']:
+            sem_types = ', '.join(column['semantic_types'])
+            columns.append(f'''\
+                <tr>
+                    <td>{column['name']}</td>
+                    <td>{column['structural_type']}</td>
+                    <td>{sem_types}</td>
+                </tr>
+            ''')
+        columns = ''.join(columns)
+
+        return (f'''\
+            <table>
+                {info}
+                <tr><th colspan="3" style="text-align: center;">Columns</th></tr>
+                <tr><th>Name</th><th>Type</th><th>Semantic types</th></tr>
+                {columns}
+            </table>
+        ''')
+
+    @property
+    def html(self):
+        if self._html is None:
+            self._html = self._render_html()
+        return self._html
+
+    def _repr_html_(self):
+        return self.html
+
+    def __repr__(self):
+        return '<%s.%s: %d columns>' % (
+            self.__class__.__module__,
+            self.__class__.__name__,
+            len(self['columns']),
+        )
+
+
 def truncate_string(s, limit=140):
     """Truncate a string, replacing characters over the limit with "...".
     """
@@ -772,4 +857,4 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
-    return frozendict(metadata)
+    return DataProfile(metadata)

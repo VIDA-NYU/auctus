@@ -1,8 +1,8 @@
-from .core import process_dataset
+from .core import DataProfile, process_dataset
 from .temporal import parse_date
 
 
 __version__ = '0.8'
 
 
-__all__ = ['process_dataset', 'parse_date']
+__all__ = ['DataProfile', 'process_dataset', 'parse_date']
