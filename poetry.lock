@@ -269,6 +269,7 @@ version = "0.8"
 
 [package.dependencies]
 datamart-geo = "0.2"
+frozendict = ">=1,<2"
 lazo-index-service = "0.5.1"
 numpy = "*"
 pandas = "*"
@@ -396,6 +397,14 @@ pyflakes = ">=2.2.0,<2.3.0"
 [package.dependencies.importlib-metadata]
 python = "<3.8"
 version = "*"
+
+[[package]]
+category = "main"
+description = "An immutable dictionary"
+name = "frozendict"
+optional = false
+python-versions = "*"
+version = "1.2"
 
 [[package]]
 category = "main"
@@ -1156,6 +1165,9 @@ elasticsearch = [
 flake8 = [
     {file = "flake8-3.8.4-py2.py3-none-any.whl", hash = "sha256:749dbbd6bfd0cf1318af27bf97a14e28e5ff548ef8e5b1566ccfb25a11e7c839"},
     {file = "flake8-3.8.4.tar.gz", hash = "sha256:aadae8761ec651813c24be05c6f7b4680857ef6afaae4651a4eccaef97ce6c3b"},
+]
+frozendict = [
+    {file = "frozendict-1.2.tar.gz", hash = "sha256:774179f22db2ef8a106e9c38d4d1f8503864603db08de2e33be5b778230f6e45"},
 ]
 grpcio = [
     {file = "grpcio-1.32.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:3afb058b6929eba07dba9ae6c5b555aa1d88cb140187d78cc510bd72d0329f28"},

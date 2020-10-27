@@ -10,6 +10,7 @@ req = [
     'lazo-index-service==0.5.1',
     'numpy',
     'pandas',
+    'frozendict>=1,<2',
     'prometheus_client',
     'python-dateutil',
     'scikit-learn>=0.22,<0.24',
