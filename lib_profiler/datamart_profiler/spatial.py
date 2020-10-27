@@ -43,10 +43,10 @@ PROM_NOMINATIM_REQ_TIME = prometheus_client.Histogram(
 
 
 def get_spatial_ranges(values):
-    """
-    Retrieve the spatial ranges (i.e. bounding boxes) given the input gps points.
+    """Build a small number (3) of bounding boxes from lat/long points.
 
-    This performs K-Means clustering, returning a maximum of 3 ranges.
+    This performs K-Means clustering, returning a maximum of 3 clusters as
+    bounding boxes.
     """
 
     clustering = KMeans(n_clusters=min(N_RANGES, len(values)),
@@ -103,6 +103,14 @@ def get_spatial_ranges(values):
 
 
 def normalize_latlong_column_name(name, substrings):
+    """Find the remainder of the column name after removing a substring.
+
+    This goes over the substrings in order and removes the first it finds from
+    the name. You should therefore put the more specific substrings first and
+    the shorter ones last. For example, this is used to turn both
+    ``"cab_latitude_from"`` and ``"cab_longitude_from"`` into ``"cab__from"``
+    which can then be matched.
+    """
     name = name.strip().lower()
     for substr in substrings:
         idx = name.find(substr)
@@ -121,6 +129,11 @@ class LatLongColumn(object):
 
 
 def pair_latlong_columns(columns_lat, columns_long):
+    """Go through likely latitude and longitude columns and finds pairs.
+
+    This tries to find columns that match apart from latitude and longitude
+    keywords (e.g. `longitude`, `long`, `lon`).
+    """
     # Normalize latitude column names
     normalized_lat = {}
     for i, col in enumerate(columns_lat):
