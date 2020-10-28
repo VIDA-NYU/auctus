@@ -89,7 +89,7 @@ class Statistics(BaseHandler):
 
     def get(self):
         return self.send_json({
-            'recent_discoveries': self.coordinator.recent_discoveries,
+            'recent_discoveries': list(self.coordinator.recent_discoveries()),
             'sources_counts': self.coordinator.sources_counts,
         })
 

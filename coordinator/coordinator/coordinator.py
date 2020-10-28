@@ -29,10 +29,35 @@ PROM_PROFILED_VERSION = prometheus_client.Gauge(
 )
 
 
+NB_RECENT = 15
+
+
+class RecentList(object):
+    def __init__(self, size, init=None):
+        self.size = size
+        if init is not None:
+            self.items = list(itertools.islice(init, size))
+        else:
+            self.items = []
+
+    def insert_or_replace(self, key, value):
+        for i in range(len(self.items)):
+            if self.items[i][0] == key:
+                self.items[i] = key, value
+                return
+
+        self.items.insert(0, (key, value))
+        if len(self.items) > self.size:
+            del self.items[self.size:]
+
+    def __iter__(self):
+        return (entry[1] for entry in self.items)
+
+
 class Coordinator(object):
     def __init__(self, es):
         self.elasticsearch = es
-        self.recent_discoveries = []
+        self._recent_discoveries = RecentList(NB_RECENT)
 
         # Setup the indices from YAML file
         with pkg_resources.resource_stream(
@@ -94,18 +119,20 @@ class Coordinator(object):
             should_never_exit=True,
         )
 
+    def recent_discoveries(self):
+        return iter(self._recent_discoveries)
+
     @staticmethod
-    def build_discovery(dataset_id, metadata, discovery=None):
-        if discovery is None:
-            discovery = {}
+    def build_discovery(dataset_id, metadata):
         materialize = metadata.get('materialize', {})
-        discovery['id'] = dataset_id
-        discovery['discoverer'] = materialize.get('identifier', '(unknown)')
-        discovery['discovered'] = materialize.get('date', '???')
-        discovery['profiled'] = metadata.get('date', '???')
-        discovery['name'] = metadata.get('name')
-        discovery['types'] = metadata.get('types')
-        return discovery
+        return dict(
+            id=dataset_id,
+            discoverer=materialize.get('identifier', '(unknown)'),
+            discovered=materialize.get('date', '???'),
+            profiled=metadata.get('date', '???'),
+            name=metadata.get('name'),
+            types=metadata.get('types'),
+        )
 
     async def _amqp(self):
         connection = await aio_pika.connect_robust(
@@ -140,16 +167,10 @@ class Coordinator(object):
             obj = json.loads(message.body.decode('utf-8'))
             dataset_id = obj['id']
             logger.info("Got dataset message: %r", dataset_id)
-            for discovery in self.recent_discoveries:
-                if discovery['id'] == dataset_id:
-                    self.build_discovery(dataset_id, obj, discovery=discovery)
-                    break
-            else:
-                self.recent_discoveries.insert(
-                    0,
-                    self.build_discovery(dataset_id, obj),
-                )
-                del self.recent_discoveries[15:]
+            self._recent_discoveries.insert_or_replace(
+                dataset_id,
+                self.build_discovery(dataset_id, obj),
+            )
 
     def _update_statistics(self):
         """Periodically compute statistics.
@@ -167,13 +188,16 @@ class Coordinator(object):
                         {'date': {'order': 'desc'}},
                     ],
                 },
-                size=15,
+                size=NB_RECENT,
             )['hits']['hits']
         except elasticsearch.ElasticsearchException:
             logger.warning("Couldn't get recent datasets from Elasticsearch")
         else:
             for h in recent:
-                recent_discoveries.append(self.build_discovery(h['_id'], h['_source']))
+                recent_discoveries.append((
+                    h['_id'],
+                    self.build_discovery(h['_id'], h['_source']),
+                ))
 
         # Count datasets per source
         sources = self.elasticsearch.search(
@@ -234,10 +258,14 @@ class Coordinator(object):
                 (
                     self.sources_counts,
                     self.profiler_versions_counts,
-                    self.recent_discoveries,
+                    recent_discoveries,
                 ) = await asyncio.get_event_loop().run_in_executor(
                     None,
                     self._update_statistics,
+                )
+                self._recent_discoveries = RecentList(
+                    NB_RECENT,
+                    recent_discoveries,
                 )
 
                 logger.info(
