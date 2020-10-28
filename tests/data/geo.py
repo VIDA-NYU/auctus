@@ -45,7 +45,7 @@ def main():
                 i = 'place%02d' % i
             print("%s,POINT (%f %f),%f" % (i, long, lat, h), file=f_data)
 
-    random = numpy.random.RandomState(4)
+    random = numpy.random.RandomState(5)
     aug_latitudes = random.normal(lat1, abs(lat1 - lat1m), 10)
     aug_longitudes = random.normal(long1, abs(long1 - long1m), 10)
 
