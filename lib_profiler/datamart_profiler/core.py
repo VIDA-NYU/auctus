@@ -395,7 +395,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
                             annot_pair=manual_latlong_pairs.get(column_meta['name']),
                         )
                     )
-                elif coverage:
+
+                if coverage:
                     ranges = get_numerical_ranges(
                         [x for x in numerical_values if x is not None]
                     )

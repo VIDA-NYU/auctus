@@ -3144,6 +3144,7 @@ annotated_metadata = {
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 40.729,
             "stddev": lambda n: round(n, 4) == 0.0036,
+            "coverage": check_ranges(40.68, 40.78),
             "plot": check_plot('histogram_numerical'),
         },
         {
@@ -3153,6 +3154,7 @@ annotated_metadata = {
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == -74.000,
             "stddev": lambda n: round(n, 5) == 0.00386,
+            "coverage": check_ranges(-74.05, -73.95),
             "plot": check_plot('histogram_numerical'),
         },
         {
@@ -3250,6 +3252,7 @@ geo_metadata = {
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 40.711,
             "stddev": lambda n: round(n, 4) == 0.0186,
+            "coverage": check_ranges(40.68, 40.78),
             "plot": check_plot('histogram_numerical'),
         },
         {
@@ -3259,6 +3262,7 @@ geo_metadata = {
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == -73.993,
             "stddev": lambda n: round(n, 5) == 0.00684,
+            "coverage": check_ranges(-74.05, -73.95),
             "plot": check_plot('histogram_numerical'),
         },
         {

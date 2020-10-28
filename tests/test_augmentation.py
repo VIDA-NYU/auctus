@@ -354,6 +354,7 @@ class TestJoin(DataTestCase):
                             'unclean_values_ratio': 0.0,
                             'mean': lambda n: round(n, 3) == 40.709,
                             'stddev': lambda n: round(n, 3) == 0.019,
+                            'coverage': check_ranges(40.68, 40.78),
                         },
                         {
                             'name': 'long',
@@ -362,6 +363,7 @@ class TestJoin(DataTestCase):
                             'unclean_values_ratio': 0.0,
                             'mean': lambda n: round(n, 3) == -73.993,
                             'stddev': lambda n: round(n, 5) == 0.00528,
+                            'coverage': check_ranges(-74.05, -73.95),
                         },
                         {
                             'name': 'id',
@@ -789,6 +791,7 @@ class TestJoin(DataTestCase):
                         'unclean_values_ratio': 0.0,
                         'mean': lambda n: round(n, 3) == 43.238,
                         'stddev': lambda n: round(n, 5) == 0.00050,
+                        'coverage': check_ranges(43.234, 43.241),
                     },
                     {
                         'name': 'longitude',
@@ -797,6 +800,7 @@ class TestJoin(DataTestCase):
                         'unclean_values_ratio': 0.0,
                         'mean': lambda n: round(n, 3) == 6.073,
                         'stddev': lambda n: round(n, 5) == 0.00050,
+                        'coverage': check_ranges(6.069, 6.11),
                     },
                     {
                         'name': 'first color',
