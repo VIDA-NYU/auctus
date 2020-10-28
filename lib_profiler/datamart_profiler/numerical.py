@@ -15,6 +15,8 @@ MIN_RANGE_SIZE = 0.1  # 10%
 
 
 def mean_stddev(array):
+    """Compute the mean (average) and standard deviation of a numerical array.
+    """
     total = 0
     count = 0
     for elem in array:

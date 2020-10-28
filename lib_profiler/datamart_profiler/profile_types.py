@@ -67,7 +67,8 @@ MAX_WRONG_LEVEL_ADMIN = 0.10  # 10%
 
 
 def regular_exp_count(array):
-    # Let you check/count how many instances match a structure of a data type
+    """Count instances matching the structure of each data type, using regexes.
+    """
     re_count = collections.Counter()
 
     for elem in array:
@@ -94,6 +95,10 @@ def regular_exp_count(array):
 
 
 def unclean_values_ratio(c_type, re_count, num_total):
+    """Count how many values don't match a given type.
+
+    This takes into account that a valid int is also a valid float, etc.
+    """
     ratio = 0
     if c_type == types.INTEGER:
         ratio = \
@@ -114,6 +119,8 @@ def unclean_values_ratio(c_type, re_count, num_total):
 
 
 def parse_dates(array):
+    """Parse the valid dates in an array of strings.
+    """
     parsed_dates = []
     for elem in array:
         elem = parse_date(elem)
@@ -123,6 +130,8 @@ def parse_dates(array):
 
 
 def identify_structural_type(re_count, num_total, threshold):
+    """Picks the structural type from counts computed by `regular_exp_count()`.
+    """
     if re_count['empty'] == num_total:
         structural_type = types.MISSING_DATA
     elif re_count['int'] >= threshold:
@@ -140,6 +149,14 @@ def identify_structural_type(re_count, num_total, threshold):
 
 
 def guess_admin_level(admin_areas):
+    """Find the most likely admin levels from a list of lists of areas.
+
+    :param admin_areas: This is a list matching the original names, each of
+        them resolved into the possible areas they might be. For example, the
+        original input ``["New York", "Vermont"]``, we get the list of lists
+        ``[[<New York County, 2>, <New York State, 1>], [<Vermont, level=1>]]``
+        and the resulting level is ``1``.
+    """
     level_counter = collections.Counter()
     # `area` is a list of lists of areas
     # For each name in the original data, it contains a list of the
@@ -162,6 +179,19 @@ def guess_admin_level(admin_areas):
 
 
 def identify_types(array, name, geo_data, manual=None):
+    """Identify the structural type and semantic types of an array.
+
+    :param array: The list, series, or array to inspect
+    :param name: The name of this column. This is taken into account for some
+        heuristics like latitude, longitude, year number.
+    :param manual: Manual information provided by the user that will be
+        reconciled with the observed data.
+    :return: A tuple ``(structural_type, semantic_types_dict, column_meta)``
+        where `structural_type` is the detected structural type (e.g. storage
+        format), `semantic_types_dict` is a dict mapping semantic types (e.g.
+        meaning) to parsed values for further processing, and `column_meta`
+        contains additional information about the column (not related to type).
+    """
     num_total = len(array)
     column_meta = {}
 
@@ -184,7 +214,6 @@ def identify_types(array, name, geo_data, manual=None):
 
     distinct_values = functools.lru_cache()(lambda: set(e for e in array if e))
 
-    # TODO: structural or semantic types?
     semantic_types_dict = {}
     if manual:
         semantic_types = manual['semantic_types']
@@ -326,8 +355,7 @@ SPATIAL_STRUCTURAL_TYPES = {
 
 
 def determine_dataset_type(column_structural_type, column_semantic_types):
-    """Determines a dataset type  (see dataset_types.py) based on combinations of
-    a column's structural and semantic types.
+    """Determines dataset types from columns' structural and semantic types.
     """
     if any(t in SPATIAL_STRUCTURAL_TYPES for t in column_semantic_types):
         return types.DATASET_SPATIAL

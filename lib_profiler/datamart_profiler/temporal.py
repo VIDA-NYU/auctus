@@ -61,6 +61,13 @@ _defaults = datetime(1985, 1, 1), datetime(2005, 6, 1)
 
 
 def parse_date(string):
+    """Parse a full date from a string.
+
+    This will accept dates with low precision, but reject strings that only
+    mention a time or a partial date, e.g. ``"June 6 11:00"`` returns None
+    (could be any year) but ``"June 2020"`` parses into
+    ``2020-06-01 00:00:00 UTC``
+    """
     with raise_warnings(dateutil.parser.UnknownTimezoneWarning):
         # This is a dirty trick because dateutil returns a datetime for strings
         # that only contain times. We parse it twice with different defaults,
