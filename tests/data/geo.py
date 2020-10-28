@@ -1,6 +1,7 @@
 import numpy
 import numpy.random
 import os
+import string
 
 
 SIZE = 50
@@ -43,6 +44,18 @@ def main():
             else:
                 i = 'place%02d' % i
             print("%s,POINT (%f %f),%f" % (i, long, lat, h), file=f_data)
+
+    random = numpy.random.RandomState(4)
+    aug_latitudes = random.normal(lat1, abs(lat1 - lat1m), 10)
+    aug_longitudes = random.normal(long1, abs(long1 - long1m), 10)
+
+    with open(os.path.join(data_dir, 'geo_aug.csv'), 'w') as f_data:
+        print("lat,long,id,letter", file=f_data)
+        for i, (lat, long, letter) in enumerate(
+            zip(aug_latitudes, aug_longitudes, string.ascii_letters),
+            100,
+        ):
+            print("%f,%f,place%d,%s" % (lat, long, i, letter), file=f_data)
 
 
 if __name__ == '__main__':
