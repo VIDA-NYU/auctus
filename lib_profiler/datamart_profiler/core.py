@@ -372,9 +372,9 @@ def process_column(
             ]
         }
 
-    # FIXME: Temporary
-    resolved_addresses = None
-    resolved_admin_areas = None
+    # Resolved values are returned so they can be used again to compute spatial
+    # coverage
+    resolved = {}
 
     # Resolve addresses into coordinates
     if (
@@ -389,7 +389,7 @@ def process_column(
         if non_empty > 0:
             unclean_ratio = 1.0 - len(locations) / non_empty
             if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
-                resolved_addresses = locations
+                resolved['addresses'] = locations
                 if types.ADDRESS not in column_meta['semantic_types']:
                     column_meta['semantic_types'].append(types.ADDRESS)
 
@@ -398,12 +398,9 @@ def process_column(
         level, areas = semantic_types_dict[types.ADMIN]
         if level is not None:
             column_meta['admin_area_level'] = level
-        resolved_admin_areas = areas
+        resolved['admin_areas'] = areas
 
-    return (
-        resolved_addresses,
-        resolved_admin_areas,
-    )
+    return resolved
 
 
 @PROM_PROFILE.time()
@@ -474,12 +471,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
         metadata['types'] = []
         return metadata
 
-    # Addresses
-    resolved_addresses = {}
-
-    # Administrative areas
-    resolved_admin_areas = {}
-
     # Get manual updates from the user
     manual_columns = {}
     if 'manual_annotations' in metadata:
@@ -488,6 +479,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 col['name']: col
                 for col in metadata['manual_annotations']['columns']
             }
+
+    # Cache some values that have been resolved for type identification but are
+    # useful for spatial coverage computation: admin areas and addresses
+    # Having to resolve them once to see if they're valid and a second time to
+    # build coverage information would be too slow
+    resolved_columns = {}
 
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
@@ -499,7 +496,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 manual = manual_columns[column_meta['name']]
             else:
                 manual = None
-            addresses, admins = process_column(
+            # Process the column, updating the column_meta dict
+            resolved_columns[column_idx] = process_column(
                 array, column_meta,
                 manual=manual,
                 plots=plots,
@@ -507,11 +505,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 geo_data=geo_data,
                 nominatim=nominatim,
             )
-            # FIXME: Temporary
-            if addresses is not None:
-                resolved_addresses[column_idx] = addresses
-            if admins is not None:
-                resolved_admin_areas[column_idx] = admins
 
     # Identify the overall dataset types (numerical, categorical, spatial, or temporal)
     dataset_types = set()
@@ -687,60 +680,65 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         'ranges': spatial_ranges,
                     })
 
-            # Compute ranges from addresses
-            for idx, values in resolved_addresses.items():
-                name = columns[idx]['name']
-                logger.info(
-                    "Computing spatial ranges address=%r (%d rows)",
-                    name, len(values),
-                )
-                spatial_ranges = get_spatial_ranges(values)
-                if spatial_ranges:
-                    spatial_coverage.append({
-                        'type': 'address',
-                        'column_names': [name],
-                        'column_indexes': [idx],
-                        'ranges': spatial_ranges,
-                    })
+            for idx, resolved in resolved_columns.items():
+                if 'addresses' in resolved:
+                    locations = resolved['addresses']
 
-            # Compute ranges from administrative areas
-            for idx, areas in resolved_admin_areas.items():
-                merged = None
-                for area in areas:
-                    if area is None:
-                        continue
-                    new = area.bounds
-                    if new:
-                        if merged is None:
-                            merged = new
-                        else:
-                            merged = (
-                                min(merged[0], new[0]),
-                                max(merged[1], new[1]),
-                                min(merged[2], new[2]),
-                                max(merged[3], new[3]),
-                            )
-                if (
-                    merged is not None
-                    and merged[1] - merged[0] > 0.01
-                    and merged[3] - merged[2] > 0.01
-                ):
-                    spatial_coverage.append({
-                        'type': 'admin',
-                        'column_names': [columns[idx]['name']],
-                        'column_indexes': [idx],
-                        'ranges': [
-                            {
-                                'range': {
-                                    'type': 'envelope',
-                                    'coordinates': [
-                                        [merged[0], merged[3]],
-                                        [merged[1], merged[2]],
-                                    ],
+                    # Compute ranges from addresses
+                    name = columns[idx]['name']
+                    logger.info(
+                        "Computing spatial ranges address=%r (%d rows)",
+                        name, len(locations),
+                    )
+                    spatial_ranges = get_spatial_ranges(locations)
+                    if spatial_ranges:
+                        spatial_coverage.append({
+                            'type': 'address',
+                            'column_names': [name],
+                            'column_indexes': [idx],
+                            'ranges': spatial_ranges,
+                        })
+
+                if 'admin_areas' in resolved:
+                    areas = resolved['admin_areas']
+
+                    # Compute ranges from administrative areas
+                    merged = None
+                    for area in areas:
+                        if area is None:
+                            continue
+                        new = area.bounds
+                        if new:
+                            if merged is None:
+                                merged = new
+                            else:
+                                merged = (
+                                    min(merged[0], new[0]),
+                                    max(merged[1], new[1]),
+                                    min(merged[2], new[2]),
+                                    max(merged[3], new[3]),
+                                )
+                    if (
+                        merged is not None
+                        and merged[1] - merged[0] > 0.01
+                        and merged[3] - merged[2] > 0.01
+                    ):
+                        spatial_coverage.append({
+                            'type': 'admin',
+                            'column_names': [columns[idx]['name']],
+                            'column_indexes': [idx],
+                            'ranges': [
+                                {
+                                    'range': {
+                                        'type': 'envelope',
+                                        'coordinates': [
+                                            [merged[0], merged[3]],
+                                            [merged[1], merged[2]],
+                                        ],
+                                    },
                                 },
-                            },
-                        ],
-                    })
+                            ],
+                        })
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
