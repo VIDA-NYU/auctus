@@ -329,31 +329,31 @@ class TestJoin(DataTestCase):
                     '\n'.join(table_lines[0:6]),
                     'lat,long,id,letter,id_r,mean height,sum height,max height,min height',
                     [
-                        '40.73279,-73.9985,place100,a,'
-                        + 'place00,50.24088,351.6862,85.77256,27.97864',
-                        '40.72970,-73.9978,place101,b,'
-                        + 'place01,42.57717,425.7717,67.62636,17.53429',
-                        '40.73266,-73.9975,place102,c,'
-                        + 'place06,50.03064,250.1532,79.72296,23.72270',
-                        '40.73117,-74.0018,place103,d,'
-                        + 'place08,49.40183,395.2146,84.19146,5.034845',
-                        '40.69427,-73.9898,place104,e,'
-                        + 'place59,47.73903,286.4341,93.16298,11.71055',
+                        '40.73119,-74.0026,place100,a,'
+                        + 'place08,41.41971,248.5182,69.64734,5.034845',
+                        '40.72887,-73.9993,place101,b,'
+                        + 'place01,43.43270,608.0579,67.62636,17.53429',
+                        '40.73717,-73.9998,place102,c,'
+                        + 'place06,49.46972,98.93944,50.59427,48.34517',
+                        '40.72910,-73.9966,place103,d,'
+                        + 'place22,53.20234,159.6070,79.72296,32.52235',
+                        '40.73019,-74.0042,place104,e,'
+                        + 'place02,39.79917,238.7950,51.92994,25.11753'
                     ],
                 )
 
             self.assertJson(
                 output_metadata,
                 {
-                    'size': 998,
+                    'size': 1014,
                     'columns': [
                         {
                             'name': 'lat',
                             'structural_type': 'http://schema.org/Float',
                             'semantic_types': ['http://schema.org/latitude'],
                             'unclean_values_ratio': 0.0,
-                            'mean': lambda n: round(n, 3) == 40.709,
-                            'stddev': lambda n: round(n, 3) == 0.019,
+                            'mean': lambda n: round(n, 3) == 40.731,
+                            'stddev': lambda n: round(n, 4) == 0.0029,
                             'coverage': check_ranges(40.68, 40.78),
                         },
                         {
@@ -361,8 +361,8 @@ class TestJoin(DataTestCase):
                             'structural_type': 'http://schema.org/Float',
                             'semantic_types': ['http://schema.org/longitude'],
                             'unclean_values_ratio': 0.0,
-                            'mean': lambda n: round(n, 3) == -73.993,
-                            'stddev': lambda n: round(n, 5) == 0.00528,
+                            'mean': lambda n: round(n, 3) == -73.999,
+                            'stddev': lambda n: round(n, 5) == 0.00375,
                             'coverage': check_ranges(-74.05, -73.95),
                         },
                         {
@@ -857,11 +857,11 @@ class TestUnion(DataTestCase):
                     '\n'.join(table_lines[0:6]),
                     'lat,long,id,letter',
                     [
-                        '40.73279,-73.9985,place100,a',
-                        '40.72970,-73.9978,place101,b',
-                        '40.73266,-73.9975,place102,c',
-                        '40.73117,-74.0018,place103,d',
-                        '40.69427,-73.9898,place104,e',
+                        '40.73119,-74.0026,place100,a',
+                        '40.72887,-73.9993,place101,b',
+                        '40.73717,-73.9998,place102,c',
+                        '40.72910,-73.9966,place103,d',
+                        '40.73019,-74.0042,place104,e',
                     ],
                 )
 
