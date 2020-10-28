@@ -6,7 +6,7 @@ This library can profile datasets for use with Auctus, NYU's Datamart system. Yo
 See also:
 
 * `The datamart-rest library for search/augmentation <https://pypi.org/project/datamart-rest/>`__
-* `The datamart-materialize library, used to materialize dataset from search results <https://pypi.org/project/datamart-profiler/>`__
+* `The datamart-materialize library, used to materialize dataset from search results <https://pypi.org/project/datamart-materialize/>`__
 * `The datamart-augmentation library, used to performs data augmentation with a dataset from Auctus <https://pypi.org/project/datamart-augmentation/>`__
 * `Auctus, NYU's Datamart system <https://auctus.vida-nyu.org/>`__
 * `Our project on GitLab <https://gitlab.com/ViDA-NYU/datamart/datamart>`__
