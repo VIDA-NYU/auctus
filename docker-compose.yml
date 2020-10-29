@@ -54,12 +54,14 @@ services:
     volumes:
       - ./docker/redis.conf:/usr/local/etc/redis/redis.conf
   lazo:
-    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.4.0
+    image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.5.0
     environment:
       - DATABASE=elasticsearch
       - PORT=50051
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
+      - JAVA_OPTS=-Xmx2g -Xms2g  # NOTCI
+      # CI: - JAVA_OPTS=-Xmx256m -Xms128m
     cpu_shares: 30
     ports:
       - 127.0.0.1:8030:50051
