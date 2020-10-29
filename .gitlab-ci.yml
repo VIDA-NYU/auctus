@@ -159,6 +159,13 @@ frontend:
     # Run the frontend tests
     - docker run --rm datamart_npm sh -c "CI=true npm run test"
 
+k8s_configs:
+  stage: test
+  before_script:
+    - curl -Lo /tmp/kubeval.tar.gz https://github.com/instrumenta/kubeval/releases/download/0.15.0/kubeval-linux-386.tar.gz && tar -xf /tmp/kubeval.tar.gz -C /usr/local/bin kubeval && rm /tmp/kubeval.tar.gz
+  script:
+    - kubeval --strict contrib/k8s/*.yml
+
 pages:
   stage: deploy
   before_script:
