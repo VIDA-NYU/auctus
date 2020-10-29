@@ -69,7 +69,11 @@
         "handler": 1,
         "name": "Profile queue alert",
         "noDataState": "alerting",
-        "notifications": []
+        "notifications": [
+          {
+            "uid": "RwAvBG2Wz"
+          }
+        ]
       },
       "aliasColors": {
         "today": "rgb(47, 87, 94)",
@@ -82,7 +86,7 @@
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 12,
         "x": 0,
         "y": 0
@@ -181,6 +185,82 @@
       }
     },
     {
+      "cacheTimeout": null,
+      "datasource": null,
+      "gridPos": {
+        "h": 2,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 18,
+      "links": [],
+      "options": {
+        "colorMode": "background",
+        "fieldOptions": {
+          "calcs": [
+            "last"
+          ],
+          "defaults": {
+            "links": [],
+            "mappings": [
+              {
+                "id": 0,
+                "op": "=",
+                "text": "N/A",
+                "type": 1,
+                "value": "null"
+              }
+            ],
+            "min": 0,
+            "nullValueMode": "connected",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "rgb(173, 173, 173)",
+                  "value": null
+                },
+                {
+                  "color": "rgb(0, 0, 0)",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [],
+          "values": false
+        },
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "vertical"
+      },
+      "pluginVersion": "6.7.3",
+      "targets": [
+        {
+          "expr": "sum(profile_profiling_count)",
+          "legendFormat": "Profiling",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(profile_downloading_count)",
+          "legendFormat": "Downloading",
+          "refId": "C"
+        },
+        {
+          "expr": "rabbitmq_queue_messages{queue=\"failed_profile\"}",
+          "interval": "",
+          "legendFormat": "Failed",
+          "refId": "D"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "",
+      "type": "stat"
+    },
+    {
       "aliasColors": {
         "today": "rgb(47, 87, 94)",
         "yesterday": "rgba(47, 87, 94, 0.5)"
@@ -192,10 +272,10 @@
       "fill": 4,
       "fillGradient": 0,
       "gridPos": {
-        "h": 7,
+        "h": 6,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 2
       },
       "hiddenSeries": false,
       "id": 16,
@@ -283,12 +363,15 @@
     },
     {
       "aliasColors": {
+        "90%": "super-light-blue",
         "download": "#bf1b00",
         "download 50%": "#0a50a1",
         "download 90%": "#0a50a1",
+        "median": "dark-blue",
         "profile": "#0a50a1",
         "profile 50%": "#bf1b00",
-        "profile 90%": "#bf1b00"
+        "profile 90%": "#bf1b00",
+        "{job=\"profiler\"}": "super-light-blue"
       },
       "bars": false,
       "dashLength": 10,
@@ -298,20 +381,20 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 7,
-        "w": 12,
+        "w": 8,
         "x": 0,
-        "y": 7
+        "y": 8
       },
       "hiddenSeries": false,
       "id": 2,
       "legend": {
-        "avg": true,
+        "avg": false,
         "current": false,
-        "max": true,
-        "min": true,
+        "max": false,
+        "min": false,
         "show": true,
         "total": false,
-        "values": true
+        "values": false
       },
       "lines": true,
       "linewidth": 1,
@@ -337,6 +420,10 @@
         {
           "alias": "profile 50%",
           "yaxis": 2
+        },
+        {
+          "alias": "nominatim",
+          "yaxis": 2
         }
       ],
       "spaceLength": 10,
@@ -344,17 +431,19 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.5, sum(rate(download_seconds_bucket{job=\"profiler\"}[2h])) without (instance))",
+          "expr": "histogram_quantile(0.5, sum(rate(profile_seconds_bucket{job=\"profiler\"}[30m])) without (instance))",
           "format": "time_series",
+          "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "download",
+          "legendFormat": "median",
           "refId": "C"
         },
         {
-          "expr": "histogram_quantile(0.5, sum(rate(profile_seconds_bucket{job=\"profiler\"}[2h])) without (instance))",
+          "expr": "histogram_quantile(0.9, sum(rate(profile_seconds_bucket{job=\"profiler\"}[30m])) without (instance))",
           "format": "time_series",
+          "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "profile",
+          "legendFormat": "90%",
           "refId": "D"
         }
       ],
@@ -362,7 +451,133 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Median download/profile time",
+      "title": "Profile time",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "90%": "super-light-red",
+        "download": "#bf1b00",
+        "download 50%": "#0a50a1",
+        "download 90%": "#0a50a1",
+        "median": "dark-red",
+        "profile": "#0a50a1",
+        "profile 50%": "#bf1b00",
+        "profile 90%": "#bf1b00"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "hiddenSeries": false,
+      "id": 7,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "paceLength": 10,
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "profile",
+          "yaxis": 2
+        },
+        {
+          "alias": "profile 90%",
+          "yaxis": 2
+        },
+        {
+          "alias": "profile 50%",
+          "yaxis": 2
+        },
+        {
+          "alias": "nominatim",
+          "yaxis": 2
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(download_seconds_bucket{job=\"profiler\"}[30m])) without (instance))",
+          "format": "time_series",
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "median",
+          "refId": "C"
+        },
+        {
+          "expr": "histogram_quantile(0.9, sum(rate(download_seconds_bucket{job=\"profiler\"}[30m])) without (instance))",
+          "format": "time_series",
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "90%",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Download time",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -401,12 +616,9 @@
     },
     {
       "aliasColors": {
-        "download": "#bf1b00",
-        "download 50%": "#0a50a1",
-        "download 90%": "#0a50a1",
-        "profile": "#0a50a1",
-        "profile 50%": "#bf1b00",
-        "profile 90%": "#bf1b00"
+        "90%": "super-light-green",
+        "median": "dark-green",
+        "{job=\"profiler\"}": "dark-blue"
       },
       "bars": false,
       "dashLength": 10,
@@ -416,71 +628,54 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 7
+        "w": 8,
+        "x": 16,
+        "y": 8
       },
       "hiddenSeries": false,
-      "id": 7,
+      "id": 22,
       "legend": {
-        "avg": true,
+        "avg": false,
         "current": false,
-        "max": true,
-        "min": true,
+        "max": false,
+        "min": false,
         "show": true,
         "total": false,
-        "values": true
+        "values": false
       },
       "lines": true,
       "linewidth": 1,
-      "links": [],
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
       },
-      "paceLength": 10,
       "percentage": false,
-      "pointradius": 5,
+      "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "profile",
-          "yaxis": 2
-        },
-        {
-          "alias": "profile 90%",
-          "yaxis": 2
-        },
-        {
-          "alias": "profile 50%",
-          "yaxis": 2
-        }
-      ],
+      "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.9, sum(rate(download_seconds_bucket{job=\"profiler\"}[2h])) without (instance))",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "download",
-          "refId": "C"
+          "expr": "histogram_quantile(0.5, sum(rate(profile_lazo_seconds_bucket{job=\"profiler\"}[30m])) without (instance))",
+          "interval": "",
+          "legendFormat": "median",
+          "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.9, sum(rate(profile_seconds_bucket{job=\"profiler\"}[2h])) without (instance))",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "profile",
-          "refId": "D"
+          "expr": "histogram_quantile(0.9, sum(rate(profile_lazo_seconds_bucket{job=\"profiler\"}[30m])) without (instance))",
+          "interval": "",
+          "legendFormat": "90%",
+          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "90% percentile download/profile time",
+      "title": "Lazo profile time",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -504,7 +699,7 @@
           "show": true
         },
         {
-          "format": "s",
+          "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -537,17 +732,16 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 15
       },
       "heatmap": {},
-      "hideZeroBuckets": false,
+      "hideZeroBuckets": true,
       "highlightCards": true,
       "id": 13,
       "legend": {
         "show": false
       },
       "links": [],
-      "options": {},
       "reverseYBuckets": false,
       "targets": [
         {
@@ -555,7 +749,7 @@
           "format": "heatmap",
           "instant": false,
           "interval": "1m",
-          "intervalFactor": 1,
+          "intervalFactor": 10,
           "legendFormat": "{{le}}",
           "refId": "A"
         }
@@ -563,7 +757,7 @@
       "title": "Profiling time",
       "tooltip": {
         "show": true,
-        "showHistogram": false
+        "showHistogram": true
       },
       "type": "heatmap",
       "xAxis": {
@@ -599,7 +793,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 15
       },
       "hiddenSeries": false,
       "id": 15,
@@ -687,17 +881,16 @@
     {
       "columns": [],
       "datasource": null,
-      "fontSize": "100%",
+      "fontSize": "90%",
       "gridPos": {
         "h": 7,
-        "w": 10,
+        "w": 5,
         "x": 0,
-        "y": 21
+        "y": 22
       },
       "hideTimeOverride": false,
       "id": 11,
       "links": [],
-      "options": {},
       "pageSize": null,
       "scroll": true,
       "showHeader": true,
@@ -744,18 +937,56 @@
       "type": "table"
     },
     {
+      "columns": [
+        {
+          "text": "Current",
+          "value": "current"
+        }
+      ],
+      "datasource": null,
+      "fontSize": "90%",
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 5,
+        "y": 22
+      },
+      "id": 20,
+      "pageSize": null,
+      "showHeader": true,
+      "sort": {
+        "col": 0,
+        "desc": false
+      },
+      "styles": [],
+      "targets": [
+        {
+          "expr": "avg(profiled_version_count) by (version)",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{version}}",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Datasets per profiler version",
+      "transform": "timeseries_aggregations",
+      "type": "table"
+    },
+    {
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "fill": 1,
+      "fill": 0,
       "fillGradient": 0,
       "gridPos": {
         "h": 7,
         "w": 14,
         "x": 10,
-        "y": 21
+        "y": 22
       },
       "hiddenSeries": false,
       "id": 9,
@@ -836,7 +1067,7 @@
       }
     }
   ],
-  "refresh": "1m",
+  "refresh": "10s",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -875,5 +1106,8 @@
   "timezone": "",
   "title": "Profiling",
   "uid": "id-Heiwiz",
-  "version": 10
+  "variables": {
+    "list": []
+  },
+  "version": 20
 }

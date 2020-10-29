@@ -256,7 +256,11 @@
         "handler": 1,
         "name": "Read-only indices alert",
         "noDataState": "alerting",
-        "notifications": []
+        "notifications": [
+          {
+            "uid": "RwAvBG2Wz"
+          }
+        ]
       },
       "aliasColors": {},
       "bars": false,
@@ -386,7 +390,11 @@
         "handler": 1,
         "name": "Elasticsearch cluster health alert",
         "noDataState": "alerting",
-        "notifications": []
+        "notifications": [
+          {
+            "uid": "RwAvBG2Wz"
+          }
+        ]
       },
       "aliasColors": {},
       "bars": false,
@@ -731,7 +739,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{job=\"query\"}[1m])",
+          "expr": "rate(process_cpu_seconds_total{job=\"apiserver\"}[1m])",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
@@ -742,7 +750,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Query CPU usage",
+      "title": "Apiserver CPU usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -822,7 +830,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{job=\"query\"}",
+          "expr": "process_resident_memory_bytes{job=\"apiserver\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
@@ -833,7 +841,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Query memory usage",
+      "title": "Apiserver memory usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -900,11 +908,15 @@
         ],
         "executionErrorState": "alerting",
         "for": "5m",
-        "frequency": "20m",
+        "frequency": "5m",
         "handler": 1,
         "name": "Available containers alert",
         "noDataState": "alerting",
-        "notifications": []
+        "notifications": [
+          {
+            "uid": "RwAvBG2Wz"
+          }
+        ]
       },
       "aliasColors": {},
       "bars": false,
@@ -1394,12 +1406,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.5, sum(rate(profile_nominatim_req_seconds_bucket[1m])) without (instance, job))",
+          "expr": "histogram_quantile(0.5, sum(rate(profile_nominatim_req_seconds_bucket[10m])) without (instance, job))",
           "legendFormat": "Median",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.9, sum(rate(profile_nominatim_req_seconds_bucket[1m])) without (instance, job))",
+          "expr": "histogram_quantile(0.9, sum(rate(profile_nominatim_req_seconds_bucket[10m])) without (instance, job))",
           "legendFormat": "90% percentile",
           "refId": "B"
         }
@@ -1804,12 +1816,16 @@
           }
         ],
         "executionErrorState": "alerting",
-        "for": "5m",
-        "frequency": "1m",
+        "for": "2m",
+        "frequency": "2m",
         "handler": 1,
         "name": "Number of processes alert",
         "noDataState": "alerting",
-        "notifications": []
+        "notifications": [
+          {
+            "uid": "I2HHV1SWk"
+          }
+        ]
       },
       "aliasColors": {},
       "bars": false,
@@ -1860,7 +1876,7 @@
           "refId": "A"
         },
         {
-          "expr": "count(process_resident_memory_bytes{job=\"query\"}) by (job)",
+          "expr": "count(process_resident_memory_bytes{job=\"apiserver\"}) by (job)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{job}}",
@@ -2022,7 +2038,7 @@
       }
     }
   ],
-  "refresh": "30s",
+  "refresh": false,
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -2061,5 +2077,8 @@
   "timezone": "",
   "title": "Processes",
   "uid": "BedV4Iwik",
-  "version": 12
+  "variables": {
+    "list": []
+  },
+  "version": 15
 }

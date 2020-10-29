@@ -463,7 +463,9 @@
     {
       "aliasColors": {
         "Hits": "blue",
-        "Misses": "red"
+        "Hits /dataset_cache": "blue",
+        "Misses": "red",
+        "Misses /dataset_cache": "red"
       },
       "bars": false,
       "dashLength": 10,
@@ -560,7 +562,9 @@
     {
       "aliasColors": {
         "Hits": "blue",
-        "Misses": "red"
+        "Hits /dataset_cache": "blue",
+        "Misses": "red",
+        "Misses /dataset_cache": "red"
       },
       "bars": false,
       "dashLength": 10,
@@ -694,5 +698,8 @@
   "timezone": "",
   "title": "Caching",
   "uid": "Uwae0IvWz",
+  "variables": {
+    "list": []
+  },
   "version": 7
 }
