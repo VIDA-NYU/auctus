@@ -13,6 +13,12 @@
   {% endif %}
 </ul>
 
+<form class="form-inline" id="delete-by-id">
+  <label for="delete-input" class="col-sm-2 col-form-label mb-2">Delete dataset:</label>
+  <input type="text" class="form-control mb-2" id="delete-input" placeholder="dataset ID" required />
+  <button type="submit" class="btn btn-primary mb-2">Delete</button>
+</form>
+
 <script async>
 function getCookie(name) {
   var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
@@ -46,6 +52,11 @@ document.querySelectorAll('.recent-upload').forEach(function(li) {
   deleteButton.innerText = "Delete";
   li.appendChild(deleteButton);
   deleteButton.addEventListener('click', function() { deleteDataset(datasetId); });
+});
+
+document.getElementById('delete-by-id').addEventListener('submit', function(e) {
+  e.preventDefault();
+  deleteDataset(document.getElementById('delete-input').value);
 });
 </script>
 {% endblock %}
