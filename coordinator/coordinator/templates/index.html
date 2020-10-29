@@ -27,6 +27,7 @@ function deleteDataset(datasetId) {
     req.onload = function() {
       if(req.status === 204) {
         alert('Dataset deleted');
+        window.location.reload();
       } else {
         alert('Error deleting dataset ' + datasetId);
       }

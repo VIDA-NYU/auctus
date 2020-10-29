@@ -50,6 +50,12 @@ class RecentList(object):
         if len(self.items) > self.size:
             del self.items[self.size:]
 
+    def delete(self, key):
+        for i in range(len(self.items)):
+            if self.items[i][0] == key:
+                del self.items[i]
+                break
+
     def __iter__(self):
         return (entry[1] for entry in self.items)
 
@@ -125,6 +131,10 @@ class Coordinator(object):
 
     def recent_uploads(self):
         return iter(self._recent_uploads)
+
+    def delete_recent(self, dataset_id):
+        self._recent_discoveries.delete(dataset_id)
+        self._recent_uploads.delete(dataset_id)
 
     @staticmethod
     def build_discovery(dataset_id, metadata):

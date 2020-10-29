@@ -143,6 +143,7 @@ class DeleteDataset(BaseHandler):
             dataset_id,
             lazo_client=self.application.lazo_client,
         )
+        self.coordinator.delete_recent(dataset_id)
         self.set_status(204)
         return self.finish()
 
