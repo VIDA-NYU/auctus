@@ -347,8 +347,10 @@ def identify_types(array, name, geo_data, manual=None):
 
 
 SPATIAL_STRUCTURAL_TYPES = {
-    types.LATITUDE, types.LONGITUDE,
     types.GEO_POINT, types.GEO_POLYGON,
+}
+SPATIAL_SEMANTIC_TYPES = {
+    types.LATITUDE, types.LONGITUDE,
     types.ADDRESS,
     types.ADMIN,
 }
@@ -357,7 +359,9 @@ SPATIAL_STRUCTURAL_TYPES = {
 def determine_dataset_type(column_structural_type, column_semantic_types):
     """Determines dataset types from columns' structural and semantic types.
     """
-    if any(t in SPATIAL_STRUCTURAL_TYPES for t in column_semantic_types):
+    if column_structural_type in SPATIAL_STRUCTURAL_TYPES:
+        return types.DATASET_SPATIAL
+    elif any(t in SPATIAL_SEMANTIC_TYPES for t in column_semantic_types):
         return types.DATASET_SPATIAL
     elif types.DATE_TIME in column_semantic_types:
         return types.DATASET_TEMPORAL
