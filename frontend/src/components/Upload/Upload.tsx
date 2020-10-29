@@ -256,6 +256,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
                     return {customValues};
                   });
                 }}
+                required={opts.required}
               />
             </FormGroup>
           ))}
