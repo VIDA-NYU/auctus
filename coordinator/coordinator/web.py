@@ -4,6 +4,7 @@ import elasticsearch
 import logging
 import jinja2
 import json
+import lazo_index_service
 import os
 import pkg_resources
 import prometheus_client
@@ -14,7 +15,7 @@ from tornado.routing import URLSpec
 import tornado.web
 from urllib.parse import quote_plus
 
-from datamart_core.common import setup_logging
+from datamart_core.common import delete_dataset_from_index, setup_logging
 
 from .cache import check_cache
 from .coordinator import Coordinator
@@ -134,6 +135,18 @@ class Login(BaseHandler):
         return self.redirect(next_)
 
 
+class DeleteDataset(BaseHandler):
+    @tornado.web.authenticated
+    def post(self, dataset_id):
+        delete_dataset_from_index(
+            self.application.elasticsearch,
+            dataset_id,
+            lazo_client=self.application.lazo_client,
+        )
+        self.set_status(204)
+        return self.finish()
+
+
 class Statistics(BaseHandler):
     def prepare(self):
         super(BaseHandler, self).prepare()
@@ -152,11 +165,12 @@ class CustomErrorHandler(tornado.web.ErrorHandler, BaseHandler):
 
 
 class Application(tornado.web.Application):
-    def __init__(self, *args, es, **kwargs):
+    def __init__(self, *args, es, lazo, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
         self.frontend_url = os.environ['FRONTEND_URL'].rstrip('/')
         self.elasticsearch = es
+        self.lazo_client = lazo
         self.coordinator = Coordinator(self.elasticsearch)
         self.admin_password = os.environ['ADMIN_PASSWORD']
 
@@ -195,10 +209,15 @@ def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
+    lazo_client = lazo_index_service.LazoIndexClient(
+        host=os.environ['LAZO_SERVER_HOST'],
+        port=int(os.environ['LAZO_SERVER_PORT'])
+    )
 
     return Application(
         [
             URLSpec('/api/statistics', Statistics),
+            URLSpec('/api/delete_dataset/([^/]+)', DeleteDataset),
             URLSpec('/', Index, name='index'),
             URLSpec('/login', Login, name='login'),
         ],
@@ -209,6 +228,7 @@ def make_app(debug=False):
         debug=debug,
         cookie_secret=secret,
         es=es,
+        lazo=lazo_client,
         default_handler_class=CustomErrorHandler,
         default_handler_args={"status_code": 404},
     )
