@@ -6,7 +6,7 @@
 <ul>
   {% if recent_uploads %}
   {% for upload in recent_uploads %}
-  <li>{{ upload.name }}, {{ upload.discovered }}</li>
+  <li><a href="{{ upload.link }}" target="_blank">{{ upload.name }}</a>, {{ upload.discovered }}</li>
   {% endfor %}
   {% else %}
   <li style="font-style: oblique;">No recent uploads</li>

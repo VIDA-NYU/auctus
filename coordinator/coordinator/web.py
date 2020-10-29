@@ -12,6 +12,7 @@ from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
+from urllib.parse import quote_plus
 
 from datamart_core.common import setup_logging
 
@@ -83,11 +84,17 @@ class BaseHandler(tornado.web.RequestHandler):
 class Index(BaseHandler):
     @tornado.web.authenticated
     def get(self):
+        frontend = self.application.frontend_url
         recent_uploads = [
             dict(
                 id=upload['id'],
                 name=upload['name'] or upload['id'],
                 discovered=datetime.fromisoformat(upload['discovered'].rstrip('Z')).strftime('%Y-%m-%d %H:%M:%S'),
+                link=(
+                    frontend
+                    + '/?q='
+                    + quote_plus(json.dumps({'query': upload['id']}))
+                )
             )
             for upload in self.coordinator.recent_uploads()
         ]
@@ -148,6 +155,7 @@ class Application(tornado.web.Application):
     def __init__(self, *args, es, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
+        self.frontend_url = os.environ['FRONTEND_URL'].rstrip('/')
         self.elasticsearch = es
         self.coordinator = Coordinator(self.elasticsearch)
         self.admin_password = os.environ['ADMIN_PASSWORD']

@@ -339,6 +339,11 @@ spec:
             secretKeyRef:
               name: secrets
               key: admin.password
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: frontend_url
         - name: API_URL
           valueFrom:
             configMapKeyRef:
