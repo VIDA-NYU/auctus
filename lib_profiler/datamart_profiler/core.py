@@ -403,6 +403,65 @@ def process_column(
     return resolved
 
 
+def lazo_index_data(
+    data, data_path,
+    dataset_id,
+    columns_textual, column_textual_names,
+    lazo_client,
+):
+    if data_path:
+        # if we have the path, send the path
+        def call_lazo():
+            lazo_client.index_data_path(
+                data_path,
+                dataset_id,
+                column_textual_names,
+            )
+
+        _lazo_retry(call_lazo)
+    else:
+        # if path is not available, send the data instead
+        for idx, name in zip(columns_textual, column_textual_names):
+            def call_lazo():
+                lazo_client.index_data(
+                    data.iloc[:, idx].values.tolist(),
+                    dataset_id,
+                    name,
+                )
+
+            _lazo_retry(call_lazo)
+
+
+def get_lazo_data_sketch(
+    data, data_path,
+    columns_textual, column_textual_names,
+    lazo_client,
+):
+    if data_path:
+        # if we have the path, send the path
+        def call_lazo():
+            return lazo_client.get_lazo_sketch_from_data_path(
+                data_path,
+                "",
+                column_textual_names,
+            )
+
+        lazo_sketches = _lazo_retry(call_lazo)
+    else:
+        # if path is not available, send the data instead
+        lazo_sketches = []
+        for idx, name in zip(columns_textual, column_textual_names):
+            def call_lazo():
+                return lazo_client.get_lazo_sketch_from_data(
+                    data.iloc[:, idx].values.tolist(),
+                    "",
+                    name,
+                )
+
+            lazo_sketches.append(_lazo_retry(call_lazo))
+    return lazo_sketches
+
+
 @PROM_PROFILE.time()
 def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client=None, nominatim=None, geo_data=None,
@@ -527,55 +586,30 @@ def process_dataset(data, dataset_id=None, metadata=None,
     ]
     if lazo_client and columns_textual:
         # Indexing with lazo
+        logger.info("Indexing textual data with Lazo...")
+        column_textual_names = [columns[idx]['name'] for idx in columns_textual]
         if not search:
-            logger.info("Indexing textual data with Lazo...")
             try:
-                if data_path:
-                    # if we have the path, send the path
-                    def call_lazo():
-                        lazo_client.index_data_path(
-                            data_path,
-                            dataset_id,
-                            [columns[idx]['name'] for idx in columns_textual],
-                        )
-                    _lazo_retry(call_lazo)
-                else:
-                    # if path is not available, send the data instead
-                    for idx in columns_textual:
-                        def call_lazo():
-                            lazo_client.index_data(
-                                data.iloc[:, idx].values.tolist(),
-                                dataset_id,
-                                columns[idx]['name'],
-                            )
-                        _lazo_retry(call_lazo)
+                lazo_index_data(
+                    data, data_path,
+                    dataset_id,
+                    columns_textual, column_textual_names,
+                    lazo_client,
+                )
             except Exception:
                 logger.warning("Error indexing textual attributes from %s", dataset_id)
                 raise
-        # Generating Lazo sketches for the search
         else:
-            logger.info("Generating Lazo sketches...")
             try:
-                if data_path:
-                    # if we have the path, send the path
-                    def call_lazo():
-                        return lazo_client.get_lazo_sketch_from_data_path(
-                            data_path,
-                            "",
-                            [columns[idx]['name'] for idx in columns_textual],
-                        )
-                    lazo_sketches = _lazo_retry(call_lazo)
-                else:
-                    # if path is not available, send the data instead
-                    lazo_sketches = []
-                    for idx in columns_textual:
-                        def call_lazo():
-                            return lazo_client.get_lazo_sketch_from_data(
-                                data.iloc[:, idx].values.tolist(),
-                                "",
-                                columns[idx]['name'],
-                            )
-                        lazo_sketches.append(_lazo_retry(call_lazo))
+                lazo_sketches = get_lazo_data_sketch(
+                    data, data_path,
+                    columns_textual, column_textual_names,
+                    lazo_client,
+                )
+            except Exception:
+                logger.warning("Error getting Lazo sketches")
+                raise
+            else:
                 # saving sketches into metadata
                 for sketch, idx in zip(lazo_sketches, columns_textual):
                     n_permutations, hash_values, cardinality = sketch
@@ -584,9 +618,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         hash_values=list(hash_values),
                         cardinality=cardinality,
                     )
-            except Exception:
-                logger.warning("Error getting Lazo sketches")
-                raise
 
     # Pair lat & long columns
     columns_lat = [
