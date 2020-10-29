@@ -571,16 +571,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 nominatim=nominatim,
             )
 
-    # Identify the overall dataset types (numerical, categorical, spatial, or temporal)
-    dataset_types = set()
-    for column_meta in columns:
-        dataset_type = determine_dataset_type(
-            column_meta['structural_type'],
-            column_meta['semantic_types'],
-        )
-        if dataset_type:
-            dataset_types.add(dataset_type)
-
     # Textual columns
     columns_textual = [
         col_idx
@@ -659,6 +649,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
             col['semantic_types'].remove(types.LATITUDE)
         if col['name'] in missed_long:
             col['semantic_types'].remove(types.LONGITUDE)
+
+    # Identify the overall dataset types (numerical, categorical, spatial, or temporal)
+    dataset_types = set()
+    for column_meta in columns:
+        dataset_type = determine_dataset_type(
+            column_meta['structural_type'],
+            column_meta['semantic_types'],
+        )
+        if dataset_type:
+            dataset_types.add(dataset_type)
+    metadata['types'] = sorted(set(dataset_types))
 
     if coverage:
         logger.info("Computing spatial coverage...")
@@ -779,8 +780,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
-            if types.DATASET_SPATIAL not in dataset_types:
-                dataset_types.add(types.DATASET_SPATIAL)
 
     # Attribute names
     attribute_keywords = []
@@ -803,8 +802,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
         sample = data.iloc[choose_rows]
         sample = sample.applymap(truncate_string)  # Truncate long values
         metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
-
-    metadata['types'] = sorted(dataset_types)
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
