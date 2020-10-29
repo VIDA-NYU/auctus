@@ -19,7 +19,10 @@ from .graceful_shutdown import GracefulApplication
 logger = logging.getLogger(__name__)
 
 
-BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
+BUCKETS = [
+    0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0,
+    float('inf'),
+]
 
 
 class BaseHandler(RequestHandler):

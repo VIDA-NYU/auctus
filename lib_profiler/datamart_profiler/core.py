@@ -35,7 +35,11 @@ SAMPLE_ROWS = 20
 MAX_UNCLEAN_ADDRESSES = 0.20  # 20%
 
 
-BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
+BUCKETS = [
+    1.0, 2.0, 4.0, 7.0, 12.0, 20.0, 32.0, 52.0, 80.0, 120.0, 190.0,
+    300.0, 480.0, 720.0, 1200.0, 1800.0, 3600.0, 5760.0, 7200.0,
+    float('inf'),
+]
 
 PROM_PROFILE = prometheus_client.Histogram(
     'profile_seconds', "Profile time",
