@@ -334,6 +334,20 @@ spec:
             secretKeyRef:
               name: secrets
               key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: admin.password
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: frontend_url
         - name: API_URL
           valueFrom:
             configMapKeyRef:

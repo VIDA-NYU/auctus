@@ -1,8 +1,10 @@
 import asyncio
+from datetime import datetime
 import elasticsearch
 import logging
 import jinja2
 import json
+import lazo_index_service
 import os
 import pkg_resources
 import prometheus_client
@@ -11,8 +13,9 @@ from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
+from urllib.parse import quote_plus
 
-from datamart_core.common import setup_logging
+from datamart_core.common import delete_dataset_from_index, setup_logging
 
 from .cache import check_cache
 from .coordinator import Coordinator
@@ -71,14 +74,78 @@ class BaseHandler(tornado.web.RequestHandler):
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
 
+    def get_current_user(self):
+        return self.get_secure_cookie('user')
+
     @property
     def coordinator(self):
         return self.application.coordinator
 
 
 class Index(BaseHandler):
+    @tornado.web.authenticated
     def get(self):
-        self.render('index.html')
+        frontend = self.application.frontend_url
+        recent_uploads = [
+            dict(
+                id=upload['id'],
+                name=upload['name'] or upload['id'],
+                discovered=datetime.fromisoformat(upload['discovered'].rstrip('Z')).strftime('%Y-%m-%d %H:%M:%S'),
+                link=(
+                    frontend
+                    + '/?q='
+                    + quote_plus(json.dumps({'query': upload['id']}))
+                )
+            )
+            for upload in self.coordinator.recent_uploads()
+        ]
+        return self.render(
+            'index.html',
+            recent_uploads=recent_uploads,
+        )
+
+
+class Login(BaseHandler):
+    def get(self):
+        if self.current_user:
+            return self._go_to_next()
+        else:
+            return self.render(
+                'login.html',
+                next=self.get_argument('next', ''),
+            )
+
+    def post(self):
+        password = self.get_body_argument('password')
+        if password == self.application.admin_password:
+            logger.info("Admin logged in")
+            self.set_secure_cookie('user', 'admin')
+            return self._go_to_next()
+        else:
+            self.render(
+                'login.html',
+                next=self.get_argument('next', ''),
+                error="Invalid password",
+            )
+
+    def _go_to_next(self):
+        next_ = self.get_argument('next', '')
+        if not next_:
+            next_ = self.reverse_url('index')
+        return self.redirect(next_)
+
+
+class DeleteDataset(BaseHandler):
+    @tornado.web.authenticated
+    def post(self, dataset_id):
+        delete_dataset_from_index(
+            self.application.elasticsearch,
+            dataset_id,
+            lazo_client=self.application.lazo_client,
+        )
+        self.coordinator.delete_recent(dataset_id)
+        self.set_status(204)
+        return self.finish()
 
 
 class Statistics(BaseHandler):
@@ -99,20 +166,18 @@ class CustomErrorHandler(tornado.web.ErrorHandler, BaseHandler):
 
 
 class Application(tornado.web.Application):
-    def __init__(self, *args, es, **kwargs):
+    def __init__(self, *args, es, lazo, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
+        self.frontend_url = os.environ['FRONTEND_URL'].rstrip('/')
         self.elasticsearch = es
+        self.lazo_client = lazo
         self.coordinator = Coordinator(self.elasticsearch)
+        self.admin_password = os.environ['ADMIN_PASSWORD']
 
 
 def make_app(debug=False):
-    if 'XDG_CACHE_HOME' in os.environ:
-        cache = os.environ['XDG_CACHE_HOME']
-    else:
-        cache = os.path.expanduser('~/.cache')
-    os.makedirs(cache, 0o700, exist_ok=True)
-    cache = os.path.join(cache, 'datamart.json')
+    cache = '/cache/secret-key.json'
     secret = None
     try:
         fp = open(cache)
@@ -140,17 +205,26 @@ def make_app(debug=False):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
+    lazo_client = lazo_index_service.LazoIndexClient(
+        host=os.environ['LAZO_SERVER_HOST'],
+        port=int(os.environ['LAZO_SERVER_PORT'])
+    )
 
     return Application(
         [
             URLSpec('/api/statistics', Statistics),
+            URLSpec('/api/delete_dataset/([^/]+)', DeleteDataset),
             URLSpec('/', Index, name='index'),
+            URLSpec('/login', Login, name='login'),
         ],
         static_path=pkg_resources.resource_filename('coordinator',
                                                     'static'),
+        login_url='/login',
+        xsrf_cookies=True,
         debug=debug,
         cookie_secret=secret,
         es=es,
+        lazo=lazo_client,
         default_handler_class=CustomErrorHandler,
         default_handler_args={"status_code": 404},
     )

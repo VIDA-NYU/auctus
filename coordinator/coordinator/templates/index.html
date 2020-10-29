@@ -2,5 +2,61 @@
 {% set active_page = "index" %}
 
 {% block contents %}
-<p>Nothing here, head over to the frontend...</p>
+<p>Recent uploads:</p>
+<ul>
+  {% if recent_uploads %}
+  {% for upload in recent_uploads %}
+  <li data-dataset-id="{{ upload.id }}" class="recent-upload"><a href="{{ upload.link }}" target="_blank">{{ upload.name }}</a>, {{ upload.discovered }}</li>
+  {% endfor %}
+  {% else %}
+  <li style="font-style: oblique;">No recent uploads</li>
+  {% endif %}
+</ul>
+
+<form class="form-inline" id="delete-by-id">
+  <label for="delete-input" class="col-sm-2 col-form-label mb-2">Delete dataset:</label>
+  <input type="text" class="form-control mb-2" id="delete-input" placeholder="dataset ID" required />
+  <button type="submit" class="btn btn-primary mb-2">Delete</button>
+</form>
+
+<script async>
+function getCookie(name) {
+  var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+  return r ? r[1] : undefined;
+}
+
+function deleteDataset(datasetId) {
+  if(confirm('Really delete dataset ' + datasetId + ' ?')) {
+    var req = new XMLHttpRequest();
+    req.open('POST', '/api/delete_dataset/' + datasetId + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')));
+    req.responseType = 'json';
+    req.onload = function() {
+      if(req.status === 204) {
+        alert('Dataset deleted');
+        window.location.reload();
+      } else {
+        alert('Error deleting dataset ' + datasetId);
+      }
+    };
+    req.onerror = function() {
+      alert('Error deleting dataset ' + datasetId);
+    }
+    req.send();
+  }
+}
+
+document.querySelectorAll('.recent-upload').forEach(function(li) {
+  var datasetId = li.getAttribute('data-dataset-id');
+  li.appendChild(document.createTextNode(' '));
+  var deleteButton = document.createElement('button');
+  deleteButton.innerText = "Delete";
+  li.appendChild(deleteButton);
+  deleteButton.addEventListener('click', function() { deleteDataset(datasetId); });
+});
+
+document.getElementById('delete-by-id').addEventListener('submit', function(e) {
+  e.preventDefault();
+  deleteDataset(document.getElementById('delete-input').value);
+});
+</script>
 {% endblock %}
