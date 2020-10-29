@@ -48,6 +48,10 @@ PROM_SPATIAL = prometheus_client.Histogram(
     'profile_spatial_seconds', "Profile spatial coverage time",
     buckets=BUCKETS,
 )
+PROM_LAZO = prometheus_client.Histogram(
+    'profile_lazo_seconds', "Profile time with Lazo, time",
+    buckets=BUCKETS,
+)
 
 
 _re_word_split = re.compile(r'\W+')
@@ -403,6 +407,7 @@ def process_column(
     return resolved
 
 
+@PROM_LAZO.time()
 def lazo_index_data(
     data, data_path,
     dataset_id,
@@ -432,6 +437,7 @@ def lazo_index_data(
             _lazo_retry(call_lazo)
 
 
+@PROM_LAZO.time()
 def get_lazo_data_sketch(
     data, data_path,
     columns_textual, column_textual_names,
