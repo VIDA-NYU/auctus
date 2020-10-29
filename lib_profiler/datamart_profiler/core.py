@@ -2,6 +2,7 @@ import codecs
 import collections
 import contextlib
 import csv
+import time
 from datetime import datetime
 from grpc._channel import _InactiveRpcError
 import logging
@@ -414,6 +415,8 @@ def lazo_index_data(
     columns_textual, column_textual_names,
     lazo_client,
 ):
+    logger.info("Indexing textual data with Lazo...")
+    start = time.perf_counter()
     if data_path:
         # if we have the path, send the path
         def call_lazo():
@@ -435,6 +438,10 @@ def lazo_index_data(
                 )
 
             _lazo_retry(call_lazo)
+    logger.info(
+        "Indexing with Lazo took %.2fs seconds",
+        time.perf_counter() - start,
+    )
 
 
 @PROM_LAZO.time()
@@ -443,6 +450,8 @@ def get_lazo_data_sketch(
     columns_textual, column_textual_names,
     lazo_client,
 ):
+    logger.info("Sketching textual data with Lazo...")
+    start = time.perf_counter()
     if data_path:
         # if we have the path, send the path
         def call_lazo():
@@ -465,6 +474,10 @@ def get_lazo_data_sketch(
                 )
 
             lazo_sketches.append(_lazo_retry(call_lazo))
+    logger.info(
+        "Sketching with Lazo took %.2fs seconds",
+        time.perf_counter() - start,
+    )
     return lazo_sketches
 
 
@@ -583,7 +596,6 @@ def process_dataset(data, dataset_id=None, metadata=None,
     ]
     if lazo_client and columns_textual:
         # Indexing with lazo
-        logger.info("Indexing textual data with Lazo...")
         column_textual_names = [columns[idx]['name'] for idx in columns_textual]
         if not search:
             try:
