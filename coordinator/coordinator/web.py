@@ -177,12 +177,7 @@ class Application(tornado.web.Application):
 
 
 def make_app(debug=False):
-    if 'XDG_CACHE_HOME' in os.environ:
-        cache = os.environ['XDG_CACHE_HOME']
-    else:
-        cache = os.path.expanduser('~/.cache')
-    os.makedirs(cache, 0o700, exist_ok=True)
-    cache = os.path.join(cache, 'datamart.json')
+    cache = '/cache/secret-key.json'
     secret = None
     try:
         fp = open(cache)
