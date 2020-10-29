@@ -61,6 +61,16 @@ datamart:
       nb_profiled_rows:
         type: long
         index: false
+      nb_columns:
+        type: long
+      nb_spatial_columns:
+        type: long
+      nb_temporal_columns:
+        type: long
+      nb_categorical_columns:
+        type: long
+      nb_numerical_columns:
+        type: long
       average_row_size:
         type: float
       version:
@@ -169,6 +179,16 @@ datamart_columns:
       dataset_nb_profiled_rows:
         type: long
         index: false
+      dataset_nb_columns:
+        type: long
+      dataset_nb_spatial_columns:
+        type: long
+      dataset_nb_temporal_columns:
+        type: long
+      dataset_nb_categorical_columns:
+        type: long
+      dataset_nb_numerical_columns:
+        type: long
       dataset_average_row_size:
         type: float
       dataset_version:
@@ -246,6 +266,16 @@ datamart_spatial_coverage:
       dataset_nb_profiled_rows:
         type: long
         index: false
+      dataset_nb_columns:
+        type: long
+      dataset_nb_spatial_columns:
+        type: long
+      dataset_nb_temporal_columns:
+        type: long
+      dataset_nb_categorical_columns:
+        type: long
+      dataset_nb_numerical_columns:
+        type: long
       dataset_average_row_size:
         type: float
       dataset_version:

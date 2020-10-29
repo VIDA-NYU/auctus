@@ -185,6 +185,7 @@ class TestProfiler(DatamartTest):
                         'size': 28,
                         'nb_rows': 0,
                         'nb_profiled_rows': 0,
+                        'nb_columns': 2,
                         'columns': [
                             {'name': 'important features'},
                             {'name': 'not here'},
@@ -2820,6 +2821,9 @@ basic_metadata = {
     "size": 427,
     "nb_rows": 20,
     "nb_profiled_rows": 20,
+    "nb_columns": 4,
+    "nb_categorical_columns": 2,
+    "nb_numerical_columns": 1,
     "average_row_size": lambda n: round(n, 2) == 21.35,
     "attribute_keywords": ["name", "color", "number", "what"],
     "columns": [
@@ -2952,6 +2956,9 @@ agg_metadata = {
     "size": 110,
     "nb_rows": 8,
     "nb_profiled_rows": 8,
+    "nb_columns": 3,
+    "nb_categorical_columns": 1,
+    "nb_numerical_columns": 2,
     "average_row_size": lambda n: round(n, 2) == 13.75,
     "attribute_keywords": ["id", "work", "salary"],
     "columns": [
@@ -3122,6 +3129,9 @@ annotated_metadata = {
     "size": 696,
     "nb_rows": 16,
     "nb_profiled_rows": 16,
+    'nb_columns': 5,
+    'nb_spatial_columns': 2,
+    'nb_numerical_columns': 2,
     "average_row_size": lambda n: round(n, 2) == 43.5,
     "specialId": 12,
     "dept": "internal",
@@ -3235,6 +3245,9 @@ geo_metadata = {
     "size": 3910,
     "nb_rows": 100,
     "nb_profiled_rows": 100,
+    "nb_columns": 4,
+    "nb_spatial_columns": 2,
+    "nb_numerical_columns": 1,
     "average_row_size": lambda n: round(n, 2) == 39.1,
     "attribute_keywords": ["id", "lat", "long", "height"],
     "columns": [
@@ -3367,6 +3380,9 @@ geo_wkt_metadata = {
     "size": 4708,
     "nb_rows": 100,
     "nb_profiled_rows": 100,
+    "nb_columns": 3,
+    "nb_spatial_columns": 1,
+    "nb_numerical_columns": 1,
     "average_row_size": lambda n: round(n, 2) == 47.08,
     "attribute_keywords": ["id", "coords", "height"],
     "columns": [
@@ -3438,6 +3454,8 @@ lazo_metadata = {
     "size": 523,
     "nb_rows": 36,
     "nb_profiled_rows": 36,
+    "nb_columns": 2,
+    "nb_temporal_columns": 1,
     "average_row_size": lambda n: round(n, 2) == 14.53,
     "attribute_keywords": ["dessert", "year"],
     "columns": [
@@ -3502,6 +3520,9 @@ daily_metadata = {
     'size': 388,
     'nb_rows': 30,
     "nb_profiled_rows": 30,
+    "nb_columns": 2,
+    "nb_temporal_columns": 1,
+    "nb_categorical_columns": 1,
     "average_row_size": lambda n: round(n, 2) == 12.93,
     "attribute_keywords": ["aug_date", "aug", "date", "rain"],
     'columns': [
@@ -3576,6 +3597,9 @@ hourly_metadata = {
     'size': 1242,
     'nb_rows': 52,
     'nb_profiled_rows': 52,
+    'nb_columns': 2,
+    'nb_temporal_columns': 1,
+    'nb_categorical_columns': 1,
     'average_row_size': lambda n: round(n, 2) == 23.88,
     'attribute_keywords': ['aug_date', 'aug', 'date', 'rain'],
     'columns': [
@@ -3653,6 +3677,9 @@ dates_pivoted_metadata = {
     'size': 511,
     'nb_rows': 24,
     'nb_profiled_rows': 24,
+    'nb_columns': 3,
+    'nb_temporal_columns': 1,
+    'nb_categorical_columns': 2,
     'average_row_size': lambda n: round(n, 2) == 21.29,
     'attribute_keywords': ['color', 'date', 'value'],
     'columns': [
@@ -3720,6 +3747,9 @@ other_formats_metadata = lambda fmt: {
     'size': 130,
     'nb_rows': 4,
     'nb_profiled_rows': 4,
+    'nb_columns': 3,
+    'nb_temporal_columns': 1,
+    'nb_numerical_columns': 1,
     'average_row_size': lambda n: round(n, 2) == 32.5,
     'attribute_keywords': ['name', 'age', 'date'],
     'columns': [

@@ -280,6 +280,9 @@ class TestDates(DataTestCase):
             {
                 'nb_rows': 3,
                 'nb_profiled_rows': 3,
+                'nb_columns': 2,
+                'nb_temporal_columns': 1,
+                'nb_numerical_columns': 1,
                 'types': ['numerical', 'temporal'],
                 'attribute_keywords': ['year', 'number'],
                 'columns': [
@@ -588,6 +591,8 @@ class TestNominatim(DataTestCase):
                 'size': 142,
                 'nb_rows': 3,
                 'nb_profiled_rows': 3,
+                'nb_columns': 2,
+                'nb_spatial_columns': 1,
                 'average_row_size': lambda n: round(n, 2) == 47.33,
                 'types': ['spatial'],
                 'attribute_keywords': ['place', 'loc'],
@@ -686,6 +691,8 @@ class TestGeo(DataTestCase):
                 'size': 145,
                 'nb_rows': 5,
                 'nb_profiled_rows': 5,
+                'nb_columns': 3,
+                'nb_spatial_columns': 2,
                 'average_row_size': lambda n: round(n, 2) == 29.0,
                 'types': ['spatial'],
                 'attribute_keywords': ['zero', 'one', 'mixed'],

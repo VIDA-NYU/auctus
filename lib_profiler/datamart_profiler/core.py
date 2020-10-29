@@ -516,6 +516,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     )
     metadata.update(file_metadata)
     metadata['nb_profiled_rows'] = data.shape[0]
+    metadata['nb_columns'] = data.shape[1]
 
     if 'columns' in metadata:
         columns = metadata['columns']
@@ -651,14 +652,22 @@ def process_dataset(data, dataset_id=None, metadata=None,
             col['semantic_types'].remove(types.LONGITUDE)
 
     # Identify the overall dataset types (numerical, categorical, spatial, or temporal)
-    dataset_types = set()
+    dataset_types = collections.Counter()
     for column_meta in columns:
         dataset_type = determine_dataset_type(
             column_meta['structural_type'],
             column_meta['semantic_types'],
         )
         if dataset_type:
-            dataset_types.add(dataset_type)
+            dataset_types[dataset_type] += 1
+    for key, d_type in [
+        ('nb_spatial_columns', types.DATASET_SPATIAL),
+        ('nb_temporal_columns', types.DATASET_TEMPORAL),
+        ('nb_categorical_columns', types.DATASET_CATEGORICAL),
+        ('nb_numerical_columns', types.DATASET_NUMERICAL),
+    ]:
+        if dataset_types[d_type]:
+            metadata[key] = dataset_types[d_type]
     metadata['types'] = sorted(set(dataset_types))
 
     if coverage:
