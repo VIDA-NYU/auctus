@@ -269,7 +269,6 @@ version = "0.8"
 
 [package.dependencies]
 datamart-geo = "0.2"
-lazo-index-service = "0.5.1"
 numpy = "*"
 pandas = "*"
 prometheus_client = "*"

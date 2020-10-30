@@ -4,7 +4,6 @@ import contextlib
 import csv
 import time
 from datetime import datetime
-from grpc._channel import _InactiveRpcError
 import logging
 import numpy
 import os
@@ -108,9 +107,10 @@ def expand_attribute_name(name):
 
 
 def _lazo_retry(func):
+    from grpc import RpcError
     try:
         return func()
-    except _InactiveRpcError:
+    except RpcError:
         pass
     return func()
 
