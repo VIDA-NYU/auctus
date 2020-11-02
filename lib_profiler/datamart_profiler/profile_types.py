@@ -59,6 +59,12 @@ _re_whitespace = re.compile(r'\s+')
 MAX_UNCLEAN = 0.02  # 2%
 
 
+# Free text is multiple words
+# At least 50% of it needs to have at least 4 words
+TEXT_WORDS = 4
+TEXT_WORDS_THRESHOLD = 0.5  # 50%
+
+
 # Maximum number of different values for categorical columns
 MAX_CATEGORICAL_RATIO = 0.10  # 10%
 
@@ -86,7 +92,7 @@ def regular_exp_count(array):
             re_count['other_point'] += 1
         elif _re_wkt_polygon.match(elem):
             re_count['polygon'] += 1
-        elif len(_re_whitespace.findall(elem)) >= 3:
+        elif len(_re_whitespace.findall(elem)) >= TEXT_WORDS - 1:
             re_count['text'] += 1
         if elem.lower() in ('0', '1', 'true', 'false', 'y', 'n', 'yes', 'no'):
             re_count['bool'] += 1
@@ -271,7 +277,12 @@ def identify_types(array, name, geo_data, manual=None):
                         semantic_types_dict[types.ADMIN] = level, resolved
                         categorical = True
 
-            if not categorical and num_text >= threshold:
+            # Different threshold there, we don't need all text to be many words
+            text_threshold = max(
+                1,
+                (1.0 - TEXT_WORDS_THRESHOLD) * (num_total - re_count['empty']),
+            )
+            if not categorical and num_text >= text_threshold:
                 # Free text
                 semantic_types_dict[types.TEXT] = None
             else:
