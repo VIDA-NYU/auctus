@@ -10,7 +10,7 @@ req = [
     'StringDist',
     'elasticsearch~=7.0',
     'redis~=3.4',
-    'lazo-index-service==0.5.1',
+    'lazo-index-service==0.6',
     'prometheus_client',
     'tornado>=5.0',
     'datamart_augmentation',
