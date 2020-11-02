@@ -107,10 +107,10 @@ def expand_attribute_name(name):
 
 
 def _lazo_retry(func):
-    from grpc import RpcError
+    from lazo_index_service.errors import LazoError
     try:
         return func()
-    except RpcError:
+    except LazoError:
         pass
     return func()
 
