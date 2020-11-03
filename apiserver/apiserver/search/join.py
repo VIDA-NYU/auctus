@@ -65,16 +65,18 @@ def get_column_coverage(data_profile, filter_=()):
             type_value = types.DATE_TIME
         else:
             continue
+        ranges = [
+            [
+                float(rg['range']['gte']),
+                float(rg['range']['lte']),
+            ]
+            for rg in column['coverage']
+        ]
         column_coverage[(column_index,)] = {
             'type': type_,
             'type_value': type_value,
-            'ranges': [],
+            'ranges': ranges,
         }
-        for range_ in column['coverage']:
-            column_coverage[(column_index,)]['ranges'].append([
-                float(range_['range']['gte']),
-                float(range_['range']['lte']),
-            ])
 
     if 'spatial_coverage' in data_profile:
         for spatial in data_profile['spatial_coverage']:
