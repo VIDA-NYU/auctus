@@ -179,9 +179,14 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
         column_metadata.update(common_dataset_metadata)
         column_metadata['index'] = column_index
         if 'coverage' in column_metadata:
-            for num_range in column_metadata['coverage']:
-                num_range['gte'] = num_range['range']['gte']
-                num_range['lte'] = num_range['range']['lte']
+            column_metadata['coverage'] = [
+                dict(
+                    num_range,
+                    gte=num_range['range']['gte'],
+                    lte=num_range['range']['lte'],
+                )
+                for num_range in column_metadata['coverage']
+            ]
         es.index(
             'datamart_columns',
             column_metadata
@@ -193,13 +198,18 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             spatial_coverage_metadata = dict()
             spatial_coverage_metadata.update(common_dataset_metadata)
             spatial_coverage_metadata.update(spatial_coverage)
+            ranges = []
             # Keep in sync, search code for 279a32
             for spatial_range in spatial_coverage_metadata['ranges']:
                 coordinates = spatial_range['range']['coordinates']
-                spatial_range['min_lon'] = coordinates[0][0]
-                spatial_range['max_lat'] = coordinates[0][1]
-                spatial_range['max_lon'] = coordinates[1][0]
-                spatial_range['min_lat'] = coordinates[1][1]
+                ranges.append(dict(
+                    spatial_range,
+                    min_lon=coordinates[0][0],
+                    max_lat=coordinates[0][1],
+                    max_lon=coordinates[1][0],
+                    min_lat=coordinates[1][1],
+                ))
+            spatial_coverage_metadata['ranges'] = ranges
             es.index(
                 'datamart_spatial_coverage',
                 spatial_coverage_metadata,
