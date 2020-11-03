@@ -157,8 +157,8 @@ def contextdecorator(factory, argname):
 
 def add_dataset_to_sup_index(es, dataset_id, metadata):
     """
-    Adds dataset to the supplementary Datamart indices:
-    'datamart_columns' and 'datamart_spatial_coverage'.
+    Adds dataset to the supplementary Datamart indices: 'datamart_columns',
+    'datamart_spatial_coverage', and 'datamart_temporal_coverage'.
     """
     DISCARD_DATASET_FIELDS = [
         'columns', 'sample', 'materialize',
@@ -214,6 +214,25 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             es.index(
                 'datamart_spatial_coverage',
                 spatial_coverage_metadata,
+            )
+
+    # 'datamart_temporal_coverage' index
+    if 'temporal_coverage' in metadata:
+        for temporal_coverage in metadata['temporal_coverage']:
+            temporal_coverage_metadata = dict()
+            temporal_coverage_metadata.update(common_dataset_metadata)
+            temporal_coverage_metadata.update(temporal_coverage)
+            temporal_coverage_metadata['ranges'] = [
+                dict(
+                    temporal_range,
+                    gte=temporal_range['range']['gte'],
+                    lte=temporal_range['range']['lte'],
+                )
+                for temporal_range in temporal_coverage_metadata['ranges']
+            ]
+            es.index(
+                'datamart_temporal_coverage',
+                temporal_coverage_metadata,
             )
 
 
@@ -291,8 +310,8 @@ def delete_dataset_from_lazo(es, dataset_id, lazo_client):
 def delete_dataset_from_index(es, dataset_id, lazo_client=None):
     """
     Safely deletes a dataset from the 'datamart' index,
-    including its corresponding information in
-    'datamart_columns' and 'datamart_spatial_coverage' indices.
+    including its corresponding information in 'datamart_columns',
+    'datamart_spatial_coverage', and 'datamart_temporal_coverage' indices.
     This function also connects to the Lazo index service
     and deletes any corresponding sketch.
     """
@@ -314,13 +333,18 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
     except elasticsearch.NotFoundError:
         return
 
-    # deleting from 'datamart_columns' and 'datamart_spatial_coverage'
+    # deleting from 'datamart_columns', 'datamart_spatial_coverage', and
+    # 'datamart_temporal_coverage'
     query = {
         'query': {
             'term': {'dataset_id': dataset_id}
         }
     }
-    for index in ('datamart_columns', 'datamart_spatial_coverage'):
+    for index in (
+        'datamart_columns',
+        'datamart_spatial_coverage',
+        'datamart_temporal_coverage',
+    ):
         nb = es.delete_by_query(
             index=index,
             body=query,
