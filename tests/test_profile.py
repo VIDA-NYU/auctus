@@ -668,6 +668,7 @@ class TestNominatim(DataTestCase):
                             'http://schema.org/Text',
                             'http://schema.org/address',
                         ],
+                        'language': 'en',
                     },
                 ],
                 'spatial_coverage': [

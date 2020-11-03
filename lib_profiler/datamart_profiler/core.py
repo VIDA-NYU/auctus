@@ -375,6 +375,13 @@ def process_column(
             ]
         }
 
+    # Guess language
+    if types.TEXT in semantic_types_dict:
+        for lang, prob in detect_language(array):
+            # If any language has >50% probability
+            if prob > 0.5:
+                column_meta['language'] = lang
+
     # Compute histogram from textual values
     if (
         plots and types.TEXT in semantic_types_dict and
