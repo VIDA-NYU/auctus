@@ -66,6 +66,11 @@ class Coordinator(object):
         self._recent_discoveries = RecentList(NB_RECENT)
         self._recent_uploads = RecentList(NB_RECENT)
 
+        # Create cache directories
+        os.makedirs('/cache/datasets', exist_ok=True)
+        os.makedirs('/cache/aug', exist_ok=True)
+        os.makedirs('/cache/user_data', exist_ok=True)
+
         # Setup the indices from YAML file
         with pkg_resources.resource_stream(
                 'coordinator', 'elasticsearch.yml') as stream:
@@ -104,11 +109,6 @@ class Coordinator(object):
                     time.sleep(5)
             else:
                 break
-
-        # Create cache directories
-        os.makedirs('/cache/datasets', exist_ok=True)
-        os.makedirs('/cache/aug', exist_ok=True)
-        os.makedirs('/cache/user_data', exist_ok=True)
 
         # Start AMQP coroutine
         log_future(
