@@ -161,7 +161,8 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
     'datamart_columns' and 'datamart_spatial_coverage'.
     """
     DISCARD_DATASET_FIELDS = [
-        'columns', 'sample', 'materialize', 'spatial_coverage',
+        'columns', 'sample', 'materialize',
+        'spatial_coverage', 'temporal_coverage',
         'manual_annotations',
     ]
     DISCARD_COLUMN_FIELDS = ['plot']
