@@ -184,7 +184,7 @@ class Profiler(object):
         else:
             self.nominatim = None
             logger.warning(
-                "$NOMINATIM_URL is not set, not resolving URLs"
+                "$NOMINATIM_URL is not set, not resolving addresses"
             )
         self.geo_data = GeoData.from_local_cache()
         self.channel = None
