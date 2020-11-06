@@ -248,7 +248,7 @@ class Coordinator(object):
         recent_uploads = []
         try:
             recent = self.elasticsearch.search(
-                index='datamart',
+                index='datamart,pending',
                 body={
                     'query': {
                         'bool': {
@@ -268,9 +268,13 @@ class Coordinator(object):
             logger.warning("Couldn't get recent datasets from Elasticsearch")
         else:
             for h in recent:
+                if h['_index'] == 'pending':
+                    metadata = h['_source']['metadata']
+                else:
+                    metadata = h['_source']
                 recent_uploads.append((
                     h['_id'],
-                    self.build_discovery(h['_id'], h['_source']),
+                    self.build_discovery(h['_id'], metadata),
                 ))
 
         # Count datasets per source
