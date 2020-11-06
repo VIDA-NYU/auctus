@@ -319,8 +319,14 @@ pending:
         type: text
         index: false
       error_details:
-        type: object
-        enabled: false
+        properties:
+          exception:
+            type: text
+          exception_type:
+            type: keyword
+          traceback:
+            type: text
+            index: false
       metadata:
         type: object
         enabled: false
