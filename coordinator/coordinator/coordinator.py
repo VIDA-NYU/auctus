@@ -120,6 +120,7 @@ class Coordinator(object):
         # Start statistics coroutine
         self.sources_counts = {}
         self.profiler_versions_counts = {}
+        self.error_counts = {}
         log_future(
             asyncio.get_event_loop().create_task(self.update_statistics()),
             logger,
@@ -135,6 +136,25 @@ class Coordinator(object):
     def delete_recent(self, dataset_id):
         self._recent_discoveries.delete(dataset_id)
         self._recent_uploads.delete(dataset_id)
+
+    def get_datasets_with_error(self, error_type, size=20):
+        return [
+            dict(h['_source'], id=h['_id'])
+            for h in self.elasticsearch.search(
+                index='pending',
+                body={
+                    'query': {
+                        'term': {
+                            'error_details.exception_type': error_type,
+                        },
+                    },
+                    'sort': [
+                        {'date': {'order': 'desc'}},
+                    ],
+                },
+                size=size,
+            )['hits']['hits']
+        ]
 
     @staticmethod
     def build_discovery(dataset_id, metadata):
@@ -272,6 +292,7 @@ class Coordinator(object):
             for bucket in sources['buckets']
         }
 
+        # Count datasets per profiler version
         versions = self.elasticsearch.search(
             index='datamart',
             body={
@@ -290,6 +311,25 @@ class Coordinator(object):
             for bucket in versions['buckets']
         }
 
+        # Count errored dataset per error type
+        errors = self.elasticsearch.search(
+            index='pending',
+            body={
+                'aggs': {
+                    'exception_types': {
+                        'terms': {
+                            'field': 'error_details.exception_type',
+                        },
+                    },
+                },
+            },
+            size=0,
+        )['aggregations']['exception_types']
+        errors = {
+            bucket['key']: bucket['doc_count']
+            for bucket in errors['buckets']
+        }
+
         # Update prometheus
         for source, count in sources.items():
             PROM_DATASETS.labels(source).set(count)
@@ -301,7 +341,7 @@ class Coordinator(object):
         for version in self.profiler_versions_counts.keys() - versions.keys():
             PROM_PROFILED_VERSION.remove(version)
 
-        return sources, versions, recent_discoveries, recent_uploads
+        return sources, versions, recent_discoveries, recent_uploads, errors
 
     async def update_statistics(self):
         """Periodically update statistics.
@@ -314,6 +354,7 @@ class Coordinator(object):
                     self.profiler_versions_counts,
                     recent_discoveries,
                     recent_uploads,
+                    self.error_counts,
                 ) = await asyncio.get_event_loop().run_in_executor(
                     None,
                     self._update_statistics,

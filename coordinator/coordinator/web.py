@@ -102,6 +102,17 @@ class Index(BaseHandler):
         return self.render(
             'index.html',
             recent_uploads=recent_uploads,
+            error_counts=sorted(self.coordinator.error_counts.items()),
+        )
+
+
+class Errors(BaseHandler):
+    def get(self, error_type):
+        datasets = self.coordinator.get_datasets_with_error(error_type)
+        return self.render(
+            'errors.html',
+            error_type=error_type,
+            datasets=datasets,
         )
 
 
@@ -215,6 +226,7 @@ def make_app(debug=False):
             URLSpec('/api/statistics', Statistics),
             URLSpec('/api/delete_dataset/([^/]+)', DeleteDataset),
             URLSpec('/', Index, name='index'),
+            URLSpec('/errors/([^/]+)', Errors, name='errors'),
             URLSpec('/login', Login, name='login'),
         ],
         static_path=pkg_resources.resource_filename('coordinator',

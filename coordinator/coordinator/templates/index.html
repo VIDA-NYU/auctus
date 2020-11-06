@@ -2,7 +2,7 @@
 {% set active_page = "index" %}
 
 {% block contents %}
-<p>Recent uploads:</p>
+<h2>Recent uploads:</h2>
 <ul>
   {% if recent_uploads %}
   {% for upload in recent_uploads %}
@@ -59,4 +59,16 @@ document.getElementById('delete-by-id').addEventListener('submit', function(e) {
   deleteDataset(document.getElementById('delete-input').value);
 });
 </script>
+
+
+<h2>Errored datasets:</h2>
+<ul>
+  {% if error_counts %}
+  {% for error_type, error_count in error_counts %}
+  <li><a href="{{ reverse_url('errors', error_type) }}">{{ error_type }}</a>: {{ error_count }}</li>
+  {% endfor %}
+  {% else %}
+  <li style="font-style: oblique;">No errors recorded</li>
+  {% endif %}
+</ul>
 {% endblock %}

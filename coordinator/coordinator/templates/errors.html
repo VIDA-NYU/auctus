@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set active_page = "index" %}
+
+{% block contents %}
+<p>Datasets with error <span class="text-monospace">{{ error_type }}</span></p>
+<ul>
+  {% if datasets %}
+  {% for dataset in datasets %}
+  <li>
+    {{ dataset.metadata.name }} (<span class="text-monospace">{{ dataset.id }}</span>)<br/>
+    <details class="ml-4">
+      <summary class="text-monospace">{{ dataset.error_details.exception }}</summary>
+      <pre>{{ dataset.error_details.traceback }}</pre>
+    </details>
+  </li>
+  {% endfor %}
+  {% else %}
+  <li style="font-style: oblique;">No dataset with that error</li>
+  {% endif %}
+</ul>
+{% endblock %}
