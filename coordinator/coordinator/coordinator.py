@@ -137,6 +137,25 @@ class Coordinator(object):
         self._recent_discoveries.delete(dataset_id)
         self._recent_uploads.delete(dataset_id)
 
+    def get_datasets_with_error(self, error_type, size=20):
+        return [
+            dict(h['_source'], id=h['_id'])
+            for h in self.elasticsearch.search(
+                index='pending',
+                body={
+                    'query': {
+                        'term': {
+                            'error_details.exception_type': error_type,
+                        },
+                    },
+                    'sort': [
+                        {'date': {'order': 'desc'}},
+                    ],
+                },
+                size=size,
+            )['hits']['hits']
+        ]
+
     @staticmethod
     def build_discovery(dataset_id, metadata):
         materialize = metadata.get('materialize', {})

@@ -65,7 +65,7 @@ document.getElementById('delete-by-id').addEventListener('submit', function(e) {
 <ul>
   {% if error_counts %}
   {% for error_type, error_count in error_counts %}
-  <li><a href="#">{{ error_type }}</a>: {{ error_count }}</li>
+  <li><a href="{{ reverse_url('errors', error_type) }}">{{ error_type }}</a>: {{ error_count }}</li>
   {% endfor %}
   {% else %}
   <li style="font-style: oblique;">No errors recorded</li>
