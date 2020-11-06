@@ -102,6 +102,7 @@ class Index(BaseHandler):
         return self.render(
             'index.html',
             recent_uploads=recent_uploads,
+            error_counts=sorted(self.coordinator.error_counts.items()),
         )
 
 
