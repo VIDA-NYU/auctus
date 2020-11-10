@@ -82,6 +82,19 @@ paths:
       - "query"
       summary: "Search the index for datasets"
       operationId: "search"
+      parameters:
+      - in: query
+        name: "page"
+        schema:
+          type: integer
+          minimum: 1
+        required: false
+      - in: query
+        name: "size"
+        schema:
+          type: integer
+          minimum: 1
+        required: false
       requestBody:
         content:
           multipart/form-data:

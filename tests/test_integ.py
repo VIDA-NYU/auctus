@@ -412,6 +412,51 @@ class TestSearch(DatamartTest):
             },
         )
 
+    def test_search_pagination(self):
+        """Do basic search with pagination."""
+        page_size = 2
+        response = self.datamart_post(
+            f'/search?page=1&size={page_size}',
+            json={'source': ['remi']},
+            schema=result_list_schema,
+        )
+        self.assertEqual(response.request.headers['Content-Type'],
+                         'application/json')
+        results = response.json()['results']
+        # Got page of the requested size
+        self.assertEqual(len(results), page_size)
+
+        # Get total size
+        total_pages = int(response.headers['X-Total-Pages'])
+        self.assertGreater(total_pages, 1)
+
+        # Get all pages and one extra
+        all_results = set()
+        for page_nb in range(2, 2 + total_pages):
+            response = self.datamart_post(
+                f'/search?page={page_nb}&size={page_size}',
+                json={'source': ['remi']},
+                schema=result_list_schema,
+            )
+            self.assertEqual(response.request.headers['Content-Type'],
+                             'application/json')
+            results = response.json()['results']
+            if page_nb < total_pages:
+                self.assertEqual(len(results), page_size)
+            elif page_nb == total_pages:
+                self.assertTrue(1 <= len(results) <= page_size)
+            else:
+                self.assertEqual(len(results), 0)
+            self.assertEqual(
+                response.headers['X-Total-Pages'],
+                str(total_pages),
+            )
+
+            # No repeats
+            new_ids = {r['id'] for r in results}
+            self.assertFalse(new_ids & all_results)
+            all_results.update(new_ids)
+
     def test_search_with_source(self):
         """Search restricted by source."""
         response = self.datamart_post(

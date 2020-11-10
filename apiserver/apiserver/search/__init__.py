@@ -1,4 +1,5 @@
 import csv
+import math
 from datetime import datetime
 import io
 import json
@@ -549,8 +550,28 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 "At least one of 'data' or 'query' must be provided",
             )
 
+        # Get pagination arguments
+        page = self.get_query_argument('page', None)
+        if page is not None:
+            try:
+                page = int(page)
+            except ValueError:
+                page = -1
+            if page < 1:
+                return self.send_error_json(400, "Invalid page number")
+        size = self.get_query_argument('size', None)
+        if size is not None:
+            try:
+                size = int(size)
+            except ValueError:
+                size = -1
+            if size < 1 or size > 100:
+                return self.send_error_json(400, "Invalid size")
+
         if not data_profile:
-            hits = self.application.elasticsearch.search(
+            page = page or 1
+            size = size or TOP_K_SIZE
+            response = self.application.elasticsearch.search(
                 index='datamart',
                 body={
                     'query': {
@@ -559,8 +580,13 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                         },
                     },
                 },
-                size=TOP_K_SIZE,
-            )['hits']['hits']
+                size=size,
+                from_=(page - 1) * size,
+            )
+            hits = response['hits']['hits']
+
+            total_pages = math.ceil(response['hits']['total']['value'] / size)
+            self.set_header('X-Total-Pages', str(total_pages))
 
             results = []
             for h in hits:
@@ -580,6 +606,11 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     supplied_resource_id=None
                 ))
         else:
+            if page or size:
+                return self.send_error_json(
+                    400,
+                    "Pagination is not yet supported for augmentation search",
+                )
             results = get_augmentation_search_results(
                 self.application.elasticsearch,
                 self.application.lazo_client,
