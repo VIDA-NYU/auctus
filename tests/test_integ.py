@@ -3306,7 +3306,7 @@ geo_metadata = {
         {
             "name": "lat",
             "structural_type": "http://schema.org/Float",
-            "semantic_types": lambda l: "http://schema.org/latitude" in l,
+            "semantic_types": ["http://schema.org/latitude"],
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 40.711,
             "stddev": lambda n: round(n, 4) == 0.0186,
@@ -3316,7 +3316,7 @@ geo_metadata = {
         {
             "name": "long",
             "structural_type": "http://schema.org/Float",
-            "semantic_types": lambda l: "http://schema.org/longitude" in l,
+            "semantic_types": ["http://schema.org/longitude"],
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == -73.993,
             "stddev": lambda n: round(n, 5) == 0.00684,
@@ -3326,7 +3326,7 @@ geo_metadata = {
         {
             "name": "height",
             "structural_type": "http://schema.org/Float",
-            "semantic_types": lambda l: isinstance(l, list),
+            "semantic_types": [],
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 47.827,
             "stddev": lambda n: round(n, 2) == 21.28,
@@ -3447,7 +3447,7 @@ geo_wkt_metadata = {
         {
             "name": "height",
             "structural_type": "http://schema.org/Float",
-            "semantic_types": lambda l: isinstance(l, list),
+            "semantic_types": [],
             "unclean_values_ratio": 0.0,
             "mean": lambda n: round(n, 3) == 47.827,
             "stddev": lambda n: round(n, 2) == 21.28,
