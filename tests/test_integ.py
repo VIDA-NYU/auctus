@@ -139,22 +139,44 @@ class TestProfiler(DatamartTest):
         )['hits']['hits']
         hits = {h['_id']: h['_source'] for h in hits}
 
+        expected = {
+            'datamart.test.basic': basic_metadata,
+            'datamart.test.geo': geo_metadata,
+            'datamart.test.geo_wkt': geo_wkt_metadata,
+            'datamart.test.agg': agg_metadata,
+            'datamart.test.lazo': lazo_metadata,
+            'datamart.test.daily': daily_metadata,
+            'datamart.test.hourly': hourly_metadata,
+            'datamart.test.dates_pivoted': dates_pivoted_metadata,
+            'datamart.test.excel': other_formats_metadata('xls'),
+            'datamart.test.spss': other_formats_metadata('spss'),
+            'datamart.test.stata114': other_formats_metadata('stata'),
+            'datamart.test.stata118': other_formats_metadata('stata'),
+        }
+
+        # Those fields are returned through the API but are not actually stored
+        # (they come from temporal_coverage)
+        def remove_enhanced_fields(col):
+            if 'http://schema.org/DateTime' in col['semantic_types']:
+                col = dict(col)
+                col.pop('coverage', None)
+                col.pop('temporal_resolution', None)
+            return col
+
+        expected = {
+            dataset_id: dict(
+                meta,
+                columns=[
+                    remove_enhanced_fields(col)
+                    for col in meta['columns']
+                ],
+            )
+            for dataset_id, meta in expected.items()
+        }
+
         self.assertJson(
             hits,
-            {
-                'datamart.test.basic': basic_metadata,
-                'datamart.test.geo': geo_metadata,
-                'datamart.test.geo_wkt': geo_wkt_metadata,
-                'datamart.test.agg': agg_metadata,
-                'datamart.test.lazo': lazo_metadata,
-                'datamart.test.daily': daily_metadata,
-                'datamart.test.hourly': hourly_metadata,
-                'datamart.test.dates_pivoted': dates_pivoted_metadata,
-                'datamart.test.excel': other_formats_metadata('xls'),
-                'datamart.test.spss': other_formats_metadata('spss'),
-                'datamart.test.stata114': other_formats_metadata('stata'),
-                'datamart.test.stata118': other_formats_metadata('stata'),
-            },
+            expected,
         )
 
     def test_alternate(self):
@@ -3519,6 +3541,11 @@ lazo_metadata = {
             "unclean_values_ratio": 0.0,
             'num_distinct_values': 2,
             "plot": check_plot('histogram_temporal'),
+            "coverage": [
+                {'range': {'gte': 631152000.0, 'lte': 631152000.0}},
+                {'range': {'gte': 662688000.0, 'lte': 662688000.0}},
+            ],
+            "temporal_resolution": "year",
         }
     ],
     "temporal_coverage": [
@@ -3575,6 +3602,12 @@ daily_metadata = {
             'unclean_values_ratio': 0.0,
             'num_distinct_values': 30,
             "plot": check_plot('histogram_temporal'),
+            'coverage': [
+                {'range': {'gte': 1555977600.0, 'lte': 1556755200.0}},
+                {'range': {'gte': 1556841600.0, 'lte': 1557619200.0}},
+                {'range': {'gte': 1557705600.0, 'lte': 1558483200.0}},
+            ],
+            'temporal_resolution': 'day',
         },
         {
             'name': 'rain',
@@ -3640,6 +3673,12 @@ hourly_metadata = {
             ],
             'num_distinct_values': 52,
             "plot": check_plot('histogram_temporal'),
+            'coverage': [
+                {'range': {'gte': 1560297600.0, 'lte': 1560358784.0}},
+                {'range': {'gte': 1560362368.0, 'lte': 1560419968.0}},
+                {'range': {'gte': 1560423552.0, 'lte': 1560481152.0}},
+            ],
+            'temporal_resolution': 'hour',
         },
         {
             'name': 'rain',
