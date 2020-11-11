@@ -173,7 +173,7 @@ def count_rows_to_skip(file):
         file.seek(0, 0)
 
 
-def load_data(data, load_max_size=None):
+def load_data(data, load_max_size=None, indexes=True):
     metadata = {}
 
     if isinstance(data, pandas.DataFrame):
@@ -186,8 +186,10 @@ def load_data(data, load_max_size=None):
 
         # Turn indexes into regular columns
         if (
-            data.index.dtype != numpy.int64
-            or not pandas.Index(numpy.arange(len(data))).equals(data.index)
+            indexes and (
+                data.index.dtype != numpy.int64
+                or not pandas.Index(numpy.arange(len(data))).equals(data.index)
+            )
         ):
             data = data.reset_index()
 
@@ -523,7 +525,9 @@ def get_lazo_data_sketch(
 def process_dataset(data, dataset_id=None, metadata=None,
                     lazo_client=None, nominatim=None, geo_data=None,
                     search=False, include_sample=False,
-                    coverage=True, plots=False, load_max_size=None, **kwargs):
+                    coverage=True, plots=False, indexes=True,
+                    load_max_size=None,
+                    **kwargs):
     """Compute all metafeatures from a dataset.
 
     :param data: path to dataset, or file object, or DataFrame
@@ -540,6 +544,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
         result. Useful to present to a user.
     :param coverage: Whether to compute data ranges
     :param plots: Whether to compute plots
+    :param indexes: Whether to include indexes. If True (the default), the
+        input is a DataFrame, and it has index(es) different from the default
+        range, they will appear in the result with the columns.
     :param load_max_size: Target size of the data to be analyzed. The data will
         be randomly sampled if it is bigger. Defaults to `MAX_SIZE`, currently
         5 MB. This is different from the sample data included in the result.
@@ -570,6 +577,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         data, file_metadata, column_names = load_data(
             data,
             load_max_size=load_max_size,
+            indexes=indexes,
         )
     except EmptyDataError:
         logger.warning("Dataframe is empty!")
