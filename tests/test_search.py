@@ -1,6 +1,10 @@
 import unittest
+from unittest import mock
 
 from apiserver.search import parse_query
+from apiserver.search import join
+
+from .utils import DataTestCase
 
 
 class TestSearch(unittest.TestCase):
@@ -179,26 +183,16 @@ class TestSearch(unittest.TestCase):
                 },
                 {
                     'nested': {
-                        'path': 'columns',
+                        'path': 'temporal_coverage',
                         'query': {
                             'bool': {
                                 'must': [
                                     {
-                                        'term': {
-                                            'columns.semantic_types': 'http://schema.org/DateTime',
-                                        },
-                                    },
-                                    {
-                                        'nested': {
-                                            'path': 'columns.coverage',
-                                            'query': {
-                                                'range': {
-                                                    'columns.coverage.range': {
-                                                        'gte': 1546300800.0,
-                                                        'lte': 1577750400.0,
-                                                        'relation': 'intersects',
-                                                    },
-                                                },
+                                        'range': {
+                                            'temporal_coverage.range': {
+                                                'gte': 1546300800.0,
+                                                'lte': 1577750400.0,
+                                                'relation': 'intersects',
                                             },
                                         },
                                     },
@@ -231,4 +225,116 @@ class TestSearch(unittest.TestCase):
                     },
                 },
             ],
+        )
+
+
+class TestAugmentation(DataTestCase):
+    def test_temporal(self):
+        main, sup_funcs, sup_filters, vars = parse_query({
+            'keywords': 'green taxi',
+        })
+        es = mock.Mock()
+        result = object()
+        es.search.return_value = {
+            'hits': {
+                'hits': [
+                    result,
+                ],
+            },
+        }
+        results = join.get_temporal_join_search_results(
+            es,
+            [[1.0, 2.0], [11.0, 12.0]],
+            None,
+            None,
+            sup_funcs,
+            sup_filters,
+        )
+        self.assertEqual(results, [result])
+        self.assertEqual(len(es.search.call_args_list), 1)
+        args, kwargs = es.search.call_args_list[0]
+        self.assertEqual(args, ())
+        temporal_query = lambda a, b: {
+            'nested': {
+                'path': 'ranges',
+                'query': {
+                    'function_score': {
+                        'query': {
+                            'range': {
+                                'ranges.range': {
+                                    'gte': a,
+                                    'lte': b,
+                                    'relation': 'intersects',
+                                },
+                            },
+                        },
+                        'script_score': {
+                            'script': {
+                                'lang': 'painless',
+                                'params': {
+                                    'gte': a,
+                                    'lte': b,
+                                    'coverage': 4.0,
+                                },
+                                'source': lambda s: (
+                                    isinstance(s, str) and len(s) > 20
+                                ),
+                            },
+                        },
+                        'boost_mode': 'replace',
+                    },
+                },
+                'inner_hits': {
+                    '_source': False,
+                    'size': 100,
+                    'name': lambda s: s.startswith('range-'),
+                },
+                'score_mode': 'sum',
+            },
+        }
+        self.assertJson(
+            kwargs,
+            dict(
+                index='datamart_temporal_coverage',
+                body={
+                    '_source': lambda d: isinstance(d, dict),
+                    'query': {
+                        'function_score': {
+                            'query': {
+                                'bool': {
+                                    'filter': [],
+                                    'should': [
+                                        temporal_query(1.0, 2.0),
+                                        temporal_query(11.0, 12.0),
+                                    ],
+                                    'must_not': [],
+                                    'minimum_should_match': 1
+                                },
+                            },
+                            'functions': [
+                                {
+                                    'filter': {
+                                        'multi_match': {
+                                            'query': 'green taxi',
+                                            'operator': 'and',
+                                            'type': 'cross_fields',
+                                            'fields': [
+                                                'dataset_id^10',
+                                                'dataset_description',
+                                                'dataset_name',
+                                                'name',
+                                                'dataset_attribute_keywords',
+                                            ],
+                                        },
+                                    },
+                                    'weight': 10,
+                                },
+                            ],
+                            'score_mode': 'sum',
+                            'boost_mode': 'multiply',
+                        },
+                    },
+                },
+                size=50,
+            ),
         )

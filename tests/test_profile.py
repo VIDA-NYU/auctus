@@ -293,14 +293,6 @@ class TestDates(DataTestCase):
                         'semantic_types': ['http://schema.org/DateTime'],
                         'unclean_values_ratio': 0.0,
                         'num_distinct_values': 3,
-                        'mean': 1104508800.0,
-                        'stddev': lambda n: round(n, 3) == 25784316.871,
-                        'coverage': [
-                            year_rng(1072915200.0),
-                            year_rng(1104537600.0),
-                            year_rng(1136073600.0),
-                        ],
-                        'temporal_resolution': 'year',
                     },
                     {
                         'name': 'number',
@@ -317,6 +309,20 @@ class TestDates(DataTestCase):
                         ],
                     },
                 ],
+                'temporal_coverage': [
+                    {
+                        'type': 'datetime',
+                        'column_names': ['year'],
+                        'column_indexes': [0],
+                        'column_types': ['http://schema.org/DateTime'],
+                        'ranges': [
+                            year_rng(1072915200.0),
+                            year_rng(1104537600.0),
+                            year_rng(1136073600.0),
+                        ],
+                        'temporal_resolution': 'year',
+                    },
+                ]
             },
         )
 
