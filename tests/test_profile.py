@@ -167,6 +167,12 @@ class TestIndex(unittest.TestCase):
             ['a', 'b', 'c'],
         )
 
+        metadata = process_dataset(df, indexes=False)
+        self.assertEqual(
+            [col['name'] for col in metadata['columns']],
+            ['a', 'b', 'c'],
+        )
+
     def test_index(self):
         """Test profiling a DataFrame that has an index set"""
         df = self.DATA.set_index(['a'])
@@ -177,6 +183,12 @@ class TestIndex(unittest.TestCase):
         self.assertEqual(
             [col['name'] for col in metadata['columns']],
             ['a', 'b', 'c'],
+        )
+
+        metadata = process_dataset(df, indexes=False)
+        self.assertEqual(
+            [col['name'] for col in metadata['columns']],
+            ['b', 'c'],
         )
 
     def test_multi_index(self):
