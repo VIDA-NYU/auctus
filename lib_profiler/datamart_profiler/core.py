@@ -765,6 +765,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                 if 'admin_areas' in resolved:
                     areas = resolved['admin_areas']
 
+                    name = columns[idx]['name']
+                    logger.info(
+                        "Computing spatial ranges admin_areas=%r (%d rows)",
+                        name, len(areas),
+                    )
+
                     # Compute ranges from administrative areas
                     merged = None
                     for area in areas:
@@ -786,6 +792,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         and merged[1] - merged[0] > 0.01
                         and merged[3] - merged[2] > 0.01
                     ):
+                        logger.info("Inserted bounding box")
                         spatial_coverage.append({
                             'type': 'admin',
                             'column_names': [columns[idx]['name']],
@@ -802,6 +809,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
                                 },
                             ],
                         })
+                    else:
+                        logger.info("Couldn't build a bounding box")
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
