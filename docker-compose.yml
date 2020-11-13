@@ -245,7 +245,6 @@ services:
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
-      - ZENODO_TOKEN=${ZENODO_TOKEN}
     volumes:
       - ./docker/zenodo.json:/usr/src/app/zenodo.json
   uaz-indicators:

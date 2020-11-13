@@ -65,9 +65,6 @@ class ZenodoDiscoverer(Discoverer):
         while url:
             logger.info("Getting %s", url)
             headers = {'Accept': 'application/json'}
-            token = os.environ.get('ZENODO_TOKEN')
-            if token:
-                headers['Authorization'] = 'Bearer %s' % token
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             obj = response.json()
