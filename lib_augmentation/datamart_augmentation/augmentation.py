@@ -396,6 +396,7 @@ def join(
             original_data,
             error_bad_lines=False,
             dtype=str,
+            na_filter=False,
         )
     else:
         raise TypeError(
@@ -642,6 +643,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             original_data,
             error_bad_lines=False,
             dtype=str,
+            na_filter=False,
             chunksize=CHUNK_SIZE_ROWS,
         ))
     else:
@@ -708,6 +710,7 @@ def union(original_data, augment_data_path, original_metadata, augment_metadata,
             augment_data_path,
             error_bad_lines=False,
             dtype=str,
+            na_filter=False,
             chunksize=CHUNK_SIZE_ROWS,
         )
         for augment_data in augment_data_chunks:
