@@ -4,6 +4,7 @@ import contextlib
 import csv
 import time
 from datetime import datetime
+import langid
 import logging
 import numpy
 import os
@@ -226,6 +227,22 @@ def load_data(data, load_max_size=None):
     return data, data_path, metadata, column_names
 
 
+def detect_language(array):
+    langid.langid.load_model()
+    lang_identifier = langid.langid.identifier
+    languages = numpy.zeros(len(lang_identifier.nb_classes))
+    for value in array:
+        if value:
+            # See LanguageIdentifier.rank()
+            fv = lang_identifier.instance2fv(value)
+            probs = lang_identifier.nb_classprobs(fv)
+            languages += probs
+    languages_exp = numpy.exp(languages)
+    languages_prob = languages_exp / languages_exp.sum()
+
+    return zip(lang_identifier.nb_classes, languages_prob)
+
+
 def process_column(
     array, column_meta,
     *,
@@ -357,6 +374,13 @@ def process_column(
                 for value, count in counts
             ]
         }
+
+    # Guess language
+    if types.TEXT in semantic_types_dict:
+        for lang, prob in detect_language(array):
+            # If any language has >50% probability
+            if prob > 0.5:
+                column_meta['language'] = lang
 
     # Compute histogram from textual values
     if (

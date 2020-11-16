@@ -269,6 +269,7 @@ version = "0.8.1"
 
 [package.dependencies]
 datamart-geo = "0.2"
+langid = ">=1.1,<2.0"
 numpy = "*"
 pandas = "*"
 prometheus_client = "*"
@@ -485,6 +486,17 @@ version = "*"
 [package.extras]
 format = ["idna", "jsonpointer (>1.13)", "rfc3987", "strict-rfc3339", "webcolors"]
 format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator (>0.1.0)", "rfc3339-validator"]
+
+[[package]]
+category = "main"
+description = "langid.py is a standalone Language Identification (LangID) tool."
+name = "langid"
+optional = false
+python-versions = "*"
+version = "1.1.6"
+
+[package.dependencies]
+numpy = "*"
 
 [[package]]
 category = "main"
@@ -1220,6 +1232,9 @@ joblib = [
 jsonschema = [
     {file = "jsonschema-3.2.0-py2.py3-none-any.whl", hash = "sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163"},
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
+]
+langid = [
+    {file = "langid-1.1.6.tar.gz", hash = "sha256:044bcae1912dab85c33d8e98f2811b8f4ff1213e5e9a9e9510137b84da2cb293"},
 ]
 lazo-index-service = [
     {file = "lazo-index-service-0.6.tar.gz", hash = "sha256:45ad9f585194dedb66cf8b0438c8b22ffdc28b0aa406ddd5b504912cc5092794"},
