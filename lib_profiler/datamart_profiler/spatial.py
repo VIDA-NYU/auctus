@@ -359,18 +359,71 @@ def disambiguate_admin_areas(admin_areas):
     Each name in the input will have been resolved to multiple possible areas,
     making the input a list of list. We want to build a simple list, where
     each name has been resolved to the most likely area.
+
+    We choose so that all the areas are of the same level (e.g. all countries,
+    or all states, but not a mix of counties and states), and if possible all
+    in the same parent area (for example, states of the same country, or
+    counties in states of the same country).
     """
-    # Guess level, stop if not uniform
-    level = guess_admin_level(admin_areas)
-    if level is None:
+    # Count possible options
+    options = collections.Counter()
+    for candidates in admin_areas:
+        # Count options from the same list of candidates only once
+        options_for_entry = set()
+        for area in candidates:
+            level = area.type.value
+            area = area.get_parent_area()
+            while area:
+                options_for_entry.add((level, area))
+                area = area.get_parent_area()
+            options_for_entry.add((level, None))
+        options.update(options_for_entry)
+
+    # Throw out options with too few matches
+    threshold = (1.0 - MAX_WRONG_LEVEL_ADMIN) * len(admin_areas)
+    threshold = max(3, threshold)
+    options = [
+        (option, count) for (option, count) in options.items()
+        if count >= threshold
+    ]
+    if not options:
         return None
 
-    # Discard areas with a different level
-    admin_areas = [
-        area for areas_list in admin_areas for area in areas_list
-        if area.type.value == level
-    ]
-    return level, admin_areas
+    # Find best option
+    (level, common_parent), _ = min(
+        options,
+        # Order:
+        key=lambda entry: (  # lambda ((level, parent_area), count):
+            # - by ascending level (prefer recognizing as a list of countries
+            #   over a list of states), then
+            entry[0][0],
+            # - by descending level of the common parent (prefer a list of
+            #   counties in the same state over counties merely in the same
+            #   country over counties in different countries), then
+            -(entry[0][1].type.value if entry[0][1] is not None else -1),
+            # - by descending count
+            -entry[1],
+        )
+    )
+    if common_parent is None:
+        common_admin = None
+    else:
+        common_admin = common_parent.levels[common_parent.type.value]
+
+    # Build the result
+    result = []
+    for candidates in admin_areas:
+        for area in candidates:
+            if (
+                area.type.value == level and (
+                    common_parent is None or
+                    area.levels[common_parent.type.value] == common_admin
+                )
+            ):
+                result.append(area)
+                break
+
+    return level, result
 
 
 def median_smallest_distance(points, tree=None):
