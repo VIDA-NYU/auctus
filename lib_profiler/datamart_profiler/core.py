@@ -185,41 +185,33 @@ def load_data(data, load_max_size=None):
             data.seek(0, 0)
 
             # Load the data
-            try:
-                if metadata['size'] > load_max_size:
-                    logger.info("Counting rows...")
-                    metadata['nb_rows'] = sum(1 for _ in data)
-                    if metadata['nb_rows'] > 0:
-                        metadata['average_row_size'] = (
-                            metadata['size'] / metadata['nb_rows']
-                        )
-                    data.seek(0, 0)
+            if metadata['size'] > load_max_size:
+                logger.info("Counting rows...")
+                metadata['nb_rows'] = sum(1 for _ in data)
+                if metadata['nb_rows'] > 0:
+                    metadata['average_row_size'] = (
+                        metadata['size'] / metadata['nb_rows']
+                    )
+                data.seek(0, 0)
 
-                    # Sub-sample
-                    ratio = load_max_size / metadata['size']
-                    logger.info("Loading dataframe, sample ratio=%r...", ratio)
-                    rand = random.Random(RANDOM_SEED)
-                    data = pandas.read_csv(
-                        data,
-                        dtype=str, na_filter=False,
-                        skiprows=lambda i: i != 0 and rand.random() > ratio)
-                else:
-                    logger.info("Loading dataframe...")
-                    data = pandas.read_csv(data,
-                                           dtype=str, na_filter=False)
+                # Sub-sample
+                ratio = load_max_size / metadata['size']
+                logger.info("Loading dataframe, sample ratio=%r...", ratio)
+                rand = random.Random(RANDOM_SEED)
+                data = pandas.read_csv(
+                    data,
+                    dtype=str, na_filter=False,
+                    skiprows=lambda i: i != 0 and rand.random() > ratio)
+            else:
+                logger.info("Loading dataframe...")
+                data = pandas.read_csv(data,
+                                       dtype=str, na_filter=False)
 
-                    metadata['nb_rows'] = data.shape[0]
-                    if metadata['nb_rows'] > 0:
-                        metadata['average_row_size'] = (
-                            metadata['size'] / metadata['nb_rows']
-                        )
-            except EmptyDataError:
-                logger.warning("Dataframe is empty!")
-                metadata['nb_rows'] = 0
-                metadata['nb_profiled_rows'] = 0
-                metadata['columns'] = []
-                metadata['types'] = []
-                return metadata
+                metadata['nb_rows'] = data.shape[0]
+                if metadata['nb_rows'] > 0:
+                    metadata['average_row_size'] = (
+                        metadata['size'] / metadata['nb_rows']
+                    )
 
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
@@ -551,10 +543,18 @@ def process_dataset(data, dataset_id=None, metadata=None,
         metadata = {}
 
     # Load or prepare data for processing
-    data, data_path, file_metadata, column_names = load_data(
-        data,
-        load_max_size=load_max_size,
-    )
+    try:
+        data, data_path, file_metadata, column_names = load_data(
+            data,
+            load_max_size=load_max_size,
+        )
+    except EmptyDataError:
+        logger.warning("Dataframe is empty!")
+        metadata['nb_rows'] = 0
+        metadata['nb_profiled_rows'] = 0
+        metadata['columns'] = []
+        metadata['types'] = []
+        return metadata
     metadata.update(file_metadata)
     metadata['nb_profiled_rows'] = data.shape[0]
     metadata['nb_columns'] = data.shape[1]
