@@ -353,6 +353,26 @@ def guess_admin_level(admin_areas):
         return None
 
 
+def disambiguate_admin_areas(admin_areas):
+    """This takes admin areas resolved from names and tries to disambiguate.
+
+    Each name in the input will have been resolved to multiple possible areas,
+    making the input a list of list. We want to build a simple list, where
+    each name has been resolved to the most likely area.
+    """
+    # Guess level, stop if not uniform
+    level = guess_admin_level(admin_areas)
+    if level is None:
+        return None
+
+    # Discard areas with a different level
+    admin_areas = [
+        area for areas_list in admin_areas for area in areas_list
+        if area.type.value == level
+    ]
+    return level, admin_areas
+
+
 def median_smallest_distance(points, tree=None):
     """Median over all points of the distance to their closest neighbor.
 

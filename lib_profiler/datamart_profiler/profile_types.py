@@ -6,7 +6,7 @@ import re
 import regex
 
 from . import types
-from .spatial import LATITUDE, LONGITUDE, guess_admin_level
+from .spatial import LATITUDE, LONGITUDE, disambiguate_admin_areas
 from .temporal import parse_date
 
 
@@ -201,16 +201,12 @@ def identify_types(array, name, geo_data, manual=None):
                 semantic_types_dict[types.DATE_TIME] = dates
             if el == types.ADMIN:
                 if geo_data is not None and len(distinct_values()) >= 3:
-                    resolved = geo_data.resolve_names_all(array)
-                    resolved = [r for r in resolved if r]
-                    if resolved:
-                        level = guess_admin_level(resolved)
-                        if level is not None:
-                            resolved = [
-                                area for areas_list in resolved for area in areas_list
-                                if area.type.value == level
-                            ]
-                            semantic_types_dict[types.ADMIN] = level, resolved
+                    admin_areas = geo_data.resolve_names_all(array)
+                    admin_areas = [r for r in admin_areas if r]
+                    if admin_areas:
+                        admin_areas = disambiguate_admin_areas(admin_areas)
+                        if admin_areas is not None:
+                            semantic_types_dict[types.ADMIN] = admin_areas
             if el == types.CATEGORICAL or el == types.INTEGER:
                 # Count distinct values
                 column_meta['num_distinct_values'] = len(distinct_values())
@@ -232,16 +228,13 @@ def identify_types(array, name, geo_data, manual=None):
 
             # Administrative areas
             if geo_data is not None and len(distinct_values()) >= 3:
-                resolved = geo_data.resolve_names_all(distinct_values())
-                resolved = [r for r in resolved if r]
-                if len(resolved) > 0.7 * len(distinct_values()):
-                    level = guess_admin_level(resolved)
-                    if level is not None:
-                        resolved = [
-                            area for areas_list in resolved for area in areas_list
-                            if area.type.value == level
-                        ]
-                        semantic_types_dict[types.ADMIN] = level, resolved
+                admin_areas = geo_data.resolve_names_all(distinct_values())
+                admin_areas = [r for r in admin_areas if r]
+                if len(admin_areas) > 0.7 * len(distinct_values()):
+
+                    admin_areas = disambiguate_admin_areas(admin_areas)
+                    if admin_areas is not None:
+                        semantic_types_dict[types.ADMIN] = admin_areas
                         categorical = True
 
             # Different threshold there, we don't need all text to be many words
