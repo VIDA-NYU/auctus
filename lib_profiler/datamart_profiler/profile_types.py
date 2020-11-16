@@ -46,7 +46,7 @@ _re_geo_combined = regex.compile(
     r'\)$'
 )
 _re_other_point = re.compile(
-    r'^POINT ?\('
+    r'^(POINT ?)?\('
     r'-?[0-9]{1,3}\.[0-9]{1,15}'
     r', ?'
     r'-?[0-9]{1,3}\.[0-9]{1,15}'
