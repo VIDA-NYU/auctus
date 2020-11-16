@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 import elasticsearch.helpers
 import json
 import logging
-import os
 import requests
 import sentry_sdk
 import time
