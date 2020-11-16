@@ -67,8 +67,9 @@ class LocationSearch(BaseHandler):
     def post(self):
         query = self.get_body_argument('q').strip()
         geo_data = self.application.geo_data
-        area = geo_data.resolve_name(query)
-        if area is not None:
+        areas = geo_data.resolve_name_all(query)
+        if areas:
+            area = min(areas, key=lambda a: a.type.value)
             bounds = area.bounds
             logger.info("Resolved area %r to %r", query, area)
             return self.send_json({'results': [
