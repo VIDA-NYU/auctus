@@ -1,3 +1,4 @@
+import collections
 from dataclasses import dataclass
 import json
 import logging
@@ -32,6 +33,8 @@ NOMINATIM_MIN_SPLIT_BATCH_SIZE = 2  # Batches >=this are divided on failure
 
 LATITUDE = ('latitude', 'lat', 'ycoord', 'y_coord')
 LONGITUDE = ('longitude', 'long', 'lon', 'lng', 'xcoord', 'x_coord')
+
+MAX_WRONG_LEVEL_ADMIN = 0.10  # 10%
 
 
 PROM_NOMINATIM_REQS = prometheus_client.Counter(
@@ -318,6 +321,36 @@ def nominatim_resolve_all(url, array, max_requests=MAX_NOMINATIM_REQUESTS):
         processed,
     )
     return locations, non_empty
+
+
+def guess_admin_level(admin_areas):
+    """Find the most likely admin levels from a list of lists of areas.
+
+    :param admin_areas: This is a list matching the original names, each of
+        them resolved into the possible areas they might be. For example, the
+        original input ``["New York", "Vermont"]``, we get the list of lists
+        ``[[<New York County, 2>, <New York State, 1>], [<Vermont, level=1>]]``
+        and the resulting level is ``1``.
+    """
+    level_counter = collections.Counter()
+    # `area` is a list of lists of areas
+    # For each name in the original data, it contains a list of the
+    # areas that were found with that name
+    for areas_resolved in admin_areas:
+        # Count each possible admin level only once
+        levels = set(
+            area.type.value
+            for area in areas_resolved
+            if 0 <= area.type.value <= 5
+        )
+        level_counter.update(levels)
+    threshold = (1.0 - MAX_WRONG_LEVEL_ADMIN) * len(admin_areas)
+    threshold = max(3, threshold)
+    for level, count in sorted(level_counter.items()):
+        if count >= threshold:
+            return level
+    else:
+        return None
 
 
 def median_smallest_distance(points, tree=None):
