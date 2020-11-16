@@ -10,6 +10,10 @@ from .base import TOP_K_SIZE, get_column_identifiers
 logger = logging.getLogger(__name__)
 
 
+#: Maximum number of Lazo hits to send back to Elasticsearch
+MAX_LAZO_CANDIDATES_SIZE = 300
+
+
 temporal_resolutions_priorities = {
     n: i
     for i, n in enumerate(reversed(list(temporal_aggregation_keys)))
@@ -512,7 +516,7 @@ def get_joinable_datasets(
             continue
         textual_results = get_textual_join_search_results(
             es,
-            query_results,
+            query_results[:MAX_LAZO_CANDIDATES_SIZE],
             query_sup_functions,
             query_sup_filters,
         )
