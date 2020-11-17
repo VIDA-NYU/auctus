@@ -8,7 +8,7 @@ RECORD="$(curl -s -H content-type:application/json -d '{"query":{"bool":{"should
     | tail -n 1)"
 LASTRECORD="$(cat $HOME/report-uploads.last)"
 if [ "$RECORD" != "$LASTRECORD" ]; then
-    echo "Check https://auctus.vida-nyu.org/" \
+    echo "Check https://coordinator.auctus.vida-nyu.org/" \
         | mail -s "New uploaded datasets" root
     echo "$RECORD" >$HOME/report-uploads.last
 fi
