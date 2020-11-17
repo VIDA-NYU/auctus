@@ -7,7 +7,7 @@ services:
     restart: on-failure
     environment:
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xmx4g -Xms4g -Des.enforce.bootstrap.checks=true  # NOTCI
+      - ES_JAVA_OPTS=-Xmx2g -Xms2g -Des.enforce.bootstrap.checks=true  # NOTCI
       # CI: - ES_JAVA_OPTS=-Xmx256m -Xms256m -Des.enforce.bootstrap.checks=true
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
