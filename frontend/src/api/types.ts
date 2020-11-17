@@ -75,6 +75,7 @@ export interface ColumnMetadata {
   stddev?: number;
   plot?: PlotVega;
   temporal_resolution?: string;
+  admin_area_level?: number;
   latlong_pair?: string;
 }
 

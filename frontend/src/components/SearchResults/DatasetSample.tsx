@@ -30,20 +30,23 @@ function typeName(type: string) {
 }
 
 function SemanticTypeBadge(props: {type: string; column?: ColumnMetadata}) {
-  const label = typeName(props.type);
+  let label = typeName(props.type);
   const semtypeClass = classMapping[label.toLowerCase()];
   const spanClass = semtypeClass
     ? `badge badge-pill semtype ${semtypeClass}`
     : 'badge badge-pill semtype';
-  const tempResolution =
-    label.toLowerCase() === 'datetime' &&
-    props.column &&
-    props.column.temporal_resolution
-      ? ' ' + props.column.temporal_resolution
-      : '';
-  return (
-    <span className={spanClass}>{label + tempResolution.toUpperCase()}</span>
-  );
+  if (
+    props.type === 'http://schema.org/DateTime' &&
+    props.column?.temporal_resolution
+  ) {
+    label += ' ' + props.column.temporal_resolution;
+  } else if (
+    props.type === 'http://schema.org/AdministrativeArea' &&
+    props.column?.admin_area_level
+  ) {
+    label += ' ' + props.column.admin_area_level;
+  }
+  return <span className={spanClass}>{label}</span>;
 }
 
 function TypeBadges(props: {column: ColumnMetadata}) {
