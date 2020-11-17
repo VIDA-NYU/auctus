@@ -132,25 +132,6 @@ def parse_dates(array):
     return parsed_dates
 
 
-def identify_structural_type(re_count, num_total, threshold):
-    """Picks the structural type from counts computed by `regular_exp_count()`.
-    """
-    if re_count['empty'] == num_total:
-        structural_type = types.MISSING_DATA
-    elif re_count['int'] >= threshold:
-        structural_type = types.INTEGER
-    elif re_count['int'] + re_count['float'] >= threshold:
-        structural_type = types.FLOAT
-    elif re_count['point'] >= threshold or re_count['geo_combined'] >= threshold or re_count['other_point'] >= threshold:
-        structural_type = types.GEO_POINT
-    elif re_count['polygon'] >= threshold:
-        structural_type = types.GEO_POLYGON
-    else:
-        structural_type = types.TEXT
-
-    return structural_type
-
-
 def identify_types(array, name, geo_data, manual=None):
     """Identify the structural type and semantic types of an array.
 
@@ -177,7 +158,18 @@ def identify_types(array, name, geo_data, manual=None):
         structural_type = manual['structural_type']
         column_meta['unclean_values_ratio'] = unclean_values_ratio(structural_type, re_count, num_total)
     else:
-        structural_type = identify_structural_type(re_count, num_total, threshold)
+        if re_count['empty'] == num_total:
+            structural_type = types.MISSING_DATA
+        elif re_count['int'] >= threshold:
+            structural_type = types.INTEGER
+        elif re_count['int'] + re_count['float'] >= threshold:
+            structural_type = types.FLOAT
+        elif re_count['point'] >= threshold or re_count['geo_combined'] >= threshold or re_count['other_point'] >= threshold:
+            structural_type = types.GEO_POINT
+        elif re_count['polygon'] >= threshold:
+            structural_type = types.GEO_POLYGON
+        else:
+            structural_type = types.TEXT
         if structural_type != types.MISSING_DATA and structural_type != types.TEXT:
             column_meta['unclean_values_ratio'] = unclean_values_ratio(structural_type, re_count, num_total)
 
