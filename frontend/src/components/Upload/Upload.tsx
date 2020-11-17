@@ -139,7 +139,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     this.setState({profilingStatus: api.RequestStatus.IN_PROGRESS});
     const file = this.getFile();
     if (file) {
-      const result = api.profile(file);
+      const result = api.profile(file, true);
       result
         .then(data => {
           this.setState({
