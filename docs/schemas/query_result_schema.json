@@ -70,6 +70,9 @@
               "temporal_resolution": {
                 "$ref": "#/definitions/temporal_resolution"
               },
+              "admin_area_level": {
+                "type": "integer"
+              },
               "mean": {"type": "number"},
               "stddev": {"type": "number"},
               "coverage": {
