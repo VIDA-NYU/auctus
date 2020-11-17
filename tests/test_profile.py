@@ -7,12 +7,13 @@ import requests
 import unittest
 import textwrap
 
-from datamart_geo import GeoData
+import datamart_geo
 from datamart_profiler import process_dataset
 from datamart_profiler.core import detect_language, expand_attribute_name
 from datamart_profiler import profile_types
 from datamart_profiler import spatial
-from datamart_profiler.spatial import LATITUDE, LONGITUDE, LatLongColumn
+from datamart_profiler.spatial import LATITUDE, LONGITUDE, LatLongColumn, \
+    disambiguate_admin_areas
 from datamart_profiler.temporal import get_temporal_resolution, parse_date
 
 from .utils import DataTestCase, data
@@ -734,7 +735,7 @@ class TestNominatim(DataTestCase):
 class TestGeo(DataTestCase):
     @classmethod
     def setUpClass(cls):
-        cls.geo_data = GeoData.from_local_cache()
+        cls.geo_data = datamart_geo.GeoData.from_local_cache()
 
     def test_profile(self):
         with data('admins.csv', 'r') as data_fp:
@@ -819,6 +820,50 @@ class TestGeo(DataTestCase):
                 ],
             },
         )
+
+    def test_ambiguous(self):
+        def countries(areas):
+            if areas and isinstance(areas[0], (list, set)):
+                # Flatten
+                areas = [area for candidates in areas for area in candidates]
+            return {
+                area.get_parent_area(datamart_geo.Type.COUNTRY).name
+                for area in areas
+            }
+
+        # 'SC' resolves to states in both USA and Brazil
+        sc_states = [
+            area
+            for area in self.geo_data.resolve_name_all('SC')
+            if area.type == datamart_geo.Type.ADMIN_1
+        ]
+        if countries(sc_states) <= {
+            'Federative Republic of Brazil', 'United States',
+        }:
+            raise ValueError("assumptions about geo data are wrong")
+        # 'CT' resolves to states in both USA and India
+        ct_states = [
+            area
+            for area in self.geo_data.resolve_name_all('CT')
+            if area.type == datamart_geo.Type.ADMIN_1
+        ]
+        if countries(ct_states) <= {'Republic of India', 'United States'}:
+            raise ValueError("assumptions about geo data are wrong")
+
+        # Test that resolving those state names resolves to the USA
+        resolved_areas = self.geo_data.resolve_names_all(['SC', 'CT', 'NY'])
+        self.assertTrue(
+            countries(resolved_areas) >= {
+                'United States', 'Federative Republic of Brazil',
+                'Republic of India',
+            },
+        )
+        level, resolved_areas = disambiguate_admin_areas(resolved_areas)
+        self.assertEqual(
+            countries(resolved_areas),
+            {'United States'},
+        )
+        self.assertEqual(level, 1)
 
 
 class TestMedianDist(unittest.TestCase):

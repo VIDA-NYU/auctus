@@ -418,7 +418,7 @@ def process_column(
                 if types.ADDRESS not in column_meta['semantic_types']:
                     column_meta['semantic_types'].append(types.ADDRESS)
 
-    # Guess level of administrative areas
+    # Set level of administrative areas
     if types.ADMIN in semantic_types_dict:
         level, areas = semantic_types_dict[types.ADMIN]
         if level is not None:
