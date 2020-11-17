@@ -314,7 +314,7 @@ class TestProfiler(DatamartTest):
 
 
 class TestProfileQuery(DatamartTest):
-    def check_result(self, response, metadata, token):
+    def check_result(self, response, metadata, token, fast=False):
         # Some fields like 'name', 'description' won't be there
         metadata = {k: v for k, v in metadata.items()
                     if k not in {'id', 'name', 'description',
@@ -331,12 +331,22 @@ class TestProfileQuery(DatamartTest):
         check_lazo = lambda dct: (
             dct.keys() == {'cardinality', 'hash_values', 'n_permutations'}
         )
-        for column in metadata['columns']:
+        for i in range(len(metadata['columns'])):
+            column = metadata['columns'][i]
             if (
-                column['structural_type'] == 'http://schema.org/Text'
+                not fast
+                and column['structural_type'] == 'http://schema.org/Text'
                 and 'http://schema.org/DateTime' not in column['semantic_types']
             ):
                 column['lazo'] = check_lazo
+            if fast:
+                metadata.pop('temporal_coverage', None)
+                metadata['columns'][i] = {
+                    k: v
+                    for k, v in column.items()
+                    if k not in ('mean', 'stddev', 'coverage')
+                }
+
         # Expect token
         metadata['token'] = token
 
@@ -364,6 +374,19 @@ class TestProfileQuery(DatamartTest):
             response,
             other_formats_metadata('xls'),
             'c6e8b9c5f634cb3b1c47b158d569a4f70462fca4',
+        )
+
+    def test_excel_fast(self):
+        with data('spss.sav') as spss_fp:
+            response = self.datamart_post(
+                '/profile/fast',
+                files={'data': spss_fp},
+            )
+        self.check_result(
+            response,
+            other_formats_metadata('spss'),
+            'd9c170a8e19884d64b52948eab5871cc4b8477ec',
+            fast=True,
         )
 
 
