@@ -35,11 +35,12 @@ PROM_PROFILE = PromMeasureRequest(
 
 
 class ProfilePostedData(tornado.web.RequestHandler):
-    def handle_data_parameter(self, data):
+    def handle_data_parameter(self, data, *, fast=False):
         """
         Handles the 'data' parameter.
 
         :param data: the input parameter
+        :param fast: whether to perform "fast" profiling, unsuitable for search
         :return: (data, data_profile)
           data: data as bytes (either the input or loaded from the input)
           data_profile: the profiling (metadata) of the data
@@ -145,6 +146,9 @@ def get_data_profile_from_es(es, dataset_id):
 
 
 class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
+    def initialize(self, *, fast=False):
+        self.fast = fast
+
     @PROM_PROFILE.sync()
     def post(self):
         data = self.get_body_argument('data', None)
@@ -182,7 +186,7 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
 
         logger.info("Got profile")
 
-        data_profile, data_hash = self.handle_data_parameter(data)
+        data_profile, data_hash = self.handle_data_parameter(data, fast=self.fast)
 
         return self.send_json(dict(
             data_profile,
