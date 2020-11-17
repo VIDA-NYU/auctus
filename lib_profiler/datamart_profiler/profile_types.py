@@ -111,7 +111,7 @@ def unclean_values_ratio(c_type, re_count, num_total):
             (num_total - re_count['empty'] - re_count['int'] - re_count['float']) / num_total
     if c_type == types.GEO_POINT:
         ratio = \
-            (num_total - re_count['empty'] - re_count['point']) / num_total
+            (num_total - re_count['empty'] - re_count['point'] - re_count['geo_combined'] - re_count['other_point']) / num_total
     if c_type == types.GEO_POLYGON:
         ratio = \
             (num_total - re_count['empty'] - re_count['polygon']) / num_total
