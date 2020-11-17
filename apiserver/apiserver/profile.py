@@ -53,7 +53,13 @@ class ProfilePostedData(tornado.web.RequestHandler):
         sha1 = hashlib.sha1(data)
         data_hash = sha1.hexdigest()
 
-        data_profile = self.application.redis.get('profile:' + data_hash)
+        if fast:
+            data_profile = (
+                self.application.redis.get('profile-fast:' + data_hash)
+                or self.application.redis.get('profile:' + data_hash)
+            )
+        else:
+            data_profile = self.application.redis.get('profile:' + data_hash)
 
         # Do format conversion
         materialize = {}
@@ -89,6 +95,29 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 # even if the profile is already in Redis
                 logger.info("Found cached profile_data")
                 data_profile = json.loads(data_profile)
+            elif fast:
+                logger.info("Profiling (fast)...")
+                start = time.perf_counter()
+                with open(csv_path, 'rb') as data:
+                    data_profile = process_dataset(
+                        data=data,
+                        geo_data=self.application.geo_data,
+                        include_sample=True,
+                        search=True, coverage=False, plots=False,
+                    )
+                logger.info("Profiled (fast) in %.2fs", time.perf_counter() - start)
+
+                data_profile['materialize'] = materialize
+                data_profile['version'] = os.environ['DATAMART_VERSION']
+
+                self.application.redis.set(
+                    'profile-fast:' + data_hash,
+                    json.dumps(
+                        data_profile,
+                        # Compact
+                        sort_keys=True, indent=None, separators=(',', ':'),
+                    ),
+                )
             else:
                 logger.info("Profiling...")
                 start = time.perf_counter()
@@ -164,8 +193,18 @@ class Profile(BaseHandler, GracefulHandler, ProfilePostedData):
                 pass
             else:
                 if profile_token_re.match(data_hash):
+                    if self.fast:
+                        data_profile = self.application.redis.get(
+                            'profile-fast:' + data_hash,
+                        )
+                        if data_profile:
+                            return self.send_json(dict(
+                                json.loads(data_profile),
+                                token=data_hash,
+                            ))
+
                     data_profile = self.application.redis.get(
-                        'profile:' + data_hash
+                        'profile:' + data_hash,
                     )
                     if data_profile:
                         return self.send_json(dict(
