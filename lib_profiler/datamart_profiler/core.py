@@ -263,6 +263,10 @@ def process_column(
     # Insert additional metadata
     column_meta.update(additional_meta)
 
+    # Resolved values are returned so they can be used again to compute spatial
+    # coverage
+    resolved = {}
+
     # Compute ranges for numerical data
     if structural_type in (types.INTEGER, types.FLOAT):
         # Get numerical ranges
@@ -303,29 +307,16 @@ def process_column(
         if ranges:
             column_meta['coverage'] = ranges
 
-    # Compute ranges for temporal data
-    if (coverage or plots) and types.DATE_TIME in semantic_types_dict:
+    if types.DATE_TIME in semantic_types_dict:
+        datetimes = semantic_types_dict[types.DATE_TIME]
+        resolved['datetimes'] = datetimes
         timestamps = numpy.empty(
-            len(semantic_types_dict[types.DATE_TIME]),
+            len(datetimes),
             dtype='float32',
         )
-        for j, dt in enumerate(
-                semantic_types_dict[types.DATE_TIME]):
+        for j, dt in enumerate(datetimes):
             timestamps[j] = dt.timestamp()
-        if 'mean' not in column_meta:
-            column_meta['mean'], column_meta['stddev'] = \
-                mean_stddev(timestamps)
-
-        # Get temporal ranges
-        if coverage and 'coverage' not in column_meta:
-            ranges = get_numerical_ranges(timestamps)
-            if ranges:
-                column_meta['coverage'] = ranges
-
-        # Get temporal resolution
-        column_meta['temporal_resolution'] = get_temporal_resolution(
-            semantic_types_dict[types.DATE_TIME],
-        )
+        resolved['timestamps'] = timestamps
 
         # Compute histogram from temporal values
         if plots and 'plot' not in column_meta:
@@ -396,10 +387,6 @@ def process_column(
                 for value, count in counts
             ]
         }
-
-    # Resolved values are returned so they can be used again to compute spatial
-    # coverage
-    resolved = {}
 
     # Resolve addresses into coordinates
     if (
@@ -842,6 +829,42 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
+
+        logging.info("Computing temporal coverage...")
+        temporal_coverage = []
+
+        # Datetime columns
+        for idx, col in enumerate(columns):
+            if types.DATE_TIME not in col['semantic_types']:
+                continue
+            datetimes = resolved_columns[idx]['datetimes']
+            timestamps = resolved_columns[idx]['timestamps']
+            logger.info(
+                "Computing temporal ranges datetime=%r (%d rows)",
+                col['name'], len(datetimes),
+            )
+
+            # Get temporal ranges
+            ranges = get_numerical_ranges(timestamps)
+            if not ranges:
+                continue
+
+            # Get temporal resolution
+            resolution = get_temporal_resolution(datetimes)
+
+            temporal_coverage.append({
+                'type': 'datetime',
+                'column_names': [col['name']],
+                'column_indexes': [idx],
+                'column_types': [types.DATE_TIME],
+                'ranges': ranges,
+                'temporal_resolution': resolution,
+            })
+
+        # TODO: Times split over multiple columns
+
+        if temporal_coverage:
+            metadata['temporal_coverage'] = temporal_coverage
 
     # Attribute names
     attribute_keywords = []

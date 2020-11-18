@@ -7,7 +7,6 @@ import logging
 import prometheus_client
 import time
 
-from datamart_core import types
 from datamart_core.prom import PromMeasureRequest
 from datamart_profiler.temporal import parse_date, temporal_aggregation_keys
 
@@ -184,13 +183,7 @@ def parse_query_variables(data, geo_data=None):
 
         # temporal variable
         if variable['type'] == 'temporal_variable':
-            filters = [
-                {
-                    'term': {
-                        'columns.semantic_types': types.DATE_TIME,
-                    },
-                }
-            ]
+            filters = []
             if 'start' in variable or 'end' in variable:
                 if 'start' in variable:
                     if not isinstance(variable['start'], str):
@@ -218,16 +211,11 @@ def parse_query_variables(data, geo_data=None):
                     raise ClientError("Invalid date range (start > end)")
 
                 filters.append({
-                    'nested': {
-                        'path': 'columns.coverage',
-                        'query': {
-                            'range': {
-                                'columns.coverage.range': {
-                                    'gte': start,
-                                    'lte': end,
-                                    'relation': 'intersects',
-                                },
-                            },
+                    'range': {
+                        'temporal_coverage.range': {
+                            'gte': start,
+                            'lte': end,
+                            'relation': 'intersects',
                         },
                     },
                 })
@@ -241,13 +229,13 @@ def parse_query_variables(data, geo_data=None):
 
                 filters.append({
                     'term': {
-                        'columns.temporal_resolution': granularity,
+                        'temporal_coverage.temporal_resolution': granularity,
                     },
                 })
 
             output.append({
                 'nested': {
-                    'path': 'columns',
+                    'path': 'temporal_coverage',
                     'query': {
                         'bool': {
                             'must': filters,
@@ -364,8 +352,9 @@ def parse_query(query_json, geo_data=None):
         )
 
     # TODO: for now, temporal and geospatial variables are ignored
-    #   for 'datamart_columns' and 'datamart_spatial_coverage' indices,
-    #   since we do not have information about a dataset in these indices
+    #   for 'datamart_columns', 'datamart_spatial_coverage', and
+    #   'datamart_temporal_coverage' indices, since we do not have information
+    #   about a dataset in these indices
     if variables_query:
         query_args_main.extend(variables_query)
 

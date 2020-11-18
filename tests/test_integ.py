@@ -139,22 +139,44 @@ class TestProfiler(DatamartTest):
         )['hits']['hits']
         hits = {h['_id']: h['_source'] for h in hits}
 
+        expected = {
+            'datamart.test.basic': basic_metadata,
+            'datamart.test.geo': geo_metadata,
+            'datamart.test.geo_wkt': geo_wkt_metadata,
+            'datamart.test.agg': agg_metadata,
+            'datamart.test.lazo': lazo_metadata,
+            'datamart.test.daily': daily_metadata,
+            'datamart.test.hourly': hourly_metadata,
+            'datamart.test.dates_pivoted': dates_pivoted_metadata,
+            'datamart.test.excel': other_formats_metadata('xls'),
+            'datamart.test.spss': other_formats_metadata('spss'),
+            'datamart.test.stata114': other_formats_metadata('stata'),
+            'datamart.test.stata118': other_formats_metadata('stata'),
+        }
+
+        # Those fields are returned through the API but are not actually stored
+        # (they come from temporal_coverage)
+        def remove_enhanced_fields(col):
+            if 'http://schema.org/DateTime' in col['semantic_types']:
+                col = dict(col)
+                col.pop('coverage', None)
+                col.pop('temporal_resolution', None)
+            return col
+
+        expected = {
+            dataset_id: dict(
+                meta,
+                columns=[
+                    remove_enhanced_fields(col)
+                    for col in meta['columns']
+                ],
+            )
+            for dataset_id, meta in expected.items()
+        }
+
         self.assertJson(
             hits,
-            {
-                'datamart.test.basic': basic_metadata,
-                'datamart.test.geo': geo_metadata,
-                'datamart.test.geo_wkt': geo_wkt_metadata,
-                'datamart.test.agg': agg_metadata,
-                'datamart.test.lazo': lazo_metadata,
-                'datamart.test.daily': daily_metadata,
-                'datamart.test.hourly': hourly_metadata,
-                'datamart.test.dates_pivoted': dates_pivoted_metadata,
-                'datamart.test.excel': other_formats_metadata('xls'),
-                'datamart.test.spss': other_formats_metadata('spss'),
-                'datamart.test.stata114': other_formats_metadata('stata'),
-                'datamart.test.stata118': other_formats_metadata('stata'),
-            },
+            expected,
         )
 
     def test_alternate(self):
@@ -990,8 +1012,8 @@ class TestDataSearch(DatamartTest):
                         'left_columns': [[0]],
                         'left_columns_names': [['orig_date']],
                         'right_columns': [[0]],
-                        'right_columns_names':[['aug_date']],
-                        'type':'join',
+                        'right_columns_names': [['aug_date']],
+                        'type': 'join',
                         'temporal_resolution': 'hour',
                     },
                     'supplied_id': None,
@@ -3518,27 +3540,26 @@ lazo_metadata = {
             "semantic_types": ["http://schema.org/DateTime"],
             "unclean_values_ratio": 0.0,
             'num_distinct_values': 2,
-            "mean": 634656000.0,
-            "stddev": lambda n: round(n, 2) == 9910808.65,
-            "coverage": (
-                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
-                    {
-                        "range": {
-                            "gte": 631152000.0,
-                            "lte": 631152000.0
-                        }
-                    },
-                    {
-                        "range": {
-                            "gte": 662688000.0,
-                            "lte": 662688000.0
-                        }
-                    }
-                ]
-            ),
-            "temporal_resolution": "year",
             "plot": check_plot('histogram_temporal'),
+            "coverage": [
+                {'range': {'gte': 631152000.0, 'lte': 631152000.0}},
+                {'range': {'gte': 662688000.0, 'lte': 662688000.0}},
+            ],
+            "temporal_resolution": "year",
         }
+    ],
+    "temporal_coverage": [
+        {
+            'type': 'datetime',
+            'column_names': ['year'],
+            'column_indexes': [1],
+            'column_types': ['http://schema.org/DateTime'],
+            'ranges': [
+                {'range': {'gte': 631152000.0, 'lte': 631152000.0}},
+                {'range': {'gte': 662688000.0, 'lte': 662688000.0}},
+            ],
+            'temporal_resolution': 'year',
+        },
     ],
     "materialize": {
         "direct_url": "http://test-discoverer:7000/lazo.csv",
@@ -3579,33 +3600,14 @@ daily_metadata = {
                 'http://schema.org/DateTime',
             ],
             'unclean_values_ratio': 0.0,
-            'temporal_resolution': 'day',
             'num_distinct_values': 30,
-            'mean': lambda n: round(n) == 1557230400.0,
-            'stddev': lambda n: round(n, 2) == 747830.14,
-            'coverage': (
-                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
-                    {
-                        'range': {
-                            'gte': 1555977600.0,
-                            'lte': 1556755200.0,
-                        },
-                    },
-                    {
-                        'range': {
-                            'gte': 1556841600.0,
-                            'lte': 1557619200.0,
-                        },
-                    },
-                    {
-                        'range': {
-                            'gte': 1557705600.0,
-                            'lte': 1558483200.0,
-                        },
-                    },
-                ]
-            ),
             "plot": check_plot('histogram_temporal'),
+            'coverage': [
+                {'range': {'gte': 1555977600.0, 'lte': 1556755200.0}},
+                {'range': {'gte': 1556841600.0, 'lte': 1557619200.0}},
+                {'range': {'gte': 1557705600.0, 'lte': 1558483200.0}},
+            ],
+            'temporal_resolution': 'day',
         },
         {
             'name': 'rain',
@@ -3617,6 +3619,20 @@ daily_metadata = {
             'unclean_values_ratio': 0.0,
             'num_distinct_values': 2,
             "plot": check_plot('histogram_categorical'),
+        },
+    ],
+    'temporal_coverage': [
+        {
+            'type': 'datetime',
+            'column_names': ['aug_date'],
+            'column_indexes': [0],
+            'column_types': ['http://schema.org/DateTime'],
+            'ranges': [
+                {'range': {'gte': 1555977600.0, 'lte': 1556755200.0}},
+                {'range': {'gte': 1556841600.0, 'lte': 1557619200.0}},
+                {'range': {'gte': 1557705600.0, 'lte': 1558483200.0}},
+            ],
+            'temporal_resolution': 'day',
         },
     ],
     'materialize': {
@@ -3656,32 +3672,13 @@ hourly_metadata = {
                 'http://schema.org/DateTime',
             ],
             'num_distinct_values': 52,
-            'temporal_resolution': 'hour',
-            'mean': lambda n: round(n) == 1560389398.0,
-            'stddev': lambda n: round(n, 2) == 54027.44,
-            'coverage': (
-                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
-                    {
-                        'range': {
-                            'gte': 1560297600.0,
-                            'lte': 1560358784.0,
-                        },
-                    },
-                    {
-                        'range': {
-                            'gte': 1560362368.0,
-                            'lte': 1560419968.0,
-                        },
-                    },
-                    {
-                        'range': {
-                            'gte': 1560423552.0,
-                            'lte': 1560481152.0,
-                        },
-                    },
-                ]
-            ),
             "plot": check_plot('histogram_temporal'),
+            'coverage': [
+                {'range': {'gte': 1560297600.0, 'lte': 1560358784.0}},
+                {'range': {'gte': 1560362368.0, 'lte': 1560419968.0}},
+                {'range': {'gte': 1560423552.0, 'lte': 1560481152.0}},
+            ],
+            'temporal_resolution': 'hour',
         },
         {
             'name': 'rain',
@@ -3693,6 +3690,20 @@ hourly_metadata = {
             'unclean_values_ratio': 0.0,
             'num_distinct_values': 2,
             "plot": check_plot('histogram_categorical'),
+        },
+    ],
+    'temporal_coverage': [
+        {
+            'type': 'datetime',
+            'column_names': ['aug_date'],
+            'column_indexes': [0],
+            'column_types': ['http://schema.org/DateTime'],
+            'ranges': [
+                {'range': {'gte': 1560297600.0, 'lte': 1560358784.0}},
+                {'range': {'gte': 1560362368.0, 'lte': 1560419968.0}},
+                {'range': {'gte': 1560423552.0, 'lte': 1560481152.0}},
+            ],
+            'temporal_resolution': 'hour',
         },
     ],
     'materialize': {
@@ -3745,10 +3756,6 @@ dates_pivoted_metadata = {
                 'http://schema.org/DateTime',
             ],
             'num_distinct_values': 12,
-            'mean': 1339833600.0,
-            'stddev': 9093802.373045063,
-            'coverage': check_ranges(1325376000.0, 1354320000.0),
-            'temporal_resolution': 'month',
             'plot': check_plot('histogram_temporal'),
         },
         {
@@ -3761,6 +3768,20 @@ dates_pivoted_metadata = {
             ],
             'num_distinct_values': 2,
             'plot': check_plot('histogram_categorical'),
+        },
+    ],
+    'temporal_coverage': [
+        {
+            'type': 'datetime',
+            'column_names': ['date'],
+            'column_indexes': [1],
+            'column_types': ['http://schema.org/DateTime'],
+            'ranges': [
+                {'range': {'gte': 1325376000.0, 'lte': 1333238400.0}},
+                {'range': {'gte': 1335830400.0, 'lte': 1343779200.0}},
+                {'range': {'gte': 1346457600.0, 'lte': 1354320000.0}},
+            ],
+            'temporal_resolution': 'month',
         },
     ],
     'materialize': {
@@ -3842,17 +3863,21 @@ other_formats_metadata = lambda fmt: {
             'structural_type': 'http://schema.org/Text',
             'semantic_types': ['http://schema.org/DateTime'],
             'num_distinct_values': 4,
-            'mean': 777211200.0,
-            'stddev': 303122413.10203373,
-            'coverage': (
-                lambda l: sorted(l, key=lambda e: e['range']['gte']) == [
-                    {'range': {'gte': 473385600.0, 'lte': 473385600.0}},
-                    {'range': {'gte': 631152000.0, 'lte': 725846400.0}},
-                    {'range': {'gte': 1278460800.0, 'lte': 1278460800.0}},
-                ]
-            ),
-            'temporal_resolution': 'year',
             'plot': check_plot('histogram_temporal'),
+        },
+    ],
+    'temporal_coverage': [
+        {
+            'type': 'datetime',
+            'column_names': ['date'],
+            'column_indexes': [2],
+            'column_types': ['http://schema.org/DateTime'],
+            'ranges': [
+                {'range': {'gte': 473385600.0, 'lte': 473385600.0}},
+                {'range': {'gte': 631152000.0, 'lte': 725846400.0}},
+                {'range': {'gte': 1278460800.0, 'lte': 1278460800.0}},
+            ],
+            'temporal_resolution': 'year',
         },
     ],
     'materialize': {

@@ -64,9 +64,6 @@ def get_column_coverage(data_profile, filter_=()):
         elif column['structural_type'] == types.INTEGER:
             type_ = 'structural_type'
             type_value = column['structural_type']
-        elif types.DATE_TIME in column['semantic_types']:
-            type_ = 'semantic_types'
-            type_value = types.DATE_TIME
         else:
             continue
         ranges = [
@@ -98,6 +95,27 @@ def get_column_coverage(data_profile, filter_=()):
             column_coverage[indexes] = {
                 'type': 'spatial',
                 'ranges': ranges,
+            }
+
+    if 'temporal_coverage' in data_profile:
+        for temporal in data_profile['temporal_coverage']:
+            indexes = tuple(temporal['column_indexes'])
+            if (
+                filter_ and
+                any(idx not in filter_ for idx in indexes)
+            ):
+                continue
+            ranges = [
+                [
+                    float(rg['range']['gte']),
+                    float(rg['range']['lte']),
+                ]
+                for rg in temporal['ranges']
+            ]
+            column_coverage[indexes] = {
+                'type': 'temporal',
+                'ranges': ranges,
+                'temporal_resolution': temporal['temporal_resolution'],
             }
 
     return column_coverage
@@ -337,6 +355,106 @@ def get_spatial_join_search_results(
     )['hits']['hits']
 
 
+def get_temporal_join_search_results(
+    es, ranges, dataset_id=None, ignore_datasets=None,
+    query_sup_functions=None, query_sup_filters=None,
+):
+    """Retrieve temporal join search results that intersect
+    with the input temporal ranges.
+    """
+
+    filter_query = []
+    must_not_query = []
+    if query_sup_filters:
+        filter_query.extend(query_sup_filters)
+    if dataset_id:
+        filter_query.append(
+            {'term': {'dataset_id': dataset_id}}
+        )
+    if ignore_datasets:
+        must_not_query.extend(
+            {'term': {'dataset_id': id}}
+            for id in ignore_datasets
+        )
+
+    should_query = list()
+    coverage = sum([range_[1] - range_[0] + 1 for range_ in ranges])
+    for i, range_ in enumerate(ranges):
+        should_query.append({
+            'nested': {
+                'path': 'ranges',
+                'query': {
+                    'function_score': {
+                        'query': {
+                            'range': {
+                                'ranges.range': {
+                                    'gte': range_[0],
+                                    'lte': range_[1],
+                                    'relation': 'intersects'
+                                }
+                            }
+                        },
+                        'script_score': {
+                            'script': {
+                                'lang': 'painless',
+                                'params': {
+                                    'gte': range_[0],
+                                    'lte': range_[1],
+                                    'coverage': coverage
+                                },
+                                'source': textwrap.dedent('''\
+                                    double start = Math.max(
+                                        params.gte,
+                                        doc['ranges.gte'].value
+                                    );
+                                    double end = Math.min(
+                                        params.lte,
+                                        doc['ranges.lte'].value
+                                    );
+                                    return (end - start + 1) / params.coverage;
+                                ''')
+                            }
+                        },
+                        'boost_mode': 'replace'
+                    }
+                },
+                'inner_hits': {
+                    '_source': False,
+                    'size': 100,
+                    'name': 'range-{0}'.format(i)
+                },
+                'score_mode': 'sum'
+            }
+        })
+
+    body = {
+        '_source': {
+            'includes': JOIN_RESULT_SOURCE_FIELDS
+        },
+        'query': {
+            'function_score': {
+                'query': {
+                    'bool': {
+                        'filter': filter_query,
+                        'should': should_query,
+                        'must_not': must_not_query,
+                        'minimum_should_match': 1,
+                    }
+                },
+                'functions': query_sup_functions or [],
+                'score_mode': 'sum',
+                'boost_mode': 'multiply'
+            }
+        }
+    }
+
+    return es.search(
+        index='datamart_temporal_coverage',
+        body=body,
+        size=TOP_K_SIZE
+    )['hits']['hits']
+
+
 def get_textual_join_search_results(
     es, query_results,
     query_sup_functions=None, query_sup_filters=None,
@@ -474,6 +592,19 @@ def get_joinable_datasets(
             for result in spatial_results:
                 result['companion_column'] = column
                 search_results.append(result)
+        elif type_ == 'temporal':
+            temporal_results = get_temporal_join_search_results(
+                es,
+                coverage['ranges'],
+                dataset_id,
+                ignore_datasets,
+                query_sup_functions,
+                query_sup_filters,
+            )
+            for result in temporal_results:
+                result['companion_column'] = column
+                result['companion_temporal_resolution'] = coverage['temporal_resolution']
+                search_results.append(result)
         elif len(column) == 1:
             column_name = data_profile['columns'][column[0]]['name']
             numerical_results = get_numerical_join_search_results(
@@ -491,7 +622,7 @@ def get_joinable_datasets(
                 result['companion_column'] = column
                 search_results.append(result)
         else:
-            raise ValueError("Non-spatial coverage from multiple columns?")
+            raise ValueError("Unknown coverage from multiple columns?")
 
     # textual/categorical attributes
     lazo_sketches = get_lazo_sketches(
@@ -538,7 +669,7 @@ def get_joinable_datasets(
         right_columns = []
         left_columns_names = []
         right_columns_names = []
-        left_temporal_resolution = None
+        left_temporal_resolution = result.get('companion_temporal_resolution')
         right_temporal_resolution = None
 
         left_columns.append(list(result['companion_column']))
@@ -546,23 +677,16 @@ def get_joinable_datasets(
             data_profile['columns'][comp]['name']
             for comp in result['companion_column']
         ])
-        for left_indices in left_columns:
-            if len(left_indices) == 1:
-                left_index = left_indices[0]
-                column = data_profile['columns'][left_index]
-                if 'temporal_resolution' in column:
-                    left_temporal_resolution = column['temporal_resolution']
-                    break
 
         source = result['_source']
         # Keep in sync, search code for 279a32
         if 'index' in source:  # column document
             right_columns.append([source['index']])
             right_columns_names.append([source['name']])
-            right_temporal_resolution = source.get('temporal_resolution')
         else:  # coverage document
             right_columns.append(source['column_indexes'])
             right_columns_names.append(source['column_names'])
+            right_temporal_resolution = source.get('temporal_resolution')
 
         res = dict(
             id=dt,

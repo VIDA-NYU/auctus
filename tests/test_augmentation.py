@@ -460,10 +460,6 @@ class TestJoin(DataTestCase):
                         'structural_type': 'http://schema.org/Text',
                         'semantic_types': ['http://schema.org/DateTime'],
                         'num_distinct_values': 6,
-                        'mean': 1556625600.0,
-                        'stddev': lambda n: round(n, 3) == 147556.091,
-                        'coverage': check_ranges(1556409600.0, 1556841600.0),
-                        'temporal_resolution': 'day',
                     },
                     {
                         'name': 'n_people',
@@ -537,10 +533,6 @@ class TestJoin(DataTestCase):
                         'structural_type': 'http://schema.org/Text',
                         'semantic_types': ['http://schema.org/DateTime'],
                         'num_distinct_values': 5,
-                        'mean': 1560394777.6,
-                        'stddev': lambda n: round(n, 3) == 5104.874,
-                        'coverage': check_ranges(1560387584.0, 1560402048.0),
-                        'temporal_resolution': 'hour',
                     },
                     {
                         'name': 'color',
@@ -608,10 +600,6 @@ class TestJoin(DataTestCase):
                         'structural_type': 'http://schema.org/Text',
                         'semantic_types': ['http://schema.org/DateTime'],
                         'num_distinct_values': 2,
-                        'mean': 1560340800.0,
-                        'stddev': 43200.0,
-                        'coverage': check_ranges(1560297600.0, 1560384000.0),
-                        'temporal_resolution': 'day',
                     },
                     {
                         'name': 'color',
@@ -690,11 +678,6 @@ class TestJoin(DataTestCase):
                         'structural_type': 'http://schema.org/Text',
                         'semantic_types': ['http://schema.org/DateTime'],
                         'num_distinct_values': 12,
-                        # FIXME: Getting a numpy.bool_ here, don't know why
-                        'mean': lambda n: round(float(n), 3) == 1556310203.077,
-                        'stddev': 50783.72599785144,
-                        'coverage': check_ranges(1556226048.0, 1556384384.0),
-                        'temporal_resolution': 'hour',
                     },
                     {
                         'name': 'n_people',
@@ -779,10 +762,6 @@ class TestJoin(DataTestCase):
                         'structural_type': 'http://schema.org/Text',
                         'semantic_types': ['http://schema.org/DateTime'],
                         'num_distinct_values': 3,
-                        'mean': 1150786816.0,
-                        'stddev': lambda n: round(n, 3) == 2926.324,
-                        'coverage': check_ranges(1150783232.0, 1150790400.0),
-                        'temporal_resolution': 'hour',
                     },
                     {
                         'name': 'latitude',
