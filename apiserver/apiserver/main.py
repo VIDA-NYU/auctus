@@ -1,5 +1,6 @@
 import asyncio
 import elasticsearch
+import itertools
 import lazo_index_service
 import logging
 import os
@@ -62,14 +63,25 @@ PROM_VERSION = PromMeasureRequest(
 )
 
 
+def min_or_none(values, *, key=None):
+    """Like min(), but returns None if the input is empty.
+    """
+    values = iter(values)
+    try:
+        first_value = next(values)
+    except StopIteration:
+        return None
+    return min(itertools.chain((first_value,), values), key=key)
+
+
 class LocationSearch(BaseHandler):
     @PROM_LOCATION.sync()
     def post(self):
         query = self.get_body_argument('q').strip()
         geo_data = self.application.geo_data
         areas = geo_data.resolve_name_all(query)
-        if areas:
-            area = min(areas, key=lambda a: a.type.value)
+        area = min_or_none(areas, key=lambda a: a.type.value)
+        if area is not None:
             bounds = area.bounds
             logger.info("Resolved area %r to %r", query, area)
             return self.send_json({'results': [
