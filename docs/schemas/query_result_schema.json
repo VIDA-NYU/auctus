@@ -73,6 +73,13 @@
               "admin_area_level": {
                 "type": "integer"
               },
+              "point_format": {
+                "type": "string",
+                "enum": [
+                  "lat,long",
+                  "long,lat"
+                ]
+              },
               "mean": {"type": "number"},
               "stddev": {"type": "number"},
               "coverage": {

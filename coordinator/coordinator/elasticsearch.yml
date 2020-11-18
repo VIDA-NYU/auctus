@@ -104,6 +104,8 @@ datamart:
             type: keyword
           admin_area_level:
             type: long
+          point_format:
+            type: keyword
           # Numerical summaries
           mean:
             type: float
@@ -220,6 +222,8 @@ datamart_columns:
         type: keyword
       admin_area_level:
         type: long
+      point_format:
+        type: keyword
       # Numerical summaries
       mean:
         type: float
