@@ -3443,6 +3443,7 @@ geo_wkt_metadata = {
             "structural_type": "http://schema.org/GeoCoordinates",
             "semantic_types": [],
             "unclean_values_ratio": 0.0,
+            "point_format": "long,lat",
         },
         {
             "name": "height",
