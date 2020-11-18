@@ -268,7 +268,7 @@ def process_column(
     resolved = {}
 
     # Compute ranges for numerical data
-    if structural_type in (types.INTEGER, types.FLOAT):
+    if structural_type in (types.INTEGER, types.FLOAT) and coverage:
         # Get numerical ranges
         numerical_values = []
         for e in array:

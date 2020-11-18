@@ -118,12 +118,12 @@ class CustomErrorHandler(tornado.web.ErrorHandler, BaseHandler):
 class ApiRule(Rule):
     VERSIONS = {'1'}
 
-    def __init__(self, pattern, versions, target):
+    def __init__(self, pattern, versions, target, kwargs=None):
         assert isinstance(versions, str)
         assert set(versions).issubset(self.VERSIONS)
         assert pattern[0] == '/'
         matcher = PathMatches(f'/api/v[{versions}]{pattern}')
-        super(ApiRule, self).__init__(matcher, target)
+        super(ApiRule, self).__init__(matcher, target, kwargs)
 
 
 def make_app(debug=False):
@@ -139,6 +139,7 @@ def make_app(debug=False):
     return Application(
         [
             ApiRule('/profile', '1', Profile),
+            ApiRule('/profile/fast', '1', Profile, {'fast': True}),
             ApiRule('/search', '1', Search),
             ApiRule('/download/([^/]+)', '1', DownloadId),
             ApiRule('/download', '1', Download),

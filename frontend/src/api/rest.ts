@@ -238,7 +238,10 @@ export interface ProfileResult extends Metadata {
   token: string;
 }
 
-export async function profile(file: File | string): Promise<ProfileResult> {
+export async function profile(
+  file: File | string,
+  fast = false
+): Promise<ProfileResult> {
   const formData = new FormData();
   formData.append('data', file);
   const config = {
@@ -246,7 +249,8 @@ export async function profile(file: File | string): Promise<ProfileResult> {
       'content-type': 'multipart/form-data',
     },
   };
-  const response = await api.post('/profile', formData, config);
+  const uri = fast ? '/profile/fast' : '/profile';
+  const response = await api.post(uri, formData, config);
   return response.data;
 }
 
