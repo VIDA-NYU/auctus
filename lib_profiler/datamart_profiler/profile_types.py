@@ -32,10 +32,11 @@ _re_wkt_point = re.compile(
 )
 _re_wkt_polygon = re.compile(
     r'^POLYGON ?\('
+    r'\([0-9 .]+\)'
     r'('
+    r', ?'
     r'\([0-9 .]+\)'
-    r', ?)*'
-    r'\([0-9 .]+\)'
+    r')*'
     r'\)$'
 )
 _re_geo_combined = regex.compile(
