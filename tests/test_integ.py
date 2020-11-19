@@ -3464,7 +3464,8 @@ geo_metadata_d3m = lambda v: {
 geo_wkt_metadata = {
     "id": "datamart.test.geo_wkt",
     "name": "geo_wkt",
-    "description": "Simple CSV in WKT format",
+    "description": "Simple CSV in WKT (https://en.wikipedia.org/wiki/Well-know"
+                   + "n_text_representation_of_geometry) format",
     'source': 'remi',
     'types': ['numerical', 'spatial'],
     "size": 4708,
