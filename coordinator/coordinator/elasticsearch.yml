@@ -75,7 +75,6 @@ datamart:
         type: float
       version:
         type: keyword
-        index: false
       attribute_keywords:
         type: text
       # 'columns' is a nested field, we want
