@@ -3,6 +3,7 @@ import asyncio
 import elasticsearch
 import functools
 import hashlib
+import html.entities
 import json
 import logging
 import os
@@ -142,6 +143,49 @@ def hash_json(*args, **kwargs):
 
     bytes_ = json.dumps(dct, sort_keys=True).encode('utf-8')
     return hashlib.sha1(bytes_).hexdigest()
+
+
+_re_html_link = re.compile(
+    r'<a [^>]*\bhref="(https?://[^"]+)"[^>]*>(.*?)</a>',
+)
+_re_html_tag = re.compile(
+    r'</?(?:a|acronym|br|div|em|h[1-5]|li|ol|p|span|ul)(?: [^>]*)?/?>',
+)
+_re_html_entities = re.compile(
+    r'&([A-Za-z]{2,35};)',
+)
+
+
+def _base_url(url):
+    if url.startswith('http://'):
+        url = url[7:]
+    elif url.startswith('https://'):
+        url = url[8:]
+    else:
+        url = url
+    return url.rstrip('/')
+
+
+def strip_html(text):
+    # Replace links
+    def replace_link(m):
+        url, label = m.groups()
+        if _base_url(url) == _base_url(label):
+            return label
+        else:
+            return "%s (%s)" % (label, url)
+    text = _re_html_link.sub(replace_link, text)
+
+    # Strip tags
+    text = _re_html_tag.sub('', text)
+
+    # Fix entities
+    text = _re_html_entities.sub(
+        lambda x: html.entities.html5.get(x.group(1), x.group(0)),
+        text,
+    )
+
+    return text
 
 
 def contextdecorator(factory, argname):
