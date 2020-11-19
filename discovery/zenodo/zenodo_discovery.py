@@ -90,7 +90,7 @@ class ZenodoDiscoverer(Discoverer):
         }
         hits = elasticsearch.helpers.scan(
             self.elasticsearch,
-            index='datamart',
+            index='datamart,pending',
             query=query,
             size=size,
             _source=['materialize.zenodo_record_id'],

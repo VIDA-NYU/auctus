@@ -104,7 +104,7 @@ class SocrataDiscoverer(Discoverer):
         }
         hits = elasticsearch.helpers.scan(
             self.elasticsearch,
-            index='datamart',
+            index='datamart,pending',
             query=query,
             size=size,
             _source=['materialize.socrata_id'],

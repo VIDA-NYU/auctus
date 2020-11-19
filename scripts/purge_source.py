@@ -26,7 +26,7 @@ def clear(identifier):
     )
     hits = elasticsearch.helpers.scan(
         es,
-        index='datamart',
+        index='datamart,pending',
         query={
             'query': {
                 'term': {
