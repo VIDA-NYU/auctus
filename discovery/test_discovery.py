@@ -23,7 +23,7 @@ class TestDiscoverer(Discoverer):
             dict(),
             {
                 # Omit name, should be set to 'geo' automatically
-                'description': "Another simple CSV with places",
+                'description': "Another simple <em>CSV</em> with places",
                 'source': 'remi',
             },
             dataset_id='geo',
@@ -34,7 +34,9 @@ class TestDiscoverer(Discoverer):
             dict(direct_url='http://test-discoverer:7000/geo_wkt.csv'),
             {
                 'name': 'geo_wkt',
-                'description': "Simple CSV in WKT format",
+                'description': "Simple CSV in <a href=\"https://en.wikipedia.o"
+                               + "rg/wiki/Well-known_text_representation_of_ge"
+                               + "ometry\">WKT</a> format",
                 'source': 'remi',
             },
             dataset_id='geo_wkt',
@@ -47,8 +49,8 @@ class TestDiscoverer(Discoverer):
             dict(),
             {
                 # Omit name, should be set to 'agg' automatically
-                'description': "Simple CSV with ids and salaries to test"
-                               " aggregation for numerical attributes",
+                'description': "Simple CSV with ids and salaries to test "
+                               + "aggregation for numerical attributes",
                 'source': 'fernando',
             },
             dataset_id='agg',
