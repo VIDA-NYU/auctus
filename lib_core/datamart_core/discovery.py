@@ -11,7 +11,7 @@ import tempfile
 import uuid
 
 from .common import block_run, log_future, json2msg, msg2json, \
-    encode_dataset_id, delete_dataset_from_index
+    encode_dataset_id, delete_dataset_from_index, strip_html
 
 
 logger = logging.getLogger(__name__)
@@ -208,6 +208,8 @@ class Discoverer(object):
             metadata['name'] = dataset_id
         if 'source' not in metadata:
             metadata['source'] = self.identifier
+        if 'description' in metadata:
+            metadata['description'] = strip_html(metadata['description'])
         coro = self._a_record_dataset(materialize, metadata,
                                       dataset_id=dataset_id, bind=bind)
         if self._async:
