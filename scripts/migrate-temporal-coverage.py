@@ -38,7 +38,7 @@ def migrate(from_folder, to_folder):
                     coverage = {
                         'type': 'datetime',
                         'column_names': [column['name']],
-                        'column_index': [idx],
+                        'column_indexes': [idx],
                         'column_types': ['http://schema.org/DateTime'],
                         'ranges': column.pop('coverage'),
                     }
