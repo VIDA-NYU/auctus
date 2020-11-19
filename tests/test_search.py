@@ -17,7 +17,7 @@ class TestSearch(unittest.TestCase):
                         'query': 'green taxi',
                         'operator': 'and',
                         'type': 'cross_fields',
-                        'fields': ['id^10', 'description', 'name', 'attribute_keywords'],
+                        'fields': ['id^10', 'description', 'name^3', 'attribute_keywords'],
                     },
                 },
                 {
@@ -44,8 +44,7 @@ class TestSearch(unittest.TestCase):
                         'fields': [
                             'dataset_id^10',
                             'dataset_description',
-                            'dataset_name',
-                            'name',
+                            'dataset_name^3',
                             'dataset_attribute_keywords',
                         ],
                     },
@@ -81,7 +80,7 @@ class TestSearch(unittest.TestCase):
                         'fields': [
                             'id^10',
                             'description',
-                            'name',
+                            'name^3',
                             'attribute_keywords',
                         ],
                     },
@@ -110,8 +109,7 @@ class TestSearch(unittest.TestCase):
                         'fields': [
                             'dataset_id^10',
                             'dataset_description',
-                            'dataset_name',
-                            'name',
+                            'dataset_name^3',
                             'dataset_attribute_keywords',
                         ],
                     },
@@ -157,7 +155,7 @@ class TestSearch(unittest.TestCase):
                         'query': 'green taxi',
                         'operator': 'and',
                         'type': 'cross_fields',
-                        'fields': ['id^10', 'description', 'name', 'attribute_keywords'],
+                        'fields': ['id^10', 'description', 'name^3', 'attribute_keywords'],
                     },
                 },
                 {
