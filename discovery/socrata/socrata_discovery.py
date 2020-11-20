@@ -95,7 +95,7 @@ class SocrataDiscoverer(Discoverer):
                         },
                         {
                             'term': {
-                                'materialize.socrata_domain': domain['url'],
+                                'materialize.socrata_domain.keyword': domain['url'],
                             },
                         },
                     ],
