@@ -106,6 +106,7 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
                         format='csv',
                         size_limit=10000000000,  # 10 GB
                     )
+                logger.info("CSV is %d bytes", os.stat(cache_temp).st_size)
 
             csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
             csv_path = dataset_lock.enter_context(
