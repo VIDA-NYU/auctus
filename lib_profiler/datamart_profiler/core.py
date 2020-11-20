@@ -220,7 +220,8 @@ def load_data(data, load_max_size=None):
 
 
 def detect_language(array):
-    langid.langid.load_model()
+    if langid.langid.identifier is None:
+        langid.langid.load_model()
     lang_identifier = langid.langid.identifier
     languages = numpy.zeros(len(lang_identifier.nb_classes))
     for value in array:
