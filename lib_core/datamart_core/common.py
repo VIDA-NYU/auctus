@@ -18,13 +18,54 @@ from . import types
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(clear=True):
+class ThreadFormatter(logging.Formatter):
+    """Variant of `Formatter` that shows the thread if it's not the main one.
+    """
+    _main_thread = threading.main_thread().ident
+
+    def __init__(self, fmt=None, datefmt=None, threadedfmt=None):
+        """Use ``%(threaded)s`` in ``fmt`` for the thread info, if not main.
+
+        ``%(threaded)s`` expands to an empty string on the main thread, or to
+        the thread ID otherwise.
+
+        You can control the format of the ``threaded`` string by passing a
+        `threadedfmt` argument, which defaults to ``' %(thread)d'``.
+
+        Example usage::
+
+            handler.formatter = ThreadFormatter(
+                fmt="%(levelname)s %(name)s%(threaded)s: %(message)s",
+                threadedfmt=" thread=%(thread)d",
+            )
+        """
+        super(ThreadFormatter, self).__init__(fmt, datefmt)
+        self._threadedfmt = threadedfmt or ' %(thread)d'
+
+    def formatMessage(self, record):
+        if record.thread != self._main_thread:
+            record.threaded = self._threadedfmt % dict(
+                thread=record.thread,
+                threadname=record.threadName,
+            )
+        else:
+            record.threaded = ''
+        return super(ThreadFormatter, self).formatMessage(record)
+
+
+def setup_logging(clear=True, thread=True):
     if clear:
         logging.root.handlers.clear()
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+
+    if thread:
+        logging.root.handlers[0].formatter = ThreadFormatter(
+            "%(asctime)s %(levelname)s %(name)s%(threaded)s: %(message)s",
+            threadedfmt=" thread=%(thread)d",
+        )
 
     def filter_delete(record):
         if (
