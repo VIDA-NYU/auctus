@@ -40,6 +40,10 @@ class RecentList(object):
         else:
             self.items = []
 
+    @property
+    def full(self):
+        return len(self.items) >= self.size
+
     def insert_or_replace(self, key, value):
         for i in range(len(self.items)):
             if self.items[i][0] == key:
@@ -58,6 +62,9 @@ class RecentList(object):
 
     def __iter__(self):
         return (entry[1] for entry in self.items)
+
+    def __getitem__(self, item):
+        return self.items[item][1]
 
 
 class Coordinator(object):
@@ -213,10 +220,15 @@ class Coordinator(object):
                 'materialize' in obj
                 and obj['materialize'].get('identifier') in ('datamart.upload', 'datamart.url')
             ):
-                self._recent_uploads.insert_or_replace(
-                    dataset_id,
-                    self.build_discovery(dataset_id, obj),
-                )
+                # If recent enough
+                if (
+                    not self._recent_uploads.full
+                    or obj['materialize'].get('date', 'z') > self._recent_uploads[-1]['discovered']
+                ):
+                    self._recent_uploads.insert_or_replace(
+                        dataset_id,
+                        self.build_discovery(dataset_id, obj),
+                    )
 
     def _update_statistics(self):
         """Periodically compute statistics.
