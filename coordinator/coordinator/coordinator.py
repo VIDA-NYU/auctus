@@ -259,7 +259,7 @@ class Coordinator(object):
                         },
                     },
                     'sort': [
-                        {'date': {'order': 'desc'}},
+                        {'materialize.date': {'order': 'desc'}},
                     ],
                 },
                 size=NB_RECENT,
