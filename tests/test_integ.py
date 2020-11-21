@@ -3813,7 +3813,7 @@ dates_pivoted_metadata = {
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
         'convert': [
-            {'identifier': 'pivot', 'except_columns': [0]},
+            {'identifier': 'pivot', 'except_columns': [0], 'date_label': 'date'},
         ],
     },
     'sample': "color,date,value\r\ngreen,2012-01-01,yes\r\ngreen,2012-02-01," +
