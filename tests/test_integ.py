@@ -913,12 +913,12 @@ class TestDataSearch(DatamartTest):
             }],
         }
 
-        with data('geo_wkt.csv') as basic_aug:
+        with data('geo_wkt.csv') as geo_wkt:
             response = self.datamart_post(
                 '/search',
                 files={
                     'query': json.dumps(query).encode('utf-8'),
-                    'data': basic_aug,
+                    'data': geo_wkt,
                 },
                 schema=result_list_schema,
             )
@@ -967,12 +967,12 @@ class TestDataSearch(DatamartTest):
             }],
         }
 
-        with data('geo_wkt.csv') as basic_aug:
+        with data('geo_wkt.csv') as geo_wkt:
             response = self.datamart_post(
                 '/search',
                 files={
                     'query': json.dumps(query).encode('utf-8'),
-                    'data': basic_aug,
+                    'data': geo_wkt,
                 },
                 schema=result_list_schema,
             )
@@ -3590,7 +3590,10 @@ lazo_metadata = {
         "direct_url": "http://test-discoverer:7000/lazo.csv",
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str),
-        "convert": [{'identifier': 'tsv', 'separator': '\t'}],
+        "convert": [
+            {'identifier': 'tsv', 'separator': '\t'},
+            {'identifier': 'skip_rows', 'nb_rows': 2},
+        ],
     },
     "sample": "dessert,year\r\ncandy,1990\r\ncookie,1990\r\npastry,1990\r\nj" +
               "ello,1990\r\napple,1990\r\nbanana,1990\r\nfruitcake,1990\r\no" +
