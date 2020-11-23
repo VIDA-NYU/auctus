@@ -26,6 +26,7 @@ setup(name='datamart_materialize',
               'pandas = datamart_materialize:PandasWriter',
           ],
           'datamart_materialize.converter': [
+              'skip_rows = datamart_materialize.common:SkipRowsConverter',
               'xls = datamart_materialize.excel:ExcelConverter',
               'pivot = datamart_materialize.pivot:PivotConverter',
               'spss = datamart_materialize.spss:SpssConverter',
