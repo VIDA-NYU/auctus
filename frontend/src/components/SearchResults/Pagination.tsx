@@ -1,31 +1,25 @@
 import React from 'react';
-
-type initialPage = 1;
+const defaultInitialPage = 1;
 
 interface PaginationProps {
-  items: Items[];
-  onChangePage: (psgeOfItems: Items[]) => void;
-  initialPage: initialPage;
+  totalRows: number;
+  onChangePage: (pager: Pager) => void;
+  initialPage: number;
   pageSize: number;
 }
 
-export interface Items {
-  id: number;
-  name: string;
+export interface Pager {
+  currentPage: number;
+  totalPages: number;
+  startPage: number;
+  endPage: number;
+  startIndex: number;
+  endIndex: number;
+  pages: number[];
 }
 
 interface PaginationState {
-  pager: {
-    totalItems: number;
-    currentPage: number;
-    pageSize: number;
-    totalPages: number;
-    startPage: number;
-    endPage: number;
-    startIndex: number;
-    endIndex: number;
-    pages: number[];
-  };
+  pager: Pager;
 }
 
 class Pagination extends React.PureComponent<PaginationProps, PaginationState> {
@@ -34,15 +28,13 @@ class Pagination extends React.PureComponent<PaginationProps, PaginationState> {
     this.state = this.initialState();
   }
   static defaultProps = {
-    initialPage: 1,
+    initialPage: defaultInitialPage,
   };
   initialState() {
     return {
       pager: {
-        totalItems: 0,
         currentPage: 0,
-        pageSize: 0,
-        totalPages: this.props.items.length,
+        totalPages: this.props.totalRows ? Math.ceil(this.props.totalRows/this.props.pageSize) : 0,
         startPage: 0,
         endPage: 0,
         startIndex: 0,
@@ -53,40 +45,37 @@ class Pagination extends React.PureComponent<PaginationProps, PaginationState> {
   }
 
   componentDidMount() {
-    // set page if items array isn't empty
-    if (this.props.items && this.props.items.length) {
+    // set initial page
+    if (this.props.totalRows) {
       this.setPage(this.props.initialPage);
     }
   }
 
   componentDidUpdate(prevProps: PaginationProps) {
-    // reset page if items array has changed
-    if (this.props.items !== prevProps.items) {
+    // reset page if the total number of rows has changed
+    if (this.props.totalRows !== prevProps.totalRows) {
       this.setPage(this.props.initialPage);
     }
   }
 
   setPage(page: number) {
-    const {items, pageSize} = this.props;
+    const {totalRows, pageSize} = this.props;
     let pager = this.state.pager;
 
     if (page < 1 || page > pager.totalPages) {
       return;
     }
     // get new pager object for specified page
-    pager = this.getPager(items.length, page, pageSize);
-
-    // get new page of items from items array
-    const pageOfItems = items.slice(pager.startIndex, pager.endIndex + 1);
+    pager = this.getPager(totalRows, page, pageSize);
 
     // update state
     this.setState({pager: pager});
 
     // call change page function in parent component
-    this.props.onChangePage(pageOfItems);
+    this.props.onChangePage(pager);
   }
 
-  getPager(totalItems: number, currentPage: number, pageSize: number) {
+  getPager(totalRows: number, currentPage: number, pageSize: number) {
     // default to first page
     currentPage = currentPage || 1;
 
@@ -94,7 +83,7 @@ class Pagination extends React.PureComponent<PaginationProps, PaginationState> {
     pageSize = pageSize || 10;
 
     // calculate total pages
-    const totalPages = Math.ceil(totalItems / pageSize);
+    const totalPages = Math.ceil(totalRows / pageSize);
 
     let startPage = 0;
     let endPage = 0;
@@ -118,9 +107,9 @@ class Pagination extends React.PureComponent<PaginationProps, PaginationState> {
       }
     }
 
-    // calculate start and end item indexes
+    // calculate start and end row indexes
     const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + pageSize - 1, totalItems - 1);
+    const endIndex = Math.min(startIndex + pageSize - 1, totalRows - 1);
 
     // create an array of pages to ng-repeat in the pager control
     const idxs = Array.from(new Array(endPage + 1 - startPage).keys());
@@ -128,9 +117,7 @@ class Pagination extends React.PureComponent<PaginationProps, PaginationState> {
 
     // return object with all pager properties required by the view
     return {
-      totalItems: totalItems,
       currentPage: currentPage,
-      pageSize: pageSize,
       totalPages: totalPages,
       startPage: startPage,
       endPage: endPage,
@@ -142,7 +129,6 @@ class Pagination extends React.PureComponent<PaginationProps, PaginationState> {
 
   render() {
     const pager = this.state.pager;
-
     if (!pager.pages || pager.pages.length <= 1) {
       // don't display pager if there is only 1 page
       return null;

@@ -14,7 +14,7 @@ import {HitInfoBox} from './HitInfoBox';
 import {SearchQuery} from '../../api/rest';
 import './SearchResults.css';
 import Pagination from './Pagination';
-import {Items} from './Pagination';
+import {Pager} from './Pagination';
 
 interface SearchResultsProps {
   searchQuery: SearchQuery;
@@ -27,8 +27,7 @@ interface SearchResultsProps {
 interface SearchResultsState {
   selectedHit?: SearchResult;
   selectedInfoBoxType: InfoBoxType;
-  paginationItems?: Items[];
-  pageOfItems?: Items[];
+  pager?: Pager;
   updateScroll: boolean;
 }
 
@@ -42,8 +41,6 @@ class SearchResults extends React.PureComponent<
     super(props);
     this.state = {
       selectedInfoBoxType: InfoBoxType.DETAIL,
-      paginationItems: undefined,
-      pageOfItems: undefined,
       updateScroll: false,
     };
     this.divRef = React.createRef<HTMLDivElement>();
@@ -58,11 +55,6 @@ class SearchResults extends React.PureComponent<
       this.setState({
         selectedHit: this.props.searchResponse
           ? this.props.searchResponse.results[0]
-          : undefined,
-        paginationItems: this.props.searchResponse
-          ? Array.from(
-              new Array(this.props.searchResponse.results.length).keys()
-            ).map(i => ({id: i + 1, name: 'Item ' + (i + 1)}))
           : undefined,
         selectedInfoBoxType: InfoBoxType.DETAIL,
       });
@@ -108,9 +100,8 @@ class SearchResults extends React.PureComponent<
     );
   }
 
-  onChangePage(pageOfItems: Items[]) {
-    // update state with new page of items
-    this.setState({pageOfItems: pageOfItems, updateScroll: true});
+  onChangePage(pager: Pager) {
+    this.setState({pager: pager, updateScroll: true});
     if (this.divRef.current) {
       this.divRef.current.scrollTo({
         top: 0,
@@ -155,16 +146,13 @@ class SearchResults extends React.PureComponent<
         const {
           selectedHit,
           selectedInfoBoxType,
-          pageOfItems,
-          paginationItems,
+          pager,
         } = this.state;
 
         const pageSize = 19; // total number of items that will be displayed
-        const startIdx = pageOfItems ? pageOfItems[0].id : 1;
-        const lastIdx = pageOfItems
-          ? pageOfItems[pageOfItems.length - 1].id
-          : pageSize;
-        const currentHits = searchResponse.results.slice(startIdx - 1, lastIdx);
+        const startIdx = pager ? pager.startIndex : 0;
+        const lastIdx = pager ? pager.endIndex : pageSize - 1;
+        const currentHits = searchResponse.results.slice(startIdx, lastIdx);
 
         return (
           <div className="d-flex flex-row container-vh-full pt-1">
@@ -176,13 +164,12 @@ class SearchResults extends React.PureComponent<
               <hr />
               <div className="container mt-2">
                 <div className="text-center">
-                  {paginationItems && (
-                    <Pagination
-                      items={paginationItems}
+                  {<Pagination
+                      totalRows={searchResponse.results.length}
                       onChangePage={this.onChangePage}
                       pageSize={pageSize}
                     />
-                  )}
+                  }
                 </div>
               </div>
             </div>
