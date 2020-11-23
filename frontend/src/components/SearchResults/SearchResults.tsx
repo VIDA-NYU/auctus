@@ -48,10 +48,16 @@ class SearchResults extends React.PureComponent<
   }
 
   componentDidUpdate() {
-    if (this.state.updateScroll && this.state.pager && this.props.searchResponse) {
+    if (
+      this.state.updateScroll &&
+      this.state.pager &&
+      this.props.searchResponse
+    ) {
       this.setState({
         updateScroll: false,
-        selectedHit: this.props.searchResponse.results[this.state.pager.startIndex],
+        selectedHit: this.props.searchResponse.results[
+          this.state.pager.startIndex
+        ],
       });
     }
     if (this.lastSearchResponse !== this.props.searchResponse) {
@@ -146,15 +152,11 @@ class SearchResults extends React.PureComponent<
           );
         }
 
-        const {
-          selectedHit,
-          selectedInfoBoxType,
-          pager,
-        } = this.state;
+        const {selectedHit, selectedInfoBoxType, pager} = this.state;
 
         const pageSize = 19; // total number of items that will be displayed
         const startIdx = pager ? pager.startIndex : 0;
-        const lastIdx = pager ? pager.endIndex + 1: pageSize;
+        const lastIdx = pager ? pager.endIndex + 1 : pageSize;
         const currentHits = searchResponse.results.slice(startIdx, lastIdx);
 
         return (
@@ -167,7 +169,8 @@ class SearchResults extends React.PureComponent<
               <hr />
               <div className="container mt-2">
                 <div className="text-center">
-                  {<Pagination
+                  {
+                    <Pagination
                       totalRows={searchResponse.results.length}
                       onChangePage={this.onChangePage}
                       pageSize={pageSize}
