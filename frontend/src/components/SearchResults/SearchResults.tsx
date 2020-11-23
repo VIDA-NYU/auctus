@@ -48,8 +48,11 @@ class SearchResults extends React.PureComponent<
   }
 
   componentDidUpdate() {
-    if (this.state.updateScroll) {
-      this.setState({updateScroll: false});
+    if (this.state.updateScroll && this.state.pager && this.props.searchResponse) {
+      this.setState({
+        updateScroll: false,
+        selectedHit: this.props.searchResponse.results[this.state.pager.startIndex],
+      });
     }
     if (this.lastSearchResponse !== this.props.searchResponse) {
       this.setState({
@@ -151,7 +154,7 @@ class SearchResults extends React.PureComponent<
 
         const pageSize = 19; // total number of items that will be displayed
         const startIdx = pager ? pager.startIndex : 0;
-        const lastIdx = pager ? pager.endIndex : pageSize - 1;
+        const lastIdx = pager ? pager.endIndex + 1: pageSize;
         const currentHits = searchResponse.results.slice(startIdx, lastIdx);
 
         return (
