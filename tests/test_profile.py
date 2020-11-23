@@ -9,7 +9,7 @@ import textwrap
 
 import datamart_geo
 from datamart_profiler import process_dataset
-from datamart_profiler.core import detect_language, expand_attribute_name
+from datamart_profiler.core import expand_attribute_name
 from datamart_profiler import profile_types
 from datamart_profiler import spatial
 from datamart_profiler.spatial import LATITUDE, LONGITUDE, LatLongColumn, \
@@ -582,36 +582,6 @@ class TestTruncate(unittest.TestCase):
         )
 
 
-class TestLanguages(unittest.TestCase):
-    def test_single(self):
-        languages = detect_language(['bonjour les amis', 'pain au chocolat'])
-        languages = sorted(languages, key=lambda p: -p[1])
-        lang0 = languages[0][0], round(languages[0][1], 2)
-        self.assertEqual(
-            lang0,
-            ('fr', 1.0),
-        )
-
-    def test_mixed(self):
-        languages = detect_language([
-            'bonjour les amis',
-            'october is my favorite month',
-            'croissant',
-        ])
-        languages = list(languages)
-        languages = sorted(languages, key=lambda p: -p[1])
-        lang0 = languages[0][0], round(languages[0][1], 2)
-        lang1 = languages[1][0], round(languages[1][1], 2)
-        self.assertEqual(
-            lang0,
-            ('fr', 0.92),
-        )
-        self.assertEqual(
-            lang1,
-            ('en', 0.08),
-        )
-
-
 class TestNominatim(DataTestCase):
     def test_profile(self):
         queries = {
@@ -675,7 +645,6 @@ class TestNominatim(DataTestCase):
                             'http://schema.org/Text',
                             'http://schema.org/address',
                         ],
-                        'language': 'en',
                     },
                 ],
                 'spatial_coverage': [

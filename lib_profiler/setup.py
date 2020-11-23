@@ -15,7 +15,6 @@ req = [
     'regex',
     'requests',
     'datamart-geo==0.2',
-    'langid>=1.1,<2.0',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
