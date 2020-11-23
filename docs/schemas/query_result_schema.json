@@ -82,6 +82,7 @@
               },
               "mean": {"type": "number"},
               "stddev": {"type": "number"},
+              "language": {"type": "string"},
               "coverage": {
                 "type": "array",
                 "items": {
