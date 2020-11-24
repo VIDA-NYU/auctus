@@ -3,11 +3,12 @@ import csv
 from datamart_materialize.utils import SimpleConverter
 
 
-DATE_COLUMN_LABEL = 'date'
 VALUE_COLUMN_LABEL = 'value'
 
 
-def pivot_table(source_filename, dest_fileobj, except_columns):
+def pivot_table(
+    source_filename, dest_fileobj, except_columns, date_label='date',
+):
     with open(source_filename, 'r') as src_fp:
         src = iter(csv.reader(src_fp))
         dst = csv.writer(dest_fileobj)
@@ -20,7 +21,7 @@ def pivot_table(source_filename, dest_fileobj, except_columns):
         carried_columns = [orig_columns[i] for i in except_columns]
 
         # Generate new header
-        dst.writerow(carried_columns + [DATE_COLUMN_LABEL, VALUE_COLUMN_LABEL])
+        dst.writerow(carried_columns + [date_label, VALUE_COLUMN_LABEL])
 
         # Indexes of date columns
         date_indexes = [

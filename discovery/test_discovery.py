@@ -127,6 +127,17 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
+            dict(direct_url='http://test-discoverer:7000/years_pivoted.csv'),
+            {
+                'name': 'years pivoted',
+                'description': "Temporal dataset but in columns",
+                'source': 'remi',
+            },
+            dataset_id='years_pivoted',
+        )
+
+        # Use URL for this one
+        self.record_dataset(
             dict(direct_url='http://test-discoverer:7000/spss.sav'),
             {
                 # Omit name, should be set to 'spss' automatically

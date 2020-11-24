@@ -1,6 +1,7 @@
 import contextlib
 import csv
 import datamart_materialize
+from datetime import datetime
 import logging
 import os
 import prometheus_client
@@ -249,21 +250,42 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
         except StopIteration:
             columns = []
     if len(columns) >= 3:
-        non_matches = [
+        # Look for dates
+        non_dates = [
             i for i, name in enumerate(columns)
             if parse_date(name) is None
         ]
+
+        # Look for years
+        def is_year(name, max_year=datetime.utcnow().year + 2):
+            if len(name) != 4:
+                return False
+            try:
+                return 1900 <= int(name) <= max_year
+            except ValueError:
+                return False
+        non_years = [
+            i for i, name in enumerate(columns)
+            if not is_year(name)
+        ]
+
+        # If there's enough matches, pivot
+        non_matches = min([non_dates, non_years], key=len)
         if len(non_matches) <= max(2.0, 0.20 * len(columns)):
+            date_label = 'year' if non_matches is non_years else 'date'
+
             # Update metadata
             logger.info("Detected pivoted table")
             materialize.setdefault('convert', []).append({
                 'identifier': 'pivot',
                 'except_columns': non_matches,
+                'date_label': date_label,
             })
 
             # Update file
             dataset_path = convert_dataset(
-                lambda path, dst: pivot_table(path, dst, non_matches),
+                lambda path, dst: pivot_table(path, dst,
+                                              non_matches, date_label),
                 dataset_path,
             )
 

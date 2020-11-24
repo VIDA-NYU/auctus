@@ -148,6 +148,7 @@ class TestProfiler(DatamartTest):
             'datamart.test.daily': daily_metadata,
             'datamart.test.hourly': hourly_metadata,
             'datamart.test.dates_pivoted': dates_pivoted_metadata,
+            'datamart.test.years_pivoted': years_pivoted_metadata,
             'datamart.test.excel': other_formats_metadata('xls'),
             'datamart.test.spss': other_formats_metadata('spss'),
             'datamart.test.stata114': other_formats_metadata('stata'),
@@ -3813,7 +3814,7 @@ dates_pivoted_metadata = {
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
         'convert': [
-            {'identifier': 'pivot', 'except_columns': [0]},
+            {'identifier': 'pivot', 'except_columns': [0], 'date_label': 'date'},
         ],
     },
     'sample': "color,date,value\r\ngreen,2012-01-01,yes\r\ngreen,2012-02-01," +
@@ -3824,6 +3825,85 @@ dates_pivoted_metadata = {
               "012-04-01,yes\r\nred,2012-05-01,no\r\nred,2012-06-01,no\r\nre" +
               "d,2012-07-01,no\r\nred,2012-09-01,no\r\nred,2012-10-01,yes\r" +
               "\nred,2012-11-01,yes\r\nred,2012-12-01,no\r\n",
+    'date': lambda d: isinstance(d, str),
+    'version': version
+}
+
+
+years_pivoted_metadata = {
+    'id': 'datamart.test.years_pivoted',
+    'name': 'years pivoted',
+    'description': 'Temporal dataset but in columns',
+    'source': 'remi',
+    'types': ['categorical', 'temporal'],
+    'size': 367,
+    'nb_rows': 24,
+    'nb_profiled_rows': 24,
+    'nb_columns': 3,
+    'nb_temporal_columns': 1,
+    'nb_categorical_columns': 2,
+    'average_row_size': lambda n: round(n, 2) == 15.29,
+    'attribute_keywords': ['color', 'year', 'value'],
+    'columns': [
+        {
+            'name': 'color',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': [
+                'http://schema.org/Enumeration',
+            ],
+            'num_distinct_values': 2,
+            'plot': check_plot('histogram_categorical'),
+        },
+        {
+            'name': 'year',
+            'structural_type': 'http://schema.org/Text',
+            'semantic_types': [
+                'http://schema.org/DateTime',
+            ],
+            'unclean_values_ratio': 0.0,
+            'num_distinct_values': 12,
+            'plot': check_plot('histogram_temporal'),
+        },
+        {
+            'name': 'value',
+            'structural_type': 'http://schema.org/Text',
+            'unclean_values_ratio': 0.0,
+            'semantic_types': [
+                'http://schema.org/Boolean',
+                'http://schema.org/Enumeration',
+            ],
+            'num_distinct_values': 2,
+            'plot': check_plot('histogram_categorical'),
+        },
+    ],
+    'temporal_coverage': [
+        {
+            'type': 'datetime',
+            'column_names': ['year'],
+            'column_indexes': [1],
+            'column_types': ['http://schema.org/DateTime'],
+            'ranges': [
+                {'range': {'gte': 1136073600.0, 'lte': 1230768000.0}},
+                {'range': {'gte': 1262304000.0, 'lte': 1356998400.0}},
+                {'range': {'gte': 1388534400.0, 'lte': 1483228800.0}},
+            ],
+            'temporal_resolution': 'year',
+        },
+    ],
+    'materialize': {
+        'direct_url': 'http://test-discoverer:7000/years_pivoted.csv',
+        'identifier': 'datamart.test',
+        'date': lambda d: isinstance(d, str),
+        'convert': [
+            {'identifier': 'pivot', 'except_columns': [0], 'date_label': 'year'},
+        ],
+    },
+    'sample': "color,year,value\r\ngreen,2006,yes\r\ngreen,2007,no\r\ngreen," +
+              "2008,no\r\ngreen,2009,yes\r\ngreen,2011,yes\r\ngreen,2012,yes" +
+              "\r\ngreen,2013,yes\r\ngreen,2014,yes\r\ngreen,2015,no\r\ngree" +
+              "n,2016,no\r\nred,2006,no\r\nred,2008,yes\r\nred,2009,yes\r\nr" +
+              "ed,2010,no\r\nred,2011,no\r\nred,2012,no\r\nred,2014,no\r\nre" +
+              "d,2015,yes\r\nred,2016,yes\r\nred,2017,no\r\n",
     'date': lambda d: isinstance(d, str),
     'version': version
 }
