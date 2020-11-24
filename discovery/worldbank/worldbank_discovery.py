@@ -6,6 +6,7 @@ import elasticsearch.helpers
 import hashlib
 import logging
 import os
+import pandas
 import re
 import requests
 import tempfile
@@ -15,6 +16,8 @@ import zipfile
 
 from datamart_core import Discoverer
 from datamart_core.common import setup_logging
+from datamart_profiler.core import count_garbage_rows
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,17 @@ LIST_URL = 'https://data.worldbank.org/indicator'
 
 
 _re_non_id = re.compile(r'[^a-z0-9]+')
+
+
+def is_year(name):
+    if len(name) != 4:
+        return False
+    try:
+        int(name)
+    except ValueError:
+        return False
+    else:
+        return True
 
 
 class WorldBankDiscoverer(Discoverer):
@@ -162,12 +176,58 @@ class WorldBankDiscoverer(Discoverer):
                 logger.info("CSV unchanged, skipping")
                 return
 
+            # Load DataFrame
+            with dl_zip.open(csv_name, 'r') as dl_csv:
+                skip_nb_rows = count_garbage_rows(dl_csv)
+                df = pandas.read_csv(
+                    dl_csv,
+                    dtype=str, na_filter=False,
+                    skiprows=skip_nb_rows,
+                )
+
+            # Organize columns
+            drop = []
+            years = []
+            other_cols = []
+            for name in df.columns:
+                if name.startswith("Unnamed: "):
+                    drop.append(name)
+                elif name.lower() == 'indicator code':
+                    drop.append(name)
+                elif is_year(name):
+                    years.append(name)
+                else:
+                    other_cols.append(name)
+            df = df.drop(drop, axis=1)
+            if set(other_cols) != {
+                'Country Name', 'Country Code', 'Indicator Name',
+            }:
+                logger.error("Not the expected columns: %r", other_cols)
+                return
+
+            # Pivot years
+            df = df.melt(
+                id_vars=other_cols,
+                value_vars=years,
+                var_name='year',
+            )
+
+            # Pivot indicators
+            df = df.pivot(
+                index=['Country Name', 'Country Code', 'year'],
+                columns='Indicator Name',
+                values='value',
+            )
+            df = df.reset_index()
+
             # Write the CSV to storage
             with dl_zip.open(csv_name, 'r') as dl_csv:
                 with self.write_to_shared_storage(dataset_id) as tmp:
-                    with open(os.path.join(tmp, 'main.csv'), 'wb') as fp:
-                        for chunk in iter(lambda: dl_csv.read(4096), b''):
-                            fp.write(chunk)
+                    df.to_csv(
+                        os.path.join(tmp, 'main.csv'),
+                        index=False,
+                        line_terminator='\r\n',
+                    )
 
         self.record_dataset(
             dict(

@@ -375,8 +375,10 @@ python-versions = "*"
 version = "0.0"
 
 [package.dependencies]
+datamart-profiler = "*"
 datamart_core = "*"
 elasticsearch = ">=7.0,<8.0"
+pandas = "*"
 
 [package.dependencies.beautifulsoup4]
 extras = ["html5lib"]
