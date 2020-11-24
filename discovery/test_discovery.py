@@ -56,9 +56,11 @@ class TestDiscoverer(Discoverer):
             dataset_id='agg',
         )
 
-        # Use URL for this one
+        # Put this one on disk
+        with self.write_to_shared_storage('lazo') as dirname:
+            shutil.copy2('lazo.csv', os.path.join(dirname, 'main.csv'))
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/lazo.csv'),
+            dict(),
             {
                 # Omit name, should be set to 'lazo' automatically
                 'description': "Simple CSV with states and years"

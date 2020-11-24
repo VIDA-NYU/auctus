@@ -1135,6 +1135,14 @@ class TestDownload(DatamartTest):
                          'application/octet-stream')
         self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
+    def test_get_id_convert(self):
+        """Download a dataset by ID, which has converters set."""
+        response = self.datamart_get('/download/' + 'datamart.test.lazo')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'],
+                         'application/octet-stream')
+        self.assertTrue(response.content.startswith(b'dessert,year\r\n'))
+
     def test_post(self):
         """Download datasets via POST /download"""
         # Basic dataset, materialized via direct_url
@@ -3587,7 +3595,6 @@ lazo_metadata = {
         },
     ],
     "materialize": {
-        "direct_url": "http://test-discoverer:7000/lazo.csv",
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str),
         "convert": [
