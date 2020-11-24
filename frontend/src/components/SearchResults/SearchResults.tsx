@@ -102,13 +102,13 @@ class SearchResults extends React.PureComponent<
         behavior: 'smooth',
       });
     }
-    const startIndex = pager ? pager.startIndex : 0;
-    const selecetdHit = this.props.searchResponse
+    const startIndex = pager.startIndex;
+    const selectedHit = this.props.searchResponse
       ? this.props.searchResponse.results[startIndex]
       : undefined;
     this.setState({
-      pager: pager,
-      selectedHit: selecetdHit,
+      pager,
+      selectedHit,
     });
   }
 
