@@ -42,9 +42,15 @@ def pivot_table(
 class PivotConverter(SimpleConverter):
     """Adapter pivoting a table.
     """
-    def __init__(self, writer, *, except_columns):
+    def __init__(self, writer, *, except_columns, date_label='date'):
         super(PivotConverter, self).__init__(writer)
         self.except_columns = except_columns
+        self.date_label = date_label
 
     def transform(self, source_filename, dest_fileobj):
-        pivot_table(source_filename, dest_fileobj, self.except_columns)
+        pivot_table(
+            source_filename,
+            dest_fileobj,
+            self.except_columns,
+            self.date_label,
+        )
