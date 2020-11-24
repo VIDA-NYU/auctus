@@ -325,7 +325,7 @@ class TestD3mIndexAdder(unittest.TestCase):
 
 
 class TestConvert(unittest.TestCase):
-    def test_pivot(self):
+    def test_pivot_dates(self):
         f_out = io.StringIO()
         pivot_table(
             os.path.join(os.path.dirname(__file__), 'data/dates_pivoted.csv'),
@@ -333,6 +333,21 @@ class TestConvert(unittest.TestCase):
             [0],
         )
         with data('dates_pivoted.converted.csv', 'r', newline='') as f_exp:
+            self.assertEqual(
+                f_out.getvalue(),
+                f_exp.read(),
+            )
+
+    def test_pivot_years(self):
+        """Test pivoting a dataset with year columns."""
+        f_out = io.StringIO()
+        pivot_table(
+            os.path.join(os.path.dirname(__file__), 'data/years_pivoted.csv'),
+            f_out,
+            [0],
+            'year',
+        )
+        with data('years_pivoted.converted.csv', 'r', newline='') as f_exp:
             self.assertEqual(
                 f_out.getvalue(),
                 f_exp.read(),
