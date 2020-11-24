@@ -153,7 +153,7 @@ class WorldBankDiscoverer(Discoverer):
             # Hash the CSV
             h = hashlib.sha1()
             with dl_zip.open(csv_name, 'r') as dl_csv:
-                for chunk in iter(dl_csv.read, b''):
+                for chunk in iter(lambda: dl_csv.read(4096), b''):
                     h.update(chunk)
             dl_csv_hash = h.hexdigest()
 
@@ -166,7 +166,7 @@ class WorldBankDiscoverer(Discoverer):
             with dl_zip.open(csv_name, 'r') as dl_csv:
                 with self.write_to_shared_storage(dataset_id) as tmp:
                     with open(os.path.join(tmp, 'main.csv'), 'wb') as fp:
-                        for chunk in iter(dl_csv.read, b''):
+                        for chunk in iter(lambda: dl_csv.read(4096), b''):
                             fp.write(chunk)
 
         self.record_dataset(
