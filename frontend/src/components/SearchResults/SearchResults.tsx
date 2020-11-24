@@ -34,7 +34,6 @@ class SearchResults extends React.PureComponent<
   SearchResultsProps,
   SearchResultsState
 > {
-  lastSearchResponse?: SearchResponse;
   private divRef: React.RefObject<HTMLDivElement>;
   constructor(props: SearchResultsProps) {
     super(props);
@@ -45,16 +44,26 @@ class SearchResults extends React.PureComponent<
     this.onChangePage = this.onChangePage.bind(this);
   }
 
-  componentDidUpdate() {
-    if (this.lastSearchResponse !== this.props.searchResponse) {
+  componentDidUpdate(
+    prevProps: SearchResultsProps,
+    prevState: SearchResultsState
+  ) {
+    if (prevProps.searchResponse !== this.props.searchResponse) {
       this.setState({
         selectedHit: this.props.searchResponse
           ? this.props.searchResponse.results[0]
           : undefined,
         selectedInfoBoxType: InfoBoxType.DETAIL,
       });
+    } else if (
+      this.divRef.current &&
+      prevState.pager?.currentPage !== this.state.pager?.currentPage
+    ) {
+      this.divRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
     }
-    this.lastSearchResponse = this.props.searchResponse;
   }
 
   renderSearchHits(
@@ -96,12 +105,6 @@ class SearchResults extends React.PureComponent<
   }
 
   onChangePage(pager: Pager) {
-    if (this.divRef.current) {
-      this.divRef.current.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      });
-    }
     const startIndex = pager.startIndex;
     const selectedHit = this.props.searchResponse
       ? this.props.searchResponse.results[startIndex]
