@@ -126,7 +126,7 @@ class TestD3m(unittest.TestCase):
             )
 
     def test_writer_default(self):
-        """Test writing with default parameters."""
+        """Test writing with default parameters"""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
             writer = D3mWriter(target)
@@ -138,7 +138,7 @@ class TestD3m(unittest.TestCase):
             self._check_output(target)
 
     def test_d3m_writer_4(self):
-        """Test writing in 4.0.0 format explicitely."""
+        """Test writing in 4.0.0 format explicitly"""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
             writer = D3mWriter(target, format_options={'version': '4.0.0'})
@@ -150,7 +150,7 @@ class TestD3m(unittest.TestCase):
             self._check_output(target)
 
     def test_writer_32(self):
-        """Test writing in 3.2.0 format."""
+        """Test writing in 3.2.0 format"""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
             writer = D3mWriter(target, format_options={'version': '3.2.0'})
@@ -165,7 +165,7 @@ class TestD3m(unittest.TestCase):
             self._check_output(target, metadata=meta)
 
     def test_index_add(self):
-        """Test adding the index to data that doesn't have it."""
+        """Test adding the index to data that doesn't have it"""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
             writer = D3mWriter(target, format_options={'need_d3mindex': True})
@@ -181,7 +181,7 @@ class TestD3m(unittest.TestCase):
             )
 
     def test_index_present(self):
-        """Test that requiring an index doesn't add one if already there."""
+        """Test that requiring an index doesn't add one if already there"""
         with tempfile.TemporaryDirectory() as temp:
             target = os.path.join(temp, 'dataset')
             writer = D3mWriter(target, format_options={'need_d3mindex': True})
@@ -224,7 +224,7 @@ class TestD3mIndexAdder(unittest.TestCase):
         _D3mAddIndex.BUFFER_MAX = cls._orig_buffer_max
 
     def test_add_binary(self):
-        """Test adding d3mIndex with binary=True."""
+        """Test adding d3mIndex with binary=True"""
         dest = StringIO()
         adapter = _D3mAddIndex(dest, True)
         self.assertIs(adapter._generate, None)
@@ -252,7 +252,7 @@ class TestD3mIndexAdder(unittest.TestCase):
         )
 
     def test_add_text(self):
-        """Test adding d3mIndex with binary=False."""
+        """Test adding d3mIndex with binary=False"""
         dest = StringIO()
         adapter = _D3mAddIndex(dest, False)
         self.assertIs(adapter._generate, None)
@@ -280,7 +280,7 @@ class TestD3mIndexAdder(unittest.TestCase):
         )
 
     def test_passthrough_binary(self):
-        """Test passthrough with binary=True."""
+        """Test passthrough with binary=True"""
         dest = StringIO()
         adapter = _D3mAddIndex(dest, True)
         self.assertIs(adapter._generate, None)
@@ -302,7 +302,7 @@ class TestD3mIndexAdder(unittest.TestCase):
         )
 
     def test_passthrough_text(self):
-        """Test passthrough with binary=False."""
+        """Test passthrough with binary=False"""
         dest = StringIO()
         adapter = _D3mAddIndex(dest, False)
         self.assertIs(adapter._generate, None)
@@ -326,6 +326,7 @@ class TestD3mIndexAdder(unittest.TestCase):
 
 class TestConvert(unittest.TestCase):
     def test_pivot_dates(self):
+        """Test pivoting a dataset with date columns"""
         f_out = io.StringIO()
         pivot_table(
             os.path.join(os.path.dirname(__file__), 'data/dates_pivoted.csv'),
@@ -339,7 +340,7 @@ class TestConvert(unittest.TestCase):
             )
 
     def test_pivot_years(self):
-        """Test pivoting a dataset with year columns."""
+        """Test pivoting a dataset with year columns"""
         f_out = io.StringIO()
         pivot_table(
             os.path.join(os.path.dirname(__file__), 'data/years_pivoted.csv'),

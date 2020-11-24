@@ -27,7 +27,7 @@ def setup_augmentation(orig, aug):
 
 class TestJoin(DataTestCase):
     def test_basic_join(self):
-        """Simple join between integer keys."""
+        """Simple join between integer keys"""
         with setup_augmentation('basic_aug.csv', 'basic.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -112,7 +112,7 @@ class TestJoin(DataTestCase):
         )
 
     def test_agg_join(self):
-        """Join with aggregation between integer keys."""
+        """Join with aggregation between integer keys"""
         with setup_augmentation('agg_aug.csv', 'agg.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -209,6 +209,7 @@ class TestJoin(DataTestCase):
         )
 
     def test_agg_join_specific_functions(self):
+        """Join between integer keys, with specified aggregation functions"""
         with setup_augmentation('agg_aug.csv', 'agg.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -301,6 +302,7 @@ class TestJoin(DataTestCase):
         )
 
     def test_geo_join(self):
+        """Join with lat,long keys"""
         with setup_augmentation('geo_aug.csv', 'geo.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -423,6 +425,7 @@ class TestJoin(DataTestCase):
             )
 
     def test_temporal_daily_join(self):
+        """Join between temporal keys (daily, daily)"""
         with setup_augmentation('daily_aug.csv', 'daily.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -497,6 +500,7 @@ class TestJoin(DataTestCase):
         )
 
     def test_temporal_hourly_join(self):
+        """Join between temporal keys (hourly, hourly)"""
         with setup_augmentation('hourly_aug.csv', 'hourly.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -566,7 +570,7 @@ class TestJoin(DataTestCase):
         )
 
     def test_temporal_hourly_days_join(self):
-        """Join daily data with hourly (= aggregate down to daily)."""
+        """Join daily data with hourly (= aggregate down to daily)"""
         with setup_augmentation('hourly_aug_days.csv', 'hourly.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -633,7 +637,7 @@ class TestJoin(DataTestCase):
         )
 
     def test_temporal_daily_hours_join(self):
-        """Join hourly data with daily (= repeat for each hour)."""
+        """Join hourly data with daily (= repeat for each hour)"""
         with setup_augmentation('daily_aug_hours.csv', 'daily.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -715,7 +719,7 @@ class TestJoin(DataTestCase):
         )
 
     def test_spatial_temporal(self):
-        """Join on both space and time columns."""
+        """Join on both space and time columns"""
         with setup_augmentation('spatiotemporal_aug.csv', 'spatiotemporal.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):
@@ -811,6 +815,7 @@ class TestJoin(DataTestCase):
 
 class TestUnion(DataTestCase):
     def test_geo_union(self):
+        """Test union on geo.csv"""
         with setup_augmentation('geo_aug.csv', 'geo.csv') as (
             orig_data, aug_data, orig_meta, aug_meta, result, writer,
         ):

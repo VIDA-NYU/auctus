@@ -60,7 +60,7 @@ def check_plot(kind):
 
 class TestNames(unittest.TestCase):
     def test_names(self):
-        """Test expanding column names."""
+        """Test expanding column names"""
         self.assertEqual(
             list(expand_attribute_name('Apt221bBakerStreet')),
             ['Apt', '221', 'b', 'Baker', 'Street'],
@@ -71,7 +71,7 @@ class TestNames(unittest.TestCase):
         )
 
     def test_duplicate_column_names(self):
-        """Test reading a CSV with duplicate names."""
+        """Test reading a CSV with duplicate names"""
         metadata = process_dataset(io.StringIO(textwrap.dedent('''\
             one,two,one
             a,1,c
@@ -91,6 +91,7 @@ class TestIndex(unittest.TestCase):
     })
 
     def test_no_index(self):
+        """Test profiling a DataFrame that has no index, for reference"""
         df = self.DATA
         self.assertEqual(list(df.columns), ['a', 'b', 'c'])
 
@@ -101,6 +102,7 @@ class TestIndex(unittest.TestCase):
         )
 
     def test_index(self):
+        """Test profiling a DataFrame that has an index set"""
         df = self.DATA.set_index(['a'])
         self.assertEqual(list(df.index.names), ['a'])
         self.assertEqual(list(df.columns), ['b', 'c'])
@@ -112,6 +114,7 @@ class TestIndex(unittest.TestCase):
         )
 
     def test_multi_index(self):
+        """Test profiling a DataFrame that has multiple indexes (MultiIndex)"""
         df = self.DATA.set_index(['a', 'b'])
         self.assertEqual(list(df.index.names), ['a', 'b'])
         self.assertEqual(list(df.columns), ['c'])
@@ -125,7 +128,7 @@ class TestIndex(unittest.TestCase):
 
 class TestLatlongSelection(DataTestCase):
     def test_normalize_name(self):
-        """Test normalizing column names."""
+        """Test normalizing column names"""
         self.assertEqual(
             spatial.normalize_latlong_column_name('latitude', LATITUDE),
             '',
@@ -144,7 +147,7 @@ class TestLatlongSelection(DataTestCase):
         )
 
     def test_pairing(self):
-        """Test pairing latitude and longitude columns by name or matching pairs defined by the user."""
+        """Test pairing latitude and longitude columns by name or matching pairs defined by the user"""
         pairs, (missed_lat, missed_long) = spatial.pair_latlong_columns(
             [
                 LatLongColumn(0, 'Pickup_latitude', None),
@@ -184,6 +187,7 @@ class TestLatlongSelection(DataTestCase):
         )
 
     def test_process(self):
+        """Test pairing latitudes & longitudes in profiler"""
         with data('lat_longs.csv', 'r') as data_fp:
             dataframe = pandas.read_csv(data_fp)
         metadata = process_dataset(
@@ -235,7 +239,7 @@ class TestLatlongSelection(DataTestCase):
 
 class TestDates(DataTestCase):
     def test_parse(self):
-        """Test parsing dates."""
+        """Test parsing dates"""
         self.assertEqual(
             parse_date('Monday July 1, 2019'),
             datetime(2019, 7, 1, tzinfo=UTC),
@@ -265,7 +269,7 @@ class TestDates(DataTestCase):
         )
 
     def test_year(self):
-        """Test the 'year' special-case."""
+        """Test the 'year' special-case"""
         dataframe = pandas.DataFrame({
             'year': [2004, 2005, 2006],
             'number': [2014, 2015, float('nan')],
@@ -329,6 +333,7 @@ class TestDates(DataTestCase):
 
 class TestTemporalResolutions(unittest.TestCase):
     def test_pandas(self):
+        """Test guessing temporal resolution of Pandas values"""
         def get_res(values):
             idx = pandas.Index(pandas.to_datetime(values))
             return get_temporal_resolution(idx)
@@ -336,6 +341,7 @@ class TestTemporalResolutions(unittest.TestCase):
         self.do_checks(get_res)
 
     def test_native(self):
+        """Test guessing temporal resolution of native Python values"""
         def get_res(values):
             values = [parse_date(d) for d in values]
             return get_temporal_resolution(values)
@@ -490,6 +496,7 @@ class TestTypes(unittest.TestCase):
                                  "Shouldn't have matched: %s" % elem)
 
     def test_ints(self):
+        """Test the integer type detection"""
         positive = '''\
         12
         0
@@ -511,6 +518,7 @@ class TestTypes(unittest.TestCase):
         self.assertFalse(profile_types._re_int.match(''))
 
     def test_floats(self):
+        """Test the floating-point number type detection"""
         positive = '''\
         12.
         0.
@@ -543,6 +551,7 @@ class TestTypes(unittest.TestCase):
         self.assertFalse(profile_types._re_float.match(''))
 
     def test_geo_combined(self):
+        """Test the "combined" geo point type detection"""
         positive = '''\
         70 WASHINGTON SQUARE S, NEW YORK, NY 10012 (40.729753, -73.997174)
         R\u00C9MI'S HOUSE, BROOKLYN, NY (40.729753, -73.997174)
@@ -558,6 +567,7 @@ class TestTypes(unittest.TestCase):
 
 class TestTruncate(unittest.TestCase):
     def test_simple(self):
+        """Test truncating a string"""
         from datamart_profiler.core import truncate_string
 
         self.assertEqual(truncate_string("abc", 10), "abc")
@@ -566,6 +576,7 @@ class TestTruncate(unittest.TestCase):
         self.assertEqual(truncate_string("abcdefghijklmnop", 10), "abcdefg...")
 
     def test_words(self):
+        """Test that truncating a string prefers a word boundary"""
         from datamart_profiler.core import truncate_string
 
         self.assertEqual(
@@ -583,6 +594,7 @@ class TestTruncate(unittest.TestCase):
 
 
 class TestNominatim(DataTestCase):
+    """Test resolving addresses, mocking Nominatim queries"""
     def test_profile(self):
         queries = {
             "70 Washington Square S, New York, NY 10012": [{
@@ -659,6 +671,7 @@ class TestNominatim(DataTestCase):
         )
 
     def test_querying(self):
+        """Test Nominatim internals, mocking the queries"""
         queries = {
             'a': [{'lat': 11.0, 'lon': 12.0}],
             'b': [],
@@ -713,6 +726,7 @@ class TestGeo(DataTestCase):
         cls.geo_data = datamart_geo.GeoData.from_local_cache()
 
     def test_admin(self):
+        """Test profiling administrative areas"""
         with data('admins.csv', 'r') as data_fp:
             metadata = process_dataset(
                 data_fp,
@@ -797,6 +811,7 @@ class TestGeo(DataTestCase):
         )
 
     def test_admin_ambiguous(self):
+        """Test the resolution of ambiguous administrative areas"""
         def countries(areas):
             if areas and isinstance(areas[0], (list, set)):
                 # Flatten
@@ -841,6 +856,7 @@ class TestGeo(DataTestCase):
         self.assertEqual(level, 1)
 
     def test_point_wkt(self):
+        """Test profiling WKT points"""
         with data('geo_wkt.csv', 'r') as data_fp:
             metadata = process_dataset(
                 data_fp,
@@ -896,6 +912,7 @@ class TestGeo(DataTestCase):
         )
 
     def test_point_latlong(self):
+        """Test profiling latitudes & longitudes"""
         with data('geo_latlong.csv', 'r') as data_fp:
             metadata = process_dataset(
                 data_fp,
@@ -953,6 +970,7 @@ class TestGeo(DataTestCase):
 
 class TestMedianDist(unittest.TestCase):
     def test_median_dist(self):
+        """Test determining the median distance of points"""
         points = []
 
         def make_grid(mx, my):

@@ -128,6 +128,7 @@ class DatamartTest(DataTestCase):
 
 class TestProfiler(DatamartTest):
     def test_basic(self):
+        """Check the profiler results"""
         hits = self.es.search(
             index='datamart',
             body={
@@ -181,6 +182,7 @@ class TestProfiler(DatamartTest):
         )
 
     def test_alternate(self):
+        """Check that the broken datasets are in the alternate index"""
         hits = self.es.search(
             index='pending',
             body={
@@ -260,6 +262,7 @@ class TestProfiler(DatamartTest):
         )
 
     def test_indexes(self):
+        """Check the mapping (schema) of the indexes"""
         def hide_default_analyzers(value):
             if isinstance(value, dict):
                 if value.get('analyzer') == 'default':
@@ -354,6 +357,7 @@ class TestProfileQuery(DatamartTest):
         self.assertJson(response.json(), metadata)
 
     def test_basic(self):
+        """Profile the basic.csv file via the API"""
         with data('basic.csv') as basic_fp:
             response = self.datamart_post(
                 '/profile',
@@ -366,6 +370,7 @@ class TestProfileQuery(DatamartTest):
         )
 
     def test_excel(self):
+        """Profile the excel.xlsx file via the API"""
         with data('excel.xlsx') as excel_fp:
             response = self.datamart_post(
                 '/profile',
@@ -378,6 +383,7 @@ class TestProfileQuery(DatamartTest):
         )
 
     def test_excel_fast(self):
+        """Profile the excel.xlsx file via the API, in fast mode"""
         with data('spss.sav') as spss_fp:
             response = self.datamart_post(
                 '/profile/fast',
@@ -393,7 +399,7 @@ class TestProfileQuery(DatamartTest):
 
 class TestSearch(DatamartTest):
     def test_basic_search_json(self):
-        """Basic search, posting the query as JSON."""
+        """Basic search, posting the query as JSON"""
         @self.do_test_basic_search
         def query():
             response = self.datamart_post(
@@ -406,7 +412,7 @@ class TestSearch(DatamartTest):
             return response
 
     def test_basic_search_formdata(self):
-        """Basic search, posting the query as formdata-urlencoded."""
+        """Basic search, posting the query as formdata-urlencoded"""
         @self.do_test_basic_search
         def query():
             response = self.datamart_post(
@@ -419,7 +425,7 @@ class TestSearch(DatamartTest):
             return response
 
     def test_basic_search_file(self):
-        """Basic search, posting the query as a file in multipart/form-data."""
+        """Basic search, posting the query as a file in multipart/form-data"""
         @self.do_test_basic_search
         def query():
             response = self.datamart_post(
@@ -459,7 +465,7 @@ class TestSearch(DatamartTest):
         )
 
     def test_search_pagination(self):
-        """Do basic search with pagination."""
+        """Do basic search with pagination"""
         page_size = 2
         response = self.datamart_post(
             f'/search?page=1&size={page_size}',
@@ -504,7 +510,7 @@ class TestSearch(DatamartTest):
             all_results.update(new_ids)
 
     def test_search_with_source(self):
-        """Search restricted by source."""
+        """Search restricted by source"""
         response = self.datamart_post(
             '/search',
             json={'keywords': ['people'], 'source': ['remi']},
@@ -541,7 +547,7 @@ class TestSearch(DatamartTest):
         )
 
     def test_search_temporal_resolution(self):
-        """Search restricted on temporal resolution."""
+        """Search restricted on temporal resolution"""
         response = self.datamart_post(
             '/search',
             json={
@@ -573,6 +579,7 @@ class TestSearch(DatamartTest):
 
 class TestDataSearch(DatamartTest):
     def test_basic_join(self):
+        """Search for joins for basic_aug.csv (integer keys), with a query"""
         query = {'keywords': ['people']}
 
         with data('basic_aug.csv') as basic_aug:
@@ -607,6 +614,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_basic_join_only_data(self):
+        """Search for joins for basic_aug.csv, from only the data file"""
         with data('basic_aug.csv') as basic_aug:
             response = self.datamart_post(
                 '/search',
@@ -638,6 +646,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_basic_join_only_data_csv(self):
+        """Search for joins for basic_aug.csv, posting the data"""
         with data('basic_aug.csv') as basic_aug:
             response = self.datamart_post(
                 '/search',
@@ -668,6 +677,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_basic_join_only_profile(self):
+        """Search for joins for basic_aug.csv, from only the profile"""
         with data('basic_aug.csv') as basic_aug:
             response = self.datamart_post(
                 '/profile',
@@ -705,6 +715,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_basic_join_only_token(self):
+        """Search for joins for basic_aug.csv, from a token"""
         with data('basic_aug.csv') as basic_aug:
             response = self.datamart_post(
                 '/profile',
@@ -741,6 +752,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_both_data_profile(self):
+        """Check that providing both profile and token is an error"""
         with data('basic_aug.csv') as basic_aug:
             response = self.datamart_post(
                 '/profile',
@@ -759,6 +771,7 @@ class TestDataSearch(DatamartTest):
             self.assertEqual(response.status_code, 400)
 
     def test_lazo_join(self):
+        """Search for joins for lazo_aug.csv (categorical keys)"""
         with data('lazo_aug.csv') as lazo_aug:
             response = self.datamart_post(
                 '/search',
@@ -790,6 +803,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_geo_union(self):
+        """Search for unions for geo_aug.csv"""
         query = {'keywords': ['places']}
 
         with data('geo_aug.csv') as geo_aug:
@@ -825,6 +839,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_geo_union_only_data(self):
+        """Search for unions for geo_aug.csv, from only the data file"""
         with data('geo_aug.csv') as geo_aug:
             response = self.datamart_post(
                 '/search',
@@ -857,6 +872,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_geo_join(self):
+        """Search for joins for geo_aug.csv (lat,long spatial keys)"""
         with data('geo_aug.csv') as geo_aug:
             response = self.datamart_post(
                 '/search',
@@ -905,6 +921,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_geo_join_restrict_variables(self):
+        """Search for joins for geo_wkt.csv, restricting columns (spatial)"""
         query = {
             'variables': [{
                 'type': 'tabular_variable',
@@ -983,6 +1000,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_temporal_daily_join(self):
+        """Search for joins for daily_aug.csv (temporal keys)"""
         with data('daily_aug.csv') as daily_aug:
             response = self.datamart_post(
                 '/search',
@@ -1015,6 +1033,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_temporal_hourly_join(self):
+        """Search for joins for hourly_aug.csv (temporal keys)"""
         with data('hourly_aug.csv') as hourly_aug:
             response = self.datamart_post(
                 '/search',
@@ -1047,6 +1066,7 @@ class TestDataSearch(DatamartTest):
         )
 
     def test_temporal_hourly_daily_join(self):
+        """Search for joins for hourly_aug_days.csv (temporal keys)"""
         with data('hourly_aug_days.csv') as hourly_aug_days:
             response = self.datamart_post(
                 '/search',
@@ -1136,7 +1156,7 @@ class TestDownload(DatamartTest):
         self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
     def test_get_id_convert(self):
-        """Download a dataset by ID, which has converters set."""
+        """Download a dataset by ID, which has converters set"""
         response = self.datamart_get('/download/' + 'datamart.test.lazo')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
@@ -1241,7 +1261,7 @@ class TestDownload(DatamartTest):
         )
 
     def test_post_invalid(self):
-        """Post invalid materialization information."""
+        """Post invalid materialization information"""
         response = self.datamart_post(
             '/download', allow_redirects=False,
             files={
@@ -1272,6 +1292,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.status_code, 400)
 
     def test_get_id_invalid(self):
+        """Test downloading an invalid ID gives 404"""
         response = self.datamart_get(
             '/download/datamart.nonexistent',
             check_status=False,
@@ -1285,7 +1306,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.status_code, 404)
 
     def test_materialize(self):
-        """Test datamart_materialize."""
+        """Test datamart_materialize"""
         def assert_same_files(a, b):
             with open(a, 'r') as f_a:
                 with open(b, 'r') as f_b:
@@ -1322,7 +1343,7 @@ class TestDownload(DatamartTest):
             )
 
     def test_basic_add_index(self):
-        """Test adding d3mIndex automatically."""
+        """Test adding d3mIndex automatically"""
         response = self.datamart_get(
             '/download/' + 'datamart.test.basic',
             params={'format': 'd3m', 'format_need_d3mindex': '1'},
@@ -1451,6 +1472,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_basic_join(self):
+        """Join (integer keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
             schema=metadata_schema,
@@ -1483,6 +1505,7 @@ class TestAugment(DatamartTest):
         self.check_basic_join(response)
 
     def test_basic_join_data_token(self):
+        """Join using a token (integer keys)"""
         # Build task dictionary
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
@@ -1528,6 +1551,7 @@ class TestAugment(DatamartTest):
         self.check_basic_join(response)
 
     def test_basic_join_auto(self):
+        """Join automatically (no task provided, integer keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
             schema=metadata_schema,
@@ -1556,6 +1580,7 @@ class TestAugment(DatamartTest):
         self.check_basic_join(response)
 
     def test_agg_join(self):
+        """Join and aggregate (integer keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.agg',
             schema=metadata_schema,
@@ -1605,6 +1630,7 @@ class TestAugment(DatamartTest):
         )
 
     def test_agg_join_specific_functions(self):
+        """Join and aggregate (integer keys, specific functions)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.agg',
             schema=metadata_schema,
@@ -1741,6 +1767,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_lazo_join(self):
+        """Join (categorical keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.lazo',
             schema=metadata_schema,
@@ -1887,6 +1914,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_geo_union(self):
+        """Union"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.geo',
             schema=metadata_schema,
@@ -2011,6 +2039,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_geo_join(self):
+        """Join (lat,long spatial keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.geo',
             schema=metadata_schema,
@@ -2176,6 +2205,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_temporal_daily_join(self):
+        """Join (temporal keys, daily-daily)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.daily',
             schema=metadata_schema,
@@ -2230,6 +2260,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_temporal_hourly_join(self):
+        """Join (temporal keys, hourly-hourly)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.hourly',
             schema=metadata_schema,
@@ -2283,7 +2314,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_temporal_hourly_days_join(self):
-        """Join daily data with hourly (= aggregate down to daily)."""
+        """Join daily data with hourly (= aggregate down to daily)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.hourly',
             schema=metadata_schema,
@@ -2334,7 +2365,7 @@ class TestAugment(DatamartTest):
             )
 
     def test_temporal_daily_hours_join(self):
-        """Join hourly data with daily (= repeat for each hour)."""
+        """Join hourly data with daily (= repeat for each hour)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.daily',
             schema=metadata_schema,
@@ -2398,6 +2429,7 @@ class TestAugment(DatamartTest):
 
 class TestUpload(DatamartTest):
     def test_upload(self):
+        """Test uploading a file for ingestion"""
         response = self.datamart_post(
             '/upload',
             data={
@@ -2500,6 +2532,7 @@ class TestUpload(DatamartTest):
             )
 
     def test_upload_human_in_the_loop(self):
+        """Test uploading a file with manual annotations for ingestion"""
         with data('annotated.csv') as annotated:
             response = self.datamart_post(
                 '/upload',
@@ -2608,6 +2641,7 @@ class TestUpload(DatamartTest):
 
 class TestSession(DatamartTest):
     def test_session_new(self):
+        """Test creating a system session"""
         def new_session(obj):
             response = self.datamart_post(
                 '/session/new',
@@ -2676,6 +2710,7 @@ class TestSession(DatamartTest):
         )
 
     def test_download_csv(self):
+        """Test downloading a CSV into a system session"""
         session_id = self.datamart_post(
             '/session/new',
             json={'format': 'csv'},
@@ -2715,6 +2750,7 @@ class TestSession(DatamartTest):
         )
 
     def test_download_d3m(self):
+        """Test downloading in D3M format into a system session"""
         session_id = self.datamart_post(
             '/session/new',
             json={'format': 'd3m'},
@@ -2761,6 +2797,7 @@ class TestSession(DatamartTest):
         )
 
     def test_augment_csv(self):
+        """Test augmenting as a CSV into a system session"""
         session_id = self.datamart_post(
             '/session/new',
             json={'format': 'csv'},
@@ -2823,6 +2860,7 @@ class TestSession(DatamartTest):
         )
 
     def test_augment_d3m(self):
+        """Test augmenting in D3M format into a system session"""
         session_id = self.datamart_post(
             '/session/new',
             json={'format': 'd3m'},
@@ -2887,6 +2925,7 @@ class TestSession(DatamartTest):
 
 class TestLocation(DatamartTest):
     def test_search(self):
+        """Test searching for locations"""
         response = self.datamart_post('/location', data={'q': 'Italy'})
         self.assertJson(
             response.json(),

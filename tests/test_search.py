@@ -9,6 +9,7 @@ from .utils import DataTestCase
 
 class TestSearch(unittest.TestCase):
     def test_simple(self):
+        """Test the query generation for a simple search"""
         main, sup_funcs, sup_filters, vars = parse_query({
             'keywords': ['green', 'taxi'],
             'source': 'gov',
@@ -71,6 +72,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(vars, [])
 
     def test_types(self):
+        """Test the query generation for a search with dataset types"""
         main, sup_funcs, sup_filters, vars = parse_query({
             'keywords': ['food'],
             'types': ['spatial', 'temporal'],
@@ -139,6 +141,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(vars, [])
 
     def test_ranges(self):
+        """Test the query generation for spatial/temporal ranges"""
         main, sup_funcs, sup_filters, vars = parse_query({
             'keywords': ['green', 'taxi'],
             'source': ['gov'],
@@ -228,6 +231,7 @@ class TestSearch(unittest.TestCase):
 
 class TestAugmentation(DataTestCase):
     def test_temporal(self):
+        """Test searching for augmentation with temporal data"""
         main, sup_funcs, sup_filters, vars = parse_query({
             'keywords': 'green taxi',
         })
