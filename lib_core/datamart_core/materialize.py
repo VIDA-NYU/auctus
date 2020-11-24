@@ -98,6 +98,32 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
         if os.path.exists(shared):
             logger.info("Reading from /datasets")
             csv_path = os.path.join(shared, 'main.csv')
+
+            # Apply converters
+            materialize = metadata.get('materialize', {})
+            if materialize.get('convert'):
+                def create_csv(cache_temp):
+                    writer = datamart_materialize.make_writer(
+                        cache_temp,
+                        format='csv',
+                    )
+                    for converter in reversed(materialize.get('convert', [])):
+                        converter_args = dict(converter)
+                        converter_id = converter_args.pop('identifier')
+                        converter_class = datamart_materialize.converters[converter_id]
+                        writer = converter_class(writer, **converter_args)
+
+                    with writer.open_file('wb') as f_out:
+                        with open(csv_path, 'rb') as f_in:
+                            for chunk in iter(lambda: f_in.read(4096), b''):
+                                f_out.write(chunk)
+
+                csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
+                csv_path = dataset_lock.enter_context(
+                    cache_get_or_set(
+                        '/cache/datasets', csv_key, create_csv,
+                    )
+                )
         else:
             # Otherwise, materialize the CSV
             def create_csv(cache_temp):
