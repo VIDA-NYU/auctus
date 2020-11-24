@@ -2,8 +2,8 @@ import codecs
 import collections
 import contextlib
 import csv
-import time
 from datetime import datetime
+import itertools
 import logging
 import numpy
 import os
@@ -11,6 +11,7 @@ import pandas
 from pandas.errors import EmptyDataError
 import prometheus_client
 import string
+import time
 import random
 import re
 import warnings
@@ -32,6 +33,13 @@ MAX_SIZE = 50000000  # 50 MB
 SAMPLE_ROWS = 20
 
 MAX_UNCLEAN_ADDRESSES = 0.20  # 20%
+
+
+#: Maximum number of rows to discard at the top of the file
+HEADER_MAX_GARBAGE = 6
+
+#: Stop throwing out lines when that many in a row have same number of columns
+HEADER_CONSISTENT_ROWS = 4
 
 
 BUCKETS = [
@@ -113,6 +121,47 @@ def _lazo_retry(func):
     except LazoError:
         pass
     return func()
+
+
+def count_garbage_rows(file):
+    """Count non-data rows at the top, such as titles etc.
+    """
+    # Check whether this is a binary file
+    read_sample = file.read(4)
+    binary = not isinstance(read_sample, str)
+    file.seek(0, 0)
+
+    # Decode CSV
+    if binary:
+        codec_reader = codecs.getreader('utf-8')(file)
+        reader = csv.reader(codec_reader)
+    else:
+        reader = csv.reader(file)
+
+    # Read rows until the number of items stabilizes
+    run_start = 0
+    run_cols = None
+    run_len = 0
+    try:
+        for i, row in enumerate(itertools.islice(reader, HEADER_MAX_GARBAGE + HEADER_CONSISTENT_ROWS)):
+            if i >= HEADER_MAX_GARBAGE + HEADER_CONSISTENT_ROWS:
+                raise ValueError("Can't find consistent CSV data in file")
+            if len(row) == run_cols:
+                # Number of columns matches with run
+                run_len += 1
+                if run_len == HEADER_CONSISTENT_ROWS:
+                    # 4 rows with the same size, assume we're good
+                    return run_start
+            else:
+                # Number of columns doesn't match, start new run
+                run_start = i
+                run_cols = len(row)
+                run_len = 1
+
+        # Reached the end of the file
+        return run_start
+    finally:
+        file.seek(0, 0)
 
 
 def load_data(data, load_max_size=None):

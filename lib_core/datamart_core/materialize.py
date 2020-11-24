@@ -10,12 +10,14 @@ import zipfile
 
 from datamart_core.common import hash_json
 from datamart_core.fscache import cache_get_or_set
+from datamart_materialize.common import skip_rows
 from datamart_materialize.excel import xls_to_csv
 from datamart_materialize.pivot import pivot_table
 from datamart_materialize.spss import spss_to_csv
 from datamart_materialize.stata import stata_to_csv
 from datamart_materialize.tsv import tsv_to_csv
 from datamart_profiler import parse_date
+from datamart_profiler.core import count_garbage_rows
 
 from .discovery import encode_dataset_id
 
@@ -241,6 +243,23 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
             lambda s, d: tsv_to_csv(s, d, separator=dialect.delimiter),
             dataset_path,
         )
+
+    # Check for non-data rows at the top of the file
+    with open(dataset_path, 'r') as fp:
+        non_data_rows = count_garbage_rows(fp)
+        if non_data_rows > 0:
+            # Update metadata
+            logger.info("Detected %d lines to skip", non_data_rows)
+            materialize.setdefault('convert', []).append({
+                'identifier': 'skip_rows',
+                'nb_rows': non_data_rows,
+            })
+
+            # Update file
+            dataset_path = convert_dataset(
+                lambda s, d: skip_rows(s, d, nb_rows=non_data_rows),
+                dataset_path,
+            )
 
     # Check for pivoted temporal table
     with open(dataset_path, 'r') as fp:

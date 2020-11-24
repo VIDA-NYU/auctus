@@ -40,7 +40,7 @@ def pivot_table(
 
 
 class PivotConverter(SimpleConverter):
-    """Adapter converting a TSV file to CSV.
+    """Adapter pivoting a table.
     """
     def __init__(self, writer, *, except_columns):
         super(PivotConverter, self).__init__(writer)
