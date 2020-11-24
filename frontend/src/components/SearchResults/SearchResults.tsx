@@ -13,6 +13,8 @@ import {Loading} from '../visus/Loading/Loading';
 import {HitInfoBox} from './HitInfoBox';
 import {SearchQuery} from '../../api/rest';
 import './SearchResults.css';
+import Pagination from './Pagination';
+import {Pager} from './Pagination';
 
 interface SearchResultsProps {
   searchQuery: SearchQuery;
@@ -25,29 +27,43 @@ interface SearchResultsProps {
 interface SearchResultsState {
   selectedHit?: SearchResult;
   selectedInfoBoxType: InfoBoxType;
+  pager?: Pager;
 }
 
 class SearchResults extends React.PureComponent<
   SearchResultsProps,
   SearchResultsState
 > {
-  lastSearchResponse?: SearchResponse;
-
+  private divRef: React.RefObject<HTMLDivElement>;
   constructor(props: SearchResultsProps) {
     super(props);
-    this.state = {selectedInfoBoxType: InfoBoxType.DETAIL};
+    this.state = {
+      selectedInfoBoxType: InfoBoxType.DETAIL,
+    };
+    this.divRef = React.createRef<HTMLDivElement>();
+    this.onChangePage = this.onChangePage.bind(this);
   }
 
-  componentDidUpdate() {
-    if (this.lastSearchResponse !== this.props.searchResponse) {
+  componentDidUpdate(
+    prevProps: SearchResultsProps,
+    prevState: SearchResultsState
+  ) {
+    if (prevProps.searchResponse !== this.props.searchResponse) {
       this.setState({
         selectedHit: this.props.searchResponse
           ? this.props.searchResponse.results[0]
           : undefined,
         selectedInfoBoxType: InfoBoxType.DETAIL,
       });
+    } else if (
+      this.divRef.current &&
+      prevState.pager?.currentPage !== this.state.pager?.currentPage
+    ) {
+      this.divRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
     }
-    this.lastSearchResponse = this.props.searchResponse;
   }
 
   renderSearchHits(
@@ -88,6 +104,17 @@ class SearchResults extends React.PureComponent<
     );
   }
 
+  onChangePage(pager: Pager) {
+    const startIndex = pager.startIndex;
+    const selectedHit = this.props.searchResponse
+      ? this.props.searchResponse.results[startIndex]
+      : undefined;
+    this.setState({
+      pager,
+      selectedHit,
+    });
+  }
+
   render() {
     const {searchResponse, searchState, searchQuery, session} = this.props;
     const centeredDiv: React.CSSProperties = {
@@ -121,18 +148,32 @@ class SearchResults extends React.PureComponent<
           );
         }
 
-        // TODO: Implement proper results pagination
-        const page = 1;
-        const k = 20;
-        const currentHits = searchResponse.results.slice(
-          (page - 1) * k,
-          page * k
-        );
-        const {selectedHit, selectedInfoBoxType} = this.state;
+        const {selectedHit, selectedInfoBoxType, pager} = this.state;
+
+        const pageSize = 20; // total number of items that will be displayed
+        const startIdx = pager ? pager.startIndex : 0;
+        const lastIdx = pager ? pager.endIndex + 1 : pageSize;
+        const currentHits = searchResponse.results.slice(startIdx, lastIdx);
+
         return (
           <div className="d-flex flex-row container-vh-full pt-1">
-            <div className="container-vh-scroll column-search-hits">
+            <div
+              ref={this.divRef}
+              className="container-vh-scroll column-search-hits"
+            >
               {this.renderSearchHits(currentHits, selectedHit, session)}
+              <hr />
+              <div className="container mt-2">
+                <div className="text-center">
+                  {
+                    <Pagination
+                      totalRows={searchResponse.results.length}
+                      onChangePage={pager => this.onChangePage(pager)}
+                      pageSize={pageSize}
+                    />
+                  }
+                </div>
+              </div>
             </div>
             {selectedHit && (
               <div className="container-vh-scroll column-infobox">
