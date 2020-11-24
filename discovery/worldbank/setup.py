@@ -7,8 +7,10 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'elasticsearch~=7.0',
-    'datamart_core',
     'beautifulsoup4[html5lib]',
+    'pandas',
+    'datamart_core',
+    'datamart-profiler',
 ]
 setup(name='datamart-worldbank_discovery-service',
       version='0.0',
