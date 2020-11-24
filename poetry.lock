@@ -328,6 +328,24 @@ url = "discovery/socrata"
 
 [[package]]
 category = "main"
+description = "Datamart discovery service for indicators from the University of Arizona"
+develop = true
+name = "datamart-uaz-indicators-service"
+optional = false
+python-versions = "*"
+version = "0.0"
+
+[package.dependencies]
+datamart_core = "*"
+requests = "*"
+
+[package.source]
+reference = ""
+type = "directory"
+url = "discovery/uaz_indicators"
+
+[[package]]
+category = "main"
 description = "Zenodo discovery service for Datamart"
 develop = true
 name = "datamart-zenodo-discovery-service"
@@ -1052,7 +1070,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [metadata]
-content-hash = "4c5bf13565fb44b10819434404c08619e2ff522c29ce9c1689a14f3be3f43636"
+content-hash = "52d63018588ccfc0267e53574995d0655626aa5d40707ea5b9080a5a16bd205c"
 lock-version = "1.0"
 python-versions = "^3.7"
 
@@ -1139,6 +1157,7 @@ datamart-noaa-discovery-service = []
 datamart-profiler = []
 datamart-profiler-service = []
 datamart-socrata-discovery-service = []
+datamart-uaz-indicators-service = []
 datamart-zenodo-discovery-service = []
 defusedxml = [
     {file = "defusedxml-0.6.0-py2.py3-none-any.whl", hash = "sha256:6687150770438374ab581bb7a1b327a847dd9c5749e396102de3fad4e8a3ef93"},

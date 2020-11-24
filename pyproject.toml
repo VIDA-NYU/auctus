@@ -39,6 +39,7 @@ datamart-api-service = {path = "./apiserver"}
 datamart-noaa_discovery-service = {path = "./discovery/noaa"}
 datamart-socrata-discovery-service = {path = "./discovery/socrata"}
 datamart-zenodo-discovery-service = {path = "./discovery/zenodo"}
+datamart-uaz_indicators-service = {path = "./discovery/uaz_indicators"}
 
 [tool.poetry.dev-dependencies]
 flake8 = "*"
