@@ -28,7 +28,6 @@ interface SearchResultsState {
   selectedHit?: SearchResult;
   selectedInfoBoxType: InfoBoxType;
   pager?: Pager;
-  updateScroll: boolean;
 }
 
 class SearchResults extends React.PureComponent<
@@ -41,25 +40,12 @@ class SearchResults extends React.PureComponent<
     super(props);
     this.state = {
       selectedInfoBoxType: InfoBoxType.DETAIL,
-      updateScroll: false,
     };
     this.divRef = React.createRef<HTMLDivElement>();
     this.onChangePage = this.onChangePage.bind(this);
   }
 
   componentDidUpdate() {
-    if (
-      this.state.updateScroll &&
-      this.state.pager &&
-      this.props.searchResponse
-    ) {
-      this.setState({
-        updateScroll: false,
-        selectedHit: this.props.searchResponse.results[
-          this.state.pager.startIndex
-        ],
-      });
-    }
     if (this.lastSearchResponse !== this.props.searchResponse) {
       this.setState({
         selectedHit: this.props.searchResponse
@@ -110,13 +96,20 @@ class SearchResults extends React.PureComponent<
   }
 
   onChangePage(pager: Pager) {
-    this.setState({pager: pager, updateScroll: true});
     if (this.divRef.current) {
       this.divRef.current.scrollTo({
         top: 0,
         behavior: 'smooth',
       });
     }
+    const startIndex = pager ? pager.startIndex : 0;
+    const selecetdHit = this.props.searchResponse
+      ? this.props.searchResponse.results[startIndex]
+      : undefined;
+    this.setState({
+      pager: pager,
+      selectedHit: selecetdHit,
+    });
   }
 
   render() {
@@ -154,7 +147,7 @@ class SearchResults extends React.PureComponent<
 
         const {selectedHit, selectedInfoBoxType, pager} = this.state;
 
-        const pageSize = 19; // total number of items that will be displayed
+        const pageSize = 20; // total number of items that will be displayed
         const startIdx = pager ? pager.startIndex : 0;
         const lastIdx = pager ? pager.endIndex + 1 : pageSize;
         const currentHits = searchResponse.results.slice(startIdx, lastIdx);
@@ -172,7 +165,7 @@ class SearchResults extends React.PureComponent<
                   {
                     <Pagination
                       totalRows={searchResponse.results.length}
-                      onChangePage={this.onChangePage}
+                      onChangePage={pager => this.onChangePage(pager)}
                       pageSize={pageSize}
                     />
                   }
