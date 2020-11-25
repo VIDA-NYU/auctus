@@ -13,7 +13,7 @@ import tempfile
 import time
 
 from datamart_core import Discoverer
-from datamart_core.common import setup_logging, encode_dataset_id
+from datamart_core.common import setup_logging
 
 
 logger = logging.getLogger(__name__)
@@ -86,13 +86,14 @@ class IsiDiscoverer(Discoverer):
                     tar.extractall(folder)
                 folder = os.path.join(folder, 'datamart-dump')
 
-            seen_variables = set()
+            seen = set()
 
             response = requests.get(self.isi_endpoint + '/metadata/datasets')
             response.raise_for_status()
             for dataset in response.json():
+                seen.add(dataset['dataset_id'])
                 try:
-                    self.process_dataset(dataset, folder, seen_variables)
+                    self.process_dataset(dataset, folder)
                 except Exception as e:
                     sentry_sdk.capture_exception(e)
                     logger.exception(
@@ -115,10 +116,10 @@ class IsiDiscoverer(Discoverer):
                 index='datamart',
                 query=query,
                 size=size,
-                _source=False,
+                _source=['materialize.isi_dataset_id'],
             )
             for h in hits:
-                if h['_id'] not in seen_variables:
+                if h['_source']['materialize']['isi_dataset_id'] not in seen:
                     self.delete_dataset(full_id=h['_id'])
                     deleted += 1
 
@@ -132,7 +133,7 @@ class IsiDiscoverer(Discoverer):
                 id=self.identifier,
             )
 
-    def process_dataset(self, dataset, data_folder, seen_variables):
+    def process_dataset(self, dataset, data_folder):
         dataset_id = dataset['dataset_id']
         logger.info("Processing dataset %r", dataset_id)
 
@@ -162,47 +163,58 @@ class IsiDiscoverer(Discoverer):
             axis=1,
         )
 
-        # Extract the variables
-        for var_name, var_data in data.groupby(['Variable']):
-            variable_id = var_data['variable_id'].iloc[0]
-            unit = var_data['value_unit'].iloc[0]
-            var_data = var_data.drop(
-                ['dataset_id', 'variable_id', 'variable', 'value_unit'],
-                axis=1,
+        # Drop columns
+        data = data.drop(
+            [
+                'dataset_id',
+                'variable', 'variable_id', 'value_unit',
+                'region_coordinate',
+            ] + [c for c in data.columns if c.startswith('stated')],
+            axis=1,
+        )
+
+        # Pivot
+        data = data.pivot_table(
+            index=[
+                'time', 'time_precision',
+                'main_subject', 'main_subject_id',
+                'country', 'country_id', 'admin1', 'admin2', 'admin3',
+            ],
+            columns=['Variable'],
+            values='value',
+            aggfunc='first',
+        )
+        data = data.fillna('')
+
+        # Measure sparsity
+        num_na = num_total = 0
+        for i in range(len(data.columns)):
+            num_na += (data.iloc[:, i] == '').sum()
+            num_total += len(data)
+        if num_na > 0.9 * num_total:
+            logger.warning("Dataset too sparse, not recording")
+            return
+
+        # Discover
+        logger.info("Writing CSV")
+        with self.write_to_shared_storage(dataset_id) as tmp:
+            data.to_csv(
+                os.path.join(tmp, 'main.csv'),
+                index=True,
+                line_terminator='\r\n',
             )
 
-            logger.info("Writing CSV, dataset=%r variable=%r unit=%r",
-                        dataset_id, variable_id, unit)
-            discovered_id = '.'.join((
-                dataset_id,
-                variable_id,
-                encode_dataset_id(unit) if unit else 'none',  # FIXME
-            ))
-            if len(discovered_id) > 35:
-                h = hashlib.sha1(discovered_id.encode('ascii')).hexdigest()
-                discovered_id = discovered_id[:28] + '-' + h[:6]
-
-            with self.write_to_shared_storage(discovered_id) as tmp:
-                var_data.to_csv(
-                    os.path.join(tmp, 'main.csv'),
-                    index=False,
-                    line_terminator='\r\n',
-                )
-
-            discovered_id = self.record_dataset(
-                dict(
-                    isi_dataset_id=dataset_id,
-                    isi_variable_id=variable_id,
-                    isi_value_unit=unit,
-                    isi_source_url=dataset['url'],
-                ),
-                dict(
-                    name="%s: %s" % (dataset['name'], var_name),
-                    source='%s (%s)' % (dataset['name'], 'ISI'),
-                ),
-                discovered_id,
-            )
-            seen_variables.add(discovered_id)
+        self.record_dataset(
+            dict(
+                isi_dataset_id=dataset_id,
+                isi_source_url=dataset['url'],
+            ),
+            dict(
+                name=dataset['name'],
+                source='ISI',
+            ),
+            dataset_id,
+        )
 
 
 if __name__ == '__main__':
