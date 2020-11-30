@@ -183,7 +183,13 @@ services:
       - ./volumes/prometheus:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
   grafana:
-    image: grafana/grafana:7.3.4
+    image: quay.io/remram44/grafana:7.3.4-image_renderer
+    build:
+      context: "./docker"
+      dockerfile: grafana.dockerfile
+      args:
+        - GRAFANA_VERSION=7.3.4
+        - GF_INSTALL_IMAGE_RENDERER_PLUGIN=true
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       #- GF_SMTP_ENABLED=true
