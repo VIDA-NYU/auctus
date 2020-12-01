@@ -12,6 +12,7 @@ req = [
     'prometheus_client',
     'prometheus_async',
     'sentry-sdk',
+    'stackprinter',
 ]
 setup(name='datamart_core',
       version='0.0',

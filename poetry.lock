@@ -217,6 +217,7 @@ lazo-index-service = "0.6.1"
 prometheus_async = "*"
 prometheus_client = "*"
 sentry-sdk = "*"
+stackprinter = "*"
 
 [package.source]
 reference = ""
@@ -1063,6 +1064,14 @@ test = ["pytest"]
 
 [[package]]
 category = "main"
+description = "Debug-friendly stack traces, with variable values and semantic highlighting"
+name = "stackprinter"
+optional = false
+python-versions = ">=3.4"
+version = "0.2.5"
+
+[[package]]
+category = "main"
 description = "This package provides the stringdist module, which includes several functions for calculating string distances. Under the hood, a C extension module is preferentially used for optimal performance, with an automatic fallback to a Python implementation."
 name = "stringdist"
 optional = false
@@ -1692,6 +1701,10 @@ sphinxcontrib-qthelp = [
 sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.4.tar.gz", hash = "sha256:eaa0eccc86e982a9b939b2b82d12cc5d013385ba5eadcc7e4fed23f4405f77bc"},
     {file = "sphinxcontrib_serializinghtml-1.1.4-py2.py3-none-any.whl", hash = "sha256:f242a81d423f59617a8e5cf16f5d4d74e28ee9a66f9e5b637a18082991db5a9a"},
+]
+stackprinter = [
+    {file = "stackprinter-0.2.5-py3-none-any.whl", hash = "sha256:e6770d1f932992caa37f1c734ca40429ee7358163ec7f262dcd3c8371b260006"},
+    {file = "stackprinter-0.2.5.tar.gz", hash = "sha256:e0197c54dafe7867020731c3dcab96a14d103c1e39130fa0b5159a2f0af427b6"},
 ]
 stringdist = [
     {file = "StringDist-1.0.9.tar.gz", hash = "sha256:91e6d4a348223db094d029e7e3de9ce89c561738047555dfad60ff5ccb7a5b74"},
