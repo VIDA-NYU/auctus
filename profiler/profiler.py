@@ -315,8 +315,17 @@ class Profiler(object):
                         add_dataset_to_index(self.es, dataset_id, body)
 
                         # Publish to RabbitMQ
+                        msg = dict(
+                            id=dataset_id,
+                        )
+                        for key in (
+                            'name', 'description', 'source', 'date', 'version',
+                            'types', 'nb_rows', 'nb_columns', 'materialize',
+                        ):
+                            if key in body:
+                                msg[key] = body[key]
                         await self.datasets_exchange.publish(
-                            json2msg(dict(body, id=dataset_id)),
+                            json2msg(msg),
                             dataset_id,
                         )
 
