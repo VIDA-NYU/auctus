@@ -273,6 +273,8 @@ class Profiler(object):
     def process_dataset_callback(self, message, dataset_id):
         async def coro(future):
             metadata = msg2json(message)['metadata']
+            _rie = asyncio.get_event_loop().run_in_executor
+            in_thread = lambda func: _rie(None, func)
             try:
                 try:
                     metadata = future.result()
@@ -282,11 +284,13 @@ class Profiler(object):
                             "%r",
                             dataset_id,
                         )
-                        delete_dataset_from_index(
-                            self.es,
-                            dataset_id,
-                            # DO delete from Lazo
-                            self.lazo_client,
+                        await in_thread(
+                            lambda: delete_dataset_from_index(
+                                self.es,
+                                dataset_id,
+                                # DO delete from Lazo
+                                self.lazo_client,
+                            ),
                         )
                         self.es.index(
                             'pending',
@@ -302,17 +306,21 @@ class Profiler(object):
                         )
                     else:
                         # Delete dataset if already exists in index
-                        delete_dataset_from_index(
-                            self.es,
-                            dataset_id,
-                            # Don't delete from Lazo, we inserted during profile
-                            None,
+                        await in_thread(
+                            lambda: delete_dataset_from_index(
+                                self.es,
+                                dataset_id,
+                                # Don't delete from Lazo, we inserted during profile
+                                None,
+                            ),
                         )
                         # Insert results in Elasticsearch
                         body = dict(metadata,
                                     date=datetime.utcnow().isoformat() + 'Z',
                                     version=os.environ['DATAMART_VERSION'])
-                        add_dataset_to_index(self.es, dataset_id, body)
+                        await in_thread(
+                            lambda: add_dataset_to_index(self.es, dataset_id, body),
+                        )
 
                         # Publish to RabbitMQ
                         msg = dict(
@@ -363,10 +371,12 @@ class Profiler(object):
                         id=dataset_id,
                     )
                     try:
-                        delete_dataset_from_index(
-                            self.es,
-                            dataset_id,
-                            self.lazo_client,
+                        await in_thread(
+                            lambda: delete_dataset_from_index(
+                                self.es,
+                                dataset_id,
+                                self.lazo_client,
+                            ),
                         )
                     except elasticsearch.NotFoundError:
                         pass
