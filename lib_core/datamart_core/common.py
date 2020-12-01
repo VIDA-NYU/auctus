@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import sentry_sdk
+import stackprinter
 import sys
 import threading
 
@@ -53,19 +54,30 @@ class ThreadFormatter(logging.Formatter):
         return super(ThreadFormatter, self).formatMessage(record)
 
 
-def setup_logging(clear=True, thread=True):
-    if clear:
-        logging.root.handlers.clear()
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+class StackFormatter(logging.Formatter):
+    def formatException(self, exc_info):
+        msg = stackprinter.format(exc_info, add_summary=False)
+        msg_indented = '    ' + '\n    '.join(msg.split('\n')).strip()
+        return msg_indented
 
+
+class ThreadStackFormatter(ThreadFormatter, StackFormatter):
+    pass
+
+
+def setup_logging(thread=True):
+    handler = logging.StreamHandler()
     if thread:
-        logging.root.handlers[0].formatter = ThreadFormatter(
+        handler.setFormatter(ThreadStackFormatter(
             "%(asctime)s %(levelname)s %(name)s%(threaded)s: %(message)s",
             threadedfmt=" thread=%(thread)d",
-        )
+        ))
+    else:
+        handler.setFormatter(StackFormatter(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s",
+        ))
+    logging.root.handlers = [handler]
+    logging.root.setLevel(logging.INFO)
 
     def filter_delete(record):
         if (
