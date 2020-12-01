@@ -609,10 +609,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
     logger.info("Identifying types, %d columns...", len(columns))
     with PROM_TYPES.time():
         for column_idx, column_meta in enumerate(columns):
-            logger.info("Processing column %d...", column_idx)
+            name = column_meta['name']
+            logger.info("Processing column %d %r...", column_idx, name)
             array = data.iloc[:, column_idx]
-            if column_meta['name'] in manual_columns:
-                manual = manual_columns[column_meta['name']]
+            if name in manual_columns:
+                manual = manual_columns[name]
             else:
                 manual = None
             # Process the column, updating the column_meta dict
