@@ -349,7 +349,7 @@ class Profiler(object):
                             "Dataset over size limit (%d bytes): %r",
                             e.limit, dataset_id,
                         )
-                    message.ack()
+                    await message.ack()
                     self.es.index(
                         'pending',
                         dict(
@@ -391,7 +391,7 @@ class Profiler(object):
                         self.failed_queue.name,
                     )
                     # Ack anyway, retrying would probably fail again
-                    message.ack()
+                    await message.ack()
 
                     self.es.index(
                         'pending',
@@ -407,11 +407,11 @@ class Profiler(object):
                         id=dataset_id,
                     )
                 else:
-                    message.ack()
+                    await message.ack()
                     logger.info("Dataset %r processed successfully",
                                 dataset_id)
             except Exception:
-                message.nack()
+                await message.nack()
                 raise
 
         def callback(future):

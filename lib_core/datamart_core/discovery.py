@@ -133,7 +133,7 @@ class Discoverer(object):
                 logger.exception("Error handling query")
                 # Ack anyway, retrying would probably fail again
                 # The message only gets re-queued if this process gets killed
-                message.ack()
+                await message.ack()
             else:
                 # Let the requester know that we are done working on this
                 await self.channel.default_exchange.publish(
@@ -143,7 +143,7 @@ class Discoverer(object):
                     message.reply_to,
                 )
 
-                message.ack()
+                await message.ack()
                 logger.info("Query handled successfully")
 
         def callback(future):
