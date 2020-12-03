@@ -113,8 +113,7 @@ python-style:
   stage: test
   before_script:
     - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.0.10 && /root/.poetry/bin/poetry config virtualenvs.create false
-    - /root/.poetry/bin/poetry export --dev --format requirements.txt >reqs.txt
-    - pip --disable-pip-version-check install --constraint reqs.txt flake8
+    - /root/.poetry/bin/poetry install
   script:
     - flake8 --ignore=E731,W504,W503,E501
 
