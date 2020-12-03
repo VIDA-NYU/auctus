@@ -108,8 +108,6 @@ datamart:
             type: float
           stddev:
             type: float
-          language:
-            type: keyword
           # we want to query individual numerical ranges
           coverage:
             type: nested
@@ -247,8 +245,6 @@ datamart_columns:
         type: float
       stddev:
         type: float
-      language:
-        type: keyword
       # numerical ranges
       coverage:
         type: nested
