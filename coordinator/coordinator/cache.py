@@ -60,22 +60,24 @@ def clear_caches():
     logger.warning("Cache size over limit, clearing")
 
     # Build list of all entries
+    temp_size = 0
     entries = []
     for cache in CACHES:
         for name in os.listdir(cache):
-            if not name.endswith('.cache'):
-                continue
-            key = name[:-6]
             path = os.path.join(cache, name)
-            stat = os.stat(path)
-            entries.append((cache, key, get_tree_size(path), stat.st_mtime))
+            if name.endswith('.temp'):
+                temp_size += get_tree_size(path)
+            elif name.endswith('.cache'):
+                key = name[:-6]
+                stat = os.stat(path)
+                entries.append((cache, key, get_tree_size(path), stat.st_mtime))
 
     # Sort it by date
     entries = sorted(entries, key=lambda e: -e[3])
 
     # Select entries to keep while staying under threshold
     keep = {cache: set() for cache in CACHES}
-    total_size = 0
+    total_size = temp_size
     for cache, key, size, mtime in entries:
         if total_size + size <= CACHE_LOW:
             keep[cache].add(key)
@@ -93,7 +95,7 @@ def measure_cache_dir(dirname):
     size_bytes = 0
     for name in os.listdir(dirname):
         path = os.path.join(dirname, name)
-        if not name.endswith('.cache'):
+        if not name.endswith(('.cache', '.temp')):
             continue
         entries += 1
         size_bytes += get_tree_size(path)
