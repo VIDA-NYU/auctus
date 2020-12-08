@@ -93,6 +93,10 @@ class BaseHandler(RequestHandler):
         self.set_header('Access-Control-Allow-Origin', '*')
         self.set_header('Access-Control-Allow-Methods', 'POST')
         self.set_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.set_header(
+            'Access-Control-Expose-Headers',
+            'Content-Type, Content-Length, Content-Disposition',
+        )
 
     def options(self):
         # CORS pre-flight
