@@ -116,7 +116,10 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
     });
 }
 
-export function downloadToSession(datasetId: string, session: Session) {
+export function downloadToSession(
+  datasetId: string,
+  session: Session
+): Promise<void> {
   let url = `/download?session_id=${session.session_id}`;
   if (session.format) {
     url += `&format=${encodeURIComponent(session.format)}`;
