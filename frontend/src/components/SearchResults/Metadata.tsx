@@ -2,8 +2,8 @@ import React from 'react';
 import * as Icon from 'react-feather';
 import {API_URL} from '../../config';
 import {SearchResult, ColumnMetadata, Session} from '../../api/types';
-import {RequestStatus, downloadToSession} from '../../api/rest';
-import {generateRandomId} from '../../utils';
+import {RequestStatus, download, downloadToSession} from '../../api/rest';
+import {generateRandomId, triggerFileDownload} from '../../utils';
 import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
 import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
 import {ButtonGroup, LinkButton} from '../ui/Button/Button';
@@ -43,16 +43,16 @@ export function DatasetTypes(props: {hit: SearchResult; label?: boolean}) {
 }
 
 export class AddToSession extends React.PureComponent<
-  {hit: SearchResult; session: Session},
+  {hit: SearchResult; session: Session; label?: string},
   {result?: RequestStatus}
 > {
-  constructor(props: {hit: SearchResult; session: Session}) {
+  constructor(props: {hit: SearchResult; session: Session; label?: string}) {
     super(props);
     this.state = {result: undefined};
   }
 
   render() {
-    const {hit, session} = this.props;
+    const {hit, session, label} = this.props;
 
     const clicked = (e: React.MouseEvent) => {
       e.preventDefault();
@@ -66,12 +66,15 @@ export class AddToSession extends React.PureComponent<
     const {result} = this.state;
     if (result === undefined) {
       return (
-        <button
-          className="btn btn-sm btn-outline-primary ml-2"
-          onClick={clicked}
-        >
-          <Icon.Download className="feather" /> Add to {session.system_name}
-        </button>
+        <>
+          <b>{label}</b>
+          <button
+            className="btn btn-sm btn-outline-primary ml-2"
+            onClick={clicked}
+          >
+            <Icon.Download className="feather" /> Add to {session.system_name}
+          </button>
+        </>
       );
     } else if (result === RequestStatus.IN_PROGRESS) {
       return (
@@ -101,24 +104,61 @@ export class AddToSession extends React.PureComponent<
   }
 }
 
-export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
-  const {hit, session} = props;
+export function DownloadButton(props: {
+  hit: SearchResult;
+  format?: string;
+  canPostOnly: boolean;
+  children: React.ReactNode;
+}) {
+  const {hit, format, canPostOnly, children} = props;
+  if (!canPostOnly) {
+    // Direct link to GET the file
+    let url = `${API_URL}/download/${hit.id}`;
+    if (format !== undefined) {
+      url += '?format=' + format;
+    }
+    return <LinkButton href={url}>{children}</LinkButton>;
+  } else {
+    // Button that POST the JSON to obtain the file
+    const postAndDownload = () => {
+      download(hit.metadata, format).then(({data, filename}) =>
+        triggerFileDownload(data, filename || hit.id)
+      );
+    };
+    return (
+      <button
+        className="btn btn-sm btn-outline-primary"
+        onClick={postAndDownload}
+      >
+        {children}
+      </button>
+    );
+  }
+}
+
+export function DownloadButtons(props: {
+  hit: SearchResult;
+  session?: Session;
+  label?: string;
+  canPostOnly: boolean;
+}) {
+  const {hit, session, label, canPostOnly} = props;
   if (session) {
     return (
       <div className="mt-2">
-        <AddToSession hit={hit} session={session} />
+        <AddToSession hit={hit} label={label} session={session} />
       </div>
     );
   }
   return (
     <ButtonGroup>
-      <b>Download: </b>
-      <LinkButton href={`${API_URL}/download/${hit.id}`}>
+      <b>{label || 'Download'}: </b>
+      <DownloadButton hit={hit} canPostOnly={canPostOnly}>
         <Icon.Download className="feather" /> CSV
-      </LinkButton>
-      <LinkButton href={`${API_URL}/download/${hit.id}?format=d3m`}>
+      </DownloadButton>
+      <DownloadButton hit={hit} format="d3m" canPostOnly={canPostOnly}>
         <Icon.Download className="feather" /> D3M
-      </LinkButton>
+      </DownloadButton>
     </ButtonGroup>
   );
 }

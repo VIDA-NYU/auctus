@@ -55,7 +55,7 @@ function HitInfoBox(props: {
               <b>Size:</b> {formatSize(hit.metadata.size)}
             </div>
             <div className="mt-2">
-              <DownloadButtons hit={hit} session={session} />
+              <DownloadVersions hit={hit} session={session} />
             </div>
             <div className="mt-2">
               <SpatialCoverage hit={hit} />
@@ -67,6 +67,64 @@ function HitInfoBox(props: {
         )}
       </div>
     </div>
+  );
+}
+
+function DownloadVersions({
+  hit,
+  session,
+}: {
+  hit: SearchResult;
+  session?: Session;
+}) {
+  const versions = [];
+  const converters = hit.metadata.materialize?.convert;
+  if (converters && converters.length > 0) {
+    for (let i = 0; i <= converters.length; ++i) {
+      const hitVersion: SearchResult = {
+        ...hit,
+        metadata: {
+          ...hit.metadata,
+          materialize: {
+            ...hit.metadata.materialize,
+            convert: converters.slice(0, i),
+          },
+        },
+      };
+      let label;
+      if (i === 0) {
+        label = 'Original';
+      } else {
+        const identifier = converters[i - 1].identifier;
+        if (identifier === 'xls') {
+          label = 'Converted from Excel';
+        } else {
+          label = "After '" + identifier + "' conversion";
+        }
+      }
+      // Only the last entry can get obtained via GET (no converters disabled)
+      const canPostOnly = i !== converters.length;
+      versions.push({
+        label,
+        hit: hitVersion,
+        canPostOnly,
+      });
+    }
+  } else {
+    versions.push({hit, canPostOnly: false});
+  }
+  return (
+    <>
+      {versions.map(({label, hit, canPostOnly}, idx) => (
+        <DownloadButtons
+          key={idx}
+          label={label}
+          hit={hit}
+          session={session}
+          canPostOnly={canPostOnly}
+        />
+      ))}
+    </>
   );
 }
 

@@ -56,7 +56,7 @@ export interface Metadata {
   nb_rows: number;
   columns: ColumnMetadata[];
   date: string;
-  materialize: {};
+  materialize: {convert?: {identifier: string}[]};
   nb_profiled_rows: number;
   sample: string;
   source: string;
