@@ -1172,6 +1172,7 @@ class TestDownload(DatamartTest):
         )
         basic_meta = basic_meta.json()['metadata']
 
+        # Download basic as d3m ZIP
         response = self.datamart_post(
             '/download', allow_redirects=False,
             params={'format': 'd3m', 'format_version': '3.2.0'},
@@ -1193,6 +1194,7 @@ class TestDownload(DatamartTest):
             basic_metadata_d3m('3.2.0'),
         )
 
+        # Download basic, but without metadata in JSON
         response = self.datamart_post(
             '/download', allow_redirects=False,
             files={
@@ -1205,6 +1207,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.headers['Location'],
                          'http://test-discoverer:7000/basic.csv')
 
+        # Download basic as CSV (server will just send a redirect)
         response = self.datamart_post(
             '/download', allow_redirects=False,
             params={'format': 'csv'},
@@ -1218,13 +1221,14 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.headers['Location'],
                          'http://test-discoverer:7000/basic.csv')
 
-        # Geo dataset, materialized via /datasets storage
+        # Geo dataset, on /datasets storage
         geo_meta = self.datamart_get(
             '/metadata/' + 'datamart.test.geo',
             schema=metadata_schema,
         )
         geo_meta = geo_meta.json()['metadata']
 
+        # Download geo
         response = self.datamart_post(
             '/download', allow_redirects=False,
             # format defaults to csv
@@ -1241,6 +1245,7 @@ class TestDownload(DatamartTest):
                          'application/octet-stream')
         self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
+        # Download geo as D3M
         response = self.datamart_post(
             '/download', allow_redirects=False,
             params={'format': 'd3m'},
@@ -1259,6 +1264,32 @@ class TestDownload(DatamartTest):
             json.load(zip_.open('datasetDoc.json')),
             geo_metadata_d3m('4.0.0'),
         )
+
+        # Lazo dataset, on /datasets storage as TSV (1 converter)
+        lazo_meta = self.datamart_get(
+            '/metadata/' + 'datamart.test.lazo',
+            schema=metadata_schema,
+        )
+        lazo_meta = lazo_meta.json()['metadata']
+
+        # Download without conversion
+        response = self.datamart_post(
+            '/download', allow_redirects=False,
+            json={
+                'id': 'datamart.test.lazo',  # Need the ID because it's on disk
+                'metadata': dict(
+                    lazo_meta,
+                    materialize=dict(lazo_meta['materialize'], convert=[]),
+                ),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Content-Type'],
+                         'application/octet-stream')
+        self.assertTrue(response.content.startswith(
+            b'here\'s a header but the profiler will throw it out\n\n'
+            b'dessert\tyear\npie	1991\n',
+        ))
 
     def test_post_invalid(self):
         """Post invalid materialization information"""
