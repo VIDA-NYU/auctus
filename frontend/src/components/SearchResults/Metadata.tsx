@@ -2,8 +2,8 @@ import React from 'react';
 import * as Icon from 'react-feather';
 import {API_URL} from '../../config';
 import {SearchResult, ColumnMetadata, Session} from '../../api/types';
-import {RequestStatus, download, downloadToSession} from '../../api/rest';
-import {generateRandomId, triggerFileDownload} from '../../utils';
+import {RequestStatus, downloadToSession} from '../../api/rest';
+import {generateRandomId} from '../../utils';
 import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
 import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
 import {ButtonGroup, LinkButton} from '../ui/Button/Button';
@@ -120,10 +120,29 @@ export function DownloadButton(props: {
     return <LinkButton href={url}>{children}</LinkButton>;
   } else {
     // Button that POST the JSON to obtain the file
+    let url = `${API_URL}/download`;
+    if (format !== undefined) {
+      url += '?format=' + format;
+    }
     const postAndDownload = () => {
-      download(hit.metadata, format).then(({data, filename}) =>
-        triggerFileDownload(data, filename || hit.id)
+      // We can't use XHR/fetch to do the POST, because it doesn't behave
+      // correctly after redirects. If the API server sends a 302, the browser
+      // will refuse to follow it unless the target has CORS headers.
+      // So we build and submit a form instead
+      const formElement = document.createElement('form');
+      formElement.setAttribute('method', 'POST');
+      formElement.setAttribute('action', url);
+      const taskElement = document.createElement('input');
+      taskElement.setAttribute('type', 'hidden');
+      taskElement.setAttribute('name', 'task');
+      taskElement.setAttribute(
+        'value',
+        JSON.stringify({id: hit.id, metadata: hit.metadata})
       );
+      formElement.appendChild(taskElement);
+      document.body.appendChild(formElement);
+      formElement.submit();
+      document.body.removeChild(formElement);
     };
     return (
       <button

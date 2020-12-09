@@ -116,31 +116,6 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
     });
 }
 
-export function download(
-  hit: Metadata,
-  format?: string
-): Promise<{data: Blob; filename?: string}> {
-  let uri = '/download';
-  if (format !== undefined) {
-    uri += '?format=' + format;
-  }
-  return api.post(uri, {metadata: hit}).then(response => {
-    const data = new Blob([response.data]);
-    let filename = undefined;
-    if (response.headers['content-disposition'] !== undefined) {
-      filename = response.headers['content-disposition']
-        .split(';')
-        .map((n: string) => n.trim())
-        .find((n: string) => n.startsWith('filename='))
-        .substring(9);
-      if (filename.startsWith('"')) {
-        filename = filename.substring(1, filename.length - 1);
-      }
-    }
-    return {data, filename};
-  });
-}
-
 export function downloadToSession(
   datasetId: string,
   session: Session
