@@ -13,17 +13,17 @@ req = [
     'lazo-index-service==0.6.1',
     'prometheus_client',
     'tornado>=5.0',
-    'datamart_augmentation',
-    'datamart_core',
-    'datamart_materialize',
-    'datamart_profiler',
+    'auctus-data-augmentation',
+    'auctus-server-core',
+    'auctus-materialize',
+    'auctus-data-profiler',
 ]
-setup(name='datamart-api-service',
+setup(name='auctus-api-service',
       version='0.0',
       packages=['apiserver'],
       entry_points={
           'console_scripts': [
-              'datamart-apiserver = apiserver.main:main']},
+              'apiserver = apiserver.main:main']},
       install_requires=req,
       description="API service of Auctus",
       author="Remi Rampin",

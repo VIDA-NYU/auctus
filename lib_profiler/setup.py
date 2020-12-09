@@ -18,9 +18,9 @@ req = [
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
-setup(name='datamart_profiler',
+setup(name='auctus-data-profiler',
       version='0.8.1',
-      packages=['datamart_profiler'],
+      packages=['auctus_data_profiler'],
       install_requires=req,
       description="Data profiling library for Auctus",
       author="Remi Rampin",

@@ -7,15 +7,14 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'aio-pika',
-    'datamart_core',
     'elasticsearch~=7.0',
     'prometheus_client',
     'PyYaml',
     'jinja2',
     'tornado>=5.0',
-    'datamart_core',
+    'auctus-server-core',
 ]
-setup(name='datamart-coordinator-service',
+setup(name='auctus-coordinator-service',
       version='0.0',
       packages=['coordinator'],
       package_data={'coordinator': [

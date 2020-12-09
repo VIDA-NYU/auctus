@@ -9,14 +9,14 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'pandas',
     'numpy',
-    'datamart_materialize==0.8.1',
-    'datamart_profiler==0.8.1',
+    'auctus-materialize==0.8.1',
+    'auctus-data-profiler==0.8.1',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
-setup(name='datamart_augmentation',
+setup(name='auctus-data-augmentation',
       version='0.8.1',
-      packages=['datamart_augmentation'],
+      packages=['auctus_data_augmentation'],
       install_requires=req,
       description="Data augmentation functions for Auctus",
       author="Remi Rampin",

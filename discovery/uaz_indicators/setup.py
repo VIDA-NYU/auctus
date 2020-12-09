@@ -7,9 +7,9 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'requests',
-    'datamart_core',
+    'auctus-server-core',
 ]
-setup(name='datamart-uaz_indicators-service',
+setup(name='auctus-uaz-indicators-service',
       version='0.0',
       py_modules=['uaz_indicators'],
       install_requires=req,

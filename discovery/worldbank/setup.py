@@ -9,10 +9,10 @@ req = [
     'elasticsearch~=7.0',
     'beautifulsoup4[html5lib]',
     'pandas',
-    'datamart_core',
-    'datamart-profiler',
+    'auctus-server-core',
+    'auctus-data-profiler',
 ]
-setup(name='datamart-worldbank_discovery-service',
+setup(name='auctus-worldbank-discovery-service',
       version='0.0',
       py_modules=['worldbank_discovery'],
       install_requires=req,

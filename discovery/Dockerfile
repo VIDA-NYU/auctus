@@ -25,8 +25,7 @@ COPY tests/data /usr/src/app/tests/data
 
 RUN python -m compileall /usr/src/app/
 ARG version
-ENV DATAMART_VERSION ${version}
-RUN test -n "${DATAMART_VERSION}"
+ENV AUCTUS_VERSION ${version}
 USER 998
 ENTRYPOINT ["/tini", "--", "/bin/bash", "-c", "set -m; if [ \"$1\" = testsuite ]; then exec python discovery/test_discovery.py; else exec \"$@\"; fi", "--"]
 CMD ["testsuite"]

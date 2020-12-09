@@ -12,11 +12,11 @@ req = [
     'prometheus_client',
     'xlrd',
     'defusedxml',
-    'datamart_core',
-    'datamart_materialize',
-    'datamart_profiler',
+    'auctus-server-core',
+    'auctus-materialize',
+    'auctus-data-profiler',
 ]
-setup(name='datamart-profiler-service',
+setup(name='auctus-profiler-service',
       version='0.0',
       py_modules=['profiler'],
       entry_points={

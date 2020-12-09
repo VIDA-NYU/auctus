@@ -1,4 +1,4 @@
-Datamart profiler library
+Auctus data profiler library
 
 Copyright 2018 New York University
 

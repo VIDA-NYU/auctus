@@ -13,9 +13,9 @@ req = [
     'prometheus_async',
     'sentry-sdk',
 ]
-setup(name='datamart_core',
+setup(name='auctus-server-core',
       version='0.0',
-      packages=['datamart_core'],
+      packages=['auctus_core'],
       install_requires=req,
       description="Core library for Auctus services",
       author="Remi Rampin",

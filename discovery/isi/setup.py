@@ -8,9 +8,9 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'elasticsearch~=7.0',
     'requests',
-    'datamart_core',
+    'auctus-server-core',
 ]
-setup(name='datamart-isi_discovery-service',
+setup(name='auctus-isi-discovery-service',
       version='0.0',
       py_modules=['isi_discovery'],
       install_requires=req,

@@ -13,25 +13,25 @@ req = [
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
-setup(name='datamart_materialize',
+setup(name='auctus-materialize',
       version='0.8.1',
-      packages=['datamart_materialize'],
+      packages=['auctus_materialize'],
       entry_points={
-          'datamart_materialize': [
-              'datamart.noaa = datamart_materialize.noaa:noaa_materializer',
+          'auctus_materialize': [
+              'datamart.noaa = auctus_materialize.noaa:noaa_materializer',
           ],
-          'datamart_materialize.writer': [
-              'csv = datamart_materialize:CsvWriter',
-              'd3m = datamart_materialize.d3m:D3mWriter',
-              'pandas = datamart_materialize:PandasWriter',
+          'auctus_materialize.writer': [
+              'csv = auctus_materialize:CsvWriter',
+              'd3m = auctus_materialize.d3m:D3mWriter',
+              'pandas = auctus_materialize:PandasWriter',
           ],
-          'datamart_materialize.converter': [
-              'skip_rows = datamart_materialize.common:SkipRowsConverter',
-              'xls = datamart_materialize.excel:ExcelConverter',
-              'pivot = datamart_materialize.pivot:PivotConverter',
-              'spss = datamart_materialize.spss:SpssConverter',
-              'stata = datamart_materialize.stata:StataConverter',
-              'tsv = datamart_materialize.tsv:TsvConverter',
+          'auctus_materialize.converter': [
+              'skip_rows = auctus_materialize.common:SkipRowsConverter',
+              'xls = auctus_materialize.excel:ExcelConverter',
+              'pivot = auctus_materialize.pivot:PivotConverter',
+              'spss = auctus_materialize.spss:SpssConverter',
+              'stata = auctus_materialize.stata:StataConverter',
+              'tsv = auctus_materialize.tsv:TsvConverter',
           ],
       },
       install_requires=req,

@@ -23,8 +23,7 @@ RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src
 
 RUN python -m compileall /usr/src/app/
 ARG version
-ENV DATAMART_VERSION ${version}
-RUN test -n "${DATAMART_VERSION}"
+ENV AUCTUS_VERSION ${version}
 USER 998
 ENTRYPOINT ["/tini", "--"]
 CMD ["python", "-m", "zenodo_discovery"]
