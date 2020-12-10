@@ -12,14 +12,11 @@ import {Filter} from '../SearchApp/SearchApp';
 import {FilterType} from '../AdvancedSearchBar/AdvancedSearchBar';
 import {generateRandomId} from '../../utils';
 
-export interface DialogInstance {
-  dlgAugmentationType: AugmentationType;
-  dlgFilters: Filter[];
+interface RelatedFileDialogStates {
+  augmentationType: AugmentationType;
+  filters: Filter[];
 }
 
-interface RelatedFileDialogStates {
-  dialogInstance: DialogInstance;
-}
 interface RelatedFileDialogProps {
   relatedFile?: RelatedFile | undefined;
   openDialog: boolean;
@@ -38,10 +35,8 @@ class RelatedFileDialog extends React.PureComponent<
   constructor(props: RelatedFileDialogProps) {
     super(props);
     this.state = {
-      dialogInstance: {
-        dlgAugmentationType: AugmentationType.JOIN,
-        dlgFilters: [],
-      },
+      augmentationType: AugmentationType.JOIN,
+      filters: [],
     };
   }
   componentDidUpdate(prevProps: RelatedFileDialogProps) {
@@ -85,10 +80,8 @@ class RelatedFileDialog extends React.PureComponent<
           filters = [...prevFilters, filter];
         }
         return {
-          dialogInstance: {
-            dlgFilters: filters,
-            dlgAugmentationType: AugmentationType.JOIN,
-          },
+          filters: filters,
+          augmentationType: AugmentationType.JOIN,
         };
       });
     }
@@ -97,7 +90,7 @@ class RelatedFileDialog extends React.PureComponent<
   updateRelatedFileFilter(filterId: string, state?: RelatedFile) {
     this.setState(prevState => {
       let found = false;
-      const filters = prevState.dialogInstance.dlgFilters.map(filter => {
+      const filters = prevState.filters.map(filter => {
         if (filter.id === filterId) {
           found = true;
           return {...filter, state};
@@ -110,31 +103,24 @@ class RelatedFileDialog extends React.PureComponent<
           `Requested to update filter state with id=[${filterId} which does not exist.]`
         );
       }
-      return {
-        dialogInstance: {...this.state.dialogInstance, dlgFilters: filters},
-      };
+      return {filters};
     });
   }
 
   updateAugmentationType(type: AugmentationType) {
     this.setState({
-      dialogInstance: {
-        ...this.state.dialogInstance,
-        dlgAugmentationType: type,
-      },
+      augmentationType: type,
     });
   }
 
   runSearchRelatedQuery() {
-    const updatedFilters = this.state.dialogInstance;
     this.props.runSearchRelatedQuery(
-      updatedFilters.dlgFilters,
-      updatedFilters.dlgAugmentationType
+      this.state.filters,
+      this.state.augmentationType
     );
   }
 
   render() {
-    const {dialogInstance} = this.state;
     return (
       <div>
         <Dialog
@@ -154,7 +140,7 @@ class RelatedFileDialog extends React.PureComponent<
                 dataset.
               </span>
             </DialogContentText>
-            {dialogInstance.dlgFilters
+            {this.state.filters
               .filter(f => f.type === FilterType.RELATED_FILE)
               .map(filter => {
                 return (
@@ -166,9 +152,7 @@ class RelatedFileDialog extends React.PureComponent<
                     onAugmentationTypeChange={type =>
                       this.updateAugmentationType(type)
                     }
-                    selectedAugmentationType={
-                      dialogInstance.dlgAugmentationType
-                    }
+                    selectedAugmentationType={this.state.augmentationType}
                     state={filter.state as RelatedFile | undefined}
                   />
                 );
