@@ -145,6 +145,7 @@ class TestDiscoverer(Discoverer):
                 # Omit name, should be set to 'spss' automatically
                 'description': "SPSS format test",
                 'source': 'remi',
+                'source_url': 'https://en.wikipedia.org/wiki/SPSS',
             },
             dataset_id='spss',
         )
@@ -156,6 +157,7 @@ class TestDiscoverer(Discoverer):
                 # Omit name, should be set to 'excel' automatically
                 'description': "Excel format test",
                 'source': 'remi',
+                'source_url': 'https://en.wikipedia.org/wiki/Microsoft_Excel',
             },
             dataset_id='excel',
         )
@@ -167,6 +169,7 @@ class TestDiscoverer(Discoverer):
                 # Omit name, should be set to 'stata114' automatically
                 'description': "Stata format 114 test",
                 'source': 'remi',
+                'source_url': 'https://en.wikipedia.org/wiki/Stata',
             },
             dataset_id='stata114',
         )
@@ -178,6 +181,7 @@ class TestDiscoverer(Discoverer):
                 # Omit name, should be set to 'stata118' automatically
                 'description': "Stata format 118 test",
                 'source': 'remi',
+                'source_url': 'https://en.wikipedia.org/wiki/Stata',
             },
             dataset_id='stata118',
         )

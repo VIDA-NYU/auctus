@@ -322,7 +322,7 @@ class TestProfileQuery(DatamartTest):
         # Some fields like 'name', 'description' won't be there
         metadata = {k: v for k, v in metadata.items()
                     if k not in {'id', 'name', 'description',
-                                 'source', 'date'}}
+                                 'source', 'source_url', 'date'}}
         metadata['materialize'] = {k: v
                                    for k, v in metadata['materialize'].items()
                                    if k == 'convert'}
@@ -382,8 +382,8 @@ class TestProfileQuery(DatamartTest):
             'c6e8b9c5f634cb3b1c47b158d569a4f70462fca4',
         )
 
-    def test_excel_fast(self):
-        """Profile the excel.xlsx file via the API, in fast mode"""
+    def test_spss_fast(self):
+        """Profile the spss.sav file via the API, in fast mode"""
         with data('spss.sav') as spss_fp:
             response = self.datamart_post(
                 '/profile/fast',
@@ -3963,6 +3963,7 @@ other_formats_metadata = lambda fmt: {
     'name': lambda v: isinstance(v, str),
     'description': lambda v: isinstance(v, str),
     'source': 'remi',
+    'source_url': lambda s: isinstance(s, str),
     'types': ['numerical', 'temporal'],
     'size': 130,
     'nb_rows': 4,
