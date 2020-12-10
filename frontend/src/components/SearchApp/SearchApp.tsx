@@ -28,8 +28,9 @@ import {
 import {Chip, ChipGroup} from '../Chip/Chip';
 import * as Icon from 'react-feather';
 import {aggregateResults} from '../../api/augmentation';
+import {RelatedFileDialog} from '../RelatedFileFilter/RelatedFileDialog';
 
-interface Filter {
+export interface Filter {
   id: string;
   type: FilterType;
   hidden: boolean;
@@ -45,6 +46,8 @@ interface SearchAppState {
   sources: string[];
   session?: Session;
   selectedAugmentationType: AugmentationType;
+  relatedFileDialog: RelatedFile | undefined;
+  openDialog: boolean;
 }
 
 interface SearchAppProps {
@@ -68,6 +71,8 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       filters: [],
       sources: api.DEFAULT_SOURCES,
       selectedAugmentationType: AugmentationType.JOIN,
+      relatedFileDialog: undefined,
+      openDialog: false,
     };
   }
 
@@ -350,36 +355,23 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   onSearchRelated(relatedFile: RelatedFile) {
+    this.setState({
+      relatedFileDialog: relatedFile,
+      openDialog: true,
+    });
+  }
+
+  runSearchRelatedQuery(
+    updatedFilters: Filter[],
+    updatedAugmentationType: AugmentationType
+  ) {
     this.setState(() => {
-      const prevFilters = this.state.filters;
-      const relatedFileFilters = prevFilters.filter(
-        f => f.type === FilterType.RELATED_FILE
-      );
-      let filters;
-      if (relatedFileFilters.length > 0) {
-        // Update existing filter
-        filters = prevFilters.map(filter => {
-          if (filter.id === relatedFileFilters[0].id) {
-            return {
-              ...relatedFileFilters[0],
-              state: relatedFile,
-            };
-          } else {
-            return filter;
-          }
-        });
-      } else {
-        // Add new filter
-        const filterId = generateRandomId();
-        const filter: Filter = {
-          id: filterId,
-          type: FilterType.RELATED_FILE,
-          hidden: false,
-          state: relatedFile,
-        };
-        filters = [...prevFilters, filter];
-      }
-      return {filters};
+      return {
+        filters: updatedFilters,
+        selectedAugmentationType: updatedAugmentationType,
+        relatedFileDialog: undefined,
+        openDialog: false,
+      };
     }, this.submitQuery);
   }
 
@@ -531,6 +523,13 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     );
   }
 
+  handleCloseDialog() {
+    this.setState({
+      relatedFileDialog: undefined,
+      openDialog: false,
+    });
+  }
+
   render() {
     const {searchQuery, searchState, searchResponse, session} = this.state;
     const compactFilters = this.renderCompactFilters();
@@ -601,6 +600,16 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             {this.renderLandingPage(session)}
           </div>
         )}
+        <RelatedFileDialog
+          relatedFile={this.state.relatedFileDialog}
+          openDialog={this.state.openDialog}
+          filters={this.state.filters}
+          handleCloseDialog={() => this.handleCloseDialog()}
+          runSearchRelatedQuery={(
+            filters: Filter[],
+            augType: AugmentationType
+          ) => this.runSearchRelatedQuery(filters, augType)}
+        />
       </>
     );
   }
