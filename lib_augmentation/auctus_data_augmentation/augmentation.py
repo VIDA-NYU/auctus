@@ -5,9 +5,9 @@ import pandas as pd
 from sklearn.neighbors._kd_tree import KDTree
 import time
 
-from datamart_materialize import types
-from datamart_profiler.spatial import median_smallest_distance
-from datamart_profiler.temporal import get_temporal_resolution, \
+from auctus_materialize import types
+from auctus_data_profiler.spatial import median_smallest_distance
+from auctus_data_profiler.temporal import get_temporal_resolution, \
     temporal_aggregation_keys
 
 
@@ -446,7 +446,7 @@ def join(
             original_join_columns_idx.extend(left)
             augment_join_columns_idx.extend(right)
         elif len(left) > 1 or len(right) > 1:
-            raise AugmentationError("Datamart currently does not support "
+            raise AugmentationError("Auctus currently does not support "
                                     "combination of columns for augmentation.")
         else:
             original_join_columns_idx.append(left[0])

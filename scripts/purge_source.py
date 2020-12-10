@@ -10,7 +10,7 @@ import logging
 import os
 import sys
 
-from datamart_core.common import delete_dataset_from_index
+from auctus_core.common import delete_dataset_from_index
 
 
 SIZE = 10000

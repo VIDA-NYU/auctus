@@ -1,6 +1,6 @@
 import csv
 
-from datamart_materialize.utils import SimpleConverter
+from auctus_materialize.utils import SimpleConverter
 
 
 VALUE_COLUMN_LABEL = 'value'

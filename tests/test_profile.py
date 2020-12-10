@@ -8,13 +8,13 @@ import unittest
 import textwrap
 
 import datamart_geo
-from datamart_profiler import process_dataset
-from datamart_profiler.core import expand_attribute_name
-from datamart_profiler import profile_types
-from datamart_profiler import spatial
-from datamart_profiler.spatial import LATITUDE, LONGITUDE, LatLongColumn, \
+from auctus_data_profiler import process_dataset
+from auctus_data_profiler.core import expand_attribute_name
+from auctus_data_profiler import profile_types
+from auctus_data_profiler import spatial
+from auctus_data_profiler.spatial import LATITUDE, LONGITUDE, LatLongColumn, \
     disambiguate_admin_areas
-from datamart_profiler.temporal import get_temporal_resolution, parse_date
+from auctus_data_profiler.temporal import get_temporal_resolution, parse_date
 
 from .utils import DataTestCase, data
 
@@ -568,7 +568,7 @@ class TestTypes(unittest.TestCase):
 class TestTruncate(unittest.TestCase):
     def test_simple(self):
         """Test truncating a string"""
-        from datamart_profiler.core import truncate_string
+        from auctus_data_profiler.core import truncate_string
 
         self.assertEqual(truncate_string("abc", 10), "abc")
         self.assertEqual(truncate_string("abcdefghij", 10), "abcdefghij")
@@ -577,7 +577,7 @@ class TestTruncate(unittest.TestCase):
 
     def test_words(self):
         """Test that truncating a string prefers a word boundary"""
-        from datamart_profiler.core import truncate_string
+        from auctus_data_profiler.core import truncate_string
 
         self.assertEqual(
             truncate_string("abcde fghijklmnopqrs tuvwxyzABCD EF", 30),

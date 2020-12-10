@@ -55,7 +55,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
 
     :param es: Elasticsearch client.
     :param data_profile: Profiled input dataset.
-    :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
+    :param dataset_id: The identifier of the desired Auctus dataset for augmentation.
     :param ignore_datasets: Identifiers of datasets to ignore.
     :param query_args_main: list of query arguments (optional).
     :param tabular_variables: specifies which columns to focus on for the search.

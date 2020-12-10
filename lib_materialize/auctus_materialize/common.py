@@ -1,6 +1,6 @@
 import csv
 
-from datamart_materialize.utils import SimpleConverter
+from auctus_materialize.utils import SimpleConverter
 
 
 def skip_rows(source_filename, dest_fileobj, nb_rows):

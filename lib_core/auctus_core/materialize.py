@@ -1,6 +1,6 @@
 import contextlib
 import csv
-import datamart_materialize
+import auctus_materialize
 from datetime import datetime
 import logging
 import os
@@ -8,16 +8,16 @@ import prometheus_client
 import shutil
 import zipfile
 
-from datamart_core.common import hash_json
-from datamart_core.fscache import cache_get_or_set
-from datamart_materialize.common import skip_rows
-from datamart_materialize.excel import xls_to_csv
-from datamart_materialize.pivot import pivot_table
-from datamart_materialize.spss import spss_to_csv
-from datamart_materialize.stata import stata_to_csv
-from datamart_materialize.tsv import tsv_to_csv
-from datamart_profiler import parse_date
-from datamart_profiler.core import count_garbage_rows
+from auctus_core.common import hash_json
+from auctus_core.fscache import cache_get_or_set
+from auctus_materialize.common import skip_rows
+from auctus_materialize.excel import xls_to_csv
+from auctus_materialize.pivot import pivot_table
+from auctus_materialize.spss import spss_to_csv
+from auctus_materialize.stata import stata_to_csv
+from auctus_materialize.tsv import tsv_to_csv
+from auctus_data_profiler import parse_date
+from auctus_data_profiler.core import count_garbage_rows
 
 from .discovery import encode_dataset_id
 
@@ -65,7 +65,7 @@ def dataset_cache_key(dataset_id, metadata, format, format_options):
         'format_options': format_options,
         'metadata': metadata,
         'materialize': materialize,
-        # Note that DATAMART_VERSION is NOT in here
+        # Note that AUCTUS_VERSION is NOT in here
         # We rely on the admin clearing the cache if required
     })
     # The hash is sufficient, other components are for convenience
@@ -103,14 +103,14 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
             materialize = metadata.get('materialize', {})
             if materialize.get('convert'):
                 def create_csv(cache_temp):
-                    writer = datamart_materialize.make_writer(
+                    writer = auctus_materialize.make_writer(
                         cache_temp,
                         format='csv',
                     )
                     for converter in reversed(materialize.get('convert', [])):
                         converter_args = dict(converter)
                         converter_id = converter_args.pop('identifier')
-                        converter_class = datamart_materialize.converters[converter_id]
+                        converter_class = auctus_materialize.converters[converter_id]
                         writer = converter_class(writer, **converter_args)
 
                     with writer.open_file('wb') as f_out:
@@ -129,7 +129,7 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
             def create_csv(cache_temp):
                 logger.info("Materializing CSV...")
                 with PROM_DOWNLOAD.time():
-                    datamart_materialize.download(
+                    auctus_materialize.download(
                         {'id': dataset_id, 'metadata': metadata},
                         cache_temp, None,
                         format='csv',
@@ -152,7 +152,7 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
             return
 
         # Otherwise, do format conversion
-        writer_cls = datamart_materialize.get_writer(format)
+        writer_cls = auctus_materialize.get_writer(format)
         if hasattr(writer_cls, 'parse_options'):
             format_options = writer_cls.parse_options(format_options)
         elif format_options:

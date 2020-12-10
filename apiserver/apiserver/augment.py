@@ -7,13 +7,13 @@ import prometheus_client
 import shutil
 import zipfile
 
-from datamart_augmentation.augmentation import AugmentationError
-from datamart_core.augment import augment
-from datamart_core.common import hash_json, contextdecorator
-from datamart_core.fscache import cache_get, cache_get_or_set
-from datamart_core.materialize import get_dataset, make_zip_recursive
-from datamart_core.prom import PromMeasureRequest
-from datamart_materialize import make_writer
+from auctus_data_augmentation.augmentation import AugmentationError
+from auctus_core.augment import augment
+from auctus_core.common import hash_json, contextdecorator
+from auctus_core.fscache import cache_get, cache_get_or_set
+from auctus_core.materialize import get_dataset, make_zip_recursive
+from auctus_core.prom import PromMeasureRequest
+from auctus_materialize import make_writer
 
 from .base import BUCKETS, BaseHandler
 from .graceful_shutdown import GracefulHandler
@@ -157,7 +157,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             else:
                 return await self.send_error_json(
                     400,
-                    "The Datamart dataset referenced by 'task' cannot "
+                    "The Auctus dataset referenced by 'task' cannot "
                     "augment 'data'",
                 )
 

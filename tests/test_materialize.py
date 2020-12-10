@@ -6,8 +6,8 @@ import shutil
 import tempfile
 import unittest
 
-from datamart_materialize.d3m import D3mWriter, _D3mAddIndex
-from datamart_materialize.pivot import pivot_table
+from auctus_materialize.d3m import D3mWriter, _D3mAddIndex
+from auctus_materialize.pivot import pivot_table
 
 from .utils import data
 

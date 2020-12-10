@@ -16,7 +16,7 @@ import logging
 import json
 import os
 
-from datamart_core.common import encode_dataset_id
+from auctus_core.common import encode_dataset_id
 
 
 SIZE = 10000

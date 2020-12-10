@@ -2,9 +2,9 @@ import contextlib
 import os
 import tempfile
 
-from datamart_augmentation import join, union
-from datamart_materialize import make_writer
-from datamart_profiler import process_dataset
+from auctus_data_augmentation import join, union
+from auctus_materialize import make_writer
+from auctus_data_profiler import process_dataset
 
 from .test_profile import check_ranges
 from .utils import DataTestCase, data

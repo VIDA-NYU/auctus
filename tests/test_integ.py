@@ -12,7 +12,7 @@ from urllib.parse import urlparse, urlunparse, parse_qs
 import yaml
 import zipfile
 
-import datamart_materialize
+import auctus_materialize
 
 from .test_profile import check_ranges, check_geo_ranges, check_plot
 from .utils import DataTestCase, data
@@ -56,7 +56,7 @@ metadata_schema['properties'] = dict(
 )
 
 
-class DatamartTest(DataTestCase):
+class AuctusTest(DataTestCase):
     @classmethod
     def setUpClass(cls):
         cls.es = elasticsearch.Elasticsearch(
@@ -67,10 +67,10 @@ class DatamartTest(DataTestCase):
     def tearDownClass(cls):
         cls.es.close()
 
-    def datamart_get(self, url, **kwargs):
+    def auctus_get(self, url, **kwargs):
         return self._request('get', url, **kwargs)
 
-    def datamart_post(self, url, **kwargs):
+    def auctus_post(self, url, **kwargs):
         return self._request('post', url, **kwargs)
 
     def _request(self, method, url, schema=None, check_status=True, **kwargs):
@@ -126,7 +126,7 @@ class DatamartTest(DataTestCase):
         response.raise_for_status()
 
 
-class TestProfiler(DatamartTest):
+class TestProfiler(AuctusTest):
     def test_basic(self):
         """Check the profiler results"""
         hits = self.es.search(
@@ -317,7 +317,7 @@ class TestProfiler(DatamartTest):
         self.assertJson(actual, expected)
 
 
-class TestProfileQuery(DatamartTest):
+class TestProfileQuery(AuctusTest):
     def check_result(self, response, metadata, token, fast=False):
         # Some fields like 'name', 'description' won't be there
         metadata = {k: v for k, v in metadata.items()
@@ -359,7 +359,7 @@ class TestProfileQuery(DatamartTest):
     def test_basic(self):
         """Profile the basic.csv file via the API"""
         with data('basic.csv') as basic_fp:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/profile',
                 files={'data': basic_fp},
             )
@@ -372,7 +372,7 @@ class TestProfileQuery(DatamartTest):
     def test_excel(self):
         """Profile the excel.xlsx file via the API"""
         with data('excel.xlsx') as excel_fp:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/profile',
                 files={'data': excel_fp},
             )
@@ -385,7 +385,7 @@ class TestProfileQuery(DatamartTest):
     def test_spss_fast(self):
         """Profile the spss.sav file via the API, in fast mode"""
         with data('spss.sav') as spss_fp:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/profile/fast',
                 files={'data': spss_fp},
             )
@@ -397,12 +397,12 @@ class TestProfileQuery(DatamartTest):
         )
 
 
-class TestSearch(DatamartTest):
+class TestSearch(AuctusTest):
     def test_basic_search_json(self):
         """Basic search, posting the query as JSON"""
         @self.do_test_basic_search
         def query():
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 json={'keywords': ['people']},
                 schema=result_list_schema,
@@ -415,7 +415,7 @@ class TestSearch(DatamartTest):
         """Basic search, posting the query as formdata-urlencoded"""
         @self.do_test_basic_search
         def query():
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 data={'query': json.dumps({'keywords': ['people']})},
                 schema=result_list_schema,
@@ -428,7 +428,7 @@ class TestSearch(DatamartTest):
         """Basic search, posting the query as a file in multipart/form-data"""
         @self.do_test_basic_search
         def query():
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={'query': json.dumps({'keywords': ['people']})
                        .encode('utf-8')},
@@ -467,7 +467,7 @@ class TestSearch(DatamartTest):
     def test_search_pagination(self):
         """Do basic search with pagination"""
         page_size = 2
-        response = self.datamart_post(
+        response = self.auctus_post(
             f'/search?page=1&size={page_size}',
             json={'source': ['remi']},
             schema=result_list_schema,
@@ -485,7 +485,7 @@ class TestSearch(DatamartTest):
         # Get all pages and one extra
         all_results = set()
         for page_nb in range(2, 2 + total_pages):
-            response = self.datamart_post(
+            response = self.auctus_post(
                 f'/search?page={page_nb}&size={page_size}',
                 json={'source': ['remi']},
                 schema=result_list_schema,
@@ -511,7 +511,7 @@ class TestSearch(DatamartTest):
 
     def test_search_with_source(self):
         """Search restricted by source"""
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/search',
             json={'keywords': ['people'], 'source': ['remi']},
             schema=result_list_schema,
@@ -523,7 +523,7 @@ class TestSearch(DatamartTest):
         )
 
         # Wrong source
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/search',
             json={'keywords': ['people'], 'source': ['fernando']},
             schema=result_list_schema,
@@ -535,7 +535,7 @@ class TestSearch(DatamartTest):
         )
 
         # All datasets from given source
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/search',
             json={'source': 'fernando'},
             schema=result_list_schema,
@@ -548,7 +548,7 @@ class TestSearch(DatamartTest):
 
     def test_search_temporal_resolution(self):
         """Search restricted on temporal resolution"""
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/search',
             json={
                 'keywords': 'daily',
@@ -562,7 +562,7 @@ class TestSearch(DatamartTest):
         results = response.json()['results']
         self.assertEqual({r['id'] for r in results}, set())
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/search',
             json={
                 'keywords': 'daily',
@@ -577,13 +577,13 @@ class TestSearch(DatamartTest):
         self.assertEqual({r['id'] for r in results}, {'datamart.test.daily'})
 
 
-class TestDataSearch(DatamartTest):
+class TestDataSearch(AuctusTest):
     def test_basic_join(self):
         """Search for joins for basic_aug.csv (integer keys), with a query"""
         query = {'keywords': ['people']}
 
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'query': json.dumps(query).encode('utf-8'),
@@ -616,7 +616,7 @@ class TestDataSearch(DatamartTest):
     def test_basic_join_only_data(self):
         """Search for joins for basic_aug.csv, from only the data file"""
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'data': basic_aug,
@@ -648,7 +648,7 @@ class TestDataSearch(DatamartTest):
     def test_basic_join_only_data_csv(self):
         """Search for joins for basic_aug.csv, posting the data"""
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 data=basic_aug,
                 headers={'Content-type': 'text/csv'},
@@ -679,13 +679,13 @@ class TestDataSearch(DatamartTest):
     def test_basic_join_only_profile(self):
         """Search for joins for basic_aug.csv, from only the profile"""
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/profile',
                 files={'data': basic_aug},
             )
         profile = response.json()
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/search',
             files={
                 'data_profile': json.dumps(profile).encode('utf-8'),
@@ -717,14 +717,14 @@ class TestDataSearch(DatamartTest):
     def test_basic_join_only_token(self):
         """Search for joins for basic_aug.csv, from a token"""
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/profile',
                 files={'data': basic_aug},
             )
         token = response.json()['token']
         self.assertEqual(len(token), 40)
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/search',
             data={'data_profile': token},
             schema=result_list_schema,
@@ -754,13 +754,13 @@ class TestDataSearch(DatamartTest):
     def test_both_data_profile(self):
         """Check that providing both profile and token is an error"""
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/profile',
                 files={'data': basic_aug},
             )
             profile = response.json()
 
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'data': basic_aug,
@@ -773,7 +773,7 @@ class TestDataSearch(DatamartTest):
     def test_lazo_join(self):
         """Search for joins for lazo_aug.csv (categorical keys)"""
         with data('lazo_aug.csv') as lazo_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'data': lazo_aug,
@@ -807,7 +807,7 @@ class TestDataSearch(DatamartTest):
         query = {'keywords': ['places']}
 
         with data('geo_aug.csv') as geo_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'query': json.dumps(query).encode('utf-8'),
@@ -841,7 +841,7 @@ class TestDataSearch(DatamartTest):
     def test_geo_union_only_data(self):
         """Search for unions for geo_aug.csv, from only the data file"""
         with data('geo_aug.csv') as geo_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'data': geo_aug,
@@ -874,7 +874,7 @@ class TestDataSearch(DatamartTest):
     def test_geo_join(self):
         """Search for joins for geo_aug.csv (lat,long spatial keys)"""
         with data('geo_aug.csv') as geo_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'data': geo_aug,
@@ -931,7 +931,7 @@ class TestDataSearch(DatamartTest):
         }
 
         with data('geo_wkt.csv') as geo_wkt:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'query': json.dumps(query).encode('utf-8'),
@@ -985,7 +985,7 @@ class TestDataSearch(DatamartTest):
         }
 
         with data('geo_wkt.csv') as geo_wkt:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'query': json.dumps(query).encode('utf-8'),
@@ -1002,7 +1002,7 @@ class TestDataSearch(DatamartTest):
     def test_temporal_daily_join(self):
         """Search for joins for daily_aug.csv (temporal keys)"""
         with data('daily_aug.csv') as daily_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'data': daily_aug,
@@ -1035,7 +1035,7 @@ class TestDataSearch(DatamartTest):
     def test_temporal_hourly_join(self):
         """Search for joins for hourly_aug.csv (temporal keys)"""
         with data('hourly_aug.csv') as hourly_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'data': hourly_aug,
@@ -1068,7 +1068,7 @@ class TestDataSearch(DatamartTest):
     def test_temporal_hourly_daily_join(self):
         """Search for joins for hourly_aug_days.csv (temporal keys)"""
         with data('hourly_aug_days.csv') as hourly_aug_days:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/search',
                 files={
                     'data': hourly_aug_days,
@@ -1099,28 +1099,28 @@ class TestDataSearch(DatamartTest):
         )
 
 
-class TestDownload(DatamartTest):
+class TestDownload(AuctusTest):
     def test_get_id(self):
         """Download datasets via GET /download/{dataset_id}"""
         # Basic dataset, materialized via direct_url
-        response = self.datamart_get('/download/' + 'datamart.test.basic',
-                                     # format defaults to csv
-                                     allow_redirects=False)
+        response = self.auctus_get('/download/' + 'datamart.test.basic',
+                                   # format defaults to csv
+                                   allow_redirects=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
                          'http://test-discoverer:7000/basic.csv')
 
-        response = self.datamart_get('/download/' + 'datamart.test.basic',
-                                     # explicit format
-                                     params={'format': 'csv'},
-                                     allow_redirects=False)
+        response = self.auctus_get('/download/' + 'datamart.test.basic',
+                                   # explicit format
+                                   params={'format': 'csv'},
+                                   allow_redirects=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
                          'http://test-discoverer:7000/basic.csv')
 
-        response = self.datamart_get('/download/' + 'datamart.test.basic',
-                                     params={'format': 'd3m'},
-                                     allow_redirects=False)
+        response = self.auctus_get('/download/' + 'datamart.test.basic',
+                                   params={'format': 'd3m'},
+                                   allow_redirects=False)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         zip_ = zipfile.ZipFile(io.BytesIO(response.content))
@@ -1131,7 +1131,7 @@ class TestDownload(DatamartTest):
             basic_metadata_d3m('4.0.0'),
         )
 
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/download/' + 'datamart.test.basic',
             params={'format': 'd3m', 'format_version': '3.2.0'},
             allow_redirects=False,
@@ -1147,9 +1147,9 @@ class TestDownload(DatamartTest):
         )
 
         # Geo dataset, materialized via /datasets storage
-        response = self.datamart_get('/download/' + 'datamart.test.geo',
-                                     # format defaults to csv
-                                     allow_redirects=False)
+        response = self.auctus_get('/download/' + 'datamart.test.geo',
+                                   # format defaults to csv
+                                   allow_redirects=False)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
                          'application/octet-stream')
@@ -1157,7 +1157,7 @@ class TestDownload(DatamartTest):
 
     def test_get_id_convert(self):
         """Download a dataset by ID, which has converters set"""
-        response = self.datamart_get('/download/' + 'datamart.test.lazo')
+        response = self.auctus_get('/download/' + 'datamart.test.lazo')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Content-Type'],
                          'application/octet-stream')
@@ -1166,13 +1166,13 @@ class TestDownload(DatamartTest):
     def test_post(self):
         """Download datasets via POST /download"""
         # Basic dataset, materialized via direct_url
-        basic_meta = self.datamart_get(
+        basic_meta = self.auctus_get(
             '/metadata/' + 'datamart.test.basic',
             schema=metadata_schema,
         )
         basic_meta = basic_meta.json()['metadata']
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/download', allow_redirects=False,
             params={'format': 'd3m', 'format_version': '3.2.0'},
             files={
@@ -1193,7 +1193,7 @@ class TestDownload(DatamartTest):
             basic_metadata_d3m('3.2.0'),
         )
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/download', allow_redirects=False,
             files={
                 'task': json.dumps({
@@ -1205,7 +1205,7 @@ class TestDownload(DatamartTest):
         self.assertEqual(response.headers['Location'],
                          'http://test-discoverer:7000/basic.csv')
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/download', allow_redirects=False,
             params={'format': 'csv'},
             json={
@@ -1219,13 +1219,13 @@ class TestDownload(DatamartTest):
                          'http://test-discoverer:7000/basic.csv')
 
         # Geo dataset, materialized via /datasets storage
-        geo_meta = self.datamart_get(
+        geo_meta = self.auctus_get(
             '/metadata/' + 'datamart.test.geo',
             schema=metadata_schema,
         )
         geo_meta = geo_meta.json()['metadata']
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/download', allow_redirects=False,
             # format defaults to csv
             files={
@@ -1241,7 +1241,7 @@ class TestDownload(DatamartTest):
                          'application/octet-stream')
         self.assertTrue(response.content.startswith(b'id,lat,long,height\n'))
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/download', allow_redirects=False,
             params={'format': 'd3m'},
             json={
@@ -1262,7 +1262,7 @@ class TestDownload(DatamartTest):
 
     def test_post_invalid(self):
         """Post invalid materialization information"""
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/download', allow_redirects=False,
             files={
                 'task': json.dumps({
@@ -1284,7 +1284,7 @@ class TestDownload(DatamartTest):
             {'error': "Materializer reports failure"},
         )
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/download', allow_redirects=False,
             files={},
             check_status=False,
@@ -1293,27 +1293,27 @@ class TestDownload(DatamartTest):
 
     def test_get_id_invalid(self):
         """Test downloading an invalid ID gives 404"""
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/download/datamart.nonexistent',
             check_status=False,
         )
         self.assertEqual(response.status_code, 404)
 
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/metadata/datamart.nonexistent',
             check_status=False,
         )
         self.assertEqual(response.status_code, 404)
 
     def test_materialize(self):
-        """Test datamart_materialize"""
+        """Test auctus_materialize"""
         def assert_same_files(a, b):
             with open(a, 'r') as f_a:
                 with open(b, 'r') as f_b:
                     self.assertEqual(f_a.read(), f_b.read())
 
         with tempfile.TemporaryDirectory() as tempdir:
-            df = datamart_materialize.download(
+            df = auctus_materialize.download(
                 'datamart.test.agg',
                 None,
                 os.environ['API_URL'],
@@ -1321,7 +1321,7 @@ class TestDownload(DatamartTest):
             )
             self.assertEqual(df.shape, (8, 3))
 
-            datamart_materialize.download(
+            auctus_materialize.download(
                 'datamart.test.geo',
                 os.path.join(tempdir, 'geo.csv'),
                 os.environ['API_URL'],
@@ -1331,7 +1331,7 @@ class TestDownload(DatamartTest):
                 os.path.join(os.path.dirname(__file__), 'data/geo.csv'),
             )
 
-            datamart_materialize.download(
+            auctus_materialize.download(
                 'datamart.test.agg',
                 os.path.join(tempdir, 'agg'),
                 os.environ['API_URL'],
@@ -1344,7 +1344,7 @@ class TestDownload(DatamartTest):
 
     def test_basic_add_index(self):
         """Test adding d3mIndex automatically"""
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/download/' + 'datamart.test.basic',
             params={'format': 'd3m', 'format_need_d3mindex': '1'},
             allow_redirects=False,
@@ -1376,7 +1376,7 @@ class TestDownload(DatamartTest):
             )
 
 
-class TestAugment(DatamartTest):
+class TestAugment(AuctusTest):
     def check_basic_join(self, response):
         self.assertEqual(response.headers['Content-Type'], 'application/zip')
         self.assertTrue(
@@ -1473,7 +1473,7 @@ class TestAugment(DatamartTest):
 
     def test_basic_join(self):
         """Join (integer keys)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.basic',
             schema=metadata_schema,
         )
@@ -1495,7 +1495,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -1507,7 +1507,7 @@ class TestAugment(DatamartTest):
     def test_basic_join_data_token(self):
         """Join using a token (integer keys)"""
         # Build task dictionary
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.basic',
             schema=metadata_schema,
         )
@@ -1529,7 +1529,7 @@ class TestAugment(DatamartTest):
 
         # Get data token
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/profile',
                 files={
                     'data': basic_aug,
@@ -1541,7 +1541,7 @@ class TestAugment(DatamartTest):
         token = response.json()['token']
         self.assertEqual(len(token), 40)
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/augment',
             files={
                 'task': json.dumps(task).encode('utf-8'),
@@ -1552,7 +1552,7 @@ class TestAugment(DatamartTest):
 
     def test_basic_join_auto(self):
         """Join automatically (no task provided, integer keys)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.basic',
             schema=metadata_schema,
         )
@@ -1570,7 +1570,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -1581,7 +1581,7 @@ class TestAugment(DatamartTest):
 
     def test_agg_join(self):
         """Join and aggregate (integer keys)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.agg',
             schema=metadata_schema,
         )
@@ -1603,7 +1603,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('agg_aug.csv') as agg_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment?format=csv',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -1631,7 +1631,7 @@ class TestAugment(DatamartTest):
 
     def test_agg_join_specific_functions(self):
         """Join and aggregate (integer keys, specific functions)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.agg',
             schema=metadata_schema,
         )
@@ -1657,7 +1657,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('agg_aug.csv') as agg_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -1768,7 +1768,7 @@ class TestAugment(DatamartTest):
 
     def test_lazo_join(self):
         """Join (categorical keys)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.lazo',
             schema=metadata_schema,
         )
@@ -1790,7 +1790,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('lazo_aug.csv') as lazo_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -1915,7 +1915,7 @@ class TestAugment(DatamartTest):
 
     def test_geo_union(self):
         """Union"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.geo',
             schema=metadata_schema,
         )
@@ -1937,7 +1937,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('geo_aug.csv') as geo_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -2040,7 +2040,7 @@ class TestAugment(DatamartTest):
 
     def test_geo_join(self):
         """Join (lat,long spatial keys)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.geo',
             schema=metadata_schema,
         )
@@ -2062,7 +2062,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('geo_aug.csv') as geo_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -2206,7 +2206,7 @@ class TestAugment(DatamartTest):
 
     def test_temporal_daily_join(self):
         """Join (temporal keys, daily-daily)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.daily',
             schema=metadata_schema,
         )
@@ -2228,7 +2228,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('daily_aug.csv') as daily_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -2261,7 +2261,7 @@ class TestAugment(DatamartTest):
 
     def test_temporal_hourly_join(self):
         """Join (temporal keys, hourly-hourly)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.hourly',
             schema=metadata_schema,
         )
@@ -2283,7 +2283,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('hourly_aug.csv') as hourly_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -2315,7 +2315,7 @@ class TestAugment(DatamartTest):
 
     def test_temporal_hourly_days_join(self):
         """Join daily data with hourly (= aggregate down to daily)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.hourly',
             schema=metadata_schema,
         )
@@ -2337,7 +2337,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('hourly_aug_days.csv') as hourly_aug_days:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -2366,7 +2366,7 @@ class TestAugment(DatamartTest):
 
     def test_temporal_daily_hours_join(self):
         """Join hourly data with daily (= repeat for each hour)"""
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.daily',
             schema=metadata_schema,
         )
@@ -2388,7 +2388,7 @@ class TestAugment(DatamartTest):
         }
 
         with data('daily_aug_hours.csv') as daily_aug_hours:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment',
                 files={
                     'task': json.dumps(task).encode('utf-8'),
@@ -2427,10 +2427,10 @@ class TestAugment(DatamartTest):
             )
 
 
-class TestUpload(DatamartTest):
+class TestUpload(AuctusTest):
     def test_upload(self):
         """Test uploading a file for ingestion"""
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/upload',
             data={
                 'address': 'http://test-discoverer:7000/basic.csv',
@@ -2518,7 +2518,7 @@ class TestUpload(DatamartTest):
                 self.es.get('pending', dataset_id)
         finally:
             import lazo_index_service
-            from datamart_core.common import delete_dataset_from_index
+            from auctus_core.common import delete_dataset_from_index
 
             time.sleep(3)  # Deleting won't work immediately
             lazo_client = lazo_index_service.LazoIndexClient(
@@ -2534,7 +2534,7 @@ class TestUpload(DatamartTest):
     def test_upload_human_in_the_loop(self):
         """Test uploading a file with manual annotations for ingestion"""
         with data('annotated.csv') as annotated:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/upload',
                 files={
                     'file': annotated,
@@ -2625,7 +2625,7 @@ class TestUpload(DatamartTest):
                     self.es.get('pending', dataset_id)
             finally:
                 import lazo_index_service
-                from datamart_core.common import delete_dataset_from_index
+                from auctus_core.common import delete_dataset_from_index
 
                 time.sleep(3)  # Deleting won't work immediately
                 lazo_client = lazo_index_service.LazoIndexClient(
@@ -2639,11 +2639,11 @@ class TestUpload(DatamartTest):
                 )
 
 
-class TestSession(DatamartTest):
+class TestSession(AuctusTest):
     def test_session_new(self):
         """Test creating a system session"""
         def new_session(obj):
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/session/new',
                 json=obj,
             )
@@ -2698,7 +2698,7 @@ class TestSession(DatamartTest):
             },
         )
 
-        response = self.datamart_post(
+        response = self.auctus_post(
             '/session/new',
             json={'unknown_key': 'value'},
             check_status=False,
@@ -2711,24 +2711,24 @@ class TestSession(DatamartTest):
 
     def test_download_csv(self):
         """Test downloading a CSV into a system session"""
-        session_id = self.datamart_post(
+        session_id = self.auctus_post(
             '/session/new',
             json={'format': 'csv'},
         ).json()['session_id']
 
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/download/' + 'datamart.test.basic'
             + '?session_id=' + session_id
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/download/' + 'datamart.test.agg'
             + '?session_id=' + session_id
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get('/session/' + session_id)
+        response = self.auctus_get('/session/' + session_id)
         self.assertEqual(
             response.json(),
             {
@@ -2751,24 +2751,24 @@ class TestSession(DatamartTest):
 
     def test_download_d3m(self):
         """Test downloading in D3M format into a system session"""
-        session_id = self.datamart_post(
+        session_id = self.auctus_post(
             '/session/new',
             json={'format': 'd3m'},
         ).json()['session_id']
 
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/download/' + 'datamart.test.basic'
             + f'?session_id={session_id}&format=d3m'
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/download/' + 'datamart.test.agg'
             + f'?session_id={session_id}&format=d3m'
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get('/session/' + session_id)
+        response = self.auctus_get('/session/' + session_id)
         format_query = (
             'format=d3m'
             + '&format_version=4.0.0'
@@ -2798,12 +2798,12 @@ class TestSession(DatamartTest):
 
     def test_augment_csv(self):
         """Test augmenting as a CSV into a system session"""
-        session_id = self.datamart_post(
+        session_id = self.auctus_post(
             '/session/new',
             json={'format': 'csv'},
         ).json()['session_id']
 
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.basic',
             schema=metadata_schema,
         )
@@ -2825,7 +2825,7 @@ class TestSession(DatamartTest):
         }
 
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment'
                 + f'?session_id={session_id}&format=csv',
                 files={
@@ -2835,7 +2835,7 @@ class TestSession(DatamartTest):
             )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get('/session/' + session_id)
+        response = self.auctus_get('/session/' + session_id)
         self.assertJson(
             response.json(),
             {
@@ -2851,7 +2851,7 @@ class TestSession(DatamartTest):
         )
         result_id = response.json()['results'][0]['url'][-40:]
 
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/augment/' + result_id,
         )
         self.assertEqual(
@@ -2861,12 +2861,12 @@ class TestSession(DatamartTest):
 
     def test_augment_d3m(self):
         """Test augmenting in D3M format into a system session"""
-        session_id = self.datamart_post(
+        session_id = self.auctus_post(
             '/session/new',
             json={'format': 'd3m'},
         ).json()['session_id']
 
-        meta = self.datamart_get(
+        meta = self.auctus_get(
             '/metadata/' + 'datamart.test.basic',
             schema=metadata_schema,
         )
@@ -2888,7 +2888,7 @@ class TestSession(DatamartTest):
         }
 
         with data('basic_aug.csv') as basic_aug:
-            response = self.datamart_post(
+            response = self.auctus_post(
                 '/augment'
                 + f'?session_id={session_id}&format=d3m',
                 files={
@@ -2898,7 +2898,7 @@ class TestSession(DatamartTest):
             )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get('/session/' + session_id)
+        response = self.auctus_get('/session/' + session_id)
         self.assertJson(
             response.json(),
             {
@@ -2914,7 +2914,7 @@ class TestSession(DatamartTest):
         )
         result_id = response.json()['results'][0]['url'][-40:]
 
-        response = self.datamart_get(
+        response = self.auctus_get(
             '/augment/' + result_id,
         )
         self.assertEqual(
@@ -2923,10 +2923,10 @@ class TestSession(DatamartTest):
         )
 
 
-class TestLocation(DatamartTest):
+class TestLocation(AuctusTest):
     def test_search(self):
         """Test searching for locations"""
-        response = self.datamart_post('/location', data={'q': 'Italy'})
+        response = self.auctus_post('/location', data={'q': 'Italy'})
         self.assertJson(
             response.json(),
             {
@@ -2946,7 +2946,7 @@ class TestLocation(DatamartTest):
         )
 
 
-version = os.environ['DATAMART_VERSION']
+version = os.environ['AUCTUS_VERSION']
 assert re.match(r'^v[0-9]+(\.[0-9]+)+(-[0-9]+-g[0-9a-f]{7,8})?$', version)
 
 

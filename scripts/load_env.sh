@@ -5,5 +5,5 @@ while read line; do
     export "$line"
   fi
 done <.env
-export DATAMART_VERSION=$(git describe)
+export AUCTUS_VERSION=$(git describe)
 export DATAMART_GEO_DATA="$(pwd)/lib_geo/data"

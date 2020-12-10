@@ -18,7 +18,7 @@ def main(services):
     with open('docker-compose.yml') as fp:
         config = yaml.safe_load(fp)
 
-    version = os.environ['DATAMART_VERSION']
+    version = os.environ['AUCTUS_VERSION']
 
     for name, svc in config['services'].items():
         if services and name not in services:

@@ -16,7 +16,7 @@ author = 'Remi Rampin'
 
 # The full version, including alpha/beta/rc tags
 release = subprocess.check_output(['git', 'describe'], encoding='ascii')
-os.environ['DATAMART_VERSION'] = release
+os.environ['AUCTUS_VERSION'] = release
 
 
 # -- General configuration ---------------------------------------------------

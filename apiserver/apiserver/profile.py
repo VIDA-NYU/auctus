@@ -9,10 +9,10 @@ import tempfile
 import time
 import tornado.web
 
-from datamart_core.fscache import cache_get_or_set
-from datamart_core.materialize import detect_format_convert_to_csv
-from datamart_core.prom import PromMeasureRequest
-from datamart_profiler import process_dataset
+from auctus_core.fscache import cache_get_or_set
+from auctus_core.materialize import detect_format_convert_to_csv
+from auctus_core.prom import PromMeasureRequest
+from auctus_data_profiler import process_dataset
 
 from .base import BUCKETS, BaseHandler
 from .graceful_shutdown import GracefulHandler
@@ -108,7 +108,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 logger.info("Profiled (fast) in %.2fs", time.perf_counter() - start)
 
                 data_profile['materialize'] = materialize
-                data_profile['version'] = os.environ['DATAMART_VERSION']
+                data_profile['version'] = os.environ['AUCTUS_VERSION']
 
                 self.application.redis.set(
                     'profile-fast:' + data_hash,
@@ -134,7 +134,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 logger.info("Profiled in %.2fs", time.perf_counter() - start)
 
                 data_profile['materialize'] = materialize
-                data_profile['version'] = os.environ['DATAMART_VERSION']
+                data_profile['version'] = os.environ['AUCTUS_VERSION']
 
                 self.application.redis.set(
                     'profile:' + data_hash,

@@ -2,7 +2,7 @@ import logging
 import time
 import uuid
 
-from datamart_augmentation import AugmentationError, join, union
+from auctus_data_augmentation import AugmentationError, join, union
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def augment(data, newdata, metadata, task, writer, columns=None):
 
     # TODO: add support for combining multiple columns before an augmentation
     #   e.g.: [['street number', 'street', 'city']] and [['address']]
-    #   currently, Datamart does not support such cases
+    #   currently, Auctus does not support such cases
     #   this means that spatial joins (with GPS) are not supported for now
 
     # Perform augmentation

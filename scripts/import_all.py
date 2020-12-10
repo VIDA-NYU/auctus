@@ -16,7 +16,7 @@ import os
 import sys
 import time
 
-from datamart_core.common import add_dataset_to_index, \
+from auctus_core.common import add_dataset_to_index, \
     delete_dataset_from_index, add_dataset_to_lazo_storage, decode_dataset_id
 
 
@@ -87,7 +87,7 @@ async def import_all(folder):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('elasticsearch').setLevel(logging.ERROR)
-    logging.getLogger('datamart_core.common').setLevel(logging.WARNING)
+    logging.getLogger('auctus_core.common').setLevel(logging.WARNING)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(loop.create_task(

@@ -1,8 +1,8 @@
 import logging
 import textwrap
 
-from datamart_core import types
-from datamart_profiler.temporal import temporal_aggregation_keys
+from auctus_core import types
+from auctus_data_profiler.temporal import temporal_aggregation_keys
 
 from .base import TOP_K_SIZE, get_column_identifiers
 
@@ -36,7 +36,7 @@ def get_column_coverage(data_profile, filter_=()):
     """
     Get coverage for each column of the input dataset.
 
-    :param data_profile: Profiled input dataset, if dataset is not in Datamart index.
+    :param data_profile: Profiled input dataset, if dataset is not in Auctus's index.
     :param filter_: list of column indices to return. If an empty list, return all the columns.
     :return: dict, where key is the column index, and value is a dict as follows:
 
@@ -560,7 +560,7 @@ def get_joinable_datasets(
     :param es: Elasticsearch client.
     :param lazo_client: client for the Lazo Index Server
     :param data_profile: Profiled input dataset.
-    :param dataset_id: The identifier of the desired Datamart dataset for augmentation.
+    :param dataset_id: The identifier of the desired Auctus dataset for augmentation.
     :param ignore_datasets: Identifiers of datasets to ignore.
     :param query_sup_functions: list of query functions over sup index.
     :param query_sup_filters: list of query filters over sup index.

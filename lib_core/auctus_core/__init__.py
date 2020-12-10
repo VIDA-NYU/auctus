@@ -10,6 +10,6 @@ __all__ = ['Discoverer', 'AsyncDiscoverer']
 __version__ = '0.0'
 
 
-PROM_VERSION = prometheus_client.Gauge('version', "Datamart version",
+PROM_VERSION = prometheus_client.Gauge('version', "Auctus version",
                                        ['version'])
-PROM_VERSION.labels(os.environ['DATAMART_VERSION']).set(1)
+PROM_VERSION.labels(os.environ['AUCTUS_VERSION']).set(1)

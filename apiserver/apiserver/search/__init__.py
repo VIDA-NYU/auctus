@@ -7,8 +7,8 @@ import logging
 import prometheus_client
 import time
 
-from datamart_core.prom import PromMeasureRequest
-from datamart_profiler.temporal import parse_date, temporal_aggregation_keys
+from auctus_core.prom import PromMeasureRequest
+from auctus_data_profiler.temporal import parse_date, temporal_aggregation_keys
 
 from ..base import BUCKETS, BaseHandler
 from ..enhance_metadata import enhance_metadata
@@ -53,7 +53,7 @@ def validate_str_list(value, what):
 
 
 def parse_keyword_query_main_index(query_json):
-    """Parses a Datamart keyword query, turning it into an
+    """Parses an Auctus keyword query, turning it into an
     Elasticsearch query over 'datamart' index.
     """
 
@@ -108,7 +108,7 @@ def parse_keyword_query_main_index(query_json):
 
 
 def parse_keyword_query_sup_index(query_json):
-    """Parses a Datamart keyword query, turning it into an
+    """Parses an Auctus keyword query, turning it into an
     Elasticsearch query over 'datamart_column' and
     'datamart_spatial_coverage' indices.
     """
@@ -160,7 +160,7 @@ def parse_keyword_query_sup_index(query_json):
 
 
 def parse_query_variables(data, geo_data=None):
-    """Parses the variables of a Datamart query, turning it into an
+    """Parses the variables of an Auctus query, turning it into an
     Elasticsearch query over 'datamart' index
     """
 
@@ -331,7 +331,7 @@ def parse_query_variables(data, geo_data=None):
 
 
 def parse_query(query_json, geo_data=None):
-    """Parses a Datamart query, turning it into an Elasticsearch query
+    """Parses an Auctus query, turning it into an Elasticsearch query
     over 'datamart' index as well as the supplementary indices
     ('datamart_columns' and 'datamart_spatial_coverage').
     """

@@ -92,7 +92,7 @@ def setup_logging(clear=True, thread=True):
             dsn=os.environ['SENTRY_DSN'],
             integrations=[TornadoIntegration()],
             ignore_errors=[KeyboardInterrupt],
-            release='auctus@%s' % os.environ['DATAMART_VERSION'],
+            release='auctus@%s' % os.environ['AUCTUS_VERSION'],
         )
 
 
@@ -242,7 +242,7 @@ def contextdecorator(factory, argname):
 
 def add_dataset_to_sup_index(es, dataset_id, metadata):
     """
-    Adds dataset to the supplementary Datamart indices: 'datamart_columns',
+    Adds dataset to the supplementary Auctus indices: 'datamart_columns',
     'datamart_spatial_coverage', and 'datamart_temporal_coverage'.
     """
     DISCARD_DATASET_FIELDS = [
@@ -323,7 +323,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
 
 def add_dataset_to_index(es, dataset_id, metadata):
     """
-    Safely adds a dataset to all the Datamart indices.
+    Safely adds a dataset to all the Auctus indices.
     """
 
     # 'datamart' index

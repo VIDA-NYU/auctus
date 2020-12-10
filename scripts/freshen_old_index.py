@@ -17,7 +17,7 @@ import os
 import subprocess
 import sys
 
-from datamart_core.common import json2msg
+from auctus_core.common import json2msg
 
 
 logger = logging.getLogger(__name__)

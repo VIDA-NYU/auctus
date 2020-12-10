@@ -9,9 +9,9 @@ from tornado.web import HTTPError, RequestHandler
 from urllib.parse import urlencode
 import zipfile
 
-from datamart_core.common import log_future
+from auctus_core.common import log_future
 from datamart_geo import GeoData
-from datamart_materialize import get_writer
+from auctus_materialize import get_writer
 
 from .graceful_shutdown import GracefulApplication
 
@@ -31,7 +31,7 @@ class BaseHandler(RequestHandler):
     application: 'Application'
 
     def set_default_headers(self):
-        self.set_header('Server', 'Auctus/%s' % os.environ['DATAMART_VERSION'])
+        self.set_header('Server', 'Auctus/%s' % os.environ['AUCTUS_VERSION'])
 
     def get_json(self):
         type_ = self.request.headers.get('Content-Type', '')
@@ -137,7 +137,7 @@ class BaseHandler(RequestHandler):
             dct['format_' + k] = v
         return urlencode(dct)
 
-    http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
+    http_client = AsyncHTTPClient(defaults=dict(user_agent="Auctus"))
 
 
 class Application(GracefulApplication):

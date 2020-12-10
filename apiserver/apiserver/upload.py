@@ -6,8 +6,8 @@ import prometheus_client
 import shutil
 import uuid
 
-from datamart_core.common import json2msg
-from datamart_core.prom import PromMeasureRequest
+from auctus_core.common import json2msg
+from auctus_core.prom import PromMeasureRequest
 
 from .base import BUCKETS, BaseHandler
 

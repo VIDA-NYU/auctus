@@ -14,9 +14,9 @@ import time
 import urllib.parse
 import zipfile
 
-from datamart_core import Discoverer
-from datamart_core.common import setup_logging
-from datamart_profiler.core import count_garbage_rows
+from auctus_core import Discoverer
+from auctus_core.common import setup_logging
+from auctus_data_profiler.core import count_garbage_rows
 
 
 logger = logging.getLogger(__name__)

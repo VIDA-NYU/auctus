@@ -11,7 +11,7 @@ import prometheus_client
 import time
 import yaml
 
-from datamart_core.common import log_future
+from auctus_core.common import log_future
 
 
 logger = logging.getLogger(__name__)

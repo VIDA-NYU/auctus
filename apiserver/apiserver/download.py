@@ -4,8 +4,8 @@ import logging
 import json
 import prometheus_client
 
-from datamart_core.materialize import get_dataset
-from datamart_core.prom import PromMeasureRequest
+from auctus_core.materialize import get_dataset
+from auctus_core.prom import PromMeasureRequest
 
 from .base import BUCKETS, BaseHandler
 from .enhance_metadata import enhance_metadata

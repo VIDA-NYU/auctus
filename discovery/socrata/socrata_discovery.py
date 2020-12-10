@@ -9,8 +9,8 @@ import sentry_sdk
 import sodapy
 import time
 
-from datamart_core import Discoverer
-from datamart_core.common import setup_logging
+from auctus_core import Discoverer
+from auctus_core.common import setup_logging
 
 
 logger = logging.getLogger(__name__)

@@ -15,7 +15,7 @@ from tornado.routing import URLSpec
 import tornado.web
 from urllib.parse import quote_plus
 
-from datamart_core.common import delete_dataset_from_index, setup_logging
+from auctus_core.common import delete_dataset_from_index, setup_logging
 
 from .cache import check_cache
 from .coordinator import Coordinator
@@ -54,7 +54,7 @@ class BaseHandler(tornado.web.RequestHandler):
     template_env.globals['xsrf_form_html'] = _tpl_xsrf_form_html
 
     def set_default_headers(self):
-        self.set_header('Server', 'Auctus/%s' % os.environ['DATAMART_VERSION'])
+        self.set_header('Server', 'Auctus/%s' % os.environ['AUCTUS_VERSION'])
 
     def render_string(self, template_name, **kwargs):
         template = self.template_env.get_template(template_name)
@@ -72,7 +72,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
 
-    http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
+    http_client = AsyncHTTPClient(defaults=dict(user_agent="Auctus"))
 
     def get_current_user(self):
         return self.get_secure_cookie('user')
@@ -248,7 +248,7 @@ def main():
     prometheus_client.start_http_server(8000)
     logger.info(
         "Startup: coordinator %s %s",
-        os.environ['DATAMART_VERSION'],
+        os.environ['AUCTUS_VERSION'],
         socket.gethostbyname(socket.gethostname()),
     )
     if debug:

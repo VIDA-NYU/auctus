@@ -60,14 +60,14 @@ def _direct_download(url, writer, size_limit=None):
 
 
 def _proxy_download(dataset_id, writer, proxy, size_limit=None):
-    """Use a Datamart service to materialize for us.
+    """Use an Auctus service to materialize for us.
 
     This is used when the materializer is not available locally. We request
-    that the Datamart handle materialization, and then we download from there.
+    that the Auctus handle materialization, and then we download from there.
 
     :param dataset_id: Dataset ID from search index.
     :param writer: Output writer used to write the dataset.
-    :param proxy: URL of a Datamart server to use as a proxy.
+    :param proxy: URL of an Auctus server to use as a proxy.
     """
     response = requests.get(proxy + '/download/' + dataset_id,
                             allow_redirects=True, stream=True)
@@ -120,9 +120,9 @@ def load_materializers():
                     logger.info("%s loaded: %s", what, entry_point.name)
             return result
 
-        materializers = load('materializer', 'datamart_materialize')
-        writers = load('writer', 'datamart_materialize.writer')
-        converters = load('converter', 'datamart_materialize.converter')
+        materializers = load('materializer', 'auctus_materialize')
+        writers = load('writer', 'auctus_materialize.writer')
+        converters = load('converter', 'auctus_materialize.converter')
 
         _materializers_loaded = True
 
@@ -235,7 +235,7 @@ def download(dataset, destination, proxy, format='csv', format_options=None,
 
     :param dataset: Dataset description from search index.
     :param destination: Path where the dataset will be written.
-    :param proxy: URL of a Datamart server to use as a proxy if we can't
+    :param proxy: URL of an Auctus server to use as a proxy if we can't
         materialize locally. If ``None``, :class:`KeyError` will be raised if this
         materializer is unavailable.
     :param format: Output format.

@@ -1,4 +1,4 @@
-from datamart_materialize.d3m import d3m_metadata
+from auctus_materialize.d3m import d3m_metadata
 
 
 def enhance_metadata(result):

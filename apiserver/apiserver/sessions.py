@@ -5,7 +5,7 @@ import uuid
 
 import prometheus_client
 
-from datamart_core.prom import PromMeasureRequest
+from auctus_core.prom import PromMeasureRequest
 from .base import BUCKETS, BaseHandler
 from .profile import profile_token_re
 

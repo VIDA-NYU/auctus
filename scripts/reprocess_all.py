@@ -13,7 +13,7 @@ import logging
 import os
 import sys
 
-from datamart_core.common import json2msg, decode_dataset_id
+from auctus_core.common import json2msg, decode_dataset_id
 
 
 async def import_all(folder):

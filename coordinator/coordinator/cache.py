@@ -3,8 +3,8 @@ import logging
 import os
 import prometheus_client
 
-from datamart_core.common import log_future
-from datamart_core.fscache import clear_cache
+from auctus_core.common import log_future
+from auctus_core.fscache import clear_cache
 
 
 logger = logging.getLogger(__name__)

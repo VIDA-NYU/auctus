@@ -12,9 +12,9 @@ from tornado.routing import Rule, PathMatches, URLSpec
 import tornado.httputil
 import tornado.web
 
-from datamart_core.common import setup_logging
-from datamart_core.prom import PromMeasureRequest
-import datamart_profiler
+from auctus_core.common import setup_logging
+from auctus_core.prom import PromMeasureRequest
+import auctus_data_profiler
 
 from .augment import Augment, AugmentResult
 from .base import BUCKETS, BaseHandler, Application
@@ -109,8 +109,8 @@ class Version(BaseHandler):
     @PROM_VERSION.sync()
     def get(self):
         return self.send_json({
-            'version': os.environ['DATAMART_VERSION'].lstrip('v'),
-            'min_profiler_version': datamart_profiler.__version__,
+            'version': os.environ['AUCTUS_VERSION'].lstrip('v'),
+            'min_profiler_version': auctus_data_profiler.__version__,
         })
 
 
@@ -182,7 +182,7 @@ def main():
     prometheus_client.start_http_server(8000)
     logger.info(
         "Startup: apiserver %s %s",
-        os.environ['DATAMART_VERSION'],
+        os.environ['AUCTUS_VERSION'],
         socket.gethostbyname(socket.gethostname()),
     )
     if debug:

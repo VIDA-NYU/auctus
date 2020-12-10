@@ -48,7 +48,7 @@ done
 set +x
 . scripts/load_env.sh
 set -x
-export DATAMART_VERSION=v0.0
+export AUCTUS_VERSION=v0.0
 
 # Run tests
 poetry run python tests --verbose --catch

@@ -1,6 +1,6 @@
 import csv
 
-from datamart_materialize.utils import SimpleConverter
+from auctus_materialize.utils import SimpleConverter
 
 
 def tsv_to_csv(source_filename, dest_fileobj, separator='\t'):

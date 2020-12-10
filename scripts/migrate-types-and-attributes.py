@@ -11,8 +11,8 @@ import os
 import shutil
 import sys
 
-from datamart_profiler.core import expand_attribute_name
-from datamart_profiler.profile_types import determine_dataset_type
+from auctus_data_profiler.core import expand_attribute_name
+from auctus_data_profiler.profile_types import determine_dataset_type
 
 
 def migrate(from_folder, to_folder):

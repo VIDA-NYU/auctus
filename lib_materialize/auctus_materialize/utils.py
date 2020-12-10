@@ -42,7 +42,7 @@ class SimpleConverter(object):
     """
     def __init__(self, writer):
         self.writer = writer
-        self.dir = tempfile.TemporaryDirectory(prefix='datamart_excel_')
+        self.dir = tempfile.TemporaryDirectory(prefix='auctus_excel_')
 
     def set_metadata(self, dataset_id, metadata):
         self.writer.set_metadata(dataset_id, metadata)

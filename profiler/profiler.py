@@ -16,15 +16,15 @@ import threading
 import time
 import traceback
 
-from datamart_core.common import setup_logging, add_dataset_to_index, \
+from auctus_core.common import setup_logging, add_dataset_to_index, \
     delete_dataset_from_index, delete_dataset_from_lazo, log_future, \
     json2msg, msg2json
-from datamart_core.fscache import cache_get_or_set
-from datamart_core.materialize import get_dataset, dataset_cache_key, \
+from auctus_core.fscache import cache_get_or_set
+from auctus_core.materialize import get_dataset, dataset_cache_key, \
     detect_format_convert_to_csv
 from datamart_geo import GeoData
-from datamart_materialize import DatasetTooBig
-from datamart_profiler import process_dataset
+from auctus_materialize import DatasetTooBig
+from auctus_data_profiler import process_dataset
 
 
 logger = logging.getLogger(__name__)
@@ -317,7 +317,7 @@ class Profiler(object):
                         # Insert results in Elasticsearch
                         body = dict(metadata,
                                     date=datetime.utcnow().isoformat() + 'Z',
-                                    version=os.environ['DATAMART_VERSION'])
+                                    version=os.environ['AUCTUS_VERSION'])
                         await in_thread(
                             lambda: add_dataset_to_index(self.es, dataset_id, body),
                         )
@@ -435,7 +435,7 @@ def main():
     prometheus_client.start_http_server(8000)
     logger.info(
         "Startup: profiler %s %s",
-        os.environ['DATAMART_VERSION'],
+        os.environ['AUCTUS_VERSION'],
         socket.gethostbyname(socket.gethostname()),
     )
     Profiler()

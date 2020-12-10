@@ -10,8 +10,8 @@ import sqlite3
 import tempfile
 import time
 
-from datamart_core import Discoverer
-from datamart_core.common import setup_logging
+from auctus_core import Discoverer
+from auctus_core.common import setup_logging
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class UazIndicatorsDiscoverer(Discoverer):
 
         # Do HTTP request
         headers = {
-            'User-Agent': 'Auctus/%s' % os.environ['DATAMART_VERSION'],
+            'User-Agent': 'Auctus/%s' % os.environ['AUCTUS_VERSION'],
         }
         if etag:
             headers['If-None-Match'] = etag
