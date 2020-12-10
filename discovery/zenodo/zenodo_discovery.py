@@ -108,6 +108,7 @@ class ZenodoDiscoverer(Discoverer):
         record_metadata = dict(
             name=record['title'],
             source='zenodo.org',
+            source_url='https://zenodo.org/record/%d' % record['id'],
         )
         if 'license' in record['metadata']:
             record_metadata['license'] = record['metadata']['license']

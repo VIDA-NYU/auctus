@@ -188,6 +188,7 @@ class UazIndicatorsDiscoverer(Discoverer):
             dict(
                 name=name,
                 source="%s (UAZ)" % source,
+                source_url='https://ml4ai.github.io/delphi/delphi_database.html',
             ),
             dataset_id=dataset_id,
         )

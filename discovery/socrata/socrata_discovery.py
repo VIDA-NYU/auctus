@@ -163,6 +163,8 @@ class SocrataDiscoverer(Discoverer):
         )
         if resource.get('description'):
             metadata['description'] = resource['description']
+        if 'link' in dataset:
+            metadata['source_url'] = dataset['link']
         direct_url = (
             'https://{domain}/api/views/{dataset_id}/rows.csv'
             '?accessType=DOWNLOAD'.format(domain=domain['url'], dataset_id=id)

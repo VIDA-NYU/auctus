@@ -212,6 +212,7 @@ class IsiDiscoverer(Discoverer):
             dict(
                 name=dataset['name'],
                 source='ISI',
+                source_url=dataset['url'],
             ),
             dataset_id,
         )

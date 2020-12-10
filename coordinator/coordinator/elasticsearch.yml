@@ -47,6 +47,8 @@ datamart:
         type: text
       license:
         type: keyword
+      source_url:
+        type: keyword
       sample:
         type: text
         index: false
@@ -188,6 +190,8 @@ datamart_columns:
         type: text
       dataset_license:
         type: keyword
+      dataset_source_url:
+        type: keyword
       dataset_source:
         type: keyword
       dataset_types:
@@ -275,6 +279,8 @@ datamart_spatial_coverage:
         type: text
       dataset_license:
         type: keyword
+      dataset_source_url:
+        type: keyword
       dataset_source:
         type: keyword
       dataset_types:
@@ -344,6 +350,8 @@ datamart_temporal_coverage:
       dataset_filename:
         type: text
       dataset_license:
+        type: keyword
+      dataset_source_url:
         type: keyword
       dataset_source:
         type: keyword

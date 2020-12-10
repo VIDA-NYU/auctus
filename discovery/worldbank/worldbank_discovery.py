@@ -57,7 +57,7 @@ class WorldBankDiscoverer(Discoverer):
         # Scrape the page with the list
         logger.info("Getting list...")
         list_page = requests.get(
-            'https://data.worldbank.org/indicator',
+            LIST_URL,
             headers={'User-agent': 'Auctus'},
         )
         list_page.raise_for_status()
@@ -238,6 +238,7 @@ class WorldBankDiscoverer(Discoverer):
             dict(
                 name="World Bank - %s" % indicator_name,
                 source="World Bank",
+                source_url=details_url,
             ),
             dataset_id,
         )
