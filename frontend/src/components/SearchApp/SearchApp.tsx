@@ -28,24 +28,13 @@ import {
 import {Chip, ChipGroup} from '../Chip/Chip';
 import * as Icon from 'react-feather';
 import {aggregateResults} from '../../api/augmentation';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import {ButtonGroup} from '../ui/Button/Button';
+import {RelatedFileDialog} from '../RelatedFileFilter/RelatedFileDialog';
 
-interface Filter {
+export interface Filter {
   id: string;
   type: FilterType;
   hidden: boolean;
   state?: FilterVariables | RelatedFile | string[];
-}
-
-interface DialogInstance {
-  dlgAugmentationType: AugmentationType;
-  dlgStatus: boolean;
-  dlgFilters: Filter[];
 }
 
 interface SearchAppState {
@@ -57,7 +46,8 @@ interface SearchAppState {
   sources: string[];
   session?: Session;
   selectedAugmentationType: AugmentationType;
-  dialogInstance: DialogInstance;
+  relatedFileDialog: RelatedFile | undefined;
+  openDialog: boolean;
 }
 
 interface SearchAppProps {
@@ -81,11 +71,8 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       filters: [],
       sources: api.DEFAULT_SOURCES,
       selectedAugmentationType: AugmentationType.JOIN,
-      dialogInstance: {
-        dlgAugmentationType: AugmentationType.JOIN,
-        dlgStatus: false,
-        dlgFilters: [],
-      },
+      relatedFileDialog: undefined,
+      openDialog: false,
     };
   }
 
@@ -368,79 +355,24 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   onSearchRelated(relatedFile: RelatedFile) {
-    this.setState(() => {
-      const prevFilters = this.state.filters;
-      const relatedFileFilters = prevFilters.filter(
-        f => f.type === FilterType.RELATED_FILE
-      );
-      let filters;
-      if (relatedFileFilters.length > 0) {
-        // Update existing filter
-        filters = prevFilters.map(filter => {
-          if (filter.id === relatedFileFilters[0].id) {
-            return {
-              ...relatedFileFilters[0],
-              state: relatedFile,
-            };
-          } else {
-            return filter;
-          }
-        });
-      } else {
-        // Add new filter
-        const filterId = generateRandomId();
-        const filter: Filter = {
-          id: filterId,
-          type: FilterType.RELATED_FILE,
-          hidden: false,
-          state: relatedFile,
-        };
-        filters = [...prevFilters, filter];
-      }
-      return {
-        dialogInstance: {
-          ...this.state.dialogInstance,
-          dlgFilters: filters,
-          dlgStatus: true,
-        },
-      };
+    this.setState({
+      relatedFileDialog: relatedFile,
+      openDialog: true,
     });
   }
 
-  runSearchRelatedQuery() {
+  runSearchRelatedQuery(
+    updatedFilters: Filter[],
+    updatedAugmentationType: AugmentationType
+  ) {
     this.setState(() => {
       return {
-        filters: this.state.dialogInstance.dlgFilters,
-        selectedAugmentationType: this.state.dialogInstance.dlgAugmentationType,
-        dialogInstance: {
-          ...this.state.dialogInstance,
-          dlgFilters: [],
-          dlgStatus: false,
-        },
+        filters: updatedFilters,
+        selectedAugmentationType: updatedAugmentationType,
+        relatedFileDialog: undefined,
+        openDialog: false,
       };
     }, this.submitQuery);
-  }
-
-  updateDialogFileFilterState(filterId: string, state?: RelatedFile) {
-    this.setState(prevState => {
-      let found = false;
-      const filters = prevState.dialogInstance.dlgFilters.map(filter => {
-        if (filter.id === filterId) {
-          found = true;
-          return {...filter, state};
-        } else {
-          return filter;
-        }
-      });
-      if (!found) {
-        console.warn(
-          `Requested to update filter state with id=[${filterId} which does not exist.]`
-        );
-      }
-      return {
-        dialogInstance: {...this.state.dialogInstance, dlgFilters: filters},
-      };
-    });
   }
 
   renderFilters() {
@@ -591,13 +523,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     );
   }
 
-  handleClose() {
+  handleCloseDialog() {
     this.setState({
-      dialogInstance: {
-        ...this.state.dialogInstance,
-        dlgFilters: [],
-        dlgStatus: false,
-      },
+      relatedFileDialog: undefined,
+      openDialog: false,
     });
   }
 
@@ -671,68 +600,16 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             {this.renderLandingPage(session)}
           </div>
         )}
-        <div>
-          <Dialog
-            open={this.state.dialogInstance.dlgStatus}
-            onClose={() => this.handleClose()}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-            maxWidth={'md'}
-          >
-            <DialogTitle id="alert-dialog-title">
-              {'Search Related Datasets'}
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText id="alert-dialog-description">
-                <span className="small">
-                  We will find datasets that can be augmented with the selected
-                  dataset.
-                </span>
-              </DialogContentText>
-              {this.state.dialogInstance.dlgFilters
-                .filter(f => f.type === FilterType.RELATED_FILE)
-                .map(filter => {
-                  return (
-                    <RelatedFileFilter
-                      key={'relatedfilter_' + filter.id}
-                      onSelectedFileChange={f =>
-                        this.updateDialogFileFilterState(filter.id, f)
-                      }
-                      onAugmentationTypeChange={type =>
-                        this.setState({
-                          dialogInstance: {
-                            ...this.state.dialogInstance,
-                            dlgAugmentationType: type,
-                          },
-                        })
-                      }
-                      selectedAugmentationType={
-                        this.state.dialogInstance.dlgAugmentationType
-                      }
-                      state={filter.state as RelatedFile | undefined}
-                    />
-                  );
-                })}
-            </DialogContent>
-            <DialogActions>
-              <ButtonGroup>
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={() => this.handleClose()}
-                >
-                  <Icon.XCircle className="feather" /> Cancel
-                </button>
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={() => this.runSearchRelatedQuery()}
-                  style={{marginLeft: 15, marginRight: 15}}
-                >
-                  <Icon.Search className="feather" /> Search
-                </button>
-              </ButtonGroup>
-            </DialogActions>
-          </Dialog>
-        </div>
+        <RelatedFileDialog
+          relatedFile={this.state.relatedFileDialog}
+          openDialog={this.state.openDialog}
+          filters={this.state.filters}
+          handleCloseDialog={() => this.handleCloseDialog()}
+          runSearchRelatedQuery={(
+            filters: Filter[],
+            augType: AugmentationType
+          ) => this.runSearchRelatedQuery(filters, augType)}
+        />
       </>
     );
   }
