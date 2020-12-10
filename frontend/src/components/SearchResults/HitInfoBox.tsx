@@ -36,7 +36,12 @@ function HitInfoBox(props: {
               <b>ID:</b> {hit.id}
             </div>
             <div className="mt-2">
-              <b>Source:</b> {hit.metadata.source}
+              <b>Source:</b>{' '}
+              {hit.metadata.source_url ? (
+                <a href={hit.metadata.source_url}>{hit.metadata.source}</a>
+              ) : (
+                hit.metadata.source
+              )}
             </div>
             <div className="mt-2">
               <b>Last Updated Date:</b> {lastUpdatedDate.toLocaleString()}
