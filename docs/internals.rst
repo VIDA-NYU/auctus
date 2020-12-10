@@ -4,14 +4,14 @@ Internals
 Architecture
 ------------
 
-Datamart is a cloud-native application divided in multiple components (containers) which can be scaled independently.
+Auctus is a cloud-native application divided in multiple components (containers) which can be scaled independently.
 
 ..  figure:: architecture.png
     :align: center
 
-    Overall architecture of Datamart
+    Overall architecture of Auctus
 
-At the core of Datamart is an `Elasticsearch cluster <https://www.elastic.co/>`__ which stores sketches of the datasets, obtained by downloading and profiling them.
+At the core of Auctus is an `Elasticsearch cluster <https://www.elastic.co/>`__ which stores sketches of the datasets, obtained by downloading and profiling them.
 
 The system is design to be extensible. Plugins called ":ref:`discoverers`" can be added to support additional data sources.
 
@@ -21,7 +21,7 @@ The different components communicate via the AMQP message-queueing protocol thro
     :align: center
     :width: 25em
 
-    AMQP queues and exchanges used by Datamart
+    AMQP queues and exchanges used by Auctus
 
 ..  _discoverers:
 
@@ -33,9 +33,9 @@ A discoverer is responsible for finding data. It runs as its own container, and 
 * announce all datasets to AMQP when they appear in the source, to be profiled **in advance** of user queries, or
 * react to user queries, use it to perform a search in the source, and announce the datasets found, **on-demand**.
 
-Either way, a base Python class is provided as part of :mod:`datamart_core` that can easily be extended instead of re-implementing the AMQP setup.
+Either way, a base Python class is provided as part of :mod:`auctus_core` that can easily be extended instead of re-implementing the AMQP setup.
 
-..  autoclass:: datamart_core.discovery.Discoverer
+..  autoclass:: auctus_core.discovery.Discoverer
 
     ..  py:method:: main_loop()
 
@@ -57,18 +57,18 @@ Either way, a base Python class is provided as part of :mod:`datamart_core` that
             :param dict metadata: Metadata for that dataset, that might be augmented with profiled information
             :param str dataset_id: Dataset id. If unspecified, a UUID4 will be generated for it.
 
-    ..  automethod:: datamart_core.discovery.Discoverer.record_dataset
+    ..  automethod:: auctus_core.discovery.Discoverer.record_dataset
 
-    ..  automethod:: datamart_core.discovery.Discoverer.write_to_shared_storage
+    ..  automethod:: auctus_core.discovery.Discoverer.write_to_shared_storage
 
-    ..  automethod:: datamart_core.discovery.Discoverer.delete_dataset
+    ..  automethod:: auctus_core.discovery.Discoverer.delete_dataset
 
-..  autoclass:: datamart_core.discovery.AsyncDiscoverer
+..  autoclass:: auctus_core.discovery.AsyncDiscoverer
 
 Profiling
 ---------
 
-The profiling is done entirely by the :doc:`python/datamart-profiler`. It functions as follows:
+The profiling is done entirely by the :doc:`python/auctus-data-profiler`. It functions as follows:
 
 * First, the data is loaded or prepared as a pandas :class:`~pandas.DataFrame`
 

@@ -1,7 +1,7 @@
 Using the REST API
 ==================
 
-You can access Datamart through a REST API. In addition to the documentation below, you can find a `Swagger UI <swagger/index.html>`__ which can be used to try the API.
+You can access Auctus through a REST API. In addition to the documentation below, you can find a `Swagger UI <swagger/index.html>`__ which can be used to try the API.
 
 There is also a :doc:`Python client library <python/datamart-rest>` for this API.
 
@@ -14,14 +14,14 @@ The API is versioned, with the current version being ``v1``. The full paths for 
 ``POST /search``
 ----------------
 
-Queries the DataMart system for datasets.
+Queries Auctus for datasets.
 
 The ``Content-Type`` should be set to `multipart/form-data <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition>`__ to allow sending both the query description and the data file.
 
 The following keys are accepted in the request body (you need to specify at least one of them):
 
 * ``data``: a file in a supported file format (CSV, Excel, SPSS...)
-* ``data_profile``: profile information for an input dataset in JSON format (such as returned by the :doc:`python/datamart-profiler` or the :ref:`rest-profile` endpoint) or a token obtained from :ref:`rest-profile`
+* ``data_profile``: profile information for an input dataset in JSON format (such as returned by the :doc:`python/auctus-data-profiler` or the :ref:`rest-profile` endpoint) or a token obtained from :ref:`rest-profile`
 * ``query``: JSON object representing the query, according to :ref:`the query API specification <schema-query>`
 
 This endpoint returns a JSON object, according to :ref:`the query results specification <schema-result>`.
@@ -31,7 +31,7 @@ This endpoint returns a JSON object, according to :ref:`the query results specif
 ``POST /download``
 ------------------
 
-Downloads a dataset from DataMart.
+Downloads a dataset from Auctus.
 
 The ``Content-Type`` should be set to `multipart/form-data <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition>`__.
 
@@ -59,7 +59,7 @@ When using the ``d3m`` format, the structure for the ZIP file follows the D3M fo
 ``GET /download/<id>``
 ----------------------
 
-Downloads a dataset from DataMart, where ``<id>`` is the dataset identifier. It also accepts one query parameter, ``format``, as specified above.
+Downloads a dataset from Auctus, where ``<id>`` is the dataset identifier. It also accepts one query parameter, ``format``, as specified above.
 
 ..  _rest-augment:
 
@@ -74,8 +74,8 @@ The accepted key/value pairs in the request body are the following:
 
 * ``data``: path to a D3M dataset **OR** path to a ``csv`` file **OR** ``csv`` file contents
 * ``task``: a JSON object that represents a query result, according to :ref:`the query results specification <schema-result>`
-* ``columns``: a list of column indices from the DataMart dataset that will be added to ``data`` (optional)
-* ``destination``: the location in disk where the new data will be saved (optional). Note that DataMart must have access to this path.
+* ``columns``: a list of column indices from the Auctus dataset that will be added to ``data`` (optional)
+* ``destination``: the location in disk where the new data will be saved (optional). Note that Auctus must have access to this path.
 
 This endpoint also accepts the ``format`` query parameter, as specified for :ref:`the download endpoint <rest-download>`. However it currently defaults to the ``d3m`` format.
 
@@ -99,7 +99,7 @@ The request will return the ID of the new dataset immediately, but profiling wil
 
 Profile a dataset. Does not add it to the index.
 
-The computed metadata is returned, similar to using the :doc:`python/datamart-profiler` directly.
+The computed metadata is returned, similar to using the :doc:`python/auctus-data-profiler` directly.
 
 This endpoint expects one variable in the request body, ``data``, the contents of a file to be profiled in a supported file format (e.g. CSV, Excel, SPSS...).
 
@@ -107,10 +107,10 @@ In addition to the profile information, the returned JSON object contains a shor
 
 ..  _rest-embed:
 
-Embedding Datamart in your software
------------------------------------
+Embedding Auctus in your software
+---------------------------------
 
-Rather than using the API and implementing your own UI for data search and augmentation, it is possible to **re-use our web frontend**, and collect results **directly from Datamart into your system without the user downloading it and then adding it** in your interface.
+Rather than using the API and implementing your own UI for data search and augmentation, it is possible to **re-use our web frontend**, and collect results **directly from Auctus into your system without the user downloading it and then adding it** in your interface.
 
 This can be done using the following 3 steps (4 steps for augmentation):
 
@@ -135,16 +135,16 @@ The result is a JSON object containing the following:
 * ``session_id``: a short string identifying the session. Use this later to retrieve results.
 * ``link_url``: a link to our interface that you can present the user (or embed, etc)
 
-Step 2: Direct the user to Datamart
-***********************************
+Step 2: Direct the user to Auctus
+*********************************
 
 Direct the user to the ``link_url`` obtained at step 1. Wait for them to be done to move to step 3, or poll step 3 regularly.
 
 The user will be able to use our interface like normal, including using filters and related searches. The download buttons are replaced by "Add to <system_name>" buttons.
 
-Step 3: Obtain the selected data from Datamart: ``GET /session/<id>``
-*********************************************************************
+Step 3: Obtain the selected data from Auctus: ``GET /session/<id>``
+*******************************************************************
 
 Issue a request to ``GET /session/<session_id>``, where ``<session_id>`` is the short string you obtained in step 1.
 
-The result is an array of JSON objects, under a top-level key ``results``. Each object has a ``url`` key, at which you can find the data that the user selected (in the format you selected at step 1), and a ``type`` key, whose value is either ``"download"`` (the result is a dataset from Datamart) or ``"join"``/``"union"`` (the result is the input data augmented with the dataset from Datamart).
+The result is an array of JSON objects, under a top-level key ``results``. Each object has a ``url`` key, at which you can find the data that the user selected (in the format you selected at step 1), and a ``type`` key, whose value is either ``"download"`` (the result is a dataset from Auctus) or ``"join"``/``"union"`` (the result is the input data augmented with the dataset from Auctus).

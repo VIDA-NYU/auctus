@@ -6,7 +6,7 @@ export interface ColumnAggregations {
   [columnName: string]: string[];
 }
 
-// Keep in sync with datamart_profiler's temporal_aggregation_keys
+// Keep in sync with auctus_data_profiler's temporal_aggregation_keys
 export enum TemporalResolution {
   YEAR = 'year',
   QUARTER = 'quarter',

@@ -11,7 +11,7 @@ function VerticalLogo() {
   return (
     <div className="text-center logo-vertical">
       <img src={logo} className="d-block" alt="Auctus Logo" />
-      <span className="d-block text-oswald">Auctus Datamart</span>
+      <span className="d-block text-oswald">Auctus Search Engine</span>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-Datamart core library
+Auctus core server library
 
 Copyright 2018 New York University
 

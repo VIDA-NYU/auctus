@@ -1,9 +1,9 @@
 Using the web interface
 =======================
 
-In addition to the :doc:`API <restapi>`, there is a web interface allowing users to interact with Datamart with no additional software.
+In addition to the :doc:`API <restapi>`, there is a web interface allowing users to interact with Auctus with no additional software.
 
-The version of Datamart that we host can be accessed at https://auctus.vida-nyu.org/
+The version of Auctus that we host can be accessed at https://auctus.vida-nyu.org/
 
 On each page, clicking on the Auctus logo will bring you back to the search page. Other pages can be accessed using the drop-down menu in the top-right corner:
 
@@ -51,7 +51,7 @@ The source filter allows you to restrict the data sources you are interested in.
 Related file filter
 *******************
 
-The related file filter allows you to find datasets that can augment your file. Upload a file by selecting one or dragging one over the area. After a few seconds (during which your file is uploaded to Datamart and profiled), you will see some information about your file. After this, only search results that can augment the file you provided will be shown. The supported augmentations are joins (keeping the data you provided and adding more columns to each one of your records) and unions (keeping the data you provided and adding more rows at the end).
+The related file filter allows you to find datasets that can augment your file. Upload a file by selecting one or dragging one over the area. After a few seconds (during which your file is uploaded to Auctus and profiled), you will see some information about your file. After this, only search results that can augment the file you provided will be shown. The supported augmentations are joins (keeping the data you provided and adding more columns to each one of your records) and unions (keeping the data you provided and adding more rows at the end).
 
 In addition, this will cause search results to display the "augment options" button; see :ref:`augment`.
 
@@ -62,7 +62,7 @@ Results page
 
 After submitting a query, you will be presented with the search results page. On that page, the search filters are still present but the filters are collapsed. You can click the "edit" link on each filter to toggle it for editing, and the trash bin icon to remove that filter.
 
-On The left is a list of search results. You can click on "View Details" or the right-pointing arrow to show the details of that result on the right. There you will find the metadata provided with that dataset, as well as the metadata that was automatically extracted by Datamart. You will also see buttons to download the dataset in different formats (currently CSV or D3M).
+On The left is a list of search results. You can click on "View Details" or the right-pointing arrow to show the details of that result on the right. There you will find the metadata provided with that dataset, as well as the metadata that was automatically extracted by Auctus. You will also see buttons to download the dataset in different formats (currently CSV or D3M).
 
 ..  figure:: screenshots/results.png
 
@@ -99,7 +99,7 @@ The "statistics" page shows the number of datasets per source as well as a feed 
 Upload page
 -----------
 
-The "upload dataset" page allows users to ingest their own datasets. After loading a data file, Auctus automatically infers the data types for each column using our datamart-profiler library. As any automated method for type inference, our profiler is not fool-proof and can derive incorrect results. To address this limitation, Auctus enables users to correct/refine the type information. Furthermore, users can provide additional annotations for the columns. Auctus also displays a sample of the dataset that can help the user to verify and confirm if the detected data type is correct, and understand what the ingested data looks like. Note that the option to correct/refine profiler results is only available through the "Upload" tab. 
+The "upload dataset" page allows users to ingest their own datasets. After loading a data file, Auctus automatically infers the data types for each column using our auctus-data-profiler library. As any automated method for type inference, our profiler is not fool-proof and can derive incorrect results. To address this limitation, Auctus enables users to correct/refine the type information. Furthermore, users can provide additional annotations for the columns. Auctus also displays a sample of the dataset that can help the user to verify and confirm if the detected data type is correct, and understand what the ingested data looks like. Note that the option to correct/refine profiler results is only available through the "Upload" tab.
 
 Additionally, Auctus provides support for custom metadata fields (e.g., the data source, grid size). Because such fields can vary widely for different applications and use cases, we defined a flexible configuration schema that allows users to customize the metadata fields required in different deployments. This schema configuration is provided at deployment time  and is then used to add the custom input fields in the interface so that the user can provide the required metadata.
 

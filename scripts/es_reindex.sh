@@ -5,7 +5,7 @@ cd "$(dirname "$(dirname "$0")")"
 . scripts/load_env.sh
 
 # Re-create the Elasticsearch indexes using the _reindex mechanism
-# This is an Elasticsearch re-index, not a Datamart one! The JSON document are
+# This is an Elasticsearch re-index, not an Auctus one! The JSON document are
 # reprocessed without any change, and without any dataset being examined
 
 ES_SERVER="$(echo "$ELASTICSEARCH_HOSTS" | sed 's/,.*$//')"
@@ -55,7 +55,7 @@ re_index(){
 
 # Take all the containers down first (not elasticsearch)
 echo >&2
-echo "!!! If Datamart containers are running, press Ctrl+C now and turn them off !!!" >&2
+echo "!!! If Auctus containers are running, press Ctrl+C now and turn them off !!!" >&2
 echo >&2
 
 # Set all indexes to read-only

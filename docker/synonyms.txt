@@ -1,5 +1,5 @@
 #
-# DATAMART: FROM: https://github.com/agora-team/elasticsearch-synonyms
+# AUCTUS: FROM: https://github.com/agora-team/elasticsearch-synonyms
 #
 
 # British English and American English Spellings
@@ -302,7 +302,7 @@ wilful, wilfully, wilfulness => willful, willfully, willfulness
 yoghurt => yogurtApril, Apr
 
 #
-# DATAMART: FROM: https://sites.google.com/site/kevinbouge/synonyms-lists
+# AUCTUS: FROM: https://sites.google.com/site/kevinbouge/synonyms-lists
 #
 
 China, People's Republic of China, mainland China, Communist China, Red China, PRC, Cathay
@@ -1827,7 +1827,7 @@ year, solar year
 zero, null
 
 #
-# DATAMART: Custom
+# AUCTUS: Custom
 #
 
 taxi, taxicab, cab

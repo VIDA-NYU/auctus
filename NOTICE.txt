@@ -1,4 +1,4 @@
-Datamart (codename Auctus)
+Auctus
 
 Copyright 2018 New York University
 

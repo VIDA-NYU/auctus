@@ -7,6 +7,6 @@ Some components
     :maxdepth: 2
 
     datamart-rest
-    datamart-profiler
-    datamart-materialize
-    datamart-augmentation
+    auctus-data-profiler
+    auctus-materialize
+    auctus-data-augmentation

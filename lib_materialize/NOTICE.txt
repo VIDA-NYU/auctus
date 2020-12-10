@@ -1,4 +1,4 @@
-Datamart materialization library
+Auctus materialization library
 
 Copyright 2018 New York University
 
