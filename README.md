@@ -55,6 +55,13 @@ The `API_URL` is the URL at which the apiserver containers will be visible to cl
 
 To run scripts locally, you can load the environment variables into your shell by running: `. scripts/load_env.sh` (that's *dot space scripts...*)
 
+Prepare data volumes
+--------------------
+
+Run `scripts/setup.sh` to initialize the data volumes. This will download the datamart-geo data to `lib_geo/data/` and will set the correct permissions on the `volumes/` subdirectories.
+
+Should you ever want to start from scratch, you can delete `volumes/` but make sure to run `scripts/setup.sh` again afterwards to set permissions.
+
 Build the containers
 --------------------
 
