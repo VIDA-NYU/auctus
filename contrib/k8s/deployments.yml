@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: rabbitmq
   labels:
-    app: datamart
+    app: auctus
     what: rabbitmq
 spec:
   replicas: 1
@@ -12,12 +12,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: rabbitmq
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: rabbitmq
     spec:
       securityContext:
@@ -48,7 +48,7 @@ kind: Deployment
 metadata:
   name: redis
   labels:
-    app: datamart
+    app: auctus
     what: redis
 spec:
   replicas: 1
@@ -56,12 +56,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: redis
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: redis
     spec:
       securityContext:
@@ -90,7 +90,7 @@ kind: Deployment
 metadata:
   name: lazo
   labels:
-    app: datamart
+    app: auctus
     what: lazo
 spec:
   replicas: 1
@@ -101,12 +101,12 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: lazo
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: lazo
     spec:
       securityContext:
@@ -143,7 +143,7 @@ kind: Deployment
 metadata:
   name: frontend
   labels:
-    app: datamart
+    app: auctus
     what: frontend
 spec:
   replicas: 1
@@ -154,17 +154,17 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: frontend
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: frontend
     spec:
       containers:
       - name: web
-        image: datamart_frontend
+        image: auctus_frontend
         imagePullPolicy: IfNotPresent
         env:
         - name: API_URL
@@ -180,7 +180,7 @@ kind: Deployment
 metadata:
   name: apiserver
   labels:
-    app: datamart
+    app: auctus
     what: apiserver
 spec:
   replicas: 4
@@ -191,19 +191,19 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: apiserver
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: apiserver
     spec:
       securityContext:
         runAsNonRoot: true
       containers:
       - name: web
-        image: datamart_apiserver
+        image: auctus_apiserver
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
@@ -281,7 +281,7 @@ kind: Deployment
 metadata:
   name: coordinator
   labels:
-    app: datamart
+    app: auctus
     what: coordinator
 spec:
   replicas: 1
@@ -292,12 +292,12 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: coordinator
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: coordinator
     spec:
       securityContext:
@@ -315,7 +315,7 @@ spec:
           name: cache
       containers:
       - name: web
-        image: datamart_coordinator
+        image: auctus_coordinator
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
@@ -383,7 +383,7 @@ kind: Deployment
 metadata:
   name: profiler
   labels:
-    app: datamart
+    app: auctus
     what: profiler
 spec:
   replicas: 4
@@ -394,19 +394,19 @@ spec:
       maxUnavailable: 2
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: profiler
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: profiler
     spec:
       securityContext:
         runAsNonRoot: true
       containers:
       - name: web
-        image: datamart_profiler
+        image: auctus_profiler
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS

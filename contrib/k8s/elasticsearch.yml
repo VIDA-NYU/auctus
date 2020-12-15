@@ -4,11 +4,11 @@ kind: Service
 metadata:
   name: elasticsearch-cluster
   labels:
-    app: datamart
+    app: auctus
     what: elasticsearch
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: elasticsearch
   ports:
   - name: transport
@@ -21,7 +21,7 @@ kind: StatefulSet
 metadata:
   name: elasticsearch
   labels:
-    app: datamart
+    app: auctus
     what: elasticsearch
 spec:
   serviceName: elasticsearch-cluster
@@ -30,12 +30,12 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: elasticsearch
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: elasticsearch
     spec:
       securityContext:

@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: monitoring
   labels:
-    app: datamart
+    app: auctus
 data:
   prometheus: |
     global:
@@ -58,11 +58,11 @@ kind: Service
 metadata:
   name: elasticsearch-scrape
   labels:
-    app: datamart
+    app: auctus
     what: monitoring
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: elasticsearch-exporter
   clusterIP: None
   ports:
@@ -74,11 +74,11 @@ kind: Service
 metadata:
   name: rabbitmq-scrape
   labels:
-    app: datamart
+    app: auctus
     what: monitoring
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: rabbitmq
   clusterIP: None
   ports:
@@ -90,11 +90,11 @@ kind: Service
 metadata:
   name: lazo-scrape
   labels:
-    app: datamart
+    app: auctus
     what: monitoring
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: lazo
   clusterIP: None
   ports:
@@ -106,11 +106,11 @@ kind: Service
 metadata:
   name: profiler-scrape
   labels:
-    app: datamart
+    app: auctus
     what: monitoring
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: profiler
   clusterIP: None
   ports:
@@ -122,11 +122,11 @@ kind: Service
 metadata:
   name: apiserver-scrape
   labels:
-    app: datamart
+    app: auctus
     what: monitoring
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: apiserver
   clusterIP: None
   ports:
@@ -138,11 +138,11 @@ kind: Service
 metadata:
   name: coordinator-scrape
   labels:
-    app: datamart
+    app: auctus
     what: monitoring
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: coordinator
   clusterIP: None
   ports:
@@ -154,11 +154,11 @@ kind: Service
 metadata:
   name: elasticsearch-scrape
   labels:
-    app: datamart
+    app: auctus
     what: monitoring
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: elasticsearch-exporter
   clusterIP: None
   ports:
@@ -170,7 +170,7 @@ kind: Deployment
 metadata:
   name: elasticsearch-exporter
   labels:
-    app: datamart
+    app: auctus
     what: elasticsearch-exporter
 spec:
   replicas: 1
@@ -178,12 +178,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: elasticsearch-exporter
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: elasticsearch-exporter
     spec:
       securityContext:
@@ -206,11 +206,11 @@ kind: Service
 metadata:
   name: prometheus
   labels:
-    app: datamart
+    app: auctus
     what: prometheus
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: prometheus
   ports:
   - protocol: TCP
@@ -232,7 +232,7 @@ kind: Deployment
 metadata:
   name: prometheus
   labels:
-    app: datamart
+    app: auctus
     what: prometheus
 spec:
   replicas: 1
@@ -240,12 +240,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: prometheus
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: prometheus
     spec:
       securityContext:
@@ -285,11 +285,11 @@ kind: Service
 metadata:
   name: grafana
   labels:
-    app: datamart
+    app: auctus
     what: grafana
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: grafana
   type: NodePort
   ports:
@@ -313,7 +313,7 @@ kind: Deployment
 metadata:
   name: grafana
   labels:
-    app: datamart
+    app: auctus
     what: grafana
 spec:
   replicas: 1
@@ -321,12 +321,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: grafana
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: grafana
     spec:
       securityContext:

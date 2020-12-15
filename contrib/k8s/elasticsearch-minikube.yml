@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: elasticsearch
   labels:
-    app: datamart
+    app: auctus
     what: elasticsearch
 spec:
   replicas: 1
@@ -12,12 +12,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: elasticsearch
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: elasticsearch
     spec:
       securityContext:

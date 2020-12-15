@@ -15,11 +15,11 @@ kind: Service
 metadata:
   name: nominatim
   labels:
-    app: datamart
+    app: auctus
     what: nominatim
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: nominatim
   type: NodePort
   ports:
@@ -32,7 +32,7 @@ kind: Deployment
 metadata:
   name: nominatim
   labels:
-    app: datamart
+    app: auctus
     what: nominatim
 spec:
   replicas: 1
@@ -40,12 +40,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: nominatim
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: nominatim
     spec:
       initContainers:

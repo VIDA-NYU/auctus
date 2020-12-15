@@ -33,8 +33,8 @@ def main(services):
                 'docker', 'build',
                 '-t', image,
                 '-f', os.path.join(build['context'], build['dockerfile']),
-                '--cache-from=datamart_base',
-                '--cache-from=datamart_npm',
+                '--cache-from=auctus_base',
+                '--cache-from=auctus_npm',
                 '--build-arg', 'version=%s' % version,
                 build['context'],
             ]

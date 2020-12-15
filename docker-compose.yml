@@ -194,7 +194,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       #- GF_SMTP_ENABLED=true
       #- GF_SMTP_HOST=ip-of-the-host:25
-      #- GF_SMTP_FROM_NAME=Datamart Development
+      #- GF_SMTP_FROM_NAME=Auctus Development
       #- GF_SMTP_STARTTLS_POLICY=NoStartTLS
       #- GF_SERVER_ROOT_URL=https://grafana.example.org/
     cpu_shares: 100

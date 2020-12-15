@@ -4,11 +4,11 @@ kind: Service
 metadata:
   name: test-discoverer
   labels:
-    app: datamart
+    app: auctus
     what: test-discoverer
 spec:
   selector:
-    app: datamart
+    app: auctus
     what: test-discoverer
   ports:
   - protocol: TCP
@@ -19,7 +19,7 @@ kind: Deployment
 metadata:
   name: test-discoverer
   labels:
-    app: datamart
+    app: auctus
     what: test-discoverer
     test: "true"
 spec:
@@ -28,19 +28,19 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: test-discoverer
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: test-discoverer
     spec:
       securityContext:
         runAsNonRoot: true
       containers:
       - name: discoverer
-        image: datamart_test-discoverer
+        image: auctus_test-discoverer
         args: ["testsuite"]
         imagePullPolicy: IfNotPresent
         env:

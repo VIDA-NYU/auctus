@@ -13,7 +13,7 @@ setup(name='datamart-uaz_indicators-service',
       version='0.0',
       py_modules=['uaz_indicators'],
       install_requires=req,
-      description="Datamart discovery service for indicators from the " +
+      description="Auctus discovery service for indicators from the " +
                   "University of Arizona",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
@@ -25,10 +25,10 @@ setup(name='datamart-uaz_indicators-service',
           'Source': 'https://gitlab.com/ViDA-NYU/auctus/auctus',
           'Tracker': 'https://gitlab.com/ViDA-NYU/auctus/auctus/-/issues',
       },
-      long_description="Datamart discovery service for indicators from the " +
+      long_description="Auctus discovery service for indicators from the " +
                        "University of Arizona",
       license='Apache-2.0',
-      keywords=['datamart'],
+      keywords=['auctus', 'datamart'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Science/Research',

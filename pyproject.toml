@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "datamart"
+name = "auctus"
 version = "0.8"
-description = "Datamart system meta-package"
+description = "Auctus system meta-package"
 
 license = "Apache-2.0"
 
@@ -12,7 +12,7 @@ authors = [
 repository = "https://gitlab.com/ViDA-NYU/auctus/auctus"
 homepage = "https://auctus.vida-nyu.org/"
 
-keywords = ["datamart"]
+keywords = ["auctus", "datamart"]
 
 classifiers = [
     "Development Status :: 4 - Beta",

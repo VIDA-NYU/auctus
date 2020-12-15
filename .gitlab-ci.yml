@@ -36,11 +36,11 @@ test:
       # Update the base image (maybe)
       chmod 644 poetry.lock docker/install_deps.py
       touch -t 200001010000.00 poetry.lock docker/install_deps.py
-      docker build -t datamart_base . \
+      docker build -t auctus_base . \
         --cache-from=$CI_REGISTRY_IMAGE/base \
         -f base.Dockerfile
       # Push the updated image to the registry (might be no-op)
-      docker tag datamart_base $CI_REGISTRY_IMAGE/base
+      docker tag auctus_base $CI_REGISTRY_IMAGE/base
       docker push $CI_REGISTRY_IMAGE/base
 
     # Set up environment for testing
@@ -136,16 +136,16 @@ frontend:
       # Update the base npm image (maybe)
       chmod 644 frontend/package.json frontend/package-lock.json
       touch -t 200001010000.00 frontend/package.json frontend/package-lock.json
-      docker build -t datamart_npm . \
+      docker build -t auctus_npm . \
         --cache-from=$CI_REGISTRY_IMAGE/npm \
         -f frontend/Dockerfile \
         --target=build
       # Push the updated image to the registry (might be no-op)
-      docker tag datamart_npm $CI_REGISTRY_IMAGE/npm
+      docker tag auctus_npm $CI_REGISTRY_IMAGE/npm
       docker push $CI_REGISTRY_IMAGE/npm
 
     # Run the frontend tests
-    - docker run --rm datamart_npm sh -c "CI=true npm run test"
+    - docker run --rm auctus_npm sh -c "CI=true npm run test"
 
 k8s_configs:
   stage: test

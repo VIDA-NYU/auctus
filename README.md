@@ -1,5 +1,5 @@
-Datamart
-========
+Auctus
+======
 
 This project is a web crawler and search engine for datasets, specifically meant for data augmentation tasks in machine learning. It is able to find datasets in different repositories and index them for later retrieval.
 
@@ -10,7 +10,7 @@ It is divided in multiple components:
 * Libraries
   * [Geospatial database](https://gitlab.com/ViDA-NYU/auctus/datamart-geo) `datamart_geo`. This contains data about administrative areas extracted from Wikidata and OpenStreetMap. It lives in its own repository and is used here as a submodule.
   * [Profiling library](lib_profiler/) `datamart_profiler`. This can be installed by clients, will allow the client library to profile datasets locally instead of sending them to the server. It is also used by the apiserver and profiler services.
-  * [Materialization library](lib_materialize/) `datamart_materialize`. This is used to materialize dataset from the various sources that Datamart supports. It can be installed by clients, which will allow them to materialize datasets locally instead of using the server as a proxy.
+  * [Materialization library](lib_materialize/) `datamart_materialize`. This is used to materialize dataset from the various sources that Auctus supports. It can be installed by clients, which will allow them to materialize datasets locally instead of using the server as a proxy.
   * [Data augmentation library](lib_augmentation/) `datamart_augmentation`. This performs the join or union of two datasets and is used by the apiserver service, but could conceivably be used stand-alone.
   * [Core server library](lib_core/) `datamart_core`. This contains common code for services. Only used for the server components.
 * Services
@@ -21,7 +21,7 @@ It is divided in multiple components:
   * [The **coordinator**](coordinator/): this service is in charge of the dataset cache, where discovery plugins download datasets, and that is read by the profiler and apiserver services. It also exports system metrics for Prometheus, and in the future will allow the administrator to perform some tasks from a browser instead of having to run scripts.
   * [The **frontend**](frontend/): this is a React app implementing a user-friendly web interface on top of the API.
 
-![Datamart Architecture](docs/architecture.png)
+![Auctus Architecture](docs/architecture.png)
 
 Elasticsearch is used as the search index, storing one document per known dataset.
 

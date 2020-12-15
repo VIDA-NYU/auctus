@@ -4,7 +4,7 @@ kind: Job
 metadata:
   name: get-geo-data
   labels:
-    app: datamart
+    app: auctus
 spec:
   template:
     spec:
@@ -33,7 +33,7 @@ kind: Job
 metadata:
   name: get-es-synonyms
   labels:
-    app: datamart
+    app: auctus
 spec:
   template:
     spec:

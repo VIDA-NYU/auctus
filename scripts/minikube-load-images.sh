@@ -19,11 +19,11 @@ IMAGES="
     remram/rabbitmq:3.7.8
     redis:5.0
     registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.3.0
-    datamart_coordinator
-    datamart_apiserver
-    datamart_profiler
-    datamart_frontend
-    datamart_test-discoverer
+    auctus_coordinator
+    auctus_apiserver
+    auctus_profiler
+    auctus_frontend
+    auctus_test-discoverer
 "
 NB_IMAGES=$(set -f; set -- $IMAGES; echo $#)
 

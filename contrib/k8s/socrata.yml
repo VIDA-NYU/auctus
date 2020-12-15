@@ -4,7 +4,7 @@ apiVersion: v1
 metadata:
   name: socrata
   labels:
-    app: datamart
+    app: auctus
 data:
   socrata.json: |
     [
@@ -17,7 +17,7 @@ kind: Deployment
 metadata:
   name: socrata
   labels:
-    app: datamart
+    app: auctus
     what: socrata
 spec:
   replicas: 1
@@ -25,19 +25,19 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: socrata
   template:
     metadata:
       labels:
-        app: datamart
+        app: auctus
         what: socrata
     spec:
       securityContext:
         runAsNonRoot: true
       containers:
       - name: socrata
-        image: datamart_socrata
+        image: auctus_socrata
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS

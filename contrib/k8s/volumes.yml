@@ -5,7 +5,7 @@ metadata:
   name: datasets
   labels:
     type: local
-    app: datamart
+    app: auctus
     what: datasets
 spec:
   storageClassName: "manual"
@@ -14,7 +14,7 @@ spec:
   accessModes:
   - ReadWriteMany
   hostPath:
-    path: "/var/lib/datamart/prod/datasets"
+    path: "/var/lib/auctus/prod/datasets"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -23,7 +23,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: datasets
   storageClassName: "manual"
   accessModes:
@@ -38,7 +38,7 @@ metadata:
   name: cache
   labels:
     type: local
-    app: datamart
+    app: auctus
     what: cache
 spec:
   storageClassName: "manual"
@@ -47,7 +47,7 @@ spec:
   accessModes:
   - ReadWriteMany
   hostPath:
-    path: "/var/lib/datamart/prod/cache"
+    path: "/var/lib/auctus/prod/cache"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -56,7 +56,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: datamart
+      app: auctus
       what: cache
   storageClassName: "manual"
   accessModes:

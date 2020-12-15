@@ -10,7 +10,7 @@ import subprocess
 
 # -- Project information -----------------------------------------------------
 
-project = 'Datamart'
+project = 'Auctus'
 copyright = '2019, New York University'
 author = 'Remi Rampin'
 
