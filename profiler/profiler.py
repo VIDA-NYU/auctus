@@ -57,7 +57,7 @@ def prom_incremented(metric, amount=1):
         metric.dec(amount)
 
 
-# FIXME: Work around https://gitlab.com/ViDA-NYU/datamart/datamart/-/issues/47
+# FIXME: Work around https://gitlab.com/ViDA-NYU/auctus/auctus/-/issues/47
 class LazoDeleteFirst(object):
     def __init__(self, lazo_client, es, dataset_id):
         self._deleted = False
