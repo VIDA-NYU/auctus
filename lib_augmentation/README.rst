@@ -9,4 +9,4 @@ See also:
 * `The datamart-profiler library, used to profile datasets for search <https://pypi.org/project/datamart-profiler/>`__
 * `The datamart-materialize library, used to materialize dataset from search results <https://pypi.org/project/datamart-materialize/>`__
 * `Auctus, NYU's Datamart system <https://auctus.vida-nyu.org/>`__
-* `Our project on GitLab <https://gitlab.com/ViDA-NYU/datamart/datamart>`__
+* `Our project on GitLab <https://gitlab.com/ViDA-NYU/auctus/auctus>`__

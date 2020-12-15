@@ -18,7 +18,7 @@ IMAGES="
     docker.elastic.co/elasticsearch/elasticsearch:7.6.2
     remram/rabbitmq:3.7.8
     redis:5.0
-    registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.3.0
+    registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.3.0
     datamart_coordinator
     datamart_apiserver
     datamart_profiler

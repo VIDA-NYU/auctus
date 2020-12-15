@@ -9,7 +9,7 @@ authors = [
     "Remi Rampin <remi.rampin@nyu.edu>",
 ]
 
-repository = "https://gitlab.com/ViDA-NYU/datamart/datamart"
+repository = "https://gitlab.com/ViDA-NYU/auctus/auctus"
 homepage = "https://auctus.vida-nyu.org/"
 
 keywords = ["datamart"]

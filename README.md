@@ -8,8 +8,7 @@ This project is a web crawler and search engine for datasets, specifically meant
 It is divided in multiple components:
 
 * Libraries
-  * [Client library](https://gitlab.com/ViDA-NYU/datamart/api) `datamart`. This can be installed by clients to query the Datamart server. It is able to perform profiling and materialization locally, if the corresponding libraries are installed. This lives in a separate repository to ease collaboration.
-  * [Geospatial database](https://gitlab.com/ViDA-NYU/datamart/datamart-geo) `datamart_geo`. This contains data about administrative areas extracted from Wikidata and OpenStreetMap. It lives in its own repository and is used here as a submodule.
+  * [Geospatial database](https://gitlab.com/ViDA-NYU/auctus/datamart-geo) `datamart_geo`. This contains data about administrative areas extracted from Wikidata and OpenStreetMap. It lives in its own repository and is used here as a submodule.
   * [Profiling library](lib_profiler/) `datamart_profiler`. This can be installed by clients, will allow the client library to profile datasets locally instead of sending them to the server. It is also used by the apiserver and profiler services.
   * [Materialization library](lib_materialize/) `datamart_materialize`. This is used to materialize dataset from the various sources that Datamart supports. It can be installed by clients, which will allow them to materialize datasets locally instead of using the server as a proxy.
   * [Data augmentation library](lib_augmentation/) `datamart_augmentation`. This performs the join or union of two datasets and is used by the apiserver service, but could conceivably be used stand-alone.
@@ -17,7 +16,7 @@ It is divided in multiple components:
 * Services
   * [**Discovery services**](discovery/): those are responsible for discovering datasets. Each plugin can talk to a specific repository. *Materialization metadata* is recorded for each dataset, to allow future retrieval of that dataset.
   * [**Profiler**](profiler/): this service downloads a discovered dataset and computes additional metadata that can be used for search (for example, dimensions, semantic types, value distributions). Uses the profiling and materialization libraries.
-  * **Lazo Server**: this service is responsible for indexing textual and categorical attributes using [Lazo](https://github.com/mitdbg/lazo). The code for the server and client is available [here](https://gitlab.com/ViDA-NYU/datamart/lazo-index-service).
+  * **Lazo Server**: this service is responsible for indexing textual and categorical attributes using [Lazo](https://github.com/mitdbg/lazo). The code for the server and client is available [here](https://gitlab.com/ViDA-NYU/auctus/lazo-index-service).
   * [**apiserver**](apiserver/): this service responds to requests from clients to search for datasets in the index (triggering on-demand query by discovery services that support it), upload new datasets, profile datasets, or perform augmentation. Uses the profiling and materialization libraries. Implements a JSON API using the Tornado web framework.
   * [The **coordinator**](coordinator/): this service is in charge of the dataset cache, where discovery plugins download datasets, and that is read by the profiler and apiserver services. It also exports system metrics for Prometheus, and in the future will allow the administrator to perform some tasks from a browser instead of having to run scripts.
   * [The **frontend**](frontend/): this is a React app implementing a user-friendly web interface on top of the API.

@@ -9,4 +9,4 @@ See also:
 * `The datamart-materialize library, used to materialize dataset from search results <https://pypi.org/project/datamart-materialize/>`__
 * `The datamart-augmentation library, used to performs data augmentation with a dataset from Auctus <https://pypi.org/project/datamart-augmentation/>`__
 * `Auctus, NYU's Datamart system <https://auctus.vida-nyu.org/>`__
-* `Our project on GitLab <https://gitlab.com/ViDA-NYU/datamart/datamart>`__
+* `Our project on GitLab <https://gitlab.com/ViDA-NYU/auctus/auctus>`__

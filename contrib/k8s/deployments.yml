@@ -113,7 +113,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: lazo
-        image: registry.gitlab.com/vida-nyu/datamart/lazo-index-service:0.4.0
+        image: registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.4.0
         env:
         - name: DATABASE
           value: elasticsearch
