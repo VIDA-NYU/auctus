@@ -330,6 +330,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             searchState: SearchState.SEARCH_SUCCESS,
             searchResponse: {
               results: aggregateResults(response.data.results),
+              facets: response.data.facets,
             },
           });
         } else {
