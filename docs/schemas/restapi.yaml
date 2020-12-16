@@ -162,6 +162,9 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Result"
+                  facets:
+                    $ref: "#/components/schemas/Facets"
+                required: ["results"]
                 additionalProperties: false
         400:
           description: "Invalid query"
@@ -351,3 +354,11 @@ components:
           description: "The error message"
     Result:
       $ref: "query_result_schema.json"
+    Facets:
+      additionalProperties:
+        properties:
+          buckets:
+            additionalProperties:
+              type: integer
+          incomplete:
+            type: boolean

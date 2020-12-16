@@ -37,11 +37,14 @@ def _fix_refs(obj, name):
 
 with open(os.path.join(schemas, 'query_result_schema.json')) as fp:
     result_schema = json.load(fp)
+with open(os.path.join(schemas, 'restapi.yaml')) as fp:
+    restapi_schema = yaml.load(fp)
 result_schema = _fix_refs(result_schema, 'query_result_schema.json')
 result_list_schema = {
     'type': 'object',
     'properties': {
-        'results': {'type': 'array', 'items': result_schema}
+        'results': {'type': 'array', 'items': result_schema},
+        'facets': restapi_schema['components']['schemas']['Facets'],
     },
     'required': ['results'],
     'additionalProperties': False,

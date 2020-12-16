@@ -572,6 +572,23 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                             'must': query_args_main,
                         },
                     },
+                    'aggs': {
+                        'source': {
+                            'terms': {
+                                'field': 'source',
+                            },
+                        },
+                        'license': {
+                            'terms': {
+                                'field': 'license',
+                            },
+                        },
+                        'type': {
+                            'terms': {
+                                'field': 'types',
+                            },
+                        },
+                    },
                 },
                 size=size,
                 from_=(page - 1) * size,
@@ -598,6 +615,17 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     supplied_id=None,
                     supplied_resource_id=None
                 ))
+
+            aggs = {
+                k: {
+                    'buckets': {
+                        b['key']: b['doc_count']
+                        for b in v['buckets']
+                    },
+                    'incomplete': v['sum_other_doc_count'] != 0,
+                }
+                for k, v in response['aggregations'].items()
+            }
         else:
             if page or size:
                 return self.send_error_json(
@@ -616,6 +644,8 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 join=search_joins,
                 union=search_unions,
             )
+            aggs = None
+
         results = [enhance_metadata(result) for result in results]
 
         # Private API for the frontend, don't want clients to rely on it
@@ -625,4 +655,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 if sample:
                     result['sample'] = list(csv.reader(io.StringIO(sample)))
 
-        return self.send_json(results)
+        if aggs is not None:
+            return self.send_json({'results': results, 'facets': aggs})
+        else:
+            return self.send_json({'results': results})
