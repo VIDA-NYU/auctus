@@ -157,9 +157,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Result"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Result"
+                additionalProperties: false
         400:
           description: "Invalid query"
           content:
