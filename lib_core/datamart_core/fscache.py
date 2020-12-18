@@ -329,7 +329,8 @@ def cache_get(cache_dir, key):
 def clear_cache(cache_dir, should_delete=None, only_if_possible=True):
     """Function used to safely clear a cache.
 
-    Directory currently locked by other processes will be
+    Directory currently locked by other processes will be retried with a 60s
+    timeout if `only_if_possible=False` (default ``True``).
     """
     if should_delete is None:
         should_delete = lambda *, key: True
