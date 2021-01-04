@@ -11,7 +11,8 @@ import zipfile
 from datamart_core.common import hash_json
 from datamart_core.fscache import cache_get_or_set
 from datamart_materialize.common import skip_rows
-from datamart_materialize.excel import xls_to_csv
+from datamart_materialize.excel import xlsx_to_csv
+from datamart_materialize.excel97 import xls_to_csv
 from datamart_materialize.pivot import pivot_table
 from datamart_materialize.spss import spss_to_csv
 from datamart_materialize.stata import stata_to_csv
@@ -207,21 +208,25 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
     with open(dataset_path, 'rb') as fp:
         magic = fp.read(16)
 
-    # Check for Excel file format
-    is_excel = False
-    if magic[:4] == b'PK\x03\x04':  # 2007+
+    # Check for Excel XLSX file format (2007+)
+    if magic[:4] == b'PK\x03\x04':
         try:
             zip = zipfile.ZipFile(dataset_path)
         except zipfile.BadZipFile:
             pass
         else:
             if any(info.filename.startswith('xl/') for info in zip.infolist()):
-                is_excel = True
-    elif magic[:8] == b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1':  # 1997-2003
-        is_excel = True
-    if is_excel:
+                # Update metadata
+                logger.info("This is an Excel XLSX (2007+) file")
+                materialize.setdefault('convert', []).append({'identifier': 'xlsx'})
+
+                # Update file
+                dataset_path = convert_dataset(xlsx_to_csv, dataset_path)
+
+    # Check for Excel XLS file format (1997-2003)
+    if magic[:8] == b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1':
         # Update metadata
-        logger.info("This is an Excel file")
+        logger.info("This is an Excel XLS (1997-2003) file")
         materialize.setdefault('convert', []).append({'identifier': 'xls'})
 
         # Update file

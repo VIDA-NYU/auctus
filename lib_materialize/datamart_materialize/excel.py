@@ -1,37 +1,35 @@
 import csv
-import xlrd
-import xlrd.sheet
+from datetime import datetime
+import openpyxl
 
 from .utils import SimpleConverter
 
 
-def xls_to_csv(source_filename, dest_fileobj):
-    with xlrd.open_workbook(source_filename) as workbook:
-        datemode = workbook.datemode
-        sheets = workbook.sheets()
+def xlsx_to_csv(source_filename, dest_fileobj):
+    with open(source_filename, 'rb') as fp:
+        workbook = openpyxl.load_workbook(fp)
+        sheets = workbook.worksheets
         if len(sheets) != 1:
             raise ValueError("Excel workbook has %d sheets" % len(sheets))
         sheet, = sheets
 
         writer = csv.writer(dest_fileobj)
-        for row_num in range(sheet.nrows):
-            values = sheet.row_values(row_num)
-
-            for col_num, cell_type in enumerate(sheet.row_types(row_num)):
-                if cell_type == xlrd.sheet.XL_CELL_DATE:
-                    # Decode dates into ISO-8601 strings
-                    values[col_num] = xlrd.xldate_as_datetime(
-                        values[col_num],
-                        datemode,
-                    ).isoformat()
-                elif cell_type == xlrd.sheet.XL_CELL_NUMBER:
-                    # Avoid forced decimal point on integers
-                    values[col_num] = '{0:g}'.format(values[col_num])
+        for values in sheet.iter_rows(values_only=True):
+            values = [
+                # Avoid forced decimal point on integers
+                '{0:g}'.format(v) if isinstance(v, float)
+                # Decode dates into ISO-8601 strings
+                else v.isoformat() if isinstance(v, datetime)
+                else v
+                for v in values
+            ]
 
             writer.writerow(values)
+
+        workbook.close()
 
 
 class ExcelConverter(SimpleConverter):
     """Adapter converting Excel files to CSV.
     """
-    transform = staticmethod(xls_to_csv)
+    transform = staticmethod(xlsx_to_csv)
