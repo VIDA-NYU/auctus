@@ -210,11 +210,16 @@ def parse_query_variables(data, geo_data=None):
                     raise ClientError("Invalid date range (start > end)")
 
                 filters.append({
-                    'range': {
-                        'temporal_coverage.range': {
-                            'gte': start,
-                            'lte': end,
-                            'relation': 'intersects',
+                    'nested': {
+                        'path': 'temporal_coverage.ranges',
+                        'query': {
+                            'range': {
+                                'temporal_coverage.ranges.range': {
+                                    'gte': start,
+                                    'lte': end,
+                                    'relation': 'intersects',
+                                },
+                            },
                         },
                     },
                 })

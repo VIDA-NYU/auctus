@@ -189,11 +189,16 @@ class TestSearch(unittest.TestCase):
                             'bool': {
                                 'must': [
                                     {
-                                        'range': {
-                                            'temporal_coverage.range': {
-                                                'gte': 1546300800.0,
-                                                'lte': 1577750400.0,
-                                                'relation': 'intersects',
+                                        'nested': {
+                                            'path': 'temporal_coverage.ranges',
+                                            'query': {
+                                                'range': {
+                                                    'temporal_coverage.ranges.range': {
+                                                        'gte': 1546300800.0,
+                                                        'lte': 1577750400.0,
+                                                        'relation': 'intersects',
+                                                    },
+                                                },
                                             },
                                         },
                                     },
