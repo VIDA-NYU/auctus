@@ -15,7 +15,7 @@ RUN pip --disable-pip-version-check --no-cache-dir install toml
 COPY docker/install_deps.py poetry.lock /usr/src/app/
 RUN python -c "import json, toml; json.dump(toml.load(open('poetry.lock')), open('poetry.lock.json', 'w'))"
 RUN python3 install_deps.py poetry.lock.json
-# CI: RUN pip --disable-pip-version-check install coverage==5.3
+# CI: RUN pip --disable-pip-version-check install coverage==5.3.1
 # CI: COPY .coveragerc /usr/src/app/
 
 COPY --chown=appuser lib_core lib_core
