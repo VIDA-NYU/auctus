@@ -132,7 +132,7 @@ description = "API service of Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 aio-pika = "*"
@@ -158,7 +158,7 @@ description = "Data augmentation functions for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 datamart_materialize = "0.8.1"
@@ -177,7 +177,7 @@ description = "Coordinator service for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 aio-pika = "*"
@@ -199,7 +199,7 @@ description = "Core library for Auctus services"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 aio-pika = "*"
@@ -220,7 +220,7 @@ description = "Geographical location data"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 ngram-search = "*"
@@ -237,7 +237,7 @@ description = "ISI Datamart discovery service for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 datamart_core = "*"
@@ -255,7 +255,7 @@ description = "Materialization library for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 openpyxl = "*"
@@ -274,7 +274,7 @@ description = "NOAA discovery service for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 datamart_core = "*"
@@ -292,7 +292,7 @@ description = "Data profiling library for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 datamart-geo = "0.2"
@@ -315,7 +315,7 @@ description = "Data profiling service of Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 aio-pika = "*"
@@ -339,7 +339,7 @@ description = "Socrata discovery service for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 datamart_core = "*"
@@ -357,7 +357,7 @@ description = "Auctus discovery service for indicators from the University of Ar
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 datamart_core = "*"
@@ -374,7 +374,7 @@ description = "World Bank indicator discovery service for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 beautifulsoup4 = {version = "*", extras = ["html5lib"]}
@@ -394,7 +394,7 @@ description = "Zenodo discovery service for Auctus"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
+develop = true
 
 [package.dependencies]
 datamart_core = "*"
@@ -1158,7 +1158,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "2b37bf308aeb7fbcacc9aa31cfb902a98e97bba0a072d061130427e82d680b08"
+content-hash = "3c617ac32387b9cbc399aff3b02faa1e2cfe8e6af5b775bcc64c27356cd234ca"
 
 [metadata.files]
 aio-pika = [
