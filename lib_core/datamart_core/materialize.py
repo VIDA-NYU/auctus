@@ -217,7 +217,7 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
         else:
             if any(info.filename.startswith('xl/') for info in zip.infolist()):
                 is_excel = True
-    elif magic[:8] == '\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1':  # 1997-2003
+    elif magic[:8] == b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1':  # 1997-2003
         is_excel = True
     if is_excel:
         # Update metadata
