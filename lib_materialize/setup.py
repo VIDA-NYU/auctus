@@ -9,6 +9,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'requests',
     'xlrd',
+    'openpyxl',
     'pyreadstat>=1.0,<2.0',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
@@ -27,7 +28,8 @@ setup(name='datamart_materialize',
           ],
           'datamart_materialize.converter': [
               'skip_rows = datamart_materialize.common:SkipRowsConverter',
-              'xls = datamart_materialize.excel:ExcelConverter',
+              'xls = datamart_materialize.excel97:Excel97Converter',
+              'xlsx = datamart_materialize.excel:ExcelConverter',
               'pivot = datamart_materialize.pivot:PivotConverter',
               'spss = datamart_materialize.spss:SpssConverter',
               'stata = datamart_materialize.stata:StataConverter',

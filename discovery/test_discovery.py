@@ -155,11 +155,23 @@ class TestDiscoverer(Discoverer):
             dict(direct_url='http://test-discoverer:7000/excel.xlsx'),
             {
                 # Omit name, should be set to 'excel' automatically
-                'description': "Excel format test",
+                'description': "Excel format 2007 test",
                 'source': 'remi',
                 'source_url': 'https://en.wikipedia.org/wiki/Microsoft_Excel',
             },
             dataset_id='excel',
+        )
+
+        # Use URL for this one
+        self.record_dataset(
+            dict(direct_url='http://test-discoverer:7000/excel97.xls'),
+            {
+                # Omit name, should be set to 'excel97' automatically
+                'description': "Excel format 1997 test",
+                'source': 'remi',
+                'source_url': 'https://en.wikipedia.org/wiki/Microsoft_Excel',
+            },
+            dataset_id='excel97',
         )
 
         # Use URL for this one
