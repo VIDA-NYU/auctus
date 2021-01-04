@@ -304,6 +304,7 @@ class TestProfiler(DatamartTest):
             settings.pop('uuid', None)
             settings.pop('version', None)
             settings.pop('blocks', None)
+            settings.pop('routing', None)
 
         # Add custom fields
         for idx, prefix in [
