@@ -15,6 +15,8 @@ import time
 import random
 import re
 import warnings
+import pandas
+import io
 
 from .numerical import mean_stddev, get_numerical_ranges
 from .profile_types import identify_types, determine_dataset_type
@@ -191,6 +193,7 @@ def load_data(data, load_max_size=None):
         column_names = None  # Avoids a warning
         with contextlib.ExitStack() as stack:
             if isinstance(data, (str, bytes)):
+                print(data)
                 if not os.path.exists(data):
                     raise ValueError("data file does not exist")
 
@@ -511,6 +514,97 @@ def get_lazo_data_sketch(
         time.perf_counter() - start,
     )
     return lazo_sketches
+
+
+def recommend_plots(meta_data):
+    columns = meta_data['columns']
+    
+    type_dict = {
+        types.DATASET_NUMERICAL: [],
+        types.DATASET_CATEGORICAL: [],
+        types.DATASET_SPATIAL: [],
+        types.DATASET_TEMPORAL: []
+    }
+    
+    for col in columns:
+        struct_type = col['structural_type']
+        sem_type = col['semantic_types']
+        deter_type = determine_dataset_type(struct_type, sem_type)
+        
+        if deter_type == types.DATASET_NUMERICAL and sem_type != types.ID:
+            type_dict[deter_type].append((col['name'], col['stddev']/col['mean']))
+        elif deter_type == types.DATASET_SPATIAL and sem_type == types.ADMIN:
+            type_dict[types.DATASET_SPATIAL].append(col['name'])
+        elif deter_type:
+            type_dict[deter_type].append(col['name'])
+        
+        type_dict[types.DATASET_NUMERICAL] = sorted(
+            type_dict[types.DATASET_NUMERICAL], 
+            key=lambda item: item[1], 
+            reverse=True)
+        
+    df_sample = pandas.read_csv(io.StringIO(meta_data['sample']))
+    recommend_plots = []
+    for numerical_col in type_dict[types.DATASET_NUMERICAL]:
+        numerical_name = numerical_col[0]
+        
+        if type_dict[types.DATASET_TEMPORAL] != []:
+            temporal_name = numpy.random.choice(type_dict[types.DATASET_TEMPORAL])
+            recommend_plots.append({
+                "numerical_column": numerical_name,
+                "temporal_column": temporal_name,
+                "generated_question": "How does "+numerical_name+" change over "+temporal_name+" ?",
+                "data": {
+                    "values":[
+                    {
+                        temporal_name: time,
+                        numerical_name: val
+                    }
+                    for time, val in zip(list(df_sample[temporal_name]),list(df_sample[numerical_name]))
+                ]},
+                "spec": {
+                    "mark": "line",
+                    "encoding": {
+                        "x": {"field": temporal_name, "type": "temporal"},
+                        "y": {"field": numerical_name, "type": "quantitative"}
+                    },
+                    "data": {"name": "values"}
+                }
+            })
+            
+        categorical_name = None
+        if type_dict[types.DATASET_SPATIAL] != []:
+            categorical_name = numpy.random.choice(type_dict[types.DATASET_SPATIAL])
+        elif type_dict[types.DATASET_CATEGORICAL] != []:
+            categorical_name = numpy.random.choice(type_dict[types.DATASET_CATEGORICAL])
+        if categorical_name:
+            recommend_plots.append({
+                "numerical_column": numerical_name,
+                "spatial/categorical_column": categorical_name,
+                "generated_question": "What is the distribution of "+numerical_name+" over "+categorical_name+" ?",
+                "data": {
+                    "values":[
+                    {
+                        categorical_name: category,
+                        numerical_name: val
+                    }
+                    for category, val in zip(list(df_sample[categorical_name]),list(df_sample[numerical_name]))
+                ]},
+                "spec": {
+                    "mark": "bar",
+                    "encoding": {
+                        "x": {"field": categorical_name, "type": "nominal"},
+                        "y": {"field": numerical_name, "type": "quantitative", "aggregate": "sum"}
+                    },
+                    "data": {"name": "values"}
+                }
+            })
+        
+        if len(recommend_plots) >= 4:
+            break
+        
+            
+    return recommend_plots
 
 
 @PROM_PROFILE.time()
@@ -913,6 +1007,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
         sample = data.iloc[choose_rows]
         sample = sample.applymap(truncate_string)  # Truncate long values
         metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
+    
+    if coverage:
+        metadata['recommend_plots'] = recommend_plots(metadata)
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
