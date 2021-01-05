@@ -1,4 +1,4 @@
-import stringdist
+from collections import Counter
 import logging
 
 from .base import get_column_identifiers
@@ -10,16 +10,24 @@ logger = logging.getLogger(__name__)
 PAGINATION_SIZE = 200
 
 
-def compute_levenshtein_sim(str1, str2):
+def name_similarity(str1, str2):
     """
-    Computer the Levenshtein Similarity between two strings using 3-grams, if one string
-    is not contained in the other.
+    Compute the similarity between two strings using 3-grams.
     """
 
-    if str1 in str2 or str2 in str1:
-        return 1
+    # Compute 3-grams
+    if len(str1) < 3:
+        str1_grams = Counter([str1])
+    else:
+        str1_grams = Counter((str1[i:i + 3] for i in range(len(str1) - 2)))
+    if len(str2) < 3:
+        str2_grams = Counter([str2])
+    else:
+        str2_grams = Counter((str2[i:i + 3] for i in range(len(str2) - 2)))
 
-    return 1 - stringdist.levenshtein_norm(str1, str2)
+    shared = sum((str1_grams & str2_grams).values())
+
+    return shared / sum((str1_grams | str2_grams).values())
 
 
 def get_columns_by_type(data_profile, filter_=()):
@@ -152,7 +160,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
                     for column_hit in inner_hits['columns']['hits']['hits']:
                         column_offset = int(column_hit['_nested']['offset'])
                         column_name = columns[column_offset]['name']
-                        sim = compute_levenshtein_sim(att.lower(), column_name.lower())
+                        sim = name_similarity(att.lower(), column_name.lower())
                         column_pairs[dataset_name].append((att, column_name, sim, es_score))
 
                 if len(hits) != PAGINATION_SIZE:
