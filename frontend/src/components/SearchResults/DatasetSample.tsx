@@ -1,5 +1,6 @@
 import React from 'react';
 import {useTable, Column, ColumnInstance, HeaderGroup} from 'react-table';
+import * as api from '../../api/rest';
 import {SearchResult, ColumnMetadata} from '../../api/types';
 import './DatasetSample.css';
 import {VegaLite} from 'react-vega';
@@ -22,6 +23,7 @@ enum tableViews {
   COMPACT = 'COMPACT',
   DETAIL = 'DETAIL',
   COLUMN = 'COLUMN',
+  RECOMM = 'RECOMM',
 }
 
 function typeName(type: string) {
@@ -203,6 +205,8 @@ function TableColumnView(props: {
   headerGroups: Array<HeaderGroup<string[]>>;
   hit: SearchResult;
 }) {
+  console.log(props.hit.metadata.columns[0].plot?.data)
+
   return (
     <tbody>
       {props.headerGroups[0].headers.map((column, i) => {
@@ -247,6 +251,202 @@ function TableColumnView(props: {
     </tbody>
   );
 }
+
+interface TableRecommProps {
+  hit: SearchResult;
+}
+
+interface TableRecommState {
+  question: string;
+  data: {values: []};
+  spec: Object;
+}
+
+class TableRecomm extends React.Component<
+  TableRecommProps,
+  TableRecommState
+>{
+  constructor(props:TableRecommProps){
+    super(props);
+    this.state = {
+      question: "",
+      data: {values: []},
+      spec: Object,
+    }
+
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleChange(event:React.ChangeEvent<HTMLInputElement>) {
+    this.setState({question: event.target.value});
+  }
+
+  handleSubmit(event:React.FormEvent<HTMLFormElement>) {
+    console.log(this.state)
+    // what is the average gold of different sex?
+
+    api
+    .nl4vis(this.state.question, this.props.hit.id)
+    .then(response => {
+      console.log(response.status)
+      if (response.status === api.RequestResult.SUCCESS && response.data) {
+        console.log("SUCCESS")
+        const res = response.data.results[0]
+        if (res.visualizations_number > 0 ){
+          const vis = res.visualizations[0]
+          console.log(vis)
+          this.setState({
+            data: vis.data_sample,
+            spec: vis.vlSpec
+          })
+        }
+      } else {
+        console.log("FAILED");
+      }
+    })
+    .catch(() => {
+      console.log("FAILED");
+    });
+
+    event.preventDefault();
+  }
+
+  render(){
+    return (
+      <tbody>
+        {this.props.hit.metadata.recommend_plots.map((plt) => {
+          return (
+            <tr>
+              <td>
+                <b>{plt.generated_question} </b>
+              </td>
+              <td>
+                <VegaLite
+                  spec={plt.spec}
+                  data={plt.data}
+                  actions={false}
+                />
+              </td>
+            </tr>
+          );
+        })}
+
+        <tr>
+          <td>
+              <form onSubmit={this.handleSubmit}>
+                <label>
+                  Ask your question:
+                  <input type="text" value={this.state.question} onChange={this.handleChange} />
+                </label>
+                <input type="submit" value="Submit" />
+              </form>          
+          </td>
+          <td>
+            <VegaLite
+              spec={this.state.spec}
+              data={this.state.data}
+              actions={false}
+            />
+          </td>
+        </tr>
+        
+      </tbody>
+    );
+  }
+
+}
+
+
+
+  // console.log(props.hit.metadata.recommend_plots)
+  // api
+  //   .nl4vis("what is the average height of different sex", props.hit.id)
+  //   .then(response => {
+  //     console.log(response.status)
+  //     if (response.status === api.RequestResult.SUCCESS && response.data) {
+  //       console.log("SUCCESS")
+  //       console.log(response.data)
+  //     } else {
+  //       console.log("FAILED");
+  //     }
+  //   })
+  //   .catch(() => {
+  //     console.log("FAILED");
+  //   });
+
+
+  // return (
+  //   <tbody>
+  //     {props.hit.metadata.recommend_plots.map((plt) => {
+  //       const dataVega = plt.data.values;
+  //       const plot = (
+  //         <VegaLite
+  //           spec={plt.spec}
+  //           data={plt.data}
+  //           actions={false}
+  //         />
+  //       );
+  //       return (
+  //         <tr>
+  //           <td>
+  //             <b>{plt.generated_question} </b>
+  //           </td>
+  //           <td>
+  //             {plot}
+  //           </td>
+  //         </tr>
+  //       );
+  //     })}
+  //   </tbody>
+  // );
+
+// function TableRecomm(props: {
+//   hit: SearchResult;
+// }) {
+
+//   console.log(props.hit.metadata.recommend_plots)
+//   api
+//     .nl4vis("what is the average height of different sex", props.hit.id)
+//     .then(response => {
+//       console.log(response.status)
+//       if (response.status === api.RequestResult.SUCCESS && response.data) {
+//         console.log("SUCCESS")
+//         console.log(response.data)
+//       } else {
+//         console.log("FAILED");
+//       }
+//     })
+//     .catch(() => {
+//       console.log("FAILED");
+//     });
+
+
+//   return (
+//     <tbody>
+//       {props.hit.metadata.recommend_plots.map((plt) => {
+//         const dataVega = plt.data.values;
+//         const plot = (
+//           <VegaLite
+//             spec={plt.spec}
+//             data={plt.data}
+//             actions={false}
+//           />
+//         );
+//         return (
+//           <tr>
+//             <td>
+//               <b>{plt.generated_question} </b>
+//             </td>
+//             <td>
+//               {plot}
+//             </td>
+//           </tr>
+//         );
+//       })}
+//     </tbody>
+//   );
+// }
 
 // Compact and Detail view share the same body content. Just the header will change.
 function TableCompactDetailView(props: {tableProps: TableProps}) {
@@ -333,6 +533,8 @@ function Table(props: TableProps) {
     <table {...getTableProps()} className="table table-hover small">
       {typeView === tableViews.COLUMN ? (
         <TableColumnView headerGroups={headerGroups} hit={hit} />
+      ) : typeView === tableViews.RECOMM ? (
+        <TableRecomm hit={hit} />
       ) : (
         <TableCompactDetailView tableProps={props} />
       )}
@@ -421,6 +623,15 @@ class DatasetSample extends React.PureComponent<
               onClick={() => this.updateTypeView(tableViews.COLUMN)}
             >
               Column View
+            </button>
+            <button
+              type="button"
+              className={`btn btn-secondary ${
+                this.state.typeView === tableViews.RECOMM ? 'active' : ''
+              }`}
+              onClick={() => this.updateTypeView(tableViews.RECOMM)}
+            >
+              Recommendation
             </button>
           </div>
           <div className="mt-2">

@@ -64,6 +64,31 @@ export interface Metadata {
   types: string[];
   version: string;
   spatial_coverage?: SpatialCoverage[];
+  recommend_plots: RecommendPlot[];
+}
+
+export interface RecommendPlot {
+  numerical_column: string;
+  temporal_column: string;
+  generated_question: string;
+  data: {values: []};
+  spec: Object;
+}
+
+export interface VisualDict{
+  attributes: string;
+  data_sample: {values: []};
+  vlSpec: Object;
+}
+
+export interface RecommendResult{
+  test_nl4vis: string;
+  visualizations: VisualDict[];
+  visualizations_number: number;
+}
+
+export interface RecommendResponse {
+  results: RecommendResult[];
 }
 
 export interface ColumnMetadata {

@@ -1,6 +1,7 @@
 import axios, {AxiosResponse, AxiosRequestConfig} from 'axios';
 import {
   SearchResponse,
+  RecommendResponse,
   SearchResult,
   FilterVariables,
   Metadata,
@@ -130,6 +131,37 @@ export function downloadToSession(
     });
   }
   return api.post(url, {id: datasetId}).then(() => {});
+}
+
+export function nl4vis(
+  q: string,
+  datasetId: string
+  ): Promise<Response<RecommendResponse>> {
+  const formData = new FormData();
+  formData.append('question', q);
+  formData.append('data_id', datasetId);
+
+  const config = {
+    headers: {
+      'content-type': 'multipart/form-data',
+    },
+  };
+
+  let url = '/nl4vis';
+
+  return api
+    .post(url, formData, config)
+    .then((response: AxiosResponse) => {
+      return {
+        status: RequestResult.SUCCESS,
+        data: response.data,
+      };
+    })
+    .catch(() => {
+      return {
+        status: RequestResult.ERROR,
+      };
+    });
 }
 
 export function augment(
