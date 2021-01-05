@@ -23,6 +23,7 @@ from .profile import Profile
 from .search import Search
 from .sessions import SessionNew, SessionGet
 from .upload import Upload
+from .nl4vis import NL4VIS
 
 
 logger = logging.getLogger(__name__)
@@ -164,6 +165,7 @@ def make_app(debug=False):
             ApiRule('/location', '1', LocationSearch),
             ApiRule('/statistics', '1', Statistics),
             ApiRule('/version', '1', Version),
+            ApiRule('/nl4vis', '1', NL4VIS),
 
             URLSpec('/health', Health),
         ],
