@@ -1,10 +1,12 @@
 import React from 'react';
 import * as Icon from 'react-feather';
+import {SearchFacet} from '../../api/types';
 
 interface DatasetTypeFilterProps {
   datasetTypes: string[];
   checkedDatasetTypes?: string[];
   onDatasetTypeChange: (checkedDatasetTypes: string[]) => void;
+  facetBuckets?: SearchFacet;
 }
 
 class DatasetTypeFilter extends React.PureComponent<DatasetTypeFilterProps> {
@@ -41,6 +43,7 @@ class DatasetTypeFilter extends React.PureComponent<DatasetTypeFilterProps> {
   }
 
   render() {
+    const {facetBuckets} = this.props;
     const datasetTypes: {[datasetType: string]: boolean} = {};
     this.props.datasetTypes.forEach(datasetType => {
       datasetTypes[datasetType] = false;
@@ -92,6 +95,9 @@ class DatasetTypeFilter extends React.PureComponent<DatasetTypeFilterProps> {
             />
             <label className="form-check-label" htmlFor={`check-box-${type}`}>
               {type.charAt(0).toUpperCase() + type.slice(1)}
+              {facetBuckets && facetBuckets.buckets[type]
+                ? ' (' + facetBuckets.buckets[type] + ')'
+                : undefined}
             </label>
           </div>
         ))}

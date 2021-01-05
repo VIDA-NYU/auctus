@@ -97,8 +97,20 @@ export interface SearchResult {
   sample: string[][];
 }
 
+export interface SearchFacet {
+  buckets: {[bucket: string]: number};
+  incomplete: boolean;
+}
+
+export interface SearchFacets {
+  source: SearchFacet;
+  license: SearchFacet;
+  type: SearchFacet;
+}
+
 export interface SearchResponse {
   results: SearchResult[];
+  facets?: SearchFacets;
 }
 
 export interface Variable {

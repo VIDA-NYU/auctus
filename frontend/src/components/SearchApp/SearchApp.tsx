@@ -330,6 +330,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             searchState: SearchState.SEARCH_SUCCESS,
             searchResponse: {
               results: aggregateResults(response.data.results),
+              facets: response.data.facets,
             },
           });
         } else {
@@ -376,6 +377,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
   }
 
   renderFilters() {
+    const facets = this.state.searchResponse?.facets;
     return this.state.filters
       .filter(filter => !filter.hidden)
       .map(filter => {
@@ -420,6 +422,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 sources={this.state.sources}
                 checkedSources={filter.state as string[] | undefined}
                 onSourcesChange={s => this.updateFilterState(filter.id, s)}
+                facetBuckets={facets?.source}
               />
             );
             break;
@@ -430,6 +433,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 datasetTypes={api.DATASET_TYPES}
                 checkedDatasetTypes={filter.state as string[] | undefined}
                 onDatasetTypeChange={s => this.updateFilterState(filter.id, s)}
+                facetBuckets={facets?.type}
               />
             );
             break;

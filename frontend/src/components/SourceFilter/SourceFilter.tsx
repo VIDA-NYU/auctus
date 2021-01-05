@@ -1,10 +1,12 @@
 import React from 'react';
 import * as Icon from 'react-feather';
+import {SearchFacet} from '../../api/types';
 
 interface SourceFilterProps {
   sources: string[];
   checkedSources?: string[];
   onSourcesChange: (checkedSources: string[]) => void;
+  facetBuckets?: SearchFacet;
 }
 
 class SourceFilter extends React.PureComponent<SourceFilterProps> {
@@ -41,6 +43,7 @@ class SourceFilter extends React.PureComponent<SourceFilterProps> {
   }
 
   render() {
+    const {facetBuckets} = this.props;
     const sources: {[source: string]: boolean} = {};
     this.props.sources.forEach(source => {
       sources[source] = false;
@@ -92,6 +95,9 @@ class SourceFilter extends React.PureComponent<SourceFilterProps> {
             />
             <label className="form-check-label" htmlFor={`check-box-${source}`}>
               {source}
+              {facetBuckets && facetBuckets.buckets[source]
+                ? ' (' + facetBuckets.buckets[source] + ')'
+                : undefined}
             </label>
           </div>
         ))}
