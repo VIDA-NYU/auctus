@@ -43,7 +43,7 @@ class UazIndicatorsDiscoverer(Discoverer):
         # Get current E-Tag
         try:
             info = self.elasticsearch.get(
-                'pending',
+                'discovery',
                 self.identifier,
             )['_source']
         except elasticsearch.NotFoundError:
@@ -82,7 +82,7 @@ class UazIndicatorsDiscoverer(Discoverer):
             self.discover_dssat(tmp.name)
 
         self.elasticsearch.index(
-            'pending',
+            'discovery',
             {'etag': response.headers.get('ETag')},
             id=self.identifier,
         )

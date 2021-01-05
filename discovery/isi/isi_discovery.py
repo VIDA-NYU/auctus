@@ -45,7 +45,7 @@ class IsiDiscoverer(Discoverer):
         # Get previous SHA-1
         try:
             info = self.elasticsearch.get(
-                'pending',
+                'discovery',
                 self.identifier,
             )['_source']
         except elasticsearch.NotFoundError:
@@ -128,7 +128,7 @@ class IsiDiscoverer(Discoverer):
 
             # Update SHA-1 in database
             self.elasticsearch.index(
-                'pending',
+                'discovery',
                 {'sha1': current_sha1},
                 id=self.identifier,
             )
