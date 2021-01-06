@@ -33,6 +33,9 @@ ADMIN = 'http://schema.org/AdministrativeArea'
 URL = 'http://schema.org/URL'
 """A URL"""
 
+FILE_PATH = 'https://metadata.datadrivendiscovery.org/types/FileName'
+"""A filename"""
+
 ID = 'http://schema.org/identifier'
 """An identifier"""
 
