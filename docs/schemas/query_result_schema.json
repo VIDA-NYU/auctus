@@ -1,20 +1,19 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://gitlab.com/datadrivendiscovery/datamart-api/query_result_schema.json",
   "title": "Result",
   "type": "object",
   "properties": {
     "id": {
       "type": "string",
-      "description": "The dataset identifier provided by DataMart."
+      "description": "The dataset identifier provided by Auctus."
     },
     "score": {
       "type": "number",
-      "description": "A non-negative number that represents the relevance of this dataset to query. Larger scores indicate better matches. Scores across different DataMart systems are not comparable."
+      "description": "A non-negative number that represents the relevance of this dataset to query. Larger scores indicate better matches."
     },
     "metadata": {
       "type": "object",
-      "description": "The metadata associated with the dataset. Metadata from different DataMart systems can have different schemas.",
+      "description": "The metadata associated with the dataset.",
       "properties": {
         "name": {"type": "string"},
         "description": {"type": "string"},
@@ -51,7 +50,7 @@
         },
         "version": {
           "type": "string",
-          "description": "Version number of the Datamart profiler which generate this record"
+          "description": "Version number of the profiler which generated this record"
         },
         "columns": {
           "type": "array",
@@ -164,7 +163,7 @@
     },
     "augmentation": {
       "type": "object",
-      "description": "The augmentation suggested by the DataMart system.",
+      "description": "The augmentation suggested by Auctus.",
       "properties": {
         "type": {
           "type": "string",
@@ -183,7 +182,7 @@
         },
         "right_columns": {
           "type": "array",
-          "description": "The right-side columns for the augmentation, which correspond to the DataMart dataset.",
+          "description": "The right-side columns for the augmentation, which correspond to the Auctus dataset.",
           "items": {
             "$ref": "#/definitions/augmentation_unit"
           }
