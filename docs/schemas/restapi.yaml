@@ -16,7 +16,6 @@ servers:
 tags:
 - name: "query"
   description: "Searching the index for datasets"
-- name: "query (only NYU)"
 - name: "augment"
   description: "Using the Datamart to perform server-side augmentation"
 - name: "ingest"
@@ -175,7 +174,7 @@ paths:
   /profile:
     post:
       tags:
-      - "query (only NYU)"
+      - "query"
       summary: Profile a dataset for future use in search (as 'data_profile')
       description: |
         The JSON object returned by this endpoint can be passed to /search as the 'data_profile'.
