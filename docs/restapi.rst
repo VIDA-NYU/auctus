@@ -1,7 +1,7 @@
 Using the REST API
 ==================
 
-You can access Datamart through a REST API. In addition to the documentation below, you can find a `Swagger UI <swagger/index.html>`__ which can be used to try the API.
+You can access Datamart through a REST API. In addition to the documentation below, you can find a `ReDoc UI <redoc/index.html>`__ which can be used to try the API.
 
 There is also a :doc:`Python client library <python/datamart-rest>` for this API.
 
