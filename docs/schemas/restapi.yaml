@@ -12,7 +12,7 @@ externalDocs:
   description: "Datamart API documentation"
   url: "https://datadrivendiscovery.gitlab.io/datamart-api/"
 servers:
-- url: "https://auctus.vida-nyu.org/"
+- url: "https://auctus.vida-nyu.org/api/v1"
 tags:
 - name: "query"
   description: "Searching the index for datasets"
