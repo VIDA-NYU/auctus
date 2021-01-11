@@ -239,7 +239,7 @@ paths:
     post:
       tags:
       - "query"
-      summary: "Download a dataset from a search result and optional input data"
+      summary: "Download a dataset from a search result"
       operationId: "download"
       parameters:
       - in: query
