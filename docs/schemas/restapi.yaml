@@ -266,10 +266,6 @@ paths:
           multipart/form-data:
             schema:
               properties:
-                data:
-                  type: string
-                  description: "Data which you want to augment"
-                  format: binary
                 task:
                   $ref: "#/components/schemas/Result"
               required:
