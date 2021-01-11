@@ -12,7 +12,7 @@ You can find the source code on GitLab: https://gitlab.com/ViDA-NYU/auctus/auctu
     :caption: Contents:
 
     webui
-    restapi
+    Using the REST API <https://docs.auctus.vida-nyu.org/redoc/>
     schemas
     python/index
     internals
