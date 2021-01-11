@@ -2,8 +2,6 @@ openapi: 3.0.1
 info:
   title: "Auctus"
   description: |
-    REST API for Auctus.
-
     # Introduction
 
     Auctus is a dataset search engine and data augmentation platform developed at New York University. It can be used to index the content of datasets from a variety of sources, that can later be queried to find data that can be joined or appended to a user's data.
@@ -11,6 +9,8 @@ info:
     The system can be found at this address: https://auctus.vida-nyu.org/
 
     You can find the source code on GitLab: https://gitlab.com/ViDA-NYU/auctus/auctus
+
+    The rest of the documentation, including the web UI and the Python libraries: https://docs.auctus.vida-nyu.org/
 
     # REST API introduction
 
@@ -23,32 +23,39 @@ info:
     email: "remi.rampin@nyu.edu"
   license:
     name: "MIT"
-  version: "1"
+  version: "v1"
 externalDocs:
-  description: "Auctus documentation (including the web UI and the Python libraries)"
+  description: "Auctus documentation"
   url: "https://docs.auctus.vida-nyu.org/"
 servers:
 - url: "https://auctus.vida-nyu.org/api/v1"
 tags:
 - name: "Query"
-  description: "Searching the index for datasets"
-- name: "Augment"
-  description: "Using Auctus to perform server-side augmentation"
+  description: "Searching the index for datasets to download or augment with."
 - name: "Ingest"
-  description: "Adding new datasets to the index"
+  description: "Adding new datasets to the index."
+- name: "Augment"
+  description: "Using Auctus to perform server-side augmentation."
 paths:
   /upload:
     post:
       tags:
       - "Ingest"
       summary: "Add a dataset to the index"
+      description: |
+        The file can be provided either via a URL or direct upload of a supported format.
+
+        When providing a URL, make sure it is a direct link to a file in a supported format (CSV, Excel, SPSS, ...) and not to an HTML page with a "download" button or GitHub page where the content is embedded (use the "raw" button).
+
+        The request will return the ID of the new dataset immediately, but profiling will happen in the background so the file will only appear in searches after a couple minutes.
       operationId: "upload"
       requestBody:
         content:
           multipart/form-data:
             schema:
               oneOf:
-              - properties:
+              - title: URL
+                properties:
                   name:
                     type: string
                     description: "Dataset name"
@@ -59,7 +66,8 @@ paths:
                 required:
                 - name
                 - address
-              - properties:
+              - title: direct upload
+                properties:
                   name:
                     type: string
                     description: "Dataset name"
@@ -96,6 +104,10 @@ paths:
       tags:
       - "Query"
       summary: "Search the index for datasets"
+      description: |
+        The `Content-Type` should be set to [`multipart/form-data`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition) to allow sending both the query description (JSON) and the data file. Alternatively you can post just JSON or just data.
+
+        You need to specify at least one of `data` (tabular file), `data_profile` (profile information), or `query` (JSON query).
       operationId: "search"
       parameters:
       - in: query
@@ -193,9 +205,9 @@ paths:
       - "Query"
       summary: Profile a dataset
       description: |
-        The JSON object returned by this endpoint can be passed to /search as the 'data_profile'.
+        The JSON object returned by this endpoint can be passed to `/search` as the `data_profile`.
 
-        It replaces the 'data' argument, allowing for lighter searches since the data is only sent once. This is useful in situation where the user will incrementally adjust his query.
+        It replaces the `data` argument, allowing for lighter searches since the data is only sent once. This is useful in situation where the user will incrementally adjust his query.
       operationId: "profile"
       requestBody:
         content:
@@ -217,7 +229,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                type: object  # TODO
         400:
           description: Invalid query
           content:
@@ -228,7 +240,16 @@ paths:
     get:
       tags:
       - "Query"
-      summary: "Download a full dataset by its ID"
+      summary: "Download a dataset by its ID"
+      description: |
+        This allows you to retrieve a dataset in CSV or another supported output format.
+
+        You can use the `format` query parameter to specify an output format, for example `/download?format=d3m`:
+
+          * `csv`: returns the dataset as a CSV file (`application/octet-stream`); this is the default option
+          * `d3m`: returns a ZIP file (`application/zip`) containing the dataset as a CSV file and its corresponding `datasetDoc.json` file. See [the D3M Dataset Schema documentation](https://gitlab.com/datadrivendiscovery/data-supply/-/blob/shared/documentation/datasetSchema.md) for more information.
+
+        Note that this endpoint might serve data directly or it might redirect to another location.
       operationId: "download_id"
       parameters:
       - in: path
@@ -255,6 +276,12 @@ paths:
       tags:
       - "Query"
       summary: "Download a dataset from a search result"
+      description: |
+        This allows you to retrieve a dataset in CSV (or another supported output format using the `format` query parameter, see above).
+
+        Note that this endpoint might serve data directly or it might redirect to another location.
+
+        This endpoint differs from `/download/{dataset_id}` in that it takes a full dataset record instead of just an ID. The advantage is that you can change this record to some extent (example: skip some converters) or send the record for a dataset the server doesn't have in its index (as long as sufficient materialization information is present).
       operationId: "download"
       parameters:
       - in: query
@@ -263,11 +290,31 @@ paths:
           enum: ["csv", "d3m"]
       requestBody:
         content:
+          application/json:
+            schema:
+                $ref: "#/components/schemas/Result" # TODO: not quite
+            examples:
+              nyc_data:
+                summary: "Sample search result sent back as task"
+                value:
+                  id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
+                  metadata:
+                    columns:
+                      - name: "Borough"
+                      - name: "Calendar Year"
+                      - name: "Filed Violation Count"
+                    materialize:
+                      socrata_id: "vbgf-ket3"
+                      socrata_domain: "data.cityofnewyork.us"
+                      socrata_updated: "2019-04-29T16:54:13.000Z"
+                      direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
+                      identifier: datamart.socrata
+                      date: "2019-06-27T19:26:53.147559Z"
           multipart/form-data:
             schema:
               properties:
                 task:
-                  $ref: "#/components/schemas/Result"
+                  $ref: "#/components/schemas/Result" # TODO: not quite
               required:
               - task
             examples:
@@ -291,26 +338,6 @@ paths:
             encoding:
               task:
                 contentType: application/json
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Result"
-            examples:
-              nyc_data:
-                summary: "Sample search result sent back as task"
-                value:
-                  id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
-                  metadata:
-                    columns:
-                      - name: "Borough"
-                      - name: "Calendar Year"
-                      - name: "Filed Violation Count"
-                    materialize:
-                      socrata_id: "vbgf-ket3"
-                      socrata_domain: "data.cityofnewyork.us"
-                      socrata_updated: "2019-04-29T16:54:13.000Z"
-                      direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
-                      identifier: datamart.socrata
-                      date: "2019-06-27T19:26:53.147559Z"
       responses:
         404:
           description: "No dataset for this result"
@@ -327,6 +354,8 @@ paths:
       tags:
       - "Augment"
       summary: "Augment an input dataset with a selected search result"
+      description: |
+        The `Content-Type` should be set to [`multipart/form-data`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition) to allow sending both a dataset search result (`task`) and a data file (`data`).
       operationId: "augment"
       requestBody:
         content:
