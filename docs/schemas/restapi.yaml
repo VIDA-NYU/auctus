@@ -2,8 +2,6 @@ openapi: 3.0.1
 info:
   title: "Auctus"
   description: |
-    REST API for Auctus.
-
     # Introduction
 
     Auctus is a dataset search engine and data augmentation platform developed at New York University. It can be used to index the content of datasets from a variety of sources, that can later be queried to find data that can be joined or appended to a user's data.
@@ -11,6 +9,8 @@ info:
     The system can be found at this address: https://auctus.vida-nyu.org/
 
     You can find the source code on GitLab: https://gitlab.com/ViDA-NYU/auctus/auctus
+
+    The rest of the documentation, including the web UI and the Python libraries: https://docs.auctus.vida-nyu.org/
 
     # REST API introduction
 
@@ -23,32 +23,68 @@ info:
     email: "remi.rampin@nyu.edu"
   license:
     name: "MIT"
-  version: "1"
+  version: "v1"
 externalDocs:
-  description: "Auctus documentation (including the web UI and the Python libraries)"
+  description: "Auctus documentation"
   url: "https://docs.auctus.vida-nyu.org/"
 servers:
 - url: "https://auctus.vida-nyu.org/api/v1"
 tags:
 - name: "Query"
-  description: "Searching the index for datasets"
-- name: "Augment"
-  description: "Using Auctus to perform server-side augmentation"
+  description: "Searching the index for datasets to download or augment with."
 - name: "Ingest"
-  description: "Adding new datasets to the index"
+  description: "Adding new datasets to the index."
+- name: "Augment"
+  description: "Using Auctus to perform server-side augmentation."
+- name: "Embedding Auctus in your software"
+  description: |
+    Rather than using the API and implementing your own UI for data search and augmentation, it is possible to **re-use our web frontend** and collect results **directly from Auctus into your system** without the user downloading it and then adding it in your interface.
+
+    This can be done using the following 3 steps (4 steps for augmentations):
+
+    ### (optional) Step 0: Provide your input data if searching for augmentations
+
+    If you don't have input data, skip this step.
+
+    Issue a request [`POST /profile`](#operation/profile), providing your data, and get the string under the `token` JSON key.
+
+    ### Step 1: Create a session
+
+    Issue a request [`POST /session/new`](#operation/session_new), with the following JSON input:
+
+      * `data_token`: the token obtained from [`POST /profile`](#operation/profile), if searching for augmentations. Optional.
+      * `format`: the desired format for datasets, as specified for [the download endpoint](#operation/download_id). Options go in the `format_options` object. Optional, defaults to `csv`.
+      * `system_name`: the name of your system. Optional, defaults to "TA3". Will be shown on buttons (e.g. "Add to <system_name>", "Join and add to <system_name>").
+
+    ### Step 2: Direct the user to Auctus
+
+    Direct the user to the `link_url` obtained from [`POST /session/new`](#operation/session_new) at step 1. Wait for them to be done to move to step 3, or poll step 3 regularly.
+
+    The user will be able to use our interface like normal, including using filters and related searches. The download buttons are replaced by "Add to <system_name>" buttons.
+
+    ### Step 3: Obtain the selected data from Auctus
+
+    Issue a request to [`GET /session/<session_id>`](#operation/session_get), where `<session_id>` is the short string you obtained in step 1.
 paths:
   /upload:
     post:
       tags:
       - "Ingest"
       summary: "Add a dataset to the index"
+      description: |
+        The file can be provided either via a URL or direct upload of a supported format.
+
+        When providing a URL, make sure it is a direct link to a file in a supported format (CSV, Excel, SPSS, ...) and not to an HTML page with a "download" button or GitHub page where the content is embedded (use the "raw" button).
+
+        The request will return the ID of the new dataset immediately, but profiling will happen in the background so the file will only appear in searches after a couple minutes.
       operationId: "upload"
       requestBody:
         content:
           multipart/form-data:
             schema:
               oneOf:
-              - properties:
+              - title: URL
+                properties:
                   name:
                     type: string
                     description: "Dataset name"
@@ -59,7 +95,8 @@ paths:
                 required:
                 - name
                 - address
-              - properties:
+              - title: direct upload
+                properties:
                   name:
                     type: string
                     description: "Dataset name"
@@ -96,6 +133,10 @@ paths:
       tags:
       - "Query"
       summary: "Search the index for datasets"
+      description: |
+        The `Content-Type` should be set to [`multipart/form-data`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition) to allow sending both the query description (JSON) and the data file. Alternatively you can post just JSON or just data.
+
+        You need to specify at least one of `data` (tabular file), `data_profile` (profile information), or `query` (JSON query).
       operationId: "search"
       parameters:
       - in: query
@@ -193,9 +234,9 @@ paths:
       - "Query"
       summary: Profile a dataset
       description: |
-        The JSON object returned by this endpoint can be passed to /search as the 'data_profile'.
+        The JSON object returned by this endpoint can be passed to `/search` as the `data_profile`.
 
-        It replaces the 'data' argument, allowing for lighter searches since the data is only sent once. This is useful in situation where the user will incrementally adjust his query.
+        It replaces the `data` argument, allowing for lighter searches since the data is only sent once. This is useful in situation where the user will incrementally adjust his query.
       operationId: "profile"
       requestBody:
         content:
@@ -217,7 +258,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                type: object  # TODO
         400:
           description: Invalid query
           content:
@@ -228,7 +269,16 @@ paths:
     get:
       tags:
       - "Query"
-      summary: "Download a full dataset by its ID"
+      summary: "Download a dataset by its ID"
+      description: |
+        This allows you to retrieve a dataset in CSV or another supported output format.
+
+        You can use the `format` query parameter to specify an output format, for example `/download?format=d3m`:
+
+          * `csv`: returns the dataset as a CSV file (`application/octet-stream`); this is the default option
+          * `d3m`: returns a ZIP file (`application/zip`) containing the dataset as a CSV file and its corresponding `datasetDoc.json` file. See [the D3M Dataset Schema documentation](https://gitlab.com/datadrivendiscovery/data-supply/-/blob/shared/documentation/datasetSchema.md) for more information.
+
+        Note that this endpoint might serve data directly or it might redirect to another location.
       operationId: "download_id"
       parameters:
       - in: path
@@ -255,6 +305,12 @@ paths:
       tags:
       - "Query"
       summary: "Download a dataset from a search result"
+      description: |
+        This allows you to retrieve a dataset in CSV (or another supported output format using the `format` query parameter, see above).
+
+        Note that this endpoint might serve data directly or it might redirect to another location.
+
+        This endpoint differs from `/download/{dataset_id}` in that it takes a full dataset record instead of just an ID. The advantage is that you can change this record to some extent (example: skip some converters) or send the record for a dataset the server doesn't have in its index (as long as sufficient materialization information is present).
       operationId: "download"
       parameters:
       - in: query
@@ -263,11 +319,31 @@ paths:
           enum: ["csv", "d3m"]
       requestBody:
         content:
+          application/json:
+            schema:
+                $ref: "#/components/schemas/Result" # TODO: not quite
+            examples:
+              nyc_data:
+                summary: "Sample search result sent back as task"
+                value:
+                  id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
+                  metadata:
+                    columns:
+                      - name: "Borough"
+                      - name: "Calendar Year"
+                      - name: "Filed Violation Count"
+                    materialize:
+                      socrata_id: "vbgf-ket3"
+                      socrata_domain: "data.cityofnewyork.us"
+                      socrata_updated: "2019-04-29T16:54:13.000Z"
+                      direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
+                      identifier: datamart.socrata
+                      date: "2019-06-27T19:26:53.147559Z"
           multipart/form-data:
             schema:
               properties:
                 task:
-                  $ref: "#/components/schemas/Result"
+                  $ref: "#/components/schemas/Result" # TODO: not quite
               required:
               - task
             examples:
@@ -291,26 +367,6 @@ paths:
             encoding:
               task:
                 contentType: application/json
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Result"
-            examples:
-              nyc_data:
-                summary: "Sample search result sent back as task"
-                value:
-                  id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
-                  metadata:
-                    columns:
-                      - name: "Borough"
-                      - name: "Calendar Year"
-                      - name: "Filed Violation Count"
-                    materialize:
-                      socrata_id: "vbgf-ket3"
-                      socrata_domain: "data.cityofnewyork.us"
-                      socrata_updated: "2019-04-29T16:54:13.000Z"
-                      direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
-                      identifier: datamart.socrata
-                      date: "2019-06-27T19:26:53.147559Z"
       responses:
         404:
           description: "No dataset for this result"
@@ -327,6 +383,8 @@ paths:
       tags:
       - "Augment"
       summary: "Augment an input dataset with a selected search result"
+      description: |
+        The `Content-Type` should be set to [`multipart/form-data`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition) to allow sending both a dataset search result (`task`) and a data file (`data`).
       operationId: "augment"
       requestBody:
         content:
@@ -353,6 +411,90 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /session/new:
+    post:
+      tags:
+      - "Embedding Auctus in your software"
+      summary: "Create a session"
+      description: |
+        Creates a session in which a user can add datasets through the Auctus web interface, to be retrieved from your software later.
+      operationId: "session_new"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                data_token:
+                  type: string
+                  description: "Input data to search for augmentation, in the form of the \"token\" field returned by /profile"
+                format:
+                  type: string
+                format_options:
+                  type: string
+                system_name:
+                  type: string
+                  description: "Name of your system, to show on buttons in the interface"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                    description: "A short string identifying the session. Use this later to retrieve results."
+                  link_url:
+                    type: string
+                    description: "A link to the Auctus web interface that you can present to the user (or embed, etc)."
+        400:
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /session/get/{session_id}:
+    get:
+      tags:
+      - "Embedding Auctus in your software"
+      summary: "Get session results"
+      description: |
+        Get the results added to this session. Every result the user selects from the Auctus web interface is added to the session to be retrieved here.
+      operationId: session_get
+      parameters:
+      - in: path
+        name: "dataset_id"
+        schema:
+          type: string
+        required: true
+      responses:
+        404:
+          description: "No session with this ID"
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        url:
+                          type: string
+                          description: "Link to the data the user selected, in the format chosen when creating the session."
+                        type:
+                          type: string
+                          description: |
+                            * `"download"` if the result is a dataset from Auctus
+                            * `"join"`/`"union"` if the result is the input data augmented with a dataset from Auctus.
+                          enum:
+                          - "download"
+                          - "join"
+                          - "union"
 components:
   schemas:
     Query:

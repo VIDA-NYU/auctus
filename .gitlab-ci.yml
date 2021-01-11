@@ -163,10 +163,10 @@ pages-test:
     - (cd docs/ && make html)
     - cp -r docs/_build/html pages
 
-    - mkdir pages/redoc
-    - curl -Lo pages/redoc/redoc.js https://cdn.jsdelivr.net/npm/redoc@2.0.0-rc.45/bundles/redoc.standalone.js
-    - cp -r docs/schemas pages/redoc/schemas
-    - cp docs/redoc/index.html pages/redoc/index.html
+    - mkdir pages/rest
+    - curl -Lo pages/rest/redoc.js https://cdn.jsdelivr.net/npm/redoc@2.0.0-rc.45/bundles/redoc.standalone.js
+    - cp -r docs/schemas pages/schemas
+    - cp docs/redoc/index.html pages/rest/index.html
   artifacts:
     paths:
       - pages
