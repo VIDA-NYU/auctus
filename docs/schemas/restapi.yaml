@@ -143,7 +143,6 @@ paths:
           content:
             application/json; charset=utf-8:
               schema:
-                type: object
                 properties:
                   id:
                     type: string
@@ -309,7 +308,7 @@ paths:
           content:
             application/json; charset=utf-8:
               schema:
-                type: object  # TODO
+                $ref: "#/components/schemas/Result"  # TODO: not quite
         400:
           description: Invalid query
           content:
@@ -558,7 +557,6 @@ paths:
           content:
             application/json; charset=utf-8:
               schema:
-                type: object
                 properties:
                   session_id:
                     type: string
@@ -594,7 +592,6 @@ paths:
           content:
             application/json; charset=utf-8:
               schema:
-                type: object
                 properties:
                   results:
                     type: array

@@ -23,6 +23,9 @@ def _inline_jsonschema(obj, definitions, base_path):
     # Drop the '$schema' key
     if '$schema' in obj:
         del obj['$schema']
+    # Drop the top-level 'type: object'
+    if 'type' in obj and obj['type'] == 'object':
+        del obj['type']
     return _inline(obj, definitions, base_path)
 
 
