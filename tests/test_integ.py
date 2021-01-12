@@ -28,6 +28,7 @@ schemas = os.path.abspath(schemas)
 with open(os.path.join(schemas, 'restapi.yaml')) as fp:
     openapi_dict = yaml.safe_load(fp)
 openapi_dict = inline_openapi(openapi_dict, schemas)
+openapi_dict['servers'] = [{'url': os.environ['API_URL']}]
 openapi_spec = create_spec(openapi_dict)
 openapi_request_validator = RequestValidator(openapi_spec)
 openapi_response_validator = ResponseValidator(openapi_spec)
