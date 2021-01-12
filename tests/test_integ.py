@@ -18,7 +18,7 @@ import zipfile
 import datamart_materialize
 
 from .test_profile import check_ranges, check_geo_ranges, check_plot
-from .utils import DataTestCase, data
+from .utils import DataTestCase, data, inline_openapi
 
 
 schemas = os.path.join(os.path.dirname(__file__), '..', 'docs', 'schemas')
@@ -27,6 +27,7 @@ schemas = os.path.abspath(schemas)
 
 with open(os.path.join(schemas, 'restapi.yaml')) as fp:
     openapi_dict = yaml.safe_load(fp)
+openapi_dict = inline_openapi(openapi_dict, schemas)
 openapi_spec = create_spec(openapi_dict)
 openapi_request_validator = RequestValidator(openapi_spec)
 openapi_response_validator = ResponseValidator(openapi_spec)
