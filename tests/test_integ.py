@@ -2,7 +2,8 @@ import elasticsearch
 import io
 import json
 from openapi_core import create_spec
-from openapi_core.contrib.requests import RequestsOpenAPIRequest, RequestsOpenAPIResponse
+from openapi_core.contrib.requests import RequestsOpenAPIResponse
+from openapi_core.validation.request.datatypes import OpenAPIRequest, RequestParameters
 from openapi_core.validation.request.validators import RequestValidator
 from openapi_core.validation.response.validators import ResponseValidator
 import os
@@ -12,6 +13,7 @@ import requests
 import tempfile
 import time
 from urllib.parse import urlparse, urlunparse, parse_qs
+from werkzeug.datastructures import ImmutableMultiDict
 import yaml
 import zipfile
 
@@ -32,6 +34,58 @@ openapi_dict['servers'] = [{'url': os.environ['API_URL']}]
 openapi_spec = create_spec(openapi_dict)
 openapi_request_validator = RequestValidator(openapi_spec)
 openapi_response_validator = ResponseValidator(openapi_spec)
+
+
+# https://github.com/p1c2u/openapi-core/pull/271
+def build_openapi_request(prepared_request):
+    method = prepared_request.method.lower()
+
+    # Cookies
+    if prepared_request._cookies is not None:
+        # cookies are stored in a cookiejar object
+        cookie = prepared_request._cookies.get_dict()
+    else:
+        cookie = {}
+
+    # Preparing a request formats the URL with params, strip them out again
+    o = urlparse(prepared_request.url)
+    params = parse_qs(o.query)
+    # extract the URL without query parameters
+    url = o._replace(query=None).geturl()
+
+    # gets deduced by path finder against spec
+    path = {}
+
+    # Order matters because all python requests issued from a session include
+    # Accept */* which does not necessarily match the content type
+    mimetype = (
+        prepared_request.headers.get('Content-Type')
+        or prepared_request.headers.get('Accept')
+    )
+
+    if mimetype.startswith('multipart/form-data'):
+        mimetype = 'multipart/form-data'
+
+    # Headers - request.headers is not an instance of dict, which is expected
+    header = dict(prepared_request.headers)
+
+    # Body
+    # TODO: figure out if request._body_position is relevant
+    body = prepared_request.body
+
+    parameters = RequestParameters(
+        query=ImmutableMultiDict(params),
+        header=header,
+        cookie=cookie,
+        path=path,
+    )
+    return OpenAPIRequest(
+        full_url_pattern=url,
+        method=method,
+        parameters=parameters,
+        body=body,
+        mimetype=mimetype,
+    )
 
 
 class DatamartTest(DataTestCase):
@@ -90,9 +144,10 @@ class DatamartTest(DataTestCase):
             url=os.environ['API_URL'] + url,
             **request_kwargs,
         )
-        openapi_request = RequestsOpenAPIRequest(request)
-        openapi_request_validator.validate(openapi_request).raise_for_errors()
         prepared_request = self.requests_session.prepare_request(request)
+
+        openapi_request = build_openapi_request(prepared_request)
+        openapi_request_validator.validate(openapi_request).raise_for_errors()
         response = self.requests_session.send(prepared_request, **send_kwargs)
         for _ in range(5):
             if response.status_code != 503:
