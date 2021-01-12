@@ -466,7 +466,8 @@ class TestSearch(DatamartTest):
         """Do basic search with pagination"""
         page_size = 2
         response = self.datamart_post(
-            f'/search?page=1&size={page_size}',
+            '/search',
+            params={'page': 1, 'size': page_size},
             json={'source': ['remi']},
         )
         self.assertEqual(response.request.headers['Content-Type'],
@@ -483,7 +484,8 @@ class TestSearch(DatamartTest):
         all_results = set()
         for page_nb in range(2, 2 + total_pages):
             response = self.datamart_post(
-                f'/search?page={page_nb}&size={page_size}',
+                '/search',
+                params={'page': page_nb, 'size': page_size},
                 json={'source': ['remi']},
             )
             self.assertEqual(response.request.headers['Content-Type'],
@@ -1575,7 +1577,8 @@ class TestAugment(DatamartTest):
 
         with data('agg_aug.csv') as agg_aug:
             response = self.datamart_post(
-                '/augment?format=csv',
+                '/augment',
+                params={'format': 'csv'},
                 files={
                     'task': json.dumps(task).encode('utf-8'),
                     'data': agg_aug,
@@ -2664,14 +2667,14 @@ class TestSession(DatamartTest):
         ).json()['session_id']
 
         response = self.datamart_get(
-            '/download/' + 'datamart.test.basic'
-            + '?session_id=' + session_id
+            '/download/' + 'datamart.test.basic',
+            params={'session_id': session_id},
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
         response = self.datamart_get(
-            '/download/' + 'datamart.test.agg'
-            + '?session_id=' + session_id
+            '/download/' + 'datamart.test.agg',
+            params={'session_id': session_id},
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
@@ -2704,14 +2707,14 @@ class TestSession(DatamartTest):
         ).json()['session_id']
 
         response = self.datamart_get(
-            '/download/' + 'datamart.test.basic'
-            + f'?session_id={session_id}&format=d3m'
+            '/download/' + 'datamart.test.basic',
+            params={'session_id': session_id, 'format': 'd3m'},
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
         response = self.datamart_get(
-            '/download/' + 'datamart.test.agg'
-            + f'?session_id={session_id}&format=d3m'
+            '/download/' + 'datamart.test.agg',
+            params={'session_id': session_id, 'format': 'd3m'},
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
@@ -2772,8 +2775,8 @@ class TestSession(DatamartTest):
 
         with data('basic_aug.csv') as basic_aug:
             response = self.datamart_post(
-                '/augment'
-                + f'?session_id={session_id}&format=csv',
+                '/augment',
+                params={'session_id': session_id, 'format': 'csv'},
                 files={
                     'task': json.dumps(task).encode('utf-8'),
                     'data': basic_aug,
@@ -2834,8 +2837,8 @@ class TestSession(DatamartTest):
 
         with data('basic_aug.csv') as basic_aug:
             response = self.datamart_post(
-                '/augment'
-                + f'?session_id={session_id}&format=d3m',
+                '/augment',
+                params={'session_id': session_id, 'format': 'd3m'},
                 files={
                     'task': json.dumps(task).encode('utf-8'),
                     'data': basic_aug,
