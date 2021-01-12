@@ -422,7 +422,7 @@ def get_augmentation_search_results(
 class Search(BaseHandler, GracefulHandler, ProfilePostedData):
     @PROM_SEARCH.sync()
     def post(self):
-        type_ = self.request.headers.get('Content-type', '')
+        type_ = self.request.headers.get('Content-Type', '')
         data = None
         data_id = None
         data_profile = None

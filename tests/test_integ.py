@@ -640,7 +640,7 @@ class TestDataSearch(DatamartTest):
             response = self.datamart_post(
                 '/search',
                 data=basic_aug,
-                headers={'Content-type': 'text/csv'},
+                headers={'Content-Type': 'text/csv'},
             )
         results = response.json()['results']
         self.assertJson(
