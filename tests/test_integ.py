@@ -111,7 +111,8 @@ class DatamartTest(DataTestCase):
     def datamart_post(self, url, **kwargs):
         return self._request('post', url, **kwargs)
 
-    def _request(self, method, url, check_status=True, **kwargs):
+    def _request(self, method, url, check_status=True, check_spec=True,
+                 **kwargs):
         if 'files' in kwargs:
             # Read files now
             # If we retry, requests would read un-rewinded files
@@ -147,7 +148,9 @@ class DatamartTest(DataTestCase):
         prepared_request = self.requests_session.prepare_request(request)
 
         openapi_request = build_openapi_request(prepared_request)
-        openapi_request_validator.validate(openapi_request).raise_for_errors()
+        if check_spec:
+            res = openapi_request_validator.validate(openapi_request)
+            res.raise_for_errors()
         response = self.requests_session.send(prepared_request, **send_kwargs)
         for _ in range(5):
             if response.status_code != 503:
@@ -163,11 +166,13 @@ class DatamartTest(DataTestCase):
                 response.raise_for_status()
         if check_status:
             self.assert_response(response)
-        openapi_response = RequestsOpenAPIResponse(response)
-        openapi_response_validator.validate(
-            openapi_request,
-            openapi_response,
-        ).raise_for_errors()
+        if check_spec and response.status_code != 500:
+            openapi_response = RequestsOpenAPIResponse(response)
+            res = openapi_response_validator.validate(
+                openapi_request,
+                openapi_response,
+            )
+            res.raise_for_errors()
         return response
 
     def assert_response(self, response):
@@ -1319,7 +1324,7 @@ class TestDownload(DatamartTest):
         response = self.datamart_post(
             '/download', allow_redirects=False,
             files={},
-            check_status=False,
+            check_status=False, check_spec=False,
         )
         self.assertEqual(response.status_code, 400)
 
