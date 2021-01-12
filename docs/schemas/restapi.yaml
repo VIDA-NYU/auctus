@@ -464,7 +464,7 @@ paths:
       operationId: session_get
       parameters:
       - in: path
-        name: "dataset_id"
+        name: "session_id"
         schema:
           type: string
         required: true
