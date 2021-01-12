@@ -150,8 +150,14 @@
               },
               "temporal_resolution": {"type": "string"},
               "ranges": {
-                "lte": {"type": "number"},
-                "gte": {"type": "number"}
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "lte": {"type": "number"},
+                    "gte": {"type": "number"}
+                  }
+                }
               }
             },
             "required": ["type", "column_names", "column_indexes", "column_types", "ranges"],
