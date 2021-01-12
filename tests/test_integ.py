@@ -1,7 +1,10 @@
 import elasticsearch
 import io
 import json
-import jsonschema
+from openapi_core import create_spec
+from openapi_core.contrib.requests import RequestsOpenAPIRequest, RequestsOpenAPIResponse
+from openapi_core.validation.request.validators import RequestValidator
+from openapi_core.validation.response.validators import ResponseValidator
 import os
 import pkg_resources
 import re
@@ -22,41 +25,11 @@ schemas = os.path.join(os.path.dirname(__file__), '..', 'docs', 'schemas')
 schemas = os.path.abspath(schemas)
 
 
-# https://github.com/Julian/jsonschema/issues/343
-def _fix_refs(obj, name):
-    if isinstance(obj, dict):
-        return {
-            k: _fix_refs(v, name) if k != '$ref' else 'file://%s/%s%s' % (schemas, name, v)
-            for k, v in obj.items()
-        }
-    elif isinstance(obj, list):
-        return [_fix_refs(v, name) for v in obj]
-    else:
-        return obj
-
-
-with open(os.path.join(schemas, 'query_result_schema.json')) as fp:
-    result_schema = json.load(fp)
 with open(os.path.join(schemas, 'restapi.yaml')) as fp:
-    restapi_schema = yaml.load(fp)
-result_schema = _fix_refs(result_schema, 'query_result_schema.json')
-result_list_schema = {
-    'type': 'object',
-    'properties': {
-        'results': {'type': 'array', 'items': result_schema},
-        'facets': restapi_schema['components']['schemas']['Facets'],
-    },
-    'required': ['results'],
-    'additionalProperties': False,
-    'definitions': result_schema.pop('definitions'),
-}
-metadata_schema = dict(result_schema)
-assert metadata_schema['required'] == ['id', 'score', 'metadata']
-metadata_schema['required'] = ['id', 'status', 'metadata']
-metadata_schema['properties'] = dict(
-    metadata_schema['properties'],
-    status={'type': 'string'},
-)
+    openapi_dict = yaml.safe_load(fp)
+openapi_spec = create_spec(openapi_dict)
+openapi_request_validator = RequestValidator(openapi_spec)
+openapi_response_validator = ResponseValidator(openapi_spec)
 
 
 class DatamartTest(DataTestCase):
@@ -70,13 +43,19 @@ class DatamartTest(DataTestCase):
     def tearDownClass(cls):
         cls.es.close()
 
+    def setUp(self):
+        self.requests_session = requests.Session()
+
+    def tearDown(self):
+        self.requests_session.close()
+
     def datamart_get(self, url, **kwargs):
         return self._request('get', url, **kwargs)
 
     def datamart_post(self, url, **kwargs):
         return self._request('post', url, **kwargs)
 
-    def _request(self, method, url, schema=None, check_status=True, **kwargs):
+    def _request(self, method, url, check_status=True, **kwargs):
         if 'files' in kwargs:
             # Read files now
             # If we retry, requests would read un-rewinded files
@@ -96,27 +75,42 @@ class DatamartTest(DataTestCase):
             if hasattr(kwargs['data'], 'read'):
                 kwargs['data'] = kwargs['data'].read()
 
-        response = requests.request(
-            method,
-            os.environ['API_URL'] + url,
-            **kwargs
+        request_kwargs = {}
+        send_kwargs = {}
+        for k, v in kwargs.items():
+            if k in ('allow_redirects',):
+                send_kwargs[k] = v
+            else:
+                request_kwargs[k] = v
+
+        request = requests.Request(
+            method=method,
+            url=os.environ['API_URL'] + url,
+            **request_kwargs,
         )
+        openapi_request = RequestsOpenAPIRequest(request)
+        openapi_request_validator.validate(openapi_request).raise_for_errors()
+        prepared_request = self.requests_session.prepare_request(request)
+        response = self.requests_session.send(prepared_request, **send_kwargs)
         for _ in range(5):
             if response.status_code != 503:
                 break
             time.sleep(0.5)
-            response = requests.request(
-                method,
-                os.environ['API_URL'] + url,
-                **kwargs
+            prepared_request = self.requests_session.prepare_request(request)
+            response = self.requests_session.send(
+                prepared_request,
+                **send_kwargs,
             )
         else:
             if response.status_code == 503:
                 response.raise_for_status()
         if check_status:
             self.assert_response(response)
-        if schema is not None:
-            jsonschema.validate(response.json(), schema)
+        openapi_response = RequestsOpenAPIResponse(response)
+        openapi_response_validator.validate(
+            openapi_request,
+            openapi_response,
+        ).raise_for_errors()
         return response
 
     def assert_response(self, response):
@@ -410,7 +404,6 @@ class TestSearch(DatamartTest):
             response = self.datamart_post(
                 '/search',
                 json={'keywords': ['people']},
-                schema=result_list_schema,
             )
             self.assertEqual(response.request.headers['Content-Type'],
                              'application/json')
@@ -423,7 +416,6 @@ class TestSearch(DatamartTest):
             response = self.datamart_post(
                 '/search',
                 data={'query': json.dumps({'keywords': ['people']})},
-                schema=result_list_schema,
             )
             self.assertEqual(response.request.headers['Content-Type'],
                              'application/x-www-form-urlencoded')
@@ -437,7 +429,6 @@ class TestSearch(DatamartTest):
                 '/search',
                 files={'query': json.dumps({'keywords': ['people']})
                        .encode('utf-8')},
-                schema=result_list_schema,
             )
             self.assertEqual(
                 response.request.headers['Content-Type'].split(';', 1)[0],
@@ -475,7 +466,6 @@ class TestSearch(DatamartTest):
         response = self.datamart_post(
             f'/search?page=1&size={page_size}',
             json={'source': ['remi']},
-            schema=result_list_schema,
         )
         self.assertEqual(response.request.headers['Content-Type'],
                          'application/json')
@@ -493,7 +483,6 @@ class TestSearch(DatamartTest):
             response = self.datamart_post(
                 f'/search?page={page_nb}&size={page_size}',
                 json={'source': ['remi']},
-                schema=result_list_schema,
             )
             self.assertEqual(response.request.headers['Content-Type'],
                              'application/json')
@@ -519,7 +508,6 @@ class TestSearch(DatamartTest):
         response = self.datamart_post(
             '/search',
             json={'keywords': ['people'], 'source': ['remi']},
-            schema=result_list_schema,
         )
         results = response.json()['results']
         self.assertEqual(
@@ -531,7 +519,6 @@ class TestSearch(DatamartTest):
         response = self.datamart_post(
             '/search',
             json={'keywords': ['people'], 'source': ['fernando']},
-            schema=result_list_schema,
         )
         results = response.json()['results']
         self.assertEqual(
@@ -543,7 +530,6 @@ class TestSearch(DatamartTest):
         response = self.datamart_post(
             '/search',
             json={'source': 'fernando'},
-            schema=result_list_schema,
         )
         results = response.json()['results']
         self.assertEqual(
@@ -562,7 +548,6 @@ class TestSearch(DatamartTest):
                     'granularity': 'hour',
                 }],
             },
-            schema=result_list_schema,
         )
         results = response.json()['results']
         self.assertEqual({r['id'] for r in results}, set())
@@ -576,7 +561,6 @@ class TestSearch(DatamartTest):
                     'granularity': 'day',
                 }],
             },
-            schema=result_list_schema,
         )
         results = response.json()['results']
         self.assertEqual({r['id'] for r in results}, {'datamart.test.daily'})
@@ -594,7 +578,6 @@ class TestDataSearch(DatamartTest):
                     'query': json.dumps(query).encode('utf-8'),
                     'data': basic_aug,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -626,7 +609,6 @@ class TestDataSearch(DatamartTest):
                 files={
                     'data': basic_aug,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -657,7 +639,6 @@ class TestDataSearch(DatamartTest):
                 '/search',
                 data=basic_aug,
                 headers={'Content-type': 'text/csv'},
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -695,7 +676,6 @@ class TestDataSearch(DatamartTest):
             files={
                 'data_profile': json.dumps(profile).encode('utf-8'),
             },
-            schema=result_list_schema,
         )
         results = response.json()['results']
         self.assertJson(
@@ -732,7 +712,6 @@ class TestDataSearch(DatamartTest):
         response = self.datamart_post(
             '/search',
             data={'data_profile': token},
-            schema=result_list_schema,
         )
         results = response.json()['results']
         self.assertJson(
@@ -783,7 +762,6 @@ class TestDataSearch(DatamartTest):
                 files={
                     'data': lazo_aug,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -818,7 +796,6 @@ class TestDataSearch(DatamartTest):
                     'query': json.dumps(query).encode('utf-8'),
                     'data': geo_aug,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
@@ -851,7 +828,6 @@ class TestDataSearch(DatamartTest):
                 files={
                     'data': geo_aug,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'union']
@@ -884,7 +860,6 @@ class TestDataSearch(DatamartTest):
                 files={
                     'data': geo_aug,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         results = [r for r in results if r['augmentation']['type'] == 'join']
@@ -942,7 +917,6 @@ class TestDataSearch(DatamartTest):
                     'query': json.dumps(query).encode('utf-8'),
                     'data': geo_wkt,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -996,7 +970,6 @@ class TestDataSearch(DatamartTest):
                     'query': json.dumps(query).encode('utf-8'),
                     'data': geo_wkt,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -1012,7 +985,6 @@ class TestDataSearch(DatamartTest):
                 files={
                     'data': daily_aug,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -1045,7 +1017,6 @@ class TestDataSearch(DatamartTest):
                 files={
                     'data': hourly_aug,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -1078,7 +1049,6 @@ class TestDataSearch(DatamartTest):
                 files={
                     'data': hourly_aug_days,
                 },
-                schema=result_list_schema,
             )
         results = response.json()['results']
         self.assertJson(
@@ -1173,7 +1143,6 @@ class TestDownload(DatamartTest):
         # Basic dataset, materialized via direct_url
         basic_meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
-            schema=metadata_schema,
         )
         basic_meta = basic_meta.json()['metadata']
 
@@ -1226,7 +1195,6 @@ class TestDownload(DatamartTest):
         # Geo dataset, materialized via /datasets storage
         geo_meta = self.datamart_get(
             '/metadata/' + 'datamart.test.geo',
-            schema=metadata_schema,
         )
         geo_meta = geo_meta.json()['metadata']
 
@@ -1480,7 +1448,6 @@ class TestAugment(DatamartTest):
         """Join (integer keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1514,7 +1481,6 @@ class TestAugment(DatamartTest):
         # Build task dictionary
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
         task = {
@@ -1559,7 +1525,6 @@ class TestAugment(DatamartTest):
         """Join automatically (no task provided, integer keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1588,7 +1553,6 @@ class TestAugment(DatamartTest):
         """Join and aggregate (integer keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.agg',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1638,7 +1602,6 @@ class TestAugment(DatamartTest):
         """Join and aggregate (integer keys, specific functions)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.agg',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1775,7 +1738,6 @@ class TestAugment(DatamartTest):
         """Join (categorical keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.lazo',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -1922,7 +1884,6 @@ class TestAugment(DatamartTest):
         """Union"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.geo',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -2047,7 +2008,6 @@ class TestAugment(DatamartTest):
         """Join (lat,long spatial keys)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.geo',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -2213,7 +2173,6 @@ class TestAugment(DatamartTest):
         """Join (temporal keys, daily-daily)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.daily',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -2268,7 +2227,6 @@ class TestAugment(DatamartTest):
         """Join (temporal keys, hourly-hourly)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.hourly',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -2322,7 +2280,6 @@ class TestAugment(DatamartTest):
         """Join daily data with hourly (= aggregate down to daily)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.hourly',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -2373,7 +2330,6 @@ class TestAugment(DatamartTest):
         """Join hourly data with daily (= repeat for each hour)"""
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.daily',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -2443,14 +2399,6 @@ class TestUpload(DatamartTest):
                 'description': "sent through upload endpoint",
                 'specialId': 12,
                 'dept': "internal",
-            },
-            schema={
-                'type': 'object',
-                'properties': {
-                    'id': {'type': 'string'},
-                },
-                'required': ['id'],
-                'additionalProperties': False,
             },
         )
         record = response.json()
@@ -2550,14 +2498,6 @@ class TestUpload(DatamartTest):
                     'specialId': 12,
                     'dept': "internal",
                     'manual_annotations': json.dumps(annotated_annotations),
-                },
-                schema={
-                    'type': 'object',
-                    'properties': {
-                        'id': {'type': 'string'},
-                    },
-                    'required': ['id'],
-                    'additionalProperties': False,
                 },
             )
             record = response.json()
@@ -2810,7 +2750,6 @@ class TestSession(DatamartTest):
 
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
@@ -2873,7 +2812,6 @@ class TestSession(DatamartTest):
 
         meta = self.datamart_get(
             '/metadata/' + 'datamart.test.basic',
-            schema=metadata_schema,
         )
         meta = meta.json()['metadata']
 
