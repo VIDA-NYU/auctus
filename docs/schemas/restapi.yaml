@@ -108,12 +108,40 @@ paths:
                 required:
                 - name
                 - file
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+              - title: URL
+                properties:
+                  name:
+                    type: string
+                    description: "Dataset name"
+                  description:
+                    type: string
+                  address:
+                    type: string
+                required:
+                - name
+                - address
+              - title: direct upload
+                properties:
+                  name:
+                    type: string
+                    description: "Dataset name"
+                  description:
+                    type: string
+                  file:
+                    type: string
+                    format: binary
+                required:
+                - name
+                - file
         required: true
       responses:
         200:
           description: "OK, provides ID of dataset (which will be available once profiling ends)"
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 type: object
                 properties:
@@ -125,7 +153,7 @@ paths:
         400:
           description: "Error"
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
   /search:
@@ -160,6 +188,9 @@ paths:
                   type: string
                   description: "Data which you want to augment"
                   format: binary
+                data_token:
+                  type: string
+                  description: "Input data to search for augmentation, in the form of the \"token\" field returned by /profile"
                 query:
                   $ref: "#/components/schemas/Query"
               # TODO: One of the two needs to be provided
@@ -186,6 +217,26 @@ paths:
                       latitude2: 40.823526516469315
                       longitude1: -73.91395568847656
                       longitude2: -73.82675170898438
+          application/x-www-form-urlencoded:
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: "Data which you want to augment"
+                  format: binary
+                data_token:
+                  type: string
+                  description: "Input data to search for augmentation, in the form of the \"token\" field returned by /profile"
+                query:
+                  $ref: "#/components/schemas/Query"
+              # TODO: One of the two needs to be provided
+            encoding:
+              query:
+                contentType: application/json
+          text/csv:
+            schema:
+              type: string
+              format: binary
           application/json:
             schema:
               $ref: "#/components/schemas/Query"
@@ -211,7 +262,7 @@ paths:
         200:
           description: OK
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 properties:
                   results:
@@ -225,7 +276,7 @@ paths:
         400:
           description: "Invalid query"
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
   /profile:
@@ -256,13 +307,13 @@ paths:
         200:
           description: OK
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 type: object  # TODO
         400:
           description: Invalid query
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
   /download/{dataset_id}:
@@ -293,6 +344,14 @@ paths:
         name: "format"
         schema:
           enum: ["csv", "d3m"]
+      - in: query
+        name: "format_options"
+        schema:
+          type: string
+      - in: query
+        name: "session_id"
+        schema:
+          type: string
       responses:
         404:
           description: "No dataset with this ID"
@@ -317,6 +376,14 @@ paths:
         name: "format"
         schema:
           enum: ["csv", "d3m"]
+      - in: query
+        name: "format_options"
+        schema:
+          type: string
+      - in: query
+        name: "session_id"
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -372,12 +439,50 @@ paths:
           description: "No dataset for this result"
         200:
           description: OK
+        302:
+          description: OK
         400:
           description: "Invalid query"
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
+  /metadata/{dataset_id}:
+    get:
+      tags:
+      - "Query"
+      summary: "Get the metadata for a dataset by its ID"
+      description: |
+        This allows you to retrieve the metadata record for a dataset in the index.
+      operationId: "metadata"
+      parameters:
+      - in: path
+        name: "dataset_id"
+        schema:
+          type: string
+        required: true
+        examples:
+          nyc_data:
+            value: "datamart.socrata.data-cityofnewyork-us.395v-hkhg"
+      responses:
+        404:
+          description: "No dataset with this ID"
+        200:
+          description: OK
+          content:
+            application/json; charset=utf-8:
+              schema:
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                    - "indexed"
+                    - "error"
+                    - "queued"
+                  metadata:
+                    $ref: "#/components/schemas/Result"
   /augment:
     post:
       tags:
@@ -386,6 +491,19 @@ paths:
       description: |
         The `Content-Type` should be set to [`multipart/form-data`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition) to allow sending both a dataset search result (`task`) and a data file (`data`).
       operationId: "augment"
+      parameters:
+      - in: query
+        name: "format"
+        schema:
+          enum: ["csv", "d3m"]
+      - in: query
+        name: "format_options"
+        schema:
+          type: string
+      - in: query
+        name: "session_id"
+        schema:
+          type: string
       requestBody:
         content:
           multipart/form-data:
@@ -408,7 +526,7 @@ paths:
         400:
           description: "Invalid request"
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
   /session/new:
@@ -438,7 +556,7 @@ paths:
         200:
           description: OK
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 type: object
                 properties:
@@ -451,10 +569,10 @@ paths:
         400:
           description: "Invalid request"
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
-  /session/get/{session_id}:
+  /session/{session_id}:
     get:
       tags:
       - "Embedding Auctus in your software"
@@ -474,7 +592,7 @@ paths:
         200:
           description: OK
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 type: object
                 properties:
