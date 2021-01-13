@@ -449,6 +449,7 @@ class TestProfileQuery(DatamartTest):
             response = self.datamart_post(
                 '/profile/fast',
                 files={'data': spss_fp},
+                check_spec=False,  # FIXME: Add to spec?
             )
         self.check_result(
             response,
@@ -2862,6 +2863,7 @@ class TestSession(DatamartTest):
 
         response = self.datamart_get(
             '/augment/' + result_id,
+            check_spec=False,
         )
         self.assertEqual(
             response.headers['Content-Type'],
@@ -2924,6 +2926,7 @@ class TestSession(DatamartTest):
 
         response = self.datamart_get(
             '/augment/' + result_id,
+            check_spec=False,
         )
         self.assertEqual(
             response.headers['Content-Type'],
@@ -2934,7 +2937,11 @@ class TestSession(DatamartTest):
 class TestLocation(DatamartTest):
     def test_search(self):
         """Test searching for locations"""
-        response = self.datamart_post('/location', data={'q': 'Italy'})
+        response = self.datamart_post(
+            '/location',
+            data={'q': 'Italy'},
+            check_spec=False,
+        )
         self.assertJson(
             response.json(),
             {
