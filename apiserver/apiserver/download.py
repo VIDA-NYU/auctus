@@ -117,7 +117,7 @@ class DownloadId(BaseDownload, GracefulHandler):
 class Download(BaseDownload, GracefulHandler, ProfilePostedData):
     @PROM_DOWNLOAD.sync()
     async def post(self):
-        type_ = self.request.headers.get('Content-type', '')
+        type_ = self.request.headers.get('Content-Type', '')
 
         task = None
         if type_.startswith('application/json'):

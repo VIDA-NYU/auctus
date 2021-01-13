@@ -57,7 +57,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
 
         session_id = self.get_query_argument('session_id', None)
 
-        type_ = self.request.headers.get('Content-type', '')
+        type_ = self.request.headers.get('Content-Type', '')
         if not type_.startswith('multipart/form-data'):
             return await self.send_error_json(
                 400,
