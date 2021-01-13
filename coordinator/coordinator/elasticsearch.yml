@@ -27,7 +27,7 @@ _refs:
             type: stemmer
             language: english
           synonym_filter:
-            type: synonym
+            type: synonym_graph
             synonyms_path: "synonyms/synonyms.txt"
 
 datamart:
