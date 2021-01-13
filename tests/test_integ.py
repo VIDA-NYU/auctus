@@ -416,8 +416,8 @@ class TestSearch(DatamartTest):
                              'application/json')
             return response
 
-    def test_basic_search_formdata(self):
-        """Basic search, posting the query as formdata-urlencoded"""
+    def test_basic_search_form_urlencoded(self):
+        """Basic search, posting the query as form-urlencoded"""
         @self.do_test_basic_search
         def query():
             response = self.datamart_post(
