@@ -30,13 +30,17 @@ externalDocs:
 servers:
 - url: "https://auctus.vida-nyu.org/api/v1"
 tags:
-- name: "Query"
+- name: "query"
+  x-displayName: Query
   description: "Searching the index for datasets to download or augment with."
-- name: "Ingest"
+- name: "ingest"
+  x-displayName: Ingest new datasets
   description: "Adding new datasets to the index."
-- name: "Augment"
+- name: "augment"
+  x-displayName: Augmentation
   description: "Using Auctus to perform server-side augmentation."
-- name: "Embedding Auctus in your software"
+- name: "embed"
+  x-displayName: "Embedding Auctus in your software"
   description: |
     Rather than using the API and implementing your own UI for data search and augmentation, it is possible to **re-use our web frontend** and collect results **directly from Auctus into your system** without the user downloading it and then adding it in your interface.
 
@@ -69,7 +73,7 @@ paths:
   /upload:
     post:
       tags:
-      - "Ingest"
+      - "ingest"
       summary: "Add a dataset to the index"
       description: |
         The file can be provided either via a URL or direct upload of a supported format.
@@ -158,7 +162,7 @@ paths:
   /search:
     post:
       tags:
-      - "Query"
+      - "query"
       summary: "Search the index for datasets"
       description: |
         The `Content-Type` should be set to [`multipart/form-data`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition) to allow sending both the query description (JSON) and the data file. Alternatively you can post just JSON or just data.
@@ -281,7 +285,7 @@ paths:
   /profile:
     post:
       tags:
-      - "Query"
+      - "query"
       summary: Profile a dataset
       description: |
         The JSON object returned by this endpoint can be passed to `/search` as the `data_profile`.
@@ -318,7 +322,7 @@ paths:
   /download/{dataset_id}:
     get:
       tags:
-      - "Query"
+      - "query"
       summary: "Download a dataset by its ID"
       description: |
         This allows you to retrieve a dataset in CSV or another supported output format.
@@ -361,7 +365,7 @@ paths:
   /download:
     post:
       tags:
-      - "Query"
+      - "query"
       summary: "Download a dataset from a search result"
       description: |
         This allows you to retrieve a dataset in CSV (or another supported output format using the `format` query parameter, see above).
@@ -449,7 +453,7 @@ paths:
   /metadata/{dataset_id}:
     get:
       tags:
-      - "Query"
+      - "query"
       summary: "Get the metadata for a dataset by its ID"
       description: |
         This allows you to retrieve the metadata record for a dataset in the index.
@@ -485,7 +489,7 @@ paths:
   /augment:
     post:
       tags:
-      - "Augment"
+      - "augment"
       summary: "Augment an input dataset with a selected search result"
       description: |
         The `Content-Type` should be set to [`multipart/form-data`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition) to allow sending both a dataset search result (`task`) and a data file (`data`).
@@ -531,7 +535,7 @@ paths:
   /session/new:
     post:
       tags:
-      - "Embedding Auctus in your software"
+      - "embed"
       summary: "Create a session"
       description: |
         Creates a session in which a user can add datasets through the Auctus web interface, to be retrieved from your software later.
@@ -573,7 +577,7 @@ paths:
   /session/{session_id}:
     get:
       tags:
-      - "Embedding Auctus in your software"
+      - "embed"
       summary: "Get session results"
       description: |
         Get the results added to this session. Every result the user selects from the Auctus web interface is added to the session to be retrieved here.
