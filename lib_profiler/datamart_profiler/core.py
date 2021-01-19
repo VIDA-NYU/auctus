@@ -17,6 +17,7 @@ import re
 import warnings
 import pandas
 import io
+import json
 
 from .numerical import mean_stddev, get_numerical_ranges
 from .profile_types import identify_types, determine_dataset_type
@@ -534,9 +535,11 @@ def recommend_plots(meta_data):
         if deter_type == types.DATASET_NUMERICAL and sem_type != types.ID:
             type_dict[deter_type].append((col['name'], col['stddev']/col['mean']))
         elif deter_type == types.DATASET_SPATIAL and sem_type == types.ADMIN:
-            type_dict[types.DATASET_SPATIAL].append(col['name'])
+            if 'num_distinct_values' in col and col['num_distinct_values'] > 1:
+                type_dict[types.DATASET_SPATIAL].append(col['name'])
         elif deter_type:
-            type_dict[deter_type].append(col['name'])
+            if 'num_distinct_values' in col and col['num_distinct_values'] > 1:
+                type_dict[deter_type].append(col['name'])
         
         type_dict[types.DATASET_NUMERICAL] = sorted(
             type_dict[types.DATASET_NUMERICAL], 
@@ -1010,6 +1013,19 @@ def process_dataset(data, dataset_id=None, metadata=None,
     
     if coverage:
         metadata['recommend_plots'] = recommend_plots(metadata)
+
+        filter_col = []
+        for col in metadata['columns']:
+            if col['structural_type'] != 'http://schema.org/Text':
+                filter_col.append(col['name'])
+        data_frame = data.dropna(subset=filter_col)
+
+        vis_data_size = min(max(int(data_frame.shape[0]*0.1), 1000), 
+            data_frame.shape[0])
+
+        metadata['vis_data'] = {
+            "values": json.loads(data_frame.sample(n=vis_data_size).to_json(orient="records"))
+        }
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
