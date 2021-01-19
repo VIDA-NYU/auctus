@@ -65,6 +65,9 @@ export interface Metadata {
   version: string;
   spatial_coverage?: SpatialCoverage[];
   recommend_plots: RecommendPlot[];
+  vis_data: {
+    values: []
+  };
 }
 
 export interface RecommendPlot {
@@ -85,6 +88,9 @@ export interface RecommendResult{
   test_nl4vis: string;
   visualizations: VisualDict[];
   visualizations_number: number;
+  vis_data: {
+    values: []
+  };
 }
 
 export interface RecommendResponse {

@@ -103,15 +103,15 @@ class NL4VIS(BaseHandler, GracefulHandler, ProfilePostedData):
         vis_lists = nl4dv_instance.analyze_query(question)['visList']
 
         for vis in vis_lists:
-            vis['data_sample'] = {
-                "values":[
-                    {
-                        "gold": g,
-                        "height": h
-                    }
-                    for g, h in zip(list(data_frame["gold"]),list(data_frame["height"]))
-                ]
-            }
+            # vis['data_sample'] = {
+            #     "values":[
+            #         {
+            #             "gold": g,
+            #             "height": h
+            #         }
+            #         for g, h in zip(list(data_frame["gold"]),list(data_frame["height"]))
+            #     ]
+            # }
             vis["vlSpec"]["data"] = {"name": "values"}
 
         # js_array = []
@@ -122,19 +122,16 @@ class NL4VIS(BaseHandler, GracefulHandler, ProfilePostedData):
         
         logger.info("line 71")
 
-        # vis_data = {
-        #     "values": data_frame.to_csv(index=False),
-        #     "format": {
-        #       "type": "csv"
-        #     }
-        # }
+        vis_data = {
+            "values": json.loads(data_frame.to_json(orient="records"))
+        }
 
         results = []
         results.append(dict(
             test_nl4vis='Hello, this is a test of nl4vis',
             visualizations=vis_lists,
-            visualizations_number=len(vis_lists)
-            # vis_data=vis_data
+            visualizations_number=len(vis_lists),
+            vis_data=vis_data
             ))
 
         # print(json.dumps(vis_lists[0]['vlSpec'], indent=4))

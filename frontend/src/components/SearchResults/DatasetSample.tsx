@@ -205,7 +205,6 @@ function TableColumnView(props: {
   headerGroups: Array<HeaderGroup<string[]>>;
   hit: SearchResult;
 }) {
-  console.log(props.hit.metadata.columns[0].plot?.data)
 
   return (
     <tbody>
@@ -283,8 +282,6 @@ class TableRecomm extends React.Component<
   }
 
   handleSubmit(event:React.FormEvent<HTMLFormElement>) {
-    console.log(this.state)
-    // what is the average gold of different sex?
 
     api
     .nl4vis(this.state.question, this.props.hit.id)
@@ -295,9 +292,9 @@ class TableRecomm extends React.Component<
         const res = response.data.results[0]
         if (res.visualizations_number > 0 ){
           const vis = res.visualizations[0]
-          console.log(vis)
           this.setState({
-            data: vis.data_sample,
+            // data: vis.data_sample,
+            data: res.vis_data,
             spec: vis.vlSpec
           })
         }
@@ -315,22 +312,6 @@ class TableRecomm extends React.Component<
   render(){
     return (
       <tbody>
-        {this.props.hit.metadata.recommend_plots.map((plt) => {
-          return (
-            <tr>
-              <td>
-                <b>{plt.generated_question} </b>
-              </td>
-              <td>
-                <VegaLite
-                  spec={plt.spec}
-                  data={plt.data}
-                  actions={false}
-                />
-              </td>
-            </tr>
-          );
-        })}
 
         <tr>
           <td>
@@ -350,6 +331,24 @@ class TableRecomm extends React.Component<
             />
           </td>
         </tr>
+
+        {this.props.hit.metadata.recommend_plots.map((plt) => {
+          return (
+            <tr>
+              <td>
+                <b>{plt.generated_question} </b>
+              </td>
+              <td>
+                <VegaLite
+                  spec={plt.spec}
+                  // data={plt.data}
+                  data={this.props.hit.metadata.vis_data}
+                  actions={false}
+                />
+              </td>
+            </tr>
+          );
+        })}
         
       </tbody>
     );
