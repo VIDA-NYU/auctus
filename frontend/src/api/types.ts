@@ -66,7 +66,7 @@ export interface Metadata {
   spatial_coverage?: SpatialCoverage[];
   recommend_plots: RecommendPlot[];
   vis_data: {
-    values: []
+    values: [];
   };
 }
 
@@ -75,21 +75,23 @@ export interface RecommendPlot {
   temporal_column: string;
   generated_question: string;
   data: {values: []};
-  spec: Object;
+  // eslint-disable-next-line
+  spec: Record<string, any>;
 }
 
-export interface VisualDict{
+export interface VisualDict {
   attributes: string;
   data_sample: {values: []};
-  vlSpec: Object;
+  // eslint-disable-next-line
+  vlSpec: Record<string, any>;
 }
 
-export interface RecommendResult{
+export interface RecommendResult {
   test_nl4vis: string;
   visualizations: VisualDict[];
   visualizations_number: number;
   vis_data: {
-    values: []
+    values: [];
   };
 }
 

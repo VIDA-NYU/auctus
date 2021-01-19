@@ -136,7 +136,7 @@ export function downloadToSession(
 export function nl4vis(
   q: string,
   datasetId: string
-  ): Promise<Response<RecommendResponse>> {
+): Promise<Response<RecommendResponse>> {
   const formData = new FormData();
   formData.append('question', q);
   formData.append('data_id', datasetId);
@@ -147,7 +147,7 @@ export function nl4vis(
     },
   };
 
-  let url = '/nl4vis';
+  const url = '/nl4vis';
 
   return api
     .post(url, formData, config)
