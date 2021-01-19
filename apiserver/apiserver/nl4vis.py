@@ -1,26 +1,13 @@
-import contextlib
-import io
+# import io
 import logging
 import json
-import os
 import prometheus_client
-import shutil
-import zipfile
-import csv
 
-from datamart_augmentation.augmentation import AugmentationError
-from datamart_core.augment import augment
-from datamart_core.common import hash_json, contextdecorator
-from datamart_core.fscache import cache_get, cache_get_or_set
-from datamart_core.materialize import get_dataset, make_zip_recursive
 from datamart_core.prom import PromMeasureRequest
-from datamart_materialize import make_writer
 
 from .base import BUCKETS, BaseHandler
 from .graceful_shutdown import GracefulHandler
-from .profile import ProfilePostedData, get_data_profile_from_es, \
-    profile_token_re
-from .search import get_augmentation_search_results
+from .profile import ProfilePostedData
 
 import pandas as pd
 import nl4dv
@@ -73,12 +60,10 @@ class NL4VIS(BaseHandler, GracefulHandler, ProfilePostedData):
         #     self.data_csv = self.data_frame.to_csv()
         #     self.nl4dv_instance = nl4dv.NL4DV(data_value=self.data_frame)
 
-
-
         data_source = self.application.elasticsearch.get(
-                'datamart', data_id
-            )['_source']
-        data_sample = data_source['sample']
+            'datamart', data_id
+        )['_source']
+        # data_sample = data_source['sample']
 
         columns = data_source['columns']
         filter_col = []
@@ -90,13 +75,13 @@ class NL4VIS(BaseHandler, GracefulHandler, ProfilePostedData):
 
         # logger.info("line 64")
         # data_frame = pd.read_csv(data_path)
-        df_sample = pd.read_csv(io.StringIO(data_sample))
+        # df_sample = pd.read_csv(io.StringIO(data_sample))
         # logger.info("line 66")
         # nl4dv_instance = nl4dv.NL4DV(data_value=data_frame)
         # logger.info("line 68")
 
         # vis_lists = self.nl4dv_instance.analyze_query(question)['visList']
-        data_path = "/datasets/"+data_id+"/main.csv"
+        data_path = "/datasets/" + data_id + "/main.csv"
         data_frame = pd.read_csv(data_path)
         data_frame = data_frame.dropna(subset=filter_col)
         nl4dv_instance = nl4dv.NL4DV(data_value=data_frame)
@@ -119,7 +104,7 @@ class NL4VIS(BaseHandler, GracefulHandler, ProfilePostedData):
         #     for row in csv.DictReader(csvf):
         #         js_array.append(row)
         # vis_data = json.dumps(js_array, indent=4)
-        
+
         logger.info("line 71")
 
         vis_data = {
@@ -132,7 +117,7 @@ class NL4VIS(BaseHandler, GracefulHandler, ProfilePostedData):
             visualizations=vis_lists,
             visualizations_number=len(vis_lists),
             vis_data=vis_data
-            ))
+        ))
 
         # print(json.dumps(vis_lists[0]['vlSpec'], indent=4))
 
@@ -154,10 +139,4 @@ class NL4VIS(BaseHandler, GracefulHandler, ProfilePostedData):
         # results[0]['data_test'] = data_test
         # results[0]['meta_test'] = meta_test
 
-
-
         return self.send_json(results)
-
-
-        
-
