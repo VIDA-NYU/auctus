@@ -15,7 +15,6 @@ import time
 import random
 import re
 import warnings
-import io
 import json
 
 from .numerical import mean_stddev, get_numerical_ranges
@@ -545,7 +544,7 @@ def recommend_plots(meta_data):
             key=lambda item: item[1],
             reverse=True)
 
-    df_sample = pandas.read_csv(io.StringIO(meta_data['sample']))
+    # df_sample = pandas.read_csv(io.StringIO(meta_data['sample']))
     recommend_plots = []
     for numerical_col in type_dict[types.DATASET_NUMERICAL]:
         numerical_name = numerical_col[0]
@@ -556,14 +555,14 @@ def recommend_plots(meta_data):
                 "numerical_column": numerical_name,
                 "temporal_column": temporal_name,
                 "generated_question": "How does " + numerical_name + " change over " + temporal_name + " ?",
-                "data": {
-                    "values": [
-                        {
-                            temporal_name: time,
-                            numerical_name: val
-                        }
-                        for time, val in zip(list(df_sample[temporal_name]), list(df_sample[numerical_name]))
-                    ]},
+                # "data": {
+                #     "values": [
+                #         {
+                #             temporal_name: time,
+                #             numerical_name: val
+                #         }
+                #         for time, val in zip(list(df_sample[temporal_name]), list(df_sample[numerical_name]))
+                #     ]},
                 "spec": {
                     "mark": "line",
                     "encoding": {
@@ -584,14 +583,14 @@ def recommend_plots(meta_data):
                 "numerical_column": numerical_name,
                 "spatial/categorical_column": categorical_name,
                 "generated_question": "What is the distribution of " + numerical_name + " over " + categorical_name + " ?",
-                "data": {
-                    "values": [
-                        {
-                            categorical_name: category,
-                            numerical_name: val
-                        }
-                        for category, val in zip(list(df_sample[categorical_name]), list(df_sample[numerical_name]))
-                    ]},
+                # "data": {
+                #     "values": [
+                #         {
+                #             categorical_name: category,
+                #             numerical_name: val
+                #         }
+                #         for category, val in zip(list(df_sample[categorical_name]), list(df_sample[numerical_name]))
+                #     ]},
                 "spec": {
                     "mark": "bar",
                     "encoding": {
