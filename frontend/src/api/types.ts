@@ -111,6 +111,7 @@ export interface SearchFacets {
 export interface SearchResponse {
   results: SearchResult[];
   facets?: SearchFacets;
+  total?: number;
 }
 
 export interface Variable {

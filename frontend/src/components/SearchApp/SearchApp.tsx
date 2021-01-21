@@ -330,7 +330,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             searchState: SearchState.SEARCH_SUCCESS,
             searchResponse: {
               results: aggregateResults(response.data.results),
-              facets: response.data.facets,
+              ...response.data,
             },
           });
         } else {
@@ -582,6 +582,14 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                   <div className="mt-1 mb-1 ml-1" style={{maxWidth: 820}}>
                     {expandedFilters}
                   </div>
+                </div>
+              )}
+              {this.state.searchResponse?.total !== undefined && (
+                <div className="mt-2 mr-2 ml-2">
+                  <span className="text-muted">
+                    {this.state.searchResponse.total.toLocaleString('en')}{' '}
+                    results
+                  </span>
                 </div>
               )}
             </div>
