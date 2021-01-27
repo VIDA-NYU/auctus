@@ -69,6 +69,22 @@ tags:
     ### Step 3: Obtain the selected data from Auctus
 
     Issue a request to [`GET /session/<session_id>`](#operation/session_get), where `<session_id>` is the short string you obtained in step 1.
+- name: "result_model"
+  x-displayName: Result
+  description: |
+    <SchemaDefinition schemaRef="#/components/schemas/Result" />
+x-tagGroups:
+- name: api
+  x-displayName: API
+  tags:
+  - "query"
+  - "ingest"
+  - "augment"
+  - "embed"
+- name: models
+  x-displayName: Models
+  tags:
+  - "result_model"
 paths:
   /upload:
     post:
