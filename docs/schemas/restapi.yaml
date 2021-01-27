@@ -175,6 +175,47 @@ paths:
             application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
+      x-codeSamples:
+      - lang: Python
+        source: |
+          # File
+          response = requests.post(
+              'https://auctus.vida-nyu.org/api/v1/upload',
+              files={'file': open('data/myfile.csv')},
+              data={
+                  "name": "Basic CSV test",
+                  "description": "Test upload from API, please ignore",
+              },
+          )
+          response.raise_for_status()
+          print(response.json()['id'])
+
+          # URL
+          response = requests.post(
+              'https://auctus.vida-nyu.org/api/v1/upload',
+              data={
+                  "address": "https://gitlab.com/ViDA-NYU/auctus/auctus/-/raw/master/tests/data/basic.csv",
+                  "name": "Basic CSV test",
+                  "description": "Test upload from API, please ignore",
+              },
+          )
+          response.raise_for_status()
+          print(response.json()['id'])
+      - lang: curl
+        source: |
+          # File
+          curl \
+              -F file=@data/myfile.csv \
+              -F name="Basic CSV test" \
+              -F description="Test upload from API, please ignore" \
+              https://auctus.vida-nyu.org/api/v1/upload
+
+          # URL
+          curl \
+              -F address=https://gitlab.com/ViDA-NYU/auctus/auctus/-/raw/master/tests/data/basic.csv \
+              -F name="Basic CSV test" \
+              -F description="Test upload from API, please ignore" \
+              https://auctus.vida-nyu.org/api/v1/upload
   /search:
     post:
       tags:
@@ -222,8 +263,8 @@ paths:
                 value:
                   query:
                     keywords:
-                      - "taxi"
-                      - "medallion"
+                    - "taxi"
+                    - "medallion"
                     variables: []
               geo_bronx:
                 summary: "Search for geospatial datasets concerning the Bronx"
@@ -264,8 +305,8 @@ paths:
                 summary: "Search using the keywords 'taxi' and 'medallion'"
                 value:
                   keywords:
-                    - "taxi"
-                    - "medallion"
+                  - "taxi"
+                  - "medallion"
                   variables: []
               geo_bronx:
                 summary: "Search for geospatial datasets concerning the Bronx"
@@ -298,6 +339,37 @@ paths:
             application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
+      x-codeSamples:
+      - lang: Python
+        source: |
+          response = requests.post(
+              'https://auctus.vida-nyu.org/api/v1/search',
+              json={'keywords': 'taxi'},
+          )
+          response.raise_for_status()
+          for result in response.json()['results']:
+              print(result['score'], result['name'], result['id'])
+
+          # Query + data
+          response = requests.post(
+              'https://auctus.vida-nyu.org/api/v1/search',
+              files={
+                  'query': json.dump({'keywords': 'weather'}).encode('utf-8'),
+                  'data': open('data/myfile.csv'),
+              },
+          )
+          response.raise_for_status()
+      - lang: curl
+        source: |
+          # Just query
+          curl -H "Content-Type: application/json" \
+              -d '{"keywords": "taxi"}' \
+              https://auctus.vida-nyu.org/api/v1/search
+
+          # Query + data
+          curl -F query='{"keywords": "taxi"}' \
+              -F data=@data/myfile.csv \
+              https://auctus.vida-nyu.org/api/v1/search
   /profile:
     post:
       tags:
@@ -310,6 +382,16 @@ paths:
       operationId: "profile"
       requestBody:
         content:
+          application/octet-stream:
+            schema:
+              type: string
+              description: Data which you want to profile
+              format: binary
+            examples:
+              simple:
+                summary: Example CSV file
+                value:
+                  "name,country,number,what\nremi,france,4,false\naecio,brazil,3,true\nsonia,peru,7,true\nroque,peru,8,true\nfernando,brazil,10,false\n"
           multipart/form-data:
             schema:
               properties:
@@ -317,11 +399,6 @@ paths:
                   type: string
                   description: Data which you want to profile
                   format: binary
-            examples:
-              simple:
-                summary: Example CSV file
-                value:
-                  data: "name,country,number,what\nremi,france,4,false\naecio,brazil,3,true\nsonia,peru,7,true\nroque,peru,8,true\nfernando,brazil,10,false\n"
       responses:
         200:
           description: OK
@@ -335,6 +412,19 @@ paths:
             application/json; charset=utf-8:
               schema:
                 $ref: "#/components/schemas/Error"
+      x-codeSamples:
+      - lang: Python
+        source: |
+          response = requests.post(
+              'https://auctus.vida-nyu.org/api/v1/profile',
+              files={'data': open('data/myfile.csv')},
+          )
+          response.raise_for_status()
+          print(response.json())
+      - lang: curl
+        source: |
+          curl -F data=@data/myfile.csv \
+              https://auctus.vida-nyu.org/api/v1/profile
   /download/{dataset_id}:
     get:
       tags:
@@ -415,9 +505,9 @@ paths:
                   id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
                   metadata:
                     columns:
-                      - name: "Borough"
-                      - name: "Calendar Year"
-                      - name: "Filed Violation Count"
+                    - name: "Borough"
+                    - name: "Calendar Year"
+                    - name: "Filed Violation Count"
                     materialize:
                       socrata_id: "vbgf-ket3"
                       socrata_domain: "data.cityofnewyork.us"
@@ -432,27 +522,37 @@ paths:
                   $ref: "#/components/schemas/Result" # TODO: not quite
               required:
               - task
-            examples:
-              nyc_data:
-                summary: "Sample search result sent back as task"
-                value:
-                  task:
-                    id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
-                    metadata:
-                      columns:
-                        - name: "Borough"
-                        - name: "Calendar Year"
-                        - name: "Filed Violation Count"
-                      materialize:
-                        socrata_id: "vbgf-ket3"
-                        socrata_domain: "data.cityofnewyork.us"
-                        socrata_updated: "2019-04-29T16:54:13.000Z"
-                        direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
-                        identifier: datamart.socrata
-                        date: "2019-06-27T19:26:53.147559Z"
             encoding:
               task:
                 contentType: application/json
+      x-codeSamples:
+      - lang: Python
+        source: |
+          # Search result as returned by /search API
+          search_result = {
+              "id": "datamart.socrata.data-cityofnewyork-us.vbgf-ket3",
+              "metadata": {"materialize": {
+                  "socrata_id": "vbgf-ket3",
+                  "socrata_domain": "data.cityofnewyork.us",
+                  "socrata_updated": "2019-04-29T16:54:13.000Z",
+                  "direct_url": "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD",
+                  "identifier": "datamart.socrata",
+                  "date": "2019-06-27T19:26:53.147559Z"
+              }}
+          }
+          # Use /download endpoint
+          response = requests.post(
+              'https://auctus.vida-nyu.org/api/v1/download',
+              files={
+                  'task': json.dumps(search_result).encode('utf-8'),
+              },
+          )
+          response.raise_for_status()
+          print(len(response.content))
+      - lang: curl
+        source: |
+          curl -F task=@searchresult.json \
+              https://auctus.vida-nyu.org/api/v1/download
       responses:
         404:
           description: "No dataset for this result"
@@ -502,6 +602,17 @@ paths:
                     - "queued"
                   metadata:
                     $ref: "#/components/schemas/Result"
+      x-codeSamples:
+      - lang: Python
+        source: |
+          response = requests.get(
+              'https://auctus.vida-nyu.org/api/v1/metadata/datamart.socrata.data-cityofnewyork-us.395v-hkhg',
+          )
+          response.raise_for_status()
+          print(response.json())
+      - lang: curl
+        source: |
+          curl https://auctus.vida-nyu.org/api/v1/metadata/datamart.socrata.data-cityofnewyork-us.395v-hkhg
   /augment:
     post:
       tags:
