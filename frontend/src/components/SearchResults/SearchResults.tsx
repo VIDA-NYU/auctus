@@ -22,6 +22,7 @@ interface SearchResultsProps {
   searchResponse?: SearchResponse;
   session?: Session;
   onSearchRelated: (relatedFile: RelatedFile) => void;
+  setCurrentPage: (currentPage: number) => void;
 }
 
 interface SearchResultsState {
@@ -113,6 +114,7 @@ class SearchResults extends React.PureComponent<
       pager,
       selectedHit,
     });
+    this.props.setCurrentPage(pager.currentPage);
   }
 
   render() {
