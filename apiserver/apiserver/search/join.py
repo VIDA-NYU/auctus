@@ -10,8 +10,8 @@ from .base import TOP_K_SIZE, get_column_identifiers
 logger = logging.getLogger(__name__)
 
 
-#: Maximum number of Lazo hits to send back to Elasticsearch
 MAX_LAZO_CANDIDATES_SIZE = 300
+"""Maximum number of Lazo hits to send back to Elasticsearch"""
 
 
 temporal_resolutions_priorities = {

@@ -1,46 +1,46 @@
 # Column types
 
-#: No data (whole column is missing)
 MISSING_DATA = 'https://metadata.datadrivendiscovery.org/types/MissingData'
+"""No data (whole column is missing)"""
 
-#: Integer (numbers without a decimal point)
 INTEGER = 'http://schema.org/Integer'
+"""Integer (numbers without a decimal point)"""
 
-#: Floating-point numbers
 FLOAT = 'http://schema.org/Float'
+"""Floating-point numbers"""
 
-#: Text, better represented as strings
 TEXT = 'http://schema.org/Text'
+"""Text, better represented as strings"""
 
-#: Booleans, e.g. only the two values "true" and "false"
 BOOLEAN = 'http://schema.org/Boolean'
+"""Booleans, e.g. only the two values \"true\" and \"false\""""
 
-#: Numerical values representing latitude coordinates
 LATITUDE = 'http://schema.org/latitude'
+"""Numerical values representing latitude coordinates"""
 
-#: Numerical values representing longitude coordinates
 LONGITUDE = 'http://schema.org/longitude'
+"""Numerical values representing longitude coordinates"""
 
-#: A specific instant in time (not partial ones such as "July 4" or "12am")
 DATE_TIME = 'http://schema.org/DateTime'
+"""A specific instant in time (not partial ones such as "July 4" or "12am")"""
 
-#: The street address of a location
 ADDRESS = 'http://schema.org/address'
+"""The street address of a location"""
 
-#: A named administrative area, such as a country, state, or city
 ADMIN = 'http://schema.org/AdministrativeArea'
+"""A named administrative area, such as a country, state, or city"""
 
-#: An identifier
 ID = 'http://schema.org/identifier'
+"""An identifier"""
 
-#: Categorical values, i.e. drawn from a limited number of options
 CATEGORICAL = 'http://schema.org/Enumeration'
+"""Categorical values, i.e. drawn from a limited number of options"""
 
-#: A geographic location (latitude+longitude coordinates)
 GEO_POINT = 'http://schema.org/GeoCoordinates'
+"""A geographic location (latitude+longitude coordinates)"""
 
-#: A geographic shape described by its coordinates
 GEO_POLYGON = 'http://schema.org/GeoShape'
+"""A geographic shape described by its coordinates"""
 
 
 # Dataset types

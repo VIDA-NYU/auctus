@@ -35,11 +35,12 @@ SAMPLE_ROWS = 20
 MAX_UNCLEAN_ADDRESSES = 0.20  # 20%
 
 
-#: Maximum number of rows to discard at the top of the file
 HEADER_MAX_GARBAGE = 6
+"""Maximum number of rows to discard at the top of the file"""
 
-#: Stop throwing out lines when that many in a row have same number of columns
 HEADER_CONSISTENT_ROWS = 4
+"""Stop throwing out lines when that many in a row have same number of columns
+"""
 
 
 BUCKETS = [
