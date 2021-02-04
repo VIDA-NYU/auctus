@@ -1,7 +1,7 @@
 API client
 ==========
 
-A client library for :doc:`the REST API <../restapi>` is available for convenience. It supports searching, downloading, and augmenting datasets.
+A client library for `the REST API <../rest>`__ is available for convenience. It supports searching, downloading, and augmenting datasets.
 
 It can perform some operations both on the client-side (for speed, the server has limited capacity; also saves time by not uploading the data) and on the server-side in "proxy mode" (working around the need to install and configure some dependencies on the client, and taking advantage of cached results on the server).
 

@@ -1,7 +1,7 @@
 Using the web interface
 =======================
 
-In addition to the :doc:`API <restapi>`, there is a web interface allowing users to interact with Datamart with no additional software.
+In addition to the `API <../rest/>`__, there is a web interface allowing users to interact with Datamart with no additional software.
 
 The version of Datamart that we host can be accessed at https://auctus.vida-nyu.org/
 

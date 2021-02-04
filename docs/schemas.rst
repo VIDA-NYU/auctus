@@ -6,7 +6,7 @@ JSON Schemas
 Query
 -----
 
-JSON objects expected by the :ref:`rest-search` endpoint.
+JSON objects expected by `the search endpoint <../rest/#operation/search>`__.
 
 ..  literalinclude:: schemas/query_input_schema.json
     :language: json
@@ -17,7 +17,7 @@ JSON objects expected by the :ref:`rest-search` endpoint.
 Result schema
 -------------
 
-Description of a dataset, such as a search result. The :ref:`rest-search` endpoint returns an array of those. They are also what you give the :func:`datamart_materialize.download`.
+Description of a dataset, such as a search result. `The search endpoint <../rest/#operation/search>`__ returns an array of those. They are also what you give the :func:`datamart_materialize.download`.
 
 ..  literalinclude:: schemas/query_result_schema.json
     :language: json
