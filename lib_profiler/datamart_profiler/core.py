@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 RANDOM_SEED = 89
 
-MAX_SIZE = 50000000  # 50 MB
+MAX_SIZE = 5000000  # 5 MB
 SAMPLE_ROWS = 20
 
 MAX_UNCLEAN_ADDRESSES = 0.20  # 20%
