@@ -1,12 +1,14 @@
 import React from 'react';
 import * as Icon from 'react-feather';
 import {SearchFacet} from '../../api/types';
+import {SimpleBar} from '../SearchResults/SimpleBar';
 
 interface DatasetTypeFilterProps {
   datasetTypes: string[];
   checkedDatasetTypes?: string[];
   onDatasetTypeChange: (checkedDatasetTypes: string[]) => void;
   facetBuckets?: SearchFacet;
+  totalResults: number;
 }
 
 class DatasetTypeFilter extends React.PureComponent<DatasetTypeFilterProps> {
@@ -93,22 +95,43 @@ class DatasetTypeFilter extends React.PureComponent<DatasetTypeFilterProps> {
           </button>
         </div>
         {datasetTypesList.map(([type, checked]) => (
-          <div className="form-check ml-2" key={`div-${type}`}>
-            <input
-              className="form-check-input"
-              type="checkbox"
-              value={type}
-              checked={checked}
-              id={`check-box-${type}`}
-              onChange={e => this.handleChange(e)}
-            />
-            <label className="form-check-label" htmlFor={`check-box-${type}`}>
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-              {facetBuckets && facetBuckets.buckets[type]
-                ? ' (' + facetBuckets.buckets[type] + ')'
-                : undefined}
-            </label>
-          </div>
+          <>
+            {
+              // Hide facets with no matches. However, facets are still displayed if the user is on the landing page.
+              (facetBuckets && facetBuckets.buckets[type]) ||
+              this.props.totalResults === 0 ? (
+                <div
+                  className="d-flex justify-content-between form-check ml-2"
+                  key={`div-${type}`}
+                  style={{width: 550}}
+                >
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    value={type}
+                    checked={checked}
+                    id={`check-box-${type}`}
+                    onChange={e => this.handleChange(e)}
+                  />
+                  <label
+                    className="form-check-label"
+                    htmlFor={`check-box-${type}`}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </label>
+                  {facetBuckets && this.props.totalResults > 0 && (
+                    <SimpleBar
+                      facetBuckets={facetBuckets}
+                      keyname={type}
+                      totalResults={this.props.totalResults}
+                    />
+                  )}
+                </div>
+              ) : (
+                <></>
+              )
+            }
+          </>
         ))}
       </>
     );

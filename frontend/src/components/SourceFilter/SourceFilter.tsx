@@ -1,12 +1,14 @@
 import React from 'react';
 import * as Icon from 'react-feather';
 import {SearchFacet} from '../../api/types';
+import {SimpleBar} from '../SearchResults/SimpleBar';
 
 interface SourceFilterProps {
   sources: string[];
   checkedSources?: string[];
   onSourcesChange: (checkedSources: string[]) => void;
   facetBuckets?: SearchFacet;
+  totalResults: number;
 }
 
 class SourceFilter extends React.PureComponent<SourceFilterProps> {
@@ -93,22 +95,43 @@ class SourceFilter extends React.PureComponent<SourceFilterProps> {
           </button>
         </div>
         {sourcesList.map(([source, checked]) => (
-          <div className="form-check ml-2" key={`div-${source}`}>
-            <input
-              className="form-check-input"
-              type="checkbox"
-              value={source}
-              checked={checked}
-              id={`check-box-${source}`}
-              onChange={e => this.handleChange(e)}
-            />
-            <label className="form-check-label" htmlFor={`check-box-${source}`}>
-              {source}
-              {facetBuckets && facetBuckets.buckets[source]
-                ? ' (' + facetBuckets.buckets[source] + ')'
-                : undefined}
-            </label>
-          </div>
+          <>
+            {
+              // Hide facets with no matches. However, facets are still displayed if the user is on the landing page.
+              (facetBuckets && facetBuckets.buckets[source]) ||
+              this.props.totalResults === 0 ? (
+                <div
+                  className="d-flex justify-content-between form-check ml-2"
+                  key={`div-${source}`}
+                  style={{width: 700}}
+                >
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    value={source}
+                    checked={checked}
+                    id={`check-box-${source}`}
+                    onChange={e => this.handleChange(e)}
+                  />
+                  <label
+                    className="form-check-label"
+                    htmlFor={`check-box-${source}`}
+                  >
+                    {source}
+                  </label>
+                  {facetBuckets && this.props.totalResults > 0 && (
+                    <SimpleBar
+                      facetBuckets={facetBuckets}
+                      keyname={source}
+                      totalResults={this.props.totalResults}
+                    />
+                  )}
+                </div>
+              ) : (
+                <></>
+              )
+            }
+          </>
         ))}
       </>
     );
