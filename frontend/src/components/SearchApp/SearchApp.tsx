@@ -379,6 +379,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
 
   renderFilters() {
     const facets = this.state.searchResponse?.facets;
+    const totalResults =
+      this.state.searchResponse && this.state.searchResponse.total
+        ? this.state.searchResponse.total
+        : 0;
     return this.state.filters
       .filter(filter => !filter.hidden)
       .map(filter => {
@@ -424,6 +428,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 checkedSources={filter.state as string[] | undefined}
                 onSourcesChange={s => this.updateFilterState(filter.id, s)}
                 facetBuckets={facets?.source}
+                totalResults={totalResults}
               />
             );
             break;
@@ -435,6 +440,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 checkedDatasetTypes={filter.state as string[] | undefined}
                 onDatasetTypeChange={s => this.updateFilterState(filter.id, s)}
                 facetBuckets={facets?.type}
+                totalResults={totalResults}
               />
             );
             break;
