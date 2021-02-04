@@ -48,6 +48,7 @@ interface SearchAppState {
   selectedAugmentationType: AugmentationType;
   relatedFileDialog: RelatedFile | undefined;
   openDialog: boolean;
+  currentPage?: number;
 }
 
 interface SearchAppProps {
@@ -330,7 +331,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             searchState: SearchState.SEARCH_SUCCESS,
             searchResponse: {
               results: aggregateResults(response.data.results),
-              facets: response.data.facets,
+              ...response.data,
             },
           });
         } else {
@@ -533,12 +534,19 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
       openDialog: false,
     });
   }
+  setCurrentPage(page: number) {
+    this.setState({currentPage: page});
+  }
 
   render() {
     const {searchQuery, searchState, searchResponse, session} = this.state;
     const compactFilters = this.renderCompactFilters();
     const expandedFilters = this.renderFilters();
     const hasExpandedFilters = expandedFilters.length > 0;
+    const totalResultsText =
+      this.state.currentPage && this.state.currentPage > 1
+        ? 'Page ' + this.state.currentPage + ' of about '
+        : 'About ';
     return (
       <>
         {searchQuery ? (
@@ -584,6 +592,15 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                   </div>
                 </div>
               )}
+              {this.state.searchResponse?.total !== undefined && (
+                <div className="mt-2 mr-2 ml-2">
+                  <span className="text-muted">
+                    {totalResultsText}
+                    {this.state.searchResponse.total.toLocaleString('en')}{' '}
+                    results
+                  </span>
+                </div>
+              )}
             </div>
             <div
               className={`${
@@ -596,6 +613,7 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
                 searchResponse={searchResponse}
                 session={session}
                 onSearchRelated={this.onSearchRelated.bind(this)}
+                setCurrentPage={(page: number) => this.setCurrentPage(page)}
               />
             </div>
           </div>
