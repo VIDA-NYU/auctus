@@ -1,3 +1,32 @@
+0.9 (TBD)
+=========
+
+Incompatible changes:
+* Socrata and Zenodo configuration is now from JSON files mounted in the countainers
+* Changed format of temporal coverage information: now in separate key `temporal_coverage` instead of column, similar to `spatial_coverage`
+* Added a World Bank discoverer, for their indicators
+* Renamed repository to 'auctus'
+* Updated Poetry from 1.0 to 1.1 (lock files are incompatible)
+* Moved state for discoverers to a separate ES index 'discovery'
+* Changed ES synonym configuration to `synonym_graph` filter
+
+Enhancements:
+* Added an admin interface to the coordinator container, allowing the admin to view recently uploaded datasets and remove datasets, and view errored datasets per exception type
+* Added pagination to search API (non-augmentation only for now)
+* Assume admin areas have the same level, record the level to metadata
+* Strip HTML from dataset descriptions
+* Automatically pivot tables with years or dates for columns
+* Added pagination to the frontend (in first 150 API results for now)
+* Searching for related files will now ask for either join or union (and which columns)
+* Added a 'source_url' field to metadata, linked from interface
+* Return facets in API (under key 'facets') and total number of results (under key `total`)
+* Show count of results for each facet in interface
+* Lowered profiled sample size dramatically (from max 50MB to max 5MB)
+
+Bugfixes:
+* Expose Content-Disposition header via CORS, allowing browser to read downloaded file names
+* Various fixes to API spec, now checked during integration tests
+
 0.8 (2020-10-20)
 ================
 
