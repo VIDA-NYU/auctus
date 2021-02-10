@@ -1,3 +1,4 @@
+import contextlib
 import csv
 from datetime import datetime
 import openpyxl
@@ -6,8 +7,12 @@ from .utils import SimpleConverter
 
 
 def xlsx_to_csv(source_filename, dest_fileobj):
-    with open(source_filename, 'rb') as fp:
-        workbook = openpyxl.load_workbook(fp, read_only=True)
+    with contextlib.ExitStack() as stack:
+        fp = stack.enter_context(open(source_filename, 'rb'))
+        workbook = stack.enter_context(contextlib.closing(
+            openpyxl.load_workbook(fp, read_only=True)
+        ))
+
         sheets = workbook.worksheets
         if len(sheets) != 1:
             raise ValueError("Excel workbook has %d sheets" % len(sheets))
@@ -25,8 +30,6 @@ def xlsx_to_csv(source_filename, dest_fileobj):
             ]
 
             writer.writerow(values)
-
-        workbook.close()
 
 
 class ExcelConverter(SimpleConverter):
