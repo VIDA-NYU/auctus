@@ -7,7 +7,7 @@ from .utils import SimpleConverter
 
 def xlsx_to_csv(source_filename, dest_fileobj):
     with open(source_filename, 'rb') as fp:
-        workbook = openpyxl.load_workbook(fp)
+        workbook = openpyxl.load_workbook(fp, read_only=True)
         sheets = workbook.worksheets
         if len(sheets) != 1:
             raise ValueError("Excel workbook has %d sheets" % len(sheets))
