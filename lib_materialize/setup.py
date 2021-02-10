@@ -10,6 +10,7 @@ req = [
     'requests',
     'xlrd',
     'openpyxl',
+    'lxml',  # optional dependency for openpyxl, it's slow without it
     'pyreadstat>=1.0,<2.0',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
