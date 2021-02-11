@@ -70,6 +70,9 @@ PROM_LAZO = prometheus_client.Histogram(
 _re_word_split = re.compile(r'\W+')
 
 
+csv.field_size_limit(2097152)  # Default 131072
+
+
 def truncate_string(s, limit=140):
     """Truncate a string, replacing characters over the limit with "...".
     """
