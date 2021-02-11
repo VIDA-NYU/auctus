@@ -5,6 +5,7 @@ import csv
 from datetime import datetime
 import itertools
 import logging
+import math
 import numpy
 import os
 import pandas
@@ -250,10 +251,16 @@ def load_data(data, load_max_size=None):
                 ratio = load_max_size / metadata['size']
                 logger.info("Loading dataframe, sample ratio=%r...", ratio)
                 rand = random.Random(RANDOM_SEED)
+                selected_rows = set(rand.sample(
+                    range(1, metadata['nb_rows']),
+                    math.ceil(ratio * (metadata['nb_rows'] - 1)),
+                ))
+                selected_rows.add(1)  # Always get the header
                 data = pandas.read_csv(
                     data,
                     dtype=str, na_filter=False,
-                    skiprows=lambda i: i != 0 and rand.random() > ratio)
+                    skiprows=lambda i: i not in selected_rows,
+                )
             else:
                 logger.info("Loading dataframe...")
                 data = pandas.read_csv(data,
