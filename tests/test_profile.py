@@ -1,15 +1,19 @@
+import contextlib
+import csv
 from datetime import datetime
 from dateutil.tz import UTC
 import io
+import os
 import pandas
 import random
 import requests
-import unittest
+import tempfile
 import textwrap
+import unittest
 
 import datamart_geo
 from datamart_profiler import process_dataset
-from datamart_profiler.core import expand_attribute_name
+from datamart_profiler.core import expand_attribute_name, load_data
 from datamart_profiler import profile_types
 from datamart_profiler import spatial
 from datamart_profiler.spatial import LATITUDE, LONGITUDE, LatLongColumn, \
@@ -56,6 +60,40 @@ def check_plot(kind):
         return plot['type'] == kind
 
     return check
+
+
+class TestSample(unittest.TestCase):
+    @contextlib.contextmanager
+    def random_data(self, rows):
+        with tempfile.NamedTemporaryFile('w+') as tmp:
+            writer = csv.writer(tmp)
+            writer.writerow(['id', 'number'])
+            rand = random.Random(4)
+            for i in range(rows):
+                writer.writerow([i, rand.randint(100000, 999999)])
+            tmp.flush()
+            filesize = os.stat(tmp.name).st_size
+            yield tmp, filesize
+
+    def test_sample(self):
+        """Test sampling of tables"""
+        with self.random_data(1000) as (tmp, filesize):
+            self.assertEqual(filesize, 11901)
+            data, data_path, metadata, column_names = load_data(tmp.name, 5000)
+            self.assertEqual(data.shape, (421, 2))
+
+        with self.random_data(600) as (tmp, filesize):
+            self.assertEqual(filesize, 7101)
+            data, data_path, metadata, column_names = load_data(tmp.name, 5000)
+            self.assertEqual(data.shape, (422, 2))
+
+        with self.random_data(425) as (tmp, filesize):
+            self.assertEqual(filesize, 5001)
+            data, data_path, metadata, column_names = load_data(tmp.name, 5000)
+            self.assertEqual(data.shape, (424, 2))
+
+            data, data_path, metadata, column_names = load_data(tmp.name, 6000)
+            self.assertEqual(data.shape, (425, 2))
 
 
 class TestNames(unittest.TestCase):
