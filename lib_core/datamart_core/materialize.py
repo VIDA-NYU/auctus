@@ -256,11 +256,25 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
 
     # Check for TSV file format
     with open(dataset_path, 'r') as fp:
-        try:
-            dialect = csv.Sniffer().sniff(fp.read(16384))
-        except Exception as error:  # csv.Error, UnicodeDecodeError
-            logger.warning("csv.Sniffer error: %s", error)
-            dialect = csv.get_dialect('excel')
+        # Read at least 65kB and 3 lines, and at most 5MB
+        sample = fp.read(65536)
+        newlines = sample.count('\n')
+        while newlines < 3 and len(sample) < 5242880:
+            more = fp.read(65536)
+            if not more:
+                break
+            sample += more
+            newlines += more.count('\n')
+
+        # Run the sniffer
+        dialect = csv.get_dialect('excel')
+        if newlines >= 3:
+            try:
+                dialect = csv.Sniffer().sniff(sample)
+            except Exception as error:  # csv.Error, UnicodeDecodeError
+                logger.warning("csv.Sniffer error: %s", error)
+        else:
+            logger.warning("Lines are too long to use csv.Sniffer")
     if getattr(dialect, 'delimiter', ',') != ',':
         # Update metadata
         logger.info("Detected separator is %r", dialect.delimiter)
