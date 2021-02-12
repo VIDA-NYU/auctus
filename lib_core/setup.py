@@ -29,11 +29,12 @@ setup(name='datamart_core',
           'Tracker': 'https://gitlab.com/ViDA-NYU/auctus/auctus/-/issues',
       },
       long_description="Core library for Auctus services",
-      license='BSD-3-Clause',
+      license='Apache-2.0',
       keywords=['auctus', 'datamart'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Science/Research',
+          'License :: OSI Approved :: Apache Software License',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 3 :: Only',
           'Topic :: Scientific/Engineering :: Information Analysis'])
