@@ -292,12 +292,11 @@ class TestProfiler(DatamartTest):
                     'status': 'error',
                     'error': 'Error profiling dataset',
                     'error_details': {
-                        'exception_type': 'builtins.TypeError',
-                        'exception': '"delimiter" must be a 1-character string',
+                        'exception_type': '_csv.Error',
+                        'exception': 'line contains NUL',
                         'traceback': lambda s: (
                             s.startswith('Traceback') and
-                            s.endswith('\nTypeError: "delimiter" must be '
-                                       'a 1-character string')
+                            s.endswith('\n_csv.Error: line contains NUL')
                         ),
                     },
                     'metadata': {
