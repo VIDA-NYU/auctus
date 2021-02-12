@@ -4,7 +4,7 @@ import os
 import prometheus_client
 
 from datamart_core.common import log_future
-from datamart_core.fscache import clear_cache
+from datamart_fslock import clear_cache
 
 
 logger = logging.getLogger(__name__)

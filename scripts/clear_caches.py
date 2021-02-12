@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 
-from datamart_core.fscache import clear_cache
+from datamart_fslock import clear_cache
 
 
 if __name__ == '__main__':

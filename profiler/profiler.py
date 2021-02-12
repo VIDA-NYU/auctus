@@ -19,9 +19,9 @@ import traceback
 from datamart_core.common import setup_logging, add_dataset_to_index, \
     delete_dataset_from_index, delete_dataset_from_lazo, log_future, \
     json2msg, msg2json
-from datamart_core.fscache import cache_get_or_set
 from datamart_core.materialize import get_dataset, dataset_cache_key, \
     detect_format_convert_to_csv
+from datamart_fslock import cache_get_or_set
 from datamart_geo import GeoData
 from datamart_materialize import DatasetTooBig
 from datamart_profiler import process_dataset

@@ -20,6 +20,8 @@ RUN python3 install_deps.py poetry.lock.json
 
 COPY --chown=appuser lib_core lib_core
 RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/lib_core
+COPY --chown=appuser lib_fslock lib_fslock
+RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/lib_fslock
 COPY --chown=appuser discovery/test_discovery.py /usr/src/app/discovery/
 COPY tests/data /usr/src/app/tests/data
 
