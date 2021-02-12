@@ -11,7 +11,7 @@ import tornado.web
 
 from datamart_core.materialize import detect_format_convert_to_csv
 from datamart_core.prom import PromMeasureRequest
-from datamart_fslock import cache_get_or_set
+from datamart_fslock.cache import cache_get_or_set
 from datamart_profiler import process_dataset
 
 from .base import BUCKETS, BaseHandler

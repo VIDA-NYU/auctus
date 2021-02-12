@@ -9,7 +9,7 @@ import shutil
 import zipfile
 
 from datamart_core.common import hash_json
-from datamart_fslock import cache_get_or_set
+from datamart_fslock.cache import cache_get_or_set
 from datamart_materialize.common import skip_rows
 from datamart_materialize.excel import xlsx_to_csv
 from datamart_materialize.excel97 import xls_to_csv

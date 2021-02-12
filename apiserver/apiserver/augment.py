@@ -12,7 +12,7 @@ from datamart_core.augment import augment
 from datamart_core.common import hash_json, contextdecorator
 from datamart_core.materialize import get_dataset, make_zip_recursive
 from datamart_core.prom import PromMeasureRequest
-from datamart_fslock import cache_get, cache_get_or_set
+from datamart_fslock.cache import cache_get, cache_get_or_set
 from datamart_materialize import make_writer
 
 from .base import BUCKETS, BaseHandler
