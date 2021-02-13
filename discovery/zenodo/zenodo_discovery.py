@@ -123,42 +123,39 @@ class ZenodoDiscoverer(Discoverer):
         logger.info("Processing record %s %r", record['id'], record['title'])
 
         # Process each file
-        checked_record = False
         for file in record['files']:
             if not file['filename'].lower().endswith(self.EXTENSIONS):
                 continue
 
             dataset_id = '%s.%s' % (record['id'], file['id'])
 
-            # In first iteration, see if we've ingested this file
-            # If we have, assume we had already processed this whole record
-            if not checked_record:
-                try:
-                    self.elasticsearch.get(
-                        'datamart',
-                        '%s.%s' % (self.identifier, dataset_id),
-                        _source=False,
-                    )
-                except elasticsearch.NotFoundError:
-                    try:
-                        hit = self.elasticsearch.get(
-                            'pending',
-                            '%s.%s' % (self.identifier, dataset_id),
-                            _source=['status'],
-                        )['_source']
-                    except elasticsearch.NotFoundError:
-                        pass
-                    else:
-                        logger.info(
-                            "Dataset already in pending index, status=%s",
-                            hit.get('status'),
-                        )
-                        return
-                else:
-                    logger.info("Dataset already in index")
-                    return
+            # See if we've ingested this file
+            try:
+                self.elasticsearch.get(
+                    'datamart',
+                    '%s.%s' % (self.identifier, dataset_id),
+                    _source=False,
+                )
+            except elasticsearch.NotFoundError:
+                pass
+            else:
+                logger.info("Dataset already in index")
+                return
 
-                checked_record = True
+            try:
+                hit = self.elasticsearch.get(
+                    'pending',
+                    '%s.%s' % (self.identifier, dataset_id),
+                    _source=['status'],
+                )['_source']
+            except elasticsearch.NotFoundError:
+                pass
+            else:
+                logger.info(
+                    "Dataset already in pending index, status=%s",
+                    hit.get('status'),
+                )
+                return
 
             logger.info("File %s", file['filename'])
 
