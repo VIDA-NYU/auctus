@@ -123,7 +123,8 @@ class ZenodoDiscoverer(Discoverer):
         logger.info("Processing record %s %r", record['id'], record['title'])
 
         # Process each file
-        for i, file in enumerate(record['files']):
+        checked_record = False
+        for file in record['files']:
             if not file['filename'].lower().endswith(self.EXTENSIONS):
                 continue
 
@@ -131,7 +132,7 @@ class ZenodoDiscoverer(Discoverer):
 
             # In first iteration, see if we've ingested this file
             # If we have, assume we had already processed this whole record
-            if i == 0:
+            if not checked_record:
                 try:
                     self.elasticsearch.get(
                         'datamart',
@@ -156,6 +157,8 @@ class ZenodoDiscoverer(Discoverer):
                 else:
                     logger.info("Dataset already in index")
                     return
+
+                checked_record = True
 
             logger.info("File %s", file['filename'])
 
