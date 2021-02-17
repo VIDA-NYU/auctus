@@ -393,7 +393,6 @@ class Profiler(object):
                         # We'll log, nack and retry
                         raise
                     else:
-                        sentry_sdk.capture_exception(e)
                         logger.exception("Error processing dataset %r",
                                          dataset_id)
                     # Move message to failed queue
