@@ -178,7 +178,7 @@ class Metadata(BaseHandler, GracefulHandler):
                 return self.send_error_json(404, "No such dataset")
             else:
                 # Don't expose the details of the problem (e.g. stacktrace)
-                record.pop('error_details')
+                record.pop('error_details', None)
                 result = {
                     'id': dataset_id,
                     'status': record['status'],
