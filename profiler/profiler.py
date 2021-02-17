@@ -383,6 +383,7 @@ class Profiler(object):
                 except Exception as e:
                     if isinstance(e, elasticsearch.RequestError):
                         # This is a problem with our computed metadata
+                        sentry_sdk.capture_exception(e)
                         logger.exception(
                             "Error inserting dataset %r in Elasticsearch",
                             dataset_id,
