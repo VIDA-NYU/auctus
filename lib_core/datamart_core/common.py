@@ -126,9 +126,15 @@ def msg2json(msg):
     return json.loads(msg.body.decode('utf-8'))
 
 
+_log_future_references = {}
+
+
 def log_future(future, logger, message="Exception in background task",
                should_never_exit=False):
+    ident = id(future)
+
     def log(future):
+        _log_future_references.pop(ident, None)
         try:
             future.result()
         except Exception as e:
@@ -139,6 +145,10 @@ def log_future(future, logger, message="Exception in background task",
             asyncio.get_event_loop().stop()
             sys.exit(1)
     future.add_done_callback(log)
+
+    # Keep a strong reference to the future
+    # https://bugs.python.org/issue21163
+    _log_future_references[ident] = future
 
 
 re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')
