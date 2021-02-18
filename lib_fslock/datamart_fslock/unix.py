@@ -113,6 +113,16 @@ def _lock_process(pipe, filepath, exclusive, timeout=None):
 _mp_context = multiprocessing.get_context('spawn')
 
 
+def join_process(proc, timeout):
+    # multiprocessing.Process.join() waits "at most", this waits "at least"
+    start = now = time.perf_counter()
+    while now - start < timeout:
+        proc.join(timeout - now + start)
+        if proc.exitcode is not None:
+            break
+        now = time.perf_counter()
+
+
 @contextlib.contextmanager
 def _lock(filepath, exclusive, timeout=None):
     type_ = "exclusive" if exclusive else "shared"
@@ -150,17 +160,17 @@ def _lock(filepath, exclusive, timeout=None):
         logger.debug("Releasing %s lock: %r", type_, filepath)
         start = time.perf_counter()
         pipe.send('UNLOCK')
-        proc.join(10)
-        if proc.exitcode is None:
-            proc.join(3 * 60)
-            logger.critical("Releasing %s lock took %.2fs: %r",
-                            type_, time.perf_counter() - start, filepath)
+        join_process(proc, 60)
         if proc.exitcode != 0:
             logger.critical("Failed (%r) to release %s lock: %r",
                             proc.exitcode, type_, filepath)
             raise SystemExit("Failed (%r) to release %s lock: %r" % (
                 proc.exitcode, type_, filepath,
             ))
+        now = time.perf_counter()
+        if now - start > 10:
+            logger.critical("Releasing %s lock took %.2fs: %r",
+                            type_, now - start, filepath)
         logger.info("Released %s lock: %r", type_, filepath)
         if locked:
             PROM_LOCKS_HELD.labels(type_).dec()
