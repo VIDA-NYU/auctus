@@ -782,18 +782,19 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     data.iloc[:, i],
                     latlong=latlong,
                 )
-                logger.info(
-                    "Computing spatial ranges point=%r (%d rows)",
-                    name, len(values),
-                )
-                spatial_ranges = get_spatial_ranges(values)
-                if spatial_ranges:
-                    spatial_coverage.append({
-                        'type': 'point_latlong' if latlong else 'point',
-                        'column_names': [name],
-                        'column_indexes': [i],
-                        'ranges': spatial_ranges,
-                    })
+                if values:
+                    logger.info(
+                        "Computing spatial ranges point=%r (%d rows)",
+                        name, len(values),
+                    )
+                    spatial_ranges = get_spatial_ranges(values)
+                    if spatial_ranges:
+                        spatial_coverage.append({
+                            'type': 'point_latlong' if latlong else 'point',
+                            'column_names': [name],
+                            'column_indexes': [i],
+                            'ranges': spatial_ranges,
+                        })
 
             for idx, resolved in resolved_columns.items():
                 if 'addresses' in resolved:
