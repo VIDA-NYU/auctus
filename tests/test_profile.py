@@ -62,6 +62,19 @@ def check_plot(kind):
     return check
 
 
+class TestCLI(unittest.TestCase):
+    def test_size(self):
+        from datamart_profiler.__main__ import parse_size
+
+        self.assertEqual(parse_size('123'), 123)
+        self.assertEqual(parse_size('123 B'), 123)
+        self.assertEqual(parse_size('123B'), 123)
+        self.assertEqual(parse_size('123k'), 123000)
+        self.assertEqual(parse_size('123 k'), 123000)
+        self.assertEqual(parse_size('123M'), 123000000)
+        self.assertEqual(parse_size('123 M'), 123000000)
+
+
 class TestSample(unittest.TestCase):
     @contextlib.contextmanager
     def random_data(self, rows):

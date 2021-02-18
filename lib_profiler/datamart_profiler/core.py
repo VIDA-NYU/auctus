@@ -547,7 +547,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
     :param plots: Whether to compute plots
     :param load_max_size: Target size of the data to be analyzed. The data will
         be randomly sampled if it is bigger. Defaults to `MAX_SIZE`, currently
-        50 MB. This is different from the sample data included in the result.
+        5 MB. This is different from the sample data included in the result.
     :return: JSON structure (dict)
     """
     if 'sample_size' in kwargs:
