@@ -393,8 +393,8 @@ class Profiler(object):
                         # We'll log, nack and retry
                         raise
                     else:
-                        logger.exception("Error processing dataset %r",
-                                         dataset_id)
+                        logger.warning("Error processing dataset %r",
+                                       dataset_id)
                     # Move message to failed queue
                     await self.channel.default_exchange.publish(
                         aio_pika.Message(message.body),
