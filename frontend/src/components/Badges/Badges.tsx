@@ -20,6 +20,8 @@ export function columnType(column: ColumnMetadata) {
         return {numerical: true, spatial: true};
       }
       return {numerical: true};
+    case 'http://schema.org/GeoCoordinates':
+      return {spatial: true};
     case 'http://schema.org/Text':
     default:
       if (column.semantic_types) {
