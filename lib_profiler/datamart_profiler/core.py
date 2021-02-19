@@ -255,7 +255,7 @@ def load_data(data, load_max_size=None):
                     range(1, metadata['nb_rows']),
                     math.ceil(ratio * (metadata['nb_rows'] - 1)),
                 ))
-                selected_rows.add(1)  # Always get the header
+                selected_rows.add(0)  # Always get the header
                 data = pandas.read_csv(
                     data,
                     dtype=str, na_filter=False,

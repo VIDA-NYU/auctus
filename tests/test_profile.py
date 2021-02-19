@@ -98,12 +98,12 @@ class TestSample(unittest.TestCase):
         with self.random_data(600) as (tmp, filesize):
             self.assertEqual(filesize, 7101)
             data, data_path, metadata, column_names = load_data(tmp.name, 5000)
-            self.assertEqual(data.shape, (422, 2))
+            self.assertEqual(data.shape, (423, 2))
 
         with self.random_data(425) as (tmp, filesize):
             self.assertEqual(filesize, 5001)
             data, data_path, metadata, column_names = load_data(tmp.name, 5000)
-            self.assertEqual(data.shape, (424, 2))
+            self.assertEqual(data.shape, (425, 2))
 
             data, data_path, metadata, column_names = load_data(tmp.name, 6000)
             self.assertEqual(data.shape, (425, 2))
