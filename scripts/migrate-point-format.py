@@ -2,7 +2,7 @@
 
 """This scripts updates the index for !166.
 
-It adds the column "point_format" information (the default one, "lat,long").
+It adds the column "point_format" information (the default one, "long,lat").
 """
 
 import json
@@ -35,7 +35,7 @@ def migrate(from_folder, to_folder):
                 column['structural_type'] == 'http://schema.org/GeoCoordinates'
                 and 'point_format' not in column
             ):
-                column['point_format'] = 'lat,long'
+                column['point_format'] = 'long,lat'
 
         with open(os.path.join(to_folder, dataset), 'w') as fp:
             json.dump(obj, fp, sort_keys=True, indent=2)
