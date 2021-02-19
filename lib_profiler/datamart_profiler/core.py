@@ -782,6 +782,13 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     data.iloc[:, i],
                     latlong=latlong,
                 )
+                if len(values) < 0.5 * data.shape[0]:
+                    logger.warning(
+                        "Most data points did not parse correctly as "
+                        "point (%s) col=%d %r",
+                        'lat,long' if latlong else 'long,lat',
+                        i, col,
+                    )
                 if values:
                     logger.info(
                         "Computing spatial ranges point=%r (%d rows)",
