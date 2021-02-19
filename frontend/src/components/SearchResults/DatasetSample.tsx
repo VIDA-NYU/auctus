@@ -50,13 +50,23 @@ function SemanticTypeBadge(props: {type: string; column?: ColumnMetadata}) {
   return <span className={spanClass}>{label}</span>;
 }
 
+function StructuralTypeBadge(props: {type: string; column?: ColumnMetadata}) {
+  let label = typeName(props.type);
+  if (props.type === 'http://schema.org/GeoCoordinates' && props.column) {
+    const order = props.column.point_format || 'long,lat';
+    label += ' ' + order;
+  }
+  return <span className="badge badge-pill badge-primary">{label}</span>;
+}
+
 function TypeBadges(props: {column: ColumnMetadata}) {
   return (
     <>
       <BadgeGroup>
-        <span className="badge badge-pill badge-primary">
-          {typeName(props.column.structural_type)}
-        </span>
+        <StructuralTypeBadge
+          type={props.column.structural_type}
+          column={props.column}
+        />
         {props.column.semantic_types.map(c => (
           <SemanticTypeBadge
             type={c}

@@ -77,6 +77,7 @@ export interface ColumnMetadata {
   plot?: PlotVega;
   temporal_resolution?: string;
   admin_area_level?: number;
+  point_format?: 'lat,long' | 'long,lat';
   latlong_pair?: string;
 }
 
