@@ -537,8 +537,8 @@ def process_dataset(data, dataset_id=None, metadata=None,
         very limited).
     :param lazo_client: client for the Lazo Index Server
     :param nominatim: URL of the Nominatim server
-    :param geo_data: a datamart_geo.GeoData instance to use to resolve named
-        administrative territorial entities
+    :param geo_data: ``True`` or a datamart_geo.GeoData instance to use to
+        resolve named administrative territorial entities
     :param search: True if this method is being called during the search
         operation (and not for indexing).
     :param include_sample: Set to True to include a few random rows to the
@@ -561,6 +561,11 @@ def process_dataset(data, dataset_id=None, metadata=None,
             "process_dataset() got unexpected keyword argument %r" %
             next(iter(kwargs))
         )
+
+    if geo_data is True:
+        from datamart_geo import GeoData
+
+        geo_data = GeoData.from_local_cache()
 
     if metadata is None:
         metadata = {}
