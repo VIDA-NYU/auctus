@@ -240,7 +240,16 @@ class GeoSpatialCoverageMap extends PersistentComponent<
     } else if (type === 'point' && column_names.length === 1) {
       return (
         <>
-          <b>Point Column: </b>
+          <b>Point Column (long-lat): </b>
+          <span className="badge badge-pill badge-secondary mr-1">
+            {column_names[0]}
+          </span>
+        </>
+      );
+    } else if (type === 'point_latlong' && column_names.length === 1) {
+      return (
+        <>
+          <b>Point Column (lat-long): </b>
           <span className="badge badge-pill badge-secondary mr-1">
             {column_names[0]}
           </span>
