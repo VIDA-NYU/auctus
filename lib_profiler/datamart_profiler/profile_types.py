@@ -174,10 +174,10 @@ def identify_types(array, name, geo_data, manual=None):
             structural_type = types.INTEGER
         elif re_count['int'] + re_count['float'] >= threshold:
             structural_type = types.FLOAT
-        elif re_count['point'] >= threshold or re_count['geo_combined'] >= threshold or re_count['other_point'] >= threshold:
+        elif re_count['point'] >= threshold or re_count['other_point'] >= threshold:
             structural_type = types.GEO_POINT
             column_meta['point_format'] = 'long,lat'
-        elif re_count['latlong_point'] >= threshold:
+        elif re_count['latlong_point'] >= threshold or re_count['geo_combined'] >= threshold:
             structural_type = types.GEO_POINT
             column_meta['point_format'] = 'lat,long'
         elif re_count['polygon'] >= threshold:
