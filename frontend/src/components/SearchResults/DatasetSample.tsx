@@ -43,7 +43,7 @@ function SemanticTypeBadge(props: {type: string; column?: ColumnMetadata}) {
     label += ' ' + props.column.temporal_resolution;
   } else if (
     props.type === 'http://schema.org/AdministrativeArea' &&
-    props.column?.admin_area_level
+    props.column?.admin_area_level !== undefined
   ) {
     label += ' ' + props.column.admin_area_level;
   }
