@@ -61,7 +61,7 @@ test:
     - python -m datamart_geo --update lib_geo/data/
 
     # Build images
-    - python scripts/docker-compose-cached-build.py $AUCTUS_BASE apiserver apilb coordinator profiler test-discoverer
+    - docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg version=$DATAMART_VERSION apiserver apilb coordinator profiler test-discoverer
     - docker-compose pull rabbitmq  # Don't build it
 
     # Bring services up

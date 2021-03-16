@@ -19,5 +19,4 @@ This folder contains scripts that make it easy to perform certain tasks. Those s
 * upload_dataset.sh: This profiles and adds a dataset to the index
 * report-uploads.sh: Alerts when datasets are uploaded to the system
 * dataset_to_sup_index.py: This creates the supplementary column indices after 5507ab47
-* docker-compose-cached-build.py: This is used by the CI to build images while using the Docker cache (works around docker-compose bug)
 * minikube-load-images.sh: This loads images built locally into the Minikube VM
