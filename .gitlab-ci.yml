@@ -37,17 +37,16 @@ test:
     # Build base image, using the GitLab registry as a cache
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     - |
-      # Pull the base image so we don't have to build from scratch
-      docker pull $CI_REGISTRY_IMAGE/base || true
-      # Update the base image (maybe)
+      export AUCTUS_BASE=$CI_REGISTRY_IMAGE/base
+      # Pull/update the base image
       chmod 644 poetry.lock docker/install_deps.py
       touch -t 200001010000.00 poetry.lock docker/install_deps.py
-      docker build -t auctus_base . \
-        --cache-from=$CI_REGISTRY_IMAGE/base \
+      docker build -t $AUCTUS_BASE . \
+        --cache-from=$AUCTUS_BASE \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
         -f base.Dockerfile
       # Push the updated image to the registry (might be no-op)
-      docker tag auctus_base $CI_REGISTRY_IMAGE/base
-      docker push $CI_REGISTRY_IMAGE/base
+      docker push $AUCTUS_BASE
 
     # Set up environment for testing
     - cp tests/ci.env .env
@@ -62,7 +61,7 @@ test:
     - python -m datamart_geo --update lib_geo/data/
 
     # Build images
-    - python scripts/docker-compose-cached-build.py auctus_base,auctus_npm apiserver apilb coordinator profiler test-discoverer
+    - python scripts/docker-compose-cached-build.py $AUCTUS_BASE apiserver apilb coordinator profiler test-discoverer
     - docker-compose pull rabbitmq  # Don't build it
 
     # Bring services up
@@ -137,21 +136,20 @@ frontend:
     # Build base image, using the GitLab registry as a cache
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     - |
-      # Pull the base npm environment
-      docker pull $CI_REGISTRY_IMAGE/npm || true
-      # Update the base npm image (maybe)
+      export AUCTUS_NPM_BASE=$CI_REGISTRY_IMAGE/npm
+      # Pull/update the base npm image
       chmod 644 frontend/package.json frontend/package-lock.json
       touch -t 200001010000.00 frontend/package.json frontend/package-lock.json
-      docker build -t auctus_npm . \
-        --cache-from=$CI_REGISTRY_IMAGE/npm \
+      docker build -t $AUCTUS_NPM_BASE . \
+        --cache-from=$AUCTUS_NPM_BASE \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
         -f frontend/Dockerfile \
         --target=build
       # Push the updated image to the registry (might be no-op)
-      docker tag auctus_npm $CI_REGISTRY_IMAGE/npm
       docker push $CI_REGISTRY_IMAGE/npm
 
     # Run the frontend tests
-    - docker run --rm auctus_npm sh -c "CI=true npm run test"
+    - docker run --rm $AUCTUS_NPM_BASE sh -c "CI=true npm run test"
 
 k8s_configs:
   stage: test
