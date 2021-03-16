@@ -4,11 +4,14 @@ cd "$(dirname "$(dirname "$0")")"
 
 set -eux
 
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
 # Check lib_geo data
 test -e lib_geo/data/admins.sqlite3
 
 # Re-build and re-start services
-docker-compose build --build-arg version=v0.0 coordinator profiler apiserver test-discoverer
+docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg version=v0.0 coordinator profiler apiserver test-discoverer
 docker-compose up -d coordinator
 sleep 2
 docker-compose up -d --force-recreate profiler apiserver apilb
