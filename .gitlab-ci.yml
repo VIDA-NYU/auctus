@@ -62,7 +62,7 @@ test:
     - python -m datamart_geo --update lib_geo/data/
 
     # Build images
-    - python scripts/docker-compose-cached-build.py apiserver apilb coordinator profiler test-discoverer
+    - python scripts/docker-compose-cached-build.py auctus_base,auctus_npm apiserver apilb coordinator profiler test-discoverer
     - docker-compose pull rabbitmq  # Don't build it
 
     # Bring services up

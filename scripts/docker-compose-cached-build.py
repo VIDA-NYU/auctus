@@ -14,7 +14,7 @@ import sys
 import yaml
 
 
-def main(services):
+def main(caches, services):
     with open('docker-compose.yml') as fp:
         config = yaml.safe_load(fp)
 
@@ -33,14 +33,20 @@ def main(services):
                 'docker', 'build',
                 '-t', image,
                 '-f', os.path.join(build['context'], build['dockerfile']),
-                '--cache-from=auctus_base',
-                '--cache-from=auctus_npm',
+            ] + [
+                '--cache-from=%s' % c
+                for c in caches
+            ] + [
+                '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
                 '--build-arg', 'version=%s' % version,
                 build['context'],
             ]
             print(' '.join(cmd), flush=True)
-            subprocess.check_call(cmd)
+            subprocess.check_call(
+                cmd,
+                env=dict(os.environ, DOCKER_BUILDKIT='1'),
+            )
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main(sys.argv[1].split(','), sys.argv[2:])
