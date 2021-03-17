@@ -564,6 +564,9 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
         if not data_profile:
             page = page or 1
             size = size or TOP_K_SIZE
+            if page * size > 10000:
+                return self.send_error_json(400, "Can't scroll past 10000 items")
+
             response = self.application.elasticsearch.search(
                 index='datamart',
                 body={
