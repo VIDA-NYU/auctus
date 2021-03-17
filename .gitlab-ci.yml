@@ -3,16 +3,22 @@ image: python:3.8
 variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_DRIVER: overlay2
+
+  # Enable buildkit
+  DOCKER_BUILDKIT: "1"
+  COMPOSE_DOCKER_CLI_BUILD: "1"
+
+  # Get submodules
   GIT_SUBMODULE_STRATEGY: recursive
 
 test:
   stage: test
   services:
-    - docker:19.03.5-dind
+    - docker:20.10.5-dind
   before_script:
-    - curl -Lo /tmp/docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-19.03.5.tgz && tar -xf /tmp/docker.tgz -C /usr/local && rm /tmp/docker.tgz && export PATH=/usr/local/docker:$PATH && export DOCKER_HOST=tcp://docker:2375
+    - curl -Lo /tmp/docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-20.10.5.tgz && tar -xf /tmp/docker.tgz -C /usr/local && rm /tmp/docker.tgz && export PATH=/usr/local/docker:$PATH
     - docker info
-    - curl -Lo /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)"
+    - curl -Lo /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/1.28.5/docker-compose-$(uname -s)-$(uname -m)"
     - chmod +x /usr/local/bin/docker-compose
     - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.4 && /root/.poetry/bin/poetry config virtualenvs.create false
     # Important note about this: the Docker server is on a separate host,
@@ -31,17 +37,16 @@ test:
     # Build base image, using the GitLab registry as a cache
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     - |
-      # Pull the base image so we don't have to build from scratch
-      docker pull $CI_REGISTRY_IMAGE/base || true
-      # Update the base image (maybe)
+      export AUCTUS_BASE=$CI_REGISTRY_IMAGE/base
+      # Pull/update the base image
       chmod 644 poetry.lock docker/install_deps.py
       touch -t 200001010000.00 poetry.lock docker/install_deps.py
-      docker build -t auctus_base . \
-        --cache-from=$CI_REGISTRY_IMAGE/base \
+      docker build -t $AUCTUS_BASE . \
+        --cache-from=$AUCTUS_BASE \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
         -f base.Dockerfile
       # Push the updated image to the registry (might be no-op)
-      docker tag auctus_base $CI_REGISTRY_IMAGE/base
-      docker push $CI_REGISTRY_IMAGE/base
+      docker push $AUCTUS_BASE
 
     # Set up environment for testing
     - cp tests/ci.env .env
@@ -56,7 +61,7 @@ test:
     - python -m datamart_geo --update lib_geo/data/
 
     # Build images
-    - python scripts/docker-compose-cached-build.py apiserver apilb coordinator profiler test-discoverer
+    - docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg version=$DATAMART_VERSION apiserver apilb coordinator profiler test-discoverer
     - docker-compose pull rabbitmq  # Don't build it
 
     # Bring services up
@@ -120,9 +125,9 @@ python-style:
 frontend:
   stage: test
   services:
-    - docker:19.03.5-dind
+    - docker:20.10.5-dind
   before_script:
-    - curl -Lo /tmp/docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-19.03.5.tgz && tar -xf /tmp/docker.tgz -C /usr/local && rm /tmp/docker.tgz && export PATH=/usr/local/docker:$PATH && export DOCKER_HOST=tcp://docker:2375
+    - curl -Lo /tmp/docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-20.10.5.tgz && tar -xf /tmp/docker.tgz -C /usr/local && rm /tmp/docker.tgz && export PATH=/usr/local/docker:$PATH
     - docker info
     # Important note about this: the Docker server is on a separate host,
     # so exposed ports are at 'docker' not 'localhost', and
@@ -131,21 +136,20 @@ frontend:
     # Build base image, using the GitLab registry as a cache
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     - |
-      # Pull the base npm environment
-      docker pull $CI_REGISTRY_IMAGE/npm || true
-      # Update the base npm image (maybe)
+      export AUCTUS_NPM_BASE=$CI_REGISTRY_IMAGE/npm
+      # Pull/update the base npm image
       chmod 644 frontend/package.json frontend/package-lock.json
       touch -t 200001010000.00 frontend/package.json frontend/package-lock.json
-      docker build -t auctus_npm . \
-        --cache-from=$CI_REGISTRY_IMAGE/npm \
+      docker build -t $AUCTUS_NPM_BASE . \
+        --cache-from=$AUCTUS_NPM_BASE \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
         -f frontend/Dockerfile \
         --target=build
       # Push the updated image to the registry (might be no-op)
-      docker tag auctus_npm $CI_REGISTRY_IMAGE/npm
       docker push $CI_REGISTRY_IMAGE/npm
 
     # Run the frontend tests
-    - docker run --rm auctus_npm sh -c "CI=true npm run test"
+    - docker run --rm $AUCTUS_NPM_BASE sh -c "CI=true npm run test"
 
 k8s_configs:
   stage: test
