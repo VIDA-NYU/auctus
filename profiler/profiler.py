@@ -394,7 +394,7 @@ class Profiler(object):
                         raise
                     else:
                         logger.warning("Error processing dataset %r",
-                                       dataset_id)
+                                       dataset_id, exc_info=True)
                     # Move message to failed queue
                     await self.channel.default_exchange.publish(
                         aio_pika.Message(message.body),
