@@ -40,6 +40,9 @@ PROM_CONVERT = prometheus_client.Histogram(
 )
 
 
+DELIMITERS = ',\t;|'
+
+
 def make_zip_recursive(zip_, src, dst=''):
     if os.path.isdir(src):
         for name in os.listdir(src):
@@ -270,7 +273,7 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
         dialect = csv.get_dialect('excel')
         if newlines >= 3:
             try:
-                dialect = csv.Sniffer().sniff(sample)
+                dialect = csv.Sniffer().sniff(sample, DELIMITERS)
             except Exception as error:  # csv.Error, UnicodeDecodeError
                 logger.warning("csv.Sniffer error: %s", error)
         else:
