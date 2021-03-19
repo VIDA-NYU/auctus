@@ -8,7 +8,6 @@ import {Tile as TileLayer, Vector as VectorLayer} from 'ol/layer';
 import {Vector as VectorSource, OSM as OSMSource} from 'ol/source';
 import {transformExtent, transform} from 'ol/proj';
 import {SpatialCoverage} from '../../api/types';
-import {PersistentComponent} from '../visus/PersistentComponent/PersistentComponent';
 import Polygon from 'ol/geom/Polygon';
 import Style from 'ol/style/Style';
 import Stroke from 'ol/style/Stroke';
@@ -18,11 +17,38 @@ import './GeoSpatialCoverageMap.css';
 import {transformCoordinates, centralizeMapToExtent} from '../spatial-utils';
 import 'ol/ol.css';
 
+function geohashToLatLong(hash: string, base: number) {
+  if (base !== 4) {
+    throw new Error('Only geohash4 is implemented');
+  }
+  const topLeft = [-180, -90];
+  const bottomRight = [180, 90];
+  for (let i = 0; i < hash.length; i++) {
+    {
+      const mid = (topLeft[0] + bottomRight[0]) / 2;
+      if (hash[i] === '2' || hash[i] === '3') {
+        topLeft[0] = mid;
+      } else {
+        bottomRight[0] = mid;
+      }
+    }
+    {
+      const mid = (topLeft[1] + bottomRight[1]) / 2;
+      if (hash[i] === '1' || hash[i] === '3') {
+        topLeft[1] = mid;
+      } else {
+        bottomRight[1] = mid;
+      }
+    }
+  }
+  return {topLeft, bottomRight};
+}
+
 interface GeoSpatialCoverageMapProps {
   coverage: SpatialCoverage;
 }
 
-class GeoSpatialCoverageMap extends PersistentComponent<
+class GeoSpatialCoverageMap extends React.PureComponent<
   GeoSpatialCoverageMapProps
 > {
   mapId = generateRandomId();
@@ -40,47 +66,74 @@ class GeoSpatialCoverageMap extends PersistentComponent<
     };
   }
 
-  createPolygons(element: SpatialCoverage) {
+  createPolygons(coverage: SpatialCoverage) {
     // collect all the bounding boxes and find their
     // extent (outer bounding box)
     const polygons = [];
 
-    let topLeft = element.ranges[0].range.coordinates[0];
-    let bottomRight = element.ranges[0].range.coordinates[1];
-    let minX = topLeft[0];
-    let maxX = bottomRight[0];
-    let minY = bottomRight[1];
-    let maxY = topLeft[1];
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
 
-    polygons.push([
-      [topLeft[0], topLeft[1]],
-      [topLeft[0], bottomRight[1]],
-      [bottomRight[0], bottomRight[1]],
-      [bottomRight[0], topLeft[1]],
-      [topLeft[0], topLeft[1]],
-    ]);
+    if (coverage.geohashes4?.length) {
+      // First pass to compute scale
+      let maxNumber = 1;
+      for (let j = 0; j < coverage.geohashes4.length; j++) {
+        maxNumber = Math.max(maxNumber, coverage.geohashes4[j].number);
+      }
 
-    for (let j = 1; j < element.ranges.length; j++) {
-      topLeft = element.ranges[j].range.coordinates[0];
-      bottomRight = element.ranges[j].range.coordinates[1];
-      minX = Math.min(topLeft[0], minX);
-      maxX = Math.max(bottomRight[0], maxX);
-      minY = Math.min(bottomRight[1], minY);
-      maxY = Math.max(topLeft[1], maxY);
+      for (let j = 0; j < coverage.geohashes4.length; j++) {
+        const {hash, number: hashNumber} = coverage.geohashes4[j];
+        const {topLeft, bottomRight} = geohashToLatLong(hash, 4);
+        minX = Math.min(topLeft[0], minX);
+        maxX = Math.max(bottomRight[0], maxX);
+        minY = Math.min(bottomRight[1], minY);
+        maxY = Math.max(topLeft[1], maxY);
+        polygons.push({
+          geom: [
+            [topLeft[0], topLeft[1]],
+            [topLeft[0], bottomRight[1]],
+            [bottomRight[0], bottomRight[1]],
+            [bottomRight[0], topLeft[1]],
+            [topLeft[0], topLeft[1]],
+          ],
+          style: new Style({
+            fill: new Fill({
+              color: [0, 0, 255, (hashNumber / maxNumber) * 0.8 + 0.2],
+            }),
+            stroke: new Stroke({
+              color: '#000',
+              width: 2,
+            }),
+          }),
+          data: {hash, number: hashNumber},
+        });
+      }
+    } else if (coverage.ranges?.length) {
+      for (let j = 0; j < coverage.ranges.length; j++) {
+        const topLeft = coverage.ranges[j].range.coordinates[0];
+        const bottomRight = coverage.ranges[j].range.coordinates[1];
+        minX = Math.min(topLeft[0], minX);
+        maxX = Math.max(bottomRight[0], maxX);
+        minY = Math.min(bottomRight[1], minY);
+        maxY = Math.max(topLeft[1], maxY);
 
-      polygons.push([
-        [topLeft[0], topLeft[1]],
-        [topLeft[0], bottomRight[1]],
-        [bottomRight[0], bottomRight[1]],
-        [bottomRight[0], topLeft[1]],
-        [topLeft[0], topLeft[1]],
-      ]);
+        polygons.push({
+          geom: [
+            [topLeft[0], topLeft[1]],
+            [topLeft[0], bottomRight[1]],
+            [bottomRight[0], bottomRight[1]],
+            [bottomRight[0], topLeft[1]],
+            [topLeft[0], topLeft[1]],
+          ],
+          style: undefined,
+          data: undefined,
+        });
+      }
     }
-    const extent = transformExtent(
-      [minX, minY, maxX, maxY],
-      'EPSG:4326',
-      'EPSG:3857'
-    );
+
+    const extent = [minX, minY, maxX, maxY];
     return {extent, polygons};
   }
 
@@ -112,9 +165,16 @@ class GeoSpatialCoverageMap extends PersistentComponent<
 
     // drawing bounding boxes
     for (let j = 0; j < polygons.length; j++) {
-      const polygon = new Polygon([polygons[j]]);
+      const {geom, style, data} = polygons[j];
+      const polygon = new Polygon([geom]);
       polygon.transform('EPSG:4326', 'EPSG:3857');
       const feature = new Feature(polygon);
+      if (style) {
+        feature.setStyle(style);
+      }
+      if (data) {
+        feature.set('datamart_data', data);
+      }
       source.addFeature(feature);
     }
 
@@ -160,7 +220,10 @@ class GeoSpatialCoverageMap extends PersistentComponent<
       }),
     });
 
-    centralizeMapToExtent(map, extent);
+    centralizeMapToExtent(
+      map,
+      transformExtent(extent, 'EPSG:4326', 'EPSG:3857')
+    );
 
     this.setupHoverPopUp(map);
   }
@@ -192,17 +255,29 @@ class GeoSpatialCoverageMap extends PersistentComponent<
 
         const content = this.popupContentRef.current;
         if (content) {
-          content.innerHTML =
-            '<span>Top Left: </span><code>' +
-            topLeft +
-            '</code> </br>' +
-            '<span>Bottom Right: </span><code>' +
-            bottomRight +
-            '</code>';
+          const data = feature.get('datamart_data');
+          if (data !== undefined) {
+            content.innerHTML = `${data.number} points`;
+          } else {
+            content.innerHTML =
+              '<span>Top Left: </span><code>' +
+              topLeft +
+              '</code> </br>' +
+              '<span>Bottom Right: </span><code>' +
+              bottomRight +
+              '</code>';
+          }
           map
             .getOverlayById('overlay')
             .setPosition(
-              transform([topLeftLon, topLeftLat], 'EPSG:4326', 'EPSG:3857')
+              transform(
+                [
+                  (topLeftLon + bottomRightLon) / 2,
+                  (topLeftLat + bottomRightLat) / 2,
+                ],
+                'EPSG:4326',
+                'EPSG:3857'
+              )
             );
         }
       } else {

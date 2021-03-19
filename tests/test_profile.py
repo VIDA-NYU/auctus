@@ -38,6 +38,20 @@ def check_ranges(min_, max_):
     return check
 
 
+def check_geohashes(prefix):
+    def check(geohashes):
+        assert isinstance(geohashes, list)
+        for entry in geohashes:
+            assert entry.keys() == {'hash', 'number'}
+            assert isinstance(entry['number'], int)
+            assert entry['number'] > 0
+            assert entry['hash'].startswith(prefix)
+
+        return True
+
+    return check
+
+
 def check_geo_ranges(min_long, min_lat, max_long, max_lat):
     def check(ranges):
         assert len(ranges) == 3
@@ -280,7 +294,13 @@ class TestLatlongSelection(DataTestCase):
         )
         # Check pairs
         self.assertJson(
-            [{k: v for k, v in c.items() if k != 'ranges'} for c in metadata['spatial_coverage']],
+            [
+                {
+                    k: v for k, v in c.items()
+                    if k not in ('ranges', 'geohashes4')
+                }
+                for c in metadata['spatial_coverage']
+            ],
             [
                 {'type': 'latlong', 'column_names': ['to lat', 'to long'], 'column_indexes': [2, 1]},
                 {'type': 'latlong', 'column_names': ['from latitude', 'from longitude'], 'column_indexes': [0, 3]},
@@ -716,6 +736,11 @@ class TestNominatim(DataTestCase):
                         'column_names': ['loc'],
                         'column_indexes': [1],
                         'ranges': check_geo_ranges(-74.00, 40.69, -73.98, 40.73),
+                        'geohashes4': [
+                            {'hash': '1211302313301103', 'number': 1},
+                            {'hash': '1211302313301102', 'number': 1},
+                            {'hash': '1211302313300022', 'number': 1},
+                        ],
                     },
                 ],
             },
@@ -956,6 +981,7 @@ class TestGeo(DataTestCase):
                         "type": "point",
                         "column_names": ["coords"],
                         "column_indexes": [1],
+                        "geohashes4": check_geohashes('1211302313'),
                         "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
                     }
                 ],
@@ -1012,10 +1038,151 @@ class TestGeo(DataTestCase):
                         "type": "point_latlong",
                         "column_names": ["coords"],
                         "column_indexes": [1],
+                        "geohashes4": check_geohashes('1211302313'),
                         "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
                     }
                 ],
             },
+        )
+
+
+class TestGeoHash(unittest.TestCase):
+    def test_bit_encoding(self):
+        self.assertEqual(
+            spatial.bits_to_chars(
+                [0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1],
+                base_bits=5,
+            ),
+            'dr5',
+        )
+        self.assertEqual(
+            spatial.bits_to_chars(
+                [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+                base_bits=2,
+            ),
+            '31000',
+        )
+
+    def test_bit_decoding(self):
+        self.assertEqual(
+            list(spatial.chars_to_bits('dr5', base_bits=5)),
+            [0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1],
+        )
+        self.assertEqual(
+            list(spatial.chars_to_bits('31000', base_bits=2)),
+            [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+        )
+
+    def test_geohash32(self):
+        self.assertEqual(
+            spatial.hash_location((40.6962574, -73.9849621)),
+            'dr5rs2tbckjz3h8c',
+        )
+        self.assertEqual(
+            spatial.hash_location(
+                (48.8588376, 2.2768489),
+                base=32, precision=5,
+            ),
+            'u09tg',
+        )
+
+    def test_geohash32_reverse(self):
+        self.assertEqual(
+            spatial.decode_hash('dr5rs2tbckjz3h8c'),
+            (
+                40.696257399849856, 40.696257400013565,
+                -73.98496210011217, -73.98496209978475,
+            ),
+        )
+        self.assertEqual(
+            spatial.decode_hash('u09tg', base=32),
+            (
+                48.8232421875, 48.8671875,
+                2.2412109375, 2.28515625,
+            ),
+        )
+
+    def test_geohash4(self):
+        self.assertEqual(
+            spatial.hash_location(
+                (40.6962574, -73.9849621),
+                base=4,
+            ),
+            '1211302313300023',
+        )
+        self.assertEqual(
+            spatial.hash_location(
+                (48.8588376, 2.2768489),
+                base=4, precision=5,
+            ),
+            '31000',
+        )
+
+    def test_geohash4_reverse(self):
+        self.assertEqual(
+            spatial.decode_hash('1211302313300023', base=4),
+            (
+                40.69610595703125, 40.6988525390625,
+                -73.9874267578125, -73.98193359375,
+            ),
+        )
+        self.assertEqual(
+            spatial.decode_hash('31000', base=4),
+            (
+                45.0, 50.625,
+                0.0, 11.25,
+            ),
+        )
+
+    def test_sketch_hashes(self):
+        test_data = [
+            ((40.0, 10.0), '3011'),
+            ((20.0, 12.0), '3001'),
+            ((30.0, 50.0), '3030'),
+            ((18.0, 80.0), '3023'),
+            ((15.0, -170.0), '1001'),
+            ((14.0, -168.0), '1001'),
+            ((-75.0, -50.0), '0203'),
+            ((-76.0, -18.0), '0223'),
+            ((-74.0, -16.0), '0223'),
+            ((-75.0, -17.0), '0223'),
+        ]
+        points = [p[0] for p in test_data]
+        self.assertEqual(
+            [
+                spatial.hash_location(point, base=4, precision=4)
+                for point in points
+            ],
+            [p[1] for p in test_data],
+        )
+        self.assertEqual(
+            spatial.get_geohashes(
+                points,
+                base=4,
+                precision=4,  # Big enough it can fail, low enough I can debug
+                number=3,
+            ),
+            [('30', 4), ('10', 2), ('02', 4)],
+        )
+
+        self.assertEqual(
+            spatial.get_geohashes(
+                [(1.0, 1.0), (46.0, 91.0), (44.0, 91.0), (89.0, 89.0)],
+                base=4,
+                precision=3,
+                number=3,
+            ),
+            [('3', 4)],
+        )
+
+        self.assertEqual(
+            spatial.get_geohashes(
+                [(12.0, 12.0), (12.0, -12.0), (-12.0, -12.0), (-12.0, 12.0)],
+                base=4,
+                precision=3,
+                number=3,
+            ),
+            [('', 4)],
         )
 
 
