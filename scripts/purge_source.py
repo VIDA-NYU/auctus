@@ -16,7 +16,7 @@ from datamart_core.common import delete_dataset_from_index
 SIZE = 10000
 
 
-def clear(identifier):
+def clear(source):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
@@ -30,7 +30,7 @@ def clear(identifier):
         query={
             'query': {
                 'term': {
-                    'materialize.identifier': identifier,
+                    'source': source,
                 },
             },
         },
