@@ -19,7 +19,7 @@ from datamart_core.common import json2msg
 logger = logging.getLogger(__name__)
 
 
-async def freshen(datasets):
+async def freshen(datasets, priority):
     es = elasticsearch.Elasticsearch(
         os.environ['ELASTICSEARCH_HOSTS'].split(',')
     )
@@ -57,7 +57,10 @@ async def freshen(datasets):
         if obj.get('manual_annotations'):
             metadata['manual_annotations'] = obj['manual_annotations']
         await amqp_profile_exchange.publish(
-            json2msg(dict(id=dataset_id, metadata=metadata)),
+            json2msg(
+                dict(id=dataset_id, metadata=metadata),
+                priority=priority,
+            ),
             '',
         )
 
@@ -65,7 +68,14 @@ async def freshen(datasets):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
+    args = sys.argv[1:]
+
+    priority = 0
+    if args and args[0] == '--prio2':
+        priority = 2
+        args = args[1:]
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(loop.create_task(
-        freshen(sys.argv[1:])
+        freshen(args, priority)
     ))
