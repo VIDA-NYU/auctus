@@ -41,6 +41,7 @@ def check_ranges(min_, max_):
 def check_geohashes(prefix):
     def check(geohashes):
         assert isinstance(geohashes, list)
+        assert 3 <= len(geohashes) <= 100
         for entry in geohashes:
             assert entry.keys() == {'hash', 'number'}
             assert isinstance(entry['number'], int)

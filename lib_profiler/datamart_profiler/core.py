@@ -43,7 +43,7 @@ HEADER_CONSISTENT_ROWS = 4
 """Stop throwing out lines when that many in a row have same number of columns
 """
 
-MAX_GEOHASHES = 10
+MAX_GEOHASHES = 100
 
 
 BUCKETS = [
