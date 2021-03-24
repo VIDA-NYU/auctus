@@ -500,7 +500,7 @@ def decode_hash(hash, base=32):
     )
 
 
-def get_geohashes(points, base=32, precision=16, number=10):
+def get_geohashes(points, *, number, base=32, precision=16):
     """Find a specific number of geohashes covering a set of points.
     """
     # Tree structure, storing total count and children at each level
