@@ -48,6 +48,22 @@ function geohashToLatLong(hash: string, base: number) {
   return {topLeft, bottomRight};
 }
 
+function heatColorMap(value: number): number[] {
+  if (value < 0.25) {
+    const v = value / 0.25;
+    return [0, 255 * v, 255];
+  } else if (value < 0.5) {
+    const v = (value - 0.25) / 0.25;
+    return [0, 255, 255 * (1.0 - v)];
+  } else if (value < 0.75) {
+    const v = (value - 0.5) / 0.25;
+    return [255 * v, 255, 0];
+  } else {
+    const v = (value - 0.75) / 0.25;
+    return [255, 255 * (1.0 - v), 0];
+  }
+}
+
 interface GeoSpatialCoverageMapProps {
   coverage: SpatialCoverage;
 }
@@ -71,10 +87,6 @@ class GeoSpatialCoverageMap extends React.PureComponent<
   }
 
   createCoverage(coverage: SpatialCoverage) {
-    // collect all the bounding boxes and find their
-    // extent (outer bounding box)
-    const polygons = [];
-
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
@@ -94,6 +106,9 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       const maxXList = [];
       const minYList = [];
       const maxYList = [];
+
+      // drawing geohashes
+      const source = new VectorSource({wrapX: false});
       for (let j = 0; j < coverage.geohashes4.length; j++) {
         const {hash, number: hashNumber} = coverage.geohashes4[j];
         const {topLeft, bottomRight} = geohashToLatLong(hash, 4);
@@ -101,25 +116,26 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         maxXList.push(bottomRight[0]);
         minYList.push(bottomRight[1]);
         maxYList.push(topLeft[1]);
-        polygons.push({
-          geom: [
+
+        const polygon = new Polygon([
+          [
             [topLeft[0], topLeft[1]],
             [topLeft[0], bottomRight[1]],
             [bottomRight[0], bottomRight[1]],
             [bottomRight[0], topLeft[1]],
             [topLeft[0], topLeft[1]],
           ],
-          style: new Style({
-            fill: new Fill({
-              color: [0, 0, 255, (hashNumber / maxNumber) * 0.8 + 0.2],
-            }),
-            stroke: new Stroke({
-              color: '#000',
-              width: 2,
-            }),
+        ]);
+        const style = new Style({
+          fill: new Fill({
+            color: heatColorMap(hashNumber / maxNumber),
           }),
-          data: {hash, number: hashNumber},
         });
+        polygon.transform('EPSG:4326', 'EPSG:3857');
+        const feature = new Feature(polygon);
+        feature.setStyle(style);
+        feature.set('number', hashNumber);
+        source.addFeature(feature);
       }
       minXList.sort();
       minX = minXList[Math.floor((minXList.length - 1) * OUTLIER_RATIO)];
@@ -129,7 +145,16 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       minY = minYList[Math.floor((minYList.length - 1) * OUTLIER_RATIO)];
       maxYList.sort();
       maxY = maxYList[Math.ceil((maxYList.length - 1) * (1.0 - OUTLIER_RATIO))];
+
+      vectorLayers.push(
+        new VectorLayer({
+          source,
+          opacity: 0.4,
+        })
+      );
     } else if (coverage.ranges?.length) {
+      // drawing bounding boxes
+      const source = new VectorSource({wrapX: false});
       for (let j = 0; j < coverage.ranges.length; j++) {
         const topLeft = coverage.ranges[j].range.coordinates[0];
         const bottomRight = coverage.ranges[j].range.coordinates[1];
@@ -138,69 +163,54 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         minY = Math.min(bottomRight[1], minY);
         maxY = Math.max(topLeft[1], maxY);
 
-        polygons.push({
-          geom: [
+        const polygon = new Polygon([
+          [
             [topLeft[0], topLeft[1]],
             [topLeft[0], bottomRight[1]],
             [bottomRight[0], bottomRight[1]],
             [bottomRight[0], topLeft[1]],
             [topLeft[0], topLeft[1]],
           ],
-          style: null,
-          data: undefined,
-        });
+        ]);
+        polygon.transform('EPSG:4326', 'EPSG:3857');
+        const feature = new Feature(polygon);
+        source.addFeature(feature);
       }
+
+      const style = new Style({
+        stroke: new Stroke({
+          color: '#57068c',
+          width: 3,
+        }),
+        fill: new Fill({
+          color: '#ffffff',
+        }),
+      });
+
+      vectorLayers.push(
+        new VectorLayer({
+          source,
+          style,
+          opacity: 0.5,
+        })
+      );
+
+      // popup with bounding boxes
+      const container = this.containerRef.current
+        ? this.containerRef.current
+        : undefined;
+
+      overlays.push(
+        new Overlay({
+          id: 'overlay',
+          element: container,
+          autoPan: true,
+          autoPanAnimation: {
+            duration: 250,
+          },
+        })
+      );
     }
-
-    // drawing bounding boxes
-    const source = new VectorSource({wrapX: false});
-    for (let j = 0; j < polygons.length; j++) {
-      const {geom, style, data} = polygons[j];
-      const polygon = new Polygon([geom]);
-      polygon.transform('EPSG:4326', 'EPSG:3857');
-      const feature = new Feature(polygon);
-      if (style) {
-        feature.setStyle(style);
-      }
-      if (data) {
-        feature.set('datamart_data', data);
-      }
-      source.addFeature(feature);
-    }
-
-    const style = new Style({
-      stroke: new Stroke({
-        color: '#57068c',
-        width: 3,
-      }),
-      fill: new Fill({
-        color: '#ffffff',
-      }),
-    });
-
-    vectorLayers.push(
-      new VectorLayer({
-        source,
-        style,
-        opacity: 0.5,
-      })
-    );
-
-    // popup with bounding boxes
-    const container = this.containerRef.current
-      ? this.containerRef.current
-      : undefined;
-
-    overlays.push(
-      new Overlay({
-        id: 'overlay',
-        element: container,
-        autoPan: true,
-        autoPanAnimation: {
-          duration: 250,
-        },
-      })
-    );
 
     const extent = [minX, minY, maxX, maxY];
     return {extent, vectorLayers, overlays};
@@ -249,7 +259,9 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       transformExtent(extent, 'EPSG:4326', 'EPSG:3857')
     );
 
-    this.setupHoverPopUp(map);
+    if (overlays.length > 0) {
+      this.setupHoverPopUp(map);
+    }
   }
 
   setupHoverPopUp(map: Map) {
@@ -279,18 +291,13 @@ class GeoSpatialCoverageMap extends React.PureComponent<
 
         const content = this.popupContentRef.current;
         if (content) {
-          const data = feature.get('datamart_data');
-          if (data !== undefined) {
-            content.innerHTML = `${data.number} points`;
-          } else {
-            content.innerHTML =
-              '<span>Top Left: </span><code>' +
-              topLeft +
-              '</code> </br>' +
-              '<span>Bottom Right: </span><code>' +
-              bottomRight +
-              '</code>';
-          }
+          content.innerHTML =
+            '<span>Top Left: </span><code>' +
+            topLeft +
+            '</code> </br>' +
+            '<span>Bottom Right: </span><code>' +
+            bottomRight +
+            '</code>';
           map
             .getOverlayById('overlay')
             .setPosition(
@@ -385,9 +392,11 @@ class GeoSpatialCoverageMap extends React.PureComponent<
           {this.renderCoverageColumns(this.props.coverage)}
         </div>
         <div id={this.mapId} ref={this.mapRef} className="map" style={style} />
-        <span className="mb-3" style={{fontSize: '0.9rem'}}>
-          Left-click on bounding box to get more information.
-        </span>
+        {this.props.coverage.geohashes4?.length ? undefined : (
+          <span className="mb-3" style={{fontSize: '0.9rem'}}>
+            Left-click on bounding box to get more information.
+          </span>
+        )}
         <div ref={this.containerRef} className="ol-popup">
           <div ref={this.popupContentRef} />
         </div>
