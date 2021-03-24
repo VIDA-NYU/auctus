@@ -70,7 +70,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     };
   }
 
-  createPolygons(coverage: SpatialCoverage) {
+  createCoverage(coverage: SpatialCoverage) {
     // collect all the bounding boxes and find their
     // extent (outer bounding box)
     const polygons = [];
@@ -80,8 +80,11 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     let minY = Infinity;
     let maxY = -Infinity;
 
+    const vectorLayers = [];
+    const overlays = [];
+
     if (coverage.geohashes4?.length) {
-      // First pass to compute scale
+      // First pass to compute color scale
       let maxNumber = 1;
       for (let j = 0; j < coverage.geohashes4.length; j++) {
         maxNumber = Math.max(maxNumber, coverage.geohashes4[j].number);
@@ -149,37 +152,8 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       }
     }
 
-    const extent = [minX, minY, maxX, maxY];
-    return {extent, polygons};
-  }
-
-  componentDidMount() {
-    this.setupMap();
-  }
-
-  componentDidUpdate() {
-    // Remove all children from the map div to force re-render
-    const mapNode = this.mapRef.current;
-    if (mapNode) {
-      while (mapNode.firstChild) {
-        if (mapNode.lastChild) {
-          mapNode.removeChild(mapNode.lastChild);
-        }
-      }
-      this.setupMap();
-    }
-  }
-
-  setupMap() {
-    const {polygons, extent} = this.createPolygons(this.props.coverage);
-
-    const raster = new TileLayer({
-      source: new OSMSource(),
-    });
-
-    const source = new VectorSource({wrapX: false});
-
     // drawing bounding boxes
+    const source = new VectorSource({wrapX: false});
     for (let j = 0; j < polygons.length; j++) {
       const {geom, style, data} = polygons[j];
       const polygon = new Polygon([geom]);
@@ -204,30 +178,64 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       }),
     });
 
-    const vector = new VectorLayer({
-      source,
-      style,
-      opacity: 0.5,
-    });
+    vectorLayers.push(
+      new VectorLayer({
+        source,
+        style,
+        opacity: 0.5,
+      })
+    );
 
     // popup with bounding boxes
     const container = this.containerRef.current
       ? this.containerRef.current
       : undefined;
 
-    const overlay = new Overlay({
-      id: 'overlay',
-      element: container,
-      autoPan: true,
-      autoPanAnimation: {
-        duration: 250,
-      },
+    overlays.push(
+      new Overlay({
+        id: 'overlay',
+        element: container,
+        autoPan: true,
+        autoPanAnimation: {
+          duration: 250,
+        },
+      })
+    );
+
+    const extent = [minX, minY, maxX, maxY];
+    return {extent, vectorLayers, overlays};
+  }
+
+  componentDidMount() {
+    this.setupMap();
+  }
+
+  componentDidUpdate() {
+    // Remove all children from the map div to force re-render
+    const mapNode = this.mapRef.current;
+    if (mapNode) {
+      while (mapNode.firstChild) {
+        if (mapNode.lastChild) {
+          mapNode.removeChild(mapNode.lastChild);
+        }
+      }
+      this.setupMap();
+    }
+  }
+
+  setupMap() {
+    const {extent, vectorLayers, overlays} = this.createCoverage(
+      this.props.coverage
+    );
+
+    const rasterLayer = new TileLayer({
+      source: new OSMSource(),
     });
 
     const map = new Map({
       interactions: interactionDefaults({mouseWheelZoom: false}),
-      layers: [raster, vector],
-      overlays: [overlay], // [overlays[index]],
+      layers: [rasterLayer, ...vectorLayers],
+      overlays: overlays,
       target: this.mapId, //'map-' + index,
       view: new View({
         projection: 'EPSG:3857',
