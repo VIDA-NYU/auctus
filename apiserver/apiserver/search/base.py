@@ -1,3 +1,6 @@
+import re
+
+
 TOP_K_SIZE = 50
 
 
@@ -18,3 +21,14 @@ def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None)
             if columns[i]['name'] == column_names[j]:
                 column_indices[j] = i
     return column_indices
+
+
+def minify_script(source):
+    """Minify source code by removing comments and unnecessary whitespace.
+    """
+    source = ' '.join(
+        line
+        for line in source.splitlines()
+        if not line.lstrip().startswith('//')
+    )
+    return re.sub(r'\s+', ' ', source).strip()

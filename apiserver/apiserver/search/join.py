@@ -1,10 +1,9 @@
 import logging
-import textwrap
 
 from datamart_core import types
 from datamart_profiler.temporal import temporal_aggregation_keys
 
-from .base import TOP_K_SIZE, get_column_identifiers
+from .base import TOP_K_SIZE, get_column_identifiers, minify_script
 
 
 logger = logging.getLogger(__name__)
@@ -198,7 +197,7 @@ def get_numerical_join_search_results(
                                     'lte': range_[1],
                                     'coverage': coverage
                                 },
-                                'source': textwrap.dedent('''\
+                                'source': minify_script('''\
                                     double start = Math.max(
                                         params.gte,
                                         doc['coverage.gte'].value
@@ -307,7 +306,7 @@ def get_spatial_join_search_results(
                                     'min_lat': range_[1][1],
                                     'coverage': coverage
                                 },
-                                'source': textwrap.dedent('''\
+                                'source': minify_script('''\
                                     double n_min_lon = Math.max(doc['ranges.min_lon'].value, params.min_lon);
                                     double n_max_lat = Math.min(doc['ranges.max_lat'].value, params.max_lat);
                                     double n_max_lon = Math.min(doc['ranges.max_lon'].value, params.max_lon);
@@ -403,7 +402,7 @@ def get_temporal_join_search_results(
                                     'lte': range_[1],
                                     'coverage': coverage
                                 },
-                                'source': textwrap.dedent('''\
+                                'source': minify_script('''\
                                     double start = Math.max(
                                         params.gte,
                                         doc['ranges.gte'].value

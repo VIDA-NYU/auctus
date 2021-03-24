@@ -2,6 +2,7 @@ import unittest
 from unittest import mock
 
 from apiserver.search import parse_query
+from apiserver.search.base import minify_script
 from apiserver.search import join
 from apiserver.search.union import name_similarity
 
@@ -9,6 +10,18 @@ from .utils import DataTestCase
 
 
 class TestSearch(unittest.TestCase):
+    def test_minify_script(self):
+        """Test the minification of Elasticsearch scripts (minify_script())"""
+        self.assertEqual(
+            minify_script('''\
+                double a = 1.0;
+                // Comments are removed
+                double b = 2.0;
+                return a / b;
+            '''),
+            'double a = 1.0; double b = 2.0; return a / b;',
+        )
+
     def test_simple(self):
         """Test the query generation for a simple search"""
         main, sup_funcs, sup_filters, vars = parse_query({
