@@ -127,7 +127,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
             [bottomRight[0], topLeft[1]],
             [topLeft[0], topLeft[1]],
           ],
-          style: undefined,
+          style: null,
           data: undefined,
         });
       }
