@@ -88,14 +88,15 @@ def get_column_coverage(data_profile, filter_=()):
                 any(idx not in filter_ for idx in indexes)
             ):
                 continue
-            ranges = [
-                rg['range']['coordinates']
-                for rg in spatial['ranges']
-            ]
-            column_coverage[indexes] = {
-                'type': 'spatial',
-                'ranges': ranges,
-            }
+            cov = {'type': 'spatial'}
+            if 'ranges' in spatial:
+                cov['ranges'] = [
+                    rg['range']['coordinates']
+                    for rg in spatial['ranges']
+                ]
+            if 'geohashes4' in spatial:
+                cov['geohashes4'] = spatial['geohashes4']
+            column_coverage[indexes] = cov
 
     if 'temporal_coverage' in data_profile:
         for temporal in data_profile['temporal_coverage']:
@@ -581,17 +582,18 @@ def get_joinable_datasets(
         type_ = coverage['type']
         type_value = coverage.get('type_value')
         if type_ == 'spatial':
-            spatial_results = get_spatial_join_search_results(
-                es,
-                coverage['ranges'],
-                dataset_id,
-                ignore_datasets,
-                query_sup_functions,
-                query_sup_filters,
-            )
-            for result in spatial_results:
-                result['companion_column'] = column
-                search_results.append(result)
+            if 'ranges' in coverage:
+                spatial_results = get_spatial_join_search_results(
+                    es,
+                    coverage['ranges'],
+                    dataset_id,
+                    ignore_datasets,
+                    query_sup_functions,
+                    query_sup_filters,
+                )
+                for result in spatial_results:
+                    result['companion_column'] = column
+                    search_results.append(result)
         elif type_ == 'temporal':
             temporal_results = get_temporal_join_search_results(
                 es,

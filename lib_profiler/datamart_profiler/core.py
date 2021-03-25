@@ -853,9 +853,14 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
                     name = columns[idx]['name']
                     logger.info(
-                        "Computing spatial ranges admin_areas=%r (%d rows)",
+                        "Computing spatial sketches admin_areas=%r (%d rows)",
                         name, len(areas),
                     )
+                    cov = {
+                        'type': 'admin',
+                        'column_names': [name],
+                        'column_indexes': [idx],
+                    }
 
                     # Merge into a single range
                     merged = None
@@ -878,25 +883,30 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         and merged[1] - merged[0] > 0.01
                         and merged[3] - merged[2] > 0.01
                     ):
-                        logger.info("Inserted bounding box")
-                        spatial_coverage.append({
-                            'type': 'admin',
-                            'column_names': [columns[idx]['name']],
-                            'column_indexes': [idx],
-                            'ranges': [
-                                {
-                                    'range': {
-                                        'type': 'envelope',
-                                        'coordinates': [
-                                            [merged[0], merged[3]],
-                                            [merged[1], merged[2]],
-                                        ],
-                                    },
+                        logger.info("Computed bounding box")
+                        cov['ranges'] = [
+                            {
+                                'range': {
+                                    'type': 'envelope',
+                                    'coordinates': [
+                                        [merged[0], merged[3]],
+                                        [merged[1], merged[2]],
+                                    ],
                                 },
-                            ],
-                        })
+                            },
+                        ]
                     else:
                         logger.info("Couldn't build a bounding box")
+
+                    # Compute geohashes
+                    builder = Geohasher(number=MAX_GEOHASHES)
+                    for area in areas:
+                        if area is None or not area.bounds:
+                            continue
+                        builder.add_aab(area.bounds)
+                    cov['geohashes4'] = builder.get_hashes_json()
+
+                    spatial_coverage.append(cov)
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage

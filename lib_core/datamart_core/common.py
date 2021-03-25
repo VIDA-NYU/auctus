@@ -296,16 +296,17 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
             spatial_coverage_metadata.update(spatial_coverage)
             ranges = []
             # Keep in sync, search code for 279a32
-            for spatial_range in spatial_coverage_metadata['ranges']:
-                coordinates = spatial_range['range']['coordinates']
-                ranges.append(dict(
-                    spatial_range,
-                    min_lon=coordinates[0][0],
-                    max_lat=coordinates[0][1],
-                    max_lon=coordinates[1][0],
-                    min_lat=coordinates[1][1],
-                ))
-            spatial_coverage_metadata['ranges'] = ranges
+            if 'ranges' in spatial_coverage_metadata:
+                for spatial_range in spatial_coverage_metadata['ranges']:
+                    coordinates = spatial_range['range']['coordinates']
+                    ranges.append(dict(
+                        spatial_range,
+                        min_lon=coordinates[0][0],
+                        max_lat=coordinates[0][1],
+                        max_lon=coordinates[1][0],
+                        min_lat=coordinates[1][1],
+                    ))
+                spatial_coverage_metadata['ranges'] = ranges
             es.index(
                 'datamart_spatial_coverage',
                 spatial_coverage_metadata,
