@@ -1074,6 +1074,25 @@ class TestGeoHash(unittest.TestCase):
             [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
         )
 
+    def test_bitrange(self):
+        results = []
+        for bits in spatial.bitrange(
+            [1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 1, 0, 1, 0],
+        ):
+            results.append(''.join(str(b) for b in bits))
+        self.assertEqual(
+            results,
+            [
+                '1010101',
+                '1010110',
+                '1010111',
+                '1011000',
+                '1011001',
+                '1011010',
+            ],
+        )
+
     def test_geohash32(self):
         self.assertEqual(
             spatial.hash_location((40.6962574, -73.9849621)),
@@ -1135,7 +1154,7 @@ class TestGeoHash(unittest.TestCase):
             ),
         )
 
-    def test_sketch_hashes(self):
+    def test_sketch_points(self):
         test_data = [
             ((40.0, 10.0), '3011'),
             ((20.0, 12.0), '3001'),
@@ -1191,6 +1210,40 @@ class TestGeoHash(unittest.TestCase):
         self.assertEqual(
             builder.get_hashes(),
             [('', 4)],
+        )
+
+    def test_sketch_aab(self):
+        builder = spatial.Geohasher(
+            base=4,
+            precision=4,
+            number=20,
+        )
+        builder.add_aab((-100.0, -30.0, -15.0, 50.0))
+        builder.add_aab((-80.0, 20.0, -50.0, 15.0))
+        self.assertEqual(
+            builder.get_hashes(),
+            [
+                ('013', 1),
+                ('031', 2),
+                ('033', 2),
+                ('030', 1),
+                ('032', 1),
+                ('021', 1),
+                ('023', 1),
+                ('102', 1),
+                ('103', 1),
+                ('112', 1),
+                ('120', 2),
+                ('121', 1),
+                ('122', 2),
+                ('123', 1),
+                ('130', 1),
+                ('132', 1),
+                ('201', 1),
+                ('210', 1),
+                ('211', 1),
+                ('300', 1),
+            ],
         )
 
 

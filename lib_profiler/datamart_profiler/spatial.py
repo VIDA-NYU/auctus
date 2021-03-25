@@ -2,6 +2,7 @@ import collections
 from dataclasses import dataclass
 import json
 import logging
+import math
 import numpy
 import numpy.random
 import prometheus_client
@@ -427,13 +428,7 @@ def chars_to_bits(chars, base_bits):
             yield (char >> i) & 1
 
 
-def hash_location(point, base=32, precision=16):
-    """Hash coordinates into short strings usable for prefix search.
-
-    If base=32, this gives Geohash strings (each level splits cells into 32).
-
-    If base=4, this makes a quadtree (each level split cells into 4 quadrants).
-    """
+def location_to_bits(point, base, precision):
     latitude, longitude = point
 
     # Compute the number of bits we need
@@ -442,7 +437,6 @@ def hash_location(point, base=32, precision=16):
         raise ValueError("Base is not a power of 2")
     precision_bits = base_bits * precision
 
-    # Build the bitstring
     lat_range = -90.0, 90.0
     long_range = -180.0, 180.0
     bits = []
@@ -462,6 +456,20 @@ def hash_location(point, base=32, precision=16):
         else:
             bits.append(0)
             lat_range = lat_range[0], mid
+    return bits
+
+
+def hash_location(point, base=32, precision=16):
+    """Hash coordinates into short strings usable for prefix search.
+
+    If base=32, this gives Geohash strings (each level splits cells into 32).
+
+    If base=4, this makes a quadtree (each level split cells into 4 quadrants).
+    """
+    base_bits = base.bit_length() - 1
+
+    # Build the bitstring
+    bits = location_to_bits(point, base, precision)
 
     # Encode the bitstring
     return bits_to_chars(bits, base_bits)
@@ -500,6 +508,19 @@ def decode_hash(hash, base=32):
     )
 
 
+def bitrange(from_bits, to_bits):
+    bits = list(from_bits)
+    while bits != to_bits:
+        yield bits
+        for i in range(len(bits) - 1, -1, -1):
+            if bits[i] == 0:
+                bits[i] = 1
+                break
+            else:
+                bits[i] = 0
+    yield bits
+
+
 class Geohasher(object):
     def __init__(self, *, number, base=4, precision=16):
         self.number = number
@@ -507,7 +528,7 @@ class Geohasher(object):
         self.precision = precision
 
         self.tree_root = [0, {}]
-        self.number_at_level = [0] * precision
+        self.number_at_level = [0] * (precision)
 
     def add_points(self, points):
         for point in points:
@@ -529,6 +550,56 @@ class Geohasher(object):
                         self.precision = level
                         break
             node[0] += 1
+
+    def add_aab(self, box):
+        base_bits = self.base.bit_length() - 1
+
+        min_long, max_long, min_lat, max_lat = box
+        min_bits = location_to_bits(
+            (min_lat, min_long), self.base, self.precision,
+        )
+        min_long_bits = min_bits[0::2]
+        min_lat_bits = min_bits[1::2]
+        max_bits = location_to_bits(
+            (max_lat, max_long), self.base, self.precision,
+        )
+        max_long_bits = max_bits[0::2]
+        max_lat_bits = max_bits[1::2]
+
+        level = 1
+        while level <= self.precision:
+            n_long_bits = math.ceil(level * base_bits / 2)
+            n_lat_bits = math.floor(level * base_bits / 2)
+            for long_bits in bitrange(
+                    min_long_bits[:n_long_bits],
+                    max_long_bits[:n_long_bits],
+            ):
+                for lat_bits in bitrange(
+                        min_lat_bits[:n_lat_bits],
+                        max_lat_bits[:n_lat_bits],
+                ):
+                    bits = [0] * (n_long_bits + n_lat_bits)
+                    bits[0::2] = long_bits
+                    bits[1::2] = lat_bits
+                    geohash = bits_to_chars(bits, base_bits)
+
+                    # Add this hash to the tree
+                    node = self.tree_root
+                    for lvl, key in enumerate(geohash):
+                        try:
+                            node = node[1][key]
+                        except KeyError:
+                            new_node = [0, {}]
+                            node[1][key] = new_node
+                            node = new_node
+                            self.number_at_level[lvl] += 1
+                    node[0] += 1
+
+                    if self.number_at_level[level - 1] > self.number:
+                        self.precision = level - 1
+                        break
+
+            level += 1
 
     def get_hashes(self):
         # Reconstruct the hashes at this level
