@@ -523,22 +523,19 @@ class Geohasher(object):
                     node[1][key] = new_node
                     node = new_node
                     self.number_at_level[level] += 1
+
+                    # If this level has too many nodes, stop building it
+                    if self.number_at_level[level] > self.number:
+                        self.precision = level
+                        break
             node[0] += 1
 
     def get_hashes(self):
-        # Find the max level with fewer than `number` hashes
-        target_level = 0
-        while (
-            target_level < self.precision
-            and self.number_at_level[target_level] <= self.number
-        ):
-            target_level += 1
-
         # Reconstruct the hashes at this level
         hashes = []
 
         def add_node(prefix, node, level):
-            if level == target_level:
+            if level == self.precision:
                 hashes.append((prefix, node[0]))
                 return
             for k, n in node[1].items():
