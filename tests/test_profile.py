@@ -1156,33 +1156,40 @@ class TestGeoHash(unittest.TestCase):
             ],
             [p[1] for p in test_data],
         )
+        builder = spatial.Geohasher(
+            base=4,
+            precision=4,  # Big enough it can fail, low enough I can debug
+            number=3,
+        )
+        builder.add_points(points)
         self.assertEqual(
-            spatial.get_geohashes(
-                points,
-                base=4,
-                precision=4,  # Big enough it can fail, low enough I can debug
-                number=3,
-            ),
+            builder.get_hashes(),
             [('30', 4), ('10', 2), ('02', 4)],
         )
 
+        builder = spatial.Geohasher(
+            base=4,
+            precision=3,
+            number=3,
+        )
+        builder.add_points([
+            (1.0, 1.0), (46.0, 91.0), (44.0, 91.0), (89.0, 89.0),
+        ])
         self.assertEqual(
-            spatial.get_geohashes(
-                [(1.0, 1.0), (46.0, 91.0), (44.0, 91.0), (89.0, 89.0)],
-                base=4,
-                precision=3,
-                number=3,
-            ),
+            builder.get_hashes(),
             [('3', 4)],
         )
 
+        builder = spatial.Geohasher(
+            base=4,
+            precision=3,
+            number=3,
+        )
+        builder.add_points([
+            (12.0, 12.0), (12.0, -12.0), (-12.0, -12.0), (-12.0, 12.0),
+        ])
         self.assertEqual(
-            spatial.get_geohashes(
-                [(12.0, 12.0), (12.0, -12.0), (-12.0, -12.0), (-12.0, 12.0)],
-                base=4,
-                precision=3,
-                number=3,
-            ),
+            builder.get_hashes(),
             [('', 4)],
         )
 

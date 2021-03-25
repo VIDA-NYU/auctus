@@ -19,8 +19,8 @@ import warnings
 
 from .numerical import mean_stddev, get_numerical_ranges
 from .profile_types import identify_types, determine_dataset_type
-from .spatial import LatLongColumn, nominatim_resolve_all, \
-    pair_latlong_columns, get_spatial_ranges, parse_wkt_column, get_geohashes
+from .spatial import LatLongColumn, Geohasher, nominatim_resolve_all, \
+    pair_latlong_columns, get_spatial_ranges, parse_wkt_column
 from .temporal import get_temporal_resolution
 from . import types
 
@@ -169,21 +169,6 @@ def count_garbage_rows(file):
         return run_start
     finally:
         file.seek(0, 0)
-
-
-def get_geohashes_json(points):
-    hashes = get_geohashes(
-        points,
-        base=4,
-        number=MAX_GEOHASHES,
-    )
-    return [
-        {
-            'hash': h,
-            'number': n,
-        }
-        for h, n in hashes
-    ]
 
 
 def load_data(data, load_max_size=None):
@@ -784,7 +769,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     # Ranges
                     spatial_ranges = get_spatial_ranges(values)
                     # Geohashes
-                    hashes = get_geohashes_json(values)
+                    builder = Geohasher(number=MAX_GEOHASHES)
+                    builder.add_points(values)
+                    hashes = builder.get_hashes_json()
 
                     spatial_coverage.append({
                         'type': 'latlong',
@@ -823,7 +810,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     # Ranges
                     spatial_ranges = get_spatial_ranges(values)
                     # Geohashes
-                    hashes = get_geohashes_json(values)
+                    builder = Geohasher(number=MAX_GEOHASHES)
+                    builder.add_points(values)
+                    hashes = builder.get_hashes_json()
 
                     spatial_coverage.append({
                         'type': 'point_latlong' if latlong else 'point',
@@ -846,7 +835,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     # Ranges
                     spatial_ranges = get_spatial_ranges(locations)
                     # Geohashes
-                    hashes = get_geohashes_json(locations)
+                    builder = Geohasher(number=MAX_GEOHASHES)
+                    builder.add_points(locations)
+                    hashes = builder.get_hashes_json()
 
                     spatial_coverage.append({
                         'type': 'address',

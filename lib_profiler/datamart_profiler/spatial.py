@@ -500,48 +500,62 @@ def decode_hash(hash, base=32):
     )
 
 
-def get_geohashes(points, *, number, base=32, precision=16):
-    """Find a specific number of geohashes covering a set of points.
-    """
-    # Tree structure, storing total count and children at each level
-    tree_root = [0, {}]
-    # Total number of nodes at each level
-    number_at_level = [0] * precision
-    for point in points:
-        hash = hash_location(point, base, precision)
-        # Add this hash to the tree
-        node = tree_root
-        for level, key in enumerate(hash):
+class Geohasher(object):
+    def __init__(self, *, number, base=4, precision=16):
+        self.number = number
+        self.base = base
+        self.precision = precision
+
+        self.tree_root = [0, {}]
+        self.number_at_level = [0] * precision
+
+    def add_points(self, points):
+        for point in points:
+            geohash = hash_location(point, self.base, self.precision)
+            # Add this hash to the tree
+            node = self.tree_root
+            for level, key in enumerate(geohash):
+                node[0] += 1
+                try:
+                    node = node[1][key]
+                except KeyError:
+                    new_node = [0, {}]
+                    node[1][key] = new_node
+                    node = new_node
+                    self.number_at_level[level] += 1
             node[0] += 1
-            try:
-                node = node[1][key]
-            except KeyError:
-                new_node = [0, {}]
-                node[1][key] = new_node
-                node = new_node
-                number_at_level[level] += 1
-        node[0] += 1
 
-    # Find the max level with fewer than `number` hashes
-    target_level = 0
-    while (
-        target_level < precision
-        and number_at_level[target_level] <= number
-    ):
-        target_level += 1
+    def get_hashes(self):
+        # Find the max level with fewer than `number` hashes
+        target_level = 0
+        while (
+            target_level < self.precision
+            and self.number_at_level[target_level] <= self.number
+        ):
+            target_level += 1
 
-    # Reconstruct the hashes at this level
-    hashes = []
+        # Reconstruct the hashes at this level
+        hashes = []
 
-    def add_node(prefix, node, level):
-        if level == target_level:
-            hashes.append((prefix, node[0]))
-            return
-        for k, n in node[1].items():
-            add_node(prefix + k, n, level + 1)
+        def add_node(prefix, node, level):
+            if level == target_level:
+                hashes.append((prefix, node[0]))
+                return
+            for k, n in node[1].items():
+                add_node(prefix + k, n, level + 1)
 
-    add_node('', tree_root, 0)
-    return hashes
+        add_node('', self.tree_root, 0)
+        return hashes
+
+    def get_hashes_json(self):
+        hashes = self.get_hashes()
+        return [
+            {
+                'hash': h,
+                'number': n,
+            }
+            for h, n in hashes
+        ]
 
 
 def median_smallest_distance(points, tree=None):
