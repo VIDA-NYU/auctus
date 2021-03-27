@@ -17,6 +17,10 @@ import './GeoSpatialCoverageMap.css';
 import {transformCoordinates, centralizeMapToExtent} from '../spatial-utils';
 import 'ol/ol.css';
 
+// Amount of outlying data to ignore when focusing the map
+// 5% on each side
+const OUTLIER_RATIO = 0.05;
+
 function geohashToLatLong(hash: string, base: number) {
   if (base !== 4) {
     throw new Error('Only geohash4 is implemented');
@@ -83,13 +87,17 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         maxNumber = Math.max(maxNumber, coverage.geohashes4[j].number);
       }
 
+      const minXList = [];
+      const maxXList = [];
+      const minYList = [];
+      const maxYList = [];
       for (let j = 0; j < coverage.geohashes4.length; j++) {
         const {hash, number: hashNumber} = coverage.geohashes4[j];
         const {topLeft, bottomRight} = geohashToLatLong(hash, 4);
-        minX = Math.min(topLeft[0], minX);
-        maxX = Math.max(bottomRight[0], maxX);
-        minY = Math.min(bottomRight[1], minY);
-        maxY = Math.max(topLeft[1], maxY);
+        minXList.push(topLeft[0]);
+        maxXList.push(bottomRight[0]);
+        minYList.push(bottomRight[1]);
+        maxYList.push(topLeft[1]);
         polygons.push({
           geom: [
             [topLeft[0], topLeft[1]],
@@ -110,6 +118,14 @@ class GeoSpatialCoverageMap extends React.PureComponent<
           data: {hash, number: hashNumber},
         });
       }
+      minXList.sort();
+      minX = minXList[Math.floor((minXList.length - 1) * OUTLIER_RATIO)];
+      maxXList.sort();
+      maxX = maxXList[Math.ceil((maxXList.length - 1) * (1.0 - OUTLIER_RATIO))];
+      minYList.sort();
+      minY = minYList[Math.floor((minYList.length - 1) * OUTLIER_RATIO)];
+      maxYList.sort();
+      maxY = maxYList[Math.ceil((maxYList.length - 1) * (1.0 - OUTLIER_RATIO))];
     } else if (coverage.ranges?.length) {
       for (let j = 0; j < coverage.ranges.length; j++) {
         const topLeft = coverage.ranges[j].range.coordinates[0];
