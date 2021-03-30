@@ -30,6 +30,12 @@ ADDRESS = 'http://schema.org/address'
 ADMIN = 'http://schema.org/AdministrativeArea'
 """A named administrative area, such as a country, state, or city"""
 
+URL = 'http://schema.org/URL'
+"""A URL"""
+
+FILE_PATH = 'https://metadata.datadrivendiscovery.org/types/FileName'
+"""A filename"""
+
 ID = 'http://schema.org/identifier'
 """An identifier"""
 
