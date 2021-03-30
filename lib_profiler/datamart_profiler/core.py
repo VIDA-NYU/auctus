@@ -445,7 +445,8 @@ def process_column(
     if (
         nominatim is not None and
         structural_type == types.TEXT and
-        types.TEXT in semantic_types_dict
+        types.TEXT in semantic_types_dict and
+        types.ADMIN not in semantic_types_dict
     ):
         locations, non_empty = nominatim_resolve_all(
             nominatim,
