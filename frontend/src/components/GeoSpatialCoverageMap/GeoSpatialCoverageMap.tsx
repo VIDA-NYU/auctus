@@ -93,7 +93,6 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     let maxY = -Infinity;
 
     const vectorLayers = [];
-    const overlays = [];
 
     if (coverage.geohashes4?.length) {
       // First pass to compute color scale
@@ -134,7 +133,8 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         polygon.transform('EPSG:4326', 'EPSG:3857');
         const feature = new Feature(polygon);
         feature.setStyle(style);
-        feature.set('number', hashNumber);
+        feature.set('numberOfPoints', hashNumber);
+        feature.set('geohash4', hash);
         source.addFeature(feature);
       }
       minXList.sort();
@@ -194,26 +194,10 @@ class GeoSpatialCoverageMap extends React.PureComponent<
           opacity: 0.5,
         })
       );
-
-      // popup with bounding boxes
-      const container = this.containerRef.current
-        ? this.containerRef.current
-        : undefined;
-
-      overlays.push(
-        new Overlay({
-          id: 'overlay',
-          element: container,
-          autoPan: true,
-          autoPanAnimation: {
-            duration: 250,
-          },
-        })
-      );
     }
 
     const extent = [minX, minY, maxX, maxY];
-    return {extent, vectorLayers, overlays};
+    return {extent, vectorLayers};
   }
 
   componentDidMount() {
@@ -234,9 +218,20 @@ class GeoSpatialCoverageMap extends React.PureComponent<
   }
 
   setupMap() {
-    const {extent, vectorLayers, overlays} = this.createCoverage(
-      this.props.coverage
-    );
+    const {extent, vectorLayers} = this.createCoverage(this.props.coverage);
+
+    // popup with bounding boxes
+    const container = this.containerRef.current
+      ? this.containerRef.current
+      : undefined;
+    const overlay = new Overlay({
+      id: 'overlay',
+      element: container,
+      autoPan: true,
+      autoPanAnimation: {
+        duration: 250,
+      },
+    });
 
     const rasterLayer = new TileLayer({
       source: new OSMSource(),
@@ -245,7 +240,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     const map = new Map({
       interactions: interactionDefaults({mouseWheelZoom: false}),
       layers: [rasterLayer, ...vectorLayers],
-      overlays: overlays,
+      overlays: [overlay],
       target: this.mapId, //'map-' + index,
       view: new View({
         projection: 'EPSG:3857',
@@ -259,9 +254,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       transformExtent(extent, 'EPSG:4326', 'EPSG:3857')
     );
 
-    if (overlays.length > 0) {
-      this.setupHoverPopUp(map);
-    }
+    this.setupHoverPopUp(map);
   }
 
   setupHoverPopUp(map: Map) {
@@ -291,13 +284,21 @@ class GeoSpatialCoverageMap extends React.PureComponent<
 
         const content = this.popupContentRef.current;
         if (content) {
-          content.innerHTML =
-            '<span>Top Left: </span><code>' +
-            topLeft +
-            '</code> </br>' +
-            '<span>Bottom Right: </span><code>' +
-            bottomRight +
-            '</code>';
+          const isGeohash = feature.get('geohash4') !== undefined;
+          const numberOfPoints = feature.get('numberOfPoints');
+          if (isGeohash && numberOfPoints !== undefined) {
+            content.innerHTML = `${numberOfPoints} points`;
+          } else if (!isGeohash) {
+            content.innerHTML =
+              '<span>Top Left: </span><code>' +
+              topLeft +
+              '</code> </br>' +
+              '<span>Bottom Right: </span><code>' +
+              bottomRight +
+              '</code>';
+          } else {
+            return;
+          }
           map
             .getOverlayById('overlay')
             .setPosition(
@@ -392,11 +393,9 @@ class GeoSpatialCoverageMap extends React.PureComponent<
           {this.renderCoverageColumns(this.props.coverage)}
         </div>
         <div id={this.mapId} ref={this.mapRef} className="map" style={style} />
-        {this.props.coverage.geohashes4?.length ? undefined : (
-          <span className="mb-3" style={{fontSize: '0.9rem'}}>
-            Left-click on bounding box to get more information.
-          </span>
-        )}
+        <span className="mb-3" style={{fontSize: '0.9rem'}}>
+          Left-click on bounding box to get more information.
+        </span>
         <div ref={this.containerRef} className="ol-popup">
           <div ref={this.popupContentRef} />
         </div>
