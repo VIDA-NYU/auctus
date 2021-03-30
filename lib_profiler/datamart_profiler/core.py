@@ -904,9 +904,12 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         if area is None or not area.bounds:
                             continue
                         builder.add_aab(area.bounds)
-                    cov['geohashes4'] = builder.get_hashes_json()
+                    hashes = builder.get_hashes_json()
+                    if hashes:
+                        cov['geohashes4'] = hashes
 
-                    spatial_coverage.append(cov)
+                    if 'ranges' in cov or 'geohashes4' in cov:
+                        spatial_coverage.append(cov)
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
