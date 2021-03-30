@@ -66,6 +66,7 @@ function heatColorMap(value: number): number[] {
 
 interface GeoSpatialCoverageMapProps {
   coverage: SpatialCoverage;
+  sampled: boolean;
 }
 
 class GeoSpatialCoverageMap extends React.PureComponent<
@@ -97,8 +98,10 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     if (coverage.geohashes4?.length) {
       // First pass to compute color scale
       let maxNumber = 1;
+      let totalNumber = 0;
       for (let j = 0; j < coverage.geohashes4.length; j++) {
         maxNumber = Math.max(maxNumber, coverage.geohashes4[j].number);
+        totalNumber += coverage.geohashes4[j].number;
       }
 
       const minXList = [];
@@ -134,6 +137,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         const feature = new Feature(polygon);
         feature.setStyle(style);
         feature.set('numberOfPoints', hashNumber);
+        feature.set('ratioOfPoints', hashNumber / totalNumber);
         feature.set('geohash4', hash);
         source.addFeature(feature);
       }
@@ -287,7 +291,12 @@ class GeoSpatialCoverageMap extends React.PureComponent<
           const isGeohash = feature.get('geohash4') !== undefined;
           const numberOfPoints = feature.get('numberOfPoints');
           if (isGeohash && numberOfPoints !== undefined) {
-            content.innerHTML = `${numberOfPoints} points`;
+            const percent = (100 * feature.get('ratioOfPoints')).toFixed(2);
+            if (this.props.sampled) {
+              content.innerHTML = `${percent} % of points`;
+            } else {
+              content.innerHTML = `${numberOfPoints} points, ${percent} %`;
+            }
           } else if (!isGeohash) {
             content.innerHTML =
               '<span>Top Left: </span><code>' +
