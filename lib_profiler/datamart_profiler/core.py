@@ -19,8 +19,8 @@ import warnings
 
 from .numerical import mean_stddev, get_numerical_ranges
 from .profile_types import identify_types, determine_dataset_type
-from .spatial import LatLongColumn, nominatim_resolve_all, \
-    pair_latlong_columns, get_spatial_ranges, parse_wkt_column, get_geohashes
+from .spatial import LatLongColumn, Geohasher, nominatim_resolve_all, \
+    pair_latlong_columns, get_spatial_ranges, parse_wkt_column
 from .temporal import get_temporal_resolution
 from . import types
 
@@ -169,21 +169,6 @@ def count_garbage_rows(file):
         return run_start
     finally:
         file.seek(0, 0)
-
-
-def get_geohashes_json(points):
-    hashes = get_geohashes(
-        points,
-        base=4,
-        number=MAX_GEOHASHES,
-    )
-    return [
-        {
-            'hash': h,
-            'number': n,
-        }
-        for h, n in hashes
-    ]
 
 
 def load_data(data, load_max_size=None):
@@ -785,7 +770,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     # Ranges
                     spatial_ranges = get_spatial_ranges(values)
                     # Geohashes
-                    hashes = get_geohashes_json(values)
+                    builder = Geohasher(number=MAX_GEOHASHES)
+                    builder.add_points(values)
+                    hashes = builder.get_hashes_json()
 
                     spatial_coverage.append({
                         'type': 'latlong',
@@ -824,7 +811,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     # Ranges
                     spatial_ranges = get_spatial_ranges(values)
                     # Geohashes
-                    hashes = get_geohashes_json(values)
+                    builder = Geohasher(number=MAX_GEOHASHES)
+                    builder.add_points(values)
+                    hashes = builder.get_hashes_json()
 
                     spatial_coverage.append({
                         'type': 'point_latlong' if latlong else 'point',
@@ -847,7 +836,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     # Ranges
                     spatial_ranges = get_spatial_ranges(locations)
                     # Geohashes
-                    hashes = get_geohashes_json(locations)
+                    builder = Geohasher(number=MAX_GEOHASHES)
+                    builder.add_points(locations)
+                    hashes = builder.get_hashes_json()
 
                     spatial_coverage.append({
                         'type': 'address',
@@ -863,9 +854,14 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
                     name = columns[idx]['name']
                     logger.info(
-                        "Computing spatial ranges admin_areas=%r (%d rows)",
+                        "Computing spatial sketches admin_areas=%r (%d rows)",
                         name, len(areas),
                     )
+                    cov = {
+                        'type': 'admin',
+                        'column_names': [name],
+                        'column_indexes': [idx],
+                    }
 
                     # Merge into a single range
                     merged = None
@@ -888,25 +884,33 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         and merged[1] - merged[0] > 0.01
                         and merged[3] - merged[2] > 0.01
                     ):
-                        logger.info("Inserted bounding box")
-                        spatial_coverage.append({
-                            'type': 'admin',
-                            'column_names': [columns[idx]['name']],
-                            'column_indexes': [idx],
-                            'ranges': [
-                                {
-                                    'range': {
-                                        'type': 'envelope',
-                                        'coordinates': [
-                                            [merged[0], merged[3]],
-                                            [merged[1], merged[2]],
-                                        ],
-                                    },
+                        logger.info("Computed bounding box")
+                        cov['ranges'] = [
+                            {
+                                'range': {
+                                    'type': 'envelope',
+                                    'coordinates': [
+                                        [merged[0], merged[3]],
+                                        [merged[1], merged[2]],
+                                    ],
                                 },
-                            ],
-                        })
+                            },
+                        ]
                     else:
                         logger.info("Couldn't build a bounding box")
+
+                    # Compute geohashes
+                    builder = Geohasher(number=MAX_GEOHASHES)
+                    for area in areas:
+                        if area is None or not area.bounds:
+                            continue
+                        builder.add_aab(area.bounds)
+                    hashes = builder.get_hashes_json()
+                    if hashes:
+                        cov['geohashes4'] = hashes
+
+                    if 'ranges' in cov or 'geohashes4' in cov:
+                        spatial_coverage.append(cov)
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage

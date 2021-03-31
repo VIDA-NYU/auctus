@@ -907,6 +907,50 @@ class TestGeo(DataTestCase):
                                 },
                             },
                         ],
+                        'geohashes4': lambda l: sorted(l, key=lambda h: h['hash']) == [
+                            {'hash': '0312', 'number': 1},
+                            {'hash': '0313', 'number': 1},
+                            {'hash': '0330', 'number': 1},
+                            {'hash': '0331', 'number': 1},
+                            {'hash': '0332', 'number': 1},
+                            {'hash': '0333', 'number': 1},
+                            {'hash': '1202', 'number': 1},
+                            {'hash': '1203', 'number': 1},
+                            {'hash': '1212', 'number': 1},
+                            {'hash': '1213', 'number': 1},
+                            {'hash': '1220', 'number': 1},
+                            {'hash': '1221', 'number': 1},
+                            {'hash': '1222', 'number': 1},
+                            {'hash': '1223', 'number': 1},
+                            {'hash': '1230', 'number': 1},
+                            {'hash': '1231', 'number': 1},
+                            {'hash': '1232', 'number': 2},
+                            {'hash': '1233', 'number': 2},
+                            {'hash': '1302', 'number': 1},
+                            {'hash': '1320', 'number': 1},
+                            {'hash': '1322', 'number': 1},
+                            {'hash': '2110', 'number': 1},
+                            {'hash': '2111', 'number': 1},
+                            {'hash': '2112', 'number': 1},
+                            {'hash': '2113', 'number': 1},
+                            {'hash': '2130', 'number': 1},
+                            {'hash': '2131', 'number': 1},
+                            {'hash': '3000', 'number': 1},
+                            {'hash': '3001', 'number': 1},
+                            {'hash': '3002', 'number': 1},
+                            {'hash': '3003', 'number': 1},
+                            {'hash': '3010', 'number': 2},
+                            {'hash': '3011', 'number': 2},
+                            {'hash': '3012', 'number': 1},
+                            {'hash': '3013', 'number': 1},
+                            {'hash': '3020', 'number': 1},
+                            {'hash': '3021', 'number': 1},
+                            {'hash': '3030', 'number': 1},
+                            {'hash': '3031', 'number': 1},
+                            {'hash': '3100', 'number': 2},
+                            {'hash': '3102', 'number': 1},
+                            {'hash': '3120', 'number': 1},
+                        ],
                     },
                     {
                         'type': 'admin',
@@ -922,6 +966,88 @@ class TestGeo(DataTestCase):
                                     ],
                                 },
                             },
+                        ],
+                        'geohashes4': lambda l: sorted(l, key=lambda h: h['hash']) == [
+                            {'hash': '310002310', 'number': 1},
+                            {'hash': '310002311', 'number': 1},
+                            {'hash': '310002312', 'number': 1},
+                            {'hash': '310002313', 'number': 1},
+                            {'hash': '310002330', 'number': 1},
+                            {'hash': '310002331', 'number': 1},
+                            {'hash': '310002332', 'number': 1},
+                            {'hash': '310002333', 'number': 1},
+                            {'hash': '310003200', 'number': 1},
+                            {'hash': '310003201', 'number': 1},
+                            {'hash': '310003202', 'number': 1},
+                            {'hash': '310003203', 'number': 1},
+                            {'hash': '310003210', 'number': 1},
+                            {'hash': '310003211', 'number': 1},
+                            {'hash': '310003212', 'number': 1},
+                            {'hash': '310003213', 'number': 1},
+                            {'hash': '310003220', 'number': 1},
+                            {'hash': '310003221', 'number': 1},
+                            {'hash': '310003222', 'number': 1},
+                            {'hash': '310003223', 'number': 1},
+                            {'hash': '310003230', 'number': 1},
+                            {'hash': '310003231', 'number': 1},
+                            {'hash': '310003232', 'number': 1},
+                            {'hash': '310003233', 'number': 1},
+                            {'hash': '310003300', 'number': 1},
+                            {'hash': '310003301', 'number': 1},
+                            {'hash': '310003302', 'number': 1},
+                            {'hash': '310003303', 'number': 1},
+                            {'hash': '310003310', 'number': 1},
+                            {'hash': '310003311', 'number': 1},
+                            {'hash': '310003312', 'number': 1},
+                            {'hash': '310003313', 'number': 1},
+                            {'hash': '310003320', 'number': 1},
+                            {'hash': '310003321', 'number': 1},
+                            {'hash': '310003322', 'number': 1},
+                            {'hash': '310003323', 'number': 1},
+                            {'hash': '310003330', 'number': 1},
+                            {'hash': '310003331', 'number': 1},
+                            {'hash': '310003332', 'number': 1},
+                            {'hash': '310003333', 'number': 1},
+                            {'hash': '310020110', 'number': 1},
+                            {'hash': '310020111', 'number': 1},
+                            {'hash': '310020112', 'number': 1},
+                            {'hash': '310020113', 'number': 1},
+                            {'hash': '310020130', 'number': 1},
+                            {'hash': '310020131', 'number': 1},
+                            {'hash': '310020132', 'number': 1},
+                            {'hash': '310020133', 'number': 1},
+                            {'hash': '310021000', 'number': 1},
+                            {'hash': '310021001', 'number': 1},
+                            {'hash': '310021002', 'number': 1},
+                            {'hash': '310021003', 'number': 1},
+                            {'hash': '310021010', 'number': 1},
+                            {'hash': '310021011', 'number': 1},
+                            {'hash': '310021012', 'number': 1},
+                            {'hash': '310021013', 'number': 1},
+                            {'hash': '310021020', 'number': 1},
+                            {'hash': '310021021', 'number': 1},
+                            {'hash': '310021022', 'number': 1},
+                            {'hash': '310021023', 'number': 1},
+                            {'hash': '310021030', 'number': 1},
+                            {'hash': '310021031', 'number': 1},
+                            {'hash': '310021032', 'number': 1},
+                            {'hash': '310021033', 'number': 1},
+                            {'hash': '310021100', 'number': 1},
+                            {'hash': '310021101', 'number': 1},
+                            {'hash': '310021102', 'number': 1},
+                            {'hash': '310021103', 'number': 1},
+                            {'hash': '310021110', 'number': 1},
+                            {'hash': '310021111', 'number': 1},
+                            {'hash': '310021112', 'number': 1},
+                            {'hash': '310021113', 'number': 1},
+                            {'hash': '310021120', 'number': 1},
+                            {'hash': '310021121', 'number': 1},
+                            {'hash': '310021122', 'number': 1},
+                            {'hash': '310021123', 'number': 1},
+                            {'hash': '310021130', 'number': 1},
+                            {'hash': '310021131', 'number': 1},
+                            {'hash': '310021132', 'number': 1},
+                            {'hash': '310021133', 'number': 1},
                         ],
                     },
                 ],
@@ -1115,6 +1241,25 @@ class TestGeoHash(unittest.TestCase):
             [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
         )
 
+    def test_bitrange(self):
+        results = []
+        for bits in spatial.bitrange(
+            [1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 1, 0, 1, 0],
+        ):
+            results.append(''.join(str(b) for b in bits))
+        self.assertEqual(
+            results,
+            [
+                '1010101',
+                '1010110',
+                '1010111',
+                '1011000',
+                '1011001',
+                '1011010',
+            ],
+        )
+
     def test_geohash32(self):
         self.assertEqual(
             spatial.hash_location((40.6962574, -73.9849621)),
@@ -1176,7 +1321,7 @@ class TestGeoHash(unittest.TestCase):
             ),
         )
 
-    def test_sketch_hashes(self):
+    def test_sketch_points(self):
         test_data = [
             ((40.0, 10.0), '3011'),
             ((20.0, 12.0), '3001'),
@@ -1197,34 +1342,75 @@ class TestGeoHash(unittest.TestCase):
             ],
             [p[1] for p in test_data],
         )
+        builder = spatial.Geohasher(
+            base=4,
+            precision=4,  # Big enough it can fail, low enough I can debug
+            number=3,
+        )
+        builder.add_points(points)
         self.assertEqual(
-            spatial.get_geohashes(
-                points,
-                base=4,
-                precision=4,  # Big enough it can fail, low enough I can debug
-                number=3,
-            ),
+            builder.get_hashes(),
             [('30', 4), ('10', 2), ('02', 4)],
         )
 
+        builder = spatial.Geohasher(
+            base=4,
+            precision=3,
+            number=3,
+        )
+        builder.add_points([
+            (1.0, 1.0), (46.0, 91.0), (44.0, 91.0), (89.0, 89.0),
+        ])
         self.assertEqual(
-            spatial.get_geohashes(
-                [(1.0, 1.0), (46.0, 91.0), (44.0, 91.0), (89.0, 89.0)],
-                base=4,
-                precision=3,
-                number=3,
-            ),
+            builder.get_hashes(),
             [('3', 4)],
         )
 
+        builder = spatial.Geohasher(
+            base=4,
+            precision=3,
+            number=3,
+        )
+        builder.add_points([
+            (12.0, 12.0), (12.0, -12.0), (-12.0, -12.0), (-12.0, 12.0),
+        ])
         self.assertEqual(
-            spatial.get_geohashes(
-                [(12.0, 12.0), (12.0, -12.0), (-12.0, -12.0), (-12.0, 12.0)],
-                base=4,
-                precision=3,
-                number=3,
-            ),
+            builder.get_hashes(),
             [('', 4)],
+        )
+
+    def test_sketch_aab(self):
+        builder = spatial.Geohasher(
+            base=4,
+            precision=4,
+            number=20,
+        )
+        builder.add_aab((-100.0, -30.0, -15.0, 50.0))
+        builder.add_aab((-80.0, 20.0, -50.0, 15.0))
+        self.assertEqual(
+            builder.get_hashes(),
+            [
+                ('013', 1),
+                ('031', 2),
+                ('033', 2),
+                ('030', 1),
+                ('032', 1),
+                ('021', 1),
+                ('023', 1),
+                ('102', 1),
+                ('103', 1),
+                ('112', 1),
+                ('120', 2),
+                ('121', 1),
+                ('122', 2),
+                ('123', 1),
+                ('130', 1),
+                ('132', 1),
+                ('201', 1),
+                ('210', 1),
+                ('211', 1),
+                ('300', 1),
+            ],
         )
 
 
