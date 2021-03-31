@@ -783,6 +783,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         ],
                         'geohashes4': hashes,
                         'ranges': spatial_ranges,
+                        'number': len(values),
                     })
 
             # Compute sketches from WKT points
@@ -821,6 +822,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         'column_indexes': [i],
                         'geohashes4': hashes,
                         'ranges': spatial_ranges,
+                        'number': len(values),
                     })
 
             for idx, resolved in resolved_columns.items():
@@ -846,6 +848,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
                         'column_indexes': [idx],
                         'geohashes4': hashes,
                         'ranges': spatial_ranges,
+                        'number': len(locations),
                     })
 
                 # Compute sketches from administrative areas
@@ -908,6 +911,9 @@ def process_dataset(data, dataset_id=None, metadata=None,
                     hashes = builder.get_hashes_json()
                     if hashes:
                         cov['geohashes4'] = hashes
+
+                    # Count
+                    cov['number'] = builder.total
 
                     if 'ranges' in cov or 'geohashes4' in cov:
                         spatial_coverage.append(cov)

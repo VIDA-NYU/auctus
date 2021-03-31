@@ -298,7 +298,7 @@ class TestLatlongSelection(DataTestCase):
             [
                 {
                     k: v for k, v in c.items()
-                    if k not in ('ranges', 'geohashes4')
+                    if k not in ('ranges', 'geohashes4', 'number')
                 }
                 for c in metadata['spatial_coverage']
             ],
@@ -783,6 +783,7 @@ class TestNominatim(DataTestCase):
                             {'hash': '1211302313301102', 'number': 1},
                             {'hash': '1211302313300022', 'number': 1},
                         ],
+                        'number': 3,
                     },
                 ],
             },
@@ -951,6 +952,7 @@ class TestGeo(DataTestCase):
                             {'hash': '3102', 'number': 1},
                             {'hash': '3120', 'number': 1},
                         ],
+                        'number': 3,
                     },
                     {
                         'type': 'admin',
@@ -1049,6 +1051,8 @@ class TestGeo(DataTestCase):
                             {'hash': '310021132', 'number': 1},
                             {'hash': '310021133', 'number': 1},
                         ],
+                        # FIXME: number currently 1 because of missing geo data
+                        'number': lambda n: isinstance(n, int),
                     },
                 ],
             },
@@ -1150,7 +1154,8 @@ class TestGeo(DataTestCase):
                         "column_names": ["coords"],
                         "column_indexes": [1],
                         "geohashes4": check_geohashes('1211302313'),
-                        "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
+                        "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352),
+                        "number": 100,
                     }
                 ],
             },
@@ -1207,8 +1212,9 @@ class TestGeo(DataTestCase):
                         "column_names": ["coords"],
                         "column_indexes": [1],
                         "geohashes4": check_geohashes('1211302313'),
-                        "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
-                    }
+                        "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352),
+                        "number": 100,
+                    },
                 ],
             },
         )

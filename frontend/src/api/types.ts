@@ -46,6 +46,7 @@ export interface SpatialCoverage {
     };
   }>;
   geohashes4?: Array<{hash: string; number: number}>;
+  number?: number;
 }
 
 export interface Metadata {

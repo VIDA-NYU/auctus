@@ -134,6 +134,10 @@
                     "number": {"type": "integer"}
                   }
                 }
+              },
+              "number": {
+                "type": "integer",
+                "description": "Number of known locations from which the coverage was generated"
               }
             },
             "required": ["type", "column_names", "column_indexes", "ranges"],

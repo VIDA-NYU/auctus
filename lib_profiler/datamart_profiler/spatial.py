@@ -566,6 +566,7 @@ class Geohasher(object):
         max_long_bits = max_bits[0::2]
         max_lat_bits = max_bits[1::2]
 
+        self.tree_root[0] += 1
         level = 1
         while level <= self.precision:
             n_long_bits = math.ceil(level * base_bits / 2)
@@ -624,6 +625,10 @@ class Geohasher(object):
             }
             for h, n in hashes
         ]
+
+    @property
+    def total(self):
+        return self.tree_root[0]
 
 
 def median_smallest_distance(points, tree=None):

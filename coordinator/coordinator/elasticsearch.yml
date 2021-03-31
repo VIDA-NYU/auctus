@@ -145,6 +145,8 @@ datamart:
             properties:
               range:
                 type: geo_shape
+          number:
+            type: integer
       temporal_coverage:
         type: nested
         properties:
@@ -350,6 +352,8 @@ datamart_spatial_coverage:
             type: double
           min_lat:
             type: double
+      number:
+        type: integer
 datamart_temporal_coverage:
   settings:
     <<: *analyzer

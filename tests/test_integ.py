@@ -3369,7 +3369,8 @@ annotated_metadata = {
             "column_names": ["lt_coord", "lg_coord"],
             "column_indexes": [1, 2],
             "geohashes4": check_geohashes('1211302313'),
-            "ranges": check_geo_ranges(-74.006, 40.7229, -73.990, 40.7352)
+            "ranges": check_geo_ranges(-74.006, 40.7229, -73.990, 40.7352),
+            "number": 16,
         }
     ],
     "sample": "id,lt_coord,lg_coord,height,stmo\r\nplace00,40.734746,-74.000077,85.772569,10\r\n" +
@@ -3472,6 +3473,7 @@ geo_metadata = {
                 {'hash': '1211302313211131', 'number': 4},
             ],
             "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352),
+            "number": 100,
         }
     ],
     "materialize": {
@@ -3617,7 +3619,8 @@ geo_wkt_metadata = {
                 {'hash': '1211302313211130', 'number': 1},
                 {'hash': '1211302313211131', 'number': 4},
             ],
-            "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352)
+            "ranges": check_geo_ranges(-74.006, 40.6905, -73.983, 40.7352),
+            "number": 100,
         }
     ],
     "materialize": {
