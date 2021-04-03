@@ -11,8 +11,8 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 test -e lib_geo/data/admins.sqlite3
 
 # Re-build and re-start services
-docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg version=v0.0 coordinator profiler apiserver test-discoverer
-docker-compose up -d coordinator
+docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg version=v0.0 cache-cleaner coordinator profiler apiserver test-discoverer
+docker-compose up -d cache-cleaner coordinator
 sleep 2
 docker-compose up -d --force-recreate profiler apiserver apilb
 

@@ -22,8 +22,8 @@ COPY --chown=appuser lib_core lib_core
 RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/lib_core
 COPY --chown=appuser lib_fslock lib_fslock
 RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/lib_fslock
-COPY --chown=appuser coordinator coordinator
-RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/coordinator
+COPY --chown=appuser cache_cleaner cache_cleaner
+RUN pip --disable-pip-version-check --no-cache-dir install --no-deps -e /usr/src/app/cache_cleaner
 
 RUN python -m compileall /usr/src/app/
 ARG version
@@ -31,4 +31,4 @@ ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
 USER 998
 ENTRYPOINT ["/tini", "--"]
-CMD ["coordinator"]
+CMD ["cache_cleaner"]

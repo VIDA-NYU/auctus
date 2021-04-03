@@ -30,6 +30,9 @@ scrape_configs:
   - job_name: coordinator
     static_configs:
       - targets: ["coordinator:8000"]
+  - job_name: cache-cleaner
+    static_configs:
+      - targets: ["cache-cleaner:8000"]
   - job_name: profiler
     dns_sd_configs:
       - names:

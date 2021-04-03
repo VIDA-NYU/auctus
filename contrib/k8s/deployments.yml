@@ -307,12 +307,10 @@ spec:
         image: busybox
         securityContext:
           runAsNonRoot: false
-        command: ["sh", "-c", "chown -R 998 /datasets /cache"]
+        command: ["sh", "-c", "chown -R 998 /datasets"]
         volumeMounts:
         - mountPath: /datasets
           name: datasets
-        - mountPath: /cache
-          name: cache
       containers:
       - name: web
         image: auctus_coordinator
@@ -353,11 +351,6 @@ spec:
             configMapKeyRef:
               name: config
               key: api_url
-        - name: MAX_CACHE_BYTES
-          valueFrom:
-            configMapKeyRef:
-              name: config
-              key: max_cache_bytes
         - name: CUSTOM_FIELDS
           valueFrom:
             configMapKeyRef:
@@ -374,6 +367,53 @@ spec:
       - name: datasets
         persistentVolumeClaim:
           claimName: datasets
+      - name: cache
+        persistentVolumeClaim:
+          claimName: cache
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cache-cleaner
+  labels:
+    app: auctus
+    what: cache-cleaner
+spec:
+  selector:
+    matchLabels:
+      app: auctus
+      what: cache-cleaner
+  template:
+    metadata:
+      labels:
+        app: auctus
+        what: cache-cleaner
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        securityContext:
+          runAsNonRoot: false
+        command: ["sh", "-c", "chown -R 998 /cache"]
+        volumeMounts:
+        - mountPath: /cache
+          name: cache
+      containers:
+      - name: web
+        image: auctus_cache_cleaner
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: MAX_CACHE_BYTES
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: max_cache_bytes
+        volumeMounts:
+        - mountPath: /cache
+          name: cache
+      volumes:
       - name: cache
         persistentVolumeClaim:
           claimName: cache

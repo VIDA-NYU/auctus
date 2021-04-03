@@ -17,7 +17,6 @@ from urllib.parse import quote_plus
 
 from datamart_core.common import delete_dataset_from_index, setup_logging
 
-from .cache import check_cache
 from .coordinator import Coordinator
 
 
@@ -259,5 +258,4 @@ def main():
     loop = tornado.ioloop.IOLoop.current()
     if debug:
         asyncio.get_event_loop().set_debug(True)
-    check_cache()  # Schedules itself to run periodically
     loop.start()

@@ -2,8 +2,9 @@ import asyncio
 import logging
 import os
 import prometheus_client
+import socket
 
-from datamart_core.common import log_future
+from datamart_core.common import log_future, setup_logging
 from datamart_fslock.cache import clear_cache
 
 
@@ -137,3 +138,21 @@ def check_cache():
             5 * 60,
             check_cache,
         )
+
+
+def main():
+    setup_logging()
+    prometheus_client.start_http_server(8000)
+    logger.info(
+        "Startup: cache_cleaner %s %s",
+        os.environ['DATAMART_VERSION'],
+        socket.gethostbyname(socket.gethostname()),
+    )
+
+    # Create cache directories
+    os.makedirs('/cache/datasets', exist_ok=True)
+    os.makedirs('/cache/aug', exist_ok=True)
+    os.makedirs('/cache/user_data', exist_ok=True)
+
+    check_cache()  # Schedules itself to run periodically
+    asyncio.get_event_loop().run_forever()

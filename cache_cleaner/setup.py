@@ -6,28 +6,17 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 req = [
-    'aio-pika',
-    'elasticsearch~=7.0',
     'prometheus_client',
-    'PyYaml',
-    'jinja2',
-    'tornado>=5.0',
     'datamart_core',
 ]
-setup(name='datamart-coordinator-service',
+setup(name='datamart-cache-cleaner-service',
       version='0.0',
-      packages=['coordinator'],
-      package_data={'coordinator': [
-          'static/css/*.css', 'static/css/*.css.map',
-          'static/js/*.js', 'static/js/*.js.map',
-          'templates/*.html',
-          'elasticsearch.yml',
-      ]},
+      packages=['cache_cleaner'],
       entry_points={
           'console_scripts': [
-              'coordinator = coordinator.web:main']},
+              'cache_cleaner = cache_cleaner.cache:main']},
       install_requires=req,
-      description="Coordinator service for Auctus",
+      description="Cache Cleaner service for Auctus",
       author="Remi Rampin",
       author_email='remi.rampin@nyu.edu',
       maintainer="Remi Rampin",
@@ -38,7 +27,7 @@ setup(name='datamart-coordinator-service',
           'Source': 'https://gitlab.com/ViDA-NYU/auctus/auctus',
           'Tracker': 'https://gitlab.com/ViDA-NYU/auctus/auctus/-/issues',
       },
-      long_description="Coordinator service for Auctus",
+      long_description="Cache Cleaner service for Auctus",
       license='Apache-2.0',
       keywords=['auctus', 'datamart'],
       classifiers=[
