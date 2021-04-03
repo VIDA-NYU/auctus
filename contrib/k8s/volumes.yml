@@ -1,6 +1,6 @@
 ---
-kind: PersistentVolume
 apiVersion: v1
+kind: PersistentVolume
 metadata:
   name: datasets
   labels:
@@ -16,8 +16,8 @@ spec:
   hostPath:
     path: "/var/lib/auctus/prod/datasets"
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: datasets
 spec:
@@ -32,8 +32,8 @@ spec:
     requests:
       storage: 5Gi
 ---
-kind: PersistentVolume
 apiVersion: v1
+kind: PersistentVolume
 metadata:
   name: cache
   labels:
@@ -49,8 +49,8 @@ spec:
   hostPath:
     path: "/var/lib/auctus/prod/cache"
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: cache
 spec:
@@ -65,8 +65,8 @@ spec:
     requests:
       storage: 55Gi
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: geo-data
 spec:
@@ -77,8 +77,8 @@ spec:
     requests:
       storage: 300Mi
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: es-synonyms
 spec:

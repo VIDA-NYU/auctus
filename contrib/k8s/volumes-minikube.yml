@@ -1,6 +1,6 @@
 ---
-kind: PersistentVolume
 apiVersion: v1
+kind: PersistentVolume
 metadata:
   name: elasticsearch
   labels:
@@ -15,8 +15,8 @@ spec:
   hostPath:
     path: "/var/lib/auctus/prod/elasticsearch"
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: elasticsearch
 spec:
@@ -31,8 +31,8 @@ spec:
     requests:
       storage: 5Gi
 ---
-kind: PersistentVolume
 apiVersion: v1
+kind: PersistentVolume
 metadata:
   name: datasets
   labels:
@@ -47,8 +47,8 @@ spec:
   hostPath:
     path: "/var/lib/auctus/prod/datasets"
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: datasets
 spec:
@@ -63,8 +63,8 @@ spec:
     requests:
       storage: 5Gi
 ---
-kind: PersistentVolume
 apiVersion: v1
+kind: PersistentVolume
 metadata:
   name: cache
   labels:
@@ -79,8 +79,8 @@ spec:
   hostPath:
     path: "/var/lib/auctus/prod/cache"
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: cache
 spec:
@@ -95,8 +95,8 @@ spec:
     requests:
       storage: 5Gi
 ---
-kind: PersistentVolume
 apiVersion: v1
+kind: PersistentVolume
 metadata:
   name: geo-data
   labels:
@@ -111,8 +111,8 @@ spec:
   hostPath:
     path: "/var/lib/auctus/geo-data"
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: geo-data
 spec:
@@ -127,8 +127,8 @@ spec:
     requests:
       storage: 300Mi
 ---
-kind: PersistentVolume
 apiVersion: v1
+kind: PersistentVolume
 metadata:
   name: es-synonyms
   labels:
@@ -143,8 +143,8 @@ spec:
   hostPath:
     path: "/var/lib/auctus/es-synonyms"
 ---
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: es-synonyms
 spec:
