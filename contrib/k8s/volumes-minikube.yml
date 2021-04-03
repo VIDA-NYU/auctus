@@ -21,10 +21,7 @@ metadata:
   name: elasticsearch
 spec:
   storageClassName: ""
-  selector:
-    matchLabels:
-      app: auctus
-      what: elasticsearch
+  volumeName: elasticsearch
   accessModes:
   - ReadWriteOnce
   resources:
@@ -53,10 +50,7 @@ metadata:
   name: datasets
 spec:
   storageClassName: ""
-  selector:
-    matchLabels:
-      app: auctus
-      what: datasets
+  volumeName: datasets
   accessModes:
   - ReadWriteMany
   resources:
@@ -72,23 +66,27 @@ metadata:
     app: auctus
     what: cache
 spec:
+  storageClassName: "manual"
   capacity:
     storage: 5Gi
   accessModes:
   - ReadWriteMany
-  hostPath:
+  local:
     path: "/var/lib/auctus/prod/cache"
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: auctus-prod-cache-volume
+              operator: Exists
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: cache
 spec:
-  storageClassName: ""
-  selector:
-    matchLabels:
-      app: auctus
-      what: cache
+  storageClassName: "manual"
+  volumeName: cache
   accessModes:
   - ReadWriteMany
   resources:
@@ -117,10 +115,7 @@ metadata:
   name: geo-data
 spec:
   storageClassName: ""
-  selector:
-    matchLabels:
-      app: auctus
-      what: geo-data
+  volumeName: geo-data
   accessModes:
   - ReadOnlyMany
   resources:
@@ -149,10 +144,7 @@ metadata:
   name: es-synonyms
 spec:
   storageClassName: ""
-  selector:
-    matchLabels:
-      app: auctus
-      what: es-synonyms
+  volumeName: es-synonyms
   accessModes:
   - ReadOnlyMany
   resources:

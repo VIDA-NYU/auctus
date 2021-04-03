@@ -21,10 +21,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: datasets
 spec:
-  selector:
-    matchLabels:
-      app: auctus
-      what: datasets
+  volumeName: datasets
   storageClassName: "manual"
   accessModes:
   - ReadWriteMany
