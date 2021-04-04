@@ -141,7 +141,7 @@ datamart_core = "*"
 datamart_materialize = "*"
 datamart_profiler = "*"
 elasticsearch = ">=7.0,<8.0"
-lazo-index-service = "0.6.1"
+lazo-index-service = "0.7.0"
 prometheus_client = "*"
 redis = ">=3.4,<4.0"
 tornado = ">=5.0"
@@ -203,7 +203,7 @@ develop = true
 [package.dependencies]
 aio-pika = "*"
 elasticsearch = ">=7.0,<8.0"
-lazo-index-service = "0.6.1"
+lazo-index-service = "0.7.0"
 prometheus_async = "*"
 prometheus_client = "*"
 sentry-sdk = "*"
@@ -342,7 +342,7 @@ datamart_materialize = "*"
 datamart_profiler = "*"
 defusedxml = "*"
 elasticsearch = ">=7.0,<8.0"
-lazo-index-service = "0.6.1"
+lazo-index-service = "0.7.0"
 prometheus_client = "*"
 xlrd = "*"
 
@@ -604,7 +604,7 @@ format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator 
 
 [[package]]
 name = "lazo-index-service"
-version = "0.6.1"
+version = "0.7.0"
 description = "API for accessing the Lazo index."
 category = "main"
 optional = false
@@ -1497,8 +1497,8 @@ jsonschema = [
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
 ]
 lazo-index-service = [
-    {file = "lazo-index-service-0.6.1.tar.gz", hash = "sha256:8005fd0f6597a67cf533f84e10a66feb78b6dca6477c4fd437b9c93f5a6c0374"},
-    {file = "lazo_index_service-0.6.1-py3-none-any.whl", hash = "sha256:3b97a2a6514660be83b044dd23df9db78ee2fd933bba00b60957e29cabe85dad"},
+    {file = "lazo-index-service-0.7.0.tar.gz", hash = "sha256:fb9ce7e02e39fe5a5cf9694218d0ac4f5ea28376d007373b16a66720524e0faa"},
+    {file = "lazo_index_service-0.7.0-py3-none-any.whl", hash = "sha256:837a1cd69d3beb57e6dfadfd9a0b609c8aab37bd86175f0c4da7cedd547caf45"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.5.2.tar.gz", hash = "sha256:5944a9b95e97de1980c65f03b79b356f30a43de48682b8bdd90aa5089f0ec1f4"},
