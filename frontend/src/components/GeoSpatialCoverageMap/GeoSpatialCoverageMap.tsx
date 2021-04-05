@@ -16,6 +16,7 @@ import {click} from 'ol/events/condition';
 import './GeoSpatialCoverageMap.css';
 import {transformCoordinates, centralizeMapToExtent} from '../spatial-utils';
 import 'ol/ol.css';
+import {scaleSequential} from 'd3-scale';
 
 // Amount of outlying data to ignore when focusing the map
 // 5% on each side
@@ -48,20 +49,10 @@ function geohashToLatLong(hash: string, base: number) {
   return {topLeft, bottomRight};
 }
 
-function heatColorMap(value: number): number[] {
-  if (value < 0.25) {
-    const v = value / 0.25;
-    return [0, 255 * v, 255];
-  } else if (value < 0.5) {
-    const v = (value - 0.25) / 0.25;
-    return [0, 255, 255 * (1.0 - v)];
-  } else if (value < 0.75) {
-    const v = (value - 0.5) / 0.25;
-    return [255 * v, 255, 0];
-  } else {
-    const v = (value - 0.75) / 0.25;
-    return [255, 255 * (1.0 - v), 0];
-  }
+function heatColorMap(value: number): string {
+  const interpolateCustomPurples = scaleSequential(['#8f8cc1', '#41027e']);
+  const color = scaleSequential(interpolateCustomPurples).domain([0, 1]);
+  return color(value);
 }
 
 interface GeoSpatialCoverageMapProps {
@@ -195,7 +186,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         new VectorLayer({
           source,
           style,
-          opacity: 0.5,
+          opacity: 0.8,
         })
       );
     }
