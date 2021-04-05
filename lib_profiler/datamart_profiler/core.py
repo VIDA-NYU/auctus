@@ -176,7 +176,6 @@ def load_data(data, load_max_size=None):
         load_max_size = MAX_SIZE
 
     metadata = {}
-    data_path = None
 
     if isinstance(data, pandas.DataFrame):
         # Turn indexes into regular columns
@@ -200,9 +199,6 @@ def load_data(data, load_max_size=None):
             if isinstance(data, (str, bytes)):
                 if not os.path.exists(data):
                     raise ValueError("data file does not exist")
-
-                # saving path
-                data_path = data
 
                 # File size
                 metadata['size'] = os.path.getsize(data)
@@ -277,7 +273,7 @@ def load_data(data, load_max_size=None):
             logger.info("Dataframe loaded, %d rows, %d columns",
                         data.shape[0], data.shape[1])
 
-    return data, data_path, metadata, column_names
+    return data, metadata, column_names
 
 
 def process_column(
@@ -456,34 +452,22 @@ def process_column(
 
 @PROM_LAZO.time()
 def lazo_index_data(
-    data, data_path,
+    data,
     dataset_id,
     columns_textual, column_textual_names,
     lazo_client,
 ):
     logger.info("Indexing textual data with Lazo...")
     start = time.perf_counter()
-    if data_path:
-        # if we have the path, send the path
+    for idx, name in zip(columns_textual, column_textual_names):
         def call_lazo():
-            lazo_client.index_data_path(
-                data_path,
+            lazo_client.index_data(
+                data.iloc[:, idx].values.tolist(),
                 dataset_id,
-                column_textual_names,
+                name,
             )
 
         _lazo_retry(call_lazo)
-    else:
-        # if path is not available, send the data instead
-        for idx, name in zip(columns_textual, column_textual_names):
-            def call_lazo():
-                lazo_client.index_data(
-                    data.iloc[:, idx].values.tolist(),
-                    dataset_id,
-                    name,
-                )
-
-            _lazo_retry(call_lazo)
     logger.info(
         "Indexing with Lazo took %.2fs seconds",
         time.perf_counter() - start,
@@ -492,34 +476,22 @@ def lazo_index_data(
 
 @PROM_LAZO.time()
 def get_lazo_data_sketch(
-    data, data_path,
+    data,
     columns_textual, column_textual_names,
     lazo_client,
 ):
     logger.info("Sketching textual data with Lazo...")
     start = time.perf_counter()
-    if data_path:
-        # if we have the path, send the path
+    lazo_sketches = []
+    for idx, name in zip(columns_textual, column_textual_names):
         def call_lazo():
-            return lazo_client.get_lazo_sketch_from_data_path(
-                data_path,
+            return lazo_client.get_lazo_sketch_from_data(
+                data.iloc[:, idx].values.tolist(),
                 "",
-                column_textual_names,
+                name,
             )
 
-        lazo_sketches = _lazo_retry(call_lazo)
-    else:
-        # if path is not available, send the data instead
-        lazo_sketches = []
-        for idx, name in zip(columns_textual, column_textual_names):
-            def call_lazo():
-                return lazo_client.get_lazo_sketch_from_data(
-                    data.iloc[:, idx].values.tolist(),
-                    "",
-                    name,
-                )
-
-            lazo_sketches.append(_lazo_retry(call_lazo))
+        lazo_sketches.append(_lazo_retry(call_lazo))
     logger.info(
         "Sketching with Lazo took %.2fs seconds",
         time.perf_counter() - start,
@@ -575,7 +547,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Load or prepare data for processing
     try:
-        data, data_path, file_metadata, column_names = load_data(
+        data, file_metadata, column_names = load_data(
             data,
             load_max_size=load_max_size,
         )
@@ -660,7 +632,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         if not search:
             try:
                 lazo_index_data(
-                    data, data_path,
+                    data,
                     dataset_id,
                     columns_textual, column_textual_names,
                     lazo_client,
@@ -671,7 +643,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         else:
             try:
                 lazo_sketches = get_lazo_data_sketch(
-                    data, data_path,
+                    data,
                     columns_textual, column_textual_names,
                     lazo_client,
                 )

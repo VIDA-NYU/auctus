@@ -107,20 +107,20 @@ class TestSample(unittest.TestCase):
         """Test sampling of tables"""
         with self.random_data(1000) as (tmp, filesize):
             self.assertEqual(filesize, 11901)
-            data, data_path, metadata, column_names = load_data(tmp.name, 5000)
+            data, metadata, column_names = load_data(tmp.name, 5000)
             self.assertEqual(data.shape, (421, 2))
 
         with self.random_data(600) as (tmp, filesize):
             self.assertEqual(filesize, 7101)
-            data, data_path, metadata, column_names = load_data(tmp.name, 5000)
+            data, metadata, column_names = load_data(tmp.name, 5000)
             self.assertEqual(data.shape, (423, 2))
 
         with self.random_data(425) as (tmp, filesize):
             self.assertEqual(filesize, 5001)
-            data, data_path, metadata, column_names = load_data(tmp.name, 5000)
+            data, metadata, column_names = load_data(tmp.name, 5000)
             self.assertEqual(data.shape, (425, 2))
 
-            data, data_path, metadata, column_names = load_data(tmp.name, 6000)
+            data, metadata, column_names = load_data(tmp.name, 6000)
             self.assertEqual(data.shape, (425, 2))
 
 
