@@ -1,11 +1,11 @@
 import asyncio
+import codecs
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import elasticsearch
 import elasticsearch.helpers
 import hashlib
 import logging
-import os
 import pandas
 import re
 import requests
@@ -221,13 +221,12 @@ class WorldBankDiscoverer(Discoverer):
             df = df.reset_index()
 
             # Write the CSV to storage
-            with dl_zip.open(csv_name, 'r') as dl_csv:
-                with self.write_to_shared_storage(dataset_id) as tmp:
-                    df.to_csv(
-                        os.path.join(tmp, 'main.csv'),
-                        index=False,
-                        line_terminator='\r\n',
-                    )
+            with self.write_to_shared_storage(dataset_id) as tmp:
+                df.to_csv(
+                    codecs.getwriter('utf-8')(tmp),
+                    index=False,
+                    line_terminator='\r\n',
+                )
 
         self.record_dataset(
             dict(

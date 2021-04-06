@@ -128,14 +128,9 @@ spec:
         ports:
         - containerPort: 50051
         volumeMounts:
-        - mountPath: /datasets
-          name: datasets
         - mountPath: /cache
           name: cache
       volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
       - name: cache
         persistentVolumeClaim:
           claimName: cache
@@ -226,6 +221,46 @@ spec:
               key: amqp.password
         - name: REDIS_HOST
           value: redis
+        - name: S3_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: s3.key
+        - name: S3_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: s3.secret
+        - name: S3_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.url
+        - name: S3_CLIENT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.client_url
+        - name: S3_BUCKET_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.bucket_prefix
+        - name: GCS_PROJECT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: gcs.project
+        - name: GCS_CREDS
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: gcs.creds
+        - name: GCS_BUCKET_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: gcs.bucket_prefix
         - name: LAZO_SERVER_HOST
           value: lazo
         - name: LAZO_SERVER_PORT
@@ -253,8 +288,6 @@ spec:
         ports:
         - containerPort: 8002
         volumeMounts:
-        - mountPath: /datasets
-          name: datasets
         - mountPath: /cache
           name: cache
         - mountPath: /usr/src/app/lib_geo/data
@@ -266,9 +299,6 @@ spec:
           periodSeconds: 1
           failureThreshold: 2
       volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
       - name: cache
         persistentVolumeClaim:
           claimName: cache
@@ -304,15 +334,6 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-      initContainers:
-      - name: fix-permissions
-        image: busybox
-        securityContext:
-          runAsNonRoot: false
-        command: ["sh", "-c", "chown -R 998 /datasets"]
-        volumeMounts:
-        - mountPath: /datasets
-          name: datasets
       containers:
       - name: web
         image: auctus_coordinator
@@ -334,6 +355,46 @@ spec:
             secretKeyRef:
               name: secrets
               key: amqp.password
+        - name: S3_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: s3.key
+        - name: S3_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: s3.secret
+        - name: S3_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.url
+        - name: S3_CLIENT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.client_url
+        - name: S3_BUCKET_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.bucket_prefix
+        - name: GCS_PROJECT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: gcs.project
+        - name: GCS_CREDS
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: gcs.creds
+        - name: GCS_BUCKET_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: gcs.bucket_prefix
         - name: LAZO_SERVER_HOST
           value: lazo
         - name: LAZO_SERVER_PORT
@@ -361,14 +422,9 @@ spec:
         ports:
         - containerPort: 8003
         volumeMounts:
-        - mountPath: /datasets
-          name: datasets
         - mountPath: /cache
           name: cache
       volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
       - name: cache
         persistentVolumeClaim:
           claimName: cache
@@ -467,6 +523,46 @@ spec:
             secretKeyRef:
               name: secrets
               key: amqp.password
+        - name: S3_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: s3.key
+        - name: S3_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: s3.secret
+        - name: S3_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.url
+        - name: S3_CLIENT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.client_url
+        - name: S3_BUCKET_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.bucket_prefix
+        - name: GCS_PROJECT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: gcs.project
+        - name: GCS_CREDS
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: gcs.creds
+        - name: GCS_BUCKET_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: gcs.bucket_prefix
         - name: LAZO_SERVER_HOST
           value: lazo
         - name: LAZO_SERVER_PORT
@@ -477,16 +573,11 @@ spec:
               name: config
               key: nominatim_url
         volumeMounts:
-        - mountPath: /datasets
-          name: datasets
         - mountPath: /cache
           name: cache
         - mountPath: /usr/src/app/lib_geo/data
           name: geo-data
       volumes:
-      - name: datasets
-        persistentVolumeClaim:
-          claimName: datasets
       - name: cache
         persistentVolumeClaim:
           claimName: cache

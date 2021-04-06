@@ -21,6 +21,7 @@ from datamart_profiler import parse_date
 from datamart_profiler.core import count_garbage_rows
 
 from .discovery import encode_dataset_id
+from .objectstore import get_object_store
 
 
 logger = logging.getLogger(__name__)
@@ -80,6 +81,47 @@ def dataset_cache_key(dataset_id, metadata, format, format_options):
     )
 
 
+def get_from_dataset_storage(metadata, dataset_id, destination):
+    object_store = get_object_store()
+
+    with contextlib.ExitStack() as s3_stack:
+        try:
+            csv_file = s3_stack.enter_context(
+                object_store.open('datasets', encode_dataset_id(dataset_id))
+            )
+        except FileNotFoundError:
+            return False
+        else:
+            logger.info("Reading from datasets bucket")
+            with open(destination, 'wb') as fp:
+                shutil.copyfileobj(csv_file, fp)
+
+            # Apply converters
+            materialize = metadata.get('materialize', {})
+            if materialize.get('convert'):
+                orig_temp = destination + '.orig'
+                try:
+                    os.rename(destination, orig_temp)
+                    writer = datamart_materialize.make_writer(
+                        destination,
+                        format='csv',
+                    )
+                    for converter in reversed(materialize.get('convert', [])):
+                        converter_args = dict(converter)
+                        converter_id = converter_args.pop('identifier')
+                        converter_class = datamart_materialize.converters[converter_id]
+                        writer = converter_class(writer, **converter_args)
+
+                    with writer.open_file('wb') as f_out:
+                        with open(orig_temp, 'rb') as f_in:
+                            for chunk in iter(lambda: f_in.read(4096), b''):
+                                f_out.write(chunk)
+                finally:
+                    os.remove(orig_temp)
+
+            return True
+
+
 @contextlib.contextmanager
 def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     if not format:
@@ -95,58 +137,29 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     # the CSV again just because we want a different format
 
     # Context to lock the CSV
-    dataset_lock = contextlib.ExitStack()
-    with dataset_lock:
-        # Try to read from persistent storage
-        shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
-        if os.path.exists(shared):
-            logger.info("Reading from /datasets")
-            csv_path = os.path.join(shared, 'main.csv')
+    with contextlib.ExitStack() as dataset_lock:
+        def create_csv(cache_temp):
+            # Try to read from persistent storage
+            if get_from_dataset_storage(metadata, dataset_id, cache_temp):
+                return
 
-            # Apply converters
-            materialize = metadata.get('materialize', {})
-            if materialize.get('convert'):
-                def create_csv(cache_temp):
-                    writer = datamart_materialize.make_writer(
-                        cache_temp,
-                        format='csv',
-                    )
-                    for converter in reversed(materialize.get('convert', [])):
-                        converter_args = dict(converter)
-                        converter_id = converter_args.pop('identifier')
-                        converter_class = datamart_materialize.converters[converter_id]
-                        writer = converter_class(writer, **converter_args)
-
-                    with writer.open_file('wb') as f_out:
-                        with open(csv_path, 'rb') as f_in:
-                            for chunk in iter(lambda: f_in.read(4096), b''):
-                                f_out.write(chunk)
-
-                csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
-                csv_path = dataset_lock.enter_context(
-                    cache_get_or_set(
-                        '/cache/datasets', csv_key, create_csv,
-                    )
-                )
-        else:
             # Otherwise, materialize the CSV
-            def create_csv(cache_temp):
-                logger.info("Materializing CSV...")
-                with PROM_DOWNLOAD.time():
-                    datamart_materialize.download(
-                        {'id': dataset_id, 'metadata': metadata},
-                        cache_temp, None,
-                        format='csv',
-                        size_limit=10000000000,  # 10 GB
-                    )
+            logger.info("Materializing CSV...")
+            with PROM_DOWNLOAD.time():
+                datamart_materialize.download(
+                    {'id': dataset_id, 'metadata': metadata},
+                    cache_temp, None,
+                    format='csv',
+                    size_limit=10000000000,  # 10 GB
+                )
                 logger.info("CSV is %d bytes", os.stat(cache_temp).st_size)
 
-            csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
-            csv_path = dataset_lock.enter_context(
-                cache_get_or_set(
-                    '/cache/datasets', csv_key, create_csv,
-                )
+        csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
+        csv_path = dataset_lock.enter_context(
+            cache_get_or_set(
+                '/cache/datasets', csv_key, create_csv,
             )
+        )
 
         # If CSV was requested, send it
         if format == 'csv':

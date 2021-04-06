@@ -1,5 +1,5 @@
 import asyncio
-import uuid
+import codecs
 from datetime import datetime, timedelta
 import elasticsearch.helpers
 import logging
@@ -9,6 +9,7 @@ import requests
 import sqlite3
 import tempfile
 import time
+import uuid
 
 from datamart_core import Discoverer
 from datamart_core.common import setup_logging
@@ -175,7 +176,7 @@ class UazIndicatorsDiscoverer(Discoverer):
 
         with self.write_to_shared_storage(dataset_id) as tmp:
             df.to_csv(
-                os.path.join(tmp, 'main.csv'),
+                codecs.getwriter('utf-8')(tmp),
                 index=False,
                 line_terminator='\r\n',
             )
