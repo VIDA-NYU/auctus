@@ -61,7 +61,7 @@ test:
     - python -m datamart_geo --update lib_geo/data/
 
     # Build images
-    - docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg version=$DATAMART_VERSION apiserver apilb coordinator profiler test-discoverer
+    - docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg version=$DATAMART_VERSION apiserver apilb cache-cleaner coordinator profiler test-discoverer
     - docker-compose pull rabbitmq  # Don't build it
 
     # Bring services up
@@ -77,7 +77,7 @@ test:
         sleep 5; slept=$((slept + 5))
       done
       echo "Elasticsearch came up after ${slept}s"
-    - docker-compose up -d coordinator lazo
+    - docker-compose up -d cache-cleaner coordinator lazo
     - sleep 10
     - docker-compose up -d profiler apiserver apilb test-discoverer
     - |

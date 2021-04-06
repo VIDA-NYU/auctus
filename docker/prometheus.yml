@@ -30,6 +30,13 @@ scrape_configs:
   - job_name: coordinator
     static_configs:
       - targets: ["coordinator:8000"]
+  - job_name: cache-cleaner
+    dns_sd_configs:
+      - names:
+          - cache-cleaner
+        type: "A"
+        port: 8000
+        refresh_interval: 60s
   - job_name: profiler
     dns_sd_configs:
       - names:

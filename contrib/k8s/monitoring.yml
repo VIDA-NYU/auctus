@@ -33,6 +33,13 @@ data:
     - job_name: coordinator
       static_configs:
       - targets: ["coordinator-scrape:8000"]
+    - job_name: cache-cleaner
+      dns_sd_configs:
+      - names:
+        - cache-cleaner-scrape
+        type: "A"
+        port: 8000
+        refresh_interval: 60s
     - job_name: profiler
       dns_sd_configs:
       - names:
@@ -144,6 +151,22 @@ spec:
   selector:
     app: auctus
     what: coordinator
+  clusterIP: None
+  ports:
+  - protocol: TCP
+    port: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cache-cleaner-scrape
+  labels:
+    app: auctus
+    what: monitoring
+spec:
+  selector:
+    app: auctus
+    what: cache-cleaner
   clusterIP: None
   ports:
   - protocol: TCP

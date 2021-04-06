@@ -18,7 +18,8 @@ It is divided in multiple components:
   * [**Profiler**](profiler/): this service downloads a discovered dataset and computes additional metadata that can be used for search (for example, dimensions, semantic types, value distributions). Uses the profiling and materialization libraries.
   * **Lazo Server**: this service is responsible for indexing textual and categorical attributes using [Lazo](https://github.com/mitdbg/lazo). The code for the server and client is available [here](https://gitlab.com/ViDA-NYU/auctus/lazo-index-service).
   * [**apiserver**](apiserver/): this service responds to requests from clients to search for datasets in the index (triggering on-demand query by discovery services that support it), upload new datasets, profile datasets, or perform augmentation. Uses the profiling and materialization libraries. Implements a JSON API using the Tornado web framework.
-  * [The **coordinator**](coordinator/): this service is in charge of the dataset cache, where discovery plugins download datasets, and that is read by the profiler and apiserver services. It also exports system metrics for Prometheus, and in the future will allow the administrator to perform some tasks from a browser instead of having to run scripts.
+  * [The **cache-cleaner**](cache_cleaner/): this service makes sure the dataset cache stays under a given size limit by removing least-recently-used datasets when the configured size is reached.
+  * [The **coordinator**](coordinator/): this service collects some metrics and offers a maintenance interface for the system administrator.
   * [The **frontend**](frontend/): this is a React app implementing a user-friendly web interface on top of the API.
 
 ![Auctus Architecture](docs/architecture.png)
@@ -65,7 +66,7 @@ Build the containers
 --------------------
 
 ```
-$ docker-compose build --build-arg version=$(git describe) coordinator profiler apiserver frontend socrata zenodo
+$ docker-compose build --build-arg version=$(git describe) coordinator cache-cleaner profiler apiserver frontend socrata zenodo
 ```
 
 Start the base containers
@@ -78,13 +79,13 @@ $ docker-compose up -d elasticsearch rabbitmq redis lazo
 These will take a few seconds to get up and running. Then you can start the other components:
 
 ```
-$ docker-compose up -d coordinator profiler apiserver apilb frontend
+$ docker-compose up -d cache-cleaner coordinator profiler apiserver apilb frontend
 ```
 
 You can use the `--scale` option to start more profiler or apiserver containers, for example:
 
 ```
-$ docker-compose up -d --scale profiler=4 --scale apiserver=8 coordinator profiler apiserver apilb frontend
+$ docker-compose up -d --scale profiler=4 --scale apiserver=8 cache-cleaner coordinator profiler apiserver apilb frontend
 ```
 
 Ports:

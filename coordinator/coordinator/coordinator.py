@@ -73,10 +73,8 @@ class Coordinator(object):
         self._recent_discoveries = RecentList(NB_RECENT)
         self._recent_uploads = RecentList(NB_RECENT)
 
-        # Create cache directories
+        # Create datasets directory
         os.makedirs('/cache/datasets', exist_ok=True)
-        os.makedirs('/cache/aug', exist_ok=True)
-        os.makedirs('/cache/user_data', exist_ok=True)
 
         # Setup the indices from YAML file
         with pkg_resources.resource_stream(

@@ -43,19 +43,22 @@ spec:
     storage: 55Gi
   accessModes:
   - ReadWriteMany
-  hostPath:
+  local:
     path: "/var/lib/auctus/prod/cache"
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: auctus-prod-cache-volume
+              operator: Exists
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: cache
 spec:
-  selector:
-    matchLabels:
-      app: auctus
-      what: cache
   storageClassName: "manual"
+  volumeName: cache
   accessModes:
   - ReadWriteMany
   resources:
