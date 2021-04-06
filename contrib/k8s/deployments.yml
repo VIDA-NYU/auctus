@@ -123,6 +123,8 @@ spec:
           value: elasticsearch
         - name: ELASTICSEARCH_PORT
           value: "9200"
+        - name: JAVA_OPTS
+          value: "-Xmx2g -Xms2g"
         ports:
         - containerPort: 50051
         volumeMounts:
