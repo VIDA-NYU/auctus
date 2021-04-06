@@ -11,7 +11,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: get-data
-        image: registry.gitlab.com/vida-nyu/auctus/auctus/profiler:v0.8-15-g045327d0
+        image: auctus_profiler
         securityContext:
           runAsNonRoot: false
           runAsUser: 0
@@ -40,7 +40,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: get-data
-        image: registry.gitlab.com/vida-nyu/auctus/auctus/profiler:v0.8-15-g045327d0
+        image: auctus_profiler
         securityContext:
           runAsNonRoot: false
           runAsUser: 0
