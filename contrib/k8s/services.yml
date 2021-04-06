@@ -32,6 +32,21 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: rabbitmq-management
+  labels:
+    app: auctus
+    what: rabbitmq
+spec:
+  selector:
+    app: auctus
+    what: rabbitmq
+  ports:
+  - protocol: TCP
+    port: 15672
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: redis
   labels:
     app: auctus
