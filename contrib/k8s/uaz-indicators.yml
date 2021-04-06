@@ -1,0 +1,89 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uaz-indicators
+  labels:
+    app: auctus
+    what: uaz-indicators
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: auctus
+      what: uaz-indicators
+  template:
+    metadata:
+      labels:
+        app: auctus
+        what: uaz-indicators
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: uaz-indicators
+        image: auctus_uaz-indicators
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: elasticsearch:9200
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: AMQP_PORT
+          value: "5672"
+        - name: AMQP_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: AMQP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        - name: S3_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: s3.key
+        - name: S3_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: s3.secret
+        - name: S3_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.url
+        - name: S3_CLIENT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.client_url
+        - name: S3_BUCKET_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: s3.bucket_prefix
+        - name: GCS_PROJECT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: gcs.project
+        - name: GCS_CREDS
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: gcs.creds
+        - name: GCS_BUCKET_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: gcs.bucket_prefix
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
