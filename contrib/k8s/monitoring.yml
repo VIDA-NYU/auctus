@@ -149,22 +149,6 @@ spec:
   - protocol: TCP
     port: 8000
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: elasticsearch-scrape
-  labels:
-    app: auctus
-    what: monitoring
-spec:
-  selector:
-    app: auctus
-    what: elasticsearch-exporter
-  clusterIP: None
-  ports:
-  - protocol: TCP
-    port: 9114
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
