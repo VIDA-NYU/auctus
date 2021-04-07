@@ -165,7 +165,7 @@ spec:
         what: frontend
     spec:
       containers:
-      - name: web
+      - name: nginx
         image: auctus_frontend
         imagePullPolicy: IfNotPresent
         env:
@@ -204,7 +204,7 @@ spec:
       securityContext:
         runAsNonRoot: true
       containers:
-      - name: web
+      - name: apiserver
         image: auctus_apiserver
         imagePullPolicy: IfNotPresent
         env:
@@ -474,7 +474,7 @@ spec:
         - mountPath: /cache
           name: cache
       containers:
-      - name: web
+      - name: cleaner
         image: auctus_cache_cleaner
         imagePullPolicy: IfNotPresent
         env:
@@ -518,7 +518,7 @@ spec:
       securityContext:
         runAsNonRoot: true
       containers:
-      - name: web
+      - name: profiler
         image: auctus_profiler
         imagePullPolicy: IfNotPresent
         env:
