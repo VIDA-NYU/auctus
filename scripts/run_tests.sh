@@ -26,8 +26,7 @@ docker exec -ti $(basename "$(pwd)")_coordinator_1 sh -c 'rm -rf /cache/*/*'
 docker-compose exec redis redis-cli flushall
 
 # Clear index
-scripts/docker_purge_source.sh datamart.test
-scripts/docker_purge_source.sh datamart.upload
+scripts/docker_purge_source.sh upload
 
 sleep 2
 
