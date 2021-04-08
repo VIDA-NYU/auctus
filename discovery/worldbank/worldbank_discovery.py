@@ -3,7 +3,6 @@ import codecs
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import elasticsearch
-import elasticsearch.helpers
 import hashlib
 import logging
 import pandas
@@ -89,8 +88,7 @@ class WorldBankDiscoverer(Discoverer):
                 },
             }
         }
-        hits = elasticsearch.helpers.scan(
-            self.elasticsearch,
+        hits = self.elasticsearch.scan(
             index='datamart,pending',
             query=query,
             size=size,

@@ -1,7 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
 import elasticsearch
-import elasticsearch.helpers
 import json
 import logging
 import re
@@ -102,8 +101,7 @@ class SocrataDiscoverer(Discoverer):
                 },
             }
         }
-        hits = elasticsearch.helpers.scan(
-            self.elasticsearch,
+        hits = self.elasticsearch.scan(
             index='datamart,pending',
             query=query,
             size=size,

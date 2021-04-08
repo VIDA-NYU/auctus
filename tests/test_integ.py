@@ -18,6 +18,7 @@ import yaml
 import zipfile
 
 import datamart_materialize
+from datamart_core.common import PrefixedElasticsearch
 
 from .test_profile import check_ranges, check_geo_ranges, check_geohashes, \
     check_plot
@@ -92,9 +93,7 @@ def build_openapi_request(prepared_request):
 class DatamartTest(DataTestCase):
     @classmethod
     def setUpClass(cls):
-        cls.es = elasticsearch.Elasticsearch(
-            os.environ['ELASTICSEARCH_HOSTS'].split(',')
-        )
+        cls.es = PrefixedElasticsearch()
 
     @classmethod
     def tearDownClass(cls):

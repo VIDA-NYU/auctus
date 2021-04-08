@@ -3,21 +3,16 @@
 """This script gives a summary of the dataset sources.
 """
 
-import elasticsearch
-import elasticsearch.helpers
-import os
+from datamart_core.common import PrefixedElasticsearch
 
 
 SIZE = 10000
 
 
 def count():
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
     sources = {}
-    hits = elasticsearch.helpers.scan(
-        es,
+    hits = es.scan(
         index='datamart',
         query={
             'query': {

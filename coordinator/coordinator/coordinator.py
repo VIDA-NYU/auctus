@@ -1,7 +1,6 @@
 import aio_pika
 import asyncio
 import elasticsearch
-import elasticsearch.helpers
 import itertools
 import json
 import logging
@@ -99,10 +98,10 @@ class Coordinator(object):
         for i in itertools.count():
             try:
                 for name, index in indices.items():
-                    if not es.indices.exists(name):
+                    if not es.index_exists(name):
                         logger.info("Creating index %r in Elasticsearch",
                                     name)
-                        es.indices.create(
+                        es.index_create(
                             name,
                             index,
                         )

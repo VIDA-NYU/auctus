@@ -3,29 +3,25 @@
 """This script deletes all the datasets in the index from a specific source.
 """
 
-import elasticsearch
-import elasticsearch.helpers
 import lazo_index_service
 import logging
 import os
 import sys
 
-from datamart_core.common import delete_dataset_from_index
+from datamart_core.common import PrefixedElasticsearch, \
+    delete_dataset_from_index
 
 
 SIZE = 10000
 
 
 def clear(source):
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
     lazo_client = lazo_index_service.LazoIndexClient(
         host=os.environ['LAZO_SERVER_HOST'],
         port=int(os.environ['LAZO_SERVER_PORT'])
     )
-    hits = elasticsearch.helpers.scan(
-        es,
+    hits = es.scan(
         index='datamart,pending',
         query={
             'query': {

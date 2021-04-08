@@ -13,16 +13,14 @@ import logging
 import os
 import sys
 
-from datamart_core.common import json2msg
+from datamart_core.common import PrefixedElasticsearch, json2msg
 
 
 logger = logging.getLogger(__name__)
 
 
 async def freshen(datasets, priority):
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
 
     amqp_conn = await aio_pika.connect_robust(
         host=os.environ['AMQP_HOST'],

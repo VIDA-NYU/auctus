@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-import elasticsearch.helpers
+import elasticsearch
 import json
 import logging
 import requests
@@ -88,8 +88,7 @@ class ZenodoDiscoverer(Discoverer):
                 },
             },
         }
-        hits = elasticsearch.helpers.scan(
-            self.elasticsearch,
+        hits = self.elasticsearch.scan(
             index='datamart,pending',
             query=query,
             size=size,

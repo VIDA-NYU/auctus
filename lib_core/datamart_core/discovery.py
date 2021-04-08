@@ -2,14 +2,13 @@ import aio_pika
 import asyncio
 import contextlib
 from datetime import datetime
-import elasticsearch
 import lazo_index_service
 import logging
 import os
 import uuid
 
-from .common import block_run, log_future, json2msg, msg2json, \
-    encode_dataset_id, delete_dataset_from_index, strip_html
+from .common import PrefixedElasticsearch, block_run, log_future, json2msg, \
+    msg2json, encode_dataset_id, delete_dataset_from_index, strip_html
 from .objectstore import get_object_store
 
 
@@ -75,9 +74,7 @@ class Discoverer(object):
         await profile_queue.bind(self.profile_exchange)
 
     async def _run(self):
-        self.elasticsearch = elasticsearch.Elasticsearch(
-            os.environ['ELASTICSEARCH_HOSTS'].split(',')
-        )
+        self.elasticsearch = PrefixedElasticsearch()
         self.lazo_client = lazo_index_service.LazoIndexClient(
             host=os.environ['LAZO_SERVER_HOST'],
             port=int(os.environ['LAZO_SERVER_PORT'])

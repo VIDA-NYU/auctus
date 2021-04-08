@@ -1,6 +1,7 @@
 import aio_pika
 import asyncio
 import elasticsearch
+import elasticsearch.helpers
 import functools
 import hashlib
 import html.entities
@@ -149,6 +150,53 @@ def log_future(future, logger, message="Exception in background task",
     # Keep a strong reference to the future
     # https://bugs.python.org/issue21163
     _log_future_references[ident] = future
+
+
+class PrefixedElasticsearch(object):
+    def __init__(self):
+        self.es = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
+        self.prefix = ''
+
+    def add_prefix(self, index):
+        return ','.join(self.prefix + idx for idx in index.split(','))
+
+    def get(self, index, id, _source=None):
+        return self.es.get(self.add_prefix(index), id, _source=_source)
+
+    def index(self, index, body, id=None):
+        return self.es.index(index=self.add_prefix(index), body=body, id=id)
+
+    def search(self, body=None, index=None,
+               size=None, from_=None, request_timeout=None):
+        return self.es.search(
+            index=self.add_prefix(index),
+            body=body, size=size, from_=from_, request_timeout=request_timeout,
+        )
+
+    def delete(self, index, id):
+        return self.es.delete(self.add_prefix(index), id)
+
+    def delete_by_query(self, index, body):
+        return self.es.delete_by_query(index=self.add_prefix(index), body=body)
+
+    def index_exists(self, index):
+        return self.es.indices.exists(self.add_prefix(index))
+
+    def index_create(self, index, body=None):
+        return self.es.indices.create(self.add_prefix(index), body=body)
+
+    def scan(self, index, query, **kwargs):
+        return elasticsearch.helpers.scan(
+            self.es,
+            index=self.add_prefix(index),
+            query=query,
+            **kwargs,
+        )
+
+    def close(self):
+        self.es.close()
 
 
 re_non_path_safe = re.compile(r'[^A-Za-z0-9_.-]')

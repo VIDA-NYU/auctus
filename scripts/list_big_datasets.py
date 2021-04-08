@@ -3,20 +3,15 @@
 """This script lists datasets with a big size.
 """
 
-import elasticsearch
-import elasticsearch.helpers
-import os
+from datamart_core.common import PrefixedElasticsearch
 
 
 SIZE = 10000
 
 
 def search():
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
-    hits = elasticsearch.helpers.scan(
-        es,
+    es = PrefixedElasticsearch()
+    hits = es.scan(
         index='datamart',
         query={
             'query': {
