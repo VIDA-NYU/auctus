@@ -18,7 +18,13 @@ if ! docker version &>/dev/null; then
   exit 1
 fi
 
-INDEXES="datamart datamart_columns datamart_spatial_coverage pending"
+if [ -z "${ELASTICSEARCH_PREFIX}" ]; then
+  echo "ELASTICSEARCH_PREFIX is not set" >&2
+  exit 1
+fi
+
+INDEXES="datasets columns spatial_coverage pending"
+INDEXES="$(for i in $INDEXES; do echo "${ELASTICSEARCH_PREFIX}${i}"; done)"
 
 ####################
 # ES functions

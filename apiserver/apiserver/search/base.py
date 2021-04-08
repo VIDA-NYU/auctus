@@ -9,7 +9,7 @@ class ClientError(ValueError):
 def get_column_identifiers(es, column_names, dataset_id=None, data_profile=None):
     column_indices = [-1 for _ in column_names]
     if not data_profile:
-        columns = es.get('datamart', dataset_id, _source='columns.name')
+        columns = es.get('datasets', dataset_id, _source='columns.name')
         columns = columns['_source']['columns']
     else:
         columns = data_profile['columns']

@@ -13,7 +13,7 @@ def count():
     es = PrefixedElasticsearch()
     sources = {}
     hits = es.scan(
-        index='datamart',
+        index='datasets',
         query={
             'query': {
                 'match_all': {},

@@ -87,9 +87,9 @@ class Coordinator(object):
             if custom_fields:
                 for field, opts in custom_fields.items():
                     for idx, name in [
-                        ('datamart', field),
-                        ('datamart_columns', 'dataset_' + field),
-                        ('datamart_spatial_coverage', 'dataset_' + field),
+                        ('datasets', field),
+                        ('columns', 'dataset_' + field),
+                        ('spatial_coverage', 'dataset_' + field),
                     ]:
                         indices[idx]['mappings']['properties'][name] = {
                             'type': opts['type'],
@@ -234,7 +234,7 @@ class Coordinator(object):
         recent_discoveries = []
         try:
             recent = self.elasticsearch.search(
-                index='datamart',
+                index='datasets',
                 body={
                     'query': {
                         'match_all': {},
@@ -257,7 +257,7 @@ class Coordinator(object):
         recent_uploads = []
         try:
             recent = self.elasticsearch.search(
-                index='datamart,pending',
+                index='datasets,pending',
                 body={
                     'query': {
                         'bool': {
@@ -277,7 +277,7 @@ class Coordinator(object):
             logger.warning("Couldn't get recent datasets from Elasticsearch")
         else:
             for h in recent:
-                if h['_index'] == 'pending':
+                if h['_index'] == self.elasticsearch.prefix + 'pending':
                     metadata = h['_source']['metadata']
                 else:
                     metadata = h['_source']
@@ -288,7 +288,7 @@ class Coordinator(object):
 
         # Count datasets per source
         sources = self.elasticsearch.search(
-            index='datamart',
+            index='datasets',
             body={
                 'aggs': {
                     'sources': {
@@ -307,7 +307,7 @@ class Coordinator(object):
 
         # Count datasets per profiler version
         versions = self.elasticsearch.search(
-            index='datamart',
+            index='datasets',
             body={
                 'aggs': {
                     'versions': {

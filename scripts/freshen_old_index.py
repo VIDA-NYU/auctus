@@ -70,7 +70,7 @@ async def freshen(version):
     )
 
     hits = es.scan(
-        index='datamart',
+        index='datasets',
         query={
             'query': {
                 'match_all': {},

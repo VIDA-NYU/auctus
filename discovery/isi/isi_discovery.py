@@ -113,7 +113,7 @@ class IsiDiscoverer(Discoverer):
                 },
             }
             hits = self.elasticsearch.scan(
-                index='datamart',
+                index='datasets',
                 query=query,
                 size=size,
                 _source=['materialize.isi_dataset_id'],

@@ -189,7 +189,7 @@ class TestProfiler(DatamartTest):
     def test_basic(self):
         """Check the profiler results"""
         hits = self.es.search(
-            index='datamart',
+            index='datasets',
             body={
                 'query': {
                     'match_all': {},
@@ -366,13 +366,18 @@ class TestProfiler(DatamartTest):
 
         # Add custom fields
         for idx, prefix in [
-            ('datamart', ''),
-            ('datamart_columns', 'dataset_'),
-            ('datamart_spatial_coverage', 'dataset_'),
+            ('datasets', ''),
+            ('columns', 'dataset_'),
+            ('spatial_coverage', 'dataset_'),
         ]:
             props = expected[idx]['mappings']['properties']
             props[prefix + 'specialId'] = {'type': 'integer'}
             props[prefix + 'dept'] = {'type': 'keyword'}
+
+        expected = {
+            os.environ['ELASTICSEARCH_PREFIX'] + k: v
+            for k, v in expected.items()
+        }
 
         self.assertJson(actual, expected)
 
@@ -2514,7 +2519,7 @@ class TestUpload(DatamartTest):
                 # Wait for it to be indexed
                 for _ in range(10):
                     try:
-                        record = self.es.get('datamart', dataset_id)['_source']
+                        record = self.es.get('datasets', dataset_id)['_source']
                     except elasticsearch.NotFoundError:
                         pass
                     else:
@@ -2613,7 +2618,7 @@ class TestUpload(DatamartTest):
                     # Wait for it to be indexed
                     for _ in range(10):
                         try:
-                            record = self.es.get('datamart', dataset_id)['_source']
+                            record = self.es.get('datasets', dataset_id)['_source']
                         except elasticsearch.NotFoundError:
                             pass
                         else:

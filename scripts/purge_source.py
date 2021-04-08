@@ -22,7 +22,7 @@ def clear(source):
         port=int(os.environ['LAZO_SERVER_PORT'])
     )
     hits = es.scan(
-        index='datamart,pending',
+        index='datasets,pending',
         query={
             'query': {
                 'term': {

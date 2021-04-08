@@ -36,7 +36,7 @@ async def freshen(datasets, priority):
 
     for dataset_id in datasets:
         try:
-            obj = es.get('datamart', dataset_id)['_source']
+            obj = es.get('datasets', dataset_id)['_source']
         except elasticsearch.NotFoundError:
             obj = es.get('pending', dataset_id)['_source']['metadata']
             dataset_version = None

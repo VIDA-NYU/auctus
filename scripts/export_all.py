@@ -43,7 +43,7 @@ def export():
 
     print("Dumping datasets", end='', flush=True)
     hits = es.scan(
-        index='datamart',
+        index='datasets',
         query={
             'query': {
                 'match_all': {},

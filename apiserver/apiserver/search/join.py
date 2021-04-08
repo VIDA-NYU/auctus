@@ -245,7 +245,7 @@ def get_numerical_join_search_results(
     }
 
     return es.search(
-        index='datamart_columns',
+        index='columns',
         body=body,
         size=TOP_K_SIZE
     )['hits']['hits']
@@ -350,7 +350,7 @@ def get_spatial_join_search_results(
     }
 
     return es.search(
-        index='datamart_spatial_coverage',
+        index='spatial_coverage',
         body=body,
         size=TOP_K_SIZE
     )['hits']['hits']
@@ -450,7 +450,7 @@ def get_temporal_join_search_results(
     }
 
     return es.search(
-        index='datamart_temporal_coverage',
+        index='temporal_coverage',
         body=body,
         size=TOP_K_SIZE
     )['hits']['hits']
@@ -544,7 +544,7 @@ def get_textual_join_search_results(
     }
 
     return es.search(
-        index='datamart_columns',
+        index='columns',
         body=body,
         size=TOP_K_SIZE
     )['hits']['hits']
@@ -666,7 +666,7 @@ def get_joinable_datasets(
     results = []
     for result in search_results:
         dt = result['_source']['dataset_id']
-        meta = es.get('datamart', dt)['_source']
+        meta = es.get('datasets', dt)['_source']
         left_columns = []
         right_columns = []
         left_columns_names = []

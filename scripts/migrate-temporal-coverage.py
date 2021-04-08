@@ -2,8 +2,8 @@
 
 """This scripts updates the index for !162.
 
-It creates the 'temporal_coverage' (in 'datamart' index) and the
-'datamart_temporal_coverage' index.
+It creates the 'temporal_coverage' (in 'datasets' index) and the
+'temporal_coverage' index.
 """
 
 import json

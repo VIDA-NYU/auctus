@@ -196,8 +196,8 @@ class Profiler(object):
         # Retry a few times, in case the Elasticsearch container is not yet up
         for i in itertools.count():
             try:
-                if not self.es.index_exists('datamart'):
-                    raise RuntimeError("'datamart' index does not exist")
+                if not self.es.index_exists('datasets'):
+                    raise RuntimeError("'datasets' index does not exist")
             except Exception:
                 logger.warning("Can't connect to Elasticsearch, retrying...")
                 if i == 5:

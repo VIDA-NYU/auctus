@@ -157,7 +157,7 @@ class PrefixedElasticsearch(object):
         self.es = elasticsearch.Elasticsearch(
             os.environ['ELASTICSEARCH_HOSTS'].split(',')
         )
-        self.prefix = ''
+        self.prefix = os.environ['ELASTICSEARCH_PREFIX']
 
     def add_prefix(self, index):
         return ','.join(self.prefix + idx for idx in index.split(','))
@@ -300,8 +300,8 @@ def contextdecorator(factory, argname):
 
 def add_dataset_to_sup_index(es, dataset_id, metadata):
     """
-    Adds dataset to the supplementary Datamart indices: 'datamart_columns',
-    'datamart_spatial_coverage', and 'datamart_temporal_coverage'.
+    Adds dataset to the supplementary Datamart indices: 'columns',
+    'spatial_coverage', and 'temporal_coverage'.
     """
     DISCARD_DATASET_FIELDS = [
         'columns', 'sample', 'materialize',
@@ -315,7 +315,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
         if key not in DISCARD_DATASET_FIELDS:
             common_dataset_metadata['dataset_' + key] = value
 
-    # 'datamart_columns' index
+    # 'columns' index
     for column_index, column in enumerate(metadata['columns']):
         column_metadata = dict(column)
         for field in DISCARD_COLUMN_FIELDS:
@@ -332,11 +332,11 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
                 for num_range in column_metadata['coverage']
             ]
         es.index(
-            'datamart_columns',
+            'columns',
             column_metadata
         )
 
-    # 'datamart_spatial_coverage' index
+    # 'spatial_coverage' index
     if 'spatial_coverage' in metadata:
         for spatial_coverage in metadata['spatial_coverage']:
             spatial_coverage_metadata = dict()
@@ -356,11 +356,11 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
                     ))
                 spatial_coverage_metadata['ranges'] = ranges
             es.index(
-                'datamart_spatial_coverage',
+                'spatial_coverage',
                 spatial_coverage_metadata,
             )
 
-    # 'datamart_temporal_coverage' index
+    # 'temporal_coverage' index
     if 'temporal_coverage' in metadata:
         for temporal_coverage in metadata['temporal_coverage']:
             temporal_coverage_metadata = dict()
@@ -375,7 +375,7 @@ def add_dataset_to_sup_index(es, dataset_id, metadata):
                 for temporal_range in temporal_coverage_metadata['ranges']
             ]
             es.index(
-                'datamart_temporal_coverage',
+                'temporal_coverage',
                 temporal_coverage_metadata,
             )
 
@@ -385,9 +385,9 @@ def add_dataset_to_index(es, dataset_id, metadata):
     Safely adds a dataset to all the Datamart indices.
     """
 
-    # 'datamart' index
+    # 'datasets' index
     es.index(
-        'datamart',
+        'datasets',
         dict(metadata, id=dataset_id),
         id=dataset_id,
     )
@@ -429,7 +429,7 @@ def delete_dataset_from_lazo(es, dataset_id, lazo_client):
     from_ = 0
     while True:
         hits = es.search(
-            index='datamart_columns',
+            index='columns',
             body=query,
             from_=from_,
             size=10000,
@@ -453,9 +453,9 @@ def delete_dataset_from_lazo(es, dataset_id, lazo_client):
 
 def delete_dataset_from_index(es, dataset_id, lazo_client=None):
     """
-    Safely deletes a dataset from the 'datamart' index,
-    including its corresponding information in 'datamart_columns',
-    'datamart_spatial_coverage', and 'datamart_temporal_coverage' indices.
+    Safely deletes a dataset from the 'datasets' index,
+    including its corresponding information in 'columns', 'spatial_coverage',
+    and 'temporal_coverage' indices.
     This function also connects to the Lazo index service
     and deletes any corresponding sketch.
     """
@@ -471,23 +471,22 @@ def delete_dataset_from_index(es, dataset_id, lazo_client=None):
     except elasticsearch.NotFoundError:
         pass
 
-    # deleting from 'datamart'
+    # deleting from 'datasets'
     try:
-        es.delete('datamart', dataset_id)
+        es.delete('datasets', dataset_id)
     except elasticsearch.NotFoundError:
         return
 
-    # deleting from 'datamart_columns', 'datamart_spatial_coverage', and
-    # 'datamart_temporal_coverage'
+    # deleting from 'columns', 'spatial_coverage', and 'temporal_coverage'
     query = {
         'query': {
             'term': {'dataset_id': dataset_id}
         }
     }
     for index in (
-        'datamart_columns',
-        'datamart_spatial_coverage',
-        'datamart_temporal_coverage',
+        'columns',
+        'spatial_coverage',
+        'temporal_coverage',
     ):
         nb = es.delete_by_query(
             index=index,

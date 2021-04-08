@@ -2,8 +2,8 @@
 
 """This scripts updates the index for !141.
 
-It changes the format of 'spatial_coverage' (in 'datamart' index) and the
-'datamart_spatial_coverage' index.
+It changes the format of 'spatial_coverage' (in 'datasets' index) and the
+'spatial_coverage' index.
 """
 
 import json

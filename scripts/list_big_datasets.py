@@ -12,7 +12,7 @@ SIZE = 10000
 def search():
     es = PrefixedElasticsearch()
     hits = es.scan(
-        index='datamart',
+        index='datasets',
         query={
             'query': {
                 'range': {
