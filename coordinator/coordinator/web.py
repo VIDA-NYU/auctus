@@ -71,7 +71,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
 
-    http_client = AsyncHTTPClient(defaults=dict(user_agent="Datamart"))
+    http_client = AsyncHTTPClient(defaults=dict(user_agent="Auctus"))
 
     def get_current_user(self):
         return self.get_secure_cookie('user')

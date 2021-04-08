@@ -1,5 +1,5 @@
 #
-# DATAMART: FROM: https://github.com/agora-team/elasticsearch-synonyms
+# AUCTUS: FROM: https://github.com/agora-team/elasticsearch-synonyms
 #
 
 # British English and American English Spellings
@@ -490,7 +490,7 @@ wilfulness, willfulness
 yoghurt, yogurt
 
 #
-# DATAMART: FROM: https://sites.google.com/site/kevinbouge/synonyms-lists
+# AUCTUS: FROM: https://sites.google.com/site/kevinbouge/synonyms-lists
 #
 
 earth, earth, world, globe
@@ -1031,7 +1031,7 @@ wizard, sorcerer, magician
 zero, null
 
 #
-# DATAMART: Custom
+# AUCTUS: Custom
 #
 
 taxi, taxicab, cab

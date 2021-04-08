@@ -1,7 +1,7 @@
 Materialization library
 =======================
 
-This library can materialize datasets from Datamart. You can use it to materialize search results directly on your side without relying on the server. It is also used internally by Datamart to materialize datasets (the ``/download`` endpoint downloads the dataset using this library then sends it to you).
+This library can materialize datasets from Auctus. You can use it to materialize search results directly on your side without relying on the server. It is also used internally by Auctus to materialize datasets (the ``/download`` endpoint downloads the dataset using this library then sends it to you).
 
 Installing datamart-materialize
 -------------------------------
@@ -22,9 +22,9 @@ If a dataset is provided to :func:`~datamart_materialize.download` that is not r
 Materializers
 `````````````
 
-A materializer is an object that can take materialization information for a dataset (a JSON dictionary such as the one provided by Datamart under the ``materialize`` key) and can materialize it as a CSV file, for example by simply downloading it, by converting a different file to CSV, or possibly by doing multiple API calls to obtain all the rows.
+A materializer is an object that can take materialization information for a dataset (a JSON dictionary such as the one provided by Auctus under the ``materialize`` key) and can materialize it as a CSV file, for example by simply downloading it, by converting a different file to CSV, or possibly by doing multiple API calls to obtain all the rows.
 
-Some datasets provided by Datamart contain a key ``materialize.direct_url``, in which case no materializer is needed, we download the CSV directly.
+Some datasets provided by Auctus contain a key ``materialize.direct_url``, in which case no materializer is needed, we download the CSV directly.
 
 ..  autoclass:: datamart_materialize.noaa.NoaaMaterializer
 

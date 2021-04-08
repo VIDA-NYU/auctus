@@ -4,14 +4,14 @@ Internals
 Architecture
 ------------
 
-Datamart is a cloud-native application divided in multiple components (containers) which can be scaled independently.
+Auctus is a cloud-native application divided in multiple components (containers) which can be scaled independently.
 
 ..  figure:: architecture.png
     :align: center
 
-    Overall architecture of Datamart
+    Overall architecture of Auctus
 
-At the core of Datamart is an `Elasticsearch cluster <https://www.elastic.co/>`__ which stores sketches of the datasets, obtained by downloading and profiling them.
+At the core of Auctus is an `Elasticsearch cluster <https://www.elastic.co/>`__ which stores sketches of the datasets, obtained by downloading and profiling them.
 
 The system is design to be extensible. Plugins called ":ref:`discoverers`" can be added to support additional data sources.
 
@@ -21,7 +21,7 @@ The different components communicate via the AMQP message-queueing protocol thro
     :align: center
     :width: 25em
 
-    AMQP queues and exchanges used by Datamart
+    AMQP queues and exchanges used by Auctus
 
 ..  _discoverers:
 
