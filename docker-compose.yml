@@ -68,12 +68,13 @@ services:
     volumes:
       - ./volumes/minio:/export
   lazo:
-    image: registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.0
+    image: registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.1
     environment:
       - DATABASE=elasticsearch
       - PORT=50051
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_INDEX=${ELASTICSEARCH_PREFIX}lazo
       - JAVA_OPTS=-Xmx2g -Xms2g  # NOTCI
       # CI: - JAVA_OPTS=-Xmx256m -Xms128m
     cpu_shares: 30
@@ -100,6 +101,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -152,6 +154,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -199,6 +202,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -256,6 +260,7 @@ services:
     # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p discovery/test_discovery.py & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS"]
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -282,6 +287,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -299,6 +305,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -316,6 +323,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -339,6 +347,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -360,6 +369,7 @@ services:
     cpu_shares: 10
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
@@ -383,6 +393,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}

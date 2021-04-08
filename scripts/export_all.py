@@ -9,14 +9,13 @@ The exported folder can be loaded in using `import_all.py` (which will simply
 load the JSON files) or `reprocess_all.py` (which will only read some fields,
 and get the metadata by reprocessing the datasets).
 """
-import elasticsearch
-import elasticsearch.helpers
+
 from functools import lru_cache
 import logging
 import json
 import os
 
-from datamart_core.common import encode_dataset_id
+from datamart_core.common import PrefixedElasticsearch, encode_dataset_id
 
 
 SIZE = 10000
@@ -40,14 +39,11 @@ def unique_filename(pattern):
 
 
 def export():
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
 
     print("Dumping datasets", end='', flush=True)
-    hits = elasticsearch.helpers.scan(
-        es,
-        index='datamart',
+    hits = es.scan(
+        index='datasets',
         query={
             'query': {
                 'match_all': {},
@@ -61,8 +57,7 @@ def export():
             json.dump(h['_source'], fp, sort_keys=True, indent=2)
 
     print("Dumping Lazo data", end='', flush=True)
-    hits = elasticsearch.helpers.scan(
-        es,
+    hits = es.scan(
         index='lazo',
         query={
             'query': {

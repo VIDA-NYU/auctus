@@ -54,7 +54,7 @@ def validate_str_list(value, what):
 
 def parse_keyword_query_main_index(query_json):
     """Parses a Datamart keyword query, turning it into an
-    Elasticsearch query over 'datamart' index.
+    Elasticsearch query over 'datasets' index.
     """
 
     query_args_main = list()
@@ -109,8 +109,8 @@ def parse_keyword_query_main_index(query_json):
 
 def parse_keyword_query_sup_index(query_json):
     """Parses a Datamart keyword query, turning it into an
-    Elasticsearch query over 'datamart_column' and
-    'datamart_spatial_coverage' indices.
+    Elasticsearch query over 'columns', 'spatial_coverage', and
+    'temporal_coverage' indices.
     """
     query_sup_functions = list()
     query_sup_filters = list()
@@ -161,7 +161,7 @@ def parse_keyword_query_sup_index(query_json):
 
 def parse_query_variables(data, geo_data=None):
     """Parses the variables of a Datamart query, turning it into an
-    Elasticsearch query over 'datamart' index
+    Elasticsearch query over 'datasets' index
     """
 
     output = list()
@@ -337,8 +337,8 @@ def parse_query_variables(data, geo_data=None):
 
 def parse_query(query_json, geo_data=None):
     """Parses a Datamart query, turning it into an Elasticsearch query
-    over 'datamart' index as well as the supplementary indices
-    ('datamart_columns' and 'datamart_spatial_coverage').
+    over 'datasets' index as well as the supplementary indices
+    ('columns' and 'spatial_coverage').
     """
     query_args_main = parse_keyword_query_main_index(query_json)
     query_sup_functions, query_sup_filters = \
@@ -356,9 +356,8 @@ def parse_query(query_json, geo_data=None):
         )
 
     # TODO: for now, temporal and geospatial variables are ignored
-    #   for 'datamart_columns', 'datamart_spatial_coverage', and
-    #   'datamart_temporal_coverage' indices, since we do not have information
-    #   about a dataset in these indices
+    #   for 'columns', 'spatial_coverage', and 'temporal_coverage' indices,
+    #   since we do not have information about a dataset in these indices
     if variables_query:
         query_args_main.extend(variables_query)
 
@@ -568,7 +567,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 return self.send_error_json(400, "Can't scroll past 10000 items")
 
             response = self.application.elasticsearch.search(
-                index='datamart',
+                index='datasets',
                 body={
                     'query': {
                         'bool': {

@@ -1,7 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
 import elasticsearch
-import elasticsearch.helpers
 import json
 import logging
 import re
@@ -102,9 +101,8 @@ class SocrataDiscoverer(Discoverer):
                 },
             }
         }
-        hits = elasticsearch.helpers.scan(
-            self.elasticsearch,
-            index='datamart,pending',
+        hits = self.elasticsearch.scan(
+            index='datasets,pending',
             query=query,
             size=size,
             _source=['materialize.socrata_id'],
@@ -143,7 +141,7 @@ class SocrataDiscoverer(Discoverer):
         except elasticsearch.NotFoundError:
             try:
                 hit = self.elasticsearch.get(
-                    'datamart',
+                    'datasets',
                     '%s.%s' % (self.identifier, dataset_id),
                     _source=['materialize.socrata_updated'],
                 )['_source']

@@ -13,16 +13,14 @@ import logging
 import os
 import sys
 
-from datamart_core.common import json2msg
+from datamart_core.common import PrefixedElasticsearch, json2msg
 
 
 logger = logging.getLogger(__name__)
 
 
 async def freshen(datasets, priority):
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
 
     amqp_conn = await aio_pika.connect_robust(
         host=os.environ['AMQP_HOST'],
@@ -38,7 +36,7 @@ async def freshen(datasets, priority):
 
     for dataset_id in datasets:
         try:
-            obj = es.get('datamart', dataset_id)['_source']
+            obj = es.get('datasets', dataset_id)['_source']
         except elasticsearch.NotFoundError:
             obj = es.get('pending', dataset_id)['_source']['metadata']
             dataset_version = None

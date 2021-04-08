@@ -1,5 +1,4 @@
 import asyncio
-import elasticsearch
 import itertools
 import lazo_index_service
 import logging
@@ -12,7 +11,7 @@ from tornado.routing import Rule, PathMatches, URLSpec
 import tornado.httputil
 import tornado.web
 
-from datamart_core.common import setup_logging
+from datamart_core.common import PrefixedElasticsearch, setup_logging
 from datamart_core.prom import PromMeasureRequest
 import datamart_profiler
 
@@ -139,9 +138,7 @@ class ApiRule(Rule):
 
 
 def make_app(debug=False):
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
     redis_client = redis.Redis(host=os.environ['REDIS_HOST'])
     lazo_client = lazo_index_service.LazoIndexClient(
         host=os.environ['LAZO_SERVER_HOST'],

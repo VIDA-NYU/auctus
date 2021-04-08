@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-import elasticsearch.helpers
+import elasticsearch
 import json
 import logging
 import requests
@@ -88,9 +88,8 @@ class ZenodoDiscoverer(Discoverer):
                 },
             },
         }
-        hits = elasticsearch.helpers.scan(
-            self.elasticsearch,
-            index='datamart,pending',
+        hits = self.elasticsearch.scan(
+            index='datasets,pending',
             query=query,
             size=size,
             _source=['materialize.zenodo_record_id'],
@@ -132,7 +131,7 @@ class ZenodoDiscoverer(Discoverer):
             # See if we've ingested this file
             try:
                 self.elasticsearch.get(
-                    'datamart',
+                    'datasets',
                     '%s.%s' % (self.identifier, dataset_id),
                     _source=False,
                 )

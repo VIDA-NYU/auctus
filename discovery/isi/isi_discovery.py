@@ -2,7 +2,7 @@ import asyncio
 import codecs
 import contextlib
 from datetime import datetime, timedelta
-import elasticsearch.helpers
+import elasticsearch
 import hashlib
 import logging
 import os
@@ -112,9 +112,8 @@ class IsiDiscoverer(Discoverer):
                     },
                 },
             }
-            hits = elasticsearch.helpers.scan(
-                self.elasticsearch,
-                index='datamart',
+            hits = self.elasticsearch.scan(
+                index='datasets',
                 query=query,
                 size=size,
                 _source=['materialize.isi_dataset_id'],

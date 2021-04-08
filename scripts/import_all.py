@@ -16,14 +16,12 @@ import os
 import sys
 import time
 
-from datamart_core.common import add_dataset_to_index, \
+from datamart_core.common import PrefixedElasticsearch, add_dataset_to_index, \
     delete_dataset_from_index, add_dataset_to_lazo_storage, decode_dataset_id
 
 
 async def import_all(folder):
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
     if 'LAZO_SERVER_HOST' in os.environ:
         lazo_client = lazo_index_service.LazoIndexClient(
             host=os.environ['LAZO_SERVER_HOST'],

@@ -41,6 +41,11 @@ spec:
         env:
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
+        - name: ELASTICSEARCH_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: elasticsearch_prefix
         - name: AMQP_HOST
           value: rabbitmq
         - name: AMQP_PORT

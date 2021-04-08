@@ -3,7 +3,6 @@ import codecs
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import elasticsearch
-import elasticsearch.helpers
 import hashlib
 import logging
 import pandas
@@ -89,9 +88,8 @@ class WorldBankDiscoverer(Discoverer):
                 },
             }
         }
-        hits = elasticsearch.helpers.scan(
-            self.elasticsearch,
-            index='datamart,pending',
+        hits = self.elasticsearch.scan(
+            index='datasets,pending',
             query=query,
             size=size,
             _source=['materialize.worldbank_url'],
@@ -137,7 +135,7 @@ class WorldBankDiscoverer(Discoverer):
         previous_csv_hash = None
         try:
             hit = self.elasticsearch.get(
-                'datamart',
+                'datasets',
                 '%s.%s' % (self.identifier, dataset_id),
                 _source=['materialize.csv_hash'],
             )['_source']

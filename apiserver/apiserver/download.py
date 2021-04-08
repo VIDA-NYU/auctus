@@ -124,7 +124,7 @@ class DownloadId(BaseDownload, GracefulHandler):
         # Get materialization data from Elasticsearch
         try:
             metadata = self.application.elasticsearch.get(
-                'datamart', dataset_id
+                'datasets', dataset_id
             )['_source']
         except elasticsearch.NotFoundError:
             return self.send_error_json(404, "No such dataset")
@@ -166,7 +166,7 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
             # Get materialization data from Elasticsearch
             try:
                 metadata = self.application.elasticsearch.get(
-                    'datamart', task['id']
+                    'datasets', task['id']
                 )['_source']
             except elasticsearch.NotFoundError:
                 return await self.send_error_json(404, "No such dataset")
@@ -187,7 +187,7 @@ class Metadata(BaseHandler, GracefulHandler):
     def get(self, dataset_id):
         es = self.application.elasticsearch
         try:
-            metadata = es.get('datamart', dataset_id)['_source']
+            metadata = es.get('datasets', dataset_id)['_source']
         except elasticsearch.NotFoundError:
             # Check alternate index
             try:

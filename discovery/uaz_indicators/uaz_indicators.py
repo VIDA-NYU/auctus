@@ -1,7 +1,7 @@
 import asyncio
 import codecs
 from datetime import datetime, timedelta
-import elasticsearch.helpers
+import elasticsearch
 import logging
 import os
 import pandas

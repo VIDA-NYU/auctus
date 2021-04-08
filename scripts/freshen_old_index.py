@@ -10,14 +10,12 @@ older than a specified commit.
 
 import aio_pika
 import asyncio
-import elasticsearch
-import elasticsearch.helpers
 import logging
 import os
 import subprocess
 import sys
 
-from datamart_core.common import json2msg
+from datamart_core.common import PrefixedElasticsearch, json2msg
 
 
 logger = logging.getLogger(__name__)
@@ -57,9 +55,7 @@ async def freshen(version):
     version_hash = version_hash.decode('ascii').strip()
     logger.warning("Reprocessing datasets profiled before %s", version_hash)
 
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
 
     amqp_conn = await aio_pika.connect_robust(
         host=os.environ['AMQP_HOST'],
@@ -73,9 +69,8 @@ async def freshen(version):
         aio_pika.ExchangeType.FANOUT,
     )
 
-    hits = elasticsearch.helpers.scan(
-        es,
-        index='datamart',
+    hits = es.scan(
+        index='datasets',
         query={
             'query': {
                 'match_all': {},

@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import elasticsearch
 import logging
 import jinja2
 import json
@@ -15,7 +14,8 @@ from tornado.routing import URLSpec
 import tornado.web
 from urllib.parse import quote_plus
 
-from datamart_core.common import delete_dataset_from_index, setup_logging
+from datamart_core.common import PrefixedElasticsearch, \
+    delete_dataset_from_index, setup_logging
 
 from .coordinator import Coordinator
 
@@ -212,9 +212,7 @@ def make_app(debug=False):
                          "persisted! Users will be logged out if you restart "
                          "the program.")
 
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
     lazo_client = lazo_index_service.LazoIndexClient(
         host=os.environ['LAZO_SERVER_HOST'],
         port=int(os.environ['LAZO_SERVER_PORT'])

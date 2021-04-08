@@ -150,7 +150,7 @@ class ProfilePostedData(tornado.web.RequestHandler):
 
 def get_data_profile_from_es(es, dataset_id):
     try:
-        data_profile = es.get('datamart', dataset_id)['_source']
+        data_profile = es.get('datasets', dataset_id)['_source']
     except elasticsearch.NotFoundError:
         return None
 

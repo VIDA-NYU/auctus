@@ -303,7 +303,7 @@ class TestAugmentation(DataTestCase):
         self.assertJson(
             kwargs,
             dict(
-                index='datamart_temporal_coverage',
+                index='temporal_coverage',
                 body={
                     '_source': lambda d: isinstance(d, dict),
                     'query': {

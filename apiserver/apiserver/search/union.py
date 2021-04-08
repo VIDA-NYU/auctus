@@ -139,7 +139,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
             from_ = 0
             while True:
                 hits = es.search(
-                    index='datamart',
+                    index='datasets',
                     body=query_obj,
                     from_=from_,
                     size=PAGINATION_SIZE,
@@ -205,7 +205,7 @@ def get_unionable_datasets(es, data_profile, dataset_id=None, ignore_datasets=No
 
     results = []
     for dt, score in sorted_datasets:
-        meta = es.get('datamart', dt)['_source']
+        meta = es.get('datasets', dt)['_source']
         # TODO: augmentation information is incorrect
         left_columns = []
         right_columns = []

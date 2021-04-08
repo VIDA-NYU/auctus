@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 
-import elasticsearch
 import lazo_index_service
 import logging
 import os
 import sys
 
-from datamart_core.common import delete_dataset_from_index
+from datamart_core.common import PrefixedElasticsearch, \
+    delete_dataset_from_index
 
 
 SIZE = 10000
 
 
 def delete(datasets):
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    es = PrefixedElasticsearch()
     lazo_client = lazo_index_service.LazoIndexClient(
         host=os.environ['LAZO_SERVER_HOST'],
         port=int(os.environ['LAZO_SERVER_PORT'])

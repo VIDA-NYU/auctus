@@ -30,7 +30,7 @@ _refs:
             type: synonym_graph
             synonyms_path: "synonyms/synonyms.txt"
 
-datamart:
+datasets:
   settings:
     <<: *analyzer
   mappings:
@@ -183,7 +183,7 @@ datamart:
       manual_annotations:
         type: object
         enabled: false
-datamart_columns:
+columns:
   settings:
     <<: *analyzer
   mappings:
@@ -272,7 +272,7 @@ datamart_columns:
             type: double
           lte:
             type: double
-datamart_spatial_coverage:
+spatial_coverage:
   settings:
     <<: *analyzer
   mappings:
@@ -354,7 +354,7 @@ datamart_spatial_coverage:
             type: double
       number:
         type: integer
-datamart_temporal_coverage:
+temporal_coverage:
   settings:
     <<: *analyzer
   mappings:

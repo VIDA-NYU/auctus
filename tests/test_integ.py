@@ -18,6 +18,7 @@ import yaml
 import zipfile
 
 import datamart_materialize
+from datamart_core.common import PrefixedElasticsearch
 
 from .test_profile import check_ranges, check_geo_ranges, check_geohashes, \
     check_plot
@@ -92,9 +93,7 @@ def build_openapi_request(prepared_request):
 class DatamartTest(DataTestCase):
     @classmethod
     def setUpClass(cls):
-        cls.es = elasticsearch.Elasticsearch(
-            os.environ['ELASTICSEARCH_HOSTS'].split(',')
-        )
+        cls.es = PrefixedElasticsearch()
 
     @classmethod
     def tearDownClass(cls):
@@ -190,7 +189,7 @@ class TestProfiler(DatamartTest):
     def test_basic(self):
         """Check the profiler results"""
         hits = self.es.search(
-            index='datamart',
+            index='datasets',
             body={
                 'query': {
                     'match_all': {},
@@ -347,7 +346,7 @@ class TestProfiler(DatamartTest):
         expected.pop('_refs', None)
 
         # Remove 'lazo' index
-        actual.pop('lazo', None)
+        actual.pop(os.environ['ELASTICSEARCH_PREFIX'] + 'lazo', None)
 
         # Remove variable sections
         for index in expected.values():
@@ -367,13 +366,18 @@ class TestProfiler(DatamartTest):
 
         # Add custom fields
         for idx, prefix in [
-            ('datamart', ''),
-            ('datamart_columns', 'dataset_'),
-            ('datamart_spatial_coverage', 'dataset_'),
+            ('datasets', ''),
+            ('columns', 'dataset_'),
+            ('spatial_coverage', 'dataset_'),
         ]:
             props = expected[idx]['mappings']['properties']
             props[prefix + 'specialId'] = {'type': 'integer'}
             props[prefix + 'dept'] = {'type': 'keyword'}
+
+        expected = {
+            os.environ['ELASTICSEARCH_PREFIX'] + k: v
+            for k, v in expected.items()
+        }
 
         self.assertJson(actual, expected)
 
@@ -2515,7 +2519,7 @@ class TestUpload(DatamartTest):
                 # Wait for it to be indexed
                 for _ in range(10):
                     try:
-                        record = self.es.get('datamart', dataset_id)['_source']
+                        record = self.es.get('datasets', dataset_id)['_source']
                     except elasticsearch.NotFoundError:
                         pass
                     else:
@@ -2614,7 +2618,7 @@ class TestUpload(DatamartTest):
                     # Wait for it to be indexed
                     for _ in range(10):
                         try:
-                            record = self.es.get('datamart', dataset_id)['_source']
+                            record = self.es.get('datasets', dataset_id)['_source']
                         except elasticsearch.NotFoundError:
                             pass
                         else:

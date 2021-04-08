@@ -16,9 +16,9 @@ import threading
 import time
 import traceback
 
-from datamart_core.common import setup_logging, add_dataset_to_index, \
-    delete_dataset_from_index, delete_dataset_from_lazo, log_future, \
-    json2msg, msg2json
+from datamart_core.common import PrefixedElasticsearch, setup_logging, \
+    add_dataset_to_index, delete_dataset_from_index, \
+    delete_dataset_from_lazo, log_future, json2msg, msg2json
 from datamart_core.materialize import get_dataset, dataset_cache_key, \
     detect_format_convert_to_csv
 from datamart_fslock.cache import cache_get_or_set
@@ -172,9 +172,7 @@ def exception_details(e):
 class Profiler(object):
     def __init__(self):
         self.profile_semaphore = threading.Semaphore(MAX_CONCURRENT_PROFILE)
-        self.es = elasticsearch.Elasticsearch(
-            os.environ['ELASTICSEARCH_HOSTS'].split(',')
-        )
+        self.es = PrefixedElasticsearch()
         self.lazo_client = lazo_index_service.LazoIndexClient(
             host=os.environ['LAZO_SERVER_HOST'],
             port=int(os.environ['LAZO_SERVER_PORT'])
@@ -198,8 +196,8 @@ class Profiler(object):
         # Retry a few times, in case the Elasticsearch container is not yet up
         for i in itertools.count():
             try:
-                if not self.es.indices.exists('datamart'):
-                    raise RuntimeError("'datamart' index does not exist")
+                if not self.es.index_exists('datasets'):
+                    raise RuntimeError("'datasets' index does not exist")
             except Exception:
                 logger.warning("Can't connect to Elasticsearch, retrying...")
                 if i == 5:
