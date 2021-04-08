@@ -113,7 +113,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: lazo
-        image: registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.0
+        image: registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.1
         env:
         - name: DATABASE
           value: elasticsearch
@@ -123,6 +123,11 @@ spec:
           value: elasticsearch
         - name: ELASTICSEARCH_PORT
           value: "9200"
+        - name: ELASTICSEARCH_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: elasticsearch_prefix
         - name: JAVA_OPTS
           value: "-Xmx2g -Xms2g"
         ports:

@@ -68,12 +68,13 @@ services:
     volumes:
       - ./volumes/minio:/export
   lazo:
-    image: registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.0
+    image: registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.1
     environment:
       - DATABASE=elasticsearch
       - PORT=50051
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_INDEX=${ELASTICSEARCH_PREFIX}lazo
       - JAVA_OPTS=-Xmx2g -Xms2g  # NOTCI
       # CI: - JAVA_OPTS=-Xmx256m -Xms128m
     cpu_shares: 30

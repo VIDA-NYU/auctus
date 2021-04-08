@@ -346,7 +346,7 @@ class TestProfiler(DatamartTest):
         expected.pop('_refs', None)
 
         # Remove 'lazo' index
-        actual.pop('lazo', None)
+        actual.pop(os.environ['ELASTICSEARCH_PREFIX'] + 'lazo', None)
 
         # Remove variable sections
         for index in expected.values():
