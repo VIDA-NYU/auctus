@@ -603,6 +603,10 @@ class TestTypes(unittest.TestCase):
         -.4e17
         +8.4e17
         +8.e17
+        8.e+17
+        8.e+07
+        8.e-17
+        8.e-07
         '''
         negative = '''\
         1.7.3

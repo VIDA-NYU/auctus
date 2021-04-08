@@ -21,7 +21,7 @@ _re_float = re.compile(
     r'(?:[0-9]+\.[0-9]*)|'
     r'(?:\.[0-9]+)'
     r')'
-    r'(?:[Ee][0-9]+)?$'
+    r'(?:[Ee][+-]?[0-9]+)?$'
 )
 _re_url = re.compile(
     r'^(?:(?:http|https|ftp)://|www\.)'
