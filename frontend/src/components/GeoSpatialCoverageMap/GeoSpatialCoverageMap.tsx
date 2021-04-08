@@ -21,6 +21,8 @@ import {scaleSequential} from 'd3-scale';
 // Amount of outlying data to ignore when focusing the map
 // 5% on each side
 const OUTLIER_RATIO = 0.05;
+const leftColorLegend = 'rgb(143, 140, 193)';
+const rightColorLegend = 'rgb(65, 2, 136)';
 
 function geohashToLatLong(hash: string, base: number) {
   if (base !== 4) {
@@ -49,9 +51,20 @@ function geohashToLatLong(hash: string, base: number) {
   return {topLeft, bottomRight};
 }
 
-function heatColorMap(value: number): string {
-  const interpolateCustomPurples = scaleSequential(['#8f8cc1', '#41027e']);
-  const color = scaleSequential(interpolateCustomPurples).domain([0, 1]);
+function heatColorMap(
+  hashNumber: number,
+  maxNumber: number,
+  totalNumber: number
+): string {
+  const value = hashNumber / totalNumber;
+  const interpolateCustomPurples = scaleSequential([
+    leftColorLegend,
+    rightColorLegend,
+  ]);
+  const color = scaleSequential(interpolateCustomPurples).domain([
+    0,
+    maxNumber / totalNumber,
+  ]);
   return color(value);
 }
 
@@ -59,9 +72,14 @@ interface GeoSpatialCoverageMapProps {
   coverage: SpatialCoverage;
   sampled: boolean;
 }
+interface GeoSpatialCoverageMapState {
+  selectedCoordinates: undefined;
+  rightValueLegend: number;
+}
 
 class GeoSpatialCoverageMap extends React.PureComponent<
-  GeoSpatialCoverageMapProps
+  GeoSpatialCoverageMapProps,
+  GeoSpatialCoverageMapState
 > {
   mapId = generateRandomId();
   mapRef: React.RefObject<HTMLDivElement>;
@@ -75,6 +93,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     this.mapRef = React.createRef();
     this.state = {
       selectedCoordinates: undefined,
+      rightValueLegend: 0,
     };
   }
 
@@ -91,6 +110,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       let maxNumber = 1;
       let totalNumber = 0;
       for (let j = 0; j < coverage.geohashes4.length; j++) {
+        // maxNumber is the number of points in the box with the most points
         maxNumber = Math.max(maxNumber, coverage.geohashes4[j].number);
         totalNumber += coverage.geohashes4[j].number;
       }
@@ -103,6 +123,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       // drawing geohashes
       const source = new VectorSource({wrapX: false});
       for (let j = 0; j < coverage.geohashes4.length; j++) {
+        // hashNumber is the number of points in a given box
         const {hash, number: hashNumber} = coverage.geohashes4[j];
         const {topLeft, bottomRight} = geohashToLatLong(hash, 4);
         minXList.push(topLeft[0]);
@@ -121,7 +142,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         ]);
         const style = new Style({
           fill: new Fill({
-            color: heatColorMap(hashNumber / maxNumber),
+            color: heatColorMap(hashNumber, maxNumber, totalNumber),
           }),
         });
         polygon.transform('EPSG:4326', 'EPSG:3857');
@@ -132,6 +153,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         feature.set('geohash4', hash);
         source.addFeature(feature);
       }
+      this.setState({rightValueLegend: 100 * (maxNumber / totalNumber)});
       minXList.sort();
       minX = minXList[Math.floor((minXList.length - 1) * OUTLIER_RATIO)];
       maxXList.sort();
@@ -144,7 +166,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
       vectorLayers.push(
         new VectorLayer({
           source,
-          opacity: 0.4,
+          opacity: 0.5,
         })
       );
     } else if (coverage.ranges?.length) {
@@ -385,6 +407,106 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     }
   }
 
+  renderLegend() {
+    const marginLegend = 12;
+    const legendWidth = 130 + marginLegend;
+    return (
+      <div className="legend" style={{width: legendWidth}}>
+        <svg height="50" width={legendWidth} fill="black">
+          <g
+            transform="translate(0,28)"
+            fill="none"
+            fontSize="10"
+            fontFamily="sans-serif"
+            textAnchor="middle"
+          >
+            <g
+              className="tick"
+              opacity="1"
+              transform={'translate(' + marginLegend + ',10)'}
+            >
+              <line stroke="currentColor" x="0" y2="1" y1="-4"></line>
+              <text
+                fill="black"
+                style={{fontSize: 9, fontFamily: 'sans-serif'}}
+                x="0"
+                y="3"
+                dy="0.71em"
+              >
+                0
+              </text>
+            </g>
+            <g
+              className="tick"
+              opacity="1"
+              transform={
+                'translate(' + (legendWidth - marginLegend) / 2 + ',10)'
+              }
+            >
+              <line stroke="currentColor" x="0" y2="1" y1="-4"></line>
+              <text
+                fill="black"
+                style={{fontSize: 9, fontFamily: 'sans-serif'}}
+                x="0"
+                y="3"
+                dy="0.71em"
+              >
+                {(this.state.rightValueLegend / 2).toFixed(1)}
+              </text>
+            </g>
+
+            <g
+              className="tick"
+              opacity="1"
+              transform={'translate(' + (legendWidth - marginLegend) + ',10)'}
+            >
+              <line stroke="currentColor" x="0" y2="1" y1="-4"></line>
+              <text
+                fill="black"
+                style={{fontSize: 9, fontFamily: 'sans-serif'}}
+                x="0"
+                y="3"
+                dy="0.71em"
+              >
+                {this.state.rightValueLegend.toFixed(1)}
+              </text>
+            </g>
+          </g>
+          <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop
+                offset="0%"
+                style={{stopColor: leftColorLegend, stopOpacity: 0.7}}
+              />
+              <stop
+                offset="100%"
+                style={{stopColor: rightColorLegend, stopOpacity: 0.7}}
+              />
+            </linearGradient>
+          </defs>
+          <text
+            x={marginLegend}
+            y="20"
+            style={{
+              fontWeight: 'bold',
+              fontSize: 10,
+              fontFamily: 'sans-serif',
+            }}
+          >
+            Ratio of points (%)
+          </text>
+          <rect
+            x={marginLegend}
+            y="25"
+            width={legendWidth - marginLegend * 2}
+            height="10"
+            fill="url(#grad1)"
+          />
+        </svg>
+      </div>
+    );
+  }
+
   render() {
     const style = {width: '100%', height: '400px'};
     return (
@@ -396,6 +518,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         <span className="mb-3" style={{fontSize: '0.9rem'}}>
           Left-click on bounding box to get more information.
         </span>
+        {this.renderLegend()}
         <div ref={this.containerRef} className="ol-popup">
           <div ref={this.popupContentRef} />
         </div>
