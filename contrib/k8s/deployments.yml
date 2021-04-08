@@ -123,11 +123,11 @@ spec:
           value: elasticsearch
         - name: ELASTICSEARCH_PORT
           value: "9200"
-        - name: ELASTICSEARCH_PREFIX
+        - name: ELASTICSEARCH_INDEX
           valueFrom:
             configMapKeyRef:
               name: config
-              key: elasticsearch_prefix
+              key: elasticsearch_lazo_index
         - name: JAVA_OPTS
           value: "-Xmx2g -Xms2g"
         ports:
