@@ -9,16 +9,26 @@ import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
 import {ButtonGroup, LinkButton} from '../ui/Button/Button';
 
 export function SpatialCoverage(props: {hit: SearchResult}) {
-  const {spatial_coverage} = props.hit.metadata;
+  const metadata = props.hit.metadata;
+  const {spatial_coverage} = metadata;
   if (!spatial_coverage) {
     return <></>;
   }
+  const sampled =
+    (metadata.nb_rows &&
+      metadata.nb_profiled_rows &&
+      metadata.nb_profiled_rows < metadata.nb_rows) ||
+    false;
   return (
     <>
       <h6>Spatial Coverage</h6>
       <span> This is the approximate spatial coverage of the data.</span>
       {spatial_coverage.map((s, i) => (
-        <GeoSpatialCoverageMap key={`spatial-coverage-map-${i}`} coverage={s} />
+        <GeoSpatialCoverageMap
+          key={`spatial-coverage-map-${i}`}
+          coverage={s}
+          sampled={sampled}
+        />
       ))}
     </>
   );

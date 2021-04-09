@@ -40,3 +40,13 @@
   left: 48px;
   margin-left: -11px;
 }
+
+.legend{
+  position:relative;
+  left: 10px;
+  top:-84px;
+  z-index:10000;
+  height: 54px;
+  background-color:#fdfcfb;
+  border-radius: 6px;
+}
