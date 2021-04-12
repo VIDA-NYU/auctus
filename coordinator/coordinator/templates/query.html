@@ -31,9 +31,11 @@ function search(text) {
   req.open('POST', '/api/search' + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')));
   req.responseType = 'json';
   req.onload = function() {
-    if(req.status == 200) {
-      var results = document.getElementById('results');
-      results.innerHTML = '';
+    var results = document.getElementById('results');
+    results.innerHTML = '';
+    if(req.status == 200 && req.response.error) {
+      results.innerHTML = 'Error: ' + req.response.error;
+    } else if(req.status == 200) {
       for(var i = 0; i < req.response.hits.length; ++i) {
         var hit = req.response.hits[i];
         var elem = document.createElement('li');

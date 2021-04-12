@@ -220,11 +220,15 @@ class ReprocessDataset(BaseHandler):
 class QuerySearch(BaseHandler):
     @tornado.web.authenticated
     def post(self):
-        body = self.get_json()
-        hits = self.application.elasticsearch.search(
-            index='datasets',
-            body=body,
-        )['hits']['hits']
+        body = self.request.body.decode('utf-8')
+        try:
+            body = json.loads(body)
+            hits = self.application.elasticsearch.search(
+                index='datasets',
+                body=body,
+            )['hits']['hits']
+        except Exception as e:
+            return self.send_json({'error': repr(e)})
         self.send_json({'hits': hits})
         return self.finish()
 
