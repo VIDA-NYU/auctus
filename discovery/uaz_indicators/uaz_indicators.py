@@ -3,7 +3,6 @@ import codecs
 from datetime import datetime, timedelta
 import elasticsearch
 import logging
-import os
 import pandas
 import requests
 import sqlite3
@@ -53,9 +52,7 @@ class UazIndicatorsDiscoverer(Discoverer):
             etag = info['etag']
 
         # Do HTTP request
-        headers = {
-            'User-Agent': 'Auctus/%s' % os.environ['DATAMART_VERSION'],
-        }
+        headers = {'User-Agent': 'Auctus'}
         if etag:
             headers['If-None-Match'] = etag
         logger.info("Downloading file (etag=%r)", etag)

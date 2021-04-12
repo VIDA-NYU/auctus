@@ -146,7 +146,11 @@ class WorldBankDiscoverer(Discoverer):
 
         # Download the ZIP file
         with tempfile.NamedTemporaryFile('wb', suffix='.zip') as dl_file:
-            with requests.get(data_url, stream=True) as resp:
+            with requests.get(
+                data_url,
+                stream=True,
+                headers={'User-agent': 'Auctus'},
+            ) as resp:
                 resp.raise_for_status()
                 for chunk in resp.iter_content(4096):
                     dl_file.write(chunk)

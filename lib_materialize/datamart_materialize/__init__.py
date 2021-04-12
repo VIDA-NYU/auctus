@@ -54,7 +54,12 @@ def _direct_download(url, writer, size_limit=None):
     :param url: URL of the file to download.
     :param writer: Output writer used to write the dataset.
     """
-    response = requests.get(url, allow_redirects=True, stream=True)
+    response = requests.get(
+        url,
+        allow_redirects=True,
+        stream=True,
+        headers={'User-agent': 'Auctus'},
+    )
     response.raise_for_status()
     _write_file(response, writer, size_limit=size_limit)
 
