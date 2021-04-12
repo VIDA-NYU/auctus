@@ -25,8 +25,20 @@ def clear(source):
         index='datasets,pending',
         query={
             'query': {
-                'term': {
-                    'source': source,
+                'bool': {
+                    'should': [
+                        {
+                            'term': {
+                                'materialize.identifier': source,
+                            },
+                        },
+                        {
+                            'term': {
+                                'source': source,
+                            },
+                        },
+                    ],
+                    'minimum_should_match': 1,
                 },
             },
         },
