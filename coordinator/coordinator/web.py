@@ -65,7 +65,8 @@ class BaseHandler(tornado.web.RequestHandler):
         return template.render(
             handler=self,
             current_user=self.current_user,
-            api_url=os.environ.get('API_URL', ''),
+            api_url=self.application.api_url,
+            frontend_url=self.application.frontend_url,
             **kwargs)
 
     def get_json(self):
@@ -270,6 +271,7 @@ class Application(tornado.web.Application):
     def __init__(self, *args, es, lazo, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
+        self.api_url = os.environ['API_URL'].rstrip('/')
         self.frontend_url = os.environ['FRONTEND_URL'].rstrip('/')
         self.elasticsearch = es
         self.lazo_client = lazo
