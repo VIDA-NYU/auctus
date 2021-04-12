@@ -9,6 +9,8 @@ Incompatible changes:
 * Updated Poetry from 1.0 to 1.1 (lock files are incompatible)
 * Moved state for discoverers to a separate ES index 'discovery'
 * Changed ES synonym configuration to `synonym_graph` filter
+* Moved cleaning file cache to a dedicated container (to run as DaemonSet on Kubernetes)
+* Use an object storage service to store uploaded datasets (S3-compatible or GCS). You can use Minio to run locally
 
 Enhancements:
 * Added an admin interface to the coordinator container, allowing the admin to view recently uploaded datasets and remove datasets, and view errored datasets per exception type
@@ -22,10 +24,18 @@ Enhancements:
 * Return facets in API (under key 'facets') and total number of results (under key `total`)
 * Show count of results for each facet in interface
 * Lowered profiled sample size dramatically (from max 50MB to max 5MB)
+* Use openpyxl to read Excel 2003+ files, as xlrd is no longer supporting them
+* Make random sampling exact, making sure that the right number of rows is selected even with very small selection ratios
+* Add command-line support to lib_profiler
+* Implement new spatial sketch based on geohash, display as heatmap in the interface
+* Recognize when columns consist of filenames or URLs
+* Use a prefix for Elasticsearch indexes names, allowing to run multiple instances against one Elasticsearch cluster
 
 Bugfixes:
 * Expose Content-Disposition header via CORS, allowing browser to read downloaded file names
 * Various fixes to API spec, now checked during integration tests
+* Improve sniffing CSV/TSV file formats
+* Fix profiler not recognizing real numbers when they include negative exponents e.g. `1.23e-04`
 
 0.8 (2020-10-20)
 ================
