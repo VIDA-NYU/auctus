@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+import elasticsearch
 import logging
 import jinja2
 import json
@@ -15,7 +16,7 @@ import tornado.web
 from tornado.web import HTTPError
 from urllib.parse import quote_plus
 
-from datamart_core.common import PrefixedElasticsearch, \
+from datamart_core.common import PrefixedElasticsearch, json2msg, \
     delete_dataset_from_index, setup_logging
 
 from .coordinator import Coordinator
@@ -181,6 +182,34 @@ class DeleteDataset(BaseHandler):
         return self.finish()
 
 
+class ReprocessDataset(BaseHandler):
+    @tornado.web.authenticated
+    async def post(self, dataset_id):
+        try:
+            obj = self.application.elasticsearch.get('datasets', dataset_id)['_source']
+        except elasticsearch.NotFoundError:
+            obj = self.application.elasticsearch.get('pending', dataset_id)['_source']['metadata']
+
+        metadata = dict(name=obj['name'],
+                        materialize=obj['materialize'],
+                        source=obj.get('source', 'unknown'))
+        if obj.get('description'):
+            metadata['description'] = obj['description']
+        if obj.get('date'):
+            metadata['date'] = obj['date']
+        if obj.get('manual_annotations'):
+            metadata['manual_annotations'] = obj['manual_annotations']
+        await self.coordinator.profile_exchange.publish(
+            json2msg(
+                dict(id=dataset_id, metadata=metadata),
+            ),
+            '',
+        )
+
+        self.set_status(204)
+        return await self.finish()
+
+
 class PurgeSource(BaseHandler):
     @tornado.web.authenticated
     def post(self):
@@ -284,6 +313,7 @@ def make_app(debug=False):
         [
             URLSpec('/api/statistics', Statistics),
             URLSpec('/api/delete_dataset/([^/]+)', DeleteDataset),
+            URLSpec('/api/reprocess_dataset/([^/]+)', ReprocessDataset),
             URLSpec('/api/purge_source', PurgeSource),
             URLSpec('/', Index, name='index'),
             URLSpec('/errors/([^/]+)', Errors, name='errors'),

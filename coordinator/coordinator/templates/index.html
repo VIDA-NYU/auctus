@@ -32,6 +32,12 @@
 
 <h2>Maintenance</h2>
 
+<form class="form-inline" id="reprocess">
+  <label for="purge-source-input" class="col-sm-2 col-form-label mb-2">Reprocess dataset:</label>
+  <input type="text" class="form-control mb-2" id="reprocess-input" placeholder="dataset ID" required />
+  <button type="submit" class="btn btn-primary mb-2">Reprocess</button>
+</form>
+
 <form class="form-inline" id="purge-source">
   <label for="purge-source-input" class="col-sm-2 col-form-label mb-2">Purge all datasets from source:</label>
   <input type="text" class="form-control mb-2" id="purge-source-input" placeholder="materializer or source" required />
@@ -76,6 +82,27 @@ document.querySelectorAll('.recent-upload').forEach(function(li) {
 document.getElementById('delete-by-id').addEventListener('submit', function(e) {
   e.preventDefault();
   deleteDataset(document.getElementById('delete-input').value);
+});
+
+function reprocess(datasetId) {
+  var req = new XMLHttpRequest();
+  req.open('POST', '/api/reprocess_dataset/' + datasetId + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')));
+  req.onload = function() {
+    if(req.status === 204) {
+      alert('Dataset will be reprocessed');
+    } else {
+      alert('Error reprocessing dataset ' + datasetId);
+    }
+  };
+  req.onerror = function() {
+    alert('Error reprocessing dataset ' + datasetId);
+  };
+  req.send();
+}
+
+document.getElementById('reprocess').addEventListener('submit', function(e) {
+  e.preventDefault();
+  reprocess(document.getElementById('reprocess-input').value);
 });
 
 function purgeSource(source) {
