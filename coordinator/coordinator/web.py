@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+import elasticsearch
 import logging
 import jinja2
 import json
@@ -12,12 +13,16 @@ from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
+from tornado.web import HTTPError
 from urllib.parse import quote_plus
 
-from datamart_core.common import PrefixedElasticsearch, \
+from datamart_core.common import PrefixedElasticsearch, json2msg, \
     delete_dataset_from_index, setup_logging
 
 from .coordinator import Coordinator
+
+
+SIZE = 10000
 
 
 logger = logging.getLogger(__name__)
@@ -60,8 +65,23 @@ class BaseHandler(tornado.web.RequestHandler):
         return template.render(
             handler=self,
             current_user=self.current_user,
-            api_url=os.environ.get('API_URL', ''),
+            api_url=self.application.api_url,
+            frontend_url=self.application.frontend_url,
             **kwargs)
+
+    def get_json(self):
+        type_ = self.request.headers.get('Content-Type', '')
+        if not type_.startswith('application/json'):
+            self.send_error_json(400, "Expected JSON")
+            raise HTTPError(400)
+        try:
+            return json.loads(self.request.body.decode('utf-8'))
+        except UnicodeDecodeError:
+            self.send_error_json(400, "Invalid character encoding")
+            raise HTTPError(400)
+        except json.JSONDecodeError:
+            self.send_error_json(400, "Invalid JSON")
+            raise HTTPError(400)
 
     def send_json(self, obj):
         if isinstance(obj, list):
@@ -70,6 +90,11 @@ class BaseHandler(tornado.web.RequestHandler):
             raise ValueError("Can't encode %r to JSON" % type(obj))
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
+
+    def send_error_json(self, status, message):
+        logger.info("Sending error %s JSON: %s", status, message)
+        self.set_status(status)
+        return self.send_json({'error': message})
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Auctus"))
 
@@ -103,6 +128,12 @@ class Index(BaseHandler):
             recent_uploads=recent_uploads,
             error_counts=sorted(self.coordinator.error_counts.items()),
         )
+
+
+class Query(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        return self.render('query.html')
 
 
 class Errors(BaseHandler):
@@ -158,6 +189,125 @@ class DeleteDataset(BaseHandler):
         return self.finish()
 
 
+class ReprocessDataset(BaseHandler):
+    @tornado.web.authenticated
+    async def post(self, dataset_id):
+        try:
+            obj = self.application.elasticsearch.get('datasets', dataset_id)['_source']
+        except elasticsearch.NotFoundError:
+            obj = self.application.elasticsearch.get('pending', dataset_id)['_source']['metadata']
+
+        metadata = dict(name=obj['name'],
+                        materialize=obj['materialize'],
+                        source=obj.get('source', 'unknown'))
+        if obj.get('description'):
+            metadata['description'] = obj['description']
+        if obj.get('date'):
+            metadata['date'] = obj['date']
+        if obj.get('manual_annotations'):
+            metadata['manual_annotations'] = obj['manual_annotations']
+        await self.coordinator.profile_exchange.publish(
+            json2msg(
+                dict(id=dataset_id, metadata=metadata),
+            ),
+            '',
+        )
+
+        self.set_status(204)
+        return await self.finish()
+
+
+class QuerySearch(BaseHandler):
+    @tornado.web.authenticated
+    def post(self):
+        body = self.request.body.decode('utf-8')
+        try:
+            body = json.loads(body)
+            hits = self.application.elasticsearch.search(
+                index='datasets',
+                body=body,
+            )['hits']['hits']
+        except Exception as e:
+            return self.send_json({'error': repr(e)})
+        self.send_json({'hits': hits})
+        return self.finish()
+
+
+class QueryReprocess(BaseHandler):
+    @tornado.web.authenticated
+    async def post(self):
+        body = self.get_json()
+        hits = self.application.elasticsearch.scan(
+            index='datasets,pending',
+            query=body,
+        )
+
+        reprocessed = 0
+        for hit in hits:
+            dataset_id = hit['_id']
+            if hit['_index'] == self.application.elasticsearch.prefix + 'pending':
+                obj = hit['_source']['metadata']
+            else:
+                obj = hit['_source']
+
+            metadata = dict(name=obj['name'],
+                            materialize=obj['materialize'],
+                            source=obj.get('source', 'unknown'))
+            if obj.get('description'):
+                metadata['description'] = obj['description']
+            if obj.get('date'):
+                metadata['date'] = obj['date']
+            if obj.get('manual_annotations'):
+                metadata['manual_annotations'] = obj['manual_annotations']
+            await self.coordinator.profile_exchange.publish(
+                json2msg(
+                    dict(id=dataset_id, metadata=metadata),
+                ),
+                '',
+            )
+            reprocessed += 1
+        return await self.send_json({'number_reprocessed': reprocessed})
+
+
+class PurgeSource(BaseHandler):
+    @tornado.web.authenticated
+    def post(self):
+        source = self.get_json()['source']
+        hits = self.application.elasticsearch.scan(
+            index='datasets,pending',
+            query={
+                'query': {
+                    'bool': {
+                        'should': [
+                            {
+                                'term': {
+                                    'materialize.identifier': source,
+                                },
+                            },
+                            {
+                                'term': {
+                                    'source': source,
+                                },
+                            },
+                        ],
+                        'minimum_should_match': 1,
+                    },
+                },
+            },
+            _source=False,
+            size=SIZE,
+        )
+        deleted = 0
+        for h in hits:
+            delete_dataset_from_index(
+                self.application.elasticsearch,
+                h['_id'],
+                self.application.lazo_client,
+            )
+            deleted += 1
+        return self.send_json({'number_deleted': deleted})
+
+
 class Statistics(BaseHandler):
     def prepare(self):
         super(BaseHandler, self).prepare()
@@ -179,6 +329,7 @@ class Application(tornado.web.Application):
     def __init__(self, *args, es, lazo, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
+        self.api_url = os.environ['API_URL'].rstrip('/')
         self.frontend_url = os.environ['FRONTEND_URL'].rstrip('/')
         self.elasticsearch = es
         self.lazo_client = lazo
@@ -222,7 +373,12 @@ def make_app(debug=False):
         [
             URLSpec('/api/statistics', Statistics),
             URLSpec('/api/delete_dataset/([^/]+)', DeleteDataset),
+            URLSpec('/api/reprocess_dataset/([^/]+)', ReprocessDataset),
+            URLSpec('/api/search', QuerySearch),
+            URLSpec('/api/reprocess', QueryReprocess),
+            URLSpec('/api/purge_source', PurgeSource),
             URLSpec('/', Index, name='index'),
+            URLSpec('/query', Query, name='query'),
             URLSpec('/errors/([^/]+)', Errors, name='errors'),
             URLSpec('/login', Login, name='login'),
         ],
