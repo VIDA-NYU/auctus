@@ -114,6 +114,9 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         maxNumber = Math.max(maxNumber, coverage.geohashes4[j].number);
         totalNumber += coverage.geohashes4[j].number;
       }
+      if (coverage.number) {
+        totalNumber = coverage.number;
+      }
 
       const minXList = [];
       const maxXList = [];
