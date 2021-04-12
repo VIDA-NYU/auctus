@@ -19,6 +19,18 @@
   <button type="submit" class="btn btn-primary mb-2">Delete</button>
 </form>
 
+<h2>Errored datasets:</h2>
+<ul>
+  {% if error_counts %}
+  {% for error_type, error_count in error_counts %}
+  <li><a href="{{ reverse_url('errors', error_type) }}">{{ error_type }}</a>: {{ error_count }}</li>
+  {% endfor %}
+  {% else %}
+  <li style="font-style: oblique;">No errors recorded</li>
+  {% endif %}
+</ul>
+
+
 <script async>
 function getCookie(name) {
   var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
@@ -29,7 +41,6 @@ function deleteDataset(datasetId) {
   if(confirm('Really delete dataset ' + datasetId + ' ?')) {
     var req = new XMLHttpRequest();
     req.open('POST', '/api/delete_dataset/' + datasetId + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')));
-    req.responseType = 'json';
     req.onload = function() {
       if(req.status === 204) {
         alert('Dataset deleted');
@@ -40,7 +51,7 @@ function deleteDataset(datasetId) {
     };
     req.onerror = function() {
       alert('Error deleting dataset ' + datasetId);
-    }
+    };
     req.send();
   }
 }
@@ -59,16 +70,4 @@ document.getElementById('delete-by-id').addEventListener('submit', function(e) {
   deleteDataset(document.getElementById('delete-input').value);
 });
 </script>
-
-
-<h2>Errored datasets:</h2>
-<ul>
-  {% if error_counts %}
-  {% for error_type, error_count in error_counts %}
-  <li><a href="{{ reverse_url('errors', error_type) }}">{{ error_type }}</a>: {{ error_count }}</li>
-  {% endfor %}
-  {% else %}
-  <li style="font-style: oblique;">No errors recorded</li>
-  {% endif %}
-</ul>
 {% endblock %}
