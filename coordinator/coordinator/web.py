@@ -21,6 +21,9 @@ from datamart_core.common import PrefixedElasticsearch, \
 from .coordinator import Coordinator
 
 
+SIZE = 10000
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -178,6 +181,45 @@ class DeleteDataset(BaseHandler):
         return self.finish()
 
 
+class PurgeSource(BaseHandler):
+    @tornado.web.authenticated
+    def post(self):
+        source = self.get_json()['source']
+        hits = self.application.elasticsearch.scan(
+            index='datasets,pending',
+            query={
+                'query': {
+                    'bool': {
+                        'should': [
+                            {
+                                'term': {
+                                    'materialize.identifier': source,
+                                },
+                            },
+                            {
+                                'term': {
+                                    'source': source,
+                                },
+                            },
+                        ],
+                        'minimum_should_match': 1,
+                    },
+                },
+            },
+            _source=False,
+            size=SIZE,
+        )
+        deleted = 0
+        for h in hits:
+            delete_dataset_from_index(
+                self.application.elasticsearch,
+                h['_id'],
+                self.application.lazo_client,
+            )
+            deleted += 1
+        return self.send_json({'number_deleted': deleted})
+
+
 class Statistics(BaseHandler):
     def prepare(self):
         super(BaseHandler, self).prepare()
@@ -242,6 +284,7 @@ def make_app(debug=False):
         [
             URLSpec('/api/statistics', Statistics),
             URLSpec('/api/delete_dataset/([^/]+)', DeleteDataset),
+            URLSpec('/api/purge_source', PurgeSource),
             URLSpec('/', Index, name='index'),
             URLSpec('/errors/([^/]+)', Errors, name='errors'),
             URLSpec('/login', Login, name='login'),

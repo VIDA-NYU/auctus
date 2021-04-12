@@ -30,6 +30,14 @@
   {% endif %}
 </ul>
 
+<h2>Maintenance</h2>
+
+<form class="form-inline" id="purge-source">
+  <label for="purge-source-input" class="col-sm-2 col-form-label mb-2">Purge all datasets from source:</label>
+  <input type="text" class="form-control mb-2" id="purge-source-input" placeholder="materializer or source" required />
+  <button type="submit" class="btn btn-primary mb-2">Purge</button>
+</form>
+
 
 <script async>
 function getCookie(name) {
@@ -68,6 +76,31 @@ document.querySelectorAll('.recent-upload').forEach(function(li) {
 document.getElementById('delete-by-id').addEventListener('submit', function(e) {
   e.preventDefault();
   deleteDataset(document.getElementById('delete-input').value);
+});
+
+function purgeSource(source) {
+  if(confirm('Really delete ALL DATASETS from source "' + source + '"?')) {
+    var req = new XMLHttpRequest();
+    req.open('POST', '/api/purge_source' + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')));
+    req.responseType = 'json';
+    req.onload = function() {
+      if(req.status == 200) {
+        alert('Deleted ' + req.response.number_deleted + ' datasets');
+      } else {
+        alert('Error purging source');
+      }
+    };
+    req.onerror = function() {
+      alert('Error purging source');
+    };
+    req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    req.send(JSON.stringify({source}));
+  }
+}
+
+document.getElementById('purge-source').addEventListener('submit', function(e) {
+  e.preventDefault();
+  purgeSource(document.getElementById('purge-source-input').value);
 });
 </script>
 {% endblock %}
