@@ -130,6 +130,12 @@ class Index(BaseHandler):
         )
 
 
+class Query(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        return self.render('query.html')
+
+
 class Errors(BaseHandler):
     def get(self, error_type):
         datasets = self.coordinator.get_datasets_with_error(error_type)
@@ -209,6 +215,54 @@ class ReprocessDataset(BaseHandler):
 
         self.set_status(204)
         return await self.finish()
+
+
+class QuerySearch(BaseHandler):
+    @tornado.web.authenticated
+    def post(self):
+        body = self.get_json()
+        hits = self.application.elasticsearch.search(
+            index='datasets',
+            body=body,
+        )['hits']['hits']
+        self.send_json({'hits': hits})
+        return self.finish()
+
+
+class QueryReprocess(BaseHandler):
+    @tornado.web.authenticated
+    async def post(self):
+        body = self.get_json()
+        hits = self.application.elasticsearch.scan(
+            index='datasets,pending',
+            query=body,
+        )
+
+        reprocessed = 0
+        for hit in hits:
+            dataset_id = hit['_id']
+            if hit['_index'] == self.application.elasticsearch.prefix + 'pending':
+                obj = hit['_source']['metadata']
+            else:
+                obj = hit['_source']
+
+            metadata = dict(name=obj['name'],
+                            materialize=obj['materialize'],
+                            source=obj.get('source', 'unknown'))
+            if obj.get('description'):
+                metadata['description'] = obj['description']
+            if obj.get('date'):
+                metadata['date'] = obj['date']
+            if obj.get('manual_annotations'):
+                metadata['manual_annotations'] = obj['manual_annotations']
+            await self.coordinator.profile_exchange.publish(
+                json2msg(
+                    dict(id=dataset_id, metadata=metadata),
+                ),
+                '',
+            )
+            reprocessed += 1
+        return await self.send_json({'number_reprocessed': reprocessed})
 
 
 class PurgeSource(BaseHandler):
@@ -316,8 +370,11 @@ def make_app(debug=False):
             URLSpec('/api/statistics', Statistics),
             URLSpec('/api/delete_dataset/([^/]+)', DeleteDataset),
             URLSpec('/api/reprocess_dataset/([^/]+)', ReprocessDataset),
+            URLSpec('/api/search', QuerySearch),
+            URLSpec('/api/reprocess', QueryReprocess),
             URLSpec('/api/purge_source', PurgeSource),
             URLSpec('/', Index, name='index'),
+            URLSpec('/query', Query, name='query'),
             URLSpec('/errors/([^/]+)', Errors, name='errors'),
             URLSpec('/login', Login, name='login'),
         ],

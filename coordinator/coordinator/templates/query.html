@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% set active_page = "query" %}
+
+{% block contents %}
+<h2>Elasticsearch query:</h2>
+
+<form id="query">
+  <div class="form-row mb-2">
+    <label for="query-input" class="col-sm-2 col-form-label">Query (JSON):</label>
+    <textarea class="form-control col-sm-10" id="query-input" required></textarea>
+  </div>
+  <div class="form-row">
+    <div class="offset-sm-2">
+      <button type="submit" class="btn btn-primary mb-2">Query</button>
+      <button type="submit" class="btn btn-warning mb-2" id="query-reprocess">Reprocess</button>
+    </div>
+  </div>
+</form>
+
+<ul id="results"></ul>
+
+
+<script async>
+function getCookie(name) {
+  var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+  return r ? r[1] : undefined;
+}
+
+function search(text) {
+  var req = new XMLHttpRequest();
+  req.open('POST', '/api/search' + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')));
+  req.responseType = 'json';
+  req.onload = function() {
+    if(req.status == 200) {
+      var results = document.getElementById('results');
+      results.innerHTML = '';
+      for(var i = 0; i < req.response.hits.length; ++i) {
+        var hit = req.response.hits[i];
+        var elem = document.createElement('li');
+        var link = FRONTEND_URL
+          + '/?q='
+          + encodeURIComponent(JSON.stringify({query: hit._id}));
+        elem.innerHTML = '<a href="' + link + '" target="_blank">' + hit._id + '</a>';
+        results.appendChild(elem);
+      }
+    } else {
+      alert('Query error');
+    }
+  };
+  req.onerror = function() {
+    alert('Query error');
+  };
+  req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+  req.send(text);
+}
+
+function reprocess(text) {
+  if(confirm('Really reprocess all datasets matching the query?')) {
+    var req = new XMLHttpRequest();
+    req.open('POST', '/api/reprocess' + '?_xsrf=' + encodeURIComponent(getCookie('_xsrf')));
+    req.responseType = 'json';
+    req.onload = function() {
+      if(req.status == 200) {
+        alert('Reprocessing ' + req.response.number_reprocessed + ' datasets');
+      } else {
+        alert('Error reprocessing');
+      }
+    };
+    req.onerror = function() {
+      alert('Error reprocessing');
+    };
+    req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    req.send(text);
+  }
+}
+
+document.getElementById('query').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var reprocess_button = document.getElementById('query-reprocess');
+  if(e.submitter === reprocess_button) {
+    reprocess(document.getElementById('query-input').value);
+  } else {
+    search(document.getElementById('query-input').value);
+  }
+});
+</script>
+{% endblock %}
