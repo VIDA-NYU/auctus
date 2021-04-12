@@ -12,6 +12,7 @@ from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.web
+from tornado.web import HTTPError
 from urllib.parse import quote_plus
 
 from datamart_core.common import PrefixedElasticsearch, \
@@ -63,6 +64,20 @@ class BaseHandler(tornado.web.RequestHandler):
             api_url=os.environ.get('API_URL', ''),
             **kwargs)
 
+    def get_json(self):
+        type_ = self.request.headers.get('Content-Type', '')
+        if not type_.startswith('application/json'):
+            self.send_error_json(400, "Expected JSON")
+            raise HTTPError(400)
+        try:
+            return json.loads(self.request.body.decode('utf-8'))
+        except UnicodeDecodeError:
+            self.send_error_json(400, "Invalid character encoding")
+            raise HTTPError(400)
+        except json.JSONDecodeError:
+            self.send_error_json(400, "Invalid JSON")
+            raise HTTPError(400)
+
     def send_json(self, obj):
         if isinstance(obj, list):
             obj = {'results': obj}
@@ -70,6 +85,11 @@ class BaseHandler(tornado.web.RequestHandler):
             raise ValueError("Can't encode %r to JSON" % type(obj))
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
+
+    def send_error_json(self, status, message):
+        logger.info("Sending error %s JSON: %s", status, message)
+        self.set_status(status)
+        return self.send_json({'error': message})
 
     http_client = AsyncHTTPClient(defaults=dict(user_agent="Auctus"))
 
