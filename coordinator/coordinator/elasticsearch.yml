@@ -134,7 +134,7 @@ datasets:
           geohashes4:
             properties:
               hash:
-                type: keyword
+                type: text
                 index: false
               number:
                 type: integer
@@ -331,8 +331,12 @@ spatial_coverage:
       geohashes4:
         properties:
           hash:
-            type: keyword
-            index: false
+            type: text
+            analyzer: keyword
+            search_analyzer: keyword
+            index_prefixes:
+              min_chars: 1
+              max_chars: 16
           number:
             type: integer
             index: false
