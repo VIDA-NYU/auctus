@@ -250,12 +250,53 @@ def get_numerical_join_search_results(
     )['hits']['hits']
 
 
+_GEOHASH_SCRIPT = minify_script('''\
+    // Select length and factor depending on respective levels
+    int leftLength = params.hashes[0].length();
+    int rightLength = params._source.geohashes4[0]['hash'].length();
+    int commonLength;
+    double factor = 1.0;
+    if(rightLength > leftLength) {
+        // The search result has more precise hashes than the ones we're searching from
+        // Truncate right hashes and set a factor so that left hashes aren't counted multiple times
+        commonLength = leftLength;
+        factor = Math.pow(0.25, rightLength - leftLength);
+    } else {
+        // The hashes we are searching from are more precise than the search result
+        // Truncate left hashes, keep factor at 1.0
+        commonLength = rightLength;
+    }
+
+    double total = 0.0, covering = 0.0;
+    // For each input geohash
+    for(int left = 0; left < params.hashes.length; ++left) {
+        String leftHash = params.hashes[left];
+        double leftNumber = params.numbers[left];
+
+        // Count it in the total
+        total += leftNumber;
+
+        // For each geohash of the search result
+        for(right in params._source.geohashes4) {
+            // If it intersects
+            if(right['hash'].substring(0, commonLength).equals(leftHash.substring(0, commonLength))) {
+                // Add to the amount of covered left points
+                covering += factor * leftNumber;
+            }
+        }
+    }
+
+    // Return the proportion of data from search input (left) covered by search dataset (right)
+    return covering / total;
+''')
+
+
 def get_spatial_join_search_results(
-    es, ranges, dataset_id=None, ignore_datasets=None,
+    es, geohashes, dataset_id=None, ignore_datasets=None,
     query_sup_functions=None, query_sup_filters=None,
 ):
     """Retrieve spatial join search results that intersect
-    with the input spatial ranges.
+    with the input geohashes.
     """
 
     filter_query = []
@@ -272,60 +313,41 @@ def get_spatial_join_search_results(
             for id in ignore_datasets
         )
 
-    should_query = list()
-    coverage = sum([
-        (range_[1][0] - range_[0][0]) * (range_[0][1] - range_[1][1])
-        for range_ in ranges])
-    for i, range_ in enumerate(ranges):
-        should_query.append({
-            'nested': {
-                'path': 'ranges',
-                'query': {
-                    'function_score': {
-                        'query': {
-                            'geo_shape': {
-                                'ranges.range': {
-                                    'shape': {
-                                        'type': 'envelope',
-                                        'coordinates': [
-                                            [range_[0][0], range_[0][1]],
-                                            [range_[1][0], range_[1][1]]
-                                        ]
-                                    },
-                                    'relation': 'intersects'
-                                }
-                            }
-                        },
-                        'script_score': {
-                            'script': {
-                                'lang': 'painless',
-                                'params': {
-                                    'min_lon': range_[0][0],
-                                    'max_lat': range_[0][1],
-                                    'max_lon': range_[1][0],
-                                    'min_lat': range_[1][1],
-                                    'coverage': coverage
-                                },
-                                'source': minify_script('''\
-                                    double n_min_lon = Math.max(doc['ranges.min_lon'].value, params.min_lon);
-                                    double n_max_lat = Math.min(doc['ranges.max_lat'].value, params.max_lat);
-                                    double n_max_lon = Math.min(doc['ranges.max_lon'].value, params.max_lon);
-                                    double n_min_lat = Math.max(doc['ranges.min_lat'].value, params.min_lat);
-                                    return ((n_max_lon - n_min_lon) * (n_max_lat - n_min_lat)) / params.coverage;
-                                ''')
-                            }
-                        },
-                        'boost_mode': 'replace'
-                    }
+    should_query = []
+    # Finds finer datasets, contained in one of the areas
+    for geohash in geohashes:
+        should_query.append(
+            {'prefix': {'geohashes4.hash': geohash['hash']}},
+        )
+    # Finds coarser dataset, containing one of the areas
+    parents = set()
+    for geohash in geohashes:
+        for i in range(1, len(geohash['hash'])):
+            parents.add(geohash['hash'][:i])
+    should_query.extend(
+        {'term': {'geohash.hash': g}}
+        for g in parents
+    )
+    query = {
+        'function_score': {
+            'query': {
+                'bool': {
+                    'should': should_query,
                 },
-                'inner_hits': {
-                    '_source': False,
-                    'size': 100,
-                    'name': 'range-{0}'.format(i)
+            },
+            'script_score': {
+                'script': {
+                    'lang': 'painless',
+                    'params': {
+                        'hashes': [g['hash'] for g in geohashes],
+                        'numbers': [g['number'] for g in geohashes],
+                    },
+                    'source': _GEOHASH_SCRIPT,
                 },
-                'score_mode': 'sum'
-            }
-        })
+            },
+            'boost_mode': 'replace',
+        },
+    }
 
     body = {
         '_source': {
@@ -336,7 +358,7 @@ def get_spatial_join_search_results(
                 'query': {
                     'bool': {
                         'filter': filter_query,
-                        'should': should_query,
+                        'should': query,
                         'must_not': must_not_query,
                         'minimum_should_match': 1,
                     }
@@ -581,10 +603,10 @@ def get_joinable_datasets(
         type_ = coverage['type']
         type_value = coverage.get('type_value')
         if type_ == 'spatial':
-            if 'ranges' in coverage:
+            if 'geohashes4' in coverage:
                 spatial_results = get_spatial_join_search_results(
                     es,
-                    coverage['ranges'],
+                    coverage['geohashes4'],
                     dataset_id,
                     ignore_datasets,
                     query_sup_functions,
