@@ -48,7 +48,7 @@ datamart-isi-discovery-service = {path= "./discovery/isi", develop=true}
 flake8 = "*"
 PyYaml = "*"
 requests = "*"
-coverage = "*" # Keep it in sync with Dockerfiles for CI
+coverage = "5.6b1" # Keep it in sync with Dockerfiles for CI
 openapi-core = "^0.13"
 readme_renderer = "*"
 Sphinx = "*"
