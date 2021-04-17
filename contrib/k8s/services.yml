@@ -85,11 +85,9 @@ spec:
   selector:
     app: auctus
     what: frontend
-  type: NodePort
   ports:
   - protocol: TCP
     port: 80
-    nodePort: 30001
 ---
 apiVersion: v1
 kind: Service
@@ -102,11 +100,9 @@ spec:
   selector:
     app: auctus
     what: coordinator
-  type: NodePort
   ports:
   - protocol: TCP
     port: 8003
-    nodePort: 30003
 ---
 apiVersion: v1
 kind: Service
@@ -119,8 +115,6 @@ spec:
   selector:
     app: auctus
     what: apiserver
-  type: NodePort
   ports:
   - protocol: TCP
     port: 8002
-    nodePort: 30002
