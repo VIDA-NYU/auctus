@@ -314,6 +314,24 @@ services:
       - LAZO_SERVER_PORT=50051
     volumes:
       - ./docker/zenodo.json:/usr/src/app/zenodo.json
+  ckan:
+    build:
+      context: .
+      dockerfile: discovery/ckan/Dockerfile
+    cpu_shares: 10
+    environment:
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
+      - AMQP_HOST=rabbitmq
+      - AMQP_PORT=5672
+      - AMQP_USER=${AMQP_USER}
+      - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - LAZO_SERVER_HOST=lazo
+      - LAZO_SERVER_PORT=50051
+    volumes:
+      - ./docker/ckan.json:/usr/src/app/ckan.json
   uaz-indicators:
     build:
       context: .

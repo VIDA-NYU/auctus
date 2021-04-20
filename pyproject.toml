@@ -40,6 +40,7 @@ datamart-api-service = {path = "./apiserver", develop=true}
 datamart-noaa_discovery-service = {path = "./discovery/noaa", develop=true}
 datamart-socrata-discovery-service = {path = "./discovery/socrata", develop=true}
 datamart-zenodo-discovery-service = {path = "./discovery/zenodo", develop=true}
+datamart-ckan-discovery-service = {path = "./discovery/ckan", develop=true}
 datamart-uaz_indicators-service = {path = "./discovery/uaz_indicators", develop=true}
 datamart-worldbank-discovery-service = {path= "./discovery/worldbank", develop=true}
 datamart-isi-discovery-service = {path= "./discovery/isi", develop=true}
