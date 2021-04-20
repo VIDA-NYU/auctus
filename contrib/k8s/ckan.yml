@@ -1,0 +1,74 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ckan
+  labels:
+    app: auctus
+data:
+  ckan.json: |
+    [
+      {"url": "data.humdata.org"}
+    ]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ckan
+  labels:
+    app: auctus
+    what: ckan
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: auctus
+      what: ckan
+  template:
+    metadata:
+      labels:
+        app: auctus
+        what: ckan
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: ckan
+        image: auctus_ckan
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: elasticsearch:9200
+        - name: ELASTICSEARCH_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: elasticsearch_prefix
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: AMQP_PORT
+          value: "5672"
+        - name: AMQP_USER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.user
+        - name: AMQP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: amqp.password
+        - name: LAZO_SERVER_HOST
+          value: lazo
+        - name: LAZO_SERVER_PORT
+          value: "50051"
+        volumeMounts:
+        - name: config
+          mountPath: /usr/src/app/ckan.json
+          subPath: ckan.json
+      volumes:
+      - name: config
+        configMap:
+          name: ckan

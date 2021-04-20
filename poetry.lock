@@ -247,6 +247,24 @@ type = "directory"
 url = "lib_augmentation"
 
 [[package]]
+name = "datamart-ckan_discovery-service"
+version = "0.0"
+description = ""
+category = "main"
+optional = false
+python-versions = "*"
+develop = true
+
+[package.dependencies]
+datamart_core = "*"
+elasticsearch = ">=7.0,<8.0"
+requests = "*"
+
+[package.source]
+type = "directory"
+url = "discovery/ckan"
+
+[[package]]
 name = "datamart-coordinator-service"
 version = "0.0"
 description = "Coordinator service for Auctus"
@@ -1519,7 +1537,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "e7b381b976695cd7f9bc9fbccc642cd90816604a8f7d4b46e86e6e39b871c436"
+content-hash = "208cb3e503cefbd3cfa41fbab6a49877950f9214ceea08d372848447faa8e5be"
 
 [metadata.files]
 aio-pika = [
@@ -1674,6 +1692,7 @@ coverage = [
 ]
 datamart-api-service = []
 datamart-augmentation = []
+datamart-ckan_discovery-service = []
 datamart-coordinator-service = []
 datamart-core = []
 datamart-fslock = []
