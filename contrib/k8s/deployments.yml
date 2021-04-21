@@ -132,13 +132,6 @@ spec:
           value: "-Xmx2g -Xms2g"
         ports:
         - containerPort: 50051
-        volumeMounts:
-        - mountPath: /cache
-          name: cache
-      volumes:
-      - name: cache
-        persistentVolumeClaim:
-          claimName: cache
 ---
 apiVersion: apps/v1
 kind: Deployment

@@ -81,8 +81,6 @@ services:
     ports:
       - 127.0.0.1:8030:50051
       - 8000
-    volumes:
-      - ./volumes/cache:/cache
   frontend:
     build:
       context: .
