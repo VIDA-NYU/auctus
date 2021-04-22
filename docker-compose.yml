@@ -290,6 +290,14 @@ services:
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - S3_KEY=${S3_KEY}
+      - S3_SECRET=${S3_SECRET}
+      - S3_URL=${S3_URL}
+      - S3_CLIENT_URL=${S3_CLIENT_URL}
+      - S3_BUCKET_PREFIX=${S3_BUCKET_PREFIX}
+      - GCS_PROJECT=${GCS_PROJECT}
+      - GCS_CREDS=${GCS_CREDS}
+      - GCS_BUCKET_PREFIX=${GCS_BUCKET_PREFIX}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
     volumes:
@@ -308,6 +316,14 @@ services:
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - S3_KEY=${S3_KEY}
+      - S3_SECRET=${S3_SECRET}
+      - S3_URL=${S3_URL}
+      - S3_CLIENT_URL=${S3_CLIENT_URL}
+      - S3_BUCKET_PREFIX=${S3_BUCKET_PREFIX}
+      - GCS_PROJECT=${GCS_PROJECT}
+      - GCS_CREDS=${GCS_CREDS}
+      - GCS_BUCKET_PREFIX=${GCS_BUCKET_PREFIX}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
     volumes:
@@ -326,6 +342,14 @@ services:
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
+      - S3_KEY=${S3_KEY}
+      - S3_SECRET=${S3_SECRET}
+      - S3_URL=${S3_URL}
+      - S3_CLIENT_URL=${S3_CLIENT_URL}
+      - S3_BUCKET_PREFIX=${S3_BUCKET_PREFIX}
+      - GCS_PROJECT=${GCS_PROJECT}
+      - GCS_CREDS=${GCS_CREDS}
+      - GCS_BUCKET_PREFIX=${GCS_BUCKET_PREFIX}
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
     volumes:
@@ -415,6 +439,4 @@ services:
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
       - NOAA_TOKEN=${NOAA_TOKEN}
-      - LAZO_SERVER_HOST=lazo
-      - LAZO_SERVER_PORT=50051
     cpu_shares: 10
