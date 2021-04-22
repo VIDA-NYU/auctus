@@ -47,6 +47,9 @@ function(
       kind: 'Ingress',
       metadata: {
         name: 'ingress-coordinator',
+        annotations: {
+          'kubernetes.io/ingress.class': 'nginx',
+        },
       },
       spec: {
         rules: [
@@ -73,6 +76,9 @@ function(
       kind: 'Ingress',
       metadata: {
         name: 'ingress-grafana',
+        annotations: {
+          'kubernetes.io/ingress.class': 'nginx',
+        },
       },
       spec: {
         rules: [
