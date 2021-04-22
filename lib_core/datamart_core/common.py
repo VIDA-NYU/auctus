@@ -54,19 +54,56 @@ class ThreadFormatter(logging.Formatter):
         return super(ThreadFormatter, self).formatMessage(record)
 
 
+class JsonFormatter(logging.Formatter):
+    _main_thread = threading.main_thread().ident
+
+    def __init__(self):
+        super(JsonFormatter, self).__init__(
+            fmt='%(message)s',
+            style='%',
+        )
+        self._encoder = json.JSONEncoder(default=repr)
+
+    def format(self, record):
+        record.message = record.getMessage()
+        dct = {
+            'severity': record.levelname,
+            'message': record.message,
+            'messageFmt': record.msg,
+            'args': record.args,
+        }
+        if record.thread != self._main_thread:
+            dct['thread'] = record.thread
+            dct['threadname'] = record.threadName
+        if record.exc_info:
+            if not record.exc_text:
+                record.exc_text = self.formatException(record.exc_info)
+        if record.exc_text:
+            dct['exception'] = record.exc_text
+        if record.stack_info:
+            dct['stack'] = self.formatStack(record.stack_info)
+        return self._encoder.encode(dct)
+
+
 def setup_logging(clear=True, thread=True):
+    log_json = os.environ.get('LOG_FORMAT', 'text') == 'json'
     if clear:
         logging.root.handlers.clear()
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
-
-    if thread:
-        logging.root.handlers[0].formatter = ThreadFormatter(
+    if log_json:
+        formatter = JsonFormatter()
+    elif thread:
+        formatter = ThreadFormatter(
             "%(asctime)s %(levelname)s %(name)s%(threaded)s: %(message)s",
             threadedfmt=" thread=%(thread)d",
         )
+    else:
+        formatter = logging.Formatter(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s",
+            style='%',
+        )
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logging.basicConfig(level=logging.INFO, handlers=[stream_handler])
 
     def filter_delete(record):
         if (

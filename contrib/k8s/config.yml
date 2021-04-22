@@ -6,6 +6,7 @@ metadata:
   labels:
     app: auctus
 data:
+  log.format: "json"
   elasticsearch.cluster_name: "auctus-cluster"
   elasticsearch.heap_size: "4g"
   elasticsearch_prefix: "auctusdev_"

@@ -201,6 +201,11 @@ spec:
         image: auctus_apiserver
         imagePullPolicy: IfNotPresent
         env:
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: log.format
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
         - name: ELASTICSEARCH_PREFIX
@@ -342,6 +347,11 @@ spec:
         image: auctus_coordinator
         imagePullPolicy: IfNotPresent
         env:
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: log.format
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
         - name: ELASTICSEARCH_PREFIX
@@ -471,6 +481,11 @@ spec:
         image: auctus_cache_cleaner
         imagePullPolicy: IfNotPresent
         env:
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: log.format
         - name: MAX_CACHE_BYTES
           valueFrom:
             configMapKeyRef:
@@ -515,6 +530,11 @@ spec:
         image: auctus_profiler
         imagePullPolicy: IfNotPresent
         env:
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: log.format
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
         - name: ELASTICSEARCH_PREFIX

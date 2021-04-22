@@ -44,6 +44,11 @@ spec:
         args: ["testsuite"]
         imagePullPolicy: IfNotPresent
         env:
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: log.format
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
         - name: ELASTICSEARCH_PREFIX
