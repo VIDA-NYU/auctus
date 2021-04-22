@@ -3,7 +3,7 @@ set -eux
 
 cd "$(dirname "$0")/.."
 
-CONTAINERS="frontend apiserver coordinator cache-cleaner profiler socrata zenodo worldbank uaz-indicators"
+CONTAINERS="frontend apiserver coordinator cache-cleaner profiler socrata zenodo ckan worldbank uaz-indicators"
 VERSION=$(git describe)
 
 # Build
