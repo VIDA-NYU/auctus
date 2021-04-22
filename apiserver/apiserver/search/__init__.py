@@ -594,6 +594,7 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                 },
                 size=size,
                 from_=(page - 1) * size,
+                request_timeout=30,
             )
             hits = response['hits']['hits']
 

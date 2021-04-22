@@ -247,7 +247,8 @@ def get_numerical_join_search_results(
     return es.search(
         index='columns',
         body=body,
-        size=TOP_K_SIZE
+        size=TOP_K_SIZE,
+        request_timeout=30,
     )['hits']['hits']
 
 
@@ -352,7 +353,8 @@ def get_spatial_join_search_results(
     return es.search(
         index='spatial_coverage',
         body=body,
-        size=TOP_K_SIZE
+        size=TOP_K_SIZE,
+        request_timeout=30,
     )['hits']['hits']
 
 
@@ -452,7 +454,8 @@ def get_temporal_join_search_results(
     return es.search(
         index='temporal_coverage',
         body=body,
-        size=TOP_K_SIZE
+        size=TOP_K_SIZE,
+        request_timeout=30,
     )['hits']['hits']
 
 
@@ -546,7 +549,8 @@ def get_textual_join_search_results(
     return es.search(
         index='columns',
         body=body,
-        size=TOP_K_SIZE
+        size=TOP_K_SIZE,
+        request_timeout=30,
     )['hits']['hits']
 
 
