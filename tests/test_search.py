@@ -300,6 +300,7 @@ class TestAugmentation(DataTestCase):
                 'score_mode': 'sum',
             },
         }
+        kwargs.pop('request_timeout', None)
         self.assertJson(
             kwargs,
             dict(
