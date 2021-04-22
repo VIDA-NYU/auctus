@@ -95,7 +95,7 @@ services:
       context: .
       dockerfile: apiserver/Dockerfile
     environment:
-      - DEBUG=${DEBUG}
+      - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
@@ -148,7 +148,7 @@ services:
       context: .
       dockerfile: coordinator/Dockerfile
     environment:
-      - DEBUG=${DEBUG}
+      - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
@@ -196,7 +196,7 @@ services:
       context: .
       dockerfile: profiler/Dockerfile
     environment:
-      - DEBUG=${DEBUG}
+      - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - ELASTICSEARCH_HOSTS=elasticsearch:9200

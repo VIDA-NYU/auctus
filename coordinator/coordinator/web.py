@@ -397,7 +397,9 @@ def make_app(debug=False):
 
 def main():
     setup_logging()
-    debug = os.environ.get('DEBUG') not in (None, '', 'no', 'off', 'false')
+    debug = os.environ.get('AUCTUS_DEBUG') not in (
+        None, '', 'no', 'off', 'false',
+    )
     prometheus_client.start_http_server(8000)
     logger.info(
         "Startup: coordinator %s %s",
