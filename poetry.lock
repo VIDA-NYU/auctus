@@ -229,7 +229,7 @@ url = "apiserver"
 
 [[package]]
 name = "datamart-augmentation"
-version = "0.8.1"
+version = "0.9"
 description = "Data augmentation functions for Auctus"
 category = "main"
 optional = false
@@ -237,8 +237,8 @@ python-versions = "*"
 develop = true
 
 [package.dependencies]
-datamart-materialize = "0.8.1"
-datamart-profiler = "0.8.1"
+datamart-materialize = "0.9"
+datamart-profiler = "0.9"
 numpy = "*"
 pandas = "*"
 
@@ -328,7 +328,7 @@ url = "lib_fslock"
 [[package]]
 name = "datamart-geo"
 version = "0.2.1"
-description = ""
+description = "Geographical location data"
 category = "main"
 optional = false
 python-versions = "*"
@@ -364,7 +364,7 @@ url = "discovery/isi"
 
 [[package]]
 name = "datamart-materialize"
-version = "0.8.1"
+version = "0.9"
 description = "Materialization library for Auctus"
 category = "main"
 optional = false
@@ -402,7 +402,7 @@ url = "discovery/noaa"
 
 [[package]]
 name = "datamart-profiler"
-version = "0.8.1"
+version = "0.9"
 description = "Data profiling library for Auctus"
 category = "main"
 optional = false

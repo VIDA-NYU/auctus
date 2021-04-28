@@ -16,7 +16,7 @@ req = [
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
 setup(name='datamart-materialize',
-      version='0.8.1',
+      version='0.9',
       packages=['datamart_materialize'],
       entry_points={
           'datamart_materialize': [

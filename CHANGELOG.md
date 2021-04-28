@@ -1,5 +1,5 @@
-0.9 (TBD)
-=========
+0.9 (2021-04-28)
+================
 
 Incompatible changes:
 * Socrata and Zenodo configuration is now from JSON files mounted in the countainers

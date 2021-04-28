@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "auctus"
-version = "0.8"
+version = "0.9"
 description = "Auctus system meta-package"
 
 license = "Apache-2.0"
