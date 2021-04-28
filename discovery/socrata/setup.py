@@ -8,9 +8,9 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'elasticsearch~=7.0',
     'sodapy',
-    'datamart_core',
+    'datamart-core',
 ]
-setup(name='datamart-socrata_discovery-service',
+setup(name='datamart-socrata-discovery-service',
       version='0.0',
       py_modules=['socrata_discovery'],
       install_requires=req,

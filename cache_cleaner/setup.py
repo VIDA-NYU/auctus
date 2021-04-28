@@ -7,7 +7,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 req = [
     'prometheus_client',
-    'datamart_core',
+    'datamart-core',
 ]
 setup(name='datamart-cache-cleaner-service',
       version='0.0',

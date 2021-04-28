@@ -8,9 +8,9 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'elasticsearch~=7.0',
     'requests',
-    'datamart_core',
+    'datamart-core',
 ]
-setup(name='datamart-zenodo_discovery-service',
+setup(name='datamart-zenodo-discovery-service',
       version='0.0',
       py_modules=['zenodo_discovery'],
       install_requires=req,

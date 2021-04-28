@@ -12,10 +12,10 @@ req = [
     's3fs',
     'gcsfs',
     'prometheus_client',
-    'prometheus_async',
+    'prometheus-async',
     'sentry-sdk',
 ]
-setup(name='datamart_core',
+setup(name='datamart-core',
       version='0.0',
       packages=['datamart_core'],
       install_requires=req,

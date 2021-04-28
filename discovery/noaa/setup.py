@@ -8,9 +8,9 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'elasticsearch~=7.0',
     'requests',
-    'datamart_core',
+    'datamart-core',
 ]
-setup(name='datamart-noaa_discovery-service',
+setup(name='datamart-noaa-discovery-service',
       version='0.0',
       packages=['noaa_discovery'],
       package_data={'noaa_discovery': [

@@ -9,10 +9,10 @@ req = [
     'elasticsearch~=7.0',
     'beautifulsoup4[html5lib]',
     'pandas',
-    'datamart_core',
+    'datamart-core',
     'datamart-profiler',
 ]
-setup(name='datamart-worldbank_discovery-service',
+setup(name='datamart-worldbank-discovery-service',
       version='0.0',
       py_modules=['worldbank_discovery'],
       install_requires=req,

@@ -8,7 +8,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 req = [
     'prometheus_client',
 ]
-setup(name='datamart_fslock',
+setup(name='datamart-fslock',
       version='2.1',
       packages=['datamart_fslock'],
       install_requires=req,

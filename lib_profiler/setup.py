@@ -18,7 +18,7 @@ req = [
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
-setup(name='datamart_profiler',
+setup(name='datamart-profiler',
       version='0.8.1',
       packages=['datamart_profiler'],
       install_requires=req,
