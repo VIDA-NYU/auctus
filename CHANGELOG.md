@@ -13,7 +13,7 @@ Incompatible changes:
 * Use an object storage service to store uploaded datasets (S3-compatible or GCS). You can use Minio to run locally
 
 Enhancements:
-* Added an admin interface to the coordinator container, allowing the admin to view recently uploaded datasets and remove datasets, and view errored datasets per exception type
+* Added a maintenance interface to the coordinator container, allowing the operator to view recently uploaded datasets and remove datasets, view errored datasets per exception type, and reprocess datasets
 * Added pagination to search API (non-augmentation only for now)
 * Assume admin areas have the same level, record the level to metadata
 * Strip HTML from dataset descriptions
@@ -26,10 +26,12 @@ Enhancements:
 * Lowered profiled sample size dramatically (from max 50MB to max 5MB)
 * Use openpyxl to read Excel 2003+ files, as xlrd is no longer supporting them
 * Make random sampling exact, making sure that the right number of rows is selected even with very small selection ratios
-* Add command-line support to lib_profiler
-* Implement new spatial sketch based on geohash, display as heatmap in the interface
+* Added command-line support to lib_profiler
+* Implemented new spatial sketch based on geohash, display as heatmap in the interface
 * Recognize when columns consist of filenames or URLs
 * Use a prefix for Elasticsearch indexes names, allowing to run multiple instances against one Elasticsearch cluster
+* Added a discovery plugin for CKAN, which allows getting all data from a CKAN repository (or those which match a keyword query)
+* Added logging to JSON format
 
 Bugfixes:
 * Expose Content-Disposition header via CORS, allowing browser to read downloaded file names
