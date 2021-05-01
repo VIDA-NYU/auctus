@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {ChangeEvent} from 'react';
 import {generateRandomId} from '../../utils';
 import {Map, View, Feature, Overlay} from 'ol/';
 import {toStringHDMS} from 'ol/coordinate';
@@ -17,6 +17,8 @@ import './GeoSpatialCoverageMap.css';
 import {transformCoordinates, centralizeMapToExtent} from '../spatial-utils';
 import 'ol/ol.css';
 import {scaleSequential} from 'd3-scale';
+import Grid from '@material-ui/core/Grid';
+import Slider from '@material-ui/core/Slider';
 
 // Amount of outlying data to ignore when focusing the map
 // 5% on each side
@@ -63,18 +65,23 @@ function heatColorMap(
   ]);
   const color = scaleSequential(interpolateCustomPurples).domain([
     0,
-    maxNumber / totalNumber,
+    maxNumber,
   ]);
+  if (value > maxNumber) {
+    return 'rgb(255,255,255)';
+  }
   return color(value);
 }
 
 interface GeoSpatialCoverageMapProps {
   coverage: SpatialCoverage;
   sampled: boolean;
+  datasetID: string;
 }
 interface GeoSpatialCoverageMapState {
   selectedCoordinates: undefined;
-  rightValueLegend: number;
+  maxValueLegend: number;
+  sliderValueLegend: number;
 }
 
 class GeoSpatialCoverageMap extends React.PureComponent<
@@ -93,7 +100,8 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     this.mapRef = React.createRef();
     this.state = {
       selectedCoordinates: undefined,
-      rightValueLegend: 0,
+      maxValueLegend: 0,
+      sliderValueLegend: -1,
     };
   }
 
@@ -143,9 +151,14 @@ class GeoSpatialCoverageMap extends React.PureComponent<
             [topLeft[0], topLeft[1]],
           ],
         ]);
+
+        const max =
+          this.state.sliderValueLegend === -1
+            ? maxNumber / totalNumber
+            : this.state.sliderValueLegend / 100;
         const style = new Style({
           fill: new Fill({
-            color: heatColorMap(hashNumber, maxNumber, totalNumber),
+            color: heatColorMap(hashNumber, max, totalNumber),
           }),
         });
         polygon.transform('EPSG:4326', 'EPSG:3857');
@@ -156,7 +169,11 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         feature.set('geohash4', hash);
         source.addFeature(feature);
       }
-      this.setState({rightValueLegend: 100 * (maxNumber / totalNumber)});
+      this.setState({
+        maxValueLegend: Number(
+          (100 * (maxNumber / totalNumber) + 0.1).toFixed(1)
+        ),
+      });
       minXList.sort();
       minX = minXList[Math.floor((minXList.length - 1) * OUTLIER_RATIO)];
       maxXList.sort();
@@ -224,7 +241,13 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     this.setupMap();
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps: GeoSpatialCoverageMapProps) {
+    if (prevProps.datasetID !== this.props.datasetID) {
+      this.setState({
+        maxValueLegend: 0,
+        sliderValueLegend: -1,
+      });
+    }
     // Remove all children from the map div to force re-render
     const mapNode = this.mapRef.current;
     if (mapNode) {
@@ -410,11 +433,19 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     }
   }
 
+  handleChange = (event: ChangeEvent<{}>, newValue: number | number[]) => {
+    this.setState({sliderValueLegend: newValue as number});
+  };
+
   renderLegend() {
     const marginLegend = 12;
     const legendWidth = 130 + marginLegend;
+    const legendHeight = 75;
     return (
-      <div className="legend" style={{width: legendWidth}}>
+      <div
+        className="legend"
+        style={{width: legendWidth, height: legendHeight}}
+      >
         <svg height="50" width={legendWidth} fill="black">
           <g
             transform="translate(0,28)"
@@ -454,7 +485,9 @@ class GeoSpatialCoverageMap extends React.PureComponent<
                 y="3"
                 dy="0.71em"
               >
-                {(this.state.rightValueLegend / 2).toFixed(1)}
+                {this.state.sliderValueLegend !== -1
+                  ? (this.state.sliderValueLegend / 2).toFixed(1)
+                  : (this.state.maxValueLegend / 2).toFixed(1)}
               </text>
             </g>
 
@@ -471,7 +504,9 @@ class GeoSpatialCoverageMap extends React.PureComponent<
                 y="3"
                 dy="0.71em"
               >
-                {this.state.rightValueLegend.toFixed(1)}
+                {this.state.sliderValueLegend !== -1
+                  ? this.state.sliderValueLegend
+                  : this.state.maxValueLegend}
               </text>
             </g>
           </g>
@@ -506,6 +541,30 @@ class GeoSpatialCoverageMap extends React.PureComponent<
             fill="url(#grad1)"
           />
         </svg>
+        <Grid container>
+          <Grid item xs={1} style={{marginLeft: '10px', marginRight: 0}}>
+            <span style={{fontSize: 10, fontFamily: 'sans-serif'}}>0</span>
+          </Grid>
+          <Grid item xs={8} style={{marginRight: 6}}>
+            <Slider
+              step={0.1}
+              max={this.state.maxValueLegend}
+              valueLabelDisplay="auto"
+              value={
+                this.state.sliderValueLegend !== -1
+                  ? this.state.sliderValueLegend
+                  : this.state.maxValueLegend
+              }
+              onChange={this.handleChange}
+              aria-labelledby="continuous-slider"
+            />
+          </Grid>
+          <Grid item xs={3} style={{marginLeft: 0, marginRight: '-17px'}}>
+            <span style={{fontSize: 10, fontFamily: 'sans-serif'}}>
+              {this.state.maxValueLegend}
+            </span>
+          </Grid>
+        </Grid>
       </div>
     );
   }

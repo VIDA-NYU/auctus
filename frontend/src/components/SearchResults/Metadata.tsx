@@ -28,6 +28,7 @@ export function SpatialCoverage(props: {hit: SearchResult}) {
           key={`spatial-coverage-map-${i}`}
           coverage={s}
           sampled={sampled}
+          datasetID={metadata.id}
         />
       ))}
     </>

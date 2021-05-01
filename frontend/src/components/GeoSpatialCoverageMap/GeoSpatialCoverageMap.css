@@ -44,9 +44,8 @@
 .legend{
   position:relative;
   left: 10px;
-  top:-84px;
+  top:-104px;
   z-index:10000;
-  height: 54px;
   background-color:#fdfcfb;
   border-radius: 6px;
 }
