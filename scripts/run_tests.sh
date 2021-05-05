@@ -16,9 +16,10 @@ docker-compose up -d cache-cleaner coordinator
 sleep 2
 docker-compose up -d --force-recreate profiler apiserver apilb
 
-# XXX: To run with debugger: remove 'apiserver' up here, use 'read' to block, and
-# run apiserver container like so:
-# docker run -ti --rm --name apiserver --network auctus_default -e AUCTUS_DEBUG=yes -e ELASTICSEARCH_HOSTS=elasticsearch:9200 -e AMQP_HOST=rabbitmq -e AMQP_PORT=5672 -e AMQP_USER=${AMQP_USER} -e AMQP_PASSWORD=${AMQP_PASSWORD} -e REDIS_HOST=redis -e LAZO_SERVER_HOST=lazo -e LAZO_SERVER_PORT=50051 -e NOMINATIM_URL=${NOMINATIM_URL} -e FRONTEND_URL=${FRONTEND_URL} -e API_URL=${API_URL} -e CUSTOM_FIELDS="${CUSTOM_FIELDS}" -v $(pwd)/volumes/datasets:/datasets -v $(pwd)/volumes/cache:/cache auctus_apiserver
+# XXX: To run with debugger: remove 'apiserver' or 'profiler' up here, and
+# run apiserver/profiler in another terminal like so:
+# docker run -ti --rm --name apiserver --network auctus_default -v $(pwd)/lib_geo/data:/usr/src/app/lib_geo/data -e AUCTUS_DEBUG=yes -e ELASTICSEARCH_HOSTS=elasticsearch:9200 -e ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX} -e AMQP_HOST=rabbitmq -e AMQP_PORT=5672 -e AMQP_USER=${AMQP_USER} -e AMQP_PASSWORD=${AMQP_PASSWORD} -e REDIS_HOST=redis -e S3_KEY=${S3_KEY} -e S3_SECRET=${S3_SECRET} -e S3_URL=${S3_URL} -e S3_CLIENT_URL=${S3_CLIENT_URL} -e S3_BUCKET_PREFIX=${S3_BUCKET_PREFIX} -e LAZO_SERVER_HOST=lazo -e LAZO_SERVER_PORT=50051 -e NOMINATIM_URL=${NOMINATIM_URL} -e FRONTEND_URL=${FRONTEND_URL} -e API_URL=${API_URL} -e CUSTOM_FIELDS="${CUSTOM_FIELDS}" -v $(pwd)/volumes/datasets:/datasets -v $(pwd)/volumes/cache:/cache auctus_apiserver
+# docker run -ti --rm --name profiler --network auctus_default -v $(pwd)/lib_geo/data:/usr/src/app/lib_geo/data -e AUCTUS_DEBUG=yes -e ELASTICSEARCH_HOSTS=elasticsearch:9200 -e ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX} -e AMQP_HOST=rabbitmq -e AMQP_PORT=5672 -e AMQP_USER=${AMQP_USER} -e AMQP_PASSWORD=${AMQP_PASSWORD} -e S3_KEY=${S3_KEY} -e S3_SECRET=${S3_SECRET} -e S3_URL=${S3_URL} -e S3_CLIENT_URL=${S3_CLIENT_URL} -e S3_BUCKET_PREFIX=${S3_BUCKET_PREFIX} -e LAZO_SERVER_HOST=lazo -e LAZO_SERVER_PORT=50051 -e NOMINATIM_URL=${NOMINATIM_URL} -e FRONTEND_URL=${FRONTEND_URL} -e API_URL=${API_URL} -e CUSTOM_FIELDS="${CUSTOM_FIELDS}" -v $(pwd)/volumes/datasets:/datasets -v $(pwd)/volumes/cache:/cache auctus_profiler
 #echo "START AUCTUS-APISERVER MANUALLY" && read i
 
 # Clear cache
