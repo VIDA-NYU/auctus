@@ -68,7 +68,7 @@ function heatColorMap(
     maxNumber,
   ]);
   if (value > maxNumber) {
-    return 'rgb(255,255,255)';
+    return rightColorLegend;
   }
   return color(value);
 }
