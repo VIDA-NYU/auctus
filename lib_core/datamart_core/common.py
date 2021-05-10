@@ -229,6 +229,7 @@ class PrefixedElasticsearch(object):
             self.es,
             index=self.add_prefix(index),
             query=query,
+            request_timeout=60,
             **kwargs,
         )
 
