@@ -309,8 +309,11 @@ def process_column(
     resolved = {}
 
     # Compute ranges for numerical data
-    if structural_type in (types.INTEGER, types.FLOAT) and coverage:
-        # Get numerical ranges
+    if (
+        structural_type in (types.INTEGER, types.FLOAT)
+        and (coverage or plots)
+    ):
+        # Get numerical values needed for either ranges or plot
         numerical_values = []
         for e in array:
             try:
@@ -321,8 +324,14 @@ def process_column(
                 if -3.4e38 < e < 3.4e38:  # Overflows in ES
                     numerical_values.append(e)
 
-        column_meta['mean'], column_meta['stddev'] = \
-            mean_stddev(numerical_values)
+        # Compute ranges from numerical values
+        if coverage:
+            column_meta['mean'], column_meta['stddev'] = \
+                mean_stddev(numerical_values)
+
+            ranges = get_numerical_ranges(numerical_values)
+            if ranges:
+                column_meta['coverage'] = ranges
 
         # Compute histogram from numerical values
         if plots:
@@ -343,10 +352,6 @@ def process_column(
                     for i, count in enumerate(counts)
                 ]
             }
-
-        ranges = get_numerical_ranges(numerical_values)
-        if ranges:
-            column_meta['coverage'] = ranges
 
     if types.DATE_TIME in semantic_types_dict:
         datetimes = semantic_types_dict[types.DATE_TIME]
@@ -518,7 +523,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         operation (and not for indexing).
     :param include_sample: Set to True to include a few random rows to the
         result. Useful to present to a user.
-    :param coverage: Whether to compute data ranges (using k-means)
+    :param coverage: Whether to compute data ranges
     :param plots: Whether to compute plots
     :param load_max_size: Target size of the data to be analyzed. The data will
         be randomly sampled if it is bigger. Defaults to `MAX_SIZE`, currently
