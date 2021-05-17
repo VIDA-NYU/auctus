@@ -14,8 +14,8 @@ spec:
   - protocol: TCP
     port: 7000
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: test-discoverer
   labels:
@@ -23,18 +23,12 @@ metadata:
     what: test-discoverer
     test: "true"
 spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: auctus
-      what: test-discoverer
   template:
     metadata:
       labels:
         app: auctus
         what: test-discoverer
+        test: "true"
     spec:
       securityContext:
         runAsNonRoot: true
