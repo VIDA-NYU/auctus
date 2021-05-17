@@ -154,9 +154,9 @@ frontend:
 k8s_configs:
   stage: test
   before_script:
-    - curl -Lo /tmp/kubeval.tar.gz https://github.com/instrumenta/kubeval/releases/download/0.15.0/kubeval-linux-386.tar.gz && tar -xf /tmp/kubeval.tar.gz -C /usr/local/bin kubeval && rm /tmp/kubeval.tar.gz
+    - curl -Lo /tmp/kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.4.7/kubeconform-linux-amd64.tar.gz && tar -xf /tmp/kubeconform.tar.gz -C /usr/local/bin && rm /tmp/kubeconform.tar.gz
   script:
-    - kubeval --strict contrib/k8s/*.yml
+    - kubeconform --kubernetes-version 1.19.0 --strict contrib/k8s/*.yml
 
 pages-test:
   stage: test
