@@ -60,7 +60,7 @@ class Discoverer(object):
 
         # Start profiling process
         try:
-            await self._call(self.main_loop)
+            await self._call(self.discover_datasets)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             logger.exception("Exception in discoverer %s", self.identifier)
@@ -78,7 +78,7 @@ class Discoverer(object):
                 *args,
             )
 
-    def main_loop(self):
+    def discover_datasets(self):
         pass
 
     async def _a_record_dataset(self, materialize, metadata,
@@ -163,5 +163,5 @@ class AsyncDiscoverer(Discoverer):
     """
     _async = True
 
-    async def main_loop(self):
+    async def discover_datasets(self):
         pass

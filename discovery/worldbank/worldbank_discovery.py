@@ -37,10 +37,7 @@ def is_year(name):
 
 
 class WorldBankDiscoverer(Discoverer):
-    def main_loop(self):
-        self.process_list()
-
-    def process_list(self):
+    def discover_datasets(self):
         # Scrape the page with the list
         logger.info("Getting list...")
         list_page = requests.get(

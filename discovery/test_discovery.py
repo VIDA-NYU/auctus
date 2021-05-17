@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class TestDiscoverer(Discoverer):
     """Discovery plugin for the test suite.
     """
-    def main_loop(self):
+    def discover_datasets(self):
         # Put this one on disk
         with open('geo.csv', 'rb') as src:
             with self.write_to_shared_storage('geo') as dst:

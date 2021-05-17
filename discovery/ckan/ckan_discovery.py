@@ -28,7 +28,7 @@ class CkanDiscoverer(Discoverer):
         logger.info("Loaded %d domains from ckan.json: %d",
                     len(self.domains))
 
-    def main_loop(self):
+    def discover_datasets(self):
         for domain in self.domains:
             try:
                 self.get_datasets(domain)

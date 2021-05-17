@@ -22,7 +22,7 @@ class UazIndicatorsDiscoverer(Discoverer):
     """
     NAMESPACE = uuid.UUID('d20b45e8-b0d5-4b17-a6c4-e8399afc2afa')  # Random
 
-    def main_loop(self):
+    def discover_datasets(self):
         # Get current E-Tag
         try:
             info = self.elasticsearch.get(

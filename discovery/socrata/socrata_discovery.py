@@ -32,7 +32,7 @@ class SocrataDiscoverer(Discoverer):
 
         self.last_update = {}
 
-    def main_loop(self):
+    def discover_datasets(self):
         for domain in self.domains:
             try:
                 self.process_domain(domain)

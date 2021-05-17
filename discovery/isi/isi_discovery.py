@@ -23,7 +23,7 @@ class IsiDiscoverer(Discoverer):
         super(IsiDiscoverer, self).__init__(*args, **kwargs)
         self.isi_endpoint = os.environ['ISI_DATAMART_URL'].rstrip('/')
 
-    def main_loop(self):
+    def discover_datasets(self):
         try:
             self.get_datasets()
         except Exception as e:

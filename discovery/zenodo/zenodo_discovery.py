@@ -28,7 +28,7 @@ class ZenodoDiscoverer(Discoverer):
         logger.info("Loaded keyword from zenodo.json: %s",
                     self.keyword_query)
 
-    def main_loop(self):
+    def discover_datasets(self):
         seen = set()
         url = (
             'https://zenodo.org/api/records/'

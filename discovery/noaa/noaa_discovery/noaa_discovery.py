@@ -100,7 +100,7 @@ class NoaaDiscoverer(Discoverer):
                 city['longitude'] = float(city['longitude'])
         logger.info("Loaded %d cities", len(self.CITIES))
 
-    def main_loop(self):
+    def discover_datasets(self):
         for dataset in self.DATASETS:
             for datatype in self.DATATYPES:
                 logger.info("Processing dataset %s (%s), datatype %s "
