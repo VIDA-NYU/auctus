@@ -1,13 +1,11 @@
 import asyncio
 import codecs
-from datetime import datetime, timedelta
 import elasticsearch
 import logging
 import pandas
 import requests
 import sqlite3
 import tempfile
-import time
 import uuid
 
 from datamart_core import Discoverer
@@ -22,24 +20,9 @@ class UazIndicatorsDiscoverer(Discoverer):
 
     https://ml4ai.github.io/delphi/delphi_database.html
     """
-    CHECK_INTERVAL = timedelta(days=1)
     NAMESPACE = uuid.UUID('d20b45e8-b0d5-4b17-a6c4-e8399afc2afa')  # Random
 
     def main_loop(self):
-        while True:
-            now = datetime.utcnow()
-
-            try:
-                self.get_data()
-            except Exception:
-                logger.exception("Error getting datasets")
-
-            sleep_until = now + self.CHECK_INTERVAL
-            logger.info("Sleeping until %s", sleep_until.isoformat())
-            while datetime.utcnow() < sleep_until:
-                time.sleep((sleep_until - datetime.utcnow()).total_seconds())
-
-    def get_data(self):
         # Get current E-Tag
         try:
             info = self.elasticsearch.get(
@@ -197,5 +180,6 @@ class UazIndicatorsDiscoverer(Discoverer):
 
 if __name__ == '__main__':
     setup_logging()
-    UazIndicatorsDiscoverer('datamart.uaz-indicators')
-    asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_until_complete(
+        UazIndicatorsDiscoverer('datamart.uaz-indicators').run()
+    )

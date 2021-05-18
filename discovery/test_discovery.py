@@ -228,5 +228,7 @@ if __name__ == '__main__':
     server_thread.setDaemon(True)
     server_thread.start()
 
-    TestDiscoverer('datamart.test')
+    fut = asyncio.ensure_future(
+        TestDiscoverer('datamart.test').run()
+    )
     asyncio.get_event_loop().run_forever()

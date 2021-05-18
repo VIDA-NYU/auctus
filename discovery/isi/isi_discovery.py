@@ -1,7 +1,6 @@
 import asyncio
 import codecs
 import contextlib
-from datetime import datetime, timedelta
 import elasticsearch
 import hashlib
 import logging
@@ -11,7 +10,6 @@ import requests
 import sentry_sdk
 import tarfile
 import tempfile
-import time
 
 from datamart_core import Discoverer
 from datamart_core.common import setup_logging
@@ -21,26 +19,16 @@ logger = logging.getLogger(__name__)
 
 
 class IsiDiscoverer(Discoverer):
-    CHECK_INTERVAL = timedelta(days=1)
-
     def __init__(self, *args, **kwargs):
         super(IsiDiscoverer, self).__init__(*args, **kwargs)
         self.isi_endpoint = os.environ['ISI_DATAMART_URL'].rstrip('/')
 
     def main_loop(self):
-        while True:
-            now = datetime.utcnow()
-
-            try:
-                self.get_datasets()
-            except Exception as e:
-                sentry_sdk.capture_exception(e)
-                logger.exception("Error getting datasets")
-
-            sleep_until = now + self.CHECK_INTERVAL
-            logger.info("Sleeping until %s", sleep_until.isoformat())
-            while datetime.utcnow() < sleep_until:
-                time.sleep((sleep_until - datetime.utcnow()).total_seconds())
+        try:
+            self.get_datasets()
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            logger.exception("Error getting datasets")
 
     def get_datasets(self):
         # Get previous SHA-1
@@ -220,5 +208,6 @@ class IsiDiscoverer(Discoverer):
 
 if __name__ == '__main__':
     setup_logging()
-    IsiDiscoverer('datamart.isi')
-    asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_until_complete(
+        IsiDiscoverer('datamart.isi').run()
+    )

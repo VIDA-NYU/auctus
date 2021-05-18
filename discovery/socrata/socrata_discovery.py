@@ -1,12 +1,10 @@
 import asyncio
-from datetime import datetime, timedelta
 import elasticsearch
 import json
 import logging
 import re
 import sentry_sdk
 import sodapy
-import time
 
 from datamart_core import Discoverer
 from datamart_core.common import setup_logging
@@ -24,8 +22,6 @@ def encode_domain(url):
 
 
 class SocrataDiscoverer(Discoverer):
-    CHECK_INTERVAL = timedelta(days=1)
-
     def __init__(self, *args, **kwargs):
         super(SocrataDiscoverer, self).__init__(*args, **kwargs)
 
@@ -37,25 +33,12 @@ class SocrataDiscoverer(Discoverer):
         self.last_update = {}
 
     def main_loop(self):
-        while True:
-            sleep_until = None
-            now = datetime.utcnow()
-            for domain in self.domains:
-                last_update = self.last_update.get(domain['url'])
-                interval = domain.get('check_interval', self.CHECK_INTERVAL)
-                if last_update is None or last_update + interval < now:
-                    try:
-                        self.process_domain(domain)
-                    except Exception as e:
-                        sentry_sdk.capture_exception(e)
-                        logger.exception("Error processing %s", domain['url'])
-                    self.last_update[domain['url']] = now
-                    if sleep_until is None or sleep_until > now + interval:
-                        sleep_until = now + interval
-
-            logger.info("Sleeping until %s", sleep_until.isoformat())
-            while datetime.utcnow() < sleep_until:
-                time.sleep((sleep_until - datetime.utcnow()).total_seconds())
+        for domain in self.domains:
+            try:
+                self.process_domain(domain)
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
+                logger.exception("Error processing %s", domain['url'])
 
     def process_domain(self, domain):
         logger.info("Processing %s...", domain['url'])
@@ -180,5 +163,6 @@ class SocrataDiscoverer(Discoverer):
 
 if __name__ == '__main__':
     setup_logging()
-    SocrataDiscoverer('datamart.socrata')
-    asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_until_complete(
+        SocrataDiscoverer('datamart.socrata').run()
+    )

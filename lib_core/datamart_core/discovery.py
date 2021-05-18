@@ -5,9 +5,11 @@ from datetime import datetime
 import lazo_index_service
 import logging
 import os
+import sentry_sdk
+import sys
 import uuid
 
-from .common import PrefixedElasticsearch, block_run, log_future, json2msg, \
+from .common import PrefixedElasticsearch, block_run, json2msg, \
     encode_dataset_id, delete_dataset_from_index, strip_html
 from .objectstore import get_object_store
 
@@ -23,7 +25,6 @@ class Discoverer(object):
     def __init__(self, identifier):
         self.identifier = identifier
         self.loop = asyncio.get_event_loop()
-        log_future(self.loop.create_task(self._run()), logger)
 
     async def _amqp_setup(self):
         # Setup the profiling exchange
@@ -39,7 +40,7 @@ class Discoverer(object):
         )
         await profile_queue.bind(self.profile_exchange)
 
-    async def _run(self):
+    async def run(self):
         self.elasticsearch = PrefixedElasticsearch()
         self.lazo_client = lazo_index_service.LazoIndexClient(
             host=os.environ['LAZO_SERVER_HOST'],
@@ -58,7 +59,12 @@ class Discoverer(object):
         await self._amqp_setup()
 
         # Start profiling process
-        log_future(self._call(self.main_loop), logger)
+        try:
+            await self._call(self.main_loop)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            logger.exception("Exception in discoverer %s", self.identifier)
+            sys.exit(1)
 
     def _call(self, method, *args):
         if self._async:
