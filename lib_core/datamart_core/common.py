@@ -71,6 +71,7 @@ class JsonFormatter(logging.Formatter):
             'message': record.message,
             'messageFmt': record.msg,
             'args': record.args,
+            'name': record.name,
         }
         if record.thread != self._main_thread:
             dct['thread'] = record.thread
