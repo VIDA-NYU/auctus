@@ -123,6 +123,16 @@ def setup_logging(clear=True, thread=True):
     logging.getLogger('elasticsearch').setLevel(logging.WARNING)
     logging.getLogger('elasticsearch').addFilter(filter_delete)
 
+    def filter_sodapy_throttle(record):
+        if record.msg == (
+            "Requests made without an app_token will be subject to strict "
+            + "throttling limits."
+        ):
+            return False
+        return True
+
+    logging.root.addFilter(filter_sodapy_throttle)
+
     # Enable Sentry
     if os.environ.get('SENTRY_DSN'):
         from sentry_sdk.integrations.tornado import TornadoIntegration
