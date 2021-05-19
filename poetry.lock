@@ -327,7 +327,7 @@ url = "lib_fslock"
 
 [[package]]
 name = "datamart-geo"
-version = "0.2.3"
+version = "0.3"
 description = "Geographical location data"
 category = "main"
 optional = false
@@ -410,7 +410,7 @@ python-versions = "*"
 develop = true
 
 [package.dependencies]
-datamart-geo = "0.2.3"
+datamart-geo = ">=0.2.3,<0.4"
 numpy = "*"
 pandas = "*"
 prometheus_client = "*"
