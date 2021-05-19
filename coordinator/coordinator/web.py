@@ -224,7 +224,7 @@ class QuerySearch(BaseHandler):
         try:
             body = json.loads(body)
             hits = self.application.elasticsearch.search(
-                index='datasets',
+                index='datasets,pending',
                 body=body,
             )['hits']['hits']
         except Exception as e:
