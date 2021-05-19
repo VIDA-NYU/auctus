@@ -36,14 +36,18 @@ function search(text) {
     if(req.status == 200 && req.response.error) {
       results.innerHTML = 'Error: ' + req.response.error;
     } else if(req.status == 200) {
-      for(var i = 0; i < req.response.hits.length; ++i) {
-        var hit = req.response.hits[i];
-        var elem = document.createElement('li');
-        var link = FRONTEND_URL
-          + '/?q='
-          + encodeURIComponent(JSON.stringify({query: hit._id}));
-        elem.innerHTML = '<a href="' + link + '" target="_blank">' + hit._id + '</a>';
-        results.appendChild(elem);
+      if(req.response.hits.length == 0) {
+        results.innerHTML = 'No results';
+      } else {
+        for(var i = 0; i < req.response.hits.length; ++i) {
+          var hit = req.response.hits[i];
+          var elem = document.createElement('li');
+          var link = FRONTEND_URL
+            + '/?q='
+            + encodeURIComponent(JSON.stringify({query: hit._id}));
+          elem.innerHTML = '<a href="' + link + '" target="_blank">' + hit._id + '</a>';
+          results.appendChild(elem);
+        }
       }
     } else {
       alert('Query error');
