@@ -47,7 +47,7 @@ services:
       - 127.0.0.1:8011:5672  # AMQP
       - 127.0.0.1:8012:15692  # Metrics
   redis:
-    image: redis:6.0
+    image: redis:6.2
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     cpu_shares: 100
     ports:
