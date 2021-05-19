@@ -1,6 +1,6 @@
 import asyncio
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime
 from io import TextIOWrapper
 import logging
 import os
@@ -85,8 +85,6 @@ class NoaaDiscoverer(Discoverer):
 
     DELAY = 0.5
 
-    CHECK_INTERVAL = timedelta(hours=12)
-
     def __init__(self, *args, **kwargs):
         super(NoaaDiscoverer, self).__init__(*args, **kwargs)
 
@@ -102,28 +100,23 @@ class NoaaDiscoverer(Discoverer):
                 city['longitude'] = float(city['longitude'])
         logger.info("Loaded %d cities", len(self.CITIES))
 
-    def main_loop(self):
-        while True:
-            for dataset in self.DATASETS:
-                for datatype in self.DATATYPES:
-                    logger.info("Processing dataset %s (%s), datatype %s "
-                                "(%s)...",
-                                dataset, self.DATASET_NAMES[dataset],
-                                datatype, self.DATATYPE_NAMES[datatype])
-                    for city_dict in self.CITIES:
-                        logger.info("Getting city %s (%s)...",
-                                    city_dict['name'], city_dict['id'])
-                        try:
-                            self.discover_data(dataset, datatype, city_dict)
-                        except Exception:
-                            logger.exception("Error handling dataset=%r "
-                                             "datatype=%r city_id=%r",
-                                             dataset, datatype,
-                                             city_dict['id'])
-
-            sleep_until = datetime.utcnow() + self.CHECK_INTERVAL
-            while datetime.utcnow() < sleep_until:
-                time.sleep((sleep_until - datetime.utcnow()).total_seconds())
+    def discover_datasets(self):
+        for dataset in self.DATASETS:
+            for datatype in self.DATATYPES:
+                logger.info("Processing dataset %s (%s), datatype %s "
+                            "(%s)...",
+                            dataset, self.DATASET_NAMES[dataset],
+                            datatype, self.DATATYPE_NAMES[datatype])
+                for city_dict in self.CITIES:
+                    logger.info("Getting city %s (%s)...",
+                                city_dict['name'], city_dict['id'])
+                    try:
+                        self.discover_data(dataset, datatype, city_dict)
+                    except Exception:
+                        logger.exception("Error handling dataset=%r "
+                                         "datatype=%r city_id=%r",
+                                         dataset, datatype,
+                                         city_dict['id'])
 
     def discover_data(self, dataset, datatype, city_dict):
         # Find available range
@@ -174,5 +167,6 @@ class NoaaDiscoverer(Discoverer):
 
 if __name__ == '__main__':
     setup_logging()
-    NoaaDiscoverer('datamart.noaa')
-    asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_until_complete(
+        NoaaDiscoverer('datamart.noaa').run()
+    )

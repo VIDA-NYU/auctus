@@ -1,11 +1,9 @@
 import asyncio
-from datetime import datetime, timedelta
 import elasticsearch
 import json
 import logging
 import requests
 import sentry_sdk
-import time
 from urllib.parse import urlencode
 
 from datamart_core import Discoverer
@@ -16,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class CkanDiscoverer(Discoverer):
-    CHECK_INTERVAL = timedelta(days=1)
     EXTENSIONS = ('.csv', '.xls', '.xlsx')
     FILE_TYPES = ['CSV', 'XLS', 'XLSX']
 
@@ -31,21 +28,13 @@ class CkanDiscoverer(Discoverer):
         logger.info("Loaded %d domains from ckan.json: %d",
                     len(self.domains))
 
-    def main_loop(self):
-        while True:
-            now = datetime.utcnow()
-
-            for domain in self.domains:
-                try:
-                    self.get_datasets(domain)
-                except Exception as e:
-                    sentry_sdk.capture_exception(e)
-                    logger.exception("Error processing %s", domain['url'])
-
-            sleep_until = now + self.CHECK_INTERVAL
-            logger.info("Sleeping until %s", sleep_until.isoformat())
-            while datetime.utcnow() < sleep_until:
-                time.sleep((sleep_until - datetime.utcnow()).total_seconds())
+    def discover_datasets(self):
+        for domain in self.domains:
+            try:
+                self.get_datasets(domain)
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
+                logger.exception("Error processing %s", domain['url'])
 
     def get_datasets(self, domain):
         PAGE_SIZE = 100
@@ -206,5 +195,6 @@ class CkanDiscoverer(Discoverer):
 
 if __name__ == '__main__':
     setup_logging()
-    CkanDiscoverer('datamart.ckan')
-    asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_until_complete(
+        CkanDiscoverer('datamart.ckan').run()
+    )

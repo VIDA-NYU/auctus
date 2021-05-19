@@ -1,7 +1,6 @@
 import asyncio
 import codecs
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
 import elasticsearch
 import hashlib
 import logging
@@ -9,7 +8,6 @@ import pandas
 import re
 import requests
 import tempfile
-import time
 import urllib.parse
 import zipfile
 
@@ -39,20 +37,7 @@ def is_year(name):
 
 
 class WorldBankDiscoverer(Discoverer):
-    CHECK_INTERVAL = timedelta(days=1)
-
-    def main_loop(self):
-        while True:
-            now = datetime.utcnow()
-
-            self.process_list()
-
-            sleep_until = now + self.CHECK_INTERVAL
-            logger.info("Sleeping until %s", sleep_until.isoformat())
-            while datetime.utcnow() < sleep_until:
-                time.sleep((sleep_until - datetime.utcnow()).total_seconds())
-
-    def process_list(self):
+    def discover_datasets(self):
         # Scrape the page with the list
         logger.info("Getting list...")
         list_page = requests.get(
@@ -247,5 +232,6 @@ class WorldBankDiscoverer(Discoverer):
 
 if __name__ == '__main__':
     setup_logging()
-    WorldBankDiscoverer('datamart.worldbank')
-    asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_until_complete(
+        WorldBankDiscoverer('datamart.worldbank').run()
+    )

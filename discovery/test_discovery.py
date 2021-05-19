@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class TestDiscoverer(Discoverer):
     """Discovery plugin for the test suite.
     """
-    def main_loop(self):
+    def discover_datasets(self):
         # Put this one on disk
         with open('geo.csv', 'rb') as src:
             with self.write_to_shared_storage('geo') as dst:
@@ -228,5 +228,7 @@ if __name__ == '__main__':
     server_thread.setDaemon(True)
     server_thread.start()
 
-    TestDiscoverer('datamart.test')
+    fut = asyncio.ensure_future(
+        TestDiscoverer('datamart.test').run()
+    )
     asyncio.get_event_loop().run_forever()

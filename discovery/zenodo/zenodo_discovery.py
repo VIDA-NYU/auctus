@@ -1,10 +1,8 @@
 import asyncio
-from datetime import datetime, timedelta
 import elasticsearch
 import json
 import logging
 import requests
-import sentry_sdk
 import time
 from urllib.parse import urlencode
 
@@ -16,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class ZenodoDiscoverer(Discoverer):
-    CHECK_INTERVAL = timedelta(days=1)
     EXTENSIONS = ('.xls', '.xlsx', '.csv', '.sav')
     FILE_TYPES = ['csv', 'xlsx', 'sav']
 
@@ -31,22 +28,7 @@ class ZenodoDiscoverer(Discoverer):
         logger.info("Loaded keyword from zenodo.json: %s",
                     self.keyword_query)
 
-    def main_loop(self):
-        while True:
-            now = datetime.utcnow()
-
-            try:
-                self.get_datasets()
-            except Exception as e:
-                sentry_sdk.capture_exception(e)
-                logger.exception("Error getting datasets")
-
-            sleep_until = now + self.CHECK_INTERVAL
-            logger.info("Sleeping until %s", sleep_until.isoformat())
-            while datetime.utcnow() < sleep_until:
-                time.sleep((sleep_until - datetime.utcnow()).total_seconds())
-
-    def get_datasets(self):
+    def discover_datasets(self):
         seen = set()
         url = (
             'https://zenodo.org/api/records/'
@@ -182,5 +164,6 @@ class ZenodoDiscoverer(Discoverer):
 
 if __name__ == '__main__':
     setup_logging()
-    ZenodoDiscoverer('datamart.zenodo')
-    asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_until_complete(
+        ZenodoDiscoverer('datamart.zenodo').run()
+    )
