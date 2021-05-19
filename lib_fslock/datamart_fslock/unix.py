@@ -45,7 +45,7 @@ def timeout_syscall(seconds):
             try:
                 socket.connect(...)
             except InterruptedError:
-                raise ValueError("This host does not respond in time")
+                raise ValueError("This host did not respond in time")
     """
     def timeout_handler(signum, frame):
         raise InterruptedError
