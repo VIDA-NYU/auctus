@@ -26,6 +26,13 @@ def main():
     packages = []
 
     for package in lockfile['package']:
+        if package['category'] == 'dev':
+            continue
+        elif package['category'] != 'main':
+            raise ValueError(
+                "Unknown package category %s" % package['category']
+            )
+
         if 'source' in package:
             if package['source']['type'] == 'git':
                 packages.append('git+%s@%s' % (
