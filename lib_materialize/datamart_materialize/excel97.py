@@ -2,6 +2,7 @@ import csv
 import xlrd
 import xlrd.sheet
 
+from .common import UnsupportedConversion
 from .utils import SimpleConverter
 
 
@@ -10,7 +11,9 @@ def xls_to_csv(source_filename, dest_fileobj):
         datemode = workbook.datemode
         sheets = workbook.sheets()
         if len(sheets) != 1:
-            raise ValueError("Excel workbook has %d sheets" % len(sheets))
+            raise UnsupportedConversion(
+                "Excel workbook has %d sheets" % len(sheets)
+            )
         sheet, = sheets
 
         writer = csv.writer(dest_fileobj)

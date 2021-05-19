@@ -3,6 +3,10 @@ import csv
 from datamart_materialize.utils import SimpleConverter
 
 
+class UnsupportedConversion(ValueError):
+    """This conversion cannot work."""
+
+
 def skip_rows(source_filename, dest_fileobj, nb_rows):
     with open(source_filename, 'r') as src_fp:
         src = iter(csv.reader(src_fp))
