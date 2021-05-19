@@ -178,6 +178,13 @@ def load_data(data, load_max_size=None):
     metadata = {}
 
     if isinstance(data, pandas.DataFrame):
+        if load_max_size is not None:
+            warnings.warn(
+                "load_max_size is set but ignored since the data was already "
+                + "loaded and provided as a DataFrame",
+                UserWarning,
+            )
+
         # Turn indexes into regular columns
         if (
             data.index.dtype != numpy.int64
