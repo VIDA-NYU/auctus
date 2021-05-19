@@ -2964,10 +2964,10 @@ class TestLocation(DatamartTest):
                         'id': 3175395,
                         'name': 'Italian Republic',
                         'boundingbox': [
-                            lambda n: round(n, 4) == 6.6027,
-                            lambda n: round(n, 4) == 18.5174,
-                            lambda n: round(n, 4) == 35.4892,
-                            lambda n: round(n, 4) == 47.0852,
+                            lambda n: round(n, 4) == 6.6273,
+                            lambda n: round(n, 4) == 18.7845,
+                            lambda n: round(n, 4) == 35.2890,
+                            lambda n: round(n, 4) == 47.0921,
                         ],
                     }
                 ]
