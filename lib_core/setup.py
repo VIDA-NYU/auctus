@@ -11,6 +11,7 @@ req = [
     'lazo-index-service==0.7.0',
     's3fs',
     'gcsfs',
+    'advocate>=1.0,<2',
     'prometheus_client',
     'prometheus-async',
     'sentry-sdk',
