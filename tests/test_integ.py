@@ -277,14 +277,14 @@ class TestProfiler(DatamartTest):
                         ],
                         'materialize': {
                             'identifier': 'datamart.test',
-                            'direct_url': 'http://test-discoverer:7000' +
+                            'direct_url': 'http://test-discoverer:8080' +
                                           '/empty.csv',
                             'date': lambda d: isinstance(d, str),
                         },
                     },
                     'materialize': {
                         'identifier': 'datamart.test',
-                        'direct_url': 'http://test-discoverer:7000/empty.csv',
+                        'direct_url': 'http://test-discoverer:8080/empty.csv',
                         'date': lambda d: isinstance(d, str),
                     },
                 },
@@ -305,7 +305,7 @@ class TestProfiler(DatamartTest):
                         'source': 'remi',
                         'materialize': {
                             'identifier': 'datamart.test',
-                            'direct_url': 'http://test-discoverer:7000/invalid.bin',
+                            'direct_url': 'http://test-discoverer:8080/invalid.bin',
                             'date': lambda d: isinstance(d, str),
                         },
                     },
@@ -313,7 +313,7 @@ class TestProfiler(DatamartTest):
                     'source': 'remi',
                     'materialize': {
                         'identifier': 'datamart.test',
-                        'direct_url': 'http://test-discoverer:7000/invalid.bin',
+                        'direct_url': 'http://test-discoverer:8080/invalid.bin',
                         'date': lambda d: isinstance(d, str),
                     },
                 },
@@ -1152,7 +1152,7 @@ class TestDownload(DatamartTest):
                                      allow_redirects=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
-                         'http://test-discoverer:7000/basic.csv')
+                         'http://test-discoverer:8080/basic.csv')
 
         response = self.datamart_get('/download/' + 'datamart.test.basic',
                                      # explicit format
@@ -1160,7 +1160,7 @@ class TestDownload(DatamartTest):
                                      allow_redirects=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
-                         'http://test-discoverer:7000/basic.csv')
+                         'http://test-discoverer:8080/basic.csv')
 
         response = self.datamart_get('/download/' + 'datamart.test.basic',
                                      params={'format': 'd3m'},
@@ -1251,7 +1251,7 @@ class TestDownload(DatamartTest):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
-                         'http://test-discoverer:7000/basic.csv')
+                         'http://test-discoverer:8080/basic.csv')
 
         response = self.datamart_post(
             '/download', allow_redirects=False,
@@ -1264,7 +1264,7 @@ class TestDownload(DatamartTest):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'],
-                         'http://test-discoverer:7000/basic.csv')
+                         'http://test-discoverer:8080/basic.csv')
 
         # Geo dataset, materialized via /datasets storage
         geo_meta = self.datamart_get(
@@ -2474,7 +2474,7 @@ class TestUpload(DatamartTest):
         response = self.datamart_post(
             '/upload',
             data={
-                'address': 'http://test-discoverer:7000/basic.csv',
+                'address': 'http://test-discoverer:8080/basic.csv',
                 'name': 'basic reupload',
                 'description': "sent through upload endpoint",
                 'specialId': 12,
@@ -2504,13 +2504,13 @@ class TestUpload(DatamartTest):
                             'source': 'upload',
                             'materialize': {
                                 'identifier': 'datamart.url',
-                                'direct_url': 'http://test-discoverer:7000/basic.csv',
+                                'direct_url': 'http://test-discoverer:8080/basic.csv',
                                 'date': lambda d: isinstance(d, str),
                             },
                         },
                         'materialize': {
                             'identifier': 'datamart.url',
-                            'direct_url': 'http://test-discoverer:7000/basic.csv',
+                            'direct_url': 'http://test-discoverer:8080/basic.csv',
                             'date': lambda d: isinstance(d, str),
                         },
                     },
@@ -3046,7 +3046,7 @@ basic_metadata = {
         }
     ],
     "materialize": {
-        "direct_url": "http://test-discoverer:7000/basic.csv",
+        "direct_url": "http://test-discoverer:8080/basic.csv",
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str)
     },
@@ -3640,7 +3640,7 @@ geo_wkt_metadata = {
     "materialize": {
         "identifier": "datamart.test",
         "date": lambda d: isinstance(d, str),
-        "direct_url": "http://test-discoverer:7000/geo_wkt.csv",
+        "direct_url": "http://test-discoverer:8080/geo_wkt.csv",
     },
     "sample": "id,coords,height\r\nplace05,POINT (-74.001501 40.722948),42.9" +
               "04820\r\nplace06,POINT (-73.996996 40.735108),48.345170\r\npl" +
@@ -3860,7 +3860,7 @@ hourly_metadata = {
         },
     ],
     'materialize': {
-        'direct_url': 'http://test-discoverer:7000/hourly.csv',
+        'direct_url': 'http://test-discoverer:8080/hourly.csv',
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
     },
@@ -3938,7 +3938,7 @@ dates_pivoted_metadata = {
         },
     ],
     'materialize': {
-        'direct_url': 'http://test-discoverer:7000/dates_pivoted.csv',
+        'direct_url': 'http://test-discoverer:8080/dates_pivoted.csv',
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
         'convert': [
@@ -4019,7 +4019,7 @@ years_pivoted_metadata = {
         },
     ],
     'materialize': {
-        'direct_url': 'http://test-discoverer:7000/years_pivoted.csv',
+        'direct_url': 'http://test-discoverer:8080/years_pivoted.csv',
         'identifier': 'datamart.test',
         'date': lambda d: isinstance(d, str),
         'convert': [

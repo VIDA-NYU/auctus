@@ -32,7 +32,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/geo_wkt.csv'),
+            dict(direct_url='http://test-discoverer:8080/geo_wkt.csv'),
             {
                 'name': 'geo_wkt',
                 'description': "Simple CSV in <a href=\"https://en.wikipedia.o"
@@ -75,7 +75,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/empty.csv'),
+            dict(direct_url='http://test-discoverer:8080/empty.csv'),
             {
                 # Omit name, should be set to 'empty' automatically
                 'description': "A CSV with no rows to test alternate index",
@@ -100,7 +100,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/hourly.csv'),
+            dict(direct_url='http://test-discoverer:8080/hourly.csv'),
             {
                 # Omit name, should be set to 'hourly' automatically
                 'description': "Temporal dataset with hourly resolution",
@@ -111,7 +111,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/invalid.bin'),
+            dict(direct_url='http://test-discoverer:8080/invalid.bin'),
             {
                 'name': 'Invalid, binary',
                 'description': "Some binary data that can't be parsed",
@@ -122,7 +122,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/dates_pivoted.csv'),
+            dict(direct_url='http://test-discoverer:8080/dates_pivoted.csv'),
             {
                 'name': 'dates pivoted',
                 'description': "Temporal dataset but in columns",
@@ -133,7 +133,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/years_pivoted.csv'),
+            dict(direct_url='http://test-discoverer:8080/years_pivoted.csv'),
             {
                 'name': 'years pivoted',
                 'description': "Temporal dataset but in columns",
@@ -144,7 +144,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/spss.sav'),
+            dict(direct_url='http://test-discoverer:8080/spss.sav'),
             {
                 # Omit name, should be set to 'spss' automatically
                 'description': "SPSS format test",
@@ -156,7 +156,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/excel.xlsx'),
+            dict(direct_url='http://test-discoverer:8080/excel.xlsx'),
             {
                 # Omit name, should be set to 'excel' automatically
                 'description': "Excel format 2007 test",
@@ -168,7 +168,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/excel97.xls'),
+            dict(direct_url='http://test-discoverer:8080/excel97.xls'),
             {
                 # Omit name, should be set to 'excel97' automatically
                 'description': "Excel format 1997 test",
@@ -180,7 +180,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/stata114.dta'),
+            dict(direct_url='http://test-discoverer:8080/stata114.dta'),
             {
                 # Omit name, should be set to 'stata114' automatically
                 'description': "Stata format 114 test",
@@ -192,7 +192,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/stata118.dta'),
+            dict(direct_url='http://test-discoverer:8080/stata118.dta'),
             {
                 # Omit name, should be set to 'stata118' automatically
                 'description': "Stata format 118 test",
@@ -204,7 +204,7 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
-            dict(direct_url='http://test-discoverer:7000/basic.csv'),
+            dict(direct_url='http://test-discoverer:8080/basic.csv'),
             {
                 'name': "basic",
                 'description': "This is a very simple CSV with people",
@@ -215,7 +215,7 @@ class TestDiscoverer(Discoverer):
 
 
 def server():
-    with HTTPServer(('0.0.0.0', 7000), SimpleHTTPRequestHandler) as httpd:
+    with HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler) as httpd:
         httpd.serve_forever()
 
 
