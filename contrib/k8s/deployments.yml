@@ -278,6 +278,11 @@ spec:
             configMapKeyRef:
               name: config
               key: nominatim_url
+        - name: AUCTUS_REQUEST_WHITELIST
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: request_whitelist
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
@@ -605,6 +610,11 @@ spec:
             configMapKeyRef:
               name: config
               key: nominatim_url
+        - name: AUCTUS_REQUEST_WHITELIST
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: request_whitelist
         volumeMounts:
         - mountPath: /cache
           name: cache
