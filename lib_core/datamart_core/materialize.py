@@ -1,3 +1,4 @@
+import advocate
 import contextlib
 import csv
 import datamart_materialize
@@ -145,13 +146,15 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
 
             # Otherwise, materialize the CSV
             logger.info("Materializing CSV...")
-            with PROM_DOWNLOAD.time():
-                datamart_materialize.download(
-                    {'id': dataset_id, 'metadata': metadata},
-                    cache_temp, None,
-                    format='csv',
-                    size_limit=10000000000,  # 10 GB
-                )
+            with advocate.Session() as http_session:
+                with PROM_DOWNLOAD.time():
+                    datamart_materialize.download(
+                        {'id': dataset_id, 'metadata': metadata},
+                        cache_temp, None,
+                        format='csv',
+                        size_limit=10000000000,  # 10 GB
+                        http=http_session,
+                    )
                 logger.info("CSV is %d bytes", os.stat(cache_temp).st_size)
 
         csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
