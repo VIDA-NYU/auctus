@@ -1,8 +1,10 @@
 import codecs
+import contextlib
 import io
 import logging
 from pkg_resources import iter_entry_points
 import requests
+import requests.sessions
 import threading
 import time
 
@@ -45,7 +47,7 @@ def _write_file(response, writer, size_limit=None):
                     raise DatasetTooBig(limit=size_limit)
 
 
-def _direct_download(url, writer, size_limit=None):
+def _direct_download(url, writer, http, size_limit=None):
     """Direct download of a file from a URL.
 
     This is used when the materialization info contains a ``direct_url`` key,
@@ -54,7 +56,7 @@ def _direct_download(url, writer, size_limit=None):
     :param url: URL of the file to download.
     :param writer: Output writer used to write the dataset.
     """
-    response = requests.get(
+    response = http.get(
         url,
         allow_redirects=True,
         stream=True,
@@ -64,7 +66,7 @@ def _direct_download(url, writer, size_limit=None):
     _write_file(response, writer, size_limit=size_limit)
 
 
-def _proxy_download(dataset_id, writer, proxy, size_limit=None):
+def _proxy_download(dataset_id, writer, http, proxy, size_limit=None):
     """Use a Datamart service to materialize for us.
 
     This is used when the materializer is not available locally. We request
@@ -74,8 +76,8 @@ def _proxy_download(dataset_id, writer, proxy, size_limit=None):
     :param writer: Output writer used to write the dataset.
     :param proxy: URL of a Datamart server to use as a proxy.
     """
-    response = requests.get(proxy + '/download/' + dataset_id,
-                            allow_redirects=True, stream=True)
+    response = http.get(proxy + '/download/' + dataset_id,
+                        allow_redirects=True, stream=True)
     response.raise_for_status()
     if (
         size_limit is not None and
@@ -235,7 +237,7 @@ def make_writer(destination, format='csv', format_options=None):
 
 
 def download(dataset, destination, proxy, format='csv', format_options=None,
-             size_limit=None):
+             size_limit=None, http=None):
     """Materialize a dataset on disk.
 
     :param dataset: Dataset description from search index.
@@ -247,87 +249,106 @@ def download(dataset, destination, proxy, format='csv', format_options=None,
     :param format_options: Dictionary of options for the writer or None.
     :param size_limit: Maximum size of the dataset to download, in bytes. If
         the limit is reached, :class:`DatasetTooBig` will be raised.
+    :param http: A `requests.sessions.Session` to use to download files.
     """
     writer = make_writer(destination, format, format_options)
 
-    if isinstance(dataset, str):
-        # If dataset is just an ID, we use the proxy
-        if proxy:
-            metadata = None
-            if getattr(writer, 'needs_metadata', False):
-                logger.info("Obtaining metadata from proxy...")
-                response = requests.get(proxy + '/metadata/' + dataset)
-                response.raise_for_status()
-                metadata = response.json()['metadata']
-            if metadata is not None:
-                writer.set_metadata(dataset, metadata)
-            _proxy_download(dataset, writer, proxy, size_limit=size_limit)
-            return writer.finish()
-        else:
-            raise ValueError("A proxy must be specified to download a dataset "
-                             "from its ID")
-    elif not isinstance(dataset, dict):
-        raise TypeError("'dataset' must be either a str or a dict")
-    else:
-        dataset_id = None
-        materialize = dataset
-        metadata = None
-        if 'metadata' in materialize:
-            metadata = materialize = materialize['metadata']
-            dataset_id = dataset.get('id')
-        if 'materialize' in materialize:
-            metadata = materialize
-            materialize = materialize['materialize']
-            dataset_id = dataset.get('id')
+    with contextlib.ExitStack() as context:
+        if http is None:
+            http = context.enter_context(requests.sessions.Session())
 
-    if metadata is not None:
-        writer.set_metadata(dataset_id, metadata)
-
-    for converter in reversed(materialize.get('convert', [])):
-        converter_args = dict(converter)
-        converter_id = converter_args.pop('identifier')
-        converter_class = converters[converter_id]
-        writer = converter_class(writer, **converter_args)
-
-    if 'direct_url' in materialize:
-        logger.info("Direct download: %s", materialize['direct_url'])
-        start = time.perf_counter()
-        _direct_download(
-            materialize['direct_url'], writer,
-            size_limit=size_limit,
-        )
-        logger.info("Download successful, %.2fs", time.perf_counter() - start)
-        return writer.finish()
-    elif 'identifier' in materialize:
-        identifier = materialize['identifier']
-        try:
-            materializer = materializers[identifier]
-        except KeyError:
-            pass
-        else:
-            try:
-                logger.info("Calling materializer...")
-                start = time.perf_counter()
-                materializer.download(
-                    materialize, writer,
+        if isinstance(dataset, str):
+            # If dataset is just an ID, we use the proxy
+            if proxy:
+                metadata = None
+                if getattr(writer, 'needs_metadata', False):
+                    logger.info("Obtaining metadata from proxy...")
+                    response = http.get(proxy + '/metadata/' + dataset)
+                    response.raise_for_status()
+                    metadata = response.json()['metadata']
+                if metadata is not None:
+                    writer.set_metadata(dataset, metadata)
+                _proxy_download(
+                    dataset, writer,
+                    http, proxy,
                     size_limit=size_limit,
                 )
-                logger.info("Materializer successful, %.2fs",
-                            time.perf_counter() - start)
                 return writer.finish()
-            except UnconfiguredMaterializer as e:
-                logger.warning("Materializer is not configured properly: %s",
-                               ", ".join(e.args))
-        if proxy and dataset_id:
-            logger.info("Calling materialization proxy...")
+            else:
+                raise ValueError(
+                    "A proxy must be specified to download a dataset "
+                    + "from its ID"
+                )
+        elif not isinstance(dataset, dict):
+            raise TypeError("'dataset' must be either a str or a dict")
+        else:
+            dataset_id = None
+            materialize = dataset
+            metadata = None
+            if 'metadata' in materialize:
+                metadata = materialize = materialize['metadata']
+                dataset_id = dataset.get('id')
+            if 'materialize' in materialize:
+                metadata = materialize
+                materialize = materialize['materialize']
+                dataset_id = dataset.get('id')
+
+        if metadata is not None:
+            writer.set_metadata(dataset_id, metadata)
+
+        for converter in reversed(materialize.get('convert', [])):
+            converter_args = dict(converter)
+            converter_id = converter_args.pop('identifier')
+            converter_class = converters[converter_id]
+            writer = converter_class(writer, **converter_args)
+
+        if 'direct_url' in materialize:
+            logger.info("Direct download: %s", materialize['direct_url'])
             start = time.perf_counter()
-            _proxy_download(dataset_id, writer, proxy, size_limit=size_limit)
-            logger.info("Materialization through proxy successful, %.2fs",
+            _direct_download(
+                materialize['direct_url'], writer,
+                http,
+                size_limit=size_limit,
+            )
+            logger.info("Download successful, %.2fs",
                         time.perf_counter() - start)
             return writer.finish()
+        elif 'identifier' in materialize:
+            identifier = materialize['identifier']
+            try:
+                materializer = materializers[identifier]
+            except KeyError:
+                pass
+            else:
+                try:
+                    logger.info("Calling materializer...")
+                    start = time.perf_counter()
+                    materializer.download(
+                        materialize, writer,
+                        size_limit=size_limit,
+                    )
+                    logger.info("Materializer successful, %.2fs",
+                                time.perf_counter() - start)
+                    return writer.finish()
+                except UnconfiguredMaterializer as e:
+                    logger.warning(
+                        "Materializer is not configured properly: %s",
+                        ", ".join(e.args),
+                    )
+            if proxy and dataset_id:
+                logger.info("Calling materialization proxy...")
+                start = time.perf_counter()
+                _proxy_download(
+                    dataset_id, writer,
+                    http, proxy,
+                    size_limit=size_limit,
+                )
+                logger.info("Materialization through proxy successful, %.2fs",
+                            time.perf_counter() - start)
+                return writer.finish()
+            else:
+                raise KeyError("Materializer unavailable: '%s'" % identifier)
         else:
-            raise KeyError("Materializer unavailable: '%s'" % identifier)
-    else:
-        raise ValueError("Invalid materialization info")
+            raise ValueError("Invalid materialization info")
 
     # unreachable
