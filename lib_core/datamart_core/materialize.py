@@ -3,10 +3,12 @@ import contextlib
 import csv
 import datamart_materialize
 from datetime import datetime
+import ipaddress
 import logging
 import os
 import prometheus_client
 import shutil
+import socket
 import zipfile
 
 from datamart_core.common import hash_json
@@ -123,6 +125,20 @@ def get_from_dataset_storage(metadata, dataset_id, destination):
             return True
 
 
+def advocate_session():
+    kwargs = {}
+    if os.environ.get('AUCTUS_REQUEST_WHITELIST', '').strip():
+        kwargs['ip_whitelist'] = {
+            ipaddress.ip_network(info[4][0] + '/32')
+            for host in os.environ['AUCTUS_REQUEST_WHITELIST'].split(',')
+            for info in socket.getaddrinfo(
+                host, 80, 0, socket.SOCK_STREAM,
+            )
+        }
+    validator = advocate.AddrValidator(**kwargs)
+    return advocate.Session(validator=validator)
+
+
 @contextlib.contextmanager
 def get_dataset(metadata, dataset_id, format='csv', format_options=None):
     if not format:
@@ -146,7 +162,7 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
 
             # Otherwise, materialize the CSV
             logger.info("Materializing CSV...")
-            with advocate.Session() as http_session:
+            with advocate_session() as http_session:
                 with PROM_DOWNLOAD.time():
                     datamart_materialize.download(
                         {'id': dataset_id, 'metadata': metadata},
