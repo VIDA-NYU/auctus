@@ -375,7 +375,7 @@ url = "lib_fslock"
 
 [[package]]
 name = "datamart-geo"
-version = "0.3"
+version = "0.3.1"
 description = "Geographical location data"
 category = "main"
 optional = false
