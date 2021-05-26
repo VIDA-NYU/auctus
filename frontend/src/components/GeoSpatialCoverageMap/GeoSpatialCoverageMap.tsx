@@ -19,12 +19,26 @@ import 'ol/ol.css';
 import {scaleSequential} from 'd3-scale';
 import Grid from '@material-ui/core/Grid';
 import Slider from '@material-ui/core/Slider';
+import {withStyles} from '@material-ui/core/styles';
 
 // Amount of outlying data to ignore when focusing the map
 // 5% on each side
 const OUTLIER_RATIO = 0.05;
 const leftColorLegend = 'rgb(143, 140, 193)';
 const rightColorLegend = 'rgb(65, 2, 136)';
+
+const LegendSlider = withStyles({
+  root: {
+    color: '#6590b9',
+    height: 2,
+    padding: '20px 0',
+    width: 117,
+  },
+  markLabel: {
+    fontSize: 9,
+    fontFamily: 'sans-serif',
+  },
+})(Slider);
 
 function geohashToLatLong(hash: string, base: number) {
   if (base !== 4) {
@@ -56,7 +70,8 @@ function geohashToLatLong(hash: string, base: number) {
 function heatColorMap(
   hashNumber: number,
   maxNumber: number,
-  totalNumber: number
+  totalNumber: number,
+  sliderValuesMinMax: number[]
 ): string {
   const value = hashNumber / totalNumber;
   const interpolateCustomPurples = scaleSequential([
@@ -67,9 +82,13 @@ function heatColorMap(
     0,
     maxNumber,
   ]);
-  if (value > maxNumber) {
-    return rightColorLegend;
+  const minValue = sliderValuesMinMax[0];
+  const maxValue = sliderValuesMinMax[1];
+
+  if (value > maxValue || value < minValue) {
+    return 'rgba(255,255,255,0)';
   }
+
   return color(value);
 }
 
@@ -81,7 +100,7 @@ interface GeoSpatialCoverageMapProps {
 interface GeoSpatialCoverageMapState {
   selectedCoordinates: undefined;
   maxValueLegend: number;
-  sliderValueLegend: number;
+  sliderValueLegend: number[];
 }
 
 class GeoSpatialCoverageMap extends React.PureComponent<
@@ -101,7 +120,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     this.state = {
       selectedCoordinates: undefined,
       maxValueLegend: 0,
-      sliderValueLegend: -1,
+      sliderValueLegend: [0, -1],
     };
   }
 
@@ -152,13 +171,24 @@ class GeoSpatialCoverageMap extends React.PureComponent<
           ],
         ]);
 
-        const max =
-          this.state.sliderValueLegend === -1
-            ? maxNumber / totalNumber
-            : this.state.sliderValueLegend / 100;
+        const max = maxNumber / totalNumber;
+        // Setting up min and max slider values.
+        const sliderValuesMinMax =
+          this.state.sliderValueLegend[1] === -1
+            ? [0, this.state.maxValueLegend]
+            : [
+                this.state.sliderValueLegend[0] / 100,
+                this.state.sliderValueLegend[1] / 100,
+              ];
+
         const style = new Style({
           fill: new Fill({
-            color: heatColorMap(hashNumber, max, totalNumber),
+            color: heatColorMap(
+              hashNumber,
+              max,
+              totalNumber,
+              sliderValuesMinMax
+            ),
           }),
         });
         polygon.transform('EPSG:4326', 'EPSG:3857');
@@ -245,7 +275,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
     if (prevProps.datasetID !== this.props.datasetID) {
       this.setState({
         maxValueLegend: 0,
-        sliderValueLegend: -1,
+        sliderValueLegend: [0, -1],
       });
     }
     // Remove all children from the map div to force re-render
@@ -434,13 +464,13 @@ class GeoSpatialCoverageMap extends React.PureComponent<
   }
 
   handleChange = (event: ChangeEvent<{}>, newValue: number | number[]) => {
-    this.setState({sliderValueLegend: newValue as number});
+    this.setState({sliderValueLegend: newValue as number[]});
   };
 
   renderLegend() {
     const marginLegend = 12;
     const legendWidth = 130 + marginLegend;
-    const legendHeight = 75;
+    const legendHeight = 75 + 25;
     return (
       <div
         className="legend"
@@ -485,9 +515,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
                 y="3"
                 dy="0.71em"
               >
-                {this.state.sliderValueLegend !== -1
-                  ? (this.state.sliderValueLegend / 2).toFixed(1)
-                  : (this.state.maxValueLegend / 2).toFixed(1)}
+                {(this.state.maxValueLegend / 2).toFixed(1)}
               </text>
             </g>
 
@@ -504,9 +532,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
                 y="3"
                 dy="0.71em"
               >
-                {this.state.sliderValueLegend !== -1
-                  ? this.state.sliderValueLegend
-                  : this.state.maxValueLegend}
+                {this.state.maxValueLegend.toFixed(1)}
               </text>
             </g>
           </g>
@@ -531,7 +557,7 @@ class GeoSpatialCoverageMap extends React.PureComponent<
               fontFamily: 'sans-serif',
             }}
           >
-            Ratio of points (%)
+            Ratio of rows (%)
           </text>
           <rect
             x={marginLegend}
@@ -542,27 +568,33 @@ class GeoSpatialCoverageMap extends React.PureComponent<
           />
         </svg>
         <Grid container>
-          <Grid item xs={1} style={{marginLeft: '10px', marginRight: 0}}>
-            <span style={{fontSize: 10, fontFamily: 'sans-serif'}}>0</span>
+          <Grid item xs={12} style={{marginLeft: '10px', marginRight: 0}}>
+            <span style={{fontSize: 10, fontFamily: 'sans-serif'}}>Filter</span>
           </Grid>
-          <Grid item xs={8} style={{marginRight: 6}}>
-            <Slider
+          <Grid
+            item
+            xs={12}
+            style={{marginRight: 0, marginLeft: 12, marginTop: '-16px'}}
+          >
+            <LegendSlider
               step={0.1}
               max={this.state.maxValueLegend}
               valueLabelDisplay="auto"
               value={
-                this.state.sliderValueLegend !== -1
+                this.state.sliderValueLegend[1] !== -1
                   ? this.state.sliderValueLegend
-                  : this.state.maxValueLegend
+                  : [0, this.state.maxValueLegend]
               }
               onChange={this.handleChange}
-              aria-labelledby="continuous-slider"
+              aria-labelledby="range-slider"
+              marks={[
+                {value: 0, label: '0'},
+                {
+                  value: this.state.maxValueLegend,
+                  label: this.state.maxValueLegend,
+                },
+              ]}
             />
-          </Grid>
-          <Grid item xs={3} style={{marginLeft: 0, marginRight: '-17px'}}>
-            <span style={{fontSize: 10, fontFamily: 'sans-serif'}}>
-              {this.state.maxValueLegend}
-            </span>
           </Grid>
         </Grid>
       </div>
