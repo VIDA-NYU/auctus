@@ -461,6 +461,7 @@ develop = true
 [package.dependencies]
 datamart-geo = ">=0.2.3,<0.4"
 numpy = "*"
+opentelemetry-api = "*"
 pandas = "*"
 prometheus_client = "*"
 python-dateutil = "*"
@@ -489,6 +490,7 @@ datamart-profiler = "*"
 defusedxml = "*"
 elasticsearch = ">=7.0,<8.0"
 lazo-index-service = "0.7.0"
+opentelemetry-api = "*"
 prometheus_client = "*"
 xlrd = "*"
 
@@ -584,6 +586,20 @@ description = "XML bomb protection for Python stdlib modules"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[[package]]
+name = "deprecated"
+version = "1.2.12"
+description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.dependencies]
+wrapt = ">=1.10,<2"
+
+[package.extras]
+dev = ["tox", "bump2version (<1)", "sphinx (<2)", "importlib-metadata (<3)", "importlib-resources (<4)", "configparser (<5)", "sphinxcontrib-websupport (<2)", "zipp (<2)", "PyTest (<5)", "PyTest-Cov (<2.6)", "pytest", "pytest-cov"]
 
 [[package]]
 name = "docutils"
@@ -1007,6 +1023,17 @@ python-versions = ">=3.6,"
 
 [package.dependencies]
 et-xmlfile = "*"
+
+[[package]]
+name = "opentelemetry-api"
+version = "1.2.0"
+description = "OpenTelemetry Python API"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+Deprecated = ">=1.2.6"
 
 [[package]]
 name = "packaging"
@@ -1864,6 +1891,10 @@ defusedxml = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
 ]
+deprecated = [
+    {file = "Deprecated-1.2.12-py2.py3-none-any.whl", hash = "sha256:08452d69b6b5bc66e8330adde0a4f8642e969b9e1702904d137eeb29c8ffc771"},
+    {file = "Deprecated-1.2.12.tar.gz", hash = "sha256:6d2de2de7931a968874481ef30208fd4e08da39177d61d3d4ebdf4366e7dbca1"},
+]
 docutils = [
     {file = "docutils-0.17-py2.py3-none-any.whl", hash = "sha256:a71042bb7207c03d5647f280427f14bfbd1a65c9eb84f4b341d85fafb6bb4bdf"},
     {file = "docutils-0.17.tar.gz", hash = "sha256:e2ffeea817964356ba4470efba7c2f42b6b0de0b04e66378507e3e2504bbff4c"},
@@ -2209,6 +2240,10 @@ openapi-spec-validator = [
 openpyxl = [
     {file = "openpyxl-3.0.7-py2.py3-none-any.whl", hash = "sha256:46af4eaf201a89b610fcca177eed957635f88770a5462fb6aae4a2a52b0ff516"},
     {file = "openpyxl-3.0.7.tar.gz", hash = "sha256:6456a3b472e1ef0facb1129f3c6ef00713cebf62e736cd7a75bcc3247432f251"},
+]
+opentelemetry-api = [
+    {file = "opentelemetry-api-1.2.0.tar.gz", hash = "sha256:e29cacbf1bb0bf6651b92b472fa709be852279821bc6ae357a180adaad51962a"},
+    {file = "opentelemetry_api-1.2.0-py3-none-any.whl", hash = "sha256:17831862757402a945621837ea818d40321ed8e94a274b8bd78c44e43ba4aa60"},
 ]
 packaging = [
     {file = "packaging-20.9-py2.py3-none-any.whl", hash = "sha256:67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a"},

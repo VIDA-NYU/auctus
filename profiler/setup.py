@@ -9,6 +9,7 @@ req = [
     'aio-pika',
     'elasticsearch~=7.0',
     'lazo-index-service==0.7.0',
+    'opentelemetry-api',
     'prometheus_client',
     'xlrd',
     'defusedxml',
