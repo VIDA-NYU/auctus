@@ -39,6 +39,8 @@ def main():
                     package['source']['url'],
                     package['source']['reference'],
                 ))
+            elif package['source']['type'] == 'url':
+                packages.append(package['source']['url'])
             elif package['source']['type'] != 'directory':
                 raise ValueError(
                     "Unknown package source %s" % package['source']['type']
