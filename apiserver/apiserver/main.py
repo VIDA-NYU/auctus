@@ -139,7 +139,9 @@ class ApiRule(Rule):
 
 def make_app(debug=False):
     es = PrefixedElasticsearch()
-    redis_client = redis.Redis(host=os.environ['REDIS_HOST'])
+    host, port = os.environ['REDIS_HOST'].split(':')
+    port = int(port)
+    redis_client = redis.Redis(host=host, port=port)
     lazo_client = lazo_index_service.LazoIndexClient(
         host=os.environ['LAZO_SERVER_HOST'],
         port=int(os.environ['LAZO_SERVER_PORT'])

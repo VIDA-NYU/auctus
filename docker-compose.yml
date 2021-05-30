@@ -104,7 +104,7 @@ services:
       - AMQP_PORT=5672
       - AMQP_USER=${AMQP_USER}
       - AMQP_PASSWORD=${AMQP_PASSWORD}
-      - REDIS_HOST=redis
+      - REDIS_HOST=redis:6379
       - S3_KEY=${S3_KEY}
       - S3_SECRET=${S3_SECRET}
       - S3_URL=${S3_URL}

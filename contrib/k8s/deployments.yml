@@ -228,7 +228,7 @@ spec:
               name: secrets
               key: amqp.password
         - name: REDIS_HOST
-          value: redis
+          value: redis:6379
         - name: S3_KEY
           valueFrom:
             secretKeyRef:
