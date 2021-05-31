@@ -7,6 +7,7 @@ import itertools
 import logging
 import math
 import numpy
+import opentelemetry.trace
 import os
 import pandas
 from pandas.errors import EmptyDataError
@@ -26,6 +27,7 @@ from . import types
 
 
 logger = logging.getLogger(__name__)
+tracer = opentelemetry.trace.get_tracer(__name__)
 
 
 RANDOM_SEED = 89
@@ -291,8 +293,9 @@ def process_column(
     nominatim=None,
 ):
     # Identify types
-    structural_type, semantic_types_dict, additional_meta = \
-        identify_types(array, column_meta['name'], geo_data, manual)
+    with tracer.start_as_current_span('identify_types'):
+        structural_type, semantic_types_dict, additional_meta = \
+            identify_types(array, column_meta['name'], geo_data, manual)
     logger.info(
         "Column type %s [%s]",
         structural_type,
@@ -319,44 +322,47 @@ def process_column(
         and (coverage or plots)
     ):
         # Get numerical values needed for either ranges or plot
-        numerical_values = []
-        for e in array:
-            try:
-                e = float(e)
-            except ValueError:
-                pass
-            else:
-                if -3.4e38 < e < 3.4e38:  # Overflows in ES
-                    numerical_values.append(e)
+        with tracer.start_as_current_span('parse_numerical_values'):
+            numerical_values = []
+            for e in array:
+                try:
+                    e = float(e)
+                except ValueError:
+                    pass
+                else:
+                    if -3.4e38 < e < 3.4e38:  # Overflows in ES
+                        numerical_values.append(e)
 
         # Compute ranges from numerical values
         if coverage:
-            column_meta['mean'], column_meta['stddev'] = \
-                mean_stddev(numerical_values)
+            with tracer.start_as_current_span('numerical_ranges'):
+                column_meta['mean'], column_meta['stddev'] = \
+                    mean_stddev(numerical_values)
 
-            ranges = get_numerical_ranges(numerical_values)
-            if ranges:
-                column_meta['coverage'] = ranges
+                ranges = get_numerical_ranges(numerical_values)
+                if ranges:
+                    column_meta['coverage'] = ranges
 
         # Compute histogram from numerical values
         if plots:
-            counts, edges = numpy.histogram(
-                numerical_values,
-                bins=10,
-            )
-            counts = [int(i) for i in counts]
-            edges = [float(f) for f in edges]
-            column_meta['plot'] = {
-                "type": "histogram_numerical",
-                "data": [
-                    {
-                        "count": count,
-                        "bin_start": edges[i],
-                        "bin_end": edges[i + 1],
-                    }
-                    for i, count in enumerate(counts)
-                ]
-            }
+            with tracer.start_as_current_span('numerical_plot'):
+                counts, edges = numpy.histogram(
+                    numerical_values,
+                    bins=10,
+                )
+                counts = [int(i) for i in counts]
+                edges = [float(f) for f in edges]
+                column_meta['plot'] = {
+                    "type": "histogram_numerical",
+                    "data": [
+                        {
+                            "count": count,
+                            "bin_start": edges[i],
+                            "bin_end": edges[i + 1],
+                        }
+                        for i, count in enumerate(counts)
+                    ]
+                }
 
     if types.DATE_TIME in semantic_types_dict:
         datetimes = semantic_types_dict[types.DATE_TIME]
@@ -371,66 +377,69 @@ def process_column(
 
         # Compute histogram from temporal values
         if plots and 'plot' not in column_meta:
-            counts, edges = numpy.histogram(timestamps, bins=10)
-            counts = [int(i) for i in counts]
-            column_meta['plot'] = {
-                "type": "histogram_temporal",
-                "data": [
-                    {
-                        "count": count,
-                        "date_start": datetime.utcfromtimestamp(
-                            edges[i],
-                        ).isoformat(),
-                        "date_end": datetime.utcfromtimestamp(
-                            edges[i + 1],
-                        ).isoformat(),
-                    }
-                    for i, count in enumerate(counts)
-                ]
-            }
+            with tracer.start_as_current_span('temporal_plot'):
+                counts, edges = numpy.histogram(timestamps, bins=10)
+                counts = [int(i) for i in counts]
+                column_meta['plot'] = {
+                    "type": "histogram_temporal",
+                    "data": [
+                        {
+                            "count": count,
+                            "date_start": datetime.utcfromtimestamp(
+                                edges[i],
+                            ).isoformat(),
+                            "date_end": datetime.utcfromtimestamp(
+                                edges[i + 1],
+                            ).isoformat(),
+                        }
+                        for i, count in enumerate(counts)
+                    ]
+                }
 
     # Compute histogram from categorical values
     if plots and types.CATEGORICAL in semantic_types_dict:
-        counter = collections.Counter()
-        for value in array:
-            if not value:
-                continue
-            counter[value] += 1
-        counts = counter.most_common(5)
-        counts = sorted(counts)
-        column_meta['plot'] = {
-            "type": "histogram_categorical",
-            "data": [
-                {
-                    "bin": value,
-                    "count": count,
-                }
-                for value, count in counts
-            ]
-        }
+        with tracer.start_as_current_span('categorical_plot'):
+            counter = collections.Counter()
+            for value in array:
+                if not value:
+                    continue
+                counter[value] += 1
+            counts = counter.most_common(5)
+            counts = sorted(counts)
+            column_meta['plot'] = {
+                "type": "histogram_categorical",
+                "data": [
+                    {
+                        "bin": value,
+                        "count": count,
+                    }
+                    for value, count in counts
+                ]
+            }
 
     # Compute histogram from textual values
     if (
         plots and types.TEXT in semantic_types_dict and
         'plot' not in column_meta
     ):
-        counter = collections.Counter()
-        for value in array:
-            for word in _re_word_split.split(value):
-                word = word.lower()
-                if word:
-                    counter[word] += 1
-        counts = counter.most_common(5)
-        column_meta['plot'] = {
-            "type": "histogram_text",
-            "data": [
-                {
-                    "bin": value,
-                    "count": count,
-                }
-                for value, count in counts
-            ]
-        }
+        with tracer.start_as_current_span('textual_plot'):
+            counter = collections.Counter()
+            for value in array:
+                for word in _re_word_split.split(value):
+                    word = word.lower()
+                    if word:
+                        counter[word] += 1
+            counts = counter.most_common(5)
+            column_meta['plot'] = {
+                "type": "histogram_text",
+                "data": [
+                    {
+                        "bin": value,
+                        "count": count,
+                    }
+                    for value, count in counts
+                ]
+            }
 
     # Resolve addresses into coordinates
     if (
@@ -439,10 +448,11 @@ def process_column(
         types.TEXT in semantic_types_dict and
         types.ADMIN not in semantic_types_dict
     ):
-        locations, non_empty = nominatim_resolve_all(
-            nominatim,
-            array,
-        )
+        with tracer.start_as_current_span('nominatim'):
+            locations, non_empty = nominatim_resolve_all(
+                nominatim,
+                array,
+            )
         if non_empty > 0:
             unclean_ratio = 1.0 - len(locations) / non_empty
             if unclean_ratio <= MAX_UNCLEAN_ADDRESSES:
@@ -609,23 +619,25 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
     with PROM_TYPES.time():
-        for column_idx, column_meta in enumerate(columns):
-            name = column_meta['name']
-            logger.info("Processing column %d %r...", column_idx, name)
-            array = data.iloc[:, column_idx]
-            if name in manual_columns:
-                manual = manual_columns[name]
-            else:
-                manual = None
-            # Process the column, updating the column_meta dict
-            resolved_columns[column_idx] = process_column(
-                array, column_meta,
-                manual=manual,
-                plots=plots,
-                coverage=coverage,
-                geo_data=geo_data,
-                nominatim=nominatim,
-            )
+        with tracer.start_as_current_span('columns'):
+            for column_idx, column_meta in enumerate(columns):
+                name = column_meta['name']
+                with tracer.start_as_current_span('column', attributes={'idx': column_idx, 'name': name}):
+                    logger.info("Processing column %d %r...", column_idx, name)
+                    array = data.iloc[:, column_idx]
+                    if name in manual_columns:
+                        manual = manual_columns[name]
+                    else:
+                        manual = None
+                    # Process the column, updating the column_meta dict
+                    resolved_columns[column_idx] = process_column(
+                        array, column_meta,
+                        manual=manual,
+                        plots=plots,
+                        coverage=coverage,
+                        geo_data=geo_data,
+                        nominatim=nominatim,
+                    )
 
     # Textual columns
     columns_textual = [
@@ -637,38 +649,39 @@ def process_dataset(data, dataset_id=None, metadata=None,
         )
     ]
     if lazo_client and columns_textual:
-        # Indexing with lazo
-        column_textual_names = [columns[idx]['name'] for idx in columns_textual]
-        if not search:
-            try:
-                lazo_index_data(
-                    data,
-                    dataset_id,
-                    columns_textual, column_textual_names,
-                    lazo_client,
-                )
-            except Exception:
-                logger.warning("Error indexing textual attributes from %s", dataset_id)
-                raise
-        else:
-            try:
-                lazo_sketches = get_lazo_data_sketch(
-                    data,
-                    columns_textual, column_textual_names,
-                    lazo_client,
-                )
-            except Exception:
-                logger.warning("Error getting Lazo sketches")
-                raise
-            else:
-                # saving sketches into metadata
-                for sketch, idx in zip(lazo_sketches, columns_textual):
-                    n_permutations, hash_values, cardinality = sketch
-                    columns[idx]['lazo'] = dict(
-                        n_permutations=n_permutations,
-                        hash_values=list(hash_values),
-                        cardinality=cardinality,
+        with tracer.start_as_current_span('categorical'):
+            # Indexing with lazo
+            column_textual_names = [columns[idx]['name'] for idx in columns_textual]
+            if not search:
+                try:
+                    lazo_index_data(
+                        data,
+                        dataset_id,
+                        columns_textual, column_textual_names,
+                        lazo_client,
                     )
+                except Exception:
+                    logger.warning("Error indexing textual attributes from %s", dataset_id)
+                    raise
+            else:
+                try:
+                    lazo_sketches = get_lazo_data_sketch(
+                        data,
+                        columns_textual, column_textual_names,
+                        lazo_client,
+                    )
+                except Exception:
+                    logger.warning("Error getting Lazo sketches")
+                    raise
+                else:
+                    # saving sketches into metadata
+                    for sketch, idx in zip(lazo_sketches, columns_textual):
+                        n_permutations, hash_values, cardinality = sketch
+                        columns[idx]['lazo'] = dict(
+                            n_permutations=n_permutations,
+                            hash_values=list(hash_values),
+                            cardinality=cardinality,
+                        )
 
     # Pair lat & long columns
     columns_lat = [
@@ -728,177 +741,178 @@ def process_dataset(data, dataset_id=None, metadata=None,
         logger.info("Computing spatial coverage...")
         spatial_coverage = []
         with PROM_SPATIAL.time():
-            # Compute sketches from lat/long pairs
-            for col_lat, col_long in latlong_pairs:
-                lat_values = data.iloc[:, col_lat.index]
-                lat_values = pandas.to_numeric(lat_values, errors='coerce')
-                long_values = data.iloc[:, col_long.index]
-                long_values = pandas.to_numeric(long_values, errors='coerce')
-                mask = (
-                    ~numpy.isnan(lat_values)
-                    & ~numpy.isnan(long_values)
-                    & (-90.0 < lat_values) & (lat_values < 90.0)
-                    & (-180.0 < long_values) & (long_values < 180.0)
-                )
-
-                if mask.any():
-                    lat_values = lat_values[mask]
-                    long_values = long_values[mask]
-                    values = numpy.array([lat_values, long_values]).T
-                    logger.info(
-                        "Computing spatial sketch lat=%r long=%r (%d rows)",
-                        col_lat.name, col_long.name, len(values),
+            with tracer.start_as_current_span('spatial_coverage'):
+                # Compute sketches from lat/long pairs
+                for col_lat, col_long in latlong_pairs:
+                    lat_values = data.iloc[:, col_lat.index]
+                    lat_values = pandas.to_numeric(lat_values, errors='coerce')
+                    long_values = data.iloc[:, col_long.index]
+                    long_values = pandas.to_numeric(long_values, errors='coerce')
+                    mask = (
+                        ~numpy.isnan(lat_values)
+                        & ~numpy.isnan(long_values)
+                        & (-90.0 < lat_values) & (lat_values < 90.0)
+                        & (-180.0 < long_values) & (long_values < 180.0)
                     )
-                    # Ranges
-                    spatial_ranges = get_spatial_ranges(values)
-                    # Geohashes
-                    builder = Geohasher(number=MAX_GEOHASHES)
-                    builder.add_points(values)
-                    hashes = builder.get_hashes_json()
 
-                    spatial_coverage.append({
-                        'type': 'latlong',
-                        'column_names': [col_lat.name, col_long.name],
-                        'column_indexes': [
-                            col_lat.index,
-                            col_long.index,
-                        ],
-                        'geohashes4': hashes,
-                        'ranges': spatial_ranges,
-                        'number': len(values),
-                    })
+                    if mask.any():
+                        lat_values = lat_values[mask]
+                        long_values = long_values[mask]
+                        values = numpy.array([lat_values, long_values]).T
+                        logger.info(
+                            "Computing spatial sketch lat=%r long=%r (%d rows)",
+                            col_lat.name, col_long.name, len(values),
+                        )
+                        # Ranges
+                        spatial_ranges = get_spatial_ranges(values)
+                        # Geohashes
+                        builder = Geohasher(number=MAX_GEOHASHES)
+                        builder.add_points(values)
+                        hashes = builder.get_hashes_json()
 
-            # Compute sketches from WKT points
-            for i, col in enumerate(columns):
-                if col['structural_type'] != types.GEO_POINT:
-                    continue
-                latlong = col.get('point_format') == 'lat,long'
-                name = col['name']
-                values = parse_wkt_column(
-                    data.iloc[:, i],
-                    latlong=latlong,
-                )
-                total = numpy.sum(data.iloc[:, i].apply(lambda x: bool(x)))
-                if len(values) < 0.5 * total:
-                    logger.warning(
-                        "Most data points did not parse correctly as "
-                        "point (%s) col=%d %r",
-                        'lat,long' if latlong else 'long,lat',
-                        i, col,
+                        spatial_coverage.append({
+                            'type': 'latlong',
+                            'column_names': [col_lat.name, col_long.name],
+                            'column_indexes': [
+                                col_lat.index,
+                                col_long.index,
+                            ],
+                            'geohashes4': hashes,
+                            'ranges': spatial_ranges,
+                            'number': len(values),
+                        })
+
+                # Compute sketches from WKT points
+                for i, col in enumerate(columns):
+                    if col['structural_type'] != types.GEO_POINT:
+                        continue
+                    latlong = col.get('point_format') == 'lat,long'
+                    name = col['name']
+                    values = parse_wkt_column(
+                        data.iloc[:, i],
+                        latlong=latlong,
                     )
-                if values:
-                    logger.info(
-                        "Computing spatial sketches point=%r (%d rows)",
-                        name, len(values),
-                    )
-                    # Ranges
-                    spatial_ranges = get_spatial_ranges(values)
-                    # Geohashes
-                    builder = Geohasher(number=MAX_GEOHASHES)
-                    builder.add_points(values)
-                    hashes = builder.get_hashes_json()
+                    total = numpy.sum(data.iloc[:, i].apply(lambda x: bool(x)))
+                    if len(values) < 0.5 * total:
+                        logger.warning(
+                            "Most data points did not parse correctly as "
+                            "point (%s) col=%d %r",
+                            'lat,long' if latlong else 'long,lat',
+                            i, col,
+                        )
+                    if values:
+                        logger.info(
+                            "Computing spatial sketches point=%r (%d rows)",
+                            name, len(values),
+                        )
+                        # Ranges
+                        spatial_ranges = get_spatial_ranges(values)
+                        # Geohashes
+                        builder = Geohasher(number=MAX_GEOHASHES)
+                        builder.add_points(values)
+                        hashes = builder.get_hashes_json()
 
-                    spatial_coverage.append({
-                        'type': 'point_latlong' if latlong else 'point',
-                        'column_names': [name],
-                        'column_indexes': [i],
-                        'geohashes4': hashes,
-                        'ranges': spatial_ranges,
-                        'number': len(values),
-                    })
+                        spatial_coverage.append({
+                            'type': 'point_latlong' if latlong else 'point',
+                            'column_names': [name],
+                            'column_indexes': [i],
+                            'geohashes4': hashes,
+                            'ranges': spatial_ranges,
+                            'number': len(values),
+                        })
 
-            for idx, resolved in resolved_columns.items():
-                # Compute sketches from addresses
-                if 'addresses' in resolved:
-                    locations = resolved['addresses']
+                for idx, resolved in resolved_columns.items():
+                    # Compute sketches from addresses
+                    if 'addresses' in resolved:
+                        locations = resolved['addresses']
 
-                    name = columns[idx]['name']
-                    logger.info(
-                        "Computing spatial sketches address=%r (%d rows)",
-                        name, len(locations),
-                    )
-                    # Ranges
-                    spatial_ranges = get_spatial_ranges(locations)
-                    # Geohashes
-                    builder = Geohasher(number=MAX_GEOHASHES)
-                    builder.add_points(locations)
-                    hashes = builder.get_hashes_json()
+                        name = columns[idx]['name']
+                        logger.info(
+                            "Computing spatial sketches address=%r (%d rows)",
+                            name, len(locations),
+                        )
+                        # Ranges
+                        spatial_ranges = get_spatial_ranges(locations)
+                        # Geohashes
+                        builder = Geohasher(number=MAX_GEOHASHES)
+                        builder.add_points(locations)
+                        hashes = builder.get_hashes_json()
 
-                    spatial_coverage.append({
-                        'type': 'address',
-                        'column_names': [name],
-                        'column_indexes': [idx],
-                        'geohashes4': hashes,
-                        'ranges': spatial_ranges,
-                        'number': len(locations),
-                    })
+                        spatial_coverage.append({
+                            'type': 'address',
+                            'column_names': [name],
+                            'column_indexes': [idx],
+                            'geohashes4': hashes,
+                            'ranges': spatial_ranges,
+                            'number': len(locations),
+                        })
 
-                # Compute sketches from administrative areas
-                if 'admin_areas' in resolved:
-                    areas = resolved['admin_areas']
+                    # Compute sketches from administrative areas
+                    if 'admin_areas' in resolved:
+                        areas = resolved['admin_areas']
 
-                    name = columns[idx]['name']
-                    logger.info(
-                        "Computing spatial sketches admin_areas=%r (%d rows)",
-                        name, len(areas),
-                    )
-                    cov = {
-                        'type': 'admin',
-                        'column_names': [name],
-                        'column_indexes': [idx],
-                    }
+                        name = columns[idx]['name']
+                        logger.info(
+                            "Computing spatial sketches admin_areas=%r (%d rows)",
+                            name, len(areas),
+                        )
+                        cov = {
+                            'type': 'admin',
+                            'column_names': [name],
+                            'column_indexes': [idx],
+                        }
 
-                    # Merge into a single range
-                    merged = None
-                    for area in areas:
-                        if area is None:
-                            continue
-                        new = area.bounds
-                        if new:
-                            if merged is None:
-                                merged = new
-                            else:
-                                merged = (
-                                    min(merged[0], new[0]),
-                                    max(merged[1], new[1]),
-                                    min(merged[2], new[2]),
-                                    max(merged[3], new[3]),
-                                )
-                    if (
-                        merged is not None
-                        and merged[1] - merged[0] > 0.01
-                        and merged[3] - merged[2] > 0.01
-                    ):
-                        logger.info("Computed bounding box")
-                        cov['ranges'] = [
-                            {
-                                'range': {
-                                    'type': 'envelope',
-                                    'coordinates': [
-                                        [merged[0], merged[3]],
-                                        [merged[1], merged[2]],
-                                    ],
+                        # Merge into a single range
+                        merged = None
+                        for area in areas:
+                            if area is None:
+                                continue
+                            new = area.bounds
+                            if new:
+                                if merged is None:
+                                    merged = new
+                                else:
+                                    merged = (
+                                        min(merged[0], new[0]),
+                                        max(merged[1], new[1]),
+                                        min(merged[2], new[2]),
+                                        max(merged[3], new[3]),
+                                    )
+                        if (
+                            merged is not None
+                            and merged[1] - merged[0] > 0.01
+                            and merged[3] - merged[2] > 0.01
+                        ):
+                            logger.info("Computed bounding box")
+                            cov['ranges'] = [
+                                {
+                                    'range': {
+                                        'type': 'envelope',
+                                        'coordinates': [
+                                            [merged[0], merged[3]],
+                                            [merged[1], merged[2]],
+                                        ],
+                                    },
                                 },
-                            },
-                        ]
-                    else:
-                        logger.info("Couldn't build a bounding box")
+                            ]
+                        else:
+                            logger.info("Couldn't build a bounding box")
 
-                    # Compute geohashes
-                    builder = Geohasher(number=MAX_GEOHASHES)
-                    for area in areas:
-                        if area is None or not area.bounds:
-                            continue
-                        builder.add_aab(area.bounds)
-                    hashes = builder.get_hashes_json()
-                    if hashes:
-                        cov['geohashes4'] = hashes
+                        # Compute geohashes
+                        builder = Geohasher(number=MAX_GEOHASHES)
+                        for area in areas:
+                            if area is None or not area.bounds:
+                                continue
+                            builder.add_aab(area.bounds)
+                        hashes = builder.get_hashes_json()
+                        if hashes:
+                            cov['geohashes4'] = hashes
 
-                    # Count
-                    cov['number'] = builder.total
+                        # Count
+                        cov['number'] = builder.total
 
-                    if 'ranges' in cov or 'geohashes4' in cov:
-                        spatial_coverage.append(cov)
+                        if 'ranges' in cov or 'geohashes4' in cov:
+                            spatial_coverage.append(cov)
 
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
@@ -906,35 +920,36 @@ def process_dataset(data, dataset_id=None, metadata=None,
         logging.info("Computing temporal coverage...")
         temporal_coverage = []
 
-        # Datetime columns
-        for idx, col in enumerate(columns):
-            if types.DATE_TIME not in col['semantic_types']:
-                continue
-            datetimes = resolved_columns[idx]['datetimes']
-            timestamps = resolved_columns[idx]['timestamps']
-            logger.info(
-                "Computing temporal ranges datetime=%r (%d rows)",
-                col['name'], len(datetimes),
-            )
+        with tracer.start_as_current_span('temporal_coverage'):
+            # Datetime columns
+            for idx, col in enumerate(columns):
+                if types.DATE_TIME not in col['semantic_types']:
+                    continue
+                datetimes = resolved_columns[idx]['datetimes']
+                timestamps = resolved_columns[idx]['timestamps']
+                logger.info(
+                    "Computing temporal ranges datetime=%r (%d rows)",
+                    col['name'], len(datetimes),
+                )
 
-            # Get temporal ranges
-            ranges = get_numerical_ranges(timestamps)
-            if not ranges:
-                continue
+                # Get temporal ranges
+                ranges = get_numerical_ranges(timestamps)
+                if not ranges:
+                    continue
 
-            # Get temporal resolution
-            resolution = get_temporal_resolution(datetimes)
+                # Get temporal resolution
+                resolution = get_temporal_resolution(datetimes)
 
-            temporal_coverage.append({
-                'type': 'datetime',
-                'column_names': [col['name']],
-                'column_indexes': [idx],
-                'column_types': [types.DATE_TIME],
-                'ranges': ranges,
-                'temporal_resolution': resolution,
-            })
+                temporal_coverage.append({
+                    'type': 'datetime',
+                    'column_names': [col['name']],
+                    'column_indexes': [idx],
+                    'column_types': [types.DATE_TIME],
+                    'ranges': ranges,
+                    'temporal_resolution': resolution,
+                })
 
-        # TODO: Times split over multiple columns
+            # TODO: Times split over multiple columns
 
         if temporal_coverage:
             metadata['temporal_coverage'] = temporal_coverage
@@ -950,16 +965,17 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Sample data
     if include_sample:
-        rand = numpy.random.RandomState(RANDOM_SEED)
-        choose_rows = rand.choice(
-            len(data),
-            min(SAMPLE_ROWS, len(data)),
-            replace=False,
-        )
-        choose_rows.sort()  # Keep it in order
-        sample = data.iloc[choose_rows]
-        sample = sample.applymap(truncate_string)  # Truncate long values
-        metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
+        with tracer.start_as_current_span('sample'):
+            rand = numpy.random.RandomState(RANDOM_SEED)
+            choose_rows = rand.choice(
+                len(data),
+                min(SAMPLE_ROWS, len(data)),
+                replace=False,
+            )
+            choose_rows.sort()  # Keep it in order
+            sample = data.iloc[choose_rows]
+            sample = sample.applymap(truncate_string)  # Truncate long values
+            metadata['sample'] = sample.to_csv(index=False, line_terminator='\r\n')
 
     # Return it -- it will be inserted into Elasticsearch, and published to the
     # feed and the waiting on-demand searches
