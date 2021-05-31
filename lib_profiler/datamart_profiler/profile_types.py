@@ -1,7 +1,6 @@
 import collections
 from datetime import datetime
 import dateutil.tz
-import functools
 import re
 import regex
 
@@ -207,7 +206,7 @@ def identify_types(array, name, geo_data, manual=None):
     if structural_type != types.MISSING_DATA and re_count['empty'] > 0:
         column_meta['missing_values_ratio'] = re_count['empty'] / num_total
 
-    distinct_values = functools.lru_cache()(lambda: set(e for e in array if e))
+    distinct_values = set(e for e in array if e)
 
     semantic_types_dict = {}
     if manual:
@@ -222,7 +221,7 @@ def identify_types(array, name, geo_data, manual=None):
                 dates = parse_dates(array)
                 semantic_types_dict[types.DATE_TIME] = dates
             if el == types.ADMIN:
-                if geo_data is not None and len(distinct_values()) >= 3:
+                if geo_data is not None and len(distinct_values) >= 3:
                     admin_areas = geo_data.resolve_names_all(array)
                     admin_areas = [r for r in admin_areas if r]
                     if admin_areas:
@@ -231,9 +230,9 @@ def identify_types(array, name, geo_data, manual=None):
                             semantic_types_dict[types.ADMIN] = admin_areas
             if el == types.CATEGORICAL or el == types.INTEGER:
                 # Count distinct values
-                column_meta['num_distinct_values'] = len(distinct_values())
+                column_meta['num_distinct_values'] = len(distinct_values)
                 if el == types.CATEGORICAL:
-                    semantic_types_dict[types.CATEGORICAL] = distinct_values()
+                    semantic_types_dict[types.CATEGORICAL] = distinct_values
     else:
         num_bool = re_count['bool']
         num_text = re_count['text']
@@ -259,10 +258,10 @@ def identify_types(array, name, geo_data, manual=None):
                 semantic_types_dict[types.FILE_PATH] = None
 
             # Administrative areas
-            if geo_data is not None and len(distinct_values()) >= 3:
-                admin_areas = geo_data.resolve_names_all(distinct_values())
+            if geo_data is not None and len(distinct_values) >= 3:
+                admin_areas = geo_data.resolve_names_all(distinct_values)
                 admin_areas = [r for r in admin_areas if r]
-                if len(admin_areas) > 0.7 * len(distinct_values()):
+                if len(admin_areas) > 0.7 * len(distinct_values):
 
                     admin_areas = disambiguate_admin_areas(admin_areas)
                     if admin_areas is not None:
@@ -279,14 +278,14 @@ def identify_types(array, name, geo_data, manual=None):
                 semantic_types_dict[types.TEXT] = None
             else:
                 # Count distinct values
-                column_meta['num_distinct_values'] = len(distinct_values())
+                column_meta['num_distinct_values'] = len(distinct_values)
                 max_categorical = MAX_CATEGORICAL_RATIO * (len(array) - num_empty)
                 if (
                     categorical or
-                    len(distinct_values()) <= max_categorical or
+                    len(distinct_values) <= max_categorical or
                     types.BOOLEAN in semantic_types_dict
                 ):
-                    semantic_types_dict[types.CATEGORICAL] = distinct_values()
+                    semantic_types_dict[types.CATEGORICAL] = distinct_values
         elif structural_type == types.INTEGER:
             # Identify ids
             # TODO: is this enough?
@@ -300,7 +299,7 @@ def identify_types(array, name, geo_data, manual=None):
                 semantic_types_dict[types.ID] = None
 
             # Count distinct values
-            column_meta['num_distinct_values'] = len(distinct_values())
+            column_meta['num_distinct_values'] = len(distinct_values)
 
             # Identify years
             if name.strip().lower() == 'year':
