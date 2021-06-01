@@ -259,6 +259,7 @@ python-versions = "*"
 develop = true
 
 [package.dependencies]
+advocate = ">=1.0,<2"
 aio-pika = "*"
 datamart-augmentation = "*"
 datamart-core = "*"

@@ -6,6 +6,7 @@ import prometheus_client
 import uuid
 
 from datamart_core.common import json2msg
+from datamart_core.materialize import advocate_session
 from datamart_core.objectstore import get_object_store
 from datamart_core.prom import PromMeasureRequest
 
@@ -83,11 +84,22 @@ class Upload(BaseHandler):
         elif self.get_body_argument('address', None):
             # Check the URL
             address = self.get_body_argument('address')
-            response = await self.http_client.fetch(address, raise_error=False)
-            if response.code != 200:
+
+            def try_get():
+                with advocate_session() as http_session:
+                    return http_session.get(
+                        address,
+                        headers={'User-Agent': 'Auctus'},
+                    )
+
+            response = await asyncio.get_event_loop().run_in_executor(
+                None,
+                try_get,
+            )
+            if response.status_code != 200:
                 return await self.send_error_json(
                     400, "Invalid URL ({} {})".format(
-                        response.code, response.reason,
+                        response.status_code, response.reason,
                     ),
                 )
 

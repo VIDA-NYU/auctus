@@ -137,8 +137,6 @@ class BaseHandler(RequestHandler):
             dct['format_' + k] = v
         return urlencode(dct)
 
-    http_client = AsyncHTTPClient(defaults=dict(user_agent="Auctus"))
-
 
 class Application(GracefulApplication):
     def __init__(self, *args, es, redis_client, lazo, **kwargs):
