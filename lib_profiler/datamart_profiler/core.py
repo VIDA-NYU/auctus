@@ -172,9 +172,6 @@ def count_garbage_rows(file):
 
 
 def load_data(data, load_max_size=None):
-    if not load_max_size:
-        load_max_size = MAX_SIZE
-
     metadata = {}
 
     if isinstance(data, pandas.DataFrame):
@@ -198,9 +195,10 @@ def load_data(data, load_max_size=None):
         data = data.astype(object).fillna('').astype(str)
 
         column_names = data.columns
-
-        # FIXME: no sampling here!
     else:
+        if not load_max_size:
+            load_max_size = MAX_SIZE
+
         column_names = None  # Avoids a warning
         with contextlib.ExitStack() as stack:
             if isinstance(data, (str, bytes)):
