@@ -221,6 +221,8 @@ spec:
             configMapKeyRef:
               name: config
               key: otel.jaeger.port
+        - name: OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES
+          value: "1"
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
         - name: ELASTICSEARCH_PREFIX
@@ -570,6 +572,8 @@ spec:
             configMapKeyRef:
               name: config
               key: otel.jaeger.port
+        - name: OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES
+          value: "1"
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
         - name: ELASTICSEARCH_PREFIX
