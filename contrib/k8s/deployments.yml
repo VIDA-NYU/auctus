@@ -206,6 +206,21 @@ spec:
             configMapKeyRef:
               name: config
               key: log.format
+        - name: OTEL_TRACES_EXPORTER
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: otel.exporter
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: otel.jaeger.host
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: otel.jaeger.port
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
         - name: ELASTICSEARCH_PREFIX
@@ -540,6 +555,21 @@ spec:
             configMapKeyRef:
               name: config
               key: log.format
+        - name: OTEL_TRACES_EXPORTER
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: otel.exporter
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: otel.jaeger.host
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: otel.jaeger.port
         - name: ELASTICSEARCH_HOSTS
           value: elasticsearch:9200
         - name: ELASTICSEARCH_PREFIX
