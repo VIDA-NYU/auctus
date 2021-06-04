@@ -7,6 +7,9 @@ metadata:
     app: auctus
 data:
   log.format: "json"
+  otel.exporter: "jaeger_thrift"
+  otel.jaeger.host: "jaeger"
+  otel.jaeger.port: "6831"
   elasticsearch.cluster_name: "auctus-cluster"
   elasticsearch.heap_size: "4g"
   elasticsearch_prefix: "auctusdev_"

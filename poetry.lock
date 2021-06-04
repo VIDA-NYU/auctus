@@ -267,6 +267,10 @@ datamart-materialize = "*"
 datamart-profiler = "*"
 elasticsearch = ">=7.0,<8.0"
 lazo-index-service = "0.7.0"
+opentelemetry-distro = "*"
+opentelemetry-exporter-jaeger-thrift = "*"
+opentelemetry-instrumentation-elasticsearch = "*"
+opentelemetry-instrumentation-grpc = "*"
 prometheus_client = "*"
 redis = ">=3.4,<4.0"
 tornado = ">=5.0"
@@ -461,6 +465,7 @@ develop = true
 [package.dependencies]
 datamart-geo = ">=0.2.3,<0.4"
 numpy = "*"
+opentelemetry-api = "*"
 pandas = "*"
 prometheus_client = "*"
 python-dateutil = "*"
@@ -489,6 +494,11 @@ datamart-profiler = "*"
 defusedxml = "*"
 elasticsearch = ">=7.0,<8.0"
 lazo-index-service = "0.7.0"
+opentelemetry-api = "*"
+opentelemetry-distro = "*"
+opentelemetry-exporter-jaeger-thrift = "*"
+opentelemetry-instrumentation-elasticsearch = "*"
+opentelemetry-instrumentation-grpc = "*"
 prometheus_client = "*"
 xlrd = "*"
 
@@ -584,6 +594,20 @@ description = "XML bomb protection for Python stdlib modules"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[[package]]
+name = "deprecated"
+version = "1.2.12"
+description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.dependencies]
+wrapt = ">=1.10,<2"
+
+[package.extras]
+dev = ["tox", "bump2version (<1)", "sphinx (<2)", "importlib-metadata (<3)", "importlib-resources (<4)", "configparser (<5)", "sphinxcontrib-websupport (<2)", "zipp (<2)", "PyTest (<5)", "PyTest-Cov (<2.6)", "pytest", "pytest-cov"]
 
 [[package]]
 name = "docutils"
@@ -1007,6 +1031,115 @@ python-versions = ">=3.6,"
 
 [package.dependencies]
 et-xmlfile = "*"
+
+[[package]]
+name = "opentelemetry-api"
+version = "1.2.0"
+description = "OpenTelemetry Python API"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+Deprecated = ">=1.2.6"
+
+[[package]]
+name = "opentelemetry-distro"
+version = "0.21b0"
+description = "OpenTelemetry Python Distro"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+opentelemetry-api = "1.2.0"
+opentelemetry-instrumentation = "0.21b0"
+opentelemetry-sdk = "1.2.0"
+
+[package.extras]
+otlp = ["opentelemetry-exporter-otlp (==1.2.0)"]
+
+[[package]]
+name = "opentelemetry-exporter-jaeger-thrift"
+version = "1.2.0"
+description = "Jaeger Thrift Exporter for OpenTelemetry"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+opentelemetry-api = "1.2.0"
+opentelemetry-sdk = "1.2.0"
+thrift = ">=0.10.0"
+
+[[package]]
+name = "opentelemetry-instrumentation"
+version = "0.21b0"
+description = "Instrumentation Tools & Auto Instrumentation for OpenTelemetry Python"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+opentelemetry-api = "1.2.0"
+wrapt = ">=1.0.0,<2.0.0"
+
+[[package]]
+name = "opentelemetry-instrumentation-elasticsearch"
+version = "0.21b0"
+description = "OpenTelemetry elasticsearch instrumentation"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+elasticsearch = ">=2.0"
+opentelemetry-api = "1.2.0"
+opentelemetry-instrumentation = "0.21b0"
+opentelemetry-semantic-conventions = "0.21b0"
+wrapt = ">=1.0.0,<2.0.0"
+
+[package.extras]
+test = ["opentelemetry-test (==0.21b0)", "elasticsearch-dsl (>=2.0)"]
+
+[[package]]
+name = "opentelemetry-instrumentation-grpc"
+version = "0.21b0"
+description = "OpenTelemetry gRPC instrumentation"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+grpcio = ">=1.27,<2.0"
+opentelemetry-api = "1.2.0"
+opentelemetry-instrumentation = "0.21b0"
+opentelemetry-sdk = "1.2.0"
+opentelemetry-semantic-conventions = "0.21b0"
+wrapt = ">=1.0.0,<2.0.0"
+
+[package.extras]
+test = ["opentelemetry-test (==0.21b0)", "opentelemetry-sdk (==1.2.0)", "protobuf (>=3.13.0)"]
+
+[[package]]
+name = "opentelemetry-sdk"
+version = "1.2.0"
+description = "OpenTelemetry Python SDK"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+opentelemetry-api = "1.2.0"
+opentelemetry-semantic-conventions = "0.21b0"
+
+[[package]]
+name = "opentelemetry-semantic-conventions"
+version = "0.21b0"
+description = "OpenTelemetry Semantic Conventions"
+category = "main"
+optional = false
+python-versions = ">=3.6"
 
 [[package]]
 name = "packaging"
@@ -1533,6 +1666,22 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "thrift"
+version = "0.13.0"
+description = "Python bindings for the Apache Thrift RPC system"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+six = ">=1.7.2"
+
+[package.extras]
+all = ["tornado (>=4.0)", "twisted"]
+tornado = ["tornado (>=4.0)"]
+twisted = ["twisted"]
+
+[[package]]
 name = "tornado"
 version = "6.1"
 description = "Tornado is a Python web framework and asynchronous networking library, originally developed at FriendFeed."
@@ -1863,6 +2012,10 @@ decorator = [
 defusedxml = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
+]
+deprecated = [
+    {file = "Deprecated-1.2.12-py2.py3-none-any.whl", hash = "sha256:08452d69b6b5bc66e8330adde0a4f8642e969b9e1702904d137eeb29c8ffc771"},
+    {file = "Deprecated-1.2.12.tar.gz", hash = "sha256:6d2de2de7931a968874481ef30208fd4e08da39177d61d3d4ebdf4366e7dbca1"},
 ]
 docutils = [
     {file = "docutils-0.17-py2.py3-none-any.whl", hash = "sha256:a71042bb7207c03d5647f280427f14bfbd1a65c9eb84f4b341d85fafb6bb4bdf"},
@@ -2210,6 +2363,38 @@ openpyxl = [
     {file = "openpyxl-3.0.7-py2.py3-none-any.whl", hash = "sha256:46af4eaf201a89b610fcca177eed957635f88770a5462fb6aae4a2a52b0ff516"},
     {file = "openpyxl-3.0.7.tar.gz", hash = "sha256:6456a3b472e1ef0facb1129f3c6ef00713cebf62e736cd7a75bcc3247432f251"},
 ]
+opentelemetry-api = [
+    {file = "opentelemetry-api-1.2.0.tar.gz", hash = "sha256:e29cacbf1bb0bf6651b92b472fa709be852279821bc6ae357a180adaad51962a"},
+    {file = "opentelemetry_api-1.2.0-py3-none-any.whl", hash = "sha256:17831862757402a945621837ea818d40321ed8e94a274b8bd78c44e43ba4aa60"},
+]
+opentelemetry-distro = [
+    {file = "opentelemetry-distro-0.21b0.tar.gz", hash = "sha256:3681e9705aab9362b60e6017041b1fe2d279140052ad9cca2b9f0ee481dd7ad3"},
+    {file = "opentelemetry_distro-0.21b0-py3-none-any.whl", hash = "sha256:db97a0cd3f618acaaf6866f28ef34092eca633dc7fa1b15ce1e6a85e3826cfc5"},
+]
+opentelemetry-exporter-jaeger-thrift = [
+    {file = "opentelemetry-exporter-jaeger-thrift-1.2.0.tar.gz", hash = "sha256:b2bf0e5cc0d0e2aa842cea1b02da9d742e892ddb222fb8a1a7d00c6960ce6b19"},
+    {file = "opentelemetry_exporter_jaeger_thrift-1.2.0-py3-none-any.whl", hash = "sha256:09db4dbe763db34d8190e3045f850c59cb6ea894cc25df69762073102a4492f5"},
+]
+opentelemetry-instrumentation = [
+    {file = "opentelemetry-instrumentation-0.21b0.tar.gz", hash = "sha256:ff11299eca6b197e4c399ca4f9850992c8eb6601869605ab7b3baa07d7f9b5d9"},
+    {file = "opentelemetry_instrumentation-0.21b0-py3-none-any.whl", hash = "sha256:8940a82f061cfa716c6f209ff3f13755939d954e1c9ed6b314fae2d31564df48"},
+]
+opentelemetry-instrumentation-elasticsearch = [
+    {file = "opentelemetry-instrumentation-elasticsearch-0.21b0.tar.gz", hash = "sha256:97993117114872f23de2f847cc5dcb2e6ad0d1b9fae96dcf8f230815a5091ad0"},
+    {file = "opentelemetry_instrumentation_elasticsearch-0.21b0-py3-none-any.whl", hash = "sha256:ac3507d122a4267ff4d9d9cbb847272fd61b81d34bcac1daa7ac9f489d33838d"},
+]
+opentelemetry-instrumentation-grpc = [
+    {file = "opentelemetry-instrumentation-grpc-0.21b0.tar.gz", hash = "sha256:dcb31f74837a66036cb13e1328a79936b8715f5199cc5dc5ed7761e011f91ee2"},
+    {file = "opentelemetry_instrumentation_grpc-0.21b0-py3-none-any.whl", hash = "sha256:778f1c43485876e183c70d39f81ce243068e4db57fe769b5a05b1888ef08095e"},
+]
+opentelemetry-sdk = [
+    {file = "opentelemetry-sdk-1.2.0.tar.gz", hash = "sha256:cbe48e97ca65ad49cfbe0943df135167b701c8d8bdd1fd2643fe1e5e427093d6"},
+    {file = "opentelemetry_sdk-1.2.0-py3-none-any.whl", hash = "sha256:369009fd709eba4cc1ac31244aecc2c0ef3206a2108d6ffda1aa7d26134794d8"},
+]
+opentelemetry-semantic-conventions = [
+    {file = "opentelemetry-semantic-conventions-0.21b0.tar.gz", hash = "sha256:78bf456fc127093720f8514fee319aac27649a5b8f5828393d769681ce1960e3"},
+    {file = "opentelemetry_semantic_conventions-0.21b0-py3-none-any.whl", hash = "sha256:174fc15eece79753484ef745aa8d980e9c23cab7c6aa9581b73ff74b82fccb4d"},
+]
 packaging = [
     {file = "packaging-20.9-py2.py3-none-any.whl", hash = "sha256:67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a"},
     {file = "packaging-20.9.tar.gz", hash = "sha256:5b327ac1320dc863dca72f4514ecc086f31186744b84a230374cc1fd776feae5"},
@@ -2552,6 +2737,9 @@ strict-rfc3339 = [
 threadpoolctl = [
     {file = "threadpoolctl-2.1.0-py3-none-any.whl", hash = "sha256:38b74ca20ff3bb42caca8b00055111d74159ee95c4370882bbff2b93d24da725"},
     {file = "threadpoolctl-2.1.0.tar.gz", hash = "sha256:ddc57c96a38beb63db45d6c159b5ab07b6bced12c45a1f07b2b92f272aebfa6b"},
+]
+thrift = [
+    {file = "thrift-0.13.0.tar.gz", hash = "sha256:9af1c86bf73433afc6010ed376a6c6aca2b54099cc0d61895f640870a9ae7d89"},
 ]
 tornado = [
     {file = "tornado-6.1-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:d371e811d6b156d82aa5f9a4e08b58debf97c302a35714f6f45e35139c332e32"},

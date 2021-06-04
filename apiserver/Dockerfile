@@ -39,5 +39,6 @@ ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
 USER 998
-ENTRYPOINT ["/tini", "--"]
+ENV OTEL_RESOURCE_ATTRIBUTES service.name=apiserver
+ENTRYPOINT ["/tini", "--", "opentelemetry-instrument"]
 CMD ["datamart-apiserver"]

@@ -67,6 +67,11 @@ services:
       - 8050:9000
     volumes:
       - ./volumes/minio:/export
+  jaeger:
+    image: jaegertracing/all-in-one
+    ports:
+      - 127.0.0.1:16686:16686
+      - 127.0.0.1:6831:6831/udp
   lazo:
     image: registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.1
     environment:
@@ -98,6 +103,11 @@ services:
       - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
+      - OTEL_TRACES_EXPORTER=jaeger_thrift
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=apiserver
+      - OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES=1
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq
@@ -200,6 +210,11 @@ services:
       - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
+      - OTEL_TRACES_EXPORTER=jaeger_thrift
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=profiler
+      - OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES=1
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
       - AMQP_HOST=rabbitmq

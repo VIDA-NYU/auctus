@@ -8,6 +8,7 @@ import io
 import itertools
 import lazo_index_service
 import logging
+import opentelemetry.trace
 import os
 import prometheus_client
 import sentry_sdk
@@ -28,6 +29,7 @@ from datamart_profiler import process_dataset
 
 
 logger = logging.getLogger(__name__)
+tracer = opentelemetry.trace.get_tracer(__name__)
 
 
 MAX_CONCURRENT_PROFILE = 1
@@ -131,24 +133,28 @@ def materialize_and_process_dataset(
         # Profile
         with profile_semaphore:
             with prom_incremented(PROM_PROFILING):
-                logger.info("Profiling dataset %r", dataset_id)
-                start = time.perf_counter()
-                metadata = process_dataset(
-                    data=dataset_path,
-                    dataset_id=dataset_id,
-                    metadata=metadata,
-                    lazo_client=lazo_client,
-                    nominatim=nominatim,
-                    geo_data=geo_data,
-                    include_sample=True,
-                    coverage=True,
-                    plots=True,
-                )
-                logger.info(
-                    "Profiling dataset %r took %.2fs",
-                    dataset_id,
-                    time.perf_counter() - start,
-                )
+                with tracer.start_as_current_span(
+                    'profile',
+                    attributes={'dataset': dataset_id},
+                ):
+                    logger.info("Profiling dataset %r", dataset_id)
+                    start = time.perf_counter()
+                    metadata = process_dataset(
+                        data=dataset_path,
+                        dataset_id=dataset_id,
+                        metadata=metadata,
+                        lazo_client=lazo_client,
+                        nominatim=nominatim,
+                        geo_data=geo_data,
+                        include_sample=True,
+                        coverage=True,
+                        plots=True,
+                    )
+                    logger.info(
+                        "Profiling dataset %r took %.2fs",
+                        dataset_id,
+                        time.perf_counter() - start,
+                    )
 
         metadata['materialize'] = materialize
         return metadata
