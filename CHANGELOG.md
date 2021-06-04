@@ -1,3 +1,15 @@
+NEXT (???)
+==========
+
+Incompatible changes:
+* Discovery scripts are now batch processes instead of services, e.g. they exit on completion instead of waiting for the next day (Kubernetes configs were updated to CronJob)
+
+Enhancements:
+* Added OpenTelemetry integration
+
+Bugfixes:
+* Added SSRF prevention code. Unless you are running other services alongside Auctus, the only thing that could be hit is Elasticsearch, whose JSON output would not be leaked, but let's plug this anyway
+
 0.9 (2021-04-28)
 ================
 
