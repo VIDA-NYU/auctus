@@ -1,4 +1,16 @@
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  labels:
+    app: auctus
+    what: redis
+data:
+  redis.conf: |
+    maxmemory 500mb
+    maxmemory-policy allkeys-lru
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,7 +48,7 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: config
+          name: redis-config
           items:
           - key: redis.conf
             path: redis.conf

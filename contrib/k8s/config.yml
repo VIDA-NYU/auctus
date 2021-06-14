@@ -19,9 +19,6 @@ data:
   frontend_url: http://192.168.99.100:30001
   nominatim_url: http://nominatim:8080/
   custom_fields: ""
-  redis.conf: |
-    maxmemory 500mb
-    maxmemory-policy allkeys-lru
   max_cache_bytes: "50000000000"  # 50 GB
   s3.url: ""
   s3.client_url: ""
