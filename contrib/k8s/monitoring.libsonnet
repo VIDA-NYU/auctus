@@ -587,6 +587,14 @@ function(config) (
                   runAsUser: 472,
                 },
                 env: (
+                  if config.grafana_anonymous_access then [
+                    {
+                      name: 'GF_AUTH_ANONYMOUS_ENABLED',
+                      value: 'true',
+                    },
+                  ]
+                  else []
+                ) + (
                   if std.objectHas(config, 'smtp') then [
                     {
                       name: 'GF_SMTP_ENABLED',

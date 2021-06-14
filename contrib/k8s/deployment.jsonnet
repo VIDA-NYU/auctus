@@ -56,6 +56,8 @@ local config = {
     jaeger: self.default,
     nominatim: self.default,
   },
+  // Whether Grafana can be access read-only by the public
+  grafana_anonymous_access: true,
   // OpenTelemetry configuration (can be null)
   //opentelemetry: null,
   opentelemetry: {
