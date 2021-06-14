@@ -156,7 +156,7 @@ k8s_configs:
   before_script:
     - curl -Lo /tmp/kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.4.7/kubeconform-linux-amd64.tar.gz && tar -xf /tmp/kubeconform.tar.gz -C /usr/local/bin && rm /tmp/kubeconform.tar.gz
   script:
-    - kubeconform --kubernetes-version 1.19.0 --strict contrib/k8s/*.yml
+    - kubeconform --kubernetes-version 1.19.0 --strict --summary contrib/k8s/*.yml
 
 pages-test:
   stage: test
