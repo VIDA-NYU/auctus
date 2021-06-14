@@ -154,9 +154,14 @@ frontend:
 k8s_configs:
   stage: test
   before_script:
+    - curl -Lo /tmp/jsonnet.tar.gz https://github.com/google/jsonnet/releases/download/v0.17.0/jsonnet-bin-v0.17.0-linux.tar.gz && tar -xf /tmp/jsonnet.tar.gz -C /usr/local/bin && rm /tmp/jsonnet.tar.gz
     - curl -Lo /tmp/kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.4.7/kubeconform-linux-amd64.tar.gz && tar -xf /tmp/kubeconform.tar.gz -C /usr/local/bin && rm /tmp/kubeconform.tar.gz
   script:
-    - kubeconform --kubernetes-version 1.19.0 --strict --summary contrib/k8s/*.yml
+    - mkdir contrib/k8s/yaml contrib/k8s/yaml/discovery
+    - (cd contrib/k8s; jsonnet -S -m yaml/ deployment.jsonnet)
+    - (cd contrib/k8s; jsonnet -S -m yaml/ secrets.jsonnet)
+    - kubeconform --kubernetes-version 1.19.0 --strict --summary contrib/k8s/yaml/*.yml
+    - find contrib/k8s -name yaml -prune -o \( -type f -not -name README.md -exec jsonnetfmt --test {} + \)
 
 pages-test:
   stage: test
