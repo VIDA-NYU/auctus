@@ -20,6 +20,8 @@ local gcs_creds = std.base64('');
       's3.key': s3_key,
       's3.secret': s3_secret,
       'gcs.creds': gcs_creds,
+      'smtp.user': 'auctus',
+      'smtp.password': 'auctus',
     },
     data: {
       [k]: std.base64(data[k])

@@ -1,6 +1,6 @@
 local utils = import 'utils.libsonnet';
 
-function() (
+function(config) (
   local prometheus_config = utils.hashed_config_map(
     name='monitoring',
     data={
@@ -586,6 +586,45 @@ function() (
                 securityContext: {
                   runAsUser: 472,
                 },
+                env: (
+                  if std.objectHas(config, 'smtp') then [
+                    {
+                      name: 'GF_SMTP_ENABLED',
+                      value: 'true',
+                    },
+                    {
+                      name: 'GF_SMTP_HOST',
+                      value: config.smtp.host,
+                    },
+                    {
+                      name: 'GF_SMTP_FROM_NAME',
+                      value: config.smtp.from_name,
+                    },
+                    {
+                      name: 'GF_SERVER_ROOT_URL',
+                      value: 'https://grafana.%s/' % config.domain,
+                    },
+                    {
+                      name: 'GF_SMTP_USER',
+                      valueFrom: {
+                        secretKeyRef: {
+                          name: 'secrets',
+                          key: 'smtp.user',
+                        },
+                      },
+                    },
+                    {
+                      name: 'GF_SMTP_PASSWORD',
+                      valueFrom: {
+                        secretKeyRef: {
+                          name: 'secrets',
+                          key: 'smtp.password',
+                        },
+                      },
+                    },
+                  ]
+                  else []
+                ),
                 ports: [
                   {
                     containerPort: 3000,

@@ -29,6 +29,10 @@ local config = {
     //gcs_project: 'auctus',
     //gcs_bucket_prefix: 'auctus-dev-',
   },
+  //smtp: {
+  //  host: 'mail.example.org',
+  //  from_name: 'Auctus',
+  //},
   domain: 'auctus.vida-nyu.org',
   custom_fields: {},
   //custom_fields: {
