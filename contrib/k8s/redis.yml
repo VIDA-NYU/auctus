@@ -1,0 +1,57 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: auctus
+    what: redis
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: auctus
+      what: redis
+  template:
+    metadata:
+      labels:
+        app: auctus
+        what: redis
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: redis
+        image: redis:6.2
+        securityContext:
+          runAsUser: 999
+        args: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/etc/redis
+      volumes:
+      - name: config
+        configMap:
+          name: config
+          items:
+          - key: redis.conf
+            path: redis.conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  labels:
+    app: auctus
+    what: redis
+spec:
+  selector:
+    app: auctus
+    what: redis
+  ports:
+  - protocol: TCP
+    port: 6379

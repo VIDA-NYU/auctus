@@ -115,3 +115,18 @@ spec:
       resources:
         requests:
           storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  labels:
+    app: auctus
+    what: elasticsearch
+spec:
+  selector:
+    app: auctus
+    what: elasticsearch
+  ports:
+  - protocol: TCP
+    port: 9200

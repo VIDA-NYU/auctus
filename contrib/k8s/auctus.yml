@@ -2,92 +2,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rabbitmq
-  labels:
-    app: auctus
-    what: rabbitmq
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: auctus
-      what: rabbitmq
-  template:
-    metadata:
-      labels:
-        app: auctus
-        what: rabbitmq
-    spec:
-      securityContext:
-        runAsNonRoot: true
-      containers:
-      - name: rabbitmq
-        image: quay.io/remram44/rabbitmq:3.8.11
-        securityContext:
-          runAsUser: 999
-        env:
-        - name: RABBITMQ_DEFAULT_USER
-          valueFrom:
-            secretKeyRef:
-              name: secrets
-              key: amqp.user
-        - name: RABBITMQ_DEFAULT_PASS
-          valueFrom:
-            secretKeyRef:
-              name: secrets
-              key: amqp.password
-        ports:
-        - containerPort: 5672
-        - containerPort: 15672
-        - containerPort: 15692
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis
-  labels:
-    app: auctus
-    what: redis
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: auctus
-      what: redis
-  template:
-    metadata:
-      labels:
-        app: auctus
-        what: redis
-    spec:
-      securityContext:
-        runAsNonRoot: true
-      containers:
-      - name: redis
-        image: redis:6.2
-        securityContext:
-          runAsUser: 999
-        args: ["redis-server", "/usr/local/etc/redis/redis.conf"]
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - name: config
-          mountPath: /usr/local/etc/redis
-      volumes:
-      - name: config
-        configMap:
-          name: config
-          items:
-          - key: redis.conf
-            path: redis.conf
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: lazo
   labels:
     app: auctus
@@ -133,6 +47,21 @@ spec:
         ports:
         - containerPort: 50051
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lazo
+  labels:
+    app: auctus
+    what: lazo
+spec:
+  selector:
+    app: auctus
+    what: lazo
+  ports:
+  - protocol: TCP
+    port: 50051
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -169,6 +98,21 @@ spec:
               key: api_url
         ports:
         - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: auctus
+    what: frontend
+spec:
+  selector:
+    app: auctus
+    what: frontend
+  ports:
+  - protocol: TCP
+    port: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -338,6 +282,21 @@ spec:
           readOnly: true
       terminationGracePeriodSeconds: 600
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apiserver
+  labels:
+    app: auctus
+    what: apiserver
+spec:
+  selector:
+    app: auctus
+    what: apiserver
+  ports:
+  - protocol: TCP
+    port: 8002
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -468,6 +427,21 @@ spec:
       - name: cache
         persistentVolumeClaim:
           claimName: cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coordinator
+  labels:
+    app: auctus
+    what: coordinator
+spec:
+  selector:
+    app: auctus
+    what: coordinator
+  ports:
+  - protocol: TCP
+    port: 8003
 ---
 apiVersion: apps/v1
 kind: DaemonSet
