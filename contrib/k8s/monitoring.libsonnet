@@ -609,10 +609,6 @@ function(config) (
                       value: config.smtp.from_name,
                     },
                     {
-                      name: 'GF_SERVER_ROOT_URL',
-                      value: 'https://grafana.%s/' % config.domain,
-                    },
-                    {
                       name: 'GF_SMTP_USER',
                       valueFrom: {
                         secretKeyRef: {
@@ -629,6 +625,14 @@ function(config) (
                           key: 'smtp.password',
                         },
                       },
+                    },
+                  ]
+                  else []
+                ) + (
+                  if config.grafana_domain != null then [
+                    {
+                      name: 'GF_SERVER_ROOT_URL',
+                      value: 'https://%s/' % config.grafana_domain,
                     },
                   ]
                   else []

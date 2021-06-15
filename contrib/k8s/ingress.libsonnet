@@ -21,7 +21,7 @@ function(
       spec: {
         rules: [
           {
-            host: config.domain,
+            host: config.app_domain,
             http: {
               paths: [
                 {
@@ -46,63 +46,71 @@ function(
         ],
       },
     },
-    {
-      apiVersion: 'extensions/v1beta1',
-      kind: 'Ingress',
-      metadata: {
-        name: 'ingress-coordinator',
-        annotations: {
-          'kubernetes.io/ingress.class': 'nginx',
+  ] + (
+    if config.coordinator_domain != null then [
+      {
+        apiVersion: 'extensions/v1beta1',
+        kind: 'Ingress',
+        metadata: {
+          name: 'ingress-coordinator',
+          annotations: {
+            'kubernetes.io/ingress.class': 'nginx',
+          },
+        },
+        spec: {
+          rules: [
+            {
+              host: config.coordinator_domain,
+              http: {
+                paths: [
+                  {
+                    path: '/',
+                    pathType: 'Prefix',
+                    backend: {
+                      serviceName: 'coordinator',
+                      servicePort: 8003,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
         },
       },
-      spec: {
-        rules: [
-          {
-            host: 'coordinator.%s' % config.domain,
-            http: {
-              paths: [
-                {
-                  path: '/',
-                  pathType: 'Prefix',
-                  backend: {
-                    serviceName: 'coordinator',
-                    servicePort: 8003,
-                  },
-                },
-              ],
-            },
+    ]
+    else []
+  ) + (
+    if config.grafana_domain != null then [
+      {
+        apiVersion: 'extensions/v1beta1',
+        kind: 'Ingress',
+        metadata: {
+          name: 'ingress-grafana',
+          annotations: {
+            'kubernetes.io/ingress.class': 'nginx',
           },
-        ],
-      },
-    },
-    {
-      apiVersion: 'extensions/v1beta1',
-      kind: 'Ingress',
-      metadata: {
-        name: 'ingress-grafana',
-        annotations: {
-          'kubernetes.io/ingress.class': 'nginx',
+        },
+        spec: {
+          rules: [
+            {
+              host: config.grafana_domain,
+              http: {
+                paths: [
+                  {
+                    path: '/',
+                    pathType: 'Prefix',
+                    backend: {
+                      serviceName: 'grafana',
+                      servicePort: 3000,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
         },
       },
-      spec: {
-        rules: [
-          {
-            host: 'grafana.%s' % config.domain,
-            http: {
-              paths: [
-                {
-                  path: '/',
-                  pathType: 'Prefix',
-                  backend: {
-                    serviceName: 'grafana',
-                    servicePort: 3000,
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ]
+    ]
+    else []
+  )
 )

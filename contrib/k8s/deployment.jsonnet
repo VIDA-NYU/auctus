@@ -18,8 +18,11 @@ local volumes = import 'volumes.libsonnet';
 
 local config = {
   image: function(name) 'auctus_%s:latest' % name,
-  frontend_url: 'http://192.168.99.100:30001',
-  api_url: 'http://192.168.99.100:30002/api/v1',
+  app_domain: 'auctus.vida-nyu.org',
+  //frontend_url: 'https://%s' % self.app_domain, // If using Ingress
+  frontend_url: 'http://192.168.99.100:30001',  // If using Minikube
+  //api_url: 'https://%s/api/v1' % self.app_domain, // If using Ingress
+  api_url: 'http://192.168.99.100:30002/api/v1',  // If using Minikube
   elasticsearch_prefix: 'auctusdev_',
   nominatim_url: 'http://nominatim:8080/',
   object_store: {
@@ -33,7 +36,6 @@ local config = {
   //  host: 'mail.example.org',
   //  from_name: 'Auctus',
   //},
-  domain: 'auctus.vida-nyu.org',
   custom_fields: {},
   //custom_fields: {
   //  specialId: { label: 'Special ID', type: 'integer' },
@@ -56,8 +58,12 @@ local config = {
     jaeger: self.default,
     nominatim: self.default,
   },
+  // Public domain for the coordinator (can be set to null to disable Ingress)
+  coordinator_domain: 'coordinator.auctus-vida-nyu.org',
   // Whether Grafana can be access read-only by the public
   grafana_anonymous_access: true,
+  // Public domain for Grafana (can be set to null to disable Ingress)
+  grafana_domain: 'grafana.auctus.vida-nyu.org',
   // OpenTelemetry configuration (can be null)
   //opentelemetry: null,
   opentelemetry: {
