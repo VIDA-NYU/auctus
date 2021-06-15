@@ -1,5 +1,77 @@
 function(config) (
   [
+    config.kube('apps/v1', 'DaemonSet', {
+      metadata: {
+        name: 'create-cache-dir',
+        labels: {
+          app: 'auctus',
+          what: 'create-cache-dir',
+        },
+      },
+      spec: {
+        selector: {
+          matchLabels: {
+            app: 'auctus',
+            what: 'create-cache-dir',
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'auctus',
+              what: 'create-cache-dir',
+            },
+          },
+          spec: {
+            securityContext: {
+              runAsNonRoot: true,
+            },
+            initContainers: [
+              {
+                name: 'create-volume',
+                image: 'busybox',
+                securityContext: {
+                  runAsNonRoot: false,
+                },
+                command: [
+                  'sh',
+                  '-c',
+                  'mkdir -p /mnt/cache',
+                ],
+                volumeMounts: [
+                  {
+                    mountPath: '/mnt',
+                    name: 'parentpath',
+                  },
+                ],
+              },
+            ],
+            containers: [
+              {
+                name: 'wait',
+                image: 'busybox',
+                securityContext: {
+                  runAsUser: 999,
+                },
+                command: [
+                  'sh',
+                  '-c',
+                  'while true; do sleep 3600; done',
+                ],
+              },
+            ],
+            volumes: [
+              {
+                name: 'parentpath',
+                hostPath: {
+                  path: '/var/lib/auctus/prod',
+                },
+              },
+            ],
+          },
+        },
+      },
+    }),
     config.kube('v1', 'PersistentVolume', {
       metadata: {
         name: 'elasticsearch',
