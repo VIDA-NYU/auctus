@@ -12,7 +12,11 @@ function(
           'nginx.ingress.kubernetes.io/proxy-send-timeout': '1200',
           'nginx.ingress.kubernetes.io/proxy-read-timeout': '1200',
           'nginx.ingress.kubernetes.io/proxy-body-size': '1024M',
-        },
+        } + if config.private_app then {
+          'nginx.ingress.kubernetes.io/auth-type': 'basic',
+          'nginx.ingress.kubernetes.io/auth-secret': 'basic-auth',
+          'nginx.ingress.kubernetes.io/auth-realm': 'Private instance',
+        } else {},
       },
       spec: {
         rules: [

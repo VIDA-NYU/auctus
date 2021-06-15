@@ -65,6 +65,9 @@ local config = {
     OTEL_EXPORTER_JAEGER_AGENT_HOST: 'jaeger',
     OTEL_EXPORTER_JAEGER_AGENT_PORT: '6831',
   },
+  // Protect the frontend and API with a password
+  // If true, the corresponding secret has to be set
+  private_app: false,
 };
 
 local files = {
