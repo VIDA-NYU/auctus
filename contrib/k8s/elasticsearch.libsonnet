@@ -1,0 +1,226 @@
+local utils = import 'utils.libsonnet';
+
+function(
+  config,
+  replicas,
+  heap_size,
+  cluster_name='auctus-cluster',
+) (
+  [
+    {
+      apiVersion: 'v1',
+      kind: 'Service',
+      metadata: {
+        name: 'elasticsearch-cluster',
+        labels: {
+          app: 'auctus',
+          what: 'elasticsearch',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'elasticsearch',
+        },
+        ports: [
+          {
+            name: 'transport',
+            protocol: 'TCP',
+            port: 9300,
+          },
+        ],
+        clusterIP: 'None',
+      },
+    },
+    {
+      apiVersion: 'apps/v1',
+      kind: 'StatefulSet',
+      metadata: {
+        name: 'elasticsearch',
+        labels: {
+          app: 'auctus',
+          what: 'elasticsearch',
+        },
+      },
+      spec: {
+        serviceName: 'elasticsearch-cluster',
+        replicas: replicas,
+        updateStrategy: {
+          type: 'RollingUpdate',
+        },
+        selector: {
+          matchLabels: {
+            app: 'auctus',
+            what: 'elasticsearch',
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'auctus',
+              what: 'elasticsearch',
+            },
+          },
+          spec: {
+            securityContext: {
+              runAsNonRoot: true,
+            },
+            initContainers: [
+              {
+                name: 'fix-permissions',
+                image: 'busybox',
+                securityContext: {
+                  runAsNonRoot: false,
+                },
+                command: [
+                  'sh',
+                  '-c',
+                  'chown -R 1000:1000 /usr/share/elasticsearch/data',
+                ],
+                volumeMounts: [
+                  {
+                    name: 'elasticsearch',
+                    mountPath: '/usr/share/elasticsearch/data',
+                  },
+                ],
+              },
+              {
+                name: 'increase-vm-max-map',
+                image: 'busybox',
+                command: [
+                  'sysctl',
+                  '-w',
+                  'vm.max_map_count=262144',
+                ],
+                securityContext: {
+                  runAsNonRoot: false,
+                  privileged: true,
+                },
+              },
+            ],
+            containers: [
+              {
+                name: 'elasticsearch',
+                image: 'docker.elastic.co/elasticsearch/elasticsearch:7.10.2',
+                securityContext: {
+                  runAsUser: 1000,
+                },
+                env: [
+                  {
+                    name: 'cluster.name',
+                    value: cluster_name,
+                  },
+                  {
+                    name: 'network.host',
+                    value: '0.0.0.0',
+                  },
+                  {
+                    name: 'ES_JAVA_OPTS',
+                    value: '-Xmx%s -Xms%s -Des.enforce.bootstrap.checks=true' % [heap_size, heap_size],
+                  },
+                  {
+                    name: 'discovery.zen.ping.unicast.hosts',
+                    value: 'elasticsearch-cluster:9300',
+                  },
+                  {
+                    name: 'discovery.zen.minimum_master_nodes',
+                    value: '1',
+                  },
+                  {
+                    name: 'xpack.security.enabled',
+                    value: 'false',
+                  },
+                  {
+                    name: 'xpack.monitoring.enabled',
+                    value: 'false',
+                  },
+                  {
+                    name: 'cluster.initial_master_nodes',
+                    value: 'elasticsearch-0',
+                  },
+                  {
+                    name: 'ES_HEAP_SIZE',
+                    value: heap_size,
+                  },
+                ],
+                ports: [
+                  {
+                    containerPort: 9200,
+                  },
+                ],
+                volumeMounts: [
+                  {
+                    mountPath: '/usr/share/elasticsearch/data',
+                    name: 'elasticsearch',
+                  },
+                  {
+                    name: 'synonyms',
+                    mountPath: '/usr/share/elasticsearch/config/synonyms/synonyms.txt',
+                    subPath: 'synonyms.txt',
+                  },
+                ],
+                readinessProbe: {
+                  httpGet: {
+                    scheme: 'HTTP',
+                    path: '/_cluster/health?local=true',
+                    port: 9200,
+                  },
+                  initialDelaySeconds: 5,
+                },
+              },
+            ],
+            volumes: [
+              {
+                name: 'synonyms',
+                persistentVolumeClaim: {
+                  claimName: 'es-synonyms',
+                  readOnly: true,
+                },
+              },
+            ],
+          } + utils.affinity(node=config.db_node_label.elasticsearch),
+        },
+        volumeClaimTemplates: [
+          {
+            metadata: {
+              name: 'elasticsearch',
+            },
+            spec: {
+              accessModes: [
+                'ReadWriteOnce',
+              ],
+              resources: {
+                requests: {
+                  storage: '5Gi',
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+    {
+      apiVersion: 'v1',
+      kind: 'Service',
+      metadata: {
+        name: 'elasticsearch',
+        labels: {
+          app: 'auctus',
+          what: 'elasticsearch',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'elasticsearch',
+        },
+        ports: [
+          {
+            protocol: 'TCP',
+            port: 9200,
+          },
+        ],
+      },
+    },
+  ]
+)
