@@ -114,9 +114,9 @@ local request_whitelist = function(config) (
   ],
   frontend: function(
     config,
-    frontend_replicas=1,
-    frontend_max_surge=1,
-    frontend_max_unavailable=0,
+    replicas=1,
+    max_surge=1,
+    max_unavailable=0,
            ) [
     {
       apiVersion: 'apps/v1',
@@ -129,12 +129,12 @@ local request_whitelist = function(config) (
         },
       },
       spec: {
-        replicas: frontend_replicas,
+        replicas: replicas,
         strategy: {
           type: 'RollingUpdate',
           rollingUpdate: {
-            maxSurge: frontend_max_surge,
-            maxUnavailable: frontend_max_unavailable,
+            maxSurge: max_surge,
+            maxUnavailable: max_unavailable,
           },
         },
         selector: {
@@ -199,9 +199,9 @@ local request_whitelist = function(config) (
   ],
   apiserver: function(
     config,
-    apiserver_replicas=4,
-    apiserver_max_surge=2,
-    apiserver_max_unavailable=0,
+    replicas=4,
+    max_surge=2,
+    max_unavailable=0,
             ) [
     {
       apiVersion: 'apps/v1',
@@ -214,12 +214,12 @@ local request_whitelist = function(config) (
         },
       },
       spec: {
-        replicas: apiserver_replicas,
+        replicas: replicas,
         strategy: {
           type: 'RollingUpdate',
           rollingUpdate: {
-            maxSurge: apiserver_max_surge,
-            maxUnavailable: apiserver_max_unavailable,
+            maxSurge: max_surge,
+            maxUnavailable: max_unavailable,
           },
         },
         selector: {
@@ -639,9 +639,9 @@ local request_whitelist = function(config) (
   ],
   profiler: function(
     config,
-    profiler_replicas=4,
-    profiler_max_surge=0,
-    profiler_max_unavailable=2,
+    replicas=4,
+    max_surge=0,
+    max_unavailable=2,
            ) [
     {
       apiVersion: 'apps/v1',
@@ -654,12 +654,12 @@ local request_whitelist = function(config) (
         },
       },
       spec: {
-        replicas: profiler_replicas,
+        replicas: replicas,
         strategy: {
           type: 'RollingUpdate',
           rollingUpdate: {
-            maxSurge: profiler_max_surge,
-            maxUnavailable: profiler_max_unavailable,
+            maxSurge: max_surge,
+            maxUnavailable: max_unavailable,
           },
         },
         selector: {
