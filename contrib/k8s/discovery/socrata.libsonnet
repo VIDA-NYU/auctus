@@ -6,6 +6,7 @@ function(
   schedule='30 1 * * 1,3,5',
 ) (
   local socrata_config = utils.hashed_config_map(
+    config.kube,
     name='socrata',
     data={
       'socrata.json': std.manifestJsonEx(
@@ -23,9 +24,7 @@ function(
 
   [
     socrata_config,
-    {
-      apiVersion: 'batch/v1beta1',
-      kind: 'CronJob',
+    config.kube('batch/v1beta1', 'CronJob', {
       metadata: {
         name: 'socrata',
         labels: {
@@ -130,6 +129,6 @@ function(
           },
         },
       },
-    },
+    }),
   ]
 )

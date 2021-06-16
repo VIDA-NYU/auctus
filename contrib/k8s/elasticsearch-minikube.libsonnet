@@ -1,11 +1,10 @@
 function(
+  config,
   cluster_name='auctus-cluster',
   heap_size='2g',
 ) (
   [
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'elasticsearch',
         labels: {
@@ -137,6 +136,6 @@ function(
           },
         },
       },
-    },
+    }),
   ]
 )

@@ -2,9 +2,7 @@ local utils = import 'utils.libsonnet';
 
 function(config) (
   [
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'rabbitmq',
         labels: {
@@ -77,10 +75,8 @@ function(config) (
           } + utils.affinity(node=config.db_node_label.rabbitmq),
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'rabbitmq',
         labels: {
@@ -100,10 +96,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'rabbitmq-management',
         labels: {
@@ -123,6 +117,6 @@ function(config) (
           },
         ],
       },
-    },
+    }),
   ]
 )

@@ -2,9 +2,7 @@ local utils = import '../utils.libsonnet';
 
 function(config) (
   [
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'test-discoverer',
         labels: {
@@ -24,10 +22,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    }),
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'test-discoverer',
         labels: {
@@ -138,6 +134,6 @@ function(config) (
           },
         },
       },
-    },
+    }),
   ]
 )

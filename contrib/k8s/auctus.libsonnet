@@ -15,9 +15,7 @@ local request_whitelist = function(config) (
     config,
     lazo_memory,
        ) [
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'lazo',
         labels: {
@@ -87,10 +85,8 @@ local request_whitelist = function(config) (
           } + utils.affinity(node=config.db_node_label.lazo),
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'lazo',
         labels: {
@@ -110,7 +106,7 @@ local request_whitelist = function(config) (
           },
         ],
       },
-    },
+    }),
   ],
   frontend: function(
     config,
@@ -118,9 +114,7 @@ local request_whitelist = function(config) (
     max_surge=1,
     max_unavailable=0,
            ) [
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'frontend',
         labels: {
@@ -172,10 +166,8 @@ local request_whitelist = function(config) (
           },
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'frontend',
         labels: {
@@ -195,7 +187,7 @@ local request_whitelist = function(config) (
           },
         ],
       },
-    },
+    }),
   ],
   apiserver: function(
     config,
@@ -203,9 +195,7 @@ local request_whitelist = function(config) (
     max_surge=2,
     max_unavailable=0,
             ) [
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'apiserver',
         labels: {
@@ -364,10 +354,8 @@ local request_whitelist = function(config) (
           },
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'apiserver',
         labels: {
@@ -387,12 +375,10 @@ local request_whitelist = function(config) (
           },
         ],
       },
-    },
+    }),
   ],
   coordinator: function(config) [
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'coordinator',
         labels: {
@@ -524,10 +510,8 @@ local request_whitelist = function(config) (
           },
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'coordinator',
         labels: {
@@ -547,15 +531,13 @@ local request_whitelist = function(config) (
           },
         ],
       },
-    },
+    }),
   ],
   cache_cleaner: function(
     config,
     cache_max_bytes=50000000000,  // 50 GB
                 ) [
-    {
-      apiVersion: 'apps/v1',
-      kind: 'DaemonSet',
+    config.kube('apps/v1', 'DaemonSet', {
       metadata: {
         name: 'cache-cleaner',
         labels: {
@@ -635,7 +617,7 @@ local request_whitelist = function(config) (
           },
         },
       },
-    },
+    }),
   ],
   profiler: function(
     config,
@@ -643,9 +625,7 @@ local request_whitelist = function(config) (
     max_surge=0,
     max_unavailable=2,
            ) [
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'profiler',
         labels: {
@@ -773,6 +753,6 @@ local request_whitelist = function(config) (
           },
         },
       },
-    },
+    }),
   ],
 }

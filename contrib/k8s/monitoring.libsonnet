@@ -2,6 +2,7 @@ local utils = import 'utils.libsonnet';
 
 function(config) (
   local prometheus_config = utils.hashed_config_map(
+    config.kube,
     name='monitoring',
     data={
       prometheus: std.manifestYamlDoc(
@@ -128,9 +129,7 @@ function(config) (
   );
   [
     prometheus_config,
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'elasticsearch-scrape',
         labels: {
@@ -151,10 +150,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'rabbitmq-scrape',
         labels: {
@@ -175,10 +172,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'lazo-scrape',
         labels: {
@@ -199,10 +194,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'profiler-scrape',
         labels: {
@@ -223,10 +216,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'apiserver-scrape',
         labels: {
@@ -247,10 +238,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'coordinator-scrape',
         labels: {
@@ -271,10 +260,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'cache-cleaner-scrape',
         labels: {
@@ -295,10 +282,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    }),
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'elasticsearch-exporter',
         labels: {
@@ -351,10 +336,8 @@ function(config) (
           } + utils.affinity(node=config.db_node_label.elasticsearch),
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'prometheus',
         labels: {
@@ -374,10 +357,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolumeClaim',
+    }),
+    config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
         name: 'prometheus',
       },
@@ -391,10 +372,8 @@ function(config) (
           },
         },
       },
-    },
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    }),
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'prometheus',
         labels: {
@@ -486,10 +465,8 @@ function(config) (
           } + utils.affinity(node=config.db_node_label.prometheus),
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'grafana',
         labels: {
@@ -509,10 +486,8 @@ function(config) (
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolumeClaim',
+    }),
+    config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
         name: 'grafana',
       },
@@ -526,10 +501,8 @@ function(config) (
           },
         },
       },
-    },
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    }),
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'grafana',
         labels: {
@@ -661,6 +634,6 @@ function(config) (
           } + utils.affinity(node=config.db_node_label.grafana),
         },
       },
-    },
+    }),
   ]
 )

@@ -7,9 +7,7 @@ function(
   cluster_name='auctus-cluster',
 ) (
   [
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'elasticsearch-cluster',
         labels: {
@@ -31,10 +29,8 @@ function(
         ],
         clusterIP: 'None',
       },
-    },
-    {
-      apiVersion: 'apps/v1',
-      kind: 'StatefulSet',
+    }),
+    config.kube('apps/v1', 'StatefulSet', {
       metadata: {
         name: 'elasticsearch',
         labels: {
@@ -198,10 +194,8 @@ function(
           },
         ],
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'elasticsearch',
         labels: {
@@ -221,6 +215,6 @@ function(
           },
         ],
       },
-    },
+    }),
   ]
 )

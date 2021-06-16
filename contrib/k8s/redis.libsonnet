@@ -5,6 +5,7 @@ function(
   maxmemory='500mb',
 ) (
   local redis_config = utils.hashed_config_map(
+    config.kube,
     name='redis-config',
     labels={
       app: 'auctus',
@@ -17,9 +18,7 @@ function(
 
   [
     redis_config,
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'redis',
         labels: {
@@ -90,10 +89,8 @@ function(
           } + utils.affinity(node=config.db_node_label.redis),
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'redis',
         labels: {
@@ -113,6 +110,6 @@ function(
           },
         ],
       },
-    },
+    }),
   ]
 )

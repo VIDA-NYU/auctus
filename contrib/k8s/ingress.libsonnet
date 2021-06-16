@@ -2,9 +2,7 @@ function(
   config,
 ) (
   [
-    {
-      apiVersion: 'extensions/v1beta1',
-      kind: 'Ingress',
+    config.kube('extensions/v1beta1', 'Ingress', {
       metadata: {
         name: 'ingress-app',
         annotations: {
@@ -45,12 +43,10 @@ function(
           },
         ],
       },
-    },
+    }),
   ] + (
     if config.coordinator_domain != null then [
-      {
-        apiVersion: 'extensions/v1beta1',
-        kind: 'Ingress',
+      config.kube('extensions/v1beta1', 'Ingress', {
         metadata: {
           name: 'ingress-coordinator',
           annotations: {
@@ -76,14 +72,12 @@ function(
             },
           ],
         },
-      },
+      }),
     ]
     else []
   ) + (
     if config.grafana_domain != null then [
-      {
-        apiVersion: 'extensions/v1beta1',
-        kind: 'Ingress',
+      config.kube('extensions/v1beta1', 'Ingress', {
         metadata: {
           name: 'ingress-grafana',
           annotations: {
@@ -109,7 +103,7 @@ function(
             },
           ],
         },
-      },
+      }),
     ]
     else []
   )

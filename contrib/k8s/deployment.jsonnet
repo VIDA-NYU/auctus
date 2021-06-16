@@ -74,6 +74,16 @@ local config = {
   // Protect the frontend and API with a password
   // If true, the corresponding secret has to be set
   private_app: false,
+  // Wrapper for Kubernetes objects
+  kube: function(version, kind, payload) (
+    std.mergePatch(
+      {
+        apiVersion: version,
+        kind: kind,
+      },
+      payload,
+    )
+  ),
 };
 
 local files = {
@@ -87,8 +97,14 @@ local files = {
     maxmemory='500mb',
   ),
   'elasticsearch.yml': elasticsearch_minikube(
+    config,
     heap_size='2g',
   ),
+  //'elasticsearch.yml': elasticsearch(
+  //  config,
+  //  replicas=3,
+  //  heap_size='2g',
+  //),
   'rabbitmq.yml': rabbitmq(config),
   'get-data.yml': get_data(config),
   'nominatim.yml': nominatim(

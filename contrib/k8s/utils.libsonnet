@@ -11,18 +11,16 @@
     local last_slash = slashes[std.length(slashes) - 1];
     std.substr(normpath, last_slash + 1, std.length(normpath))
   ),
-  hashed_config_map: function(name, data, labels={}) (
+  hashed_config_map: function(kube, name, data, labels={}) (
     local full_hash = std.md5(std.manifestJsonEx(data, '  '));
     local short_hash = std.substr(full_hash, 0, 6);
-    {
-      apiVersion: 'v1',
-      kind: 'ConfigMap',
+    kube('v1', 'ConfigMap', {
       metadata: {
         name: name + '-' + short_hash,
         labels: labels,
       },
       data: data,
-    }
+    })
   ),
   object_store_env: function(object_store) (
     local s3_props = ['s3_url', 's3_client_url', 's3_bucket_prefix'];

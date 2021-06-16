@@ -6,6 +6,7 @@ function(
   schedule='40 0 * * 1,3,5',
 ) (
   local zenodo_config = utils.hashed_config_map(
+    config.kube,
     name='zenodo',
     data={
       'zenodo.json': std.manifestJsonEx(
@@ -22,9 +23,7 @@ function(
 
   [
     zenodo_config,
-    {
-      apiVersion: 'batch/v1beta1',
-      kind: 'CronJob',
+    config.kube('batch/v1beta1', 'CronJob', {
       metadata: {
         name: 'zenodo',
         labels: {
@@ -129,6 +128,6 @@ function(
           },
         },
       },
-    },
+    }),
   ]
 )

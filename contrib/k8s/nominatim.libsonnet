@@ -5,9 +5,7 @@ function(
   data_url,
 ) (
   [
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolumeClaim',
+    config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
         name: 'nominatim',
       },
@@ -21,10 +19,8 @@ function(
           },
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'Service',
+    }),
+    config.kube('v1', 'Service', {
       metadata: {
         name: 'nominatim',
         labels: {
@@ -44,10 +40,8 @@ function(
           },
         ],
       },
-    },
-    {
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
+    }),
+    config.kube('apps/v1', 'Deployment', {
       metadata: {
         name: 'nominatim',
         labels: {
@@ -126,6 +120,6 @@ function(
           } + utils.affinity(node=config.db_node_label.nominatim),
         },
       },
-    },
+    }),
   ]
 )

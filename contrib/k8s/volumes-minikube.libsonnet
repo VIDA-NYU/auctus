@@ -1,8 +1,6 @@
 function() (
   [
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolume',
+    config.kube('v1', 'PersistentVolume', {
       metadata: {
         name: 'elasticsearch',
         labels: {
@@ -22,10 +20,8 @@ function() (
           path: '/var/lib/auctus/prod/elasticsearch',
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolumeClaim',
+    }),
+    config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
         name: 'elasticsearch',
       },
@@ -41,10 +37,8 @@ function() (
           },
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolume',
+    }),
+    config.kube('v1', 'PersistentVolume', {
       metadata: {
         name: 'cache',
         labels: {
@@ -79,10 +73,8 @@ function() (
           },
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolumeClaim',
+    }),
+    config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
         name: 'cache',
       },
@@ -98,10 +90,8 @@ function() (
           },
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolume',
+    }),
+    config.kube('v1', 'PersistentVolume', {
       metadata: {
         name: 'geo-data',
         labels: {
@@ -121,10 +111,8 @@ function() (
           path: '/var/lib/auctus/geo-data',
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolumeClaim',
+    }),
+    config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
         name: 'geo-data',
       },
@@ -140,10 +128,8 @@ function() (
           },
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolume',
+    }),
+    config.kube('v1', 'PersistentVolume', {
       metadata: {
         name: 'es-synonyms',
         labels: {
@@ -163,10 +149,8 @@ function() (
           path: '/var/lib/auctus/es-synonyms',
         },
       },
-    },
-    {
-      apiVersion: 'v1',
-      kind: 'PersistentVolumeClaim',
+    }),
+    config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
         name: 'es-synonyms',
       },
@@ -182,6 +166,6 @@ function() (
           },
         },
       },
-    },
+    }),
   ]
 )

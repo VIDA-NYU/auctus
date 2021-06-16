@@ -5,9 +5,7 @@ function(
   schedule='20 1 * * 1,3,5',
 ) (
   [
-    {
-      apiVersion: 'batch/v1beta1',
-      kind: 'CronJob',
+    config.kube('batch/v1beta1', 'CronJob', {
       metadata: {
         name: 'uaz-indicators',
         labels: {
@@ -97,6 +95,6 @@ function(
           },
         },
       },
-    },
+    }),
   ]
 )

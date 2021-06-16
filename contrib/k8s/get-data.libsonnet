@@ -2,9 +2,7 @@ function(
   config,
 ) (
   [
-    {
-      apiVersion: 'batch/v1',
-      kind: 'Job',
+    config.kube('batch/v1', 'Job', {
       metadata: {
         name: 'get-geo-data',
         labels: {
@@ -48,10 +46,8 @@ function(
           },
         },
       },
-    },
-    {
-      apiVersion: 'batch/v1',
-      kind: 'Job',
+    }),
+    config.kube('batch/v1', 'Job', {
       metadata: {
         name: 'get-es-synonyms',
         labels: {
@@ -95,6 +91,6 @@ function(
           },
         },
       },
-    },
+    }),
   ]
 )

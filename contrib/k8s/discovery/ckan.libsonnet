@@ -6,6 +6,7 @@ function(
   schedule='10 1 * * 1,3,5',
 ) (
   local ckan_config = utils.hashed_config_map(
+    config.kube,
     name='ckan',
     data={
       'ckan.json': std.manifestJsonEx(
@@ -23,9 +24,7 @@ function(
 
   [
     ckan_config,
-    {
-      apiVersion: 'batch/v1beta1',
-      kind: 'CronJob',
+    config.kube('batch/v1beta1', 'CronJob', {
       metadata: {
         name: 'ckan',
         labels: {
@@ -130,6 +129,6 @@ function(
           },
         },
       },
-    },
+    }),
   ]
 )
