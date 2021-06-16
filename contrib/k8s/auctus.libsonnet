@@ -107,6 +107,28 @@ local request_whitelist = function(config) (
         ],
       },
     }),
+    config.kube('v1', 'Service', {
+      metadata: {
+        name: 'lazo-scrape',
+        labels: {
+          app: 'auctus',
+          what: 'monitoring',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'lazo',
+        },
+        clusterIP: 'None',
+        ports: [
+          {
+            protocol: 'TCP',
+            port: 8000,
+          },
+        ],
+      },
+    }),
   ],
   frontend: function(
     config,
@@ -376,6 +398,28 @@ local request_whitelist = function(config) (
         ],
       },
     }),
+    config.kube('v1', 'Service', {
+      metadata: {
+        name: 'apiserver-scrape',
+        labels: {
+          app: 'auctus',
+          what: 'monitoring',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'apiserver',
+        },
+        clusterIP: 'None',
+        ports: [
+          {
+            protocol: 'TCP',
+            port: 8000,
+          },
+        ],
+      },
+    }),
   ],
   coordinator: function(config) [
     config.kube('apps/v1', 'Deployment', {
@@ -532,6 +576,28 @@ local request_whitelist = function(config) (
         ],
       },
     }),
+    config.kube('v1', 'Service', {
+      metadata: {
+        name: 'coordinator-scrape',
+        labels: {
+          app: 'auctus',
+          what: 'monitoring',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'coordinator',
+        },
+        clusterIP: 'None',
+        ports: [
+          {
+            protocol: 'TCP',
+            port: 8000,
+          },
+        ],
+      },
+    }),
   ],
   cache_cleaner: function(
     config,
@@ -616,6 +682,28 @@ local request_whitelist = function(config) (
             ],
           },
         },
+      },
+    }),
+    config.kube('v1', 'Service', {
+      metadata: {
+        name: 'cache-cleaner-scrape',
+        labels: {
+          app: 'auctus',
+          what: 'monitoring',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'cache-cleaner',
+        },
+        clusterIP: 'None',
+        ports: [
+          {
+            protocol: 'TCP',
+            port: 8000,
+          },
+        ],
       },
     }),
   ],
@@ -752,6 +840,28 @@ local request_whitelist = function(config) (
             ],
           },
         },
+      },
+    }),
+    config.kube('v1', 'Service', {
+      metadata: {
+        name: 'profiler-scrape',
+        labels: {
+          app: 'auctus',
+          what: 'monitoring',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'profiler',
+        },
+        clusterIP: 'None',
+        ports: [
+          {
+            protocol: 'TCP',
+            port: 8000,
+          },
+        ],
       },
     }),
   ],

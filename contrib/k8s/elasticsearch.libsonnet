@@ -7,6 +7,7 @@ function(
   cluster_name='auctus-cluster',
 ) (
   [
+    // Headless Service governing the StatefulSet
     config.kube('v1', 'Service', {
       metadata: {
         name: 'elasticsearch-cluster',
@@ -212,6 +213,83 @@ function(
           {
             protocol: 'TCP',
             port: 9200,
+          },
+        ],
+      },
+    }),
+    // Prometheus exporter
+    config.kube('apps/v1', 'Deployment', {
+      metadata: {
+        name: 'elasticsearch-exporter',
+        labels: {
+          app: 'auctus',
+          what: 'elasticsearch-exporter',
+        },
+      },
+      spec: {
+        replicas: 1,
+        strategy: {
+          type: 'Recreate',
+        },
+        selector: {
+          matchLabels: {
+            app: 'auctus',
+            what: 'elasticsearch-exporter',
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'auctus',
+              what: 'elasticsearch-exporter',
+            },
+          },
+          spec: {
+            securityContext: {
+              runAsNonRoot: true,
+            },
+            containers: [
+              {
+                name: 'elasticsearch-exporter',
+                image: 'justwatch/elasticsearch_exporter:1.1.0',
+                securityContext: {
+                  runAsUser: 999,
+                },
+                args: [
+                  '--es.uri=http://elasticsearch:9200',
+                  '--es.cluster_settings',
+                  '--es.indices',
+                  '--es.indices_settings',
+                ],
+                ports: [
+                  {
+                    containerPort: 9114,
+                  },
+                ],
+              },
+            ],
+          } + utils.affinity(node=config.db_node_label.elasticsearch),
+        },
+      },
+    }),
+    config.kube('v1', 'Service', {
+      metadata: {
+        name: 'elasticsearch-scrape',
+        labels: {
+          app: 'auctus',
+          what: 'monitoring',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'elasticsearch-exporter',
+        },
+        clusterIP: 'None',
+        ports: [
+          {
+            protocol: 'TCP',
+            port: 9114,
           },
         ],
       },

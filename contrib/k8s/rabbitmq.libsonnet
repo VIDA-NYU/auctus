@@ -118,5 +118,27 @@ function(config) (
         ],
       },
     }),
+    config.kube('v1', 'Service', {
+      metadata: {
+        name: 'rabbitmq-scrape',
+        labels: {
+          app: 'auctus',
+          what: 'monitoring',
+        },
+      },
+      spec: {
+        selector: {
+          app: 'auctus',
+          what: 'rabbitmq',
+        },
+        clusterIP: 'None',
+        ports: [
+          {
+            protocol: 'TCP',
+            port: 15692,
+          },
+        ],
+      },
+    }),
   ]
 )
