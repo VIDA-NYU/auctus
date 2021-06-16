@@ -72,7 +72,7 @@ local request_whitelist = function(config) (
                   },
                   {
                     name: 'JAVA_OPTS',
-                    value: '-Xmx%s -Xms%s' % [lazo_memory, lazo_memory],
+                    value: '-Xmx%d -Xms%d' % [lazo_memory, lazo_memory],
                   },
                 ],
                 ports: [

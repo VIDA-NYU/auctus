@@ -112,7 +112,7 @@ local files = {
     data_url='https://www.googleapis.com/download/storage/v1/b/nominatim-data-nyu/o/nominatim-postgres-data.tar?alt=media',
   ),
   'auctus.yml': (
-    auctus.lazo(config, lazo_memory='2g')
+    auctus.lazo(config, lazo_memory=2000000000)  // 2 GB
     + auctus.frontend(config)
     + auctus.apiserver(config)
     + auctus.coordinator(config)
