@@ -4,7 +4,6 @@ local socrata = import 'discovery/socrata.libsonnet';
 local uaz_indicators = import 'discovery/uaz-indicators.libsonnet';
 local worldbank = import 'discovery/worldbank.libsonnet';
 local zenodo = import 'discovery/zenodo.libsonnet';
-local elasticsearch_minikube = import 'elasticsearch-minikube.libsonnet';
 local elasticsearch = import 'elasticsearch.libsonnet';
 local get_data = import 'get-data.libsonnet';
 local ingress = import 'ingress.libsonnet';
@@ -96,15 +95,11 @@ local files = {
     config,
     maxmemory='500mb',
   ),
-  'elasticsearch.yml': elasticsearch_minikube(
+  'elasticsearch.yml': elasticsearch(
     config,
+    replicas=1,
     heap_size='2g',
   ),
-  //'elasticsearch.yml': elasticsearch(
-  //  config,
-  //  replicas=3,
-  //  heap_size='2g',
-  //),
   'rabbitmq.yml': rabbitmq(config),
   'get-data.yml': get_data(config),
   'nominatim.yml': nominatim(

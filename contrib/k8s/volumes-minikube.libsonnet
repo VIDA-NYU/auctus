@@ -23,7 +23,7 @@ function() (
     }),
     config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
-        name: 'elasticsearch',
+        name: 'elasticsearch-elasticsearch-0',
       },
       spec: {
         storageClassName: '',
