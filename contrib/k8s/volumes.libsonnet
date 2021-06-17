@@ -3,10 +3,15 @@ function(
   cache_size,
   local_cache_path,
 ) (
+  local cache_pv_name = 'cache-%s' % std.substr(
+    std.md5(local_cache_path),
+    0,
+    6,
+  );
   [
     config.kube('v1', 'PersistentVolume', {
       metadata: {
-        name: 'cache',
+        name: cache_pv_name,
         labels: {
           type: 'local',
           app: 'auctus',
@@ -50,7 +55,7 @@ function(
       },
       spec: {
         storageClassName: 'manual',
-        volumeName: 'cache',
+        volumeName: cache_pv_name,
         accessModes: [
           'ReadWriteMany',
         ],
