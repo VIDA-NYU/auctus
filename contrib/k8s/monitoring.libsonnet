@@ -374,6 +374,10 @@ function(config) (
                       value: config.smtp.from_name,
                     },
                     {
+                      name: 'GF_SMTP_FROM_ADDRESS',
+                      value: config.smtp.from_address,
+                    },
+                    {
                       name: 'GF_SMTP_USER',
                       valueFrom: {
                         secretKeyRef: {

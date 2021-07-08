@@ -34,6 +34,7 @@ local config = {
   //smtp: {
   //  host: 'mail.example.org',
   //  from_name: 'Auctus',
+  //  from_address: 'auctus@example.org',
   //},
   custom_fields: {},
   //custom_fields: {
