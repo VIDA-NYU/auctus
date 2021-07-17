@@ -3,6 +3,7 @@ NEXT (???)
 
 Incompatible changes:
 * Discovery scripts are now batch processes instead of services, e.g. they exit on completion instead of waiting for the next day (Kubernetes configs were updated to CronJob)
+* Rewrote Kubernetes config using jsonnet, for easier customization
 
 Enhancements:
 * Added OpenTelemetry integration
