@@ -18,7 +18,8 @@ include:
 gemnasium-python-dependency_scanning:
   before_script:
     - pip install poetry==1.1.6
-    - poetry export -f requirements.txt -o requirements.txt
+    - poetry export -f requirements.txt -o requirements.txt --without-hashes
+    - sed -i '/file:/d' requirements.txt
     - rm poetry.lock pyproject.toml
 
 test:
