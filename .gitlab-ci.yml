@@ -20,7 +20,7 @@ test:
     - docker info
     - curl -Lo /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/1.28.5/docker-compose-$(uname -s)-$(uname -m)"
     - chmod +x /usr/local/bin/docker-compose
-    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.6 && /root/.poetry/bin/poetry config virtualenvs.create false
+    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.7 && /root/.poetry/bin/poetry config virtualenvs.create false
     # Important note about this: the Docker server is on a separate host,
     # so exposed ports are at 'docker' not 'localhost', and
     # Docker containers can't reach the local runner!
@@ -117,7 +117,7 @@ test:
 python-style:
   stage: test
   before_script:
-    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.6 && /root/.poetry/bin/poetry config virtualenvs.create false
+    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.7 && /root/.poetry/bin/poetry config virtualenvs.create false
     - /root/.poetry/bin/poetry install
   script:
     - flake8 --ignore=E731,W504,W503,E501
@@ -160,13 +160,13 @@ k8s_configs:
     - mkdir contrib/k8s/yaml contrib/k8s/yaml/discovery
     - (cd contrib/k8s; jsonnet -S -m yaml/ deployment.jsonnet)
     - (cd contrib/k8s; jsonnet -S -m yaml/ secrets.jsonnet)
-    - kubeconform --kubernetes-version 1.19.0 --strict --summary contrib/k8s/yaml/*.yml
+    - kubeconform --kubernetes-version 1.20.7 --strict --summary contrib/k8s/yaml/*.yml
     - find contrib/k8s -name yaml -prune -o \( -type f -not -name README.md -exec jsonnetfmt --test {} + \)
 
 pages-test:
   stage: test
   before_script:
-    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.6 && /root/.poetry/bin/poetry config virtualenvs.create false
+    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.7 && /root/.poetry/bin/poetry config virtualenvs.create false
   script:
     - /root/.poetry/bin/poetry install
     - (cd docs/ && make html)
@@ -185,7 +185,7 @@ pages-test:
 pages:
   stage: deploy
   before_script:
-    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.6 && /root/.poetry/bin/poetry config virtualenvs.create false
+    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.7 && /root/.poetry/bin/poetry config virtualenvs.create false
   script:
     - /root/.poetry/bin/poetry install
     - (cd docs/ && make html)
