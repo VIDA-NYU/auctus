@@ -19,7 +19,9 @@ function HitInfoBox(props: {
   session?: Session;
 }) {
   const {hit, searchQuery, infoBoxType, session} = props;
-  const lastUpdatedDate = new Date(hit.metadata.date);
+  const lastUpdatedDate = hit.metadata.materialize.date
+    ? new Date(hit.metadata.materialize.date)
+    : null;
   return (
     <div className="card shadow-sm">
       <div className="card-body d-flex flex-column">
@@ -43,9 +45,11 @@ function HitInfoBox(props: {
                 hit.metadata.source
               )}
             </div>
-            <div className="mt-2">
-              <b>Last Updated Date:</b> {lastUpdatedDate.toLocaleString()}
-            </div>
+            {lastUpdatedDate !== null ? (
+              <div className="mt-2">
+                <b>Last Updated Date:</b> {lastUpdatedDate.toLocaleString()}
+              </div>
+            ) : null}
             <Description hit={hit} label={true} />
             <DatasetTypes hit={hit} label={true} />
             <DatasetColumns
