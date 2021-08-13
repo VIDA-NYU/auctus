@@ -41,7 +41,7 @@ def unique_filename(pattern):
 def export():
     es = PrefixedElasticsearch()
 
-    print("Dumping datasets", end='', flush=True)
+    print("Dumping datasets")
     hits = es.scan(
         index='datasets',
         query={
@@ -56,7 +56,7 @@ def export():
         with open(encode_dataset_id(h['_id']), 'w') as fp:
             json.dump(h['_source'], fp, sort_keys=True, indent=2)
 
-    print("Dumping Lazo data", end='', flush=True)
+    print("Dumping Lazo data")
     hits = es.scan(
         index='lazo',
         query={
