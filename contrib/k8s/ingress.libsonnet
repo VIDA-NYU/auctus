@@ -2,11 +2,10 @@ function(
   config,
 ) (
   [
-    config.kube('extensions/v1beta1', 'Ingress', {
+    config.kube('networking.k8s.io/v1', 'Ingress', {
       metadata: {
         name: 'ingress-app',
         annotations: {
-          'kubernetes.io/ingress.class': 'nginx',
           'nginx.ingress.kubernetes.io/proxy-send-timeout': '1200',
           'nginx.ingress.kubernetes.io/proxy-read-timeout': '1200',
           'nginx.ingress.kubernetes.io/proxy-body-size': '1024M',
@@ -17,6 +16,7 @@ function(
         } else {},
       },
       spec: {
+        ingressClassName: 'nginx',
         rules: [
           {
             host: config.app_domain,
@@ -26,16 +26,24 @@ function(
                   path: '/api/v1/',
                   pathType: 'Prefix',
                   backend: {
-                    serviceName: 'apiserver',
-                    servicePort: 8002,
+                    service: {
+                      name: 'apiserver',
+                      port: {
+                        number: 8002,
+                      },
+                    },
                   },
                 },
                 {
                   path: '/',
                   pathType: 'Prefix',
                   backend: {
-                    serviceName: 'frontend',
-                    servicePort: 80,
+                    service: {
+                      name: 'frontend',
+                      port: {
+                        number: 80,
+                      },
+                    },
                   },
                 },
               ],
@@ -46,14 +54,12 @@ function(
     }),
   ] + (
     if config.coordinator_domain != null then [
-      config.kube('extensions/v1beta1', 'Ingress', {
+      config.kube('networking.k8s.io/v1', 'Ingress', {
         metadata: {
           name: 'ingress-coordinator',
-          annotations: {
-            'kubernetes.io/ingress.class': 'nginx',
-          },
         },
         spec: {
+          ingressClassName: 'nginx',
           rules: [
             {
               host: config.coordinator_domain,
@@ -63,8 +69,12 @@ function(
                     path: '/',
                     pathType: 'Prefix',
                     backend: {
-                      serviceName: 'coordinator',
-                      servicePort: 8003,
+                      service: {
+                        name: 'coordinator',
+                        port: {
+                          number: 8003,
+                        },
+                      },
                     },
                   },
                 ],
@@ -77,14 +87,12 @@ function(
     else []
   ) + (
     if config.grafana_domain != null then [
-      config.kube('extensions/v1beta1', 'Ingress', {
+      config.kube('networking.k8s.io/v1', 'Ingress', {
         metadata: {
           name: 'ingress-grafana',
-          annotations: {
-            'kubernetes.io/ingress.class': 'nginx',
-          },
         },
         spec: {
+          ingressClassName: 'nginx',
           rules: [
             {
               host: config.grafana_domain,
@@ -94,8 +102,12 @@ function(
                     path: '/',
                     pathType: 'Prefix',
                     backend: {
-                      serviceName: 'grafana',
-                      servicePort: 3000,
+                      service: {
+                        name: 'grafana',
+                        port: {
+                          number: 3000,
+                        },
+                      },
                     },
                   },
                 ],
