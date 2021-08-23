@@ -113,6 +113,11 @@ class Version(BaseHandler):
         })
 
 
+class DocRedirect(BaseHandler):
+    def get(self):
+        return self.redirect('https://docs.auctus.vida-nyu.org/rest/')
+
+
 class Health(BaseHandler):
     def get(self):
         if self.application.is_closing:
@@ -163,6 +168,8 @@ def make_app(debug=False):
             ApiRule('/location', '1', LocationSearch),
             ApiRule('/statistics', '1', Statistics),
             ApiRule('/version', '1', Version),
+
+            URLSpec(r'/(?:api(?:/(?:v[0-9.]+)?)?)?', DocRedirect),
 
             URLSpec('/health', Health),
         ],
