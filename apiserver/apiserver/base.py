@@ -116,17 +116,22 @@ class BaseHandler(RequestHandler):
         return format, format_options, format_ext
 
     def read_format(self, default_format='csv'):
-        format = self.get_query_argument('format', default_format)
-        format_options = {}
-        for n, v in self.request.query_arguments.items():
-            if n.startswith('format_'):
-                if len(v) != 1:
-                    self.send_error_json(
-                        400,
-                        "Multiple occurrences of format option %r" % n[7:],
-                    )
-                    raise HTTPError(400)
-                format_options[n[7:]] = self.decode_argument(v[0])
+        if 'format' in self.request.files:
+            # Legacy
+            format = self.request.files['format'][0].body.decode('utf-8')
+            format_options = {}
+        else:
+            format = self.get_query_argument('format', default_format)
+            format_options = {}
+            for n, v in self.request.query_arguments.items():
+                if n.startswith('format_'):
+                    if len(v) != 1:
+                        self.send_error_json(
+                            400,
+                            "Multiple occurrences of format option %r" % n[7:],
+                        )
+                        raise HTTPError(400)
+                    format_options[n[7:]] = self.decode_argument(v[0])
 
         return self.validate_format(format, format_options)
 

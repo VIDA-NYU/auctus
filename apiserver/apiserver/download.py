@@ -147,12 +147,6 @@ class Download(BaseDownload, GracefulHandler, ProfilePostedData):
                 task = self.request.files['task'][0].body.decode('utf-8')
             if task is not None:
                 task = json.loads(task)
-            if 'format' in self.request.files:
-                return await self.send_error_json(
-                    400,
-                    "Sending 'format' in the POST data is no longer "
-                    "supported, please use query parameters",
-                )
         if task is None:
             return await self.send_error_json(
                 400,
