@@ -15,10 +15,13 @@ fi
 
 IMAGES="
     busybox
-    docker.elastic.co/elasticsearch/elasticsearch:7.6.2
-    remram/rabbitmq:3.7.8
-    redis:5.0
-    registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.3.0
+    docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    quay.io/remram44/rabbitmq:3.7.11
+    redis:6.2
+    minio/minio:RELEASE.2020-10-18T21-54-12Z
+    jaegertracing/all-in-one
+    registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.1
+    auctus_cache-cleaner
     auctus_coordinator
     auctus_apiserver
     auctus_profiler
