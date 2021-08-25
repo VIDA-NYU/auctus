@@ -20,7 +20,7 @@ IMAGES="
     redis:6.2
     minio/minio:RELEASE.2020-10-18T21-54-12Z
     jaegertracing/all-in-one
-    registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.1
+    registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.2
     auctus_cache-cleaner
     auctus_coordinator
     auctus_apiserver

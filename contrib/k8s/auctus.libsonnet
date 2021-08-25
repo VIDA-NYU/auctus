@@ -48,7 +48,7 @@ local request_whitelist = function(config) (
             containers: [
               {
                 name: 'lazo',
-                image: 'registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.1',
+                image: 'registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.2',
                 env: [
                   {
                     name: 'DATABASE',
