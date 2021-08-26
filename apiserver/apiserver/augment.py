@@ -120,7 +120,7 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
                             data_token,
                         ))
                         if data is None:
-                            return self.send_error_json(
+                            return await self.send_error_json(
                                 404,
                                 "Data token expired",
                             )
@@ -241,4 +241,4 @@ class AugmentResult(BaseHandler):
                     name='augmentation',
                 )
             else:
-                return self.send_error_json(404, "Data not in cache")
+                return await self.send_error_json(404, "Data not in cache")
