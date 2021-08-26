@@ -24,6 +24,7 @@ def get_object_store():
 class ObjectStore(object):
     BUCKETS = (
         'datasets',
+        'snapshots',
     )
 
     def __init__(self, fs, prefix=None):

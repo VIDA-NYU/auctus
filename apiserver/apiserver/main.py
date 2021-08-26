@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import itertools
 import lazo_index_service
 import logging
@@ -12,6 +13,7 @@ import tornado.httputil
 import tornado.web
 
 from datamart_core.common import PrefixedElasticsearch, setup_logging
+from datamart_core.objectstore import get_object_store
 from datamart_core.prom import PromMeasureRequest
 import datamart_profiler
 
@@ -118,6 +120,22 @@ class DocRedirect(BaseHandler):
         return self.redirect('https://docs.auctus.vida-nyu.org/rest/')
 
 
+class Snapshot(BaseHandler):
+    def get(self, filename):
+        object_store = get_object_store()
+        with contextlib.ExitStack() as stack:
+            try:
+                dataset = stack.enter_context(
+                    object_store.open('snapshots', filename)
+                )
+            except FileNotFoundError:
+                pass
+            else:
+                return self.redirect(object_store.file_url(dataset))
+
+    head = get
+
+
 class Health(BaseHandler):
     def get(self):
         if self.application.is_closing:
@@ -170,6 +188,7 @@ def make_app(debug=False):
             ApiRule('/version', '1', Version),
 
             URLSpec(r'/(?:api(?:/(?:v[0-9.]+)?)?)?', DocRedirect),
+            URLSpec(r'/snapshot/(.*)', Snapshot),
 
             URLSpec('/health', Health),
         ],

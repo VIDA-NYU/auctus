@@ -35,6 +35,18 @@ function(
                   },
                 },
                 {
+                  path: '/snapshot/',
+                  pathType: 'Prefix',
+                  backend: {
+                    service: {
+                      name: 'apiserver',
+                      port: {
+                        number: 8002,
+                      },
+                    },
+                  },
+                },
+                {
                   path: '/',
                   pathType: 'Prefix',
                   backend: {
