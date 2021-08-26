@@ -172,5 +172,20 @@ function(
         },
       },
     }),
+    config.kube('v1', 'PersistentVolumeClaim', {
+      metadata: {
+        name: 'minio',
+      },
+      spec: {
+        accessModes: [
+          'ReadWriteOnce',
+        ],
+        resources: {
+          requests: {
+            storage: '5Gi',
+          },
+        },
+      },
+    }),
   ]
 )

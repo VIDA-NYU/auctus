@@ -7,8 +7,8 @@ local private_app_password = |||
 local amqp_user = 'auctus';
 local amqp_password = 'auctus';
 local admin_password = 'auctus';
-local s3_key = '';
-local s3_secret = '';
+local s3_key = 'devkey';
+local s3_secret = 'devpassword';
 local gcs_creds = std.base64('');
 
 {

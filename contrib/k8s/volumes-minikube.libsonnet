@@ -246,5 +246,44 @@ function(config) (
         },
       },
     }),
+    config.kube('v1', 'PersistentVolume', {
+      metadata: {
+        name: 'minio',
+        labels: {
+          type: 'local',
+          app: 'auctus',
+          what: 'minio',
+        },
+      },
+      spec: {
+        storageClassName: 'manual',
+        capacity: {
+          storage: '5Gi',
+        },
+        accessModes: [
+          'ReadWriteOnce',
+        ],
+        hostPath: {
+          path: '/var/lib/auctus/minio',
+        },
+      },
+    }),
+    config.kube('v1', 'PersistentVolumeClaim', {
+      metadata: {
+        name: 'minio',
+      },
+      spec: {
+        storageClassName: 'manual',
+        volumeName: 'minio',
+        accessModes: [
+          'ReadWriteOnce',
+        ],
+        resources: {
+          requests: {
+            storage: '5Gi',
+          },
+        },
+      },
+    }),
   ]
 )

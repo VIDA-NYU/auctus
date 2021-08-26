@@ -8,6 +8,7 @@ local elasticsearch = import 'elasticsearch.libsonnet';
 local get_data = import 'get-data.libsonnet';
 local ingress = import 'ingress.libsonnet';
 local jaeger = import 'jaeger.libsonnet';
+local minio = import 'minio.libsonnet';
 local monitoring = import 'monitoring.libsonnet';
 local nominatim = import 'nominatim.libsonnet';
 local rabbitmq = import 'rabbitmq.libsonnet';
@@ -26,7 +27,7 @@ local config = {
   nominatim_url: 'http://nominatim:8080/',
   object_store: {
     s3_url: 'http://minio:9000',
-    s3_client_url: 'http://localhost:9000',
+    s3_client_url: 'http://files.localhost:30808',
     s3_bucket_prefix: 'auctus-dev-',
     //gcs_project: 'auctus',
     //gcs_bucket_prefix: 'auctus-dev-',
@@ -52,6 +53,7 @@ local config = {
     redis: self.default,
     elasticsearch: self.default,
     rabbitmq: self.default,
+    minio: self.default,
     lazo: self.default,
     prometheus: self.default,
     grafana: self.default,
@@ -119,6 +121,7 @@ local files = {
     + auctus.profiler(config)
   ),
   'ingress.yml': ingress(config),
+  'minio.yml': minio(config),
   'monitoring.yml': monitoring(config),
   'jaeger.yml': jaeger(config),
   'discovery/ckan.yml': ckan(
