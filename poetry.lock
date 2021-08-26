@@ -524,6 +524,23 @@ type = "directory"
 url = "profiler"
 
 [[package]]
+name = "datamart-snapshotter-service"
+version = "0.0"
+description = ""
+category = "main"
+optional = false
+python-versions = "*"
+develop = true
+
+[package.dependencies]
+datamart-core = "*"
+prometheus_client = "*"
+
+[package.source]
+type = "directory"
+url = "snapshotter"
+
+[[package]]
 name = "datamart-socrata-discovery-service"
 version = "0.0"
 description = "Socrata discovery service for Auctus"
@@ -1804,7 +1821,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "ab624d3b94dea5d0f7d103a8f4178b95ae1de432b98cb502f60cc682eef7f703"
+content-hash = "f9d64b41d0eca26ab0bfe8a3101c915d54bbac8554d35a49c2c38c21de1daa97"
 
 [metadata.files]
 advocate = [
@@ -2027,6 +2044,7 @@ datamart-materialize = []
 datamart-noaa-discovery-service = []
 datamart-profiler = []
 datamart-profiler-service = []
+datamart-snapshotter-service = []
 datamart-socrata-discovery-service = []
 datamart-uaz-indicators-service = []
 datamart-worldbank-discovery-service = []
