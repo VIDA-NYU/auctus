@@ -10,10 +10,8 @@ load the JSON files) or `reprocess_all.py` (which will only read some fields,
 and get the metadata by reprocessing the datasets).
 """
 
-from functools import lru_cache
 import logging
 import json
-import os
 
 from datamart_core.common import PrefixedElasticsearch, encode_dataset_id
 
@@ -21,21 +19,15 @@ from datamart_core.common import PrefixedElasticsearch, encode_dataset_id
 SIZE = 10000
 
 
-@lru_cache(maxsize=10000000)
-def _next_filename(pattern):
-    number = 0
-    while os.path.exists(pattern.format(number)):
-        number += 1
-    return [number]  # Return a list so we can mutate it
+_unique_filenames = {}
 
 
 def unique_filename(pattern):
     """Return a file name with an incrementing number to make it unique.
     """
-    number = _next_filename(pattern)
-    fname = pattern.format(number[0])
-    number[0] += 1
-    return fname
+    number = _unique_filenames.get(pattern, 0) + 1
+    _unique_filenames[pattern] = number
+    return pattern.format(number)
 
 
 def export():
