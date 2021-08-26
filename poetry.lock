@@ -299,6 +299,23 @@ type = "directory"
 url = "lib_augmentation"
 
 [[package]]
+name = "datamart-cache-cleaner-service"
+version = "0.0"
+description = ""
+category = "main"
+optional = false
+python-versions = "*"
+develop = true
+
+[package.dependencies]
+datamart-core = "*"
+prometheus_client = "*"
+
+[package.source]
+type = "directory"
+url = "cache_cleaner"
+
+[[package]]
 name = "datamart-ckan-discovery-service"
 version = "0.0"
 description = "CKAN discovery service for Auctus"
@@ -1779,7 +1796,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "ee16d4ea5a3c2d411a07800f09ab1ae829b92df4fdfea0a25e3535a0d507418b"
+content-hash = "c34f6e50d051ad8ef88cceb41998d2c12425bdd952883ca6c58b9245d896f875"
 
 [metadata.files]
 advocate = [
@@ -1991,6 +2008,7 @@ cryptography = [
 ]
 datamart-api-service = []
 datamart-augmentation = []
+datamart-cache-cleaner-service = []
 datamart-ckan-discovery-service = []
 datamart-coordinator-service = []
 datamart-core = []

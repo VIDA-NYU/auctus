@@ -37,6 +37,7 @@ datamart-fslock = {path = "./lib_fslock", develop=true}
 datamart-coordinator-service = {path = "./coordinator", develop=true}
 datamart-profiler-service = {path = "./profiler", develop=true}
 datamart-api-service = {path = "./apiserver", develop=true}
+datamart-cache-cleaner-service = {path = "cache_cleaner", develop=true}
 datamart-noaa-discovery-service = {path = "./discovery/noaa", develop=true}
 datamart-socrata-discovery-service = {path = "./discovery/socrata", develop=true}
 datamart-zenodo-discovery-service = {path = "./discovery/zenodo", develop=true}
