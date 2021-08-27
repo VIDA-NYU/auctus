@@ -1,4 +1,4 @@
-function() (
+function(config) (
   [
     config.kube('v1', 'PersistentVolume', {
       metadata: {
@@ -10,6 +10,7 @@ function() (
         },
       },
       spec: {
+        storageClassName: 'manual',
         capacity: {
           storage: '5Gi',
         },
@@ -26,7 +27,7 @@ function() (
         name: 'elasticsearch-elasticsearch-0',
       },
       spec: {
-        storageClassName: '',
+        storageClassName: 'manual',
         volumeName: 'elasticsearch',
         accessModes: [
           'ReadWriteOnce',
@@ -101,11 +102,13 @@ function() (
         },
       },
       spec: {
+        storageClassName: 'manual',
         capacity: {
           storage: '300Mi',
         },
         accessModes: [
           'ReadOnlyMany',
+          'ReadWriteOnce',
         ],
         hostPath: {
           path: '/var/lib/auctus/geo-data',
@@ -117,10 +120,11 @@ function() (
         name: 'geo-data',
       },
       spec: {
-        storageClassName: '',
+        storageClassName: 'manual',
         volumeName: 'geo-data',
         accessModes: [
           'ReadOnlyMany',
+          'ReadWriteOnce',
         ],
         resources: {
           requests: {
@@ -139,11 +143,13 @@ function() (
         },
       },
       spec: {
+        storageClassName: 'manual',
         capacity: {
           storage: '5Mi',
         },
         accessModes: [
           'ReadOnlyMany',
+          'ReadWriteOnce',
         ],
         hostPath: {
           path: '/var/lib/auctus/es-synonyms',
@@ -155,10 +161,11 @@ function() (
         name: 'es-synonyms',
       },
       spec: {
-        storageClassName: '',
+        storageClassName: 'manual',
         volumeName: 'es-synonyms',
         accessModes: [
           'ReadOnlyMany',
+          'ReadWriteOnce',
         ],
         resources: {
           requests: {
