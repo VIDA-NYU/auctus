@@ -129,7 +129,7 @@ class Snapshot(BaseHandler):
                     object_store.open('snapshots', filename)
                 )
             except FileNotFoundError:
-                pass
+                return self.send_error(404)
             else:
                 return self.redirect(object_store.file_url(dataset))
 
