@@ -49,6 +49,7 @@ local request_whitelist = function(config) (
               {
                 name: 'lazo',
                 image: 'registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.2',
+                imagePullPolicy: 'IfNotPresent',
                 env: [
                   {
                     name: 'DATABASE',

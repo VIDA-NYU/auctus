@@ -17,6 +17,7 @@ function(
               {
                 name: 'get-data',
                 image: config.image('profiler'),
+                imagePullPolicy: 'IfNotPresent',
                 securityContext: {
                   runAsNonRoot: false,
                   runAsUser: 0,
@@ -62,6 +63,7 @@ function(
               {
                 name: 'get-data',
                 image: config.image('profiler'),
+                imagePullPolicy: 'IfNotPresent',
                 securityContext: {
                   runAsNonRoot: false,
                   runAsUser: 0,
