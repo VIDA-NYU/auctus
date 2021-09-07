@@ -15,4 +15,8 @@ API
 
 The :py:func:`datamart_profiler.process_dataset` function is the entrypoint for the library. It returns a dict following Auctus's JSON result schema.
 
-..  autofunction:: datamart_profiler.process_dataset
+..  autofunction:: datamart_profiler.core.process_dataset
+
+..  autofunction:: datamart_profiler.temporal.parse_date
+
+..  autofunction:: datamart_profiler.core.count_rows_to_skip
