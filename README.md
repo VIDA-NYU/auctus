@@ -47,6 +47,8 @@ Make sure you have checked out the submodule with `git submodule init && git sub
 
 Make sure you have [Git LFS](https://git-lfs.github.com/) installed and configured (`git lfs install`)
 
+Install datamart-geo: `pip install datamart-geo~=0.3`
+
 Copy env.default to .env and update the variables there. You might want to update the password for a production deployment.
 
 Make sure your node is set up for running Elasticsearch. You will probably have to [raise the mmap limit](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/vm-max-map-count.html).
