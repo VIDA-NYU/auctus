@@ -38,7 +38,7 @@ SAMPLE_ROWS = 20
 MAX_UNCLEAN_ADDRESSES = 0.20  # 20%
 
 
-HEADER_MAX_GARBAGE = 6
+MAX_SKIPPED_ROWS = 6
 """Maximum number of rows to discard at the top of the file"""
 
 HEADER_CONSISTENT_ROWS = 4
@@ -132,7 +132,7 @@ def _lazo_retry(func):
     return func()
 
 
-def count_garbage_rows(file):
+def count_rows_to_skip(file):
     """Count non-data rows at the top, such as titles etc.
     """
     # Check whether this is a binary file
@@ -152,8 +152,8 @@ def count_garbage_rows(file):
     run_cols = None
     run_len = 0
     try:
-        for i, row in enumerate(itertools.islice(reader, HEADER_MAX_GARBAGE + HEADER_CONSISTENT_ROWS)):
-            if i >= HEADER_MAX_GARBAGE + HEADER_CONSISTENT_ROWS:
+        for i, row in enumerate(itertools.islice(reader, MAX_SKIPPED_ROWS + HEADER_CONSISTENT_ROWS)):
+            if i >= MAX_SKIPPED_ROWS + HEADER_CONSISTENT_ROWS:
                 raise ValueError("Can't find consistent CSV data in file")
             if len(row) == run_cols:
                 # Number of columns matches with run

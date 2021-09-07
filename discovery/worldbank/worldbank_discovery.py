@@ -13,7 +13,7 @@ import zipfile
 
 from datamart_core import Discoverer
 from datamart_core.common import setup_logging
-from datamart_profiler.core import count_garbage_rows
+from datamart_profiler.core import count_rows_to_skip
 
 
 logger = logging.getLogger(__name__)
@@ -165,7 +165,7 @@ class WorldBankDiscoverer(Discoverer):
 
             # Load DataFrame
             with dl_zip.open(csv_name, 'r') as dl_csv:
-                skip_nb_rows = count_garbage_rows(dl_csv)
+                skip_nb_rows = count_rows_to_skip(dl_csv)
                 df = pandas.read_csv(
                     dl_csv,
                     dtype=str, na_filter=False,

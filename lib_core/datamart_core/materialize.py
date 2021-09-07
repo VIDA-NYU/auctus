@@ -21,7 +21,7 @@ from datamart_materialize.spss import spss_to_csv
 from datamart_materialize.stata import stata_to_csv
 from datamart_materialize.tsv import tsv_to_csv
 from datamart_profiler import parse_date
-from datamart_profiler.core import count_garbage_rows
+from datamart_profiler.core import count_rows_to_skip
 
 from .discovery import encode_dataset_id
 from .objectstore import get_object_store
@@ -326,7 +326,7 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
 
     # Check for non-data rows at the top of the file
     with open(dataset_path, 'r') as fp:
-        non_data_rows = count_garbage_rows(fp)
+        non_data_rows = count_rows_to_skip(fp)
         if non_data_rows > 0:
             # Update metadata
             logger.info("Detected %d lines to skip", non_data_rows)
