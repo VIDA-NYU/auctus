@@ -20,3 +20,12 @@ The :py:func:`datamart_profiler.process_dataset` function is the entrypoint for 
 ..  autofunction:: datamart_profiler.temporal.parse_date
 
 ..  autofunction:: datamart_profiler.core.count_rows_to_skip
+
+Command-line usage
+------------------
+
+You can also use datamart-profiler from the command-line like so::
+
+    $ python -m datamart_profiler <file.csv>
+
+It will output the extracted metadata as JSON.
