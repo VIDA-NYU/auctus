@@ -85,7 +85,9 @@ function getEncoding(typePlot: string | undefined) {
     type: 'quantitative',
     title: null,
   };
-  if (typePlot === 'histogram_numerical') {
+  if (typePlot === undefined) {
+    return;
+  } else if (typePlot === 'histogram_numerical') {
     return {
       y: yContent,
       x: {
