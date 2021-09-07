@@ -188,16 +188,11 @@ interface TableProps {
 
 function Table(props: TableProps) {
   const {columns, data, profiledData} = props;
-  const {
-    headerGroups,
-    rows,
-    getTableProps,
-    getTableBodyProps,
-    prepareRow,
-  } = useTable({
-    columns,
-    data,
-  });
+  const {headerGroups, rows, getTableProps, getTableBodyProps, prepareRow} =
+    useTable({
+      columns,
+      data,
+    });
   return (
     <table
       {...getTableProps()}

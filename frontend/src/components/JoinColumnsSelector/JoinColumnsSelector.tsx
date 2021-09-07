@@ -209,9 +209,8 @@ class JoinColumnsSelector extends React.Component<
     }
 
     functions = this.unique([...this.state.columns, ...functions]);
-    const columnAggregations: ColumnAggregations = this.updateColumnAggregations(
-      functions
-    );
+    const columnAggregations: ColumnAggregations =
+      this.updateColumnAggregations(functions);
 
     this.setState(
       {

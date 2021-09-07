@@ -292,12 +292,8 @@ class GeoSpatialCoverageMap extends React.PureComponent<
         }
       );
       if (feature) {
-        const {
-          topLeftLat,
-          topLeftLon,
-          bottomRightLat,
-          bottomRightLon,
-        } = transformCoordinates(feature);
+        const {topLeftLat, topLeftLon, bottomRightLat, bottomRightLon} =
+          transformCoordinates(feature);
 
         const topLeft = toStringHDMS([topLeftLon, topLeftLat]);
         const bottomRight = toStringHDMS([bottomRightLon, bottomRightLat]);
