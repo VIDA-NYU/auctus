@@ -38,7 +38,7 @@ def parse_size(number):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser('datamart_profiler')
     parser.add_argument('-v', action='count',
                         default=0, dest='verbosity',
                         help="augments verbosity level")
