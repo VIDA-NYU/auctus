@@ -272,7 +272,7 @@ interface DataTable {
   rows: string[][];
 }
 
-class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
+class ProfileDataset extends React.PureComponent<ProfileDatasetProps> {
   getSample(text: string): string[][] {
     const lines = text.split('\n');
     const result = [];

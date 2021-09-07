@@ -10,7 +10,7 @@ interface StatisticsState {
 }
 
 class Statistics extends React.PureComponent<{}, StatisticsState> {
-  timer: number | undefined;
+  timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(props: {}) {
     super(props);
@@ -26,7 +26,7 @@ class Statistics extends React.PureComponent<{}, StatisticsState> {
   }
 
   componentWillUnmount() {
-    clearInterval(this.timer);
+    clearInterval(this.timer as unknown as number);
   }
 
   async fetchStatus() {

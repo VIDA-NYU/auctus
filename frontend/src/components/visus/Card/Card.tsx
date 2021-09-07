@@ -5,7 +5,7 @@ import './card.css';
 interface CardProps {
   title: string;
   className?: string;
-  style?: object;
+  style?: React.CSSProperties;
 }
 
 class Card extends React.PureComponent<CardProps> {

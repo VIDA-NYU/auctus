@@ -73,7 +73,7 @@ export interface ColumnMetadata {
   structural_type: string;
   semantic_types: string[];
   num_distinct_values?: number;
-  coverage?: Array<{}>;
+  coverage?: Array<unknown>;
   mean?: number;
   stddev?: number;
   plot?: PlotVega;

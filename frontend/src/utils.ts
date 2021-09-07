@@ -29,6 +29,7 @@ export function cloneObject<T>(object: T): T {
   return JSON.parse(JSON.stringify(object));
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function shallowEqual(a: object, b: object) {
   if (a === b) {
     return true;

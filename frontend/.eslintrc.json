@@ -16,6 +16,15 @@
         "destructuring": "all",
         "ignoreReadBeforeAssign": false
       }
+    ],
+    "@typescript-eslint/ban-types": [
+      "error",
+      {
+        "extendDefaults": true,
+        "types": {
+          "{}": false
+        }
+      }
     ]
   },
   "settings": {
