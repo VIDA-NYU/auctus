@@ -45,6 +45,7 @@ datamart-ckan-discovery-service = {path = "./discovery/ckan", develop=true}
 datamart-uaz-indicators-service = {path = "./discovery/uaz_indicators", develop=true}
 datamart-worldbank-discovery-service = {path= "./discovery/worldbank", develop=true}
 datamart-isi-discovery-service = {path= "./discovery/isi", develop=true}
+toml = "*"
 
 [tool.poetry.dev-dependencies]
 flake8 = "*"
