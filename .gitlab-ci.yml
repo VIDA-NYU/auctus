@@ -34,35 +34,36 @@ test:
         python -m readme_renderer "$i" >/dev/null
       done
 
-    # Build base image, using the GitLab registry as a cache
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
-    - |
-      export AUCTUS_BASE=$CI_REGISTRY_IMAGE/base
-      # Pull/update the base image
-      chmod 644 poetry.lock docker/install_deps.py
-      touch -t 200001010000.00 poetry.lock docker/install_deps.py
-      docker build -t $AUCTUS_BASE . \
-        --cache-from=$AUCTUS_BASE \
-        --build-arg BUILDKIT_INLINE_CACHE=1 \
-        -f base.Dockerfile
-      # Push the updated image to the registry (might be no-op)
-      docker push $AUCTUS_BASE
-
     # Set up environment for testing
     - cp tests/ci.env .env
     - . scripts/load_env.sh
-    - "sed -i 's/# CI: //' docker-compose.yml base.Dockerfile */Dockerfile"
-    - "sed -i '/# NOTCI$/d' docker-compose.yml base.Dockerfile */Dockerfile"
+    - export DATAMART_VERSION=v0.0
+    - "sed -i 's/# CI: //' docker-compose.yml Dockerfile"
+    - "sed -i '/# NOTCI$/d' docker-compose.yml Dockerfile"
     - "sed -i 's/127\\.0\\.0\\.1:\\([0-9]\\+\\):\\([0-9]\\+\\)/\\1:\\2/' docker-compose.yml"
     - mkdir cov
     - chown 998 cov
 
+    # Build image, using the GitLab registry as a cache
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - |
+      export AUCTUS_IMAGE=$CI_REGISTRY_IMAGE/ci
+      # Pull/update the image
+      chmod 644 poetry.lock docker/install_deps.py
+      touch -t 200001010000.00 poetry.lock docker/install_deps.py
+      docker build -t auctus . \
+        --cache-from=$AUCTUS_IMAGE \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        --build-arg version=$DATAMART_VERSION
+      # Push the updated image to the registry (might be no-op)
+      docker tag auctus $AUCTUS_IMAGE
+      docker push $AUCTUS_IMAGE
+
     # Download lib_geo data
     - python -m datamart_geo --update lib_geo/data/
 
-    # Build images
-    - docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg version=$DATAMART_VERSION apiserver apilb cache-cleaner coordinator profiler test-discoverer
-    - docker-compose pull rabbitmq  # Don't build it
+    # Pull image not to be built
+    - docker-compose pull rabbitmq
 
     # Bring services up
     - scripts/setup.sh
@@ -133,23 +134,23 @@ frontend:
     # so exposed ports are at 'docker' not 'localhost', and
     # Docker containers can't reach the local runner!
   script:
-    # Build base image, using the GitLab registry as a cache
+    # Build image, using the GitLab registry as a cache
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
     - |
-      export AUCTUS_NPM_BASE=$CI_REGISTRY_IMAGE/npm
-      # Pull/update the base npm image
+      export AUCTUS_NPM_IMAGE=$CI_REGISTRY_IMAGE/ci-frontend
+      # Pull/update the npm image
       chmod 644 frontend/package.json frontend/package-lock.json
       touch -t 200001010000.00 frontend/package.json frontend/package-lock.json
-      docker build -t $AUCTUS_NPM_BASE . \
-        --cache-from=$AUCTUS_NPM_BASE \
+      docker build -t $AUCTUS_NPM_IMAGE . \
+        --cache-from=$AUCTUS_NPM_IMAGE \
         --build-arg BUILDKIT_INLINE_CACHE=1 \
         -f frontend/Dockerfile \
         --target=build
       # Push the updated image to the registry (might be no-op)
-      docker push $CI_REGISTRY_IMAGE/npm
+      docker push $AUCTUS_NPM_IMAGE
 
     # Run the frontend tests
-    - docker run --rm $AUCTUS_NPM_BASE sh -c "CI=true npm run test"
+    - docker run --rm $AUCTUS_NPM_IMAGE sh -c "CI=true npm run test"
 
 k8s_configs:
   stage: test
