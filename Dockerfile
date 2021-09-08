@@ -38,7 +38,7 @@ RUN pip --disable-pip-version-check --no-cache-dir install toml
 COPY docker/install_deps.py poetry.lock /usr/src/app/
 RUN python3 install_deps.py poetry.lock
 # CI: RUN pip --disable-pip-version-check install coverage==5.3.1
-# CI: COPY .coveragerc /usr/src/app/
+# CI: COPY docker/coveragerc /usr/src/app/.coveragerc
 
 COPY --chown=appuser --from=sources /usr/src/app /usr/src/app/
 RUN sh -xc "for pkg in \"\$@\"; do pip --disable-pip-version-check --no-cache-dir install --no-deps -e ./\$pkg; done" -- \
