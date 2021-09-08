@@ -188,16 +188,11 @@ interface TableProps {
 
 function Table(props: TableProps) {
   const {columns, data, profiledData} = props;
-  const {
-    headerGroups,
-    rows,
-    getTableProps,
-    getTableBodyProps,
-    prepareRow,
-  } = useTable({
-    columns,
-    data,
-  });
+  const {headerGroups, rows, getTableProps, getTableBodyProps, prepareRow} =
+    useTable({
+      columns,
+      data,
+    });
   return (
     <table
       {...getTableProps()}
@@ -272,7 +267,7 @@ interface DataTable {
   rows: string[][];
 }
 
-class ProfileDataset extends React.PureComponent<ProfileDatasetProps, {}> {
+class ProfileDataset extends React.PureComponent<ProfileDatasetProps> {
   getSample(text: string): string[][] {
     const lines = text.split('\n');
     const result = [];

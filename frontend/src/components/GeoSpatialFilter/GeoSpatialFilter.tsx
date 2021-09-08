@@ -61,12 +61,8 @@ class GeoSpatialFilter extends React.PureComponent<
     if (!this.props.state) {
       return false;
     }
-    const {
-      topLeftLat,
-      topLeftLon,
-      bottomRightLat,
-      bottomRightLon,
-    } = transformCoordinates(feature);
+    const {topLeftLat, topLeftLon, bottomRightLat, bottomRightLon} =
+      transformCoordinates(feature);
     const {latitude1, longitude1, latitude2, longitude2} = this.props.state;
     return (
       topLeftLat === latitude1 &&
@@ -160,12 +156,8 @@ class GeoSpatialFilter extends React.PureComponent<
       return;
     }
 
-    let {
-      topLeftLat,
-      topLeftLon,
-      bottomRightLat,
-      bottomRightLon,
-    } = transformCoordinates(evt.feature);
+    let {topLeftLat, topLeftLon, bottomRightLat, bottomRightLon} =
+      transformCoordinates(evt.feature);
 
     topLeftLon = wrapLongitude(topLeftLon);
     bottomRightLon = wrapLongitude(bottomRightLon);

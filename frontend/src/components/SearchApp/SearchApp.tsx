@@ -115,9 +115,10 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     return query;
   }
 
-  static queryToFilters(
-    query: api.SearchQuery
-  ): {keywords: string; filters: Filter[]} {
+  static queryToFilters(query: api.SearchQuery): {
+    keywords: string;
+    filters: Filter[];
+  } {
     const filters: Filter[] = [];
     if (query.filters) {
       query.filters.forEach(v => {

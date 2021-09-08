@@ -78,12 +78,10 @@ class AugmentationOptions extends React.PureComponent<
 > {
   constructor(props: AugmentationOptionsProps) {
     super(props);
-    this.handleColumnSelectionChange = this.handleColumnSelectionChange.bind(
-      this
-    );
-    this.handleTemporalResolutionChange = this.handleTemporalResolutionChange.bind(
-      this
-    );
+    this.handleColumnSelectionChange =
+      this.handleColumnSelectionChange.bind(this);
+    this.handleTemporalResolutionChange =
+      this.handleTemporalResolutionChange.bind(this);
     this.state = AugmentationOptions.initialState(props);
   }
 

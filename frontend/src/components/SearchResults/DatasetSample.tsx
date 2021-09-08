@@ -239,7 +239,8 @@ function TableColumnView(props: {
           </td>
         );
         return (
-          <tr key={'column' + i} {...column.getHeaderProps()}>
+          // eslint-disable-next-line react/jsx-key
+          <tr {...column.getHeaderProps()}>
             <td>
               <b>{column.render('Header')} </b>
             </td>

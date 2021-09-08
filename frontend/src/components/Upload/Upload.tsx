@@ -205,8 +205,8 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
     annotation: Annotation
   ) {
     if (this.state.profiledData) {
-      const modifiedColumns: ColumnMetadata[] = this.state.profiledData.columns.map(
-        (col: ColumnMetadata) => {
+      const modifiedColumns: ColumnMetadata[] =
+        this.state.profiledData.columns.map((col: ColumnMetadata) => {
           if (col.name === column.name) {
             if (type === TypesCategory.STRUCTURAL) {
               return {...col, structural_type: value};
@@ -223,8 +223,7 @@ class UploadForm extends React.PureComponent<UploadFormProps, UploadFormState> {
           } else {
             return {...col};
           }
-        }
-      );
+        });
       this.setState({
         columnsName: [...this.state.columnsName, column.name],
         profiledData: {...this.state.profiledData, columns: modifiedColumns},
