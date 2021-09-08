@@ -57,7 +57,7 @@ function(
                 containers: [
                   {
                     name: 'socrata',
-                    image: config.image('socrata'),
+                    image: config.image,
                     imagePullPolicy: 'IfNotPresent',
                     env: [
                       {

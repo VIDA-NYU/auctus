@@ -68,7 +68,7 @@ Build the containers
 --------------------
 
 ```
-$ docker-compose build --build-arg version=$(git describe) coordinator cache-cleaner profiler apiserver frontend socrata zenodo
+$ docker-compose build --build-arg version=$(git describe) apiserver
 ```
 
 Start the base containers
