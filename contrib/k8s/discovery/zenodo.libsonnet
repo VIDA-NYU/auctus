@@ -58,6 +58,7 @@ function(
                     name: 'zenodo',
                     image: config.image,
                     imagePullPolicy: 'IfNotPresent',
+                    args: ['python', '-m', 'zenodo_discovery'],
                     env: [
                       {
                         name: 'LOG_FORMAT',

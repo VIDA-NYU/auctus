@@ -59,6 +59,7 @@ function(
                     name: 'socrata',
                     image: config.image,
                     imagePullPolicy: 'IfNotPresent',
+                    args: ['python', '-m', 'socrata_discovery'],
                     env: [
                       {
                         name: 'LOG_FORMAT',

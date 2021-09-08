@@ -40,6 +40,7 @@ function(
                     name: 'uaz-indicators',
                     image: config.image,
                     imagePullPolicy: 'IfNotPresent',
+                    args: ['python', '-m', 'uaz_indicators'],
                     env: [
                       {
                         name: 'LOG_FORMAT',

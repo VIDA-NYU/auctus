@@ -40,6 +40,7 @@ function(
                     name: 'worldbank',
                     image: config.image,
                     imagePullPolicy: 'IfNotPresent',
+                    args: ['python', '-m', 'worldbank_discovery'],
                     env: [
                       {
                         name: 'LOG_FORMAT',

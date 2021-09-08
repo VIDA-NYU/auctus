@@ -59,6 +59,7 @@ function(
                     name: 'ckan',
                     image: config.image,
                     imagePullPolicy: 'IfNotPresent',
+                    args: ['python', '-m', 'ckan_discovery'],
                     env: [
                       {
                         name: 'LOG_FORMAT',
