@@ -8,4 +8,4 @@ if [ -z "$1" ]; then
 fi
 mkdir "$1"
 chown 998 "$1"
-docker run --rm --network ${PROJ}_default -v $PWD/scripts:/scripts -v "$1:/index" -w /index -e ELASTICSEARCH_HOSTS=elasticsearch:9200 -e ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX} ${PROJ}_coordinator python /scripts/export_all.py
+docker run --rm --network ${PROJ}_default -v $PWD/scripts:/scripts -v "$1:/index" -w /index -e ELASTICSEARCH_HOSTS=elasticsearch:9200 -e ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX} auctus python /scripts/export_all.py

@@ -3,14 +3,14 @@ set -eux
 
 cd "$(dirname "$0")/.."
 
-CONTAINERS="frontend apiserver coordinator cache-cleaner profiler socrata zenodo ckan worldbank uaz-indicators"
 VERSION=$(git describe)
 
 # Build
-docker-compose build --build-arg version=$VERSION $CONTAINERS
+docker build -t auctus --build-arg version=$VERSION .
+docker build -t auctus_frontend -f frontend/Dockerfile .
 
 # Push
-for i in $CONTAINERS; do
-    docker tag auctus_$i registry.gitlab.com/vida-nyu/auctus/auctus/$i:$VERSION
-    docker push registry.gitlab.com/vida-nyu/auctus/auctus/$i:$VERSION
-done
+docker tag auctus registry.gitlab.com/vida-nyu/auctus/auctus:$VERSION
+docker push registry.gitlab.com/vida-nyu/auctus/auctus:$VERSION
+docker tag auctus registry.gitlab.com/vida-nyu/auctus/auctus/frontend:$VERSION
+docker push registry.gitlab.com/vida-nyu/auctus/auctus/frontend:$VERSION
