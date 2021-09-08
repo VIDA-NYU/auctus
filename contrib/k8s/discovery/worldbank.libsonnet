@@ -38,7 +38,7 @@ function(
                 containers: [
                   {
                     name: 'worldbank',
-                    image: config.image('worldbank'),
+                    image: config.image,
                     imagePullPolicy: 'IfNotPresent',
                     env: [
                       {

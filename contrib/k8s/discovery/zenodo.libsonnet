@@ -56,7 +56,7 @@ function(
                 containers: [
                   {
                     name: 'zenodo',
-                    image: config.image('zenodo'),
+                    image: config.image,
                     imagePullPolicy: 'IfNotPresent',
                     env: [
                       {

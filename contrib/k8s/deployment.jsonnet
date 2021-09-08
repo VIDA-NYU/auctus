@@ -17,7 +17,8 @@ local volumes_minikube = import 'volumes-minikube.libsonnet';
 local volumes = import 'volumes.libsonnet';
 
 local config = {
-  image: function(name) 'auctus_%s:latest' % name,
+  image: 'auctus:latest',
+  frontend_image: 'auctus_frontend:latest',
   app_domain: 'auctus.vida-nyu.org',
   //frontend_url: 'https://%s' % self.app_domain, // If using Ingress
   frontend_url: 'http://192.168.99.100:30001',  // If using Minikube

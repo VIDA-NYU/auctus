@@ -57,7 +57,7 @@ function(
                 containers: [
                   {
                     name: 'ckan',
-                    image: config.image('ckan'),
+                    image: config.image,
                     imagePullPolicy: 'IfNotPresent',
                     env: [
                       {
