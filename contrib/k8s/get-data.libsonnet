@@ -16,7 +16,7 @@ function(
             containers: [
               {
                 name: 'get-data',
-                image: config.image('profiler'),
+                image: config.image,
                 imagePullPolicy: 'IfNotPresent',
                 securityContext: {
                   runAsNonRoot: false,
@@ -62,7 +62,7 @@ function(
             containers: [
               {
                 name: 'get-data',
-                image: config.image('profiler'),
+                image: config.image,
                 imagePullPolicy: 'IfNotPresent',
                 securityContext: {
                   runAsNonRoot: false,

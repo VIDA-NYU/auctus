@@ -171,7 +171,7 @@ local request_whitelist = function(config) (
             containers: [
               {
                 name: 'nginx',
-                image: config.image('frontend'),
+                image: config.frontend_image,
                 imagePullPolicy: 'IfNotPresent',
                 env: [
                   {
@@ -255,8 +255,9 @@ local request_whitelist = function(config) (
             containers: [
               {
                 name: 'apiserver',
-                image: config.image('apiserver'),
+                image: config.image,
                 imagePullPolicy: 'IfNotPresent',
+                args: ['datamart-apiserver'],
                 env: [
                   {
                     name: 'LOG_FORMAT',
@@ -460,8 +461,9 @@ local request_whitelist = function(config) (
             containers: [
               {
                 name: 'web',
-                image: config.image('coordinator'),
+                image: config.image,
                 imagePullPolicy: 'IfNotPresent',
+                args: ['coordinator'],
                 env: [
                   {
                     name: 'LOG_FORMAT',
@@ -653,8 +655,9 @@ local request_whitelist = function(config) (
             containers: [
               {
                 name: 'cleaner',
-                image: config.image('cache-cleaner'),
+                image: config.image,
                 imagePullPolicy: 'IfNotPresent',
+                args: ['cache_cleaner'],
                 env: [
                   {
                     name: 'LOG_FORMAT',
@@ -751,8 +754,9 @@ local request_whitelist = function(config) (
             containers: [
               {
                 name: 'profiler',
-                image: config.image('profiler'),
+                image: config.image,
                 imagePullPolicy: 'IfNotPresent',
+                args: ['profiler'],
                 env: [
                   {
                     name: 'LOG_FORMAT',

@@ -58,9 +58,10 @@ function(config) (
             containers: [
               {
                 name: 'discoverer',
-                image: config.image('test-discoverer'),
+                image: config.image,
                 args: [
-                  'testsuite',
+                  'python',
+                  'discovery/test_discovery.py',
                 ],
                 imagePullPolicy: 'IfNotPresent',
                 env: [

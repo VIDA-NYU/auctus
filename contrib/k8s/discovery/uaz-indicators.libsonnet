@@ -38,7 +38,7 @@ function(
                 containers: [
                   {
                     name: 'uaz-indicators',
-                    image: config.image('uaz-indicators'),
+                    image: config.image,
                     imagePullPolicy: 'IfNotPresent',
                     env: [
                       {
