@@ -87,6 +87,7 @@ services:
       - 127.0.0.1:8030:50051
       - 8000
   frontend:
+    image: auctus_frontend
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -96,17 +97,19 @@ services:
     ports:
       - 127.0.0.1:8001:80
   apiserver:
+    image: auctus
     build:
       context: .
-      dockerfile: apiserver/Dockerfile
+      dockerfile: Dockerfile
+    command: ["datamart-apiserver"]
     environment:
       - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
-      - OTEL_TRACES_EXPORTER=jaeger_thrift
-      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger
-      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
-      - OTEL_RESOURCE_ATTRIBUTES=service.name=apiserver
+      - AUCTUS_OTEL_SERVICE=apiserver
+      - OTEL_TRACES_EXPORTER=jaeger_thrift  # NOTCI
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger  # NOTCI
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831  # NOTCI
       - OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES=1
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
@@ -155,9 +158,11 @@ services:
       interval: 10s
       retries: 2
   coordinator:
+    image: auctus
     build:
       context: .
-      dockerfile: coordinator/Dockerfile
+      dockerfile: Dockerfile
+    command: ["coordinator"]
     environment:
       - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
@@ -190,9 +195,11 @@ services:
       # CI: - ./cov:/cov
       - ./volumes/cache:/cache
   cache-cleaner:
+    image: auctus
     build:
       context: .
-      dockerfile: cache_cleaner/Dockerfile
+      dockerfile: Dockerfile
+    command: ["cache_cleaner"]
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
@@ -203,17 +210,19 @@ services:
       # CI: - ./cov:/cov
       - ./volumes/cache:/cache
   profiler:
+    image: auctus
     build:
       context: .
-      dockerfile: profiler/Dockerfile
+      dockerfile: Dockerfile
+    command: ["profiler"]
     environment:
       - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
-      - OTEL_TRACES_EXPORTER=jaeger_thrift
-      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger
-      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
-      - OTEL_RESOURCE_ATTRIBUTES=service.name=profiler
+      - AUCTUS_OTEL_SERVICE=profiler
+      - OTEL_TRACES_EXPORTER=jaeger_thrift  # NOTCI
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger  # NOTCI
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831  # NOTCI
       - OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES=1
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - ELASTICSEARCH_PREFIX=${ELASTICSEARCH_PREFIX}
@@ -268,10 +277,11 @@ services:
     volumes:
       - ./volumes/grafana:/var/lib/grafana
   test-discoverer:
+    image: auctus
     build:
       context: .
-      dockerfile: discovery/Dockerfile
-    command: testsuite  # NOTCI
+      dockerfile: Dockerfile
+    command: ["python", "discovery/test_discovery.py"]  # NOTCI
     # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p discovery/test_discovery.py & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS"]
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
@@ -294,9 +304,11 @@ services:
     # CI: volumes:
     # CI:   - ./cov:/cov
   socrata:
+    image: auctus
     build:
       context: .
-      dockerfile: discovery/socrata/Dockerfile
+      dockerfile: Dockerfile
+    command: ["python", "-m", "socrata_discovery"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -320,9 +332,11 @@ services:
     volumes:
       - ./docker/socrata.json:/usr/src/app/socrata.json
   zenodo:
+    image: auctus
     build:
       context: .
-      dockerfile: discovery/zenodo/Dockerfile
+      dockerfile: Dockerfile
+    command: ["python", "-m", "zenodo_discovery"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -346,9 +360,11 @@ services:
     volumes:
       - ./docker/zenodo.json:/usr/src/app/zenodo.json
   ckan:
+    image: auctus
     build:
       context: .
-      dockerfile: discovery/ckan/Dockerfile
+      dockerfile: Dockerfile
+    command: ["python", "-m", "ckan_discovery"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -372,9 +388,11 @@ services:
     volumes:
       - ./docker/ckan.json:/usr/src/app/ckan.json
   uaz-indicators:
+    image: auctus
     build:
       context: .
-      dockerfile: discovery/uaz_indicators/Dockerfile
+      dockerfile: Dockerfile
+    command: ["python", "-m", "uaz_indicators"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -396,9 +414,11 @@ services:
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
   worldbank:
+    image: auctus
     build:
       context: .
-      dockerfile: discovery/worldbank/Dockerfile
+      dockerfile: Dockerfile
+    command: ["python", "-m", "worldbank_discovery"]
     cpu_shares: 10
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
@@ -420,9 +440,11 @@ services:
       - LAZO_SERVER_HOST=lazo
       - LAZO_SERVER_PORT=50051
   isi:
+    image: auctus
     build:
       context: .
-      dockerfile: discovery/isi/Dockerfile
+      dockerfile: Dockerfile
+    command: ["python", "-m", "isi_discovery"]
     cpu_shares: 10
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
@@ -443,9 +465,11 @@ services:
       - LAZO_SERVER_PORT=50051
       - ISI_DATAMART_URL=${ISI_DATAMART_URL}
   noaa:
+    image: auctus
     build:
       context: .
-      dockerfile: discovery/noaa/Dockerfile
+      dockerfile: Dockerfile
+    command: ["python", "-m", "noaa_discovery.noaa_discovery"]
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
