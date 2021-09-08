@@ -61,7 +61,7 @@ local config = {
     nominatim: self.default,
   },
   // Public domain for the coordinator (can be set to null to disable Ingress)
-  coordinator_domain: 'coordinator.auctus-vida-nyu.org',
+  coordinator_domain: 'coordinator.auctus.vida-nyu.org',
   // Whether Grafana can be access read-only by the public
   grafana_anonymous_access: true,
   // Public domain for Grafana (can be set to null to disable Ingress)
