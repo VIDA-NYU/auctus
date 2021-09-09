@@ -7,6 +7,8 @@ Incompatible changes:
 
 Enhancements:
 * Added OpenTelemetry integration
+* Add snapshotter service, dumping Elasticsearch data as a tar.gz of JSON files, and putting it in object store to be serve by API server at `/snapshot/`
+* Use a single Docker image for all services (not including databases, Lazo, frontend)
 
 Bugfixes:
 * Added SSRF prevention code. Unless you are running other services alongside Auctus, the only thing that could be hit is Elasticsearch, whose JSON output would not be leaked, but let's plug this anyway
