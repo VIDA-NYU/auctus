@@ -28,7 +28,11 @@ schemas = os.path.abspath(schemas)
 def _fix_refs(obj, name):
     if isinstance(obj, dict):
         return {
-            k: _fix_refs(v, name) if k != '$ref' else 'file://%s/%s%s' % (schemas, name, v)
+            k: (
+                _fix_refs(v, name) if k != '$ref'
+                else 'file://%s/%s%s' % (schemas, name, v) if v.startswith('#')
+                else 'file://%s/%s' % (schemas, v)
+            )
             for k, v in obj.items()
         }
     elif isinstance(obj, list):
@@ -40,19 +44,16 @@ def _fix_refs(obj, name):
 with open(os.path.join(schemas, 'query_result_schema.json')) as fp:
     result_schema = json.load(fp)
 with open(os.path.join(schemas, 'restapi.yaml')) as fp:
-    restapi_schema = yaml.load(fp)
+    restapi_schema = yaml.safe_load(fp)
+with open(os.path.join(schemas, 'restapi.json'), 'w') as fp:
+    json.dump(restapi_schema, fp)
 result_schema = _fix_refs(result_schema, 'query_result_schema.json')
-result_list_schema = {
-    'type': 'object',
-    'properties': {
-        'results': {'type': 'array', 'items': result_schema},
-        'facets': restapi_schema['components']['schemas']['Facets'],
-        'total': {'type': 'number'},
-    },
-    'required': ['results'],
-    'additionalProperties': False,
-    'definitions': result_schema.pop('definitions'),
-}
+restapi_schema = _fix_refs(restapi_schema, 'restapi.json')
+result_list_schema = (
+    restapi_schema['paths']['/search']['post']
+    ['responses'][200]['content']
+    ['application/json; charset=utf-8']['schema']
+)
 metadata_schema = dict(result_schema)
 assert metadata_schema['required'] == ['id', 'score', 'metadata']
 metadata_schema['required'] = ['id', 'status', 'metadata']
