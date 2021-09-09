@@ -270,7 +270,6 @@ lazo-index-service = "0.7.0"
 opentelemetry-distro = "*"
 opentelemetry-exporter-jaeger-thrift = "*"
 opentelemetry-instrumentation-elasticsearch = "*"
-opentelemetry-instrumentation-grpc = "*"
 prometheus_client = "*"
 redis = ">=3.4,<4.0"
 tornado = ">=5.0"
@@ -515,7 +514,6 @@ opentelemetry-api = "*"
 opentelemetry-distro = "*"
 opentelemetry-exporter-jaeger-thrift = "*"
 opentelemetry-instrumentation-elasticsearch = "*"
-opentelemetry-instrumentation-grpc = "*"
 prometheus_client = "*"
 xlrd = "*"
 
@@ -1135,25 +1133,6 @@ wrapt = ">=1.0.0,<2.0.0"
 
 [package.extras]
 test = ["opentelemetry-test (==0.21b0)", "elasticsearch-dsl (>=2.0)"]
-
-[[package]]
-name = "opentelemetry-instrumentation-grpc"
-version = "0.21b0"
-description = "OpenTelemetry gRPC instrumentation"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-grpcio = ">=1.27,<2.0"
-opentelemetry-api = "1.2.0"
-opentelemetry-instrumentation = "0.21b0"
-opentelemetry-sdk = "1.2.0"
-opentelemetry-semantic-conventions = "0.21b0"
-wrapt = ">=1.0.0,<2.0.0"
-
-[package.extras]
-test = ["opentelemetry-test (==0.21b0)", "opentelemetry-sdk (==1.2.0)", "protobuf (>=3.13.0)"]
 
 [[package]]
 name = "opentelemetry-sdk"
@@ -2426,10 +2405,6 @@ opentelemetry-instrumentation = [
 opentelemetry-instrumentation-elasticsearch = [
     {file = "opentelemetry-instrumentation-elasticsearch-0.21b0.tar.gz", hash = "sha256:97993117114872f23de2f847cc5dcb2e6ad0d1b9fae96dcf8f230815a5091ad0"},
     {file = "opentelemetry_instrumentation_elasticsearch-0.21b0-py3-none-any.whl", hash = "sha256:ac3507d122a4267ff4d9d9cbb847272fd61b81d34bcac1daa7ac9f489d33838d"},
-]
-opentelemetry-instrumentation-grpc = [
-    {file = "opentelemetry-instrumentation-grpc-0.21b0.tar.gz", hash = "sha256:dcb31f74837a66036cb13e1328a79936b8715f5199cc5dc5ed7761e011f91ee2"},
-    {file = "opentelemetry_instrumentation_grpc-0.21b0-py3-none-any.whl", hash = "sha256:778f1c43485876e183c70d39f81ce243068e4db57fe769b5a05b1888ef08095e"},
 ]
 opentelemetry-sdk = [
     {file = "opentelemetry-sdk-1.2.0.tar.gz", hash = "sha256:cbe48e97ca65ad49cfbe0943df135167b701c8d8bdd1fd2643fe1e5e427093d6"},

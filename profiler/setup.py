@@ -13,7 +13,6 @@ req = [
     'opentelemetry-distro',
     'opentelemetry-exporter-jaeger-thrift',
     'opentelemetry-instrumentation-elasticsearch',
-    'opentelemetry-instrumentation-grpc',
     'prometheus_client',
     'xlrd',
     'defusedxml',
