@@ -1,10 +1,11 @@
 import asyncio
-import contextlib
+from datetime import datetime
 import itertools
 import lazo_index_service
 import logging
 import os
 import prometheus_client
+import re
 import redis
 import socket
 import tornado.ioloop
@@ -121,19 +122,38 @@ class DocRedirect(BaseHandler):
 
 
 class Snapshot(BaseHandler):
+    _re_filenames = re.compile(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}\.tar\.gz$')
+
+    _most_recent_filename = None
+    _most_recent_time = None
+
     def get(self, filename):
         object_store = get_object_store()
-        with contextlib.ExitStack() as stack:
-            try:
-                dataset = stack.enter_context(
-                    object_store.open('snapshots', filename)
-                )
-            except FileNotFoundError:
-                return self.send_error(404)
-            else:
-                return self.redirect(object_store.file_url(dataset))
+
+        if filename == 'index.tar.gz':
+            filename = self.most_recent_snapshot(object_store)
+        elif not self._re_filenames.match(filename):
+            return self.send_error(404)
+
+        return self.redirect(object_store.url('snapshots', filename))
 
     head = get
+
+    @classmethod
+    def most_recent_snapshot(cls, object_store):
+        now = datetime.utcnow()
+        if (
+            cls._most_recent_time is None
+            or (now - cls._most_recent_time).total_seconds() > 3600
+        ):
+            cls._most_recent_filename = max(
+                name
+                for name in object_store.list_bucket_names('snapshots')
+                if cls._re_filenames.match(name)
+            )
+            cls._most_recent_time = now
+
+        return cls._most_recent_filename
 
 
 class Health(BaseHandler):

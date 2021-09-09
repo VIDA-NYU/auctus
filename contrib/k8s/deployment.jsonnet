@@ -13,6 +13,7 @@ local monitoring = import 'monitoring.libsonnet';
 local nominatim = import 'nominatim.libsonnet';
 local rabbitmq = import 'rabbitmq.libsonnet';
 local redis = import 'redis.libsonnet';
+local snapshotter = import 'snapshotter.libsonnet';
 local volumes_minikube = import 'volumes-minikube.libsonnet';
 local volumes = import 'volumes.libsonnet';
 
@@ -121,6 +122,7 @@ local files = {
     )
     + auctus.profiler(config)
   ),
+  'snapshotter.yml': snapshotter(config),
   'ingress.yml': ingress(config),
   'minio.yml': minio(config),
   'monitoring.yml': monitoring(config),

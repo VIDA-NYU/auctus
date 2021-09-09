@@ -12,6 +12,7 @@ COPY apiserver /usr/src/app/apiserver
 COPY coordinator /usr/src/app/coordinator
 COPY profiler /usr/src/app/profiler
 COPY cache_cleaner /usr/src/app/cache_cleaner
+COPY snapshotter /usr/src/app/snapshotter
 COPY discovery/test_discovery.py /usr/src/app/discovery/
 COPY discovery/noaa /usr/src/app/discovery/noaa
 COPY discovery/isi /usr/src/app/discovery/isi
@@ -43,7 +44,7 @@ RUN python3 install_deps.py poetry.lock
 COPY --chown=appuser --from=sources /usr/src/app /usr/src/app/
 RUN sh -c "pip --disable-pip-version-check --no-cache-dir install --no-deps \$(for pkg in \"\$@\"; do printf -- \" -e ./%s\" \$pkg; done)" -- \
     lib_core lib_fslock lib_geo lib_materialize lib_augmentation lib_profiler \
-    apiserver coordinator profiler cache_cleaner \
+    apiserver coordinator profiler cache_cleaner snapshotter \
     discovery/noaa discovery/isi discovery/isi discovery/socrata \
     discovery/zenodo discovery/ckan discovery/worldbank discovery/uaz_indicators
 
