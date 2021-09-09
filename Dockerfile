@@ -41,7 +41,7 @@ RUN python3 install_deps.py poetry.lock
 # CI: COPY docker/coveragerc /usr/src/app/.coveragerc
 
 COPY --chown=appuser --from=sources /usr/src/app /usr/src/app/
-RUN sh -xc "for pkg in \"\$@\"; do pip --disable-pip-version-check --no-cache-dir install --no-deps -e ./\$pkg; done" -- \
+RUN sh -c "pip --disable-pip-version-check --no-cache-dir install --no-deps \$(for pkg in \"\$@\"; do printf -- \" -e ./%s\" \$pkg; done)" -- \
     lib_core lib_fslock lib_geo lib_materialize lib_augmentation lib_profiler \
     apiserver coordinator profiler cache_cleaner \
     discovery/noaa discovery/isi discovery/isi discovery/socrata \
