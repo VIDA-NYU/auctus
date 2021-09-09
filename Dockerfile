@@ -55,7 +55,6 @@ ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
 USER 998
-# TODO (some of them): ENV OTEL_RESOURCE_ATTRIBUTES service.name=apiserver
 ENTRYPOINT ["/tini", "--", "opentelemetry-instrument"]
 ENTRYPOINT [ \
     "/tini", "--", "/bin/bash", "-c", \
