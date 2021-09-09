@@ -53,7 +53,7 @@ flake8 = "*"
 PyYaml = "*"
 requests = "*"
 coverage = "*" # Keep it in sync with Dockerfiles for CI
-openapi-core = "^0.13"
+jsonschema = ">=3.0,<4"
 readme_renderer = "*"
 Sphinx = "*"
 sphinx-rtd-theme = "^0.5.0"
