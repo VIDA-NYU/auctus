@@ -54,12 +54,10 @@ result_list_schema = (
     ['responses'][200]['content']
     ['application/json; charset=utf-8']['schema']
 )
-metadata_schema = dict(result_schema)
-assert metadata_schema['required'] == ['id', 'score', 'metadata']
-metadata_schema['required'] = ['id', 'status', 'metadata']
-metadata_schema['properties'] = dict(
-    metadata_schema['properties'],
-    status={'type': 'string'},
+metadata_schema = (
+    restapi_schema['paths']['/metadata/{dataset_id}']['get']
+    ['responses'][200]['content']
+    ['application/json; charset=utf-8']['schema']
 )
 new_session_schema = (
     restapi_schema['paths']['/session/new']['post']
