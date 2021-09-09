@@ -60,6 +60,16 @@ metadata_schema['properties'] = dict(
     metadata_schema['properties'],
     status={'type': 'string'},
 )
+new_session_schema = (
+    restapi_schema['paths']['/session/new']['post']
+    ['responses'][200]['content']
+    ['application/json; charset=utf-8']['schema']
+)
+get_session_schema = (
+    restapi_schema['paths']['/session/{session_id}']['get']
+    ['responses'][200]['content']
+    ['application/json; charset=utf-8']['schema']
+)
 
 
 class DatamartTest(DataTestCase):
@@ -2676,6 +2686,7 @@ class TestSession(DatamartTest):
             response = self.datamart_post(
                 '/session/new',
                 json=obj,
+                schema=new_session_schema,
             )
             obj = response.json()
             session_id = obj.pop('session_id')
@@ -2744,6 +2755,7 @@ class TestSession(DatamartTest):
         session_id = self.datamart_post(
             '/session/new',
             json={'format': 'csv'},
+            schema=new_session_schema,
         ).json()['session_id']
 
         response = self.datamart_get(
@@ -2758,7 +2770,10 @@ class TestSession(DatamartTest):
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get('/session/' + session_id)
+        response = self.datamart_get(
+            '/session/' + session_id,
+            schema=get_session_schema,
+        )
         self.assertEqual(
             response.json(),
             {
@@ -2784,6 +2799,7 @@ class TestSession(DatamartTest):
         session_id = self.datamart_post(
             '/session/new',
             json={'format': 'd3m'},
+            schema=new_session_schema,
         ).json()['session_id']
 
         response = self.datamart_get(
@@ -2798,7 +2814,10 @@ class TestSession(DatamartTest):
         )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get('/session/' + session_id)
+        response = self.datamart_get(
+            '/session/' + session_id,
+            schema=get_session_schema,
+        )
         format_query = (
             'format=d3m'
             + '&format_version=4.0.0'
@@ -2831,6 +2850,7 @@ class TestSession(DatamartTest):
         session_id = self.datamart_post(
             '/session/new',
             json={'format': 'csv'},
+            schema=new_session_schema,
         ).json()['session_id']
 
         meta = self.datamart_get(
@@ -2865,7 +2885,10 @@ class TestSession(DatamartTest):
             )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get('/session/' + session_id)
+        response = self.datamart_get(
+            '/session/' + session_id,
+            schema=get_session_schema,
+        )
         self.assertJson(
             response.json(),
             {
@@ -2892,6 +2915,7 @@ class TestSession(DatamartTest):
         session_id = self.datamart_post(
             '/session/new',
             json={'format': 'd3m'},
+            schema=new_session_schema,
         ).json()['session_id']
 
         meta = self.datamart_get(
@@ -2926,7 +2950,10 @@ class TestSession(DatamartTest):
             )
         self.assertEqual(response.json(), {'success': "attached to session"})
 
-        response = self.datamart_get('/session/' + session_id)
+        response = self.datamart_get(
+            '/session/' + session_id,
+            schema=get_session_schema,
+        )
         self.assertJson(
             response.json(),
             {
