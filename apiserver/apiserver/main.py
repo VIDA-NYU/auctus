@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import itertools
 import lazo_index_service
 import logging
@@ -123,15 +122,7 @@ class DocRedirect(BaseHandler):
 class Snapshot(BaseHandler):
     def get(self, filename):
         object_store = get_object_store()
-        with contextlib.ExitStack() as stack:
-            try:
-                dataset = stack.enter_context(
-                    object_store.open('snapshots', filename)
-                )
-            except FileNotFoundError:
-                return self.send_error(404)
-            else:
-                return self.redirect(object_store.file_url(dataset))
+        return self.redirect(object_store.url('snapshots', filename))
 
     head = get
 
