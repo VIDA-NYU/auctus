@@ -603,7 +603,8 @@ paths:
                     - "error"
                     - "queued"
                   metadata:
-                    $ref: "#/components/schemas/Result"
+                    $ref: "query_result_schema.json#/definitions/metadata"
+                required: ["id", "status", "metadata"]
       x-codeSamples:
       - lang: Python
         source: |

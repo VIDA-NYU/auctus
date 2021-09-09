@@ -27,7 +27,7 @@ packages = []
 include = []
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.7,<3.11" # Upper bound for numpy
 datamart-profiler = {path = "./lib_profiler", develop=true}
 datamart-materialize = {path = "./lib_materialize", develop=true}
 datamart-augmentation = {path = "./lib_augmentation", develop=true}
@@ -53,7 +53,7 @@ flake8 = "*"
 PyYaml = "*"
 requests = "*"
 coverage = "*" # Keep it in sync with Dockerfiles for CI
-openapi-core = "^0.13"
+jsonschema = ">=3.0,<4"
 readme_renderer = "*"
 Sphinx = "*"
 sphinx-rtd-theme = "^0.5.0"

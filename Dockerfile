@@ -38,7 +38,7 @@ WORKDIR /usr/src/app
 RUN pip --disable-pip-version-check --no-cache-dir install toml
 COPY docker/install_deps.py poetry.lock /usr/src/app/
 RUN python install_deps.py poetry.lock
-# CI: RUN pip --disable-pip-version-check install coverage==5.3.1
+# CI: RUN pip --disable-pip-version-check install coverage==5.5
 # CI: COPY docker/coveragerc /usr/src/app/.coveragerc
 
 COPY --chown=appuser --from=sources /usr/src/app /usr/src/app/

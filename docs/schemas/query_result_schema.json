@@ -12,6 +12,87 @@
       "description": "A non-negative number that represents the relevance of this dataset to query. Larger scores indicate better matches."
     },
     "metadata": {
+      "$ref": "#/definitions/metadata"
+    },
+    "augmentation": {
+      "type": "object",
+      "description": "The augmentation suggested by Auctus.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "join",
+            "union",
+            "none"
+          ]
+        },
+        "left_columns": {
+          "type": "array",
+          "description": "The left-side columns for the augmentation, which correspond to the supplied dataset.",
+          "items": {
+            "$ref": "#/definitions/augmentation_unit"
+          }
+        },
+        "right_columns": {
+          "type": "array",
+          "description": "The right-side columns for the augmentation, which correspond to the Auctus dataset.",
+          "items": {
+            "$ref": "#/definitions/augmentation_unit"
+          }
+        },
+        "left_columns_names": {
+          "type": "array",
+          "description": "The names of the left-side columns, for information.",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "right_columns_names": {
+          "type": "array",
+          "description": "The names of the right-side columns, for information.",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "temporal_resolution": {
+          "$ref": "#/definitions/temporal_resolution"
+        },
+        "agg_functions": {
+          "type": "object",
+          "description": "Maps column names to aggregation function(s) names.",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "left_columns",
+        "right_columns"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": ["id", "score", "metadata"],
+  "additionalProperties": true,
+  "definitions": {
+    "metadata": {
       "type": "object",
       "description": "The metadata associated with the dataset.",
       "properties": {
@@ -181,84 +262,6 @@
       },
       "required": ["name"]
     },
-    "augmentation": {
-      "type": "object",
-      "description": "The augmentation suggested by Auctus.",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "join",
-            "union",
-            "none"
-          ]
-        },
-        "left_columns": {
-          "type": "array",
-          "description": "The left-side columns for the augmentation, which correspond to the supplied dataset.",
-          "items": {
-            "$ref": "#/definitions/augmentation_unit"
-          }
-        },
-        "right_columns": {
-          "type": "array",
-          "description": "The right-side columns for the augmentation, which correspond to the Auctus dataset.",
-          "items": {
-            "$ref": "#/definitions/augmentation_unit"
-          }
-        },
-        "left_columns_names": {
-          "type": "array",
-          "description": "The names of the left-side columns, for information.",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "right_columns_names": {
-          "type": "array",
-          "description": "The names of the right-side columns, for information.",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "temporal_resolution": {
-          "$ref": "#/definitions/temporal_resolution"
-        },
-        "agg_functions": {
-          "type": "object",
-          "description": "Maps column names to aggregation function(s) names.",
-          "additionalProperties": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          }
-        }
-      },
-      "required": [
-        "type",
-        "left_columns",
-        "right_columns"
-      ],
-      "additionalProperties": false
-    }
-  },
-  "required": ["id", "score", "metadata"],
-  "additionalProperties": true,
-  "definitions": {
     "augmentation_unit": {
       "type": "array",
       "description": "An array of column identifiers that represents an unit for the augmentation. In the simplest case, we have a single identifier, and in more complex cases, we have multiple identifiers (e.g.: columns 'latitude' and 'longitude' could be combined to join and/or concatenate with column 'country').",
