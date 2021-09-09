@@ -388,10 +388,10 @@ def process_column(
                         {
                             "count": count,
                             "date_start": datetime.utcfromtimestamp(
-                                edges[i],
+                                float(edges[i]),
                             ).isoformat(),
                             "date_end": datetime.utcfromtimestamp(
-                                edges[i + 1],
+                                float(edges[i + 1]),
                             ).isoformat(),
                         }
                         for i, count in enumerate(counts)
