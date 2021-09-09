@@ -18,7 +18,7 @@ function(config) (
         ports: [
           {
             protocol: 'TCP',
-            port: 7000,
+            port: 8080,
           },
         ],
       },
