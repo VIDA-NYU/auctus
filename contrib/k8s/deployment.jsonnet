@@ -1,6 +1,7 @@
 local auctus = import 'auctus.libsonnet';
 local ckan = import 'discovery/ckan.libsonnet';
 local socrata = import 'discovery/socrata.libsonnet';
+local test_discoverer = import 'discovery/test.libsonnet';
 local uaz_indicators = import 'discovery/uaz-indicators.libsonnet';
 local worldbank = import 'discovery/worldbank.libsonnet';
 local zenodo = import 'discovery/zenodo.libsonnet';
@@ -14,17 +15,17 @@ local nominatim = import 'nominatim.libsonnet';
 local rabbitmq = import 'rabbitmq.libsonnet';
 local redis = import 'redis.libsonnet';
 local snapshotter = import 'snapshotter.libsonnet';
-local volumes_minikube = import 'volumes-minikube.libsonnet';
+local volumes_local = import 'volumes-local.libsonnet';
 local volumes = import 'volumes.libsonnet';
 
 local config = {
   image: 'auctus:latest',
   frontend_image: 'auctus_frontend:latest',
-  app_domain: 'auctus.vida-nyu.org',
+  app_domain: 'localhost',
   //frontend_url: 'https://%s' % self.app_domain, // If using Ingress
-  frontend_url: 'http://192.168.99.100:30001',  // If using Minikube
+  frontend_url: 'http://localhost:30808',  // If using KinD
   //api_url: 'https://%s/api/v1' % self.app_domain, // If using Ingress
-  api_url: 'http://192.168.99.100:30002/api/v1',  // If using Minikube
+  api_url: 'http://localhost:30808/api/v1',  // If using KinD
   elasticsearch_prefix: 'auctusdev_',
   nominatim_url: 'http://nominatim:8080/',
   object_store: {
@@ -45,7 +46,7 @@ local config = {
   //  dept: { label: 'Department', type: 'keyword', required: true },
   //},
   // Addresses to exclude from SSRF protection
-  request_whitelist: [],
+  request_whitelist: ['test-discoverer'],
   log_format: 'json',
   // Label on nodes where the cache volume is available (can be set to null)
   local_cache_node_label: 'auctus-prod-cache-volume',
@@ -96,6 +97,7 @@ local files = {
     cache_size='55Gi',
     local_cache_path='/var/lib/auctus/prod/cache',
   ),
+  //'volumes.yml': volumes_local(config),
   'redis.yml': redis(
     config,
     maxmemory='500mb',
@@ -141,6 +143,7 @@ local files = {
     config,
     keyword_query='covid',
   ),
+  //'discovery/test-discoverer.yml': test_discoverer(config),
 };
 
 {
