@@ -7,10 +7,17 @@ function(
         name: 'get-geo-data',
         labels: {
           app: 'auctus',
+          what: 'get-geo-data',
         },
       },
       spec: {
         template: {
+          metadata: {
+            labels: {
+              app: 'auctus',
+              what: 'get-geo-data',
+            },
+          },
           spec: {
             restartPolicy: 'Never',
             containers: [
@@ -53,10 +60,17 @@ function(
         name: 'get-es-synonyms',
         labels: {
           app: 'auctus',
+          what: 'get-es-synonyms',
         },
       },
       spec: {
         template: {
+          metadata: {
+            labels: {
+              app: 'auctus',
+              what: 'get-es-synonyms',
+            },
+          },
           spec: {
             restartPolicy: 'Never',
             containers: [
