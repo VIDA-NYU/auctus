@@ -166,47 +166,6 @@ function(config) (
     }),
     config.kube('v1', 'PersistentVolume', {
       metadata: {
-        name: 'geo-data',
-        labels: {
-          type: 'local',
-          app: 'auctus',
-          what: 'geo-data',
-        },
-      },
-      spec: {
-        storageClassName: 'manual',
-        capacity: {
-          storage: '300Mi',
-        },
-        accessModes: [
-          'ReadOnlyMany',
-          'ReadWriteOnce',
-        ],
-        hostPath: {
-          path: '/var/lib/auctus/geo-data',
-        },
-      },
-    }),
-    config.kube('v1', 'PersistentVolumeClaim', {
-      metadata: {
-        name: 'geo-data',
-      },
-      spec: {
-        storageClassName: 'manual',
-        volumeName: 'geo-data',
-        accessModes: [
-          'ReadOnlyMany',
-          'ReadWriteOnce',
-        ],
-        resources: {
-          requests: {
-            storage: '300Mi',
-          },
-        },
-      },
-    }),
-    config.kube('v1', 'PersistentVolume', {
-      metadata: {
         name: 'minio',
         labels: {
           type: 'local',

@@ -1,3 +1,12 @@
+FROM python:3.8 AS geo-data
+
+RUN mkdir /usr/src/app
+COPY lib_geo /usr/src/app/lib_geo
+RUN pip --disable-pip-version-check --no-cache-dir install /usr/src/app/lib_geo
+ENV DATAMART_GEO_DATA /usr/src/app/geo_data
+RUN python -m datamart_geo --update /usr/src/app/geo_data && \
+    ls -l /usr/src/app/geo_data
+
 FROM python:3.8 AS sources
 # If only there was a way to do this copy directly with Docker...
 # https://github.com/moby/moby/issues/33551
@@ -25,6 +34,8 @@ COPY tests/data /usr/src/app/tests/data
 
 FROM python:3.8
 
+COPY --from=geo-data /usr/src/app/geo_data /usr/src/app/geo_data
+
 ENV TINI_VERSION v0.18.0
 RUN curl -Lo /tini https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini && \
     chmod +x /tini
@@ -48,7 +59,7 @@ RUN sh -c "pip --disable-pip-version-check --no-cache-dir install --no-deps \$(f
     discovery/noaa discovery/isi discovery/isi discovery/socrata \
     discovery/zenodo discovery/ckan discovery/worldbank discovery/uaz_indicators
 
-ENV DATAMART_GEO_DATA /usr/src/app/lib_geo/data
+ENV DATAMART_GEO_DATA /usr/src/app/geo_data
 
 RUN python -m compileall /usr/src/app/
 ARG version

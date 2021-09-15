@@ -6,7 +6,6 @@ local uaz_indicators = import 'discovery/uaz-indicators.libsonnet';
 local worldbank = import 'discovery/worldbank.libsonnet';
 local zenodo = import 'discovery/zenodo.libsonnet';
 local elasticsearch = import 'elasticsearch.libsonnet';
-local get_data = import 'get-data.libsonnet';
 local ingress = import 'ingress.libsonnet';
 local jaeger = import 'jaeger.libsonnet';
 local minio = import 'minio.libsonnet';
@@ -110,7 +109,6 @@ local files = {
     heap_size='2g',
   ),
   'rabbitmq.yml': rabbitmq(config),
-  'get-data.yml': get_data(config),
   'nominatim.yml': nominatim(
     config,
     data_url='https://www.googleapis.com/download/storage/v1/b/nominatim-data-nyu/o/nominatim-postgres-data.tar?alt=media',

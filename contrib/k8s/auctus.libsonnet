@@ -344,10 +344,6 @@ local request_whitelist = function(config) (
                     mountPath: '/cache',
                     name: 'cache',
                   },
-                  {
-                    mountPath: '/usr/src/app/lib_geo/data',
-                    name: 'geo-data',
-                  },
                 ],
                 readinessProbe: {
                   httpGet: {
@@ -364,13 +360,6 @@ local request_whitelist = function(config) (
                 name: 'cache',
                 persistentVolumeClaim: {
                   claimName: 'cache',
-                },
-              },
-              {
-                name: 'geo-data',
-                persistentVolumeClaim: {
-                  claimName: 'geo-data',
-                  readOnly: true,
                 },
               },
             ],
@@ -821,10 +810,6 @@ local request_whitelist = function(config) (
                     mountPath: '/cache',
                     name: 'cache',
                   },
-                  {
-                    mountPath: '/usr/src/app/lib_geo/data',
-                    name: 'geo-data',
-                  },
                 ],
               },
             ],
@@ -833,13 +818,6 @@ local request_whitelist = function(config) (
                 name: 'cache',
                 persistentVolumeClaim: {
                   claimName: 'cache',
-                },
-              },
-              {
-                name: 'geo-data',
-                persistentVolumeClaim: {
-                  claimName: 'geo-data',
-                  readOnly: true,
                 },
               },
             ],

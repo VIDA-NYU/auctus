@@ -142,23 +142,6 @@ function(
     }),
     config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
-        name: 'geo-data',
-      },
-      spec: {
-        storageClassName: config.storage_class,
-        accessModes: [
-          'ReadOnlyMany',
-          'ReadWriteOnce',
-        ],
-        resources: {
-          requests: {
-            storage: '2.5Gi',
-          },
-        },
-      },
-    }),
-    config.kube('v1', 'PersistentVolumeClaim', {
-      metadata: {
         name: 'minio',
       },
       spec: {
