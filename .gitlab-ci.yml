@@ -59,9 +59,6 @@ test:
       docker tag auctus $AUCTUS_IMAGE
       docker push $AUCTUS_IMAGE
 
-    # Download lib_geo data
-    - python -m datamart_geo --update lib_geo/data/
-
     # Pull image not to be built
     - docker-compose pull rabbitmq
 
