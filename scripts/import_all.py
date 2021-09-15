@@ -20,6 +20,9 @@ from datamart_core.common import PrefixedElasticsearch, add_dataset_to_index, \
     delete_dataset_from_index, add_dataset_to_lazo_storage, decode_dataset_id
 
 
+RETRY_DELAYS = [10, 15, 30, 45, 60, 80, 100, 120, 140, 0]  # 10 attempts
+
+
 async def import_all(folder):
     es = PrefixedElasticsearch()
     if 'LAZO_SERVER_HOST' in os.environ:
@@ -49,14 +52,14 @@ async def import_all(folder):
             obj = json.load(fp)
 
         dataset_id = decode_dataset_id(name)
-        try:
-            delete_dataset_from_index(es, dataset_id, lazo_client)
-            add_dataset_to_index(es, dataset_id, obj)
-        except elasticsearch.TransportError:
-            print('X', end='', flush=True)
-            time.sleep(10)  # If writing can't keep up, needs a real break
-            delete_dataset_from_index(es, dataset_id, lazo_client)
-            add_dataset_to_index(es, dataset_id, obj)
+        for delay in RETRY_DELAYS:
+            try:
+                delete_dataset_from_index(es, dataset_id, lazo_client)
+                add_dataset_to_index(es, dataset_id, obj)
+                break
+            except elasticsearch.TransportError:
+                print('X', end='', flush=True)
+                time.sleep(delay)
         print('.', end='', flush=True)
 
     for i, name in enumerate(lazo_docs):
@@ -72,12 +75,13 @@ async def import_all(folder):
         dataset_id = decode_dataset_id(name[5:]).rsplit('.', 1)[0]
         lazo_es_id = obj.pop('_id')
         assert lazo_es_id.split('__.__')[0] == dataset_id
-        try:
-            add_dataset_to_lazo_storage(es, lazo_es_id, obj)
-        except elasticsearch.TransportError:
-            print('X', end='', flush=True)
-            time.sleep(10)  # If writing can't keep up, needs a real break
-            add_dataset_to_lazo_storage(es, lazo_es_id, obj)
+        for delay in RETRY_DELAYS:
+            try:
+                add_dataset_to_lazo_storage(es, lazo_es_id, obj)
+                break
+            except elasticsearch.TransportError:
+                print('X', end='', flush=True)
+                time.sleep(delay)
         if i % 10 == 0:
             print('.', end='', flush=True)
 
