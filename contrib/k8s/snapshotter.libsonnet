@@ -57,15 +57,6 @@ function(
                     ] + utils.object_store_env(config.object_store),
                   },
                 ],
-                volumes: [
-                  {
-                    name: 'geo-data',
-                    persistentVolumeClaim: {
-                      claimName: 'geo-data',
-                      readOnly: false,
-                    },
-                  },
-                ],
               },
             },
           },
