@@ -198,6 +198,7 @@ function(
               name: 'elasticsearch',
             },
             spec: {
+              storageClassName: config.storage_class,
               accessModes: [
                 'ReadWriteOnce',
               ],

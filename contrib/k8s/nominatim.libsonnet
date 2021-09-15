@@ -10,6 +10,7 @@ function(
         name: 'nominatim',
       },
       spec: {
+        storageClassName: config.storage_class,
         accessModes: [
           'ReadWriteOnce',
         ],

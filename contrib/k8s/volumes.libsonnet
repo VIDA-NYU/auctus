@@ -145,6 +145,7 @@ function(
         name: 'geo-data',
       },
       spec: {
+        storageClassName: config.storage_class,
         accessModes: [
           'ReadOnlyMany',
           'ReadWriteOnce',
@@ -161,6 +162,7 @@ function(
         name: 'minio',
       },
       spec: {
+        storageClassName: config.storage_class,
         accessModes: [
           'ReadWriteOnce',
         ],

@@ -155,6 +155,7 @@ function(config) (
         name: 'prometheus',
       },
       spec: {
+        storageClassName: config.storage_class,
         accessModes: [
           'ReadWriteOnce',
         ],
@@ -284,6 +285,7 @@ function(config) (
         name: 'grafana',
       },
       spec: {
+        storageClassName: config.storage_class,
         accessModes: [
           'ReadWriteOnce',
         ],

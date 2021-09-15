@@ -48,6 +48,8 @@ local config = {
   // Addresses to exclude from SSRF protection
   request_whitelist: ['test-discoverer'],
   log_format: 'json',
+  // Storage class for volumes (except cache)
+  storage_class: 'standard',
   // Label on nodes where the cache volume is available (can be set to null)
   local_cache_node_label: 'auctus-prod-cache-volume',
   // Label on nodes where databases will be run (can be set to null)
