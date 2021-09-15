@@ -207,47 +207,6 @@ function(config) (
     }),
     config.kube('v1', 'PersistentVolume', {
       metadata: {
-        name: 'es-synonyms',
-        labels: {
-          type: 'local',
-          app: 'auctus',
-          what: 'es-synonyms',
-        },
-      },
-      spec: {
-        storageClassName: 'manual',
-        capacity: {
-          storage: '5Mi',
-        },
-        accessModes: [
-          'ReadOnlyMany',
-          'ReadWriteOnce',
-        ],
-        hostPath: {
-          path: '/var/lib/auctus/es-synonyms',
-        },
-      },
-    }),
-    config.kube('v1', 'PersistentVolumeClaim', {
-      metadata: {
-        name: 'es-synonyms',
-      },
-      spec: {
-        storageClassName: 'manual',
-        volumeName: 'es-synonyms',
-        accessModes: [
-          'ReadOnlyMany',
-          'ReadWriteOnce',
-        ],
-        resources: {
-          requests: {
-            storage: '5Mi',
-          },
-        },
-      },
-    }),
-    config.kube('v1', 'PersistentVolume', {
-      metadata: {
         name: 'minio',
         labels: {
           type: 'local',

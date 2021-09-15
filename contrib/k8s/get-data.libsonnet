@@ -55,58 +55,5 @@ function(
         },
       },
     }),
-    config.kube('batch/v1', 'Job', {
-      metadata: {
-        name: 'get-es-synonyms',
-        labels: {
-          app: 'auctus',
-          what: 'get-es-synonyms',
-        },
-      },
-      spec: {
-        template: {
-          metadata: {
-            labels: {
-              app: 'auctus',
-              what: 'get-es-synonyms',
-            },
-          },
-          spec: {
-            restartPolicy: 'Never',
-            containers: [
-              {
-                name: 'get-data',
-                image: config.image,
-                imagePullPolicy: 'IfNotPresent',
-                securityContext: {
-                  runAsNonRoot: false,
-                  runAsUser: 0,
-                },
-                args: [
-                  'sh',
-                  '-c',
-                  'curl -Lo /synonyms/synonyms.txt https://gitlab.com/ViDA-NYU/auctus/auctus/-/raw/master/docker/synonyms.txt?inline=false && ls -l /synonyms',
-                ],
-                volumeMounts: [
-                  {
-                    name: 'synonyms',
-                    mountPath: '/synonyms',
-                  },
-                ],
-              },
-            ],
-            volumes: [
-              {
-                name: 'synonyms',
-                persistentVolumeClaim: {
-                  claimName: 'es-synonyms',
-                  readOnly: false,
-                },
-              },
-            ],
-          },
-        },
-      },
-    }),
   ]
 )

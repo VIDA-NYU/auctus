@@ -158,22 +158,6 @@ function(
     }),
     config.kube('v1', 'PersistentVolumeClaim', {
       metadata: {
-        name: 'es-synonyms',
-      },
-      spec: {
-        accessModes: [
-          'ReadOnlyMany',
-          'ReadWriteOnce',
-        ],
-        resources: {
-          requests: {
-            storage: '5Mi',
-          },
-        },
-      },
-    }),
-    config.kube('v1', 'PersistentVolumeClaim', {
-      metadata: {
         name: 'minio',
       },
       spec: {

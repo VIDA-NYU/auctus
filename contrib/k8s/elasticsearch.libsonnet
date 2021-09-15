@@ -94,6 +94,25 @@ function(
                   privileged: true,
                 },
               },
+              {
+                name: 'download-synonyms',
+                image: config.image,
+                securityContext: {
+                  runAsNonRoot: false,
+                  runAsUser: 0,
+                },
+                args: [
+                  'sh',
+                  '-c',
+                  'curl -Lo /synonyms/synonyms.txt https://gitlab.com/ViDA-NYU/auctus/auctus/-/raw/master/docker/synonyms.txt?inline=false && ls -l /synonyms',
+                ],
+                volumeMounts: [
+                  {
+                    name: 'synonyms',
+                    mountPath: '/synonyms',
+                  },
+                ],
+              },
             ],
             containers: [
               {
@@ -152,8 +171,7 @@ function(
                   },
                   {
                     name: 'synonyms',
-                    mountPath: '/usr/share/elasticsearch/config/synonyms/synonyms.txt',
-                    subPath: 'synonyms.txt',
+                    mountPath: '/usr/share/elasticsearch/config/synonyms',
                   },
                 ],
                 readinessProbe: {
@@ -169,10 +187,7 @@ function(
             volumes: [
               {
                 name: 'synonyms',
-                persistentVolumeClaim: {
-                  claimName: 'es-synonyms',
-                  readOnly: true,
-                },
+                emptyDir: {},
               },
             ],
           } + utils.affinity(node=config.db_node_label.elasticsearch),
