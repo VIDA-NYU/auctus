@@ -64,72 +64,42 @@ function(config) (
                   'discovery/test_discovery.py',
                 ],
                 imagePullPolicy: 'IfNotPresent',
-                env: [
+                env: utils.env(
                   {
-                    name: 'LOG_FORMAT',
-                    value: config.log_format,
-                  },
-                  {
-                    name: 'ELASTICSEARCH_HOSTS',
-                    value: 'elasticsearch:9200',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_PREFIX',
-                    value: config.elasticsearch_prefix,
-                  },
-                  {
-                    name: 'AMQP_HOST',
-                    value: 'rabbitmq',
-                  },
-                  {
-                    name: 'AMQP_PORT',
-                    value: '5672',
-                  },
-                  {
-                    name: 'AMQP_USER',
-                    valueFrom: {
+                    LOG_FORMAT: config.log_format,
+                    ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
+                    ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                    AMQP_HOST: 'rabbitmq',
+                    AMQP_PORT: '5672',
+                    AMQP_USER: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'amqp.user',
                       },
                     },
-                  },
-                  {
-                    name: 'AMQP_PASSWORD',
-                    valueFrom: {
+                    AMQP_PASSWORD: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'amqp.password',
                       },
                     },
-                  },
-                  {
-                    name: 'S3_KEY',
-                    valueFrom: {
+                    S3_KEY: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 's3.key',
                       },
                     },
-                  },
-                  {
-                    name: 'S3_SECRET',
-                    valueFrom: {
+                    S3_SECRET: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 's3.secret',
                       },
                     },
-                  },
-                  {
-                    name: 'LAZO_SERVER_HOST',
-                    value: 'lazo',
-                  },
-                  {
-                    name: 'LAZO_SERVER_PORT',
-                    value: '50051',
-                  },
-                ] + utils.object_store_env(config.object_store),
+                    LAZO_SERVER_HOST: 'lazo',
+                    LAZO_SERVER_PORT: '50051',
+                  }
+                  + utils.object_store_env(config.object_store)
+                ),
               },
             ],
           },

@@ -121,44 +121,17 @@ function(
                 securityContext: {
                   runAsUser: 1000,
                 },
-                env: [
-                  {
-                    name: 'cluster.name',
-                    value: cluster_name,
-                  },
-                  {
-                    name: 'network.host',
-                    value: '0.0.0.0',
-                  },
-                  {
-                    name: 'ES_JAVA_OPTS',
-                    value: '-Xmx%s -Xms%s -Des.enforce.bootstrap.checks=true' % [heap_size, heap_size],
-                  },
-                  {
-                    name: 'discovery.zen.ping.unicast.hosts',
-                    value: 'elasticsearch-cluster:9300',
-                  },
-                  {
-                    name: 'discovery.zen.minimum_master_nodes',
-                    value: '1',
-                  },
-                  {
-                    name: 'xpack.security.enabled',
-                    value: 'false',
-                  },
-                  {
-                    name: 'xpack.monitoring.enabled',
-                    value: 'false',
-                  },
-                  {
-                    name: 'cluster.initial_master_nodes',
-                    value: 'elasticsearch-0',
-                  },
-                  {
-                    name: 'ES_HEAP_SIZE',
-                    value: heap_size,
-                  },
-                ],
+                env: utils.env({
+                  'cluster.name': cluster_name,
+                  'network.host': '0.0.0.0',
+                  ES_JAVA_OPTS: '-Xmx%s -Xms%s -Des.enforce.bootstrap.checks=true' % [heap_size, heap_size],
+                  'discovery.zen.ping.unicast.hosts': 'elasticsearch-cluster:9300',
+                  'discovery.zen.minimum_master_nodes': '1',
+                  'xpack.security.enabled': 'false',
+                  'xpack.monitoring.enabled': 'false',
+                  'cluster.initial_master_nodes': 'elasticsearch-0',
+                  ES_HEAP_SIZE: heap_size,
+                }),
                 ports: [
                   {
                     containerPort: 9200,

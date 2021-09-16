@@ -1,22 +1,18 @@
 local utils = import 'utils.libsonnet';
 
 local request_whitelist = function(config) (
-  if config.request_whitelist != null && std.length(config.request_whitelist) > 0 then [
+  if config.request_whitelist != null && std.length(config.request_whitelist) > 0 then
     {
-      name: 'AUCTUS_REQUEST_WHITELIST',
-      value: std.join(',', config.request_whitelist),
-    },
-  ]
-  else []
+      AUCTUS_REQUEST_WHITELIST: std.join(',', config.request_whitelist),
+    }
+  else {}
 );
 local request_blacklist = function(config) (
-  if config.request_blacklist != null && std.length(config.request_blacklist) > 0 then [
+  if config.request_blacklist != null && std.length(config.request_blacklist) > 0 then
     {
-      name: 'AUCTUS_REQUEST_BLACKLIST',
-      value: std.join(',', config.request_blacklist),
-    },
-  ]
-  else []
+      AUCTUS_REQUEST_BLACKLIST: std.join(',', config.request_blacklist),
+    }
+  else {}
 );
 
 {
@@ -59,32 +55,14 @@ local request_blacklist = function(config) (
                 name: 'lazo',
                 image: 'registry.gitlab.com/vida-nyu/auctus/lazo-index-service:0.7.2',
                 imagePullPolicy: 'IfNotPresent',
-                env: [
-                  {
-                    name: 'DATABASE',
-                    value: 'elasticsearch',
-                  },
-                  {
-                    name: 'PORT',
-                    value: '50051',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_HOST',
-                    value: 'elasticsearch',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_PORT',
-                    value: '9200',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_INDEX',
-                    value: config.elasticsearch_prefix + 'lazo',
-                  },
-                  {
-                    name: 'JAVA_OPTS',
-                    value: '-Xmx%d -Xms%d' % [lazo_memory, lazo_memory],
-                  },
-                ],
+                env: utils.env({
+                  DATABASE: 'elasticsearch',
+                  PORT: '50051',
+                  ELASTICSEARCH_HOST: 'elasticsearch',
+                  ELASTICSEARCH_PORT: '9200',
+                  ELASTICSEARCH_INDEX: config.elasticsearch_prefix + 'lazo',
+                  JAVA_OPTS: '-Xmx%d -Xms%d' % [lazo_memory, lazo_memory],
+                }),
                 ports: [
                   {
                     containerPort: 50051,
@@ -182,12 +160,9 @@ local request_blacklist = function(config) (
                 name: 'nginx',
                 image: config.frontend_image,
                 imagePullPolicy: 'IfNotPresent',
-                env: [
-                  {
-                    name: 'API_URL',
-                    value: config.api_url,
-                  },
-                ],
+                env: utils.env({
+                  API_URL: config.api_url,
+                }),
                 ports: [
                   {
                     containerPort: 80,
@@ -267,82 +242,38 @@ local request_blacklist = function(config) (
                 image: config.image,
                 imagePullPolicy: 'IfNotPresent',
                 args: ['datamart-apiserver'],
-                env: [
+                env: utils.env(
                   {
-                    name: 'LOG_FORMAT',
-                    value: config.log_format,
-                  },
-                  {
-                    name: 'OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES',
-                    value: '1',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_HOSTS',
-                    value: 'elasticsearch:9200',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_PREFIX',
-                    value: config.elasticsearch_prefix,
-                  },
-                  {
-                    name: 'AMQP_HOST',
-                    value: 'rabbitmq',
-                  },
-                  {
-                    name: 'AMQP_PORT',
-                    value: '5672',
-                  },
-                  {
-                    name: 'AMQP_USER',
-                    valueFrom: {
+                    LOG_FORMAT: config.log_format,
+                    OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES: '1',
+                    ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
+                    ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                    AMQP_HOST: 'rabbitmq',
+                    AMQP_PORT: '5672',
+                    AMQP_USER: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'amqp.user',
                       },
                     },
-                  },
-                  {
-                    name: 'AMQP_PASSWORD',
-                    valueFrom: {
+                    AMQP_PASSWORD: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'amqp.password',
                       },
                     },
-                  },
-                  {
-                    name: 'REDIS_HOST',
-                    value: 'redis:6379',
-                  },
-                  {
-                    name: 'LAZO_SERVER_HOST',
-                    value: 'lazo',
-                  },
-                  {
-                    name: 'LAZO_SERVER_PORT',
-                    value: '50051',
-                  },
-                  {
-                    name: 'NOMINATIM_URL',
-                    value: config.nominatim_url,
-                  },
-                  {
-                    name: 'FRONTEND_URL',
-                    value: config.frontend_url,
-                  },
-                  {
-                    name: 'API_URL',
-                    value: config.api_url,
-                  },
-                  {
-                    name: 'CUSTOM_FIELDS',
-                    value: std.manifestJsonEx(config.custom_fields, '  '),
-                  },
-                ] + (
-                  utils.object_store_env(config.object_store)
+                    REDIS_HOST: 'redis:6379',
+                    LAZO_SERVER_HOST: 'lazo',
+                    LAZO_SERVER_PORT: '50051',
+                    NOMINATIM_URL: config.nominatim_url,
+                    FRONTEND_URL: config.frontend_url,
+                    API_URL: config.api_url,
+                    CUSTOM_FIELDS: std.manifestJsonEx(config.custom_fields, '  '),
+                  }
+                  + utils.object_store_env(config.object_store)
                   + request_whitelist(config)
                   + request_blacklist(config)
-                  + utils.env(config.opentelemetry)
+                  + config.opentelemetry
                 ),
                 ports: [
                   {
@@ -463,75 +394,39 @@ local request_blacklist = function(config) (
                 image: config.image,
                 imagePullPolicy: 'IfNotPresent',
                 args: ['coordinator'],
-                env: [
+                env: utils.env(
                   {
-                    name: 'LOG_FORMAT',
-                    value: config.log_format,
-                  },
-                  {
-                    name: 'ELASTICSEARCH_HOSTS',
-                    value: 'elasticsearch:9200',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_PREFIX',
-                    value: config.elasticsearch_prefix,
-                  },
-                  {
-                    name: 'AMQP_HOST',
-                    value: 'rabbitmq',
-                  },
-                  {
-                    name: 'AMQP_PORT',
-                    value: '5672',
-                  },
-                  {
-                    name: 'AMQP_USER',
-                    valueFrom: {
+                    LOG_FORMAT: config.log_format,
+                    ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
+                    ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                    AMQP_HOST: 'rabbitmq',
+                    AMQP_PORT: '5672',
+                    AMQP_USER: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'amqp.user',
                       },
                     },
-                  },
-                  {
-                    name: 'AMQP_PASSWORD',
-                    valueFrom: {
+                    AMQP_PASSWORD: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'amqp.password',
                       },
                     },
-                  },
-                  {
-                    name: 'LAZO_SERVER_HOST',
-                    value: 'lazo',
-                  },
-                  {
-                    name: 'LAZO_SERVER_PORT',
-                    value: '50051',
-                  },
-                  {
-                    name: 'ADMIN_PASSWORD',
-                    valueFrom: {
+                    LAZO_SERVER_HOST: 'lazo',
+                    LAZO_SERVER_PORT: '50051',
+                    ADMIN_PASSWORD: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'admin.password',
                       },
                     },
-                  },
-                  {
-                    name: 'FRONTEND_URL',
-                    value: config.frontend_url,
-                  },
-                  {
-                    name: 'API_URL',
-                    value: config.api_url,
-                  },
-                  {
-                    name: 'CUSTOM_FIELDS',
-                    value: std.manifestJsonEx(config.custom_fields, '  '),
-                  },
-                ] + utils.object_store_env(config.object_store),
+                    FRONTEND_URL: config.frontend_url,
+                    API_URL: config.api_url,
+                    CUSTOM_FIELDS: std.manifestJsonEx(config.custom_fields, '  '),
+                  }
+                  + utils.object_store_env(config.object_store)
+                ),
                 ports: [
                   {
                     containerPort: 8003,
@@ -657,16 +552,10 @@ local request_blacklist = function(config) (
                 image: config.image,
                 imagePullPolicy: 'IfNotPresent',
                 args: ['cache_cleaner'],
-                env: [
-                  {
-                    name: 'LOG_FORMAT',
-                    value: config.log_format,
-                  },
-                  {
-                    name: 'MAX_CACHE_BYTES',
-                    value: '%d' % cache_max_bytes,
-                  },
-                ],
+                env: utils.env({
+                  LOG_FORMAT: config.log_format,
+                  MAX_CACHE_BYTES: '%d' % cache_max_bytes,
+                }),
                 volumeMounts: [
                   {
                     mountPath: '/cache',
@@ -756,63 +645,31 @@ local request_blacklist = function(config) (
                 image: config.image,
                 imagePullPolicy: 'IfNotPresent',
                 args: ['profiler'],
-                env: [
+                env: utils.env(
                   {
-                    name: 'LOG_FORMAT',
-                    value: config.log_format,
-                  },
-                  {
-                    name: 'OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES',
-                    value: '1',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_HOSTS',
-                    value: 'elasticsearch:9200',
-                  },
-                  {
-                    name: 'ELASTICSEARCH_PREFIX',
-                    value: config.elasticsearch_prefix,
-                  },
-                  {
-                    name: 'AMQP_HOST',
-                    value: 'rabbitmq',
-                  },
-                  {
-                    name: 'AMQP_PORT',
-                    value: '5672',
-                  },
-                  {
-                    name: 'AMQP_USER',
-                    valueFrom: {
+                    LOG_FORMAT: config.log_format,
+                    OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES: '1',
+                    ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
+                    ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                    AMQP_HOST: 'rabbitmq',
+                    AMQP_PORT: '5672',
+                    AMQP_USER: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'amqp.user',
                       },
                     },
-                  },
-                  {
-                    name: 'AMQP_PASSWORD',
-                    valueFrom: {
+                    AMQP_PASSWORD: {
                       secretKeyRef: {
                         name: 'secrets',
                         key: 'amqp.password',
                       },
                     },
-                  },
-                  {
-                    name: 'LAZO_SERVER_HOST',
-                    value: 'lazo',
-                  },
-                  {
-                    name: 'LAZO_SERVER_PORT',
-                    value: '50051',
-                  },
-                  {
-                    name: 'NOMINATIM_URL',
-                    value: config.nominatim_url,
-                  },
-                ] + (
-                  utils.object_store_env(config.object_store)
+                    LAZO_SERVER_HOST: 'lazo',
+                    LAZO_SERVER_PORT: '50051',
+                    NOMINATIM_URL: config.nominatim_url,
+                  }
+                  + utils.object_store_env(config.object_store)
                   + request_whitelist(config)
                   + request_blacklist(config)
                   + utils.env(config.opentelemetry)

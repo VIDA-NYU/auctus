@@ -41,20 +41,14 @@ function(
                     image: config.image,
                     imagePullPolicy: 'IfNotPresent',
                     args: ['snapshotter'],
-                    env: [
+                    env: utils.env(
                       {
-                        name: 'LOG_FORMAT',
-                        value: config.log_format,
-                      },
-                      {
-                        name: 'ELASTICSEARCH_HOSTS',
-                        value: 'elasticsearch:9200',
-                      },
-                      {
-                        name: 'ELASTICSEARCH_PREFIX',
-                        value: config.elasticsearch_prefix,
-                      },
-                    ] + utils.object_store_env(config.object_store),
+                        LOG_FORMAT: config.log_format,
+                        ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
+                        ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                      }
+                      + utils.object_store_env(config.object_store)
+                    ),
                   },
                 ],
               },

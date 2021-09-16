@@ -39,26 +39,20 @@ function(config) (
                 securityContext: {
                   runAsUser: 999,
                 },
-                env: [
-                  {
-                    name: 'RABBITMQ_DEFAULT_USER',
-                    valueFrom: {
-                      secretKeyRef: {
-                        name: 'secrets',
-                        key: 'amqp.user',
-                      },
+                env: utils.env({
+                  RABBITMQ_DEFAULT_USER: {
+                    secretKeyRef: {
+                      name: 'secrets',
+                      key: 'amqp.user',
                     },
                   },
-                  {
-                    name: 'RABBITMQ_DEFAULT_PASS',
-                    valueFrom: {
-                      secretKeyRef: {
-                        name: 'secrets',
-                        key: 'amqp.password',
-                      },
+                  RABBITMQ_DEFAULT_PASS: {
+                    secretKeyRef: {
+                      name: 'secrets',
+                      key: 'amqp.password',
                     },
                   },
-                ],
+                }),
                 ports: [
                   {
                     containerPort: 5672,

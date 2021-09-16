@@ -34,66 +34,43 @@
     assert has_gcs_props == 0 || has_gcs_props == 2;
 
     if has_s3_props > 0 then
-      [
-        {
-          name: 'S3_URL',
-          value: object_store.s3_url,
-        },
-        {
-          name: 'S3_CLIENT_URL',
-          value: object_store.s3_client_url,
-        },
-        {
-          name: 'S3_BUCKET_PREFIX',
-          value: object_store.s3_bucket_prefix,
-        },
-        {
-          name: 'S3_KEY',
-          valueFrom: {
-            secretKeyRef: {
-              name: 'secrets',
-              key: 's3.key',
-            },
+      {
+        S3_URL: object_store.s3_url,
+        S3_CLIENT_URL: object_store.s3_client_url,
+        S3_BUCKET_PREFIX: object_store.s3_bucket_prefix,
+        S3_KEY: {
+          secretKeyRef: {
+            name: 'secrets',
+            key: 's3.key',
           },
         },
-        {
-          name: 'S3_SECRET',
-          valueFrom: {
-            secretKeyRef: {
-              name: 'secrets',
-              key: 's3.secret',
-            },
+        S3_SECRET: {
+          secretKeyRef: {
+            name: 'secrets',
+            key: 's3.secret',
           },
         },
-      ]
+      }
     else
-      [
-        {
-          name: 'GCS_PROJECT',
-          value: object_store.gcs_project,
-        },
-        {
-          name: 'GCS_CREDS',
-          valueFrom: {
-            secretKeyRef: {
-              name: 'secrets',
-              key: 'gcs.creds',
-            },
+      {
+        GCS_PROJECT: object_store.gcs_project,
+        GCS_CREDS: {
+          secretKeyRef: {
+            name: 'secrets',
+            key: 'gcs.creds',
           },
         },
-        {
-          name: 'GCS_BUCKET_PREFIX',
-          value: object_store.gcs_bucket_prefix,
-        },
-      ]
+        GCS_BUCKET_PREFIX: object_store.gcs_bucket_prefix,
+      }
   ),
   env: function(object) (
     if object == null then []
     else [
-      {
-        name: k,
-        value: object[k],
-      }
+      { name: k }
+      + (
+        if std.type(object[k]) == 'string' then { value: object[k] }
+        else { valueFrom: object[k] }
+      )
       for k in std.objectFields(object)
     ]
   ),

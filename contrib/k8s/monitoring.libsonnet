@@ -353,60 +353,38 @@ function(config) (
                 securityContext: {
                   runAsUser: 472,
                 },
-                env: (
-                  if config.grafana_anonymous_access then [
-                    {
-                      name: 'GF_AUTH_ANONYMOUS_ENABLED',
-                      value: 'true',
-                    },
-                  ]
-                  else []
-                ) + (
-                  if std.objectHas(config, 'smtp') then [
-                    {
-                      name: 'GF_SMTP_ENABLED',
-                      value: 'true',
-                    },
-                    {
-                      name: 'GF_SMTP_HOST',
-                      value: config.smtp.host,
-                    },
-                    {
-                      name: 'GF_SMTP_FROM_NAME',
-                      value: config.smtp.from_name,
-                    },
-                    {
-                      name: 'GF_SMTP_FROM_ADDRESS',
-                      value: config.smtp.from_address,
-                    },
-                    {
-                      name: 'GF_SMTP_USER',
-                      valueFrom: {
+                env: utils.env(
+                  (
+                    if config.grafana_anonymous_access then {
+                      GF_AUTH_ANONYMOUS_ENABLED: 'true',
+                    }
+                    else {}
+                  ) + (
+                    if std.objectHas(config, 'smtp') then {
+                      GF_SMTP_ENABLED: 'true',
+                      GF_SMTP_HOST: config.smtp.host,
+                      GF_SMTP_FROM_NAME: config.smtp.from_name,
+                      GF_SMTP_FROM_ADDRESS: config.smtp.from_address,
+                      GF_SMTP_USER: {
                         secretKeyRef: {
                           name: 'secrets',
                           key: 'smtp.user',
                         },
                       },
-                    },
-                    {
-                      name: 'GF_SMTP_PASSWORD',
-                      valueFrom: {
+                      GF_SMTP_PASSWORD: {
                         secretKeyRef: {
                           name: 'secrets',
                           key: 'smtp.password',
                         },
                       },
-                    },
-                  ]
-                  else []
-                ) + (
-                  if config.grafana_domain != null then [
-                    {
-                      name: 'GF_SERVER_ROOT_URL',
-                      value: 'https://%s/' % config.grafana_domain,
-                    },
-                  ]
-                  else []
+                    }
+                    else {}
+                  ) + (
+                    if config.grafana_domain != null then {
+                      GF_SERVER_ROOT_URL: 'https://%s/' % config.grafana_domain,
+                    }
+                    else {}
+                  )
                 ),
                 ports: [
                   {

@@ -66,26 +66,20 @@ function(config) (
                   },
                 ],
                 imagePullPolicy: 'IfNotPresent',
-                env: [
-                  {
-                    name: 'MINIO_ACCESS_KEY',
-                    valueFrom: {
-                      secretKeyRef: {
-                        name: 'secrets',
-                        key: 's3.key',
-                      },
+                env: utils.env({
+                  MINIO_ACCESS_KEY: {
+                    secretKeyRef: {
+                      name: 'secrets',
+                      key: 's3.key',
                     },
                   },
-                  {
-                    name: 'MINIO_SECRET_KEY',
-                    valueFrom: {
-                      secretKeyRef: {
-                        name: 'secrets',
-                        key: 's3.secret',
-                      },
+                  MINIO_SECRET_KEY: {
+                    secretKeyRef: {
+                      name: 'secrets',
+                      key: 's3.secret',
                     },
                   },
-                ],
+                }),
                 volumeMounts: [
                   {
                     name: 'data',
