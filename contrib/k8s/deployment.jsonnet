@@ -49,8 +49,11 @@ local config = {
   log_format: 'json',
   // Storage class for volumes (except cache)
   storage_class: 'standard',
-  // Label on nodes where the cache volume is available (can be set to null)
-  local_cache_node_label: 'auctus-prod-cache-volume',
+  // Node selector for nodes where the cache volume is available
+  local_cache_node_selector: [
+    //{ key: 'kubernetes.io/os', operator: 'In', values: ['linux'] },
+    { key: 'auctus-prod-cache-volume', operator: 'Exists' },
+  ],
   // Label on nodes where databases will be run (can be set to null)
   db_node_label: {
     default: null,

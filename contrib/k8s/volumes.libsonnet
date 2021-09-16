@@ -105,20 +105,11 @@ function(
         },
         nodeAffinity: {
           required: {
-            nodeSelectorTerms: (
-              // Match the local_cache_node_label if set
-              if config.local_cache_node_label != null then [
-                {
-                  matchExpressions: [
-                    {
-                      key: config.local_cache_node_label,
-                      operator: 'Exists',
-                    },
-                  ],
-                },
-              ]
-              else []
-            ),
+            nodeSelectorTerms: [
+              {
+                matchExpressions: config.local_cache_node_selector,
+              },
+            ],
           },
         },
       },
