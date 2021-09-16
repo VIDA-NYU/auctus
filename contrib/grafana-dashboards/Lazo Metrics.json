@@ -9,26 +9,13 @@
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
-      },
-      {
-        "datasource": "-- Grafana --",
-        "enable": true,
-        "hide": true,
-        "iconColor": "#3274D9",
-        "limit": 100,
-        "name": "manual",
-        "showIn": 0,
-        "tags": [
-          "manual"
-        ],
-        "type": "tags"
       }
     ]
   },
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 5,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -37,7 +24,14 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "fill": 4,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
@@ -60,29 +54,38 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
-      "stack": true,
+      "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(node_cpu_seconds_total{mode=~\"system|user\"}[1m])) by (mode)",
+          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
+          "instant": false,
           "interval": "",
-          "legendFormat": "{{mode}}",
+          "intervalFactor": 1,
+          "legendFormat": "JVM Used Heap",
           "refId": "A"
+        },
+        {
+          "expr": "jvm_memory_bytes_max{area=\"heap\"}",
+          "interval": "",
+          "legendFormat": "JVM  Max Heap",
+          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "CPU",
+      "title": "Lazo Memory (JVM Heap)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -98,7 +101,7 @@
       },
       "yaxes": [
         {
-          "format": "percentunit",
+          "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -120,46 +123,18 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                3000000000
-              ],
-              "type": "lt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "3m",
-        "frequency": "1m",
-        "handler": 1,
-        "name": "RAM alert",
-        "noDataState": "alerting",
-        "notifications": []
-      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -169,7 +144,7 @@
         "y": 0
       },
       "hiddenSeries": false,
-      "id": 12,
+      "id": 8,
       "legend": {
         "avg": false,
         "current": false,
@@ -183,122 +158,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "total",
-          "fill": 0
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "available",
-          "refId": "A"
-        },
-        {
-          "expr": "node_memory_MemTotal_bytes",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "total",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 3000000000
-        }
-      ],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "RAM",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "bytes",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "load1": "dark-green",
-        "load15": "rgba(25, 115, 14, 0.29)",
-        "load5": "rgba(25, 115, 14, 0.67)"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
-      "hiddenSeries": false,
-      "id": 6,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -308,29 +171,17 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "node_load1",
+          "expr": "rate(process_cpu_seconds_total{job=\"lazo\"}[1m])",
           "interval": "",
-          "legendFormat": "load1",
+          "legendFormat": "{{instance}}",
           "refId": "A"
-        },
-        {
-          "expr": "node_load5",
-          "interval": "",
-          "legendFormat": "load5",
-          "refId": "B"
-        },
-        {
-          "expr": "node_load15",
-          "interval": "",
-          "legendFormat": "load15",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Load",
+      "title": "Lazo - CPU usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -346,7 +197,7 @@
       },
       "yaxes": [
         {
-          "format": "none",
+          "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -373,12 +224,19 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 8
       },
       "hiddenSeries": false,
@@ -396,9 +254,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -408,23 +267,17 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(node_disk_read_bytes_total[1m])) by (device)",
+          "expr": "sum(lazo_requests_seconds_count) by (type)",
           "interval": "",
-          "legendFormat": "{{device}} read",
+          "legendFormat": "{{type}}",
           "refId": "A"
-        },
-        {
-          "expr": "-sum(rate(node_disk_written_bytes_total[1m])) by (device)",
-          "interval": "",
-          "legendFormat": "{{device}} written",
-          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Disk I/O",
+      "title": "Lazo Request Counts",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -440,7 +293,7 @@
       },
       "yaxes": [
         {
-          "format": "Bps",
+          "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -467,104 +320,23 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "hiddenSeries": false,
-      "id": 10,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "node_filesystem_avail_bytes{device=~\"/dev/.*\",mountpoint!~\"/boot/.*\"}",
-          "interval": "",
-          "legendFormat": "{{mountpoint}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Filesystems space available",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "bytes",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
         },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 8
       },
       "hiddenSeries": false,
-      "id": 8,
+      "id": 6,
       "legend": {
         "avg": false,
         "current": false,
@@ -578,9 +350,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -590,23 +363,17 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(rate(node_network_receive_bytes_total{device=~\"en.*\"}[1m])) by (instance)",
+          "expr": "sum(lazo_requests_total) by (type)",
           "interval": "",
-          "legendFormat": "recv",
+          "legendFormat": "{{type}}",
           "refId": "A"
-        },
-        {
-          "expr": "-avg(rate(node_network_transmit_bytes_total{device=~\"en.*\"}[1m])) by (instance, device)",
-          "interval": "",
-          "legendFormat": "send",
-          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Network I/O",
+      "title": "Lazo - Total Requests",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -622,7 +389,7 @@
       },
       "yaxes": [
         {
-          "format": "Bps",
+          "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -644,15 +411,15 @@
       }
     }
   ],
-  "refresh": "10s",
-  "schemaVersion": 22,
+  "refresh": false,
+  "schemaVersion": 26,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {
@@ -670,10 +437,7 @@
     ]
   },
   "timezone": "",
-  "title": "Node",
-  "uid": "rIuvqLzMz",
-  "variables": {
-    "list": []
-  },
-  "version": 12
+  "title": "Lazo Metrics",
+  "uid": "34xAXjtGk",
+  "version": 1
 }

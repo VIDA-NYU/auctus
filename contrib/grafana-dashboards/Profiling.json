@@ -32,7 +32,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 4,
   "links": [],
   "panels": [
     {
@@ -71,7 +71,7 @@
         "noDataState": "alerting",
         "notifications": [
           {
-            "uid": "RwAvBG2Wz"
+            "uid": "74mLDy_Mk"
           }
         ]
       },
@@ -83,6 +83,13 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -107,14 +114,24 @@
       "links": [],
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": false
       },
       "paceLength": 10,
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "Profiled per minute (10min average)",
+          "yaxis": 2
+        },
+        {
+          "alias": "Profiled per minute (30min average)",
+          "yaxis": 2
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
@@ -122,6 +139,7 @@
         {
           "expr": "rabbitmq_queue_messages{queue=\"profile\"}",
           "format": "time_series",
+          "hide": false,
           "intervalFactor": 1,
           "legendFormat": "today",
           "refId": "A"
@@ -133,13 +151,21 @@
           "intervalFactor": 1,
           "legendFormat": "yesterday",
           "refId": "B"
+        },
+        {
+          "expr": "sum(rate(profile_seconds_bucket{le=\"+Inf\", job=\"profiler\"}[30m]) * 60) without(instance)",
+          "format": "time_series",
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "Profiled per minute (30min average)",
+          "refId": "C"
         }
       ],
       "thresholds": [
         {
           "colorMode": "critical",
-          "fill": true,
-          "line": true,
+          "fill": false,
+          "line": false,
           "op": "gt",
           "value": 10
         }
@@ -163,6 +189,7 @@
       },
       "yaxes": [
         {
+          "decimals": null,
           "format": "none",
           "label": "",
           "logBase": 1,
@@ -171,11 +198,12 @@
           "show": true
         },
         {
-          "format": "short",
+          "decimals": 1,
+          "format": "none",
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         }
       ],
@@ -187,6 +215,38 @@
     {
       "cacheTimeout": null,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": [],
+          "mappings": [
+            {
+              "id": 0,
+              "op": "=",
+              "text": "N/A",
+              "type": 1,
+              "value": "null"
+            }
+          ],
+          "min": 0,
+          "nullValueMode": "connected",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgb(173, 173, 173)",
+                "value": null
+              },
+              {
+                "color": "rgb(0, 0, 0)",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
       "gridPos": {
         "h": 2,
         "w": 12,
@@ -197,46 +257,19 @@
       "links": [],
       "options": {
         "colorMode": "background",
-        "fieldOptions": {
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "vertical",
+        "reduceOptions": {
           "calcs": [
             "last"
           ],
-          "defaults": {
-            "links": [],
-            "mappings": [
-              {
-                "id": 0,
-                "op": "=",
-                "text": "N/A",
-                "type": 1,
-                "value": "null"
-              }
-            ],
-            "min": 0,
-            "nullValueMode": "connected",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "rgb(173, 173, 173)",
-                  "value": null
-                },
-                {
-                  "color": "rgb(0, 0, 0)",
-                  "value": 1
-                }
-              ]
-            },
-            "unit": "short"
-          },
-          "overrides": [],
+          "fields": "",
           "values": false
         },
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "vertical"
+        "textMode": "auto"
       },
-      "pluginVersion": "6.7.3",
+      "pluginVersion": "7.3.4",
       "targets": [
         {
           "expr": "sum(profile_profiling_count)",
@@ -269,6 +302,13 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 4,
       "fillGradient": 0,
       "gridPos": {
@@ -293,10 +333,11 @@
       "links": [],
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "paceLength": 10,
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -377,6 +418,13 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -401,10 +449,11 @@
       "links": [],
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "paceLength": 10,
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -503,6 +552,13 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -527,10 +583,11 @@
       "links": [],
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "paceLength": 10,
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -624,6 +681,13 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -647,9 +711,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -728,6 +793,12 @@
       },
       "dataFormat": "tsbuckets",
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "gridPos": {
         "h": 7,
         "w": 12,
@@ -787,6 +858,13 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -810,9 +888,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -827,13 +906,15 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(cache_datasets_bytes)",
-          "legendFormat": "Datasets",
+          "expr": "cache_datasets_bytes",
+          "interval": "",
+          "legendFormat": "Datasets {{instance}}",
           "refId": "A"
         },
         {
           "expr": "avg(cache_augmentations_bytes)",
-          "legendFormat": "Augmentations",
+          "interval": "",
+          "legendFormat": "Augmentations {{instance}}",
           "refId": "B"
         }
       ],
@@ -881,6 +962,12 @@
     {
       "columns": [],
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fontSize": "90%",
       "gridPos": {
         "h": 7,
@@ -934,7 +1021,7 @@
       ],
       "title": "Datasets by source",
       "transform": "table",
-      "type": "table"
+      "type": "table-old"
     },
     {
       "columns": [
@@ -944,6 +1031,12 @@
         }
       ],
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fontSize": "90%",
       "gridPos": {
         "h": 7,
@@ -972,7 +1065,7 @@
       "timeShift": null,
       "title": "Datasets per profiler version",
       "transform": "timeseries_aggregations",
-      "type": "table"
+      "type": "table-old"
     },
     {
       "aliasColors": {},
@@ -980,6 +1073,13 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -1005,10 +1105,11 @@
       "links": [],
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "paceLength": 10,
       "percentage": false,
+      "pluginVersion": "7.3.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1018,8 +1119,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(source_count) without (job, instance)",
+          "expr": "avg(source_count) without (job, instance)",
           "format": "time_series",
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{source}}",
           "refId": "A"
@@ -1067,8 +1169,8 @@
       }
     }
   ],
-  "refresh": "10s",
-  "schemaVersion": 22,
+  "refresh": "30s",
+  "schemaVersion": 26,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -1106,8 +1208,5 @@
   "timezone": "",
   "title": "Profiling",
   "uid": "id-Heiwiz",
-  "variables": {
-    "list": []
-  },
-  "version": 20
+  "version": 4
 }
