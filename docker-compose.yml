@@ -128,6 +128,7 @@ services:
       - LAZO_SERVER_PORT=50051
       - NOMINATIM_URL=${NOMINATIM_URL}
       - AUCTUS_REQUEST_WHITELIST=${AUCTUS_REQUEST_WHITELIST}
+      - AUCTUS_REQUEST_BLACKLIST=${AUCTUS_REQUEST_BLACKLIST}
       - FRONTEND_URL=${FRONTEND_URL}
       - API_URL=${API_URL}
       - CUSTOM_FIELDS=${CUSTOM_FIELDS}
@@ -239,6 +240,7 @@ services:
       - LAZO_SERVER_PORT=50051
       - NOMINATIM_URL=${NOMINATIM_URL}
       - AUCTUS_REQUEST_WHITELIST=${AUCTUS_REQUEST_WHITELIST}
+      - AUCTUS_REQUEST_BLACKLIST=${AUCTUS_REQUEST_BLACKLIST}
     # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     cpu_shares: 10
     volumes:

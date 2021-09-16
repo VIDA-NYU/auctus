@@ -46,6 +46,7 @@ local config = {
   //},
   // Addresses to exclude from SSRF protection
   request_whitelist: ['test-discoverer'],
+  request_blacklist: [],
   log_format: 'json',
   // Storage class for volumes (except cache)
   storage_class: 'standard',

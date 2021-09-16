@@ -135,6 +135,11 @@ def advocate_session():
                 host, 80, 0, socket.SOCK_STREAM,
             )
         }
+    if os.environ.get('AUCTUS_REQUEST_BLACKLIST', '').strip():
+        kwargs['ip_blacklist'] = {
+            ipaddress.ip_network(net)
+            for net in os.environ['AUCTUS_REQUEST_BLACKLIST'].split(',')
+        }
     validator = advocate.AddrValidator(**kwargs)
     return advocate.Session(validator=validator)
 

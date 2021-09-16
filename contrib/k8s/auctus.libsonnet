@@ -9,6 +9,15 @@ local request_whitelist = function(config) (
   ]
   else []
 );
+local request_blacklist = function(config) (
+  if config.request_blacklist != null && std.length(config.request_blacklist) > 0 then [
+    {
+      name: 'AUCTUS_REQUEST_BLACKLIST',
+      value: std.join(',', config.request_blacklist),
+    },
+  ]
+  else []
+);
 
 {
   lazo: function(
@@ -332,6 +341,7 @@ local request_whitelist = function(config) (
                 ] + (
                   utils.object_store_env(config.object_store)
                   + request_whitelist(config)
+                  + request_blacklist(config)
                   + utils.env(config.opentelemetry)
                 ),
                 ports: [
