@@ -72,6 +72,7 @@
         else { valueFrom: object[k] }
       )
       for k in std.objectFields(object)
+      if object[k] != null
     ]
   ),
   affinity: function(node=null) (

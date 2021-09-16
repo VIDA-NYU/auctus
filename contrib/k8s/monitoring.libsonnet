@@ -1,7 +1,7 @@
 local utils = import 'utils.libsonnet';
 
-function(config) (
-  local prometheus_config = utils.hashed_config_map(
+function(config) {
+  'prometheus-config': utils.hashed_config_map(
     config.kube,
     name='monitoring',
     data={
@@ -126,290 +126,320 @@ function(config) (
     labels={
       app: 'auctus',
     },
-  );
-  [
-    prometheus_config,
-    config.kube('v1', 'Service', {
-      metadata: {
-        name: 'prometheus',
-        labels: {
+  ) + { file:: 'monitoring.yml' },
+  'prometheus-svc': config.kube('v1', 'Service', {
+    file:: 'monitoring.yml',
+    metadata: {
+      name: 'prometheus',
+      labels: {
+        app: 'auctus',
+        what: 'prometheus',
+      },
+    },
+    spec: {
+      selector: {
+        app: 'auctus',
+        what: 'prometheus',
+      },
+      ports: [
+        {
+          protocol: 'TCP',
+          port: 9090,
+        },
+      ],
+    },
+  }),
+  'prometheus-pvc': config.kube('v1', 'PersistentVolumeClaim', {
+    file:: 'volumes.yml',
+    metadata: {
+      name: 'prometheus',
+    },
+    spec: {
+      storageClassName: config.storage_class,
+      accessModes: [
+        'ReadWriteOnce',
+      ],
+      resources: {
+        requests: {
+          storage: '2Gi',
+        },
+      },
+    },
+  }),
+  'prometheus-deploy': config.kube('apps/v1', 'Deployment', {
+    file:: 'monitoring.yml',
+    metadata: {
+      name: 'prometheus',
+      labels: {
+        app: 'auctus',
+        what: 'prometheus',
+      },
+    },
+    spec: {
+      replicas: 1,
+      strategy: {
+        type: 'Recreate',
+      },
+      selector: {
+        matchLabels: {
           app: 'auctus',
           what: 'prometheus',
         },
       },
-      spec: {
-        selector: {
-          app: 'auctus',
-          what: 'prometheus',
-        },
-        ports: [
-          {
-            protocol: 'TCP',
-            port: 9090,
-          },
-        ],
-      },
-    }),
-    config.kube('v1', 'PersistentVolumeClaim', {
-      metadata: {
-        name: 'prometheus',
-      },
-      spec: {
-        storageClassName: config.storage_class,
-        accessModes: [
-          'ReadWriteOnce',
-        ],
-        resources: {
-          requests: {
-            storage: '2Gi',
-          },
-        },
-      },
-    }),
-    config.kube('apps/v1', 'Deployment', {
-      metadata: {
-        name: 'prometheus',
-        labels: {
-          app: 'auctus',
-          what: 'prometheus',
-        },
-      },
-      spec: {
-        replicas: 1,
-        strategy: {
-          type: 'Recreate',
-        },
-        selector: {
-          matchLabels: {
+      template: {
+        metadata: {
+          labels: {
             app: 'auctus',
             what: 'prometheus',
           },
         },
-        template: {
-          metadata: {
-            labels: {
-              app: 'auctus',
-              what: 'prometheus',
+        spec: {
+          securityContext: {
+            runAsNonRoot: true,
+          },
+          initContainers: [
+            {
+              name: 'fix-permissions',
+              image: 'busybox',
+              securityContext: {
+                runAsNonRoot: false,
+              },
+              command: [
+                'sh',
+                '-c',
+                'chown -R 65534:65534 /prometheus',
+              ],
+              volumeMounts: [
+                {
+                  mountPath: '/prometheus',
+                  name: 'data',
+                },
+              ],
             },
-          },
-          spec: {
-            securityContext: {
-              runAsNonRoot: true,
+          ],
+          containers: [
+            {
+              name: 'prometheus',
+              image: 'prom/prometheus:v2.22.0',
+              securityContext: {
+                runAsUser: 65534,
+              },
+              ports: [
+                {
+                  containerPort: 9090,
+                },
+              ],
+              volumeMounts: [
+                {
+                  mountPath: '/prometheus',
+                  name: 'data',
+                },
+                {
+                  mountPath: '/etc/prometheus/prometheus.yml',
+                  subPath: 'prometheus',
+                  name: 'config',
+                },
+              ],
             },
-            initContainers: [
-              {
-                name: 'fix-permissions',
-                image: 'busybox',
-                securityContext: {
-                  runAsNonRoot: false,
-                },
-                command: [
-                  'sh',
-                  '-c',
-                  'chown -R 65534:65534 /prometheus',
-                ],
-                volumeMounts: [
-                  {
-                    mountPath: '/prometheus',
-                    name: 'data',
-                  },
-                ],
+          ],
+          volumes: [
+            {
+              name: 'data',
+              persistentVolumeClaim: {
+                claimName: 'prometheus',
               },
-            ],
-            containers: [
-              {
-                name: 'prometheus',
-                image: 'prom/prometheus:v2.22.0',
-                securityContext: {
-                  runAsUser: 65534,
-                },
-                ports: [
-                  {
-                    containerPort: 9090,
-                  },
-                ],
-                volumeMounts: [
-                  {
-                    mountPath: '/prometheus',
-                    name: 'data',
-                  },
-                  {
-                    mountPath: '/etc/prometheus/prometheus.yml',
-                    subPath: 'prometheus',
-                    name: 'config',
-                  },
-                ],
+            },
+            {
+              name: 'config',
+              configMap: {
+                name: $['prometheus-config'].metadata.name,
               },
-            ],
-            volumes: [
-              {
-                name: 'data',
-                persistentVolumeClaim: {
-                  claimName: 'prometheus',
-                },
-              },
-              {
-                name: 'config',
-                configMap: {
-                  name: prometheus_config.metadata.name,
-                },
-              },
-            ],
-          } + utils.affinity(node=config.db_node_label.prometheus),
+            },
+          ],
+        } + utils.affinity(node=config.db_node_label.prometheus),
+      },
+    },
+  }),
+  'grafana-svc': config.kube('v1', 'Service', {
+    file:: 'monitoring.yml',
+    metadata: {
+      name: 'grafana',
+      labels: {
+        app: 'auctus',
+        what: 'grafana',
+      },
+    },
+    spec: {
+      selector: {
+        app: 'auctus',
+        what: 'grafana',
+      },
+      ports: [
+        {
+          protocol: 'TCP',
+          port: 3000,
+        },
+      ],
+    },
+  }),
+  'grafana-pvc': config.kube('v1', 'PersistentVolumeClaim', {
+    file:: 'volumes.yml',
+    metadata: {
+      name: 'grafana',
+    },
+    spec: {
+      storageClassName: config.storage_class,
+      accessModes: [
+        'ReadWriteOnce',
+      ],
+      resources: {
+        requests: {
+          storage: '100Mi',
         },
       },
-    }),
-    config.kube('v1', 'Service', {
-      metadata: {
-        name: 'grafana',
-        labels: {
+    },
+  }),
+  'grafana-deploy': config.kube('apps/v1', 'Deployment', {
+    file:: 'monitoring.yml',
+    metadata: {
+      name: 'grafana',
+      labels: {
+        app: 'auctus',
+        what: 'grafana',
+      },
+    },
+    spec: {
+      replicas: 1,
+      strategy: {
+        type: 'Recreate',
+      },
+      selector: {
+        matchLabels: {
           app: 'auctus',
           what: 'grafana',
         },
       },
-      spec: {
-        selector: {
-          app: 'auctus',
-          what: 'grafana',
-        },
-        ports: [
-          {
-            protocol: 'TCP',
-            port: 3000,
-          },
-        ],
-      },
-    }),
-    config.kube('v1', 'PersistentVolumeClaim', {
-      metadata: {
-        name: 'grafana',
-      },
-      spec: {
-        storageClassName: config.storage_class,
-        accessModes: [
-          'ReadWriteOnce',
-        ],
-        resources: {
-          requests: {
-            storage: '100Mi',
-          },
-        },
-      },
-    }),
-    config.kube('apps/v1', 'Deployment', {
-      metadata: {
-        name: 'grafana',
-        labels: {
-          app: 'auctus',
-          what: 'grafana',
-        },
-      },
-      spec: {
-        replicas: 1,
-        strategy: {
-          type: 'Recreate',
-        },
-        selector: {
-          matchLabels: {
+      template: {
+        metadata: {
+          labels: {
             app: 'auctus',
             what: 'grafana',
           },
         },
-        template: {
-          metadata: {
-            labels: {
-              app: 'auctus',
-              what: 'grafana',
-            },
+        spec: {
+          securityContext: {
+            runAsNonRoot: true,
           },
-          spec: {
-            securityContext: {
-              runAsNonRoot: true,
+          initContainers: [
+            {
+              name: 'fix-permissions',
+              image: 'busybox',
+              securityContext: {
+                runAsNonRoot: false,
+              },
+              command: [
+                'sh',
+                '-c',
+                'chown -R 472:472 /grafana',
+              ],
+              volumeMounts: [
+                {
+                  mountPath: '/grafana',
+                  name: 'data',
+                },
+              ],
             },
-            initContainers: [
-              {
-                name: 'fix-permissions',
-                image: 'busybox',
-                securityContext: {
-                  runAsNonRoot: false,
-                },
-                command: [
-                  'sh',
-                  '-c',
-                  'chown -R 472:472 /grafana',
-                ],
-                volumeMounts: [
-                  {
-                    mountPath: '/grafana',
-                    name: 'data',
-                  },
-                ],
+          ],
+          containers: [
+            {
+              name: 'grafana',
+              image: 'quay.io/remram44/grafana:7.3.4-image_renderer',
+              securityContext: {
+                runAsUser: 472,
               },
-            ],
-            containers: [
-              {
-                name: 'grafana',
-                image: 'quay.io/remram44/grafana:7.3.4-image_renderer',
-                securityContext: {
-                  runAsUser: 472,
-                },
-                env: utils.env(
-                  (
-                    if config.grafana_anonymous_access then {
-                      GF_AUTH_ANONYMOUS_ENABLED: 'true',
-                    }
-                    else {}
-                  ) + (
-                    if std.objectHas(config, 'smtp') then {
-                      GF_SMTP_ENABLED: 'true',
-                      GF_SMTP_HOST: config.smtp.host,
-                      GF_SMTP_FROM_NAME: config.smtp.from_name,
-                      GF_SMTP_FROM_ADDRESS: config.smtp.from_address,
-                      GF_SMTP_USER: {
-                        secretKeyRef: {
-                          name: 'secrets',
-                          key: 'smtp.user',
-                        },
+              env: utils.env(
+                {
+                  GF_AUTH_ANONYMOUS_ENABLED: if config.grafana_anonymous_access then 'true',
+                  GF_SERVER_ROOT_URL: if config.grafana_domain != null then 'https://%s/' % config.grafana_domain,
+                } + (
+                  if std.objectHas(config, 'smtp') then {
+                    GF_SMTP_ENABLED: 'true',
+                    GF_SMTP_HOST: config.smtp.host,
+                    GF_SMTP_FROM_NAME: config.smtp.from_name,
+                    GF_SMTP_FROM_ADDRESS: config.smtp.from_address,
+                    GF_SMTP_USER: {
+                      secretKeyRef: {
+                        name: 'secrets',
+                        key: 'smtp.user',
                       },
-                      GF_SMTP_PASSWORD: {
-                        secretKeyRef: {
-                          name: 'secrets',
-                          key: 'smtp.password',
-                        },
+                    },
+                    GF_SMTP_PASSWORD: {
+                      secretKeyRef: {
+                        name: 'secrets',
+                        key: 'smtp.password',
                       },
-                    }
-                    else {}
-                  ) + (
-                    if config.grafana_domain != null then {
-                      GF_SERVER_ROOT_URL: 'https://%s/' % config.grafana_domain,
-                    }
-                    else {}
-                  )
-                ),
-                ports: [
-                  {
-                    containerPort: 3000,
-                  },
-                ],
-                volumeMounts: [
-                  {
-                    mountPath: '/var/lib/grafana',
-                    name: 'data',
-                  },
-                ],
-              },
-            ],
-            volumes: [
-              {
-                name: 'data',
-                persistentVolumeClaim: {
-                  claimName: 'grafana',
+                    },
+                  }
+                  else {}
+                )
+              ),
+              ports: [
+                {
+                  containerPort: 3000,
                 },
+              ],
+              volumeMounts: [
+                {
+                  mountPath: '/var/lib/grafana',
+                  name: 'data',
+                },
+              ],
+            },
+          ],
+          volumes: [
+            {
+              name: 'data',
+              persistentVolumeClaim: {
+                claimName: 'grafana',
               },
-            ],
-          } + utils.affinity(node=config.db_node_label.grafana),
-        },
+            },
+          ],
+        } + utils.affinity(node=config.db_node_label.grafana),
       },
-    }),
-  ]
-)
+    },
+  }),
+  'grafana-ingress': (
+    if config.grafana_domain != null then
+      config.kube('networking.k8s.io/v1', 'Ingress', {
+        file:: 'ingress.yml',
+        metadata: {
+          name: 'grafana',
+        },
+        spec: {
+          ingressClassName: 'nginx',
+          rules: [
+            {
+              host: config.grafana_domain,
+              http: {
+                paths: [
+                  {
+                    path: '/',
+                    pathType: 'Prefix',
+                    backend: {
+                      service: {
+                        name: 'grafana',
+                        port: {
+                          number: 3000,
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      })
+    else null
+  ),
+}

@@ -86,71 +86,73 @@ local config = {
   private_app: false,
   // Wrapper for Kubernetes objects
   kube: function(version, kind, payload) (
-    std.mergePatch(
-      {
-        apiVersion: version,
-        kind: kind,
-      },
-      payload,
-    )
+    {
+      apiVersion: version,
+      kind: kind,
+    }
+    + payload
   ),
 };
 
-local files = {
-  'volumes.yml': volumes(
-    config,
-    cache_size='55Gi',
-    local_cache_path='/var/lib/auctus/prod/cache',
-  ),
-  //'volumes.yml': volumes_local(config),
-  'redis.yml': redis(
+local data = (
+  {}
+  + redis(
     config,
     maxmemory='500mb',
-  ),
-  'elasticsearch.yml': elasticsearch(
+  )
+  + elasticsearch(
     config,
     replicas=1,
     heap_size='2g',
-  ),
-  'rabbitmq.yml': rabbitmq(config),
-  'nominatim.yml': nominatim(
+  )
+  + rabbitmq(config)
+  + nominatim(
     config,
     data_url='https://www.googleapis.com/download/storage/v1/b/nominatim-data-nyu/o/nominatim-postgres-data.tar?alt=media',
-  ),
-  'auctus.yml': (
-    auctus.lazo(config, lazo_memory=2000000000)  // 2 GB
-    + auctus.frontend(config)
-    + auctus.apiserver(config)
-    + auctus.coordinator(config)
-    + auctus.cache_cleaner(
-      config,
-      cache_max_bytes=50000000000,  // 50 GB
-    )
-    + auctus.profiler(config)
-  ),
-  'snapshotter.yml': snapshotter(config),
-  'ingress.yml': ingress(config),
-  'minio.yml': minio(config),
-  'monitoring.yml': monitoring(config),
-  'jaeger.yml': jaeger(config),
-  'discovery/ckan.yml': ckan(
+  )
+  + auctus.volumes(
+    config,
+    cache_size='55Gi',
+    local_cache_path='/var/lib/auctus/prod/cache',
+  )
+  + auctus.lazo(config, lazo_memory=2000000000)  // 2 GB
+  + auctus.frontend(config)
+  + auctus.apiserver(config)
+  + auctus.coordinator(config)
+  + auctus.cache_cleaner(
+    config,
+    cache_max_bytes=50000000000,  // 50 GB
+  )
+  + auctus.profiler(config)
+  + snapshotter(config)
+  + ingress(config)
+  + minio(config)
+  + monitoring(config)
+  + jaeger(config)
+  + ckan(
     config,
     domains=['data.humdata.org'],
-  ),
-  'discovery/socrata.yml': socrata(
+  )
+  + socrata(
     config,
     domains=['data.cityofnewyork.us', 'finances.worldbank.org'],
-  ),
-  'discovery/uaz-indicators.yml': uaz_indicators(config),
-  'discovery/worldbank.yml': worldbank(config),
-  'discovery/zenodo.yml': zenodo(
+  )
+  + uaz_indicators(config)
+  + worldbank(config)
+  + zenodo(
     config,
     keyword_query='covid',
-  ),
-  //'discovery/test-discoverer.yml': test_discoverer(config),
-};
+  )
+  //+ test_discoverer(config)
+);
+
+local files = std.set([data[k].file for k in std.objectFields(data)]);
 
 {
-  [k]: std.manifestYamlStream(files[k])
-  for k in std.objectFields(files)
+  [file]: std.manifestYamlStream([
+    data[k]
+    for k in std.objectFields(data)
+    if data[k] != null && data[k].file == file
+  ])
+  for file in files
 }

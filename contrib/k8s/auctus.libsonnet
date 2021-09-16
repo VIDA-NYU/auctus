@@ -16,11 +16,270 @@ local request_blacklist = function(config) (
 );
 
 {
+  volumes: function(config, cache_size, local_cache_path) {
+    local cache_pv_name = 'cache-%s' % std.substr(
+      std.md5(local_cache_path),
+      0,
+      6,
+    ),
+    'cache-dir-ds': config.kube('apps/v1', 'DaemonSet', {
+      file:: 'volumes.yml',
+      metadata: {
+        name: 'create-cache-dir',
+        labels: {
+          app: 'auctus',
+          what: 'create-cache-dir',
+        },
+      },
+      spec: {
+        selector: {
+          matchLabels: {
+            app: 'auctus',
+            what: 'create-cache-dir',
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'auctus',
+              what: 'create-cache-dir',
+            },
+          },
+          spec: {
+            securityContext: {
+              runAsNonRoot: true,
+            },
+            initContainers: [
+              {
+                name: 'create-volume',
+                image: 'busybox',
+                securityContext: {
+                  runAsNonRoot: false,
+                },
+                command: [
+                  'sh',
+                  '-c',
+                  'mkdir -p /mnt/%s' % utils.basename(local_cache_path),
+                ],
+                volumeMounts: [
+                  {
+                    mountPath: '/mnt',
+                    name: 'parentpath',
+                  },
+                ],
+              },
+            ],
+            containers: [
+              {
+                name: 'wait',
+                image: 'busybox',
+                securityContext: {
+                  runAsUser: 999,
+                },
+                command: [
+                  'sh',
+                  '-c',
+                  'while true; do sleep 3600; done',
+                ],
+              },
+            ],
+            volumes: [
+              {
+                name: 'parentpath',
+                hostPath: {
+                  path: utils.dirname(local_cache_path),
+                },
+              },
+            ],
+          },
+        },
+      },
+    }),
+    'cache-dir-ds-local': config.kube('apps/v1', 'DaemonSet', {
+      file:: 'volumes-local.yml',
+      metadata: {
+        name: 'create-cache-dir',
+        labels: {
+          app: 'auctus',
+          what: 'create-cache-dir',
+        },
+      },
+      spec: {
+        selector: {
+          matchLabels: {
+            app: 'auctus',
+            what: 'create-cache-dir',
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'auctus',
+              what: 'create-cache-dir',
+            },
+          },
+          spec: {
+            securityContext: {
+              runAsNonRoot: true,
+            },
+            initContainers: [
+              {
+                name: 'create-volume',
+                image: 'busybox',
+                securityContext: {
+                  runAsNonRoot: false,
+                },
+                command: [
+                  'sh',
+                  '-c',
+                  'mkdir -p /mnt/cache',
+                ],
+                volumeMounts: [
+                  {
+                    mountPath: '/mnt',
+                    name: 'parentpath',
+                  },
+                ],
+              },
+            ],
+            containers: [
+              {
+                name: 'wait',
+                image: 'busybox',
+                securityContext: {
+                  runAsUser: 999,
+                },
+                command: [
+                  'sh',
+                  '-c',
+                  'while true; do sleep 3600; done',
+                ],
+              },
+            ],
+            volumes: [
+              {
+                name: 'parentpath',
+                hostPath: {
+                  path: '/var/lib/auctus/prod',
+                },
+              },
+            ],
+          },
+        },
+      },
+    }),
+    'cache-pv': config.kube('v1', 'PersistentVolume', {
+      file:: 'volumes.yml',
+      metadata: {
+        name: cache_pv_name,
+        labels: {
+          type: 'local',
+          app: 'auctus',
+          what: 'cache',
+        },
+      },
+      spec: {
+        storageClassName: 'manual',
+        capacity: {
+          storage: cache_size,
+        },
+        accessModes: [
+          'ReadWriteMany',
+        ],
+        'local': {
+          path: local_cache_path,
+        },
+        nodeAffinity: {
+          required: {
+            nodeSelectorTerms: [
+              {
+                matchExpressions: config.local_cache_node_selector,
+              },
+            ],
+          },
+        },
+      },
+    }),
+    'cache-pvc': config.kube('v1', 'PersistentVolumeClaim', {
+      file:: 'volumes.yml',
+      metadata: {
+        name: 'cache',
+      },
+      spec: {
+        storageClassName: 'manual',
+        volumeName: cache_pv_name,
+        accessModes: [
+          'ReadWriteMany',
+        ],
+        resources: {
+          requests: {
+            storage: cache_size,
+          },
+        },
+      },
+    }),
+    'cache-pv-local': config.kube('v1', 'PersistentVolume', {
+      file:: 'volumes-local.yml',
+      metadata: {
+        name: 'cache',
+        labels: {
+          type: 'local',
+          app: 'auctus',
+          what: 'cache',
+        },
+      },
+      spec: {
+        storageClassName: 'manual',
+        capacity: {
+          storage: '5Gi',
+        },
+        accessModes: [
+          'ReadWriteMany',
+        ],
+        'local': {
+          path: '/var/lib/auctus/prod/cache',
+        },
+        nodeAffinity: {
+          required: {
+            nodeSelectorTerms: [
+              {
+                matchExpressions: [
+                  {
+                    key: 'auctus-prod-cache-volume',
+                    operator: 'Exists',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    }),
+    'cache-pvc-local': config.kube('v1', 'PersistentVolumeClaim', {
+      file:: 'volumes-local.yml',
+      metadata: {
+        name: 'cache',
+      },
+      spec: {
+        storageClassName: 'manual',
+        volumeName: 'cache',
+        accessModes: [
+          'ReadWriteMany',
+        ],
+        resources: {
+          requests: {
+            storage: '5Gi',
+          },
+        },
+      },
+    }),
+  },
   lazo: function(
     config,
     lazo_memory,
-       ) [
-    config.kube('apps/v1', 'Deployment', {
+       ) {
+    'lazo-deploy': config.kube('apps/v1', 'Deployment', {
+      file:: 'lazo.yml',
       metadata: {
         name: 'lazo',
         labels: {
@@ -74,7 +333,8 @@ local request_blacklist = function(config) (
         },
       },
     }),
-    config.kube('v1', 'Service', {
+    'lazo-svc': config.kube('v1', 'Service', {
+      file:: 'lazo.yml',
       metadata: {
         name: 'lazo',
         labels: {
@@ -95,7 +355,8 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-    config.kube('v1', 'Service', {
+    'lazo-scrape-svc': config.kube('v1', 'Service', {
+      file:: 'monitoring.yml',
       metadata: {
         name: 'lazo-scrape',
         labels: {
@@ -117,14 +378,15 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-  ],
+  },
   frontend: function(
     config,
     replicas=1,
     max_surge=1,
     max_unavailable=0,
-           ) [
-    config.kube('apps/v1', 'Deployment', {
+           ) {
+    'frontend-deploy': config.kube('apps/v1', 'Deployment', {
+      file:: 'auctus.yml',
       metadata: {
         name: 'frontend',
         labels: {
@@ -174,7 +436,8 @@ local request_blacklist = function(config) (
         },
       },
     }),
-    config.kube('v1', 'Service', {
+    'frontend-svc': config.kube('v1', 'Service', {
+      file:: 'auctus.yml',
       metadata: {
         name: 'frontend',
         labels: {
@@ -195,14 +458,15 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-  ],
+  },
   apiserver: function(
     config,
     replicas=4,
     max_surge=2,
     max_unavailable=0,
-            ) [
-    config.kube('apps/v1', 'Deployment', {
+            ) {
+    'apiserver-deploy': config.kube('apps/v1', 'Deployment', {
+      file:: 'auctus.yml',
       metadata: {
         name: 'apiserver',
         labels: {
@@ -309,7 +573,8 @@ local request_blacklist = function(config) (
         },
       },
     }),
-    config.kube('v1', 'Service', {
+    'apiserver-svc': config.kube('v1', 'Service', {
+      file:: 'auctus.yml',
       metadata: {
         name: 'apiserver',
         labels: {
@@ -330,7 +595,8 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-    config.kube('v1', 'Service', {
+    'apiserver-scrape-svc': config.kube('v1', 'Service', {
+      file:: 'monitoring.yml',
       metadata: {
         name: 'apiserver-scrape',
         labels: {
@@ -352,9 +618,10 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-  ],
-  coordinator: function(config) [
-    config.kube('apps/v1', 'Deployment', {
+  },
+  coordinator: function(config) {
+    'coordinator-deploy': config.kube('apps/v1', 'Deployment', {
+      file:: 'auctus.yml',
       metadata: {
         name: 'coordinator',
         labels: {
@@ -452,7 +719,8 @@ local request_blacklist = function(config) (
         },
       },
     }),
-    config.kube('v1', 'Service', {
+    'coordinator-svc': config.kube('v1', 'Service', {
+      file:: 'auctus.yml',
       metadata: {
         name: 'coordinator',
         labels: {
@@ -473,7 +741,8 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-    config.kube('v1', 'Service', {
+    'coordinator-scrape-svc': config.kube('v1', 'Service', {
+      file:: 'monitoring.yml',
       metadata: {
         name: 'coordinator-scrape',
         labels: {
@@ -495,12 +764,13 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-  ],
+  },
   cache_cleaner: function(
     config,
     cache_max_bytes=50000000000,  // 50 GB
-                ) [
-    config.kube('apps/v1', 'DaemonSet', {
+                ) {
+    'cache-cleaner-ds': config.kube('apps/v1', 'DaemonSet', {
+      file:: 'auctus.yml',
       metadata: {
         name: 'cache-cleaner',
         labels: {
@@ -576,7 +846,8 @@ local request_blacklist = function(config) (
         },
       },
     }),
-    config.kube('v1', 'Service', {
+    'cache-cleaner-scrape-svc': config.kube('v1', 'Service', {
+      file:: 'monitoring.yml',
       metadata: {
         name: 'cache-cleaner-scrape',
         labels: {
@@ -598,14 +869,15 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-  ],
+  },
   profiler: function(
     config,
     replicas=4,
     max_surge=0,
     max_unavailable=2,
-           ) [
-    config.kube('apps/v1', 'Deployment', {
+           ) {
+    'profiler-deploy': config.kube('apps/v1', 'Deployment', {
+      file:: 'auctus.yml',
       metadata: {
         name: 'profiler',
         labels: {
@@ -694,7 +966,8 @@ local request_blacklist = function(config) (
         },
       },
     }),
-    config.kube('v1', 'Service', {
+    'profiler-scrape': config.kube('v1', 'Service', {
+      file:: 'monitoring.yml',
       metadata: {
         name: 'profiler-scrape',
         labels: {
@@ -716,5 +989,5 @@ local request_blacklist = function(config) (
         ],
       },
     }),
-  ],
+  },
 }

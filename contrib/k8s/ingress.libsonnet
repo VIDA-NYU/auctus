@@ -1,8 +1,9 @@
 function(
   config,
 ) (
-  [
-    config.kube('networking.k8s.io/v1', 'Ingress', {
+  {
+    'app-ingress': config.kube('networking.k8s.io/v1', 'Ingress', {
+      file:: 'ingress.yml',
       metadata: {
         name: 'app',
         annotations: {
@@ -64,9 +65,10 @@ function(
         ],
       },
     }),
-  ] + (
-    if config.coordinator_domain != null then [
-      config.kube('networking.k8s.io/v1', 'Ingress', {
+  } + (
+    if config.coordinator_domain != null then {
+      'coordinator-ingress': config.kube('networking.k8s.io/v1', 'Ingress', {
+        file:: 'ingress.yml',
         metadata: {
           name: 'coordinator',
         },
@@ -95,40 +97,7 @@ function(
           ],
         },
       }),
-    ]
-    else []
-  ) + (
-    if config.grafana_domain != null then [
-      config.kube('networking.k8s.io/v1', 'Ingress', {
-        metadata: {
-          name: 'grafana',
-        },
-        spec: {
-          ingressClassName: 'nginx',
-          rules: [
-            {
-              host: config.grafana_domain,
-              http: {
-                paths: [
-                  {
-                    path: '/',
-                    pathType: 'Prefix',
-                    backend: {
-                      service: {
-                        name: 'grafana',
-                        port: {
-                          number: 3000,
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      }),
-    ]
-    else []
+    }
+    else {}
   )
 )
