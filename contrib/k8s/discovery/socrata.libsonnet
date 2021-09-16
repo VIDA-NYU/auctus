@@ -20,9 +20,9 @@ function(
     labels={
       app: 'auctus',
     },
-  ) + { file:: 'socrata.yml' },
+  ) + { file:: 'discovery.yml' },
   'socrata-cronjob': config.kube('batch/v1beta1', 'CronJob', {
-    file:: 'socrata.yml',
+    file:: 'discovery.yml',
     metadata: {
       name: 'socrata',
       labels: {

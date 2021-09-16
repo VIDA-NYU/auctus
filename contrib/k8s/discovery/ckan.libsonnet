@@ -20,9 +20,9 @@ function(
     labels={
       app: 'auctus',
     },
-  ) + { file:: 'ckan.yml' },
+  ) + { file:: 'discovery.yml' },
   'ckan-cronjob': config.kube('batch/v1beta1', 'CronJob', {
-    file:: 'ckan.yml',
+    file:: 'discovery.yml',
     metadata: {
       name: 'ckan',
       labels: {

@@ -5,7 +5,7 @@ function(
   schedule='20 1 * * 1,3,5',
 ) {
   'uaz-indicators-cronjob': config.kube('batch/v1beta1', 'CronJob', {
-    file:: 'uaz-indicators.yml',
+    file:: 'discovery.yml',
     metadata: {
       name: 'uaz-indicators',
       labels: {

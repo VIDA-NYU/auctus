@@ -5,7 +5,7 @@ function(
   schedule='0 1 * * 1,3,5',
 ) {
   'worldbank-cronjob': config.kube('batch/v1beta1', 'CronJob', {
-    file:: 'worldbank.yml',
+    file:: 'discovery.yml',
     metadata: {
       name: 'worldbank',
       labels: {

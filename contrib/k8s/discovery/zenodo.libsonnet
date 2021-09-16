@@ -19,9 +19,9 @@ function(
     labels={
       app: 'auctus',
     },
-  ) + { file:: 'zenodo.yml' },
+  ) + { file:: 'discovery.yml' },
   'zenodo-cronjob': config.kube('batch/v1beta1', 'CronJob', {
-    file:: 'zenodo.yml',
+    file:: 'discovery.yml',
     metadata: {
       name: 'zenodo',
       labels: {
