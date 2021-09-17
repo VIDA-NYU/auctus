@@ -4,7 +4,7 @@ function(
   config,
   replicas,
   heap_size,
-  cluster_name='auctus-cluster',
+  cluster_name='docker-cluster',
 ) (
   [
     // Headless Service governing the StatefulSet
