@@ -814,6 +814,8 @@ local request_blacklist = function(config) (
                 ] + (
                   utils.object_store_env(config.object_store)
                   + request_whitelist(config)
+                  + request_blacklist(config)
+                  + utils.env(config.opentelemetry)
                 ),
                 volumeMounts: [
                   {
