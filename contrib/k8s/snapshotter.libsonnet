@@ -45,7 +45,7 @@ function(
                     {
                       LOG_FORMAT: config.log_format,
                       ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
-                      ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                      ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                     }
                     + utils.object_store_env(config.object_store)
                   ),

@@ -1,9 +1,6 @@
 local utils = import 'utils.libsonnet';
 
-function(
-  config,
-  maxmemory='500mb',
-) {
+function(config) {
   'redis-config': utils.hashed_config_map(
     config.kube,
     name='redis-config',
@@ -12,7 +9,7 @@ function(
       what: 'redis',
     },
     data={
-      'redis.conf': 'maxmemory %s\nmaxmemory-policy allkeys-lru\n' % maxmemory,
+      'redis.conf': 'maxmemory %s\nmaxmemory-policy allkeys-lru\n' % config.redis.max_memory,
     },
   ) + { file:: 'redis.yml' },
   'redis-deploy': config.kube('apps/v1', 'Deployment', {

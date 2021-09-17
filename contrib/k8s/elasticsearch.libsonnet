@@ -1,11 +1,6 @@
 local utils = import 'utils.libsonnet';
 
-function(
-  config,
-  replicas,
-  heap_size,
-  cluster_name='docker-cluster',
-) {
+function(config) {
   // Headless Service governing the StatefulSet
   'elasticsearch-cluster-svc': config.kube('v1', 'Service', {
     file:: 'elasticsearch.yml',
@@ -42,7 +37,7 @@ function(
     },
     spec: {
       serviceName: 'elasticsearch-cluster',
-      replicas: replicas,
+      replicas: config.elasticsearch.replicas,
       updateStrategy: {
         type: 'RollingUpdate',
       },
@@ -123,15 +118,15 @@ function(
                 runAsUser: 1000,
               },
               env: utils.env({
-                'cluster.name': cluster_name,
+                'cluster.name': 'docker-cluster',
                 'network.host': '0.0.0.0',
-                ES_JAVA_OPTS: '-Xmx%s -Xms%s -Des.enforce.bootstrap.checks=true' % [heap_size, heap_size],
+                ES_JAVA_OPTS: '-Xmx%s -Xms%s -Des.enforce.bootstrap.checks=true' % [config.elasticsearch.heap_size, config.elasticsearch.heap_size],
                 'discovery.zen.ping.unicast.hosts': 'elasticsearch-cluster:9300',
                 'discovery.zen.minimum_master_nodes': '1',
                 'xpack.security.enabled': 'false',
                 'xpack.monitoring.enabled': 'false',
                 'cluster.initial_master_nodes': 'elasticsearch-0',
-                ES_HEAP_SIZE: heap_size,
+                ES_HEAP_SIZE: config.elasticsearch.heap_size,
               }),
               ports: [
                 {

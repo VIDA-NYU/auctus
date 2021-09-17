@@ -25,7 +25,6 @@ local config = {
   frontend_url: 'http://localhost:30808',  // If using KinD
   //api_url: 'https://%s/api/v1' % self.app_domain, // If using Ingress
   api_url: 'http://localhost:30808/api/v1',  // If using KinD
-  elasticsearch_prefix: 'auctusdev_',
   nominatim_url: 'http://nominatim:8080/',
   minio_domain: 'files.localhost',
   object_store: {
@@ -51,11 +50,16 @@ local config = {
   log_format: 'json',
   // Storage class for volumes (except cache)
   storage_class: 'standard',
-  // Node selector for nodes where the cache volume is available
-  local_cache_node_selector: [
-    //{ key: 'kubernetes.io/os', operator: 'In', values: ['linux'] },
-    { key: 'auctus-prod-cache-volume', operator: 'Exists' },
-  ],
+  cache: {
+    size: '55Gi',
+    high_mark_bytes: 50000000000,  // 50 GB
+    path: '/var/lib/auctus/prod/cache',
+    // Node selector for nodes where the cache volume is available
+    node_selector: [
+      //{ key: 'kubernetes.io/os', operator: 'In', values: ['linux'] },
+      { key: 'auctus-prod-cache-volume', operator: 'Exists' },
+    ],
+  },
   // Label on nodes where databases will be run (can be set to null)
   db_node_label: {
     default: null,
@@ -85,6 +89,32 @@ local config = {
   // Protect the frontend and API with a password
   // If true, the corresponding secret has to be set
   private_app: false,
+  redis: {
+    max_memory: '500mb',
+  },
+  elasticsearch: {
+    prefix: 'auctusdev_',
+    replicas: 1,
+    heap_size: '2g',
+  },
+  nominatim: {
+    data_url: 'https://www.googleapis.com/download/storage/v1/b/nominatim-data-nyu/o/nominatim-postgres-data.tar?alt=media',
+  },
+  lazo: {
+    memory: 2000000000,  // 2 GB
+  },
+  socrata: {
+    domains: ['data.cityofnewyork.us', 'finances.worldbank.org'],
+    schedule: '30 1 * * 1,3,5',
+  },
+  zenodo: {
+    schedule: '40 0 * * 1,3,5',
+    keyword_query: 'covid',
+  },
+  ckan: {
+    domains: ['data.humdata.org'],
+    schedule: '10 1 * * 1,3,5',
+  },
   // Wrapper for Kubernetes objects
   kube: function(version, kind, payload) (
     {
@@ -97,53 +127,27 @@ local config = {
 
 local data = (
   {}
-  + redis(
-    config,
-    maxmemory='500mb',
-  )
-  + elasticsearch(
-    config,
-    replicas=1,
-    heap_size='2g',
-  )
+  + redis(config)
+  + elasticsearch(config)
   + rabbitmq(config)
-  + nominatim(
-    config,
-    data_url='https://www.googleapis.com/download/storage/v1/b/nominatim-data-nyu/o/nominatim-postgres-data.tar?alt=media',
-  )
-  + auctus.volumes(
-    config,
-    cache_size='55Gi',
-    local_cache_path='/var/lib/auctus/prod/cache',
-  )
-  + auctus.lazo(config, lazo_memory=2000000000)  // 2 GB
+  + nominatim(config)
+  + auctus.volumes(config)
+  + auctus.lazo(config)
   + auctus.frontend(config)
   + auctus.apiserver(config)
   + auctus.coordinator(config)
-  + auctus.cache_cleaner(
-    config,
-    cache_max_bytes=50000000000,  // 50 GB
-  )
+  + auctus.cache_cleaner(config)
   + auctus.profiler(config)
   + snapshotter(config)
   + ingress(config)
   + minio(config)
   + monitoring(config)
   + jaeger(config)
-  + ckan(
-    config,
-    domains=['data.humdata.org'],
-  )
-  + socrata(
-    config,
-    domains=['data.cityofnewyork.us', 'finances.worldbank.org'],
-  )
+  + ckan(config)
+  + socrata(config)
   + uaz_indicators(config)
   + worldbank(config)
-  + zenodo(
-    config,
-    keyword_query='covid',
-  )
+  + zenodo(config)
   //+ test_discoverer(config)
 );
 

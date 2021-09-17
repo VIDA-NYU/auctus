@@ -1,9 +1,6 @@
 local utils = import 'utils.libsonnet';
 
-function(
-  config,
-  data_url,
-) {
+function(config) {
   'nominatim-pvc': config.kube('v1', 'PersistentVolumeClaim', {
     file:: 'volumes.yml',
     metadata: {
@@ -78,7 +75,7 @@ function(
               command: [
                 'sh',
                 '-c',
-                'if ! [ -d /data/base ]; then\n  curl -Ls %s | tar -C /data --strip-components=1 -xf -\nfi\n' % data_url,
+                'if ! [ -d /data/base ]; then\n  curl -Ls %s | tar -C /data --strip-components=1 -xf -\nfi\n' % config.nominatim.data_url,
               ],
               volumeMounts: [
                 {

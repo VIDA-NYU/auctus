@@ -69,7 +69,7 @@ function(config) {
                 {
                   LOG_FORMAT: config.log_format,
                   ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
-                  ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                  ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                   AMQP_HOST: 'rabbitmq',
                   AMQP_PORT: '5672',
                   AMQP_USER: {

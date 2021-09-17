@@ -1,10 +1,6 @@
 local utils = import '../utils.libsonnet';
 
-function(
-  config,
-  domains,
-  schedule='10 1 * * 1,3,5',
-) {
+function(config) {
   'ckan-config': utils.hashed_config_map(
     config.kube,
     name='ckan',
@@ -12,13 +8,14 @@ function(
       'ckan.json': std.manifestJsonEx(
         [
           { url: d }
-          for d in domains
+          for d in config.ckan.domains
         ],
         '  ',
       ),
     },
     labels={
       app: 'auctus',
+      what: 'ckan',
     },
   ) + { file:: 'discovery.yml' },
   'ckan-cronjob': config.kube('batch/v1beta1', 'CronJob', {
@@ -31,7 +28,7 @@ function(
       },
     },
     spec: {
-      schedule: schedule,
+      schedule: config.ckan.schedule,
       jobTemplate: {
         metadata: {
           labels: {
@@ -62,7 +59,7 @@ function(
                     {
                       LOG_FORMAT: config.log_format,
                       ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
-                      ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                      ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                       AMQP_HOST: 'rabbitmq',
                       AMQP_PORT: '5672',
                       AMQP_USER: {

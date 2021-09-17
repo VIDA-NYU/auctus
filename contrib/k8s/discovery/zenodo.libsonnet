@@ -1,17 +1,13 @@
 local utils = import '../utils.libsonnet';
 
-function(
-  config,
-  keyword_query,
-  schedule='40 0 * * 1,3,5',
-) {
+function(config) {
   'zenodo-config': utils.hashed_config_map(
     config.kube,
     name='zenodo',
     data={
       'zenodo.json': std.manifestJsonEx(
         {
-          keyword_query: keyword_query,
+          keyword_query: config.zenodo.keyword_query,
         },
         '  ',
       ),
@@ -30,7 +26,7 @@ function(
       },
     },
     spec: {
-      schedule: schedule,
+      schedule: config.zenodo.schedule,
       jobTemplate: {
         metadata: {
           labels: {
@@ -61,7 +57,7 @@ function(
                     {
                       LOG_FORMAT: config.log_format,
                       ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
-                      ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                      ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                       AMQP_HOST: 'rabbitmq',
                       AMQP_PORT: '5672',
                       AMQP_USER: {

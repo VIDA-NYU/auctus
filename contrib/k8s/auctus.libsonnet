@@ -16,9 +16,9 @@ local request_blacklist = function(config) (
 );
 
 {
-  volumes: function(config, cache_size, local_cache_path) {
+  volumes: function(config) {
     local cache_pv_name = 'cache-%s' % std.substr(
-      std.md5(local_cache_path),
+      std.md5(config.cache.path),
       0,
       6,
     ),
@@ -59,7 +59,7 @@ local request_blacklist = function(config) (
                 command: [
                   'sh',
                   '-c',
-                  'mkdir -p /mnt/%s' % utils.basename(local_cache_path),
+                  'mkdir -p /mnt/%s' % utils.basename(config.cache.path),
                 ],
                 volumeMounts: [
                   {
@@ -87,7 +87,7 @@ local request_blacklist = function(config) (
               {
                 name: 'parentpath',
                 hostPath: {
-                  path: utils.dirname(local_cache_path),
+                  path: utils.dirname(config.cache.path),
                 },
               },
             ],
@@ -181,19 +181,19 @@ local request_blacklist = function(config) (
       spec: {
         storageClassName: 'manual',
         capacity: {
-          storage: cache_size,
+          storage: config.cache.size,
         },
         accessModes: [
           'ReadWriteMany',
         ],
         'local': {
-          path: local_cache_path,
+          path: config.cache.path,
         },
         nodeAffinity: {
           required: {
             nodeSelectorTerms: [
               {
-                matchExpressions: config.local_cache_node_selector,
+                matchExpressions: config.cache.node_selector,
               },
             ],
           },
@@ -213,7 +213,7 @@ local request_blacklist = function(config) (
         ],
         resources: {
           requests: {
-            storage: cache_size,
+            storage: config.cache.size,
           },
         },
       },
@@ -231,7 +231,7 @@ local request_blacklist = function(config) (
       spec: {
         storageClassName: 'manual',
         capacity: {
-          storage: '5Gi',
+          storage: config.cache.size,
         },
         accessModes: [
           'ReadWriteMany',
@@ -243,12 +243,7 @@ local request_blacklist = function(config) (
           required: {
             nodeSelectorTerms: [
               {
-                matchExpressions: [
-                  {
-                    key: 'auctus-prod-cache-volume',
-                    operator: 'Exists',
-                  },
-                ],
+                matchExpressions: config.cache.node_selector,
               },
             ],
           },
@@ -268,16 +263,13 @@ local request_blacklist = function(config) (
         ],
         resources: {
           requests: {
-            storage: '5Gi',
+            storage: config.cache.size,
           },
         },
       },
     }),
   },
-  lazo: function(
-    config,
-    lazo_memory,
-       ) {
+  lazo: function(config) {
     'lazo-deploy': config.kube('apps/v1', 'Deployment', {
       file:: 'lazo.yml',
       metadata: {
@@ -319,8 +311,8 @@ local request_blacklist = function(config) (
                   PORT: '50051',
                   ELASTICSEARCH_HOST: 'elasticsearch',
                   ELASTICSEARCH_PORT: '9200',
-                  ELASTICSEARCH_INDEX: config.elasticsearch_prefix + 'lazo',
-                  JAVA_OPTS: '-Xmx%d -Xms%d' % [lazo_memory, lazo_memory],
+                  ELASTICSEARCH_INDEX: config.elasticsearch.prefix + 'lazo',
+                  JAVA_OPTS: '-Xmx%d -Xms%d' % [config.lazo.memory, config.lazo.memory],
                 }),
                 ports: [
                   {
@@ -379,12 +371,7 @@ local request_blacklist = function(config) (
       },
     }),
   },
-  frontend: function(
-    config,
-    replicas=1,
-    max_surge=1,
-    max_unavailable=0,
-           ) {
+  frontend: function(config) {
     'frontend-deploy': config.kube('apps/v1', 'Deployment', {
       file:: 'auctus.yml',
       metadata: {
@@ -395,12 +382,12 @@ local request_blacklist = function(config) (
         },
       },
       spec: {
-        replicas: replicas,
+        replicas: 1,
         strategy: {
           type: 'RollingUpdate',
           rollingUpdate: {
-            maxSurge: max_surge,
-            maxUnavailable: max_unavailable,
+            maxSurge: 1,
+            maxUnavailable: 0,
           },
         },
         selector: {
@@ -459,12 +446,7 @@ local request_blacklist = function(config) (
       },
     }),
   },
-  apiserver: function(
-    config,
-    replicas=4,
-    max_surge=2,
-    max_unavailable=0,
-            ) {
+  apiserver: function(config) {
     'apiserver-deploy': config.kube('apps/v1', 'Deployment', {
       file:: 'auctus.yml',
       metadata: {
@@ -475,12 +457,12 @@ local request_blacklist = function(config) (
         },
       },
       spec: {
-        replicas: replicas,
+        replicas: 4,
         strategy: {
           type: 'RollingUpdate',
           rollingUpdate: {
-            maxSurge: max_surge,
-            maxUnavailable: max_unavailable,
+            maxSurge: 2,
+            maxUnavailable: 0,
           },
         },
         selector: {
@@ -511,7 +493,7 @@ local request_blacklist = function(config) (
                     LOG_FORMAT: config.log_format,
                     OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES: '1',
                     ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
-                    ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                    ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                     AMQP_HOST: 'rabbitmq',
                     AMQP_PORT: '5672',
                     AMQP_USER: {
@@ -665,7 +647,7 @@ local request_blacklist = function(config) (
                   {
                     LOG_FORMAT: config.log_format,
                     ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
-                    ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                    ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                     AMQP_HOST: 'rabbitmq',
                     AMQP_PORT: '5672',
                     AMQP_USER: {
@@ -765,10 +747,7 @@ local request_blacklist = function(config) (
       },
     }),
   },
-  cache_cleaner: function(
-    config,
-    cache_max_bytes=50000000000,  // 50 GB
-                ) {
+  cache_cleaner: function(config) {
     'cache-cleaner-ds': config.kube('apps/v1', 'DaemonSet', {
       file:: 'auctus.yml',
       metadata: {
@@ -824,7 +803,7 @@ local request_blacklist = function(config) (
                 args: ['cache_cleaner'],
                 env: utils.env({
                   LOG_FORMAT: config.log_format,
-                  MAX_CACHE_BYTES: '%d' % cache_max_bytes,
+                  MAX_CACHE_BYTES: '%d' % config.cache.high_mark_bytes,
                 }),
                 volumeMounts: [
                   {
@@ -870,12 +849,7 @@ local request_blacklist = function(config) (
       },
     }),
   },
-  profiler: function(
-    config,
-    replicas=4,
-    max_surge=0,
-    max_unavailable=2,
-           ) {
+  profiler: function(config) {
     'profiler-deploy': config.kube('apps/v1', 'Deployment', {
       file:: 'auctus.yml',
       metadata: {
@@ -886,12 +860,12 @@ local request_blacklist = function(config) (
         },
       },
       spec: {
-        replicas: replicas,
+        replicas: 4,
         strategy: {
           type: 'RollingUpdate',
           rollingUpdate: {
-            maxSurge: max_surge,
-            maxUnavailable: max_unavailable,
+            maxSurge: 0,
+            maxUnavailable: 2,
           },
         },
         selector: {
@@ -922,7 +896,7 @@ local request_blacklist = function(config) (
                     LOG_FORMAT: config.log_format,
                     OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES: '1',
                     ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
-                    ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                    ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                     AMQP_HOST: 'rabbitmq',
                     AMQP_PORT: '5672',
                     AMQP_USER: {

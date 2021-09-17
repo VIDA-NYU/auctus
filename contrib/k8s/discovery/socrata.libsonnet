@@ -1,10 +1,6 @@
 local utils = import '../utils.libsonnet';
 
-function(
-  config,
-  domains,
-  schedule='30 1 * * 1,3,5',
-) {
+function(config) {
   'socrata-config': utils.hashed_config_map(
     config.kube,
     name='socrata',
@@ -12,7 +8,7 @@ function(
       'socrata.json': std.manifestJsonEx(
         [
           { url: d }
-          for d in domains
+          for d in config.socrata.domains
         ],
         '  ',
       ),
@@ -31,7 +27,7 @@ function(
       },
     },
     spec: {
-      schedule: schedule,
+      schedule: config.socrata.schedule,
       jobTemplate: {
         metadata: {
           labels: {
@@ -62,7 +58,7 @@ function(
                     {
                       LOG_FORMAT: config.log_format,
                       ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
-                      ELASTICSEARCH_PREFIX: config.elasticsearch_prefix,
+                      ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                       AMQP_HOST: 'rabbitmq',
                       AMQP_PORT: '5672',
                       AMQP_USER: {
