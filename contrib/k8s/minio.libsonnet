@@ -130,7 +130,7 @@ function(config) (
     }),
     config.kube('networking.k8s.io/v1', 'Ingress', {
       metadata: {
-        name: 'ingress-minio',
+        name: 'minio',
         annotations: {
           'nginx.ingress.kubernetes.io/proxy-send-timeout': '1200',
           'nginx.ingress.kubernetes.io/proxy-read-timeout': '1200',

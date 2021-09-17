@@ -4,7 +4,7 @@ function(
   [
     config.kube('networking.k8s.io/v1', 'Ingress', {
       metadata: {
-        name: 'ingress-app',
+        name: 'app',
         annotations: {
           'nginx.ingress.kubernetes.io/proxy-send-timeout': '1200',
           'nginx.ingress.kubernetes.io/proxy-read-timeout': '1200',
@@ -68,7 +68,7 @@ function(
     if config.coordinator_domain != null then [
       config.kube('networking.k8s.io/v1', 'Ingress', {
         metadata: {
-          name: 'ingress-coordinator',
+          name: 'coordinator',
         },
         spec: {
           ingressClassName: 'nginx',
@@ -101,7 +101,7 @@ function(
     if config.grafana_domain != null then [
       config.kube('networking.k8s.io/v1', 'Ingress', {
         metadata: {
-          name: 'ingress-grafana',
+          name: 'grafana',
         },
         spec: {
           ingressClassName: 'nginx',
