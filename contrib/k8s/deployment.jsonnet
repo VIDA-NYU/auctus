@@ -27,9 +27,10 @@ local config = {
   api_url: 'http://localhost:30808/api/v1',  // If using KinD
   elasticsearch_prefix: 'auctusdev_',
   nominatim_url: 'http://nominatim:8080/',
+  minio_domain: 'files.localhost',
   object_store: {
     s3_url: 'http://minio:9000',
-    s3_client_url: 'http://files.localhost:30808',
+    s3_client_url: 'http://%s:30808' % $.minio_domain,
     s3_bucket_prefix: 'auctus-dev-',
     //gcs_project: 'auctus',
     //gcs_bucket_prefix: 'auctus-dev-',

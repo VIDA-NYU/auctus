@@ -195,7 +195,7 @@ function(config) {
       ingressClassName: 'nginx',
       rules: [
         {
-          host: 'files.localhost',
+          host: config.minio_domain,
           http: {
             paths: [
               {
