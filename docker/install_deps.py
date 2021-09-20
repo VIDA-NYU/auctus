@@ -16,15 +16,21 @@ import sys
 import toml
 
 
-def main():
-    with open(sys.argv[1]) as fp:
+def main(args):
+    devel = False
+    if args[0] == '--dev':
+        devel = True
+        args = args[1:]
+
+    with open(args[0]) as fp:
         lockfile = toml.load(fp)
 
     packages = []
 
     for package in lockfile['package']:
         if package['category'] == 'dev':
-            continue
+            if not devel:
+                continue
         elif package['category'] != 'main':
             raise ValueError(
                 "Unknown package category %s" % package['category']
@@ -57,4 +63,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

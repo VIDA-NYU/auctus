@@ -47,8 +47,6 @@ Make sure you have checked out the submodule with `git submodule init && git sub
 
 Make sure you have [Git LFS](https://git-lfs.github.com/) installed and configured (`git lfs install`)
 
-Install datamart-geo: `pip install datamart-geo~=0.3`
-
 Copy env.default to .env and update the variables there. You might want to update the password for a production deployment.
 
 Make sure your node is set up for running Elasticsearch. You will probably have to [raise the mmap limit](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/vm-max-map-count.html).
@@ -60,7 +58,7 @@ To run scripts locally, you can load the environment variables into your shell b
 Prepare data volumes
 --------------------
 
-Run `scripts/setup.sh` to initialize the data volumes. This will download the datamart-geo data to `lib_geo/data/` and will set the correct permissions on the `volumes/` subdirectories.
+Run `scripts/setup.sh` to initialize the data volumes. This will set the correct permissions on the `volumes/` subdirectories.
 
 Should you ever want to start from scratch, you can delete `volumes/` but make sure to run `scripts/setup.sh` again afterwards to set permissions.
 
