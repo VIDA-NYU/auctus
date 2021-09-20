@@ -55,4 +55,4 @@ set -x
 export DATAMART_VERSION=v0.0
 
 # Run tests
-poetry run python tests --verbose --catch
+docker run --env-file tests/ci.env -v $(pwd)/tests:/usr/src/app/tests -v $(pwd)/docs:/usr/src/app/docs --network auctus_default auctus python tests --verbose --catch
