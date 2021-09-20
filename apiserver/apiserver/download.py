@@ -62,7 +62,7 @@ class BaseDownload(BaseHandler):
                 )
             # Redirect the client to it
             logger.info("Sending redirect to direct_url")
-            return await self.redirect(materialize['direct_url'])
+            return self.redirect(materialize['direct_url'])
 
         # If it's in object storage
         if (
@@ -79,7 +79,7 @@ class BaseDownload(BaseHandler):
                 except FileNotFoundError:
                     pass
                 else:
-                    return await self.redirect(object_store.file_url(dataset))
+                    return self.redirect(object_store.file_url(dataset))
 
         with contextlib.ExitStack() as stack:
             try:
