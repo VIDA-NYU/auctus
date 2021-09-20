@@ -93,7 +93,7 @@ test:
     # Run the tests in a container
     - |
       # Run tests
-        if ! docker run --env-file tests/ci.env -v $(pwd)/tests:/usr/src/app/tests -v $(pwd)/docs:/usr/src/app/docs -v $(pwd)/cov:/cov -e COVERAGE_FILE=/cov/testsuite -e "PYTHONWARNINGS=$PYTHONWARNINGS" --network auctus_default $AUCTUS_IMAGE python -m coverage run --branch tests/__main__.py; then docker-compose logs apiserver; docker-compose logs lazo; exit 1; fi
+        if ! docker run --env-file tests/ci.env -v $(pwd)/tests:/usr/src/app/tests -v $(pwd)/docs:/usr/src/app/docs -v $(pwd)/cov:/cov -e COVERAGE_FILE=/cov/.coverage.testsuite -e "PYTHONWARNINGS=$PYTHONWARNINGS" --network auctus_default $AUCTUS_IMAGE python -m coverage run --branch tests/__main__.py; then docker-compose logs apiserver; docker-compose logs lazo; exit 1; fi
     - docker-compose logs apiserver
     - docker-compose logs lazo
 
@@ -101,11 +101,10 @@ test:
     - docker-compose down -t 30
     - ls -lA cov/
     - cp docker/coveragerc .coveragerc
-    - coverage combine -a cov/
-    - coverage html --show-contexts
+    - docker run -v $(pwd)/tests:/usr/src/app/tests -v $(pwd)/cov:/cov -e COVERAGE_FILE=/cov/coverage $AUCTUS_IMAGE sh -c "coverage combine -a /cov/.coverage* && coverage html --show-contexts -d /cov/htmlcov"
   artifacts:
     paths:
-      - htmlcov
+      - cov/htmlcov
     expire_in: 1 week
 
 python-style:
