@@ -99,7 +99,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["datamart-apiserver"]
+    command: ["datamart-apiserver"]  # NOTCI
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m apiserver & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     environment:
       - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
@@ -135,7 +136,6 @@ services:
     cpu_shares: 10
     ports:
       - 8002
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m apiserver & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     volumes:
       # CI: - ./cov:/cov
       - ./volumes/cache:/cache
@@ -160,7 +160,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["coordinator"]
+    command: ["coordinator"]  # NOTCI
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     environment:
       - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
@@ -185,7 +186,6 @@ services:
       - FRONTEND_URL=${FRONTEND_URL}
       - API_URL=${API_URL}
       - CUSTOM_FIELDS=${CUSTOM_FIELDS}
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m coordinator & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     cpu_shares: 100
     ports:
       - 127.0.0.1:8003:8003
@@ -197,12 +197,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["cache_cleaner"]
+    command: ["cache_cleaner"]  # NOTCI
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m cache_cleaner & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     environment:
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
       - MAX_CACHE_BYTES=${MAX_CACHE_BYTES}
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m cache_cleaner & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     cpu_shares: 100
     volumes:
       # CI: - ./cov:/cov
@@ -212,7 +212,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["profiler"]
+    command: ["profiler"]  # NOTCI
+    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     environment:
       - AUCTUS_DEBUG=${AUCTUS_DEBUG}
       - SENTRY_DSN=${SENTRY_DSN}
@@ -241,7 +242,6 @@ services:
       - NOMINATIM_URL=${NOMINATIM_URL}
       - AUCTUS_REQUEST_WHITELIST=${AUCTUS_REQUEST_WHITELIST}
       - AUCTUS_REQUEST_BLACKLIST=${AUCTUS_REQUEST_BLACKLIST}
-    # CI: command: ["bash", "-c", "set -m; COVERAGE_FILE=/cov/.coverage python -Wd -m coverage run --context=server --branch -p -m profiler & PROCESS=$$!; trap \"kill -INT $$PROCESS\" INT TERM; wait $$PROCESS; wait $$PROCESS"]
     cpu_shares: 10
     volumes:
       # CI: - ./cov:/cov
