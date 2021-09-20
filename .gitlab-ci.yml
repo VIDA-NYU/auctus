@@ -27,6 +27,8 @@ test:
     - diff -u lib_core/datamart_core/types.py lib_profiler/datamart_profiler/types.py
     - diff -u lib_core/datamart_core/types.py lib_materialize/datamart_materialize/types.py
 
+    - export PYTHONWARNINGS='default,ignore:`np.float` is a deprecated alias for the builtin `float`:DeprecationWarning:'
+
     # Set up environment for testing
     - cp tests/ci.env .env
     - . scripts/load_env.sh
@@ -91,7 +93,7 @@ test:
     # Run the tests in a container
     - |
       # Run tests
-        if ! docker run --env-file tests/ci.env -v $(pwd)/tests:/usr/src/app/tests -v $(pwd)/docs:/usr/src/app/docs -v $(pwd)/cov:/cov -e COVERAGE_FILE=/cov/testsuite --network auctus_default $AUCTUS_IMAGE python -Wd -m coverage run --branch tests/__main__.py; then docker-compose logs apiserver; docker-compose logs lazo; exit 1; fi
+        if ! docker run --env-file tests/ci.env -v $(pwd)/tests:/usr/src/app/tests -v $(pwd)/docs:/usr/src/app/docs -v $(pwd)/cov:/cov -e COVERAGE_FILE=/cov/testsuite -e "PYTHONWARNINGS=$PYTHONWARNINGS" --network auctus_default $AUCTUS_IMAGE python -m coverage run --branch tests/__main__.py; then docker-compose logs apiserver; docker-compose logs lazo; exit 1; fi
     - docker-compose logs apiserver
     - docker-compose logs lazo
 
