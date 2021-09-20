@@ -67,8 +67,7 @@ ARG version
 ENV DATAMART_VERSION ${version}
 RUN test -n "${DATAMART_VERSION}"
 USER 998
-ENTRYPOINT ["/tini", "--", "opentelemetry-instrument"]
 ENTRYPOINT [ \
     "/tini", "--", "/bin/bash", "-c", \
-    "if [ \"x$AUCTUS_OTEL_SERVICE\" != x ]; then OTEL_RESOURCE_ATTRIBUTES=service.name=$AUCTUS_OTEL_SERVICE exec opentelemetry-instrument \"$@\"; else exec \"$@\"; fi", "--"]
+    "if [ \"OTEL_TRACES_EXPORTER\" != x ]; then OTEL_RESOURCE_ATTRIBUTES=service.name=$AUCTUS_OTEL_SERVICE exec opentelemetry-instrument \"$@\"; else exec \"$@\"; fi", "--"]
 CMD ["false"]

@@ -77,4 +77,26 @@ function(config) {
       ],
     },
   }),
+  'jaeger-ui-svc': config.kube('v1', 'Service', {
+    file:: 'jaeger.yml',
+    metadata: {
+      name: 'jaeger-ui',
+      labels: {
+        app: 'auctus',
+        what: 'jaeger',
+      },
+    },
+    spec: {
+      selector: {
+        app: 'auctus',
+        what: 'jaeger',
+      },
+      ports: [
+        {
+          protocol: 'TCP',
+          port: 16686,
+        },
+      ],
+    },
+  }),
 }

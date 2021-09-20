@@ -485,6 +485,7 @@ function(config) {
                 {
                   LOG_FORMAT: config.log_format,
                   OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES: '1',
+                  AUCTUS_OTEL_SERVICE: 'apiserver',
                   ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
                   ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
                   AMQP_HOST: 'rabbitmq',
@@ -881,6 +882,7 @@ function(config) {
               env: utils.env(
                 {
                   LOG_FORMAT: config.log_format,
+                  AUCTUS_OTEL_SERVICE: 'profiler',
                   OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES: '1',
                   ELASTICSEARCH_HOSTS: 'elasticsearch:9200',
                   ELASTICSEARCH_PREFIX: config.elasticsearch.prefix,
