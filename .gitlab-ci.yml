@@ -156,10 +156,9 @@ k8s_configs:
     - curl -Lo /tmp/kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.4.7/kubeconform-linux-amd64.tar.gz && tar -xf /tmp/kubeconform.tar.gz -C /usr/local/bin && rm /tmp/kubeconform.tar.gz
   script:
     - mkdir contrib/k8s/yaml contrib/k8s/yaml/discovery
-    - (cd contrib/k8s; jsonnet -S -m yaml/ deployment.jsonnet)
-    - (cd contrib/k8s; jsonnet -S -m yaml/ secrets.jsonnet)
+    - (cd contrib/k8s; make)
     - kubeconform --kubernetes-version 1.20.7 --strict --summary contrib/k8s/yaml/*.yml
-    - find contrib/k8s -name yaml -prune -o \( -type f -not -name README.md -exec jsonnetfmt --test {} + \)
+    - find contrib/k8s -name yaml -prune -o \( -type f -not -name README.md -not -name Makefile -exec jsonnetfmt --test {} + \)
 
 pages-test:
   stage: test

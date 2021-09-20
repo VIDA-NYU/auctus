@@ -1,21 +1,4 @@
 local auctus = import 'auctus.libsonnet';
-local ckan = import 'discovery/ckan.libsonnet';
-local socrata = import 'discovery/socrata.libsonnet';
-local test_discoverer = import 'discovery/test.libsonnet';
-local uaz_indicators = import 'discovery/uaz-indicators.libsonnet';
-local worldbank = import 'discovery/worldbank.libsonnet';
-local zenodo = import 'discovery/zenodo.libsonnet';
-local elasticsearch = import 'elasticsearch.libsonnet';
-local ingress = import 'ingress.libsonnet';
-local jaeger = import 'jaeger.libsonnet';
-local minio = import 'minio.libsonnet';
-local monitoring = import 'monitoring.libsonnet';
-local nominatim = import 'nominatim.libsonnet';
-local rabbitmq = import 'rabbitmq.libsonnet';
-local redis = import 'redis.libsonnet';
-local snapshotter = import 'snapshotter.libsonnet';
-local volumes_local = import 'volumes-local.libsonnet';
-local volumes = import 'volumes.libsonnet';
 
 local config = {
   image: 'auctus:latest',
@@ -25,11 +8,11 @@ local config = {
   frontend_url: 'http://localhost:30808',  // If using KinD
   //api_url: 'https://%s/api/v1' % self.app_domain, // If using Ingress
   api_url: 'http://localhost:30808/api/v1',  // If using KinD
-  elasticsearch_prefix: 'auctusdev_',
   nominatim_url: 'http://nominatim:8080/',
+  minio_domain: 'files.localhost',
   object_store: {
     s3_url: 'http://minio:9000',
-    s3_client_url: 'http://files.localhost:30808',
+    s3_client_url: 'http://%s:30808' % $.minio_domain,
     s3_bucket_prefix: 'auctus-dev-',
     //gcs_project: 'auctus',
     //gcs_bucket_prefix: 'auctus-dev-',
@@ -50,11 +33,16 @@ local config = {
   log_format: 'json',
   // Storage class for volumes (except cache)
   storage_class: 'standard',
-  // Node selector for nodes where the cache volume is available
-  local_cache_node_selector: [
-    //{ key: 'kubernetes.io/os', operator: 'In', values: ['linux'] },
-    { key: 'auctus-prod-cache-volume', operator: 'Exists' },
-  ],
+  cache: {
+    size: '55Gi',
+    high_mark_bytes: 50000000000,  // 50 GB
+    path: '/var/lib/auctus/prod/cache',
+    // Node selector for nodes where the cache volume is available
+    node_selector: [
+      //{ key: 'kubernetes.io/os', operator: 'In', values: ['linux'] },
+      { key: 'auctus-prod-cache-volume', operator: 'Exists' },
+    ],
+  },
   // Label on nodes where databases will be run (can be set to null)
   db_node_label: {
     default: null,
@@ -84,73 +72,40 @@ local config = {
   // Protect the frontend and API with a password
   // If true, the corresponding secret has to be set
   private_app: false,
+  redis: {
+    max_memory: '500mb',
+  },
+  elasticsearch: {
+    prefix: 'auctusdev_',
+    replicas: 1,
+    heap_size: '2g',
+  },
+  nominatim: {
+    data_url: 'https://www.googleapis.com/download/storage/v1/b/nominatim-data-nyu/o/nominatim-postgres-data.tar?alt=media',
+  },
+  lazo: {
+    memory: 2000000000,  // 2 GB
+  },
+  socrata: {
+    domains: ['data.cityofnewyork.us', 'finances.worldbank.org'],
+    schedule: '30 1 * * 1,3,5',
+  },
+  zenodo: {
+    schedule: '40 0 * * 1,3,5',
+    keyword_query: 'covid',
+  },
+  ckan: {
+    domains: ['data.humdata.org'],
+    schedule: '10 1 * * 1,3,5',
+  },
   // Wrapper for Kubernetes objects
   kube: function(version, kind, payload) (
-    std.mergePatch(
-      {
-        apiVersion: version,
-        kind: kind,
-      },
-      payload,
-    )
+    {
+      apiVersion: version,
+      kind: kind,
+    }
+    + payload
   ),
 };
 
-local files = {
-  'volumes.yml': volumes(
-    config,
-    cache_size='55Gi',
-    local_cache_path='/var/lib/auctus/prod/cache',
-  ),
-  //'volumes.yml': volumes_local(config),
-  'redis.yml': redis(
-    config,
-    maxmemory='500mb',
-  ),
-  'elasticsearch.yml': elasticsearch(
-    config,
-    replicas=1,
-    heap_size='2g',
-  ),
-  'rabbitmq.yml': rabbitmq(config),
-  'nominatim.yml': nominatim(
-    config,
-    data_url='https://www.googleapis.com/download/storage/v1/b/nominatim-data-nyu/o/nominatim-postgres-data.tar?alt=media',
-  ),
-  'auctus.yml': (
-    auctus.lazo(config, lazo_memory=2000000000)  // 2 GB
-    + auctus.frontend(config)
-    + auctus.apiserver(config)
-    + auctus.coordinator(config)
-    + auctus.cache_cleaner(
-      config,
-      cache_max_bytes=50000000000,  // 50 GB
-    )
-    + auctus.profiler(config)
-  ),
-  'snapshotter.yml': snapshotter(config),
-  'ingress.yml': ingress(config),
-  'minio.yml': minio(config),
-  'monitoring.yml': monitoring(config),
-  'jaeger.yml': jaeger(config),
-  'discovery/ckan.yml': ckan(
-    config,
-    domains=['data.humdata.org'],
-  ),
-  'discovery/socrata.yml': socrata(
-    config,
-    domains=['data.cityofnewyork.us', 'finances.worldbank.org'],
-  ),
-  'discovery/uaz-indicators.yml': uaz_indicators(config),
-  'discovery/worldbank.yml': worldbank(config),
-  'discovery/zenodo.yml': zenodo(
-    config,
-    keyword_query='covid',
-  ),
-  //'discovery/test-discoverer.yml': test_discoverer(config),
-};
-
-{
-  [k]: std.manifestYamlStream(files[k])
-  for k in std.objectFields(files)
-}
+auctus(config)

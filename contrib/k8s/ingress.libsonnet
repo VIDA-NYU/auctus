@@ -1,10 +1,11 @@
 function(
   config,
 ) (
-  [
-    config.kube('networking.k8s.io/v1', 'Ingress', {
+  {
+    'app-ingress': config.kube('networking.k8s.io/v1', 'Ingress', {
+      file:: 'ingress.yml',
       metadata: {
-        name: 'ingress-app',
+        name: 'app',
         annotations: {
           'nginx.ingress.kubernetes.io/proxy-send-timeout': '1200',
           'nginx.ingress.kubernetes.io/proxy-read-timeout': '1200',
@@ -64,11 +65,12 @@ function(
         ],
       },
     }),
-  ] + (
-    if config.coordinator_domain != null then [
-      config.kube('networking.k8s.io/v1', 'Ingress', {
+  } + (
+    if config.coordinator_domain != null then {
+      'coordinator-ingress': config.kube('networking.k8s.io/v1', 'Ingress', {
+        file:: 'ingress.yml',
         metadata: {
-          name: 'ingress-coordinator',
+          name: 'coordinator',
         },
         spec: {
           ingressClassName: 'nginx',
@@ -95,40 +97,7 @@ function(
           ],
         },
       }),
-    ]
-    else []
-  ) + (
-    if config.grafana_domain != null then [
-      config.kube('networking.k8s.io/v1', 'Ingress', {
-        metadata: {
-          name: 'ingress-grafana',
-        },
-        spec: {
-          ingressClassName: 'nginx',
-          rules: [
-            {
-              host: config.grafana_domain,
-              http: {
-                paths: [
-                  {
-                    path: '/',
-                    pathType: 'Prefix',
-                    backend: {
-                      service: {
-                        name: 'grafana',
-                        port: {
-                          number: 3000,
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      }),
-    ]
-    else []
+    }
+    else {}
   )
 )
