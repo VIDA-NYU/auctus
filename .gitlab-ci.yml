@@ -28,11 +28,6 @@ test:
     - diff -u lib_core/datamart_core/types.py lib_profiler/datamart_profiler/types.py
     - diff -u lib_core/datamart_core/types.py lib_materialize/datamart_materialize/types.py
     - /root/.poetry/bin/poetry install
-    - |
-      # Check READMEs
-      find . -name README.rst | while read i; do
-        python -m readme_renderer "$i" >/dev/null
-      done
 
     # Set up environment for testing
     - cp tests/ci.env .env
@@ -120,6 +115,11 @@ python-style:
     - /root/.poetry/bin/poetry install
   script:
     - flake8 --ignore=E731,W504,W503,E501
+    - |
+      # Check READMEs
+      find . -name README.rst | while read i; do
+        python -m readme_renderer "$i" >/dev/null
+      done
 
 frontend:
   stage: test
