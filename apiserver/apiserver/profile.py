@@ -2,6 +2,7 @@ import elasticsearch
 import logging
 import hashlib
 import json
+import opentelemetry.trace
 import os
 import prometheus_client
 import re
@@ -19,6 +20,7 @@ from .graceful_shutdown import GracefulHandler
 
 
 logger = logging.getLogger(__name__)
+tracer = opentelemetry.trace.get_tracer(__name__)
 
 
 PROM_PROFILE = PromMeasureRequest(
@@ -96,16 +98,20 @@ class ProfilePostedData(tornado.web.RequestHandler):
                 logger.info("Found cached profile_data")
                 data_profile = json.loads(data_profile)
             elif fast:
-                logger.info("Profiling (fast)...")
-                start = time.perf_counter()
-                with open(csv_path, 'rb') as data:
-                    data_profile = process_dataset(
-                        data=data,
-                        geo_data=self.application.geo_data,
-                        include_sample=True,
-                        search=True, coverage=False, plots=False,
-                    )
-                logger.info("Profiled (fast) in %.2fs", time.perf_counter() - start)
+                with tracer.start_as_current_span(
+                    'profile-userdata',
+                    attributes={'hash': data_hash, 'fast': True},
+                ):
+                    logger.info("Profiling (fast)...")
+                    start = time.perf_counter()
+                    with open(csv_path, 'rb') as data:
+                        data_profile = process_dataset(
+                            data=data,
+                            geo_data=self.application.geo_data,
+                            include_sample=True,
+                            search=True, coverage=False, plots=False,
+                        )
+                    logger.info("Profiled (fast) in %.2fs", time.perf_counter() - start)
 
                 data_profile['materialize'] = materialize
                 data_profile['version'] = os.environ['DATAMART_VERSION']
@@ -119,19 +125,23 @@ class ProfilePostedData(tornado.web.RequestHandler):
                     ),
                 )
             else:
-                logger.info("Profiling...")
-                start = time.perf_counter()
-                with open(csv_path, 'rb') as data:
-                    data_profile = process_dataset(
-                        data=data,
-                        lazo_client=self.application.lazo_client,
-                        nominatim=self.application.nominatim,
-                        geo_data=self.application.geo_data,
-                        search=True,
-                        include_sample=True,
-                        coverage=True,
-                    )
-                logger.info("Profiled in %.2fs", time.perf_counter() - start)
+                with tracer.start_as_current_span(
+                    'profile-userdata',
+                    attributes={'hash': data_hash, 'fast': False},
+                ):
+                    logger.info("Profiling...")
+                    start = time.perf_counter()
+                    with open(csv_path, 'rb') as data:
+                        data_profile = process_dataset(
+                            data=data,
+                            lazo_client=self.application.lazo_client,
+                            nominatim=self.application.nominatim,
+                            geo_data=self.application.geo_data,
+                            search=True,
+                            include_sample=True,
+                            coverage=True,
+                        )
+                    logger.info("Profiled in %.2fs", time.perf_counter() - start)
 
                 data_profile['materialize'] = materialize
                 data_profile['version'] = os.environ['DATAMART_VERSION']

@@ -2,6 +2,7 @@ import contextlib
 import io
 import logging
 import json
+import opentelemetry.trace
 import os
 import prometheus_client
 import shutil
@@ -23,6 +24,7 @@ from .search import get_augmentation_search_results
 
 
 logger = logging.getLogger(__name__)
+tracer = opentelemetry.trace.get_tracer(__name__)
 
 
 PROM_AUGMENT = PromMeasureRequest(
@@ -91,144 +93,154 @@ class Augment(BaseHandler, GracefulHandler, ProfilePostedData):
             columns = json.loads(columns)
 
         logger.info("Got augmentation, content-type=%r", type_.split(';')[0])
-
-        # data
-        if data_id is not None and data is not None:
-            return await self.send_error_json(
-                400,
-                "Please only provide one input dataset " +
-                "(either 'data' or 'data_id')",
-            )
-        elif data_id is not None:
-            data_profile = get_data_profile_from_es(
-                self.application.elasticsearch,
-                data_id,
-            )
-            data_hash = None
-            if data_profile is None:
-                return await self.send_error_json(400, "No such dataset")
-        elif data is not None:
-            if len(data) == 40:
-                try:
-                    data_token = data.decode('ascii')
-                except UnicodeDecodeError:
-                    pass
-                else:
-                    if profile_token_re.match(data_token):
-                        data = stack.enter_context(cache_get(
-                            '/cache/user_data',
-                            data_token,
-                        ))
-                        if data is None:
-                            return await self.send_error_json(
-                                404,
-                                "Data token expired",
-                            )
-                        else:
-                            with open(data, 'rb') as fp:
-                                data = fp.read()
-            data_profile, data_hash = self.handle_data_parameter(data)
-        else:
-            return await self.send_error_json(400, "Missing 'data'")
-
-        # materialize augmentation data
-        metadata = task['metadata']
-
-        # no augmentation task provided -- will first look for possible augmentation
-        if 'augmentation' not in task or task['augmentation']['type'] == 'none':
-            logger.info("No task, searching for augmentations")
-            search_results = get_augmentation_search_results(
-                es=self.application.elasticsearch,
-                lazo_client=self.application.lazo_client,
-                data_profile=data_profile,
-                query_args_main=None,
-                query_sup_functions=None,
-                query_sup_filters=None,
-                tabular_variables=None,
-                dataset_id=task['id'],
-                union=False
-            )
-
-            if search_results:
-                # get first result
-                task = search_results[0]
-                logger.info("Using first of %d augmentation results: %r",
-                            len(search_results), task['id'])
-            else:
+        with tracer.start_as_current_span(
+            'augment',
+            attributes={
+                'data': bool(data),
+                'data_id': bool(data_id),
+            },
+        ):
+            # data
+            if data_id is not None and data is not None:
                 return await self.send_error_json(
                     400,
-                    "The Datamart dataset referenced by 'task' cannot "
-                    "augment 'data'",
+                    "Please only provide one input dataset " +
+                    "(either 'data' or 'data_id')",
                 )
-
-        key = hash_json(
-            task=task,
-            supplied_data=data_hash or data_id,
-            columns=columns,
-            format=format,
-            format_options=format_options,
-        )
-
-        def create_aug(cache_temp):
-            with contextlib.ExitStack() as stack:
-                # Get augmentation data
-                newdata = stack.enter_context(
-                    get_dataset(metadata, task['id'], format='csv'),
+            elif data_id is not None:
+                data_profile = get_data_profile_from_es(
+                    self.application.elasticsearch,
+                    data_id,
                 )
-                # Get input data if it's a reference to a dataset
-                if data_id:
-                    path = stack.enter_context(
-                        get_dataset(data_profile, data_id, format='csv'),
+                data_hash = None
+                if data_profile is None:
+                    return await self.send_error_json(400, "No such dataset")
+            elif data is not None:
+                if len(data) == 40:
+                    try:
+                        data_token = data.decode('ascii')
+                    except UnicodeDecodeError:
+                        pass
+                    else:
+                        if profile_token_re.match(data_token):
+                            data = stack.enter_context(cache_get(
+                                '/cache/user_data',
+                                data_token,
+                            ))
+                            if data is None:
+                                return await self.send_error_json(
+                                    404,
+                                    "Data token expired",
+                                )
+                            else:
+                                with open(data, 'rb') as fp:
+                                    data = fp.read()
+                data_profile, data_hash = self.handle_data_parameter(data)
+            else:
+                return await self.send_error_json(400, "Missing 'data'")
+
+            # materialize augmentation data
+            metadata = task['metadata']
+
+            # no augmentation task provided -- will first look for possible augmentation
+            if 'augmentation' not in task or task['augmentation']['type'] == 'none':
+                logger.info("No task, searching for augmentations")
+                with tracer.start_as_current_span('augment/search'):
+                    search_results = get_augmentation_search_results(
+                        es=self.application.elasticsearch,
+                        lazo_client=self.application.lazo_client,
+                        data_profile=data_profile,
+                        query_args_main=None,
+                        query_sup_functions=None,
+                        query_sup_filters=None,
+                        tabular_variables=None,
+                        dataset_id=task['id'],
+                        union=False
                     )
-                    data_file = stack.enter_context(open(path, 'rb'))
+
+                if search_results:
+                    # get first result
+                    task = search_results[0]
+                    logger.info("Using first of %d augmentation results: %r",
+                                len(search_results), task['id'])
                 else:
-                    data_file = io.BytesIO(data)
-                # Perform augmentation
-                writer = make_writer(cache_temp, format, format_options)
-                logger.info("Performing augmentation with supplied data")
-                augment(
-                    data_file,
-                    newdata,
-                    data_profile,
-                    task,
-                    writer,
-                    columns=columns,
-                )
+                    return await self.send_error_json(
+                        400,
+                        "The Datamart dataset referenced by 'task' cannot "
+                        "augment 'data'",
+                    )
 
-                # ZIP result if it's a directory
-                if os.path.isdir(cache_temp):
-                    logger.info("Result is a directory, creating ZIP file")
-                    zip_name = cache_temp + '.zip'
-                    with zipfile.ZipFile(zip_name, 'w') as zip_:
-                        make_zip_recursive(zip_, cache_temp)
-                    shutil.rmtree(cache_temp)
-                    os.rename(zip_name, cache_temp)
+            key = hash_json(
+                task=task,
+                supplied_data=data_hash or data_id,
+                columns=columns,
+                format=format,
+                format_options=format_options,
+            )
 
-        try:
-            with cache_get_or_set('/cache/aug', key, create_aug) as path:
-                if session_id:
-                    self.application.redis.rpush(
-                        'session:' + session_id,
-                        json.dumps(
-                            {
-                                'type': task['augmentation']['type'],
-                                'url': '/augment/' + key,
-                            },
-                            # Compact
-                            sort_keys=True, indent=None, separators=(',', ':'),
+            def create_aug(cache_temp):
+                with contextlib.ExitStack() as stack:
+                    stack.enter_context(tracer.start_as_current_span('augment/join'))
+
+                    # Get augmentation data
+                    newdata = stack.enter_context(
+                        get_dataset(metadata, task['id'], format='csv'),
+                    )
+                    # Get input data if it's a reference to a dataset
+                    if data_id:
+                        path = stack.enter_context(
+                            get_dataset(data_profile, data_id, format='csv'),
                         )
+                        data_file = stack.enter_context(open(path, 'rb'))
+                    else:
+                        data_file = io.BytesIO(data)
+                    # Perform augmentation
+                    writer = make_writer(cache_temp, format, format_options)
+                    logger.info("Performing augmentation with supplied data")
+                    augment(
+                        data_file,
+                        newdata,
+                        data_profile,
+                        task,
+                        writer,
+                        columns=columns,
                     )
-                    return await self.send_json({
-                        'success': "attached to session",
-                    })
-                else:
-                    # send the file
-                    return await self.send_file(
-                        path,
-                        name='augmentation' + (format_ext or ''),
-                    )
-        except AugmentationError as e:
-            return await self.send_error_json(400, str(e))
+
+                    # ZIP result if it's a directory
+                    if os.path.isdir(cache_temp):
+                        logger.info("Result is a directory, creating ZIP file")
+                        with tracer.start_as_current_span('augment/zip-results'):
+                            zip_name = cache_temp + '.zip'
+                            with zipfile.ZipFile(zip_name, 'w') as zip_:
+                                make_zip_recursive(zip_, cache_temp)
+                            shutil.rmtree(cache_temp)
+                            os.rename(zip_name, cache_temp)
+
+            try:
+                with cache_get_or_set('/cache/aug', key, create_aug) as path:
+                    if session_id:
+                        self.application.redis.rpush(
+                            'session:' + session_id,
+                            json.dumps(
+                                {
+                                    'type': task['augmentation']['type'],
+                                    'url': '/augment/' + key,
+                                },
+                                # Compact
+                                sort_keys=True, indent=None, separators=(',', ':'),
+                            )
+                        )
+                        return await self.send_json({
+                            'success': "attached to session",
+                        })
+                    else:
+                        # send the file
+                        return await self.send_file(
+                            path,
+                            name='augmentation' + (format_ext or ''),
+                        )
+            except AugmentationError as e:
+                return await self.send_error_json(400, str(e))
 
 
 class AugmentResult(BaseHandler):

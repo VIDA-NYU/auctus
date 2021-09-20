@@ -5,6 +5,7 @@ import datamart_materialize
 from datetime import datetime
 import ipaddress
 import logging
+import opentelemetry.trace
 import os
 import prometheus_client
 import shutil
@@ -28,6 +29,7 @@ from .objectstore import get_object_store
 
 
 logger = logging.getLogger(__name__)
+tracer = opentelemetry.trace.get_tracer(__name__)
 
 
 PROM_DOWNLOAD = prometheus_client.Histogram(
@@ -167,16 +169,22 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
 
             # Otherwise, materialize the CSV
             logger.info("Materializing CSV...")
-            with advocate_session() as http_session:
-                with PROM_DOWNLOAD.time():
-                    datamart_materialize.download(
-                        {'id': dataset_id, 'metadata': metadata},
-                        cache_temp, None,
-                        format='csv',
-                        size_limit=10000000000,  # 10 GB
-                        http=http_session,
-                    )
-                logger.info("CSV is %d bytes", os.stat(cache_temp).st_size)
+            with tracer.start_as_current_span(
+                'materialize/download',
+                attributes={
+                    'dataset_id': dataset_id,
+                },
+            ):
+                with advocate_session() as http_session:
+                    with PROM_DOWNLOAD.time():
+                        datamart_materialize.download(
+                            {'id': dataset_id, 'metadata': metadata},
+                            cache_temp, None,
+                            format='csv',
+                            size_limit=10000000000,  # 10 GB
+                            http=http_session,
+                        )
+                    logger.info("CSV is %d bytes", os.stat(cache_temp).st_size)
 
         csv_key = dataset_cache_key(dataset_id, metadata, 'csv', {})
         csv_path = dataset_lock.enter_context(
@@ -206,24 +214,31 @@ def get_dataset(metadata, dataset_id, format='csv', format_options=None):
         def create(cache_temp):
             # Do format conversion from CSV file
             logger.info("Converting CSV to %r opts=%r", format, format_options)
-            with PROM_CONVERT.time():
-                with open(csv_path, 'rb') as src:
-                    writer = writer_cls(
-                        cache_temp, format_options=format_options,
-                    )
-                    writer.set_metadata(dataset_id, metadata)
-                    with writer.open_file('wb') as dst:
-                        shutil.copyfileobj(src, dst)
-                    writer.finish()
+            with tracer.start_as_current_span(
+                'materialize/convert-format',
+                attributes={
+                    'dataset_id': dataset_id,
+                    'format': format,
+                },
+            ):
+                with PROM_CONVERT.time():
+                    with open(csv_path, 'rb') as src:
+                        writer = writer_cls(
+                            cache_temp, format_options=format_options,
+                        )
+                        writer.set_metadata(dataset_id, metadata)
+                        with writer.open_file('wb') as dst:
+                            shutil.copyfileobj(src, dst)
+                        writer.finish()
 
-                # Make a ZIP if it's a folder
-                if os.path.isdir(cache_temp):
-                    logger.info("Result is a directory, creating ZIP file")
-                    zip_name = cache_temp + '.zip'
-                    with zipfile.ZipFile(zip_name, 'w') as zip_:
-                        make_zip_recursive(zip_, cache_temp)
-                    shutil.rmtree(cache_temp)
-                    os.rename(zip_name, cache_temp)
+                    # Make a ZIP if it's a folder
+                    if os.path.isdir(cache_temp):
+                        logger.info("Result is a directory, creating ZIP file")
+                        zip_name = cache_temp + '.zip'
+                        with zipfile.ZipFile(zip_name, 'w') as zip_:
+                            make_zip_recursive(zip_, cache_temp)
+                        shutil.rmtree(cache_temp)
+                        os.rename(zip_name, cache_temp)
 
         with dataset_lock.pop_all():
             cache_path = dataset_lock.enter_context(

@@ -4,6 +4,7 @@ from datetime import datetime
 import io
 import json
 import logging
+import opentelemetry.trace
 import prometheus_client
 import time
 
@@ -21,6 +22,7 @@ from .union import get_unionable_datasets
 
 
 logger = logging.getLogger(__name__)
+tracer = opentelemetry.trace.get_tracer(__name__)
 
 
 PROM_SEARCH = PromMeasureRequest(
@@ -495,176 +497,184 @@ class Search(BaseHandler, GracefulHandler, ProfilePostedData):
                     ', data' if data else '',
                     ', data_id' if data_id else '',
                     ', data_profile' if data_profile else '')
+        with tracer.start_as_current_span(
+            'search',
+            attributes={
+                'query': bool(query),
+                'data': bool(data),
+                'data_id': bool(data_id),
+                'data_profile': bool(data_profile),
+            },
+        ):
+            # parameter: data
+            if data is not None:
+                data_profile, _ = self.handle_data_parameter(data)
 
-        # parameter: data
-        if data is not None:
-            data_profile, _ = self.handle_data_parameter(data)
+            # parameter: data_id
+            if data_id:
+                data_profile = get_data_profile_from_es(
+                    self.application.elasticsearch,
+                    data_id,
+                )
+                if data_profile is None:
+                    return self.send_error_json(400, "No such dataset")
 
-        # parameter: data_id
-        if data_id:
-            data_profile = get_data_profile_from_es(
-                self.application.elasticsearch,
-                data_id,
-            )
-            if data_profile is None:
-                return self.send_error_json(400, "No such dataset")
+            # parameter: query
+            query_args_main = list()
+            query_sup_functions = list()
+            query_sup_filters = list()
+            tabular_variables = list()
+            search_joins = search_unions = True
+            if query:
+                try:
+                    (
+                        query_args_main,
+                        query_sup_functions, query_sup_filters,
+                        tabular_variables,
+                    ) = parse_query(query, self.application.geo_data)
+                except ClientError as e:
+                    return self.send_error_json(400, str(e))
+                if 'augmentation_type' in query:
+                    if query['augmentation_type'] == 'join':
+                        search_unions = False
+                    elif query['augmentation_type'] == 'union':
+                        search_joins = False
+                    else:
+                        return self.send_error_json(
+                            400,
+                            "Unknown augmentation_type",
+                        )
 
-        # parameter: query
-        query_args_main = list()
-        query_sup_functions = list()
-        query_sup_filters = list()
-        tabular_variables = list()
-        search_joins = search_unions = True
-        if query:
-            try:
-                (
-                    query_args_main,
-                    query_sup_functions, query_sup_filters,
-                    tabular_variables,
-                ) = parse_query(query, self.application.geo_data)
-            except ClientError as e:
-                return self.send_error_json(400, str(e))
-            if 'augmentation_type' in query:
-                if query['augmentation_type'] == 'join':
-                    search_unions = False
-                elif query['augmentation_type'] == 'union':
-                    search_joins = False
-                else:
-                    return self.send_error_json(
-                        400,
-                        "Unknown augmentation_type",
-                    )
-
-        # At least one of them must be provided
-        if not query_args_main and not data_profile:
-            return self.send_error_json(
-                400,
-                "At least one of 'data' or 'query' must be provided",
-            )
-
-        # Get pagination arguments
-        page = self.get_query_argument('page', None)
-        if page is not None:
-            try:
-                page = int(page)
-            except ValueError:
-                page = -1
-            if page < 1:
-                return self.send_error_json(400, "Invalid page number")
-        size = self.get_query_argument('size', None)
-        if size is not None:
-            try:
-                size = int(size)
-            except ValueError:
-                size = -1
-            if size < 1 or size > 100:
-                return self.send_error_json(400, "Invalid size")
-
-        if not data_profile:
-            page = page or 1
-            size = size or TOP_K_SIZE
-            if page * size > 10000:
-                return self.send_error_json(400, "Can't scroll past 10000 items")
-
-            response = self.application.elasticsearch.search(
-                index='datasets',
-                body={
-                    'query': {
-                        'bool': {
-                            'must': query_args_main,
-                        },
-                    },
-                    'aggs': {
-                        'source': {
-                            'terms': {
-                                'field': 'source',
-                            },
-                        },
-                        'license': {
-                            'terms': {
-                                'field': 'license',
-                            },
-                        },
-                        'type': {
-                            'terms': {
-                                'field': 'types',
-                            },
-                        },
-                    },
-                },
-                size=size,
-                from_=(page - 1) * size,
-                request_timeout=30,
-            )
-            hits = response['hits']['hits']
-
-            total_pages = math.ceil(response['hits']['total']['value'] / size)
-            self.set_header('X-Total-Pages', str(total_pages))
-
-            results = []
-            for h in hits:
-                meta = h.pop('_source')
-                results.append(dict(
-                    id=h['_id'],
-                    score=h['_score'],
-                    metadata=meta,
-                    augmentation={
-                        'type': 'none',
-                        'left_columns': [],
-                        'left_columns_names': [],
-                        'right_columns': [],
-                        'right_columns_names': []
-                    },
-                    supplied_id=None,
-                    supplied_resource_id=None
-                ))
-
-            aggs = {
-                k: {
-                    'buckets': {
-                        b['key']: b['doc_count']
-                        for b in v['buckets']
-                    },
-                    'incomplete': v['sum_other_doc_count'] != 0,
-                }
-                for k, v in response['aggregations'].items()
-            }
-            total = None
-            if response['hits']['total']['relation'] == 'eq':
-                total = response['hits']['total']['value']
-        else:
-            if page or size:
+            # At least one of them must be provided
+            if not query_args_main and not data_profile:
                 return self.send_error_json(
                     400,
-                    "Pagination is not yet supported for augmentation search",
+                    "At least one of 'data' or 'query' must be provided",
                 )
-            results = get_augmentation_search_results(
-                self.application.elasticsearch,
-                self.application.lazo_client,
-                data_profile,
-                query_args_main,
-                query_sup_functions,
-                query_sup_filters,
-                tabular_variables,
-                ignore_datasets=[data_id] if data_id is not None else [],
-                join=search_joins,
-                union=search_unions,
-            )
-            aggs = None
-            total = None
 
-        results = [enhance_metadata(result) for result in results]
+            # Get pagination arguments
+            page = self.get_query_argument('page', None)
+            if page is not None:
+                try:
+                    page = int(page)
+                except ValueError:
+                    page = -1
+                if page < 1:
+                    return self.send_error_json(400, "Invalid page number")
+            size = self.get_query_argument('size', None)
+            if size is not None:
+                try:
+                    size = int(size)
+                except ValueError:
+                    size = -1
+                if size < 1 or size > 100:
+                    return self.send_error_json(400, "Invalid size")
 
-        # Private API for the frontend, don't want clients to rely on it
-        if self.get_query_argument('_parse_sample', ''):
-            for result in results:
-                sample = result['metadata'].pop('sample', None)
-                if sample:
-                    result['sample'] = list(csv.reader(io.StringIO(sample)))
+            if not data_profile:
+                page = page or 1
+                size = size or TOP_K_SIZE
+                if page * size > 10000:
+                    return self.send_error_json(400, "Can't scroll past 10000 items")
 
-        response = {'results': results}
-        if aggs is not None:
-            response['facets'] = aggs
-        if total is not None:
-            response['total'] = total
-        return self.send_json(response)
+                response = self.application.elasticsearch.search(
+                    index='datasets',
+                    body={
+                        'query': {
+                            'bool': {
+                                'must': query_args_main,
+                            },
+                        },
+                        'aggs': {
+                            'source': {
+                                'terms': {
+                                    'field': 'source',
+                                },
+                            },
+                            'license': {
+                                'terms': {
+                                    'field': 'license',
+                                },
+                            },
+                            'type': {
+                                'terms': {
+                                    'field': 'types',
+                                },
+                            },
+                        },
+                    },
+                    size=size,
+                    from_=(page - 1) * size,
+                    request_timeout=30,
+                )
+                hits = response['hits']['hits']
+
+                total_pages = math.ceil(response['hits']['total']['value'] / size)
+                self.set_header('X-Total-Pages', str(total_pages))
+
+                results = []
+                for h in hits:
+                    meta = h.pop('_source')
+                    results.append(dict(
+                        id=h['_id'],
+                        score=h['_score'],
+                        metadata=meta,
+                        augmentation={
+                            'type': 'none',
+                            'left_columns': [],
+                            'left_columns_names': [],
+                            'right_columns': [],
+                            'right_columns_names': []
+                        },
+                        supplied_id=None,
+                        supplied_resource_id=None
+                    ))
+
+                aggs = {
+                    k: {
+                        'buckets': {
+                            b['key']: b['doc_count']
+                            for b in v['buckets']
+                        },
+                        'incomplete': v['sum_other_doc_count'] != 0,
+                    }
+                    for k, v in response['aggregations'].items()
+                }
+                total = None
+                if response['hits']['total']['relation'] == 'eq':
+                    total = response['hits']['total']['value']
+            else:
+                if page or size:
+                    return self.send_error_json(
+                        400,
+                        "Pagination is not yet supported for augmentation search",
+                    )
+                results = get_augmentation_search_results(
+                    self.application.elasticsearch,
+                    self.application.lazo_client,
+                    data_profile,
+                    query_args_main,
+                    query_sup_functions,
+                    query_sup_filters,
+                    tabular_variables,
+                    ignore_datasets=[data_id] if data_id is not None else [],
+                    join=search_joins,
+                    union=search_unions,
+                )
+                aggs = None
+                total = None
+
+            results = [enhance_metadata(result) for result in results]
+
+            # Private API for the frontend, don't want clients to rely on it
+            if self.get_query_argument('_parse_sample', ''):
+                for result in results:
+                    sample = result['metadata'].pop('sample', None)
+                    if sample:
+                        result['sample'] = list(csv.reader(io.StringIO(sample)))
+
+            response = {'results': results}
+            if aggs is not None:
+                response['facets'] = aggs
+            if total is not None:
+                response['total'] = total
+            return self.send_json(response)

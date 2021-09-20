@@ -179,7 +179,7 @@ def identify_types(array, name, geo_data, manual=None):
     column_meta = {}
 
     # This function let you check/count how many instances match a structure of particular data type
-    with tracer.start_as_current_span('regular_exp_count'):
+    with tracer.start_as_current_span('profile/regular_exp_count'):
         re_count = regular_exp_count(array)
 
     # Identify structural type and compute unclean values ratio
@@ -264,7 +264,7 @@ def identify_types(array, name, geo_data, manual=None):
 
             # Administrative areas
             if geo_data is not None and len(distinct_values) >= 3:
-                with tracer.start_as_current_span('admin_areas'):
+                with tracer.start_as_current_span('profile/admin_areas'):
                     admin_areas = geo_data.resolve_names_all(distinct_values)
                     admin_areas = [r for r in admin_areas if r]
                     if len(admin_areas) > 0.7 * len(distinct_values):
@@ -309,7 +309,7 @@ def identify_types(array, name, geo_data, manual=None):
 
             # Identify years
             if name.strip().lower() == 'year':
-                with tracer.start_as_current_span('parse_years'):
+                with tracer.start_as_current_span('profile/parse_years'):
                     dates = []
                     for year in array:
                         try:
@@ -325,7 +325,7 @@ def identify_types(array, name, geo_data, manual=None):
 
         # Identify lat/long
         if structural_type == types.FLOAT:
-            with tracer.start_as_current_span('parse_latlong'):
+            with tracer.start_as_current_span('profile/parse_latlong'):
                 num_lat = num_long = 0
                 for elem in array:
                     try:
@@ -344,7 +344,7 @@ def identify_types(array, name, geo_data, manual=None):
                     semantic_types_dict[types.LONGITUDE] = None
 
         # Identify dates
-        with tracer.start_as_current_span('parse_dates'):
+        with tracer.start_as_current_span('profile/parse_dates'):
             parsed_dates = parse_dates(array)
 
         if len(parsed_dates) >= threshold:

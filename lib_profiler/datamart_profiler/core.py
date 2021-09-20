@@ -295,7 +295,7 @@ def process_column(
     nominatim=None,
 ):
     # Identify types
-    with tracer.start_as_current_span('identify_types'):
+    with tracer.start_as_current_span('profile/identify_types'):
         structural_type, semantic_types_dict, additional_meta = \
             identify_types(array, column_meta['name'], geo_data, manual)
     logger.info(
@@ -324,7 +324,7 @@ def process_column(
         and (coverage or plots)
     ):
         # Get numerical values needed for either ranges or plot
-        with tracer.start_as_current_span('parse_numerical_values'):
+        with tracer.start_as_current_span('profile/parse_numerical_values'):
             numerical_values = []
             for e in array:
                 try:
@@ -337,7 +337,7 @@ def process_column(
 
         # Compute ranges from numerical values
         if coverage:
-            with tracer.start_as_current_span('numerical_ranges'):
+            with tracer.start_as_current_span('profile/numerical_ranges'):
                 column_meta['mean'], column_meta['stddev'] = \
                     mean_stddev(numerical_values)
 
@@ -347,7 +347,7 @@ def process_column(
 
         # Compute histogram from numerical values
         if plots:
-            with tracer.start_as_current_span('numerical_plot'):
+            with tracer.start_as_current_span('profile/numerical_plot'):
                 counts, edges = numpy.histogram(
                     numerical_values,
                     bins=10,
@@ -379,7 +379,7 @@ def process_column(
 
         # Compute histogram from temporal values
         if plots and 'plot' not in column_meta:
-            with tracer.start_as_current_span('temporal_plot'):
+            with tracer.start_as_current_span('profile/temporal_plot'):
                 counts, edges = numpy.histogram(timestamps, bins=10)
                 counts = [int(i) for i in counts]
                 column_meta['plot'] = {
@@ -400,7 +400,7 @@ def process_column(
 
     # Compute histogram from categorical values
     if plots and types.CATEGORICAL in semantic_types_dict:
-        with tracer.start_as_current_span('categorical_plot'):
+        with tracer.start_as_current_span('profile/categorical_plot'):
             counter = collections.Counter()
             for value in array:
                 if not value:
@@ -424,7 +424,7 @@ def process_column(
         plots and types.TEXT in semantic_types_dict and
         'plot' not in column_meta
     ):
-        with tracer.start_as_current_span('textual_plot'):
+        with tracer.start_as_current_span('profile/textual_plot'):
             counter = collections.Counter()
             for value in array:
                 for word in _re_word_split.split(value):
@@ -450,7 +450,7 @@ def process_column(
         types.TEXT in semantic_types_dict and
         types.ADMIN not in semantic_types_dict
     ):
-        with tracer.start_as_current_span('nominatim'):
+        with tracer.start_as_current_span('profile/nominatim'):
             locations, non_empty = nominatim_resolve_all(
                 nominatim,
                 array,
@@ -627,10 +627,10 @@ def process_dataset(data, dataset_id=None, metadata=None,
     # Identify types
     logger.info("Identifying types, %d columns...", len(columns))
     with PROM_TYPES.time():
-        with tracer.start_as_current_span('columns'):
+        with tracer.start_as_current_span('profile/columns'):
             for column_idx, column_meta in enumerate(columns):
                 name = column_meta['name']
-                with tracer.start_as_current_span('column', attributes={'idx': column_idx, 'name': name}):
+                with tracer.start_as_current_span('profile/column', attributes={'idx': column_idx, 'name': name}):
                     logger.info("Processing column %d %r...", column_idx, name)
                     array = data.iloc[:, column_idx]
                     if name in manual_columns:
@@ -657,7 +657,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         )
     ]
     if lazo_client and columns_textual:
-        with tracer.start_as_current_span('categorical'):
+        with tracer.start_as_current_span('profile/categorical'):
             # Indexing with lazo
             column_textual_names = [columns[idx]['name'] for idx in columns_textual]
             if not search:
@@ -749,7 +749,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         logger.info("Computing spatial coverage...")
         spatial_coverage = []
         with PROM_SPATIAL.time():
-            with tracer.start_as_current_span('spatial_coverage'):
+            with tracer.start_as_current_span('profile/spatial_coverage'):
                 # Compute sketches from lat/long pairs
                 for col_lat, col_long in latlong_pairs:
                     lat_values = data.iloc[:, col_lat.index]
@@ -928,7 +928,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         logging.info("Computing temporal coverage...")
         temporal_coverage = []
 
-        with tracer.start_as_current_span('temporal_coverage'):
+        with tracer.start_as_current_span('profile/temporal_coverage'):
             # Datetime columns
             for idx, col in enumerate(columns):
                 if types.DATE_TIME not in col['semantic_types']:
@@ -973,7 +973,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
 
     # Sample data
     if include_sample:
-        with tracer.start_as_current_span('sample'):
+        with tracer.start_as_current_span('profile/sample'):
             rand = numpy.random.RandomState(RANDOM_SEED)
             choose_rows = rand.choice(
                 len(data),
