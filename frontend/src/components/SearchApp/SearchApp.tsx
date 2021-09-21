@@ -204,12 +204,12 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
             this.fetchSearchResults(query);
           }
         );
-      } else {
-        this.setState(this.initialState());
+        return;
       }
-    } else {
-      this.setState(this.initialState());
     }
+
+    this.setState(this.initialState());
+    this.fetchSources();
   }
 
   componentDidUpdate(prevProps: SearchAppProps) {
