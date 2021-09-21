@@ -166,18 +166,21 @@ def clear_cache(cache_dir, should_delete=None, only_if_possible=True):
     if should_delete is None:
         should_delete = lambda *, key: True
 
-    files = sorted(
-        f for f in os.listdir(cache_dir)
-        if f.endswith('.cache')
-    )
+    files = set()
+    for filename in os.listdir(cache_dir):
+        if filename.endswith(('.lock', '.cache', '.temp')):
+            filename = filename.rsplit('.', 1)[0]
+            files.add(filename)
+        else:
+            logger.warning("Unexpected file in cache directory: %s", filename)
+    files = sorted(files)
     logger.info("Cleaning cache, %d entries in %r", len(files), cache_dir)
 
     # Loop while there are entries to delete
     timeout = 0
     while files:
         not_deleted = []
-        for fname in files:
-            key = fname[:-6]
+        for key in files:
             if not should_delete(key=key):
                 logger.info("Skipping entry: %r", key)
                 continue
@@ -185,7 +188,7 @@ def clear_cache(cache_dir, should_delete=None, only_if_possible=True):
                 delete_cache_entry(cache_dir, key, timeout=timeout)
             except TimeoutError:
                 logger.warning("Entry is locked: %r", key)
-                not_deleted.append(fname)
+                not_deleted.append(key)
                 continue
         files = not_deleted
         logger.info("%d entries left", len(files))
@@ -215,7 +218,7 @@ def delete_cache_entry(cache_dir, key, timeout=None):
             os.remove(lock_path)
         if os.path.exists(temp_path):
             logger.info("Deleting temporary file: %r", key + '.temp')
-            if os.path.isfile(entry_path):
+            if os.path.isfile(temp_path):
                 os.remove(temp_path)
             else:
                 shutil.rmtree(temp_path)
