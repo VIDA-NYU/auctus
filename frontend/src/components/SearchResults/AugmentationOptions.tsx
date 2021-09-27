@@ -191,10 +191,9 @@ class AugmentationOptions extends React.PureComponent<
     const {session} = this.props;
     api
       .augment(relatedFile, task, session)
-      .then(response => {
+      .then(zipFile => {
         this.setState({result: api.RequestStatus.SUCCESS});
         if (!session) {
-          const zipFile = response.data;
           if (zipFile) {
             triggerFileDownload(zipFile, 'augmentation.zip');
           } else {

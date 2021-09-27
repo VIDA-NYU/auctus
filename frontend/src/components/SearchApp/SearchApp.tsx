@@ -327,17 +327,13 @@ class SearchApp extends React.Component<SearchAppProps, SearchAppState> {
     api
       .search(query)
       .then(response => {
-        if (response.status === api.RequestResult.SUCCESS && response.data) {
-          this.setState({
-            searchState: SearchState.SEARCH_SUCCESS,
-            searchResponse: {
-              ...response.data,
-              results: aggregateResults(response.data.results),
-            },
-          });
-        } else {
-          this.setState({searchState: SearchState.SEARCH_FAILED});
-        }
+        this.setState({
+          searchState: SearchState.SEARCH_SUCCESS,
+          searchResponse: {
+            ...response,
+            results: aggregateResults(response.results),
+          },
+        });
       })
       .catch(() => {
         this.setState({searchState: SearchState.SEARCH_FAILED});
