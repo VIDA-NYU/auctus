@@ -14,7 +14,7 @@ import Stroke from 'ol/style/Stroke';
 import Fill from 'ol/style/Fill';
 import {click} from 'ol/events/condition';
 import './GeoSpatialCoverageMap.css';
-import {transformCoordinates, centralizeMapToExtent} from '../spatial-utils';
+import {transformCoordinates, centralizeMapToExtent} from '../../spatial-utils';
 import 'ol/ol.css';
 import {scaleSequential} from 'd3-scale';
 

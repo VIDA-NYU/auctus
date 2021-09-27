@@ -25,7 +25,7 @@ import {
   centralizeMapToFeature,
   MyMapBrowserEvent,
   wrapLongitude,
-} from '../spatial-utils';
+} from '../../spatial-utils';
 import {SearchBar} from '../SearchBar/SearchBar';
 import 'ol/ol.css';
 
