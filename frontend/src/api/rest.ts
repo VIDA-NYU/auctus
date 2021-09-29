@@ -34,20 +34,10 @@ export const DATASET_TYPES = [
   'categorical',
 ];
 
-export enum RequestResult {
-  SUCCESS = 'SUCCESS',
-  ERROR = 'ERROR',
-}
-
 export enum RequestStatus {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
   IN_PROGRESS = 'IN_PROGRESS',
-}
-
-export interface Response<T> {
-  status: RequestResult;
-  data?: T;
 }
 
 export interface SearchQuery {
@@ -59,7 +49,7 @@ export interface SearchQuery {
   augmentationType?: AugmentationType;
 }
 
-export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
+export function search(q: SearchQuery): Promise<SearchResponse> {
   let spec: QuerySpec = {
     keywords: q.query,
     variables: q.filters ? [...q.filters] : [],
@@ -104,15 +94,7 @@ export function search(q: SearchQuery): Promise<Response<SearchResponse>> {
   return api
     .post('/search?_parse_sample=1', formData, config)
     .then((response: AxiosResponse) => {
-      return {
-        status: RequestResult.SUCCESS,
-        data: response.data,
-      };
-    })
-    .catch(() => {
-      return {
-        status: RequestResult.ERROR,
-      };
+      return response.data;
     });
 }
 
@@ -136,7 +118,7 @@ export function augment(
   data: RelatedFile,
   task: SearchResult,
   session?: Session
-): Promise<Response<Blob>> {
+): Promise<Blob> {
   const formData = new FormData();
   formData.append('task', JSON.stringify(task));
   if (data.kind === 'localFile') {
@@ -167,22 +149,12 @@ export function augment(
       });
     }
   }
-  return api
-    .post(url, formData, config)
-    .then((response: AxiosResponse) => {
-      if (response.status !== 200) {
-        throw new Error('Status ' + response.status);
-      }
-      return {
-        status: RequestResult.SUCCESS,
-        data: response.data,
-      };
-    })
-    .catch(() => {
-      return {
-        status: RequestResult.ERROR,
-      };
-    });
+  return api.post(url, formData, config).then((response: AxiosResponse) => {
+    if (response.status !== 200) {
+      throw new Error('Status ' + response.status);
+    }
+    return response.data;
+  });
 }
 
 export interface CustomFields {
