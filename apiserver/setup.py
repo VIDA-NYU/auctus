@@ -15,6 +15,7 @@ req = [
     'opentelemetry-exporter-jaeger-thrift',
     'opentelemetry-instrumentation-elasticsearch',
     'opentelemetry-instrumentation-grpc',
+    'opentelemetry-instrumentation-tornado',
     'prometheus_client',
     'tornado>=5.0',
     'datamart-augmentation',
