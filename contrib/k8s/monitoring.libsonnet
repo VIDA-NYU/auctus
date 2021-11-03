@@ -361,6 +361,7 @@ function(config) {
                 {
                   GF_AUTH_ANONYMOUS_ENABLED: if config.grafana_anonymous_access then 'true',
                   GF_SERVER_ROOT_URL: if config.grafana_domain != null then 'https://%s/' % config.grafana_domain,
+                  GF_SECURITY_DATA_SOURCE_PROXY_WHITELIST: 'prometheus:9090',
                 } + (
                   if std.objectHas(config, 'smtp') then {
                     GF_SMTP_ENABLED: 'true',

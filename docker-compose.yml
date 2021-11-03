@@ -267,6 +267,7 @@ services:
         - GRAFANA_VERSION=7.3.4
         - GF_INSTALL_IMAGE_RENDERER_PLUGIN=true
     environment:
+      - GF_SECURITY_DATA_SOURCE_PROXY_WHITELIST=prometheus:9090
       - GF_AUTH_ANONYMOUS_ENABLED=true
       #- GF_SMTP_ENABLED=true
       #- GF_SMTP_HOST=ip-of-the-host:25
