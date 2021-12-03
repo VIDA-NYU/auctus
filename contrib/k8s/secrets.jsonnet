@@ -4,9 +4,9 @@ local private_app_password = |||
   auctus:$apr1$ECD/OaHB$CMBSkoEdcA/2uX8gPZM3y1
 |||;
 
-local amqp_user = 'auctus';
-local amqp_password = 'auctus';
-local admin_password = 'auctus';
+local amqp_user = 'auctususer';
+local amqp_password = 'auctuspassword';
+local admin_password = 'auctuspassword';
 local s3_key = 'devkey';
 local s3_secret = 'devpassword';
 local gcs_creds = std.base64('');
@@ -27,8 +27,8 @@ local gcs_creds = std.base64('');
         's3.key': s3_key,
         's3.secret': s3_secret,
         'gcs.creds': gcs_creds,
-        'smtp.user': 'auctus',
-        'smtp.password': 'auctus',
+        'smtp.user': 'auctususer',
+        'smtp.password': 'auctuspassword',
       },
       data: {
         [k]: std.base64(data[k])
