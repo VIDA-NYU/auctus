@@ -1027,7 +1027,7 @@ otlp = ["opentelemetry-exporter-otlp (==1.6.0)"]
 
 [[package]]
 name = "opentelemetry-exporter-jaeger-thrift"
-version = "1.5.0"
+version = "1.6.2"
 description = "Jaeger Thrift Exporter for OpenTelemetry"
 category = "main"
 optional = false
@@ -2308,8 +2308,8 @@ opentelemetry-distro = [
     {file = "opentelemetry_distro-0.25b0-py3-none-any.whl", hash = "sha256:be48f42bb5f64aeb4740862b8b8320a868d7e8c9d36b7f8317fcbc0844d84b47"},
 ]
 opentelemetry-exporter-jaeger-thrift = [
-    {file = "opentelemetry-exporter-jaeger-thrift-1.5.0.tar.gz", hash = "sha256:169da4f7ce5fdccc8fb7bbac86e1bfd7ce9f3327a64e73d70c0971cf0d39e586"},
-    {file = "opentelemetry_exporter_jaeger_thrift-1.5.0-py3-none-any.whl", hash = "sha256:0368b6e4e205b63df0a18064c51bf84e1576ae1e5f7da55335f841d6f3fbf858"},
+    {file = "opentelemetry-exporter-jaeger-thrift-1.6.2.tar.gz", hash = "sha256:3b13d3837a91680e3cf3ae460214fe2c59da7ce937a3d7ffcebccd239bc49edd"},
+    {file = "opentelemetry_exporter_jaeger_thrift-1.6.2-py3-none-any.whl", hash = "sha256:625d664cd16d700dabf8c26423666f7d33bfeae8a57bce478281c7c99c99a7fc"},
 ]
 opentelemetry-instrumentation = [
     {file = "opentelemetry-instrumentation-0.25b0.tar.gz", hash = "sha256:4ca62a7ac4ab0446663d44b24fc9bdbd28252bfc9efa5c02c21dd0aabdf62666"},
