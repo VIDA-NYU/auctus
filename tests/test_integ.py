@@ -172,6 +172,7 @@ class TestProfiler(DatamartTest):
             'datamart.test.years_pivoted': years_pivoted_metadata,
             'datamart.test.excel': other_formats_metadata('xlsx'),
             'datamart.test.excel97': other_formats_metadata('xls'),
+            'datamart.test.parquet': other_formats_metadata('parquet'),
             'datamart.test.spss': other_formats_metadata('spss'),
             'datamart.test.stata114': other_formats_metadata('stata'),
             'datamart.test.stata118': other_formats_metadata('stata'),

@@ -180,6 +180,18 @@ class TestDiscoverer(Discoverer):
 
         # Use URL for this one
         self.record_dataset(
+            dict(direct_url='http://test-discoverer:8080/parquet.parquet'),
+            {
+                # Omit name, should be set to 'excel97' automatically
+                'description': "Apache Parquet test",
+                'source': 'remi',
+                'source_url': 'https://github.com/apache/parquet-format',
+            },
+            dataset_id='parquet',
+        )
+
+        # Use URL for this one
+        self.record_dataset(
             dict(direct_url='http://test-discoverer:8080/stata114.dta'),
             {
                 # Omit name, should be set to 'stata114' automatically
