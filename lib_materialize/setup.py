@@ -11,6 +11,7 @@ req = [
     'xlrd',
     'openpyxl',
     'lxml',  # optional dependency for openpyxl, it's slow without it
+    'fastparquet>=0.7,<0.8',
     'pyreadstat>=1.0,<2.0',
 ]
 with io.open('README.rst', encoding='utf-8') as fp:
@@ -31,6 +32,7 @@ setup(name='datamart-materialize',
               'skip_rows = datamart_materialize.common:SkipRowsConverter',
               'xls = datamart_materialize.excel97:Excel97Converter',
               'xlsx = datamart_materialize.excel:ExcelConverter',
+              'parquet = datamart_materialize.parquet:ParquetConverter',
               'pivot = datamart_materialize.pivot:PivotConverter',
               'spss = datamart_materialize.spss:SpssConverter',
               'stata = datamart_materialize.stata:StataConverter',

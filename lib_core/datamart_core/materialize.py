@@ -17,6 +17,7 @@ from datamart_fslock.cache import cache_get_or_set
 from datamart_materialize.common import skip_rows
 from datamart_materialize.excel import xlsx_to_csv
 from datamart_materialize.excel97 import xls_to_csv
+from datamart_materialize.parquet import parquet_to_csv
 from datamart_materialize.pivot import pivot_table
 from datamart_materialize.spss import spss_to_csv
 from datamart_materialize.stata import stata_to_csv
@@ -286,6 +287,15 @@ def detect_format_convert_to_csv(dataset_path, convert_dataset, materialize):
 
         # Update file
         dataset_path = convert_dataset(xls_to_csv, dataset_path)
+
+    # Check for Parquet file format
+    if magic[:4] == b'PAR1':
+        # Update metadata
+        logger.info("This is a Parquet file")
+        materialize.setdefault('convert', []).append({'identifier': 'parquet'})
+
+        # Update file
+        dataset_path = convert_dataset(parquet_to_csv, dataset_path)
 
     # Check for Stata file format
     if magic[:11] == b'<stata_dta>' or magic[:4] in (
