@@ -9,9 +9,14 @@ Enhancements:
 * Added OpenTelemetry integration
 * Add snapshotter service, dumping Elasticsearch data as a tar.gz of JSON files, and putting it in object store to be serve by API server at `/snapshot/`
 * Use a single Docker image for all services (not including databases, Lazo, frontend)
+* Add option not to profile the pandas DataFrame's index
+* Removed volume and job for getting the list of synonyms for Elasticsearch: just do it at startup of every container
+* Removed volume and job for getting the datamart-geo data: put them in the Docker image instead. This makes for a big image, but allows deduplication between multiple Auctus instances and is simpler to setup
+* Add ability to recognize and convert/profile Parquet files
 
 Bugfixes:
 * Added SSRF prevention code. Unless you are running other services alongside Auctus, the only thing that could be hit is Elasticsearch, whose JSON output would not be leaked, but let's plug this anyway
+* Set Grafana data source proxy whitelist, to prevent SSRF through Grafana
 
 0.9 (2021-04-28)
 ================
