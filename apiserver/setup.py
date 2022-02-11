@@ -12,7 +12,6 @@ req = [
     'redis~=3.4',
     'lazo-index-service==0.7.0',
     'opentelemetry-distro',
-    'opentelemetry-exporter-jaeger-thrift',
     'opentelemetry-instrumentation-elasticsearch',
     'opentelemetry-instrumentation-grpc',
     'opentelemetry-instrumentation-tornado',

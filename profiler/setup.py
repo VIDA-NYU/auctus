@@ -11,7 +11,6 @@ req = [
     'lazo-index-service==0.7.0',
     'opentelemetry-api',
     'opentelemetry-distro',
-    'opentelemetry-exporter-jaeger-thrift',
     'opentelemetry-instrumentation-elasticsearch',
     'opentelemetry-instrumentation-grpc',
     'prometheus_client',

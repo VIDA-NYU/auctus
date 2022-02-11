@@ -47,6 +47,7 @@ datamart-uaz-indicators-service = {path = "./discovery/uaz_indicators", develop=
 datamart-worldbank-discovery-service = {path= "./discovery/worldbank", develop=true}
 datamart-isi-discovery-service = {path= "./discovery/isi", develop=true}
 toml = "*"
+opentelemetry-exporter-jaeger-thrift = "*"
 
 [tool.poetry.dev-dependencies]
 flake8 = "*"
