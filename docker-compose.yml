@@ -265,7 +265,7 @@ services:
       dockerfile: grafana.dockerfile
       args:
         - GRAFANA_VERSION=7.3.4
-        - GF_INSTALL_IMAGE_RENDERER_PLUGIN=true
+        - GF_INSTALL_IMAGE_RENDERER_PLUGIN=v3.4.1
     environment:
       - GF_SECURITY_DATA_SOURCE_PROXY_WHITELIST=prometheus:9090
       - GF_AUTH_ANONYMOUS_ENABLED=true
