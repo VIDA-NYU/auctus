@@ -1,6 +1,23 @@
 local utils = import 'utils.libsonnet';
 
 function(config) {
+  'jaeger-pvc': config.kube('v1', 'PersistentVolumeClaim', {
+    file:: 'volumes.yml',
+    metadata: {
+      name: 'jaeger',
+    },
+    spec: {
+      storageClassName: config.storage_class,
+      accessModes: [
+        'ReadWriteOnce',
+      ],
+      resources: {
+        requests: {
+          storage: '10Gi',
+        },
+      },
+    },
+  }),
   'jaeger-deploy': config.kube('apps/v1', 'Deployment', {
     file:: 'jaeger.yml',
     metadata: {
@@ -32,13 +49,39 @@ function(config) {
           securityContext: {
             runAsNonRoot: true,
           },
+          initContainers: [
+            {
+              name: 'fix-permissions',
+              image: 'busybox',
+              securityContext: {
+                runAsNonRoot: false,
+              },
+              command: [
+                'sh',
+                '-c',
+                'chown -R 999 /badger',
+              ],
+              volumeMounts: [
+                {
+                  mountPath: '/badger',
+                  name: 'badger',
+                },
+              ],
+            },
+          ],
           containers: [
             {
               name: 'jaeger',
-              image: 'jaegertracing/all-in-one',
+              image: 'jaegertracing/all-in-one:1.31',
               securityContext: {
                 runAsUser: 999,
               },
+              env: utils.env({
+                SPAN_STORAGE_TYPE: 'badger',
+                BADGER_EPHEMERAL: 'false',
+                BADGER_DIRECTORY_KEY: '/badger/key',
+                BADGER_DIRECTORY_VALUE: '/badger/value',
+              }),
               ports: [
                 {
                   containerPort: 16686,
@@ -48,6 +91,20 @@ function(config) {
                   protocol: 'UDP',
                 },
               ],
+              volumeMounts: [
+                {
+                  mountPath: '/badger',
+                  name: 'badger',
+                },
+              ],
+            },
+          ],
+          volumes: [
+            {
+              name: 'badger',
+              persistentVolumeClaim: {
+                claimName: 'jaeger',
+              },
             },
           ],
         } + utils.affinity(node=config.db_node_label.jaeger),
