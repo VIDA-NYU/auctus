@@ -1,5 +1,11 @@
 ARG GRAFANA_VERSION="latest"
 
+FROM python:3.8 AS tini
+
+ENV TINI_VERSION v0.18.0
+RUN curl -Lo /tini https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini && \
+    chmod +x /tini
+
 FROM grafana/grafana:${GRAFANA_VERSION}
 
 USER root
@@ -42,3 +48,8 @@ RUN if [ ! -z "${GF_INSTALL_PLUGINS}" ]; then \
         grafana-cli --pluginsDir "$GF_PATHS_PLUGINS" plugins install ${plugin}; \
     done; \
 fi
+
+# Use tini so Chrome processes get reaped
+# https://github.com/grafana/grafana-image-renderer/issues/179
+COPY --from=tini /tini /tini
+ENTRYPOINT ["/tini", "--", "/run.sh"]
