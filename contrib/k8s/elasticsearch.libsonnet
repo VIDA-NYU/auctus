@@ -93,6 +93,7 @@ function(config) {
             {
               name: 'download-synonyms',
               image: config.image,
+              imagePullPolicy: 'IfNotPresent',
               securityContext: {
                 runAsNonRoot: false,
                 runAsUser: 0,
