@@ -11,7 +11,7 @@ ENV GF_PATHS_PLUGINS="/var/lib/grafana-plugins"
 RUN mkdir -p "$GF_PATHS_PLUGINS" && \
     chown -R grafana:root "$GF_PATHS_PLUGINS"
 
-RUN if [ $GF_INSTALL_IMAGE_RENDERER_PLUGIN = "true" ]; then \
+RUN if [ $GF_INSTALL_IMAGE_RENDERER_PLUGIN != "false" ]; then \
     echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
     echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories && \
     echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
@@ -25,10 +25,10 @@ USER grafana
 
 ENV GF_RENDERER_PLUGIN_CHROME_BIN="/usr/bin/chromium-browser"
 
-RUN if [ $GF_INSTALL_IMAGE_RENDERER_PLUGIN = "true" ]; then \
+RUN if [ $GF_INSTALL_IMAGE_RENDERER_PLUGIN != "false" ]; then \
     grafana-cli \
         --pluginsDir "$GF_PATHS_PLUGINS" \
-        --pluginUrl https://github.com/grafana/grafana-image-renderer/releases/latest/download/plugin-linux-x64-glibc-no-chromium.zip \
+        --pluginUrl https://github.com/grafana/grafana-image-renderer/releases/download/$GF_INSTALL_IMAGE_RENDERER_PLUGIN/plugin-linux-x64-glibc-no-chromium.zip \
         plugins install grafana-image-renderer; \
 fi
 
