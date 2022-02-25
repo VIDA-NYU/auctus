@@ -353,7 +353,7 @@ function(config) {
           containers: [
             {
               name: 'grafana',
-              image: 'quay.io/remram44/grafana:7.3.4-image_renderer',
+              image: 'quay.io/remram44/grafana:7.5.15-image_renderer',
               securityContext: {
                 runAsUser: 472,
               },

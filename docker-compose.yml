@@ -259,12 +259,12 @@ services:
       - ./volumes/prometheus:/prometheus
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
   grafana:
-    image: quay.io/remram44/grafana:7.3.4-image_renderer
+    image: quay.io/remram44/grafana:7.5.15-image_renderer
     build:
       context: "./docker"
       dockerfile: grafana.dockerfile
       args:
-        - GRAFANA_VERSION=7.3.4
+        - GRAFANA_VERSION=7.5.15
         - GF_INSTALL_IMAGE_RENDERER_PLUGIN=v3.4.1
     environment:
       - GF_SECURITY_DATA_SOURCE_PROXY_WHITELIST=prometheus:9090
