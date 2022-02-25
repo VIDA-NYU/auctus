@@ -30,6 +30,7 @@ fi
 USER grafana
 
 ENV GF_RENDERER_PLUGIN_CHROME_BIN="/usr/bin/chromium-browser"
+ENV GF_PLUGIN_RENDERING_CHROME_BIN="/usr/bin/chromium-browser"
 
 RUN if [ $GF_INSTALL_IMAGE_RENDERER_PLUGIN != "false" ]; then \
     grafana-cli \
