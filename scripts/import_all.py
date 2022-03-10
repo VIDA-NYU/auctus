@@ -52,13 +52,15 @@ async def import_all(folder):
             obj = json.load(fp)
 
         dataset_id = decode_dataset_id(name)
-        for delay in RETRY_DELAYS:
+        for i, delay in enumerate(RETRY_DELAYS):
             try:
                 delete_dataset_from_index(es, dataset_id, lazo_client)
                 add_dataset_to_index(es, dataset_id, obj)
                 break
             except elasticsearch.TransportError:
                 print('X', end='', flush=True)
+                if i == len(RETRY_DELAYS) - 1:
+                    raise
                 time.sleep(delay)
         print('.', end='', flush=True)
 
@@ -75,12 +77,14 @@ async def import_all(folder):
         dataset_id = decode_dataset_id(name[5:]).rsplit('.', 1)[0]
         lazo_es_id = obj.pop('_id')
         assert lazo_es_id.split('__.__')[0] == dataset_id
-        for delay in RETRY_DELAYS:
+        for i, delay in enumerate(RETRY_DELAYS):
             try:
                 add_dataset_to_lazo_storage(es, lazo_es_id, obj)
                 break
             except elasticsearch.TransportError:
                 print('X', end='', flush=True)
+                if i == len(RETRY_DELAYS) - 1:
+                    raise
                 time.sleep(delay)
         if i % 10 == 0:
             print('.', end='', flush=True)
