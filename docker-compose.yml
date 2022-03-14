@@ -147,8 +147,8 @@ services:
       dockerfile: haproxy.dockerfile
     restart: on-failure
     ports:
-      - 127.0.0.1:8002:80
-      - 127.0.0.1:8004:8000
+      - 127.0.0.1:8002:8002
+      - 127.0.0.1:8004:8004
     cpu_shares: 100
     volumes:
       - ./docker/haproxy.conf:/usr/local/etc/haproxy/haproxy.cfg:ro
