@@ -138,7 +138,7 @@ class SearchHit extends React.PureComponent<SearchHitProps, SearchHitState> {
         <div className="card-body d-flex flex-column">
           <HitTitle hit={hit} />
           <span className="small">{hit.metadata.source}</span>
-          <Description hit={hit} label={false} />
+          <Description hit={hit} label={false} length={100} />
           <DatasetColumns columns={hit.metadata.columns} label={false} />
           <DatasetTypes hit={hit} label={false} />
           <DownloadViewDetails

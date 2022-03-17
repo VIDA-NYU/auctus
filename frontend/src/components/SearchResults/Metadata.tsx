@@ -7,6 +7,11 @@ import {generateRandomId} from '../../utils';
 import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
 import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
 import {ButtonGroup, LinkButton} from '../ui/Button/Button';
+import Dialog from '@material-ui/core/Dialog';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogActions from '@material-ui/core/DialogActions';
 
 export function SpatialCoverage(props: {hit: SearchResult}) {
   const metadata = props.hit.metadata;
@@ -113,6 +118,13 @@ export class AddToSession extends React.PureComponent<
 
 export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
   const {hit, session} = props;
+  const [open, setOpen] = React.useState(false);
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
   if (session) {
     return (
       <div className="mt-2">
@@ -121,21 +133,51 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
     );
   }
   return (
-    <ButtonGroup>
-      <b>Download: </b>
-      <LinkButton href={`${API_URL}/download/${hit.id}`}>
-        <Icon.Download className="feather" /> CSV
-      </LinkButton>
-      <LinkButton href={`${API_URL}/download/${hit.id}?format=d3m`}>
-        <Icon.Download className="feather" /> D3M
-      </LinkButton>
-    </ButtonGroup>
+    <>
+      <ButtonGroup>
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={handleClickOpen}
+        >
+          <Icon.Info className="feather" /> ID
+        </button>
+        <LinkButton href={`${API_URL}/download/${hit.id}`}>
+          <Icon.Download className="feather" /> CSV
+        </LinkButton>
+        <LinkButton href={`${API_URL}/download/${hit.id}?format=d3m`}>
+          <Icon.Download className="feather" /> D3M
+        </LinkButton>
+      </ButtonGroup>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title"> Dataset ID: </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            {hit.id}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={handleClose}
+            style={{marginRight: 15, marginBottom: 5}}
+          >
+            <Icon.XCircle className="feather" /> Close
+          </button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 
 interface DescriptionProps {
   hit: SearchResult;
   label?: boolean;
+  length: number;
 }
 interface DescriptionState {
   hidden: boolean;
@@ -150,7 +192,7 @@ export class Description extends React.PureComponent<
     this.state = {hidden: true};
   }
   render() {
-    const limitLength = 100;
+    const limitLength = this.props.length;
     const {description} = this.props.hit.metadata;
     const showLabel = this.props.label ? this.props.label : false;
     const displayedDescription =
