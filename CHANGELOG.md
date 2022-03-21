@@ -1,5 +1,5 @@
-NEXT (???)
-==========
+0.10 (2022-03-21)
+=================
 
 Incompatible changes:
 * Discovery scripts are now batch processes instead of services, e.g. they exit on completion instead of waiting for the next day (Kubernetes configs were updated to CronJob)
