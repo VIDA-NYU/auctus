@@ -17,6 +17,9 @@ Enhancements:
 Bugfixes:
 * Added SSRF prevention code. Unless you are running other services alongside Auctus, the only thing that could be hit is Elasticsearch, whose JSON output would not be leaked, but let's plug this anyway
 * Set Grafana data source proxy whitelist, to prevent SSRF through Grafana
+* Fix docker_import_snapshot.sh syntax error
+* Fix import_all.py not quiting on repeated error, making it look like it's making progress when it is not
+* Don't have haproxy listen on a privileged port, fixes issues on Docker for Mac
 
 0.9 (2021-04-28)
 ================
