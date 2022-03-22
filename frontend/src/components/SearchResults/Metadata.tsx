@@ -112,6 +112,43 @@ export class AddToSession extends React.PureComponent<
   }
 }
 
+class IdCopyButton extends React.PureComponent<
+  {id: string},
+  {copied: boolean}
+> {
+  constructor(props: {id: string}) {
+    super(props);
+    this.state = {copied: false};
+  }
+
+  clicked() {
+    navigator.clipboard.writeText(this.props.id);
+    this.setState({copied: true});
+  }
+
+  left() {
+    this.setState({copied: false});
+  }
+
+  render() {
+    const text = this.state.copied ? 'Copied!' : 'Copy ID';
+    const handlers: {[t: string]: () => void} = {
+      onClick: () => this.clicked(),
+    };
+    if (this.state.copied) {
+      handlers.onMouseOut = () => this.left();
+      handlers.onBlur = () => this.left();
+    }
+    return (
+      <Tooltip title="Copy dataset ID to clipboard" placement="top" arrow>
+        <button className="btn btn-sm btn-outline-primary" {...handlers}>
+          <Icon.Copy className="feather" /> {text}
+        </button>
+      </Tooltip>
+    );
+  }
+}
+
 export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
   const {hit, session} = props;
   if (session) {
@@ -123,14 +160,7 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
   }
   return (
     <ButtonGroup>
-      <Tooltip title="Copy Dataset ID" placement="top" arrow>
-        <button
-          className="btn btn-sm btn-outline-primary"
-          onClick={() => navigator.clipboard.writeText(hit.id)}
-        >
-          <Icon.Copy className="feather" /> ID
-        </button>
-      </Tooltip>
+      <IdCopyButton id={hit.id} />
       <LinkButton
         href={`${API_URL}/download/${hit.id}`}
         message={'Download CSV dataset'}
