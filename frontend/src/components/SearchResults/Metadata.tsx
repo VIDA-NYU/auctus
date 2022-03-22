@@ -157,7 +157,15 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
         <DialogTitle id="alert-dialog-title"> Dataset ID: </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            {hit.id}
+            <div className="d-flex flex-row">
+              {hit.id}
+              <div
+                className="chip-btn-download ml-4"
+                onClick={() => navigator.clipboard.writeText(hit.id)}
+              >
+                <Icon.Copy className="feather" />
+              </div>
+            </div>
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -293,7 +301,7 @@ export class DatasetColumns extends React.PureComponent<
     return (
       <div className="mt-2">
         <BadgeGroup>
-          {showLabel && <b>Columns:</b>}
+          {showLabel && <b>Column Names:</b>}
           {visibleColumns.map(column => (
             <ColumnBadge column={column} key={`${this.id}-${column.name}`} />
           ))}

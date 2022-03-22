@@ -67,16 +67,12 @@ function HitInfoBox(props: {
               maxLength={200}
               label={true}
             />
-            <div className="row">
-              <div className="col-sm-2 border-right">
-                <b>Columns:</b> {hit.metadata.columns.length}
-              </div>
-              <div className="col-sm-2 border-right">
-                <b>Rows:</b> {hit.metadata.nb_rows}
-              </div>
-              <div className="col-sm-2">
-                <b>Size:</b> {formatSize(hit.metadata.size)}
-              </div>
+            <div className="mt-2">
+              <b>Rows:</b> {hit.metadata.nb_rows}
+              <span className="text-muted ml-4 mr-4">|</span>
+              <b>Columns:</b> {hit.metadata.columns.length}
+              <span className="text-muted ml-4 mr-4">|</span>
+              <b>Size:</b> {formatSize(hit.metadata.size)}
             </div>
             <div className="mt-4">
               <SpatialCoverage hit={hit} />
