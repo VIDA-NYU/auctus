@@ -1,3 +1,4 @@
+import {Tooltip} from '@material-ui/core';
 import React from 'react';
 import {Spinner} from '../../visus/Loading/Spinner';
 import './Button.css';
@@ -17,11 +18,19 @@ function ButtonGroup(props: React.PropsWithChildren<{}>) {
   return <div className="button-group">{props.children}</div>;
 }
 
-function LinkButton(props: React.PropsWithChildren<{href: string}>) {
+function LinkButton(
+  props: React.PropsWithChildren<{href: string; message?: string}>
+) {
   return (
-    <a className="btn btn-sm btn-outline-primary" href={props.href}>
-      {props.children}
-    </a>
+    <Tooltip
+      title={props.message === undefined ? '' : props.message}
+      placement="top"
+      arrow
+    >
+      <a className="btn btn-sm btn-outline-primary" href={props.href}>
+        {props.children}
+      </a>
+    </Tooltip>
   );
 }
 

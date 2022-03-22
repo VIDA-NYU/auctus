@@ -7,6 +7,7 @@ import {generateRandomId} from '../../utils';
 import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
 import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
 import {ButtonGroup, LinkButton} from '../ui/Button/Button';
+import Tooltip from '@material-ui/core/Tooltip';
 
 export function SpatialCoverage(props: {hit: SearchResult}) {
   const metadata = props.hit.metadata;
@@ -111,6 +112,43 @@ export class AddToSession extends React.PureComponent<
   }
 }
 
+class IdCopyButton extends React.PureComponent<
+  {id: string},
+  {copied: boolean}
+> {
+  constructor(props: {id: string}) {
+    super(props);
+    this.state = {copied: false};
+  }
+
+  clicked() {
+    navigator.clipboard.writeText(this.props.id);
+    this.setState({copied: true});
+  }
+
+  left() {
+    this.setState({copied: false});
+  }
+
+  render() {
+    const text = this.state.copied ? 'Copied!' : 'Copy ID';
+    const handlers: {[t: string]: () => void} = {
+      onClick: () => this.clicked(),
+    };
+    if (this.state.copied) {
+      handlers.onMouseOut = () => this.left();
+      handlers.onBlur = () => this.left();
+    }
+    return (
+      <Tooltip title="Copy dataset ID to clipboard" placement="top" arrow>
+        <button className="btn btn-sm btn-outline-primary" {...handlers}>
+          <Icon.Copy className="feather" /> {text}
+        </button>
+      </Tooltip>
+    );
+  }
+}
+
 export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
   const {hit, session} = props;
   if (session) {
@@ -122,11 +160,17 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
   }
   return (
     <ButtonGroup>
-      <b>Download: </b>
-      <LinkButton href={`${API_URL}/download/${hit.id}`}>
+      <IdCopyButton id={hit.id} />
+      <LinkButton
+        href={`${API_URL}/download/${hit.id}`}
+        message={'Download CSV dataset'}
+      >
         <Icon.Download className="feather" /> CSV
       </LinkButton>
-      <LinkButton href={`${API_URL}/download/${hit.id}?format=d3m`}>
+      <LinkButton
+        href={`${API_URL}/download/${hit.id}?format=d3m`}
+        message={'Download D3M dataset'}
+      >
         <Icon.Download className="feather" /> D3M
       </LinkButton>
     </ButtonGroup>
@@ -136,6 +180,7 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
 interface DescriptionProps {
   hit: SearchResult;
   label?: boolean;
+  length: number;
 }
 interface DescriptionState {
   hidden: boolean;
@@ -150,7 +195,7 @@ export class Description extends React.PureComponent<
     this.state = {hidden: true};
   }
   render() {
-    const limitLength = 100;
+    const limitLength = this.props.length;
     const {description} = this.props.hit.metadata;
     const showLabel = this.props.label ? this.props.label : false;
     const displayedDescription =
@@ -251,7 +296,7 @@ export class DatasetColumns extends React.PureComponent<
     return (
       <div className="mt-2">
         <BadgeGroup>
-          {showLabel && <b>Columns:</b>}
+          {showLabel && <b>Column Names:</b>}
           {visibleColumns.map(column => (
             <ColumnBadge column={column} key={`${this.id}-${column.name}`} />
           ))}

@@ -7,6 +7,7 @@ import {TopLevelSpec as VlSpec} from 'vega-lite';
 import {BadgeGroup} from '../Badges/Badges';
 import {triggerFileDownload} from '../../utils';
 import * as Icon from 'react-feather';
+import Tooltip from '@material-ui/core/Tooltip';
 
 const classMapping: {[key: string]: string} = {
   text: 'semtype-text',
@@ -298,7 +299,12 @@ function TableCompactDetailView(props: {tableProps: TableProps}) {
         {typeView === tableViews.DETAIL &&
           headerGroups.map(headerGroup => (
             // eslint-disable-next-line react/jsx-key
-            <tr {...headerGroup.getHeaderGroupProps()}>
+            <tr
+              style={{
+                background: '#eee',
+              }}
+              {...headerGroup.getHeaderGroupProps()}
+            >
               {headerGroup.headers.map((column, i) => (
                 <VegaPlot
                   key={`headerPlot_${i}`}
@@ -366,7 +372,7 @@ class DatasetSample extends React.PureComponent<
 > {
   constructor(props: TableSampleProps) {
     super(props);
-    this.state = {typeView: tableViews.COMPACT};
+    this.state = {typeView: tableViews.DETAIL};
   }
   updateTypeView(view: tableViews) {
     this.setState({typeView: view});
@@ -393,12 +399,14 @@ class DatasetSample extends React.PureComponent<
       <div className="mt-2">
         <div className="d-flex flex-row">
           <h6>Dataset Sample (</h6>
-          <div
-            className="chip-btn-download"
-            onClick={() => this.downloadSampleData(hit)}
-          >
-            <Icon.Download className="feather" />
-          </div>
+          <Tooltip title="Download" placement="top" arrow>
+            <div
+              className="chip-btn-download"
+              onClick={() => this.downloadSampleData(hit)}
+            >
+              <Icon.Download className="feather" />
+            </div>
+          </Tooltip>
           <h6>): </h6>
         </div>
         <div>
@@ -411,20 +419,20 @@ class DatasetSample extends React.PureComponent<
             <button
               type="button"
               className={`btn btn-secondary ${
-                this.state.typeView === tableViews.COMPACT ? 'active' : ''
-              }`}
-              onClick={() => this.updateTypeView(tableViews.COMPACT)}
-            >
-              Compact View
-            </button>
-            <button
-              type="button"
-              className={`btn btn-secondary ${
                 this.state.typeView === tableViews.DETAIL ? 'active' : ''
               }`}
               onClick={() => this.updateTypeView(tableViews.DETAIL)}
             >
               Detail View
+            </button>
+            <button
+              type="button"
+              className={`btn btn-secondary ${
+                this.state.typeView === tableViews.COMPACT ? 'active' : ''
+              }`}
+              onClick={() => this.updateTypeView(tableViews.COMPACT)}
+            >
+              Compact View
             </button>
             <button
               type="button"
