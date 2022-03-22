@@ -7,11 +7,7 @@ import {generateRandomId} from '../../utils';
 import {GeoSpatialCoverageMap} from '../GeoSpatialCoverageMap/GeoSpatialCoverageMap';
 import {BadgeGroup, DatasetTypeBadge, ColumnBadge} from '../Badges/Badges';
 import {ButtonGroup, LinkButton} from '../ui/Button/Button';
-import Dialog from '@material-ui/core/Dialog';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogActions from '@material-ui/core/DialogActions';
+import Tooltip from '@material-ui/core/Tooltip';
 
 export function SpatialCoverage(props: {hit: SearchResult}) {
   const metadata = props.hit.metadata;
@@ -118,13 +114,6 @@ export class AddToSession extends React.PureComponent<
 
 export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
   const {hit, session} = props;
-  const [open, setOpen] = React.useState(false);
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-  const handleClose = () => {
-    setOpen(false);
-  };
   if (session) {
     return (
       <div className="mt-2">
@@ -133,52 +122,28 @@ export function DownloadButtons(props: {hit: SearchResult; session?: Session}) {
     );
   }
   return (
-    <>
-      <ButtonGroup>
+    <ButtonGroup>
+      <Tooltip title="Copy Dataset ID" placement="top" arrow>
         <button
           className="btn btn-sm btn-outline-primary"
-          onClick={handleClickOpen}
+          onClick={() => navigator.clipboard.writeText(hit.id)}
         >
-          <Icon.Info className="feather" /> ID
+          <Icon.Copy className="feather" /> ID
         </button>
-        <LinkButton href={`${API_URL}/download/${hit.id}`}>
-          <Icon.Download className="feather" /> CSV
-        </LinkButton>
-        <LinkButton href={`${API_URL}/download/${hit.id}?format=d3m`}>
-          <Icon.Download className="feather" /> D3M
-        </LinkButton>
-      </ButtonGroup>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+      </Tooltip>
+      <LinkButton
+        href={`${API_URL}/download/${hit.id}`}
+        message={'Download CSV dataset'}
       >
-        <DialogTitle id="alert-dialog-title"> Dataset ID: </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            <div className="d-flex flex-row">
-              {hit.id}
-              <div
-                className="chip-btn-download ml-4"
-                onClick={() => navigator.clipboard.writeText(hit.id)}
-              >
-                <Icon.Copy className="feather" />
-              </div>
-            </div>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <button
-            className="btn btn-sm btn-outline-primary"
-            onClick={handleClose}
-            style={{marginRight: 15, marginBottom: 5}}
-          >
-            <Icon.XCircle className="feather" /> Close
-          </button>
-        </DialogActions>
-      </Dialog>
-    </>
+        <Icon.Download className="feather" /> CSV
+      </LinkButton>
+      <LinkButton
+        href={`${API_URL}/download/${hit.id}?format=d3m`}
+        message={'Download D3M dataset'}
+      >
+        <Icon.Download className="feather" /> D3M
+      </LinkButton>
+    </ButtonGroup>
   );
 }
 
