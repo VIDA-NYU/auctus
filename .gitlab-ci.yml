@@ -110,8 +110,8 @@ test:
 python-style:
   stage: test
   before_script:
-    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.12 && /root/.poetry/bin/poetry config virtualenvs.create false
-    - /root/.poetry/bin/poetry install
+    - curl -sSL https://install.python-poetry.org | python3 - && /root/.local/bin/poetry config virtualenvs.create false
+    - /root/.local/bin/poetry install
   script:
     - flake8 --ignore=E731,W504,W503,E501
     - |
@@ -163,9 +163,9 @@ k8s_configs:
 pages-test:
   stage: test
   before_script:
-    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.12 && /root/.poetry/bin/poetry config virtualenvs.create false
+    - curl -sSL https://install.python-poetry.org | python3 - && /root/.local/bin/poetry config virtualenvs.create false
   script:
-    - /root/.poetry/bin/poetry install
+    - /root/.local/bin/poetry install
     - (cd docs/ && make html)
     - cp -r docs/_build/html pages
 
@@ -182,9 +182,9 @@ pages-test:
 pages:
   stage: deploy
   before_script:
-    - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python - --version 1.1.12 && /root/.poetry/bin/poetry config virtualenvs.create false
+    - curl -sSL https://install.python-poetry.org | python3 - && /root/.local/bin/poetry config virtualenvs.create false
   script:
-    - /root/.poetry/bin/poetry install
+    - /root/.local/bin/poetry install
     - (cd docs/ && make html)
     - cp -r docs/_build/html public
 
