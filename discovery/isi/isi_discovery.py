@@ -12,7 +12,7 @@ import tarfile
 import tempfile
 
 from datamart_core import Discoverer
-from datamart_core.common import setup_logging
+from datamart_core.common import setup_logging, safe_extract_tar
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class IsiDiscoverer(Discoverer):
                     tempfile.TemporaryDirectory()
                 )
                 with tarfile.open(tarball.name, 'r') as tar:
-                    tar.extractall(folder)
+                    safe_extract_tar(tar, folder)
                 folder = os.path.join(folder, 'datamart-dump')
 
             seen = set()
