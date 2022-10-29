@@ -12,7 +12,7 @@ import tarfile
 import tempfile
 
 from datamart_core import Discoverer
-from datamart_core.common import setup_logging
+from datamart_core.common import setup_logging, safe_extract_tar
 
 
 logger = logging.getLogger(__name__)
@@ -72,26 +72,7 @@ class IsiDiscoverer(Discoverer):
                     tempfile.TemporaryDirectory()
                 )
                 with tarfile.open(tarball.name, 'r') as tar:
-                    def is_within_directory(directory, target):
-                        
-                        abs_directory = os.path.abspath(directory)
-                        abs_target = os.path.abspath(target)
-                    
-                        prefix = os.path.commonprefix([abs_directory, abs_target])
-                        
-                        return prefix == abs_directory
-                    
-                    def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
-                    
-                        for member in tar.getmembers():
-                            member_path = os.path.join(path, member.name)
-                            if not is_within_directory(path, member_path):
-                                raise Exception("Attempted Path Traversal in Tar File")
-                    
-                        tar.extractall(path, members, numeric_owner=numeric_owner) 
-                        
-                    
-                    safe_extract(tar, folder)
+                    safe_extract_tar(tar, folder)
                 folder = os.path.join(folder, 'datamart-dump')
 
             seen = set()

@@ -347,6 +347,25 @@ def contextdecorator(factory, argname):
     return inner
 
 
+def safe_extract_tar(tar, directory='.', members=None, *, numeric_owner=False):
+    abs_directory = os.path.abspath(directory)
+
+    def is_within_directory(target):
+        abs_target = os.path.abspath(target)
+        prefix = os.path.commonprefix([abs_directory, abs_target])
+        return prefix == abs_directory
+
+    if members is None:
+        members = tar.getmembers()
+
+    for member in members:
+        member_path = os.path.join(directory, member.name)
+        if not is_within_directory(member_path):
+            raise ValueError("Attempted Path Traversal in Tar File")
+
+    tar.extractall(directory, members, numeric_owner=numeric_owner)
+
+
 def add_dataset_to_sup_index(es, dataset_id, metadata):
     """
     Adds dataset to the supplementary Datamart indices: 'columns',
