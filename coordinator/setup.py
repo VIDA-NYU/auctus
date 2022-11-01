@@ -10,7 +10,7 @@ req = [
     'elasticsearch~=7.0',
     'prometheus_client',
     'PyYaml',
-    'jinja2',
+    'jinja2>=3,<4',
     'tornado>=5.0',
     'datamart-core',
 ]
