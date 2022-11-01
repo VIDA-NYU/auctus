@@ -36,7 +36,7 @@ FROM python:3.10
 
 COPY --from=geo-data /usr/src/app/geo_data /usr/src/app/geo_data
 
-ENV TINI_VERSION v0.18.0
+ENV TINI_VERSION v0.19.0
 RUN curl -Lo /tini https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini && \
     chmod +x /tini
 
