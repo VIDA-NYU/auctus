@@ -1,4 +1,4 @@
-FROM python:3.8 AS geo-data
+FROM python:3.10 AS geo-data
 
 RUN mkdir /usr/src/app
 COPY lib_geo /usr/src/app/lib_geo
@@ -7,7 +7,7 @@ ENV DATAMART_GEO_DATA /usr/src/app/geo_data
 RUN python -m datamart_geo --update /usr/src/app/geo_data && \
     ls -l /usr/src/app/geo_data
 
-FROM python:3.8 AS sources
+FROM python:3.10 AS sources
 # If only there was a way to do this copy directly with Docker...
 # https://github.com/moby/moby/issues/33551
 RUN mkdir /usr/src/app
@@ -32,7 +32,7 @@ COPY discovery/worldbank /usr/src/app/discovery/worldbank
 COPY discovery/uaz_indicators /usr/src/app/discovery/uaz_indicators
 COPY tests/data /usr/src/app/tests/data
 
-FROM python:3.8
+FROM python:3.10
 
 COPY --from=geo-data /usr/src/app/geo_data /usr/src/app/geo_data
 
