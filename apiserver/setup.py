@@ -9,7 +9,7 @@ req = [
     'advocate>=1.0,<2',
     'aio-pika',
     'elasticsearch~=7.0',
-    'redis~=3.4',
+    'redis>=4,<5',
     'lazo-index-service==0.7.0',
     'opentelemetry-distro',
     'opentelemetry-instrumentation-elasticsearch',
