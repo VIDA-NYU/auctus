@@ -925,7 +925,7 @@ def process_dataset(data, dataset_id=None, metadata=None,
         if spatial_coverage:
             metadata['spatial_coverage'] = spatial_coverage
 
-        logging.info("Computing temporal coverage...")
+        logger.info("Computing temporal coverage...")
         temporal_coverage = []
 
         with tracer.start_as_current_span('profile/temporal_coverage'):

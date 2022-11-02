@@ -107,7 +107,7 @@ class WorldBankDiscoverer(Discoverer):
             data_url = urllib.parse.urljoin(details_page.url, data_url)
             break
         if not data_url:
-            logging.error("No CSV link on %s", details_url)
+            logger.error("No CSV link on %s", details_url)
             return
 
         dataset_id = indicator_name.lower()
