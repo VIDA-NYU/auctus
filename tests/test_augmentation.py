@@ -347,7 +347,7 @@ class TestJoin(DataTestCase):
             self.assertJson(
                 output_metadata,
                 {
-                    'size': 1014,
+                    'size': 939,
                     'columns': [
                         {
                             'name': 'lat',

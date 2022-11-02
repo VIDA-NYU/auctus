@@ -2152,7 +2152,7 @@ class TestAugment(DatamartTest):
                 meta,
                 {
                     'about': {
-                        'approximateSize': '1014 B',
+                        'approximateSize': '939 B',
                         'datasetID': lambda s: len(s) == 32,
                         'datasetName': lambda s: len(s) == 32,
                         'datasetSchemaVersion': '4.0.0',
@@ -3808,9 +3808,9 @@ daily_metadata = {
             'column_indexes': [0],
             'column_types': ['http://schema.org/DateTime'],
             'ranges': [
-                {'range': {'gte': 1555977600.0, 'lte': 1556755200.0}},
-                {'range': {'gte': 1556841600.0, 'lte': 1557619200.0}},
-                {'range': {'gte': 1557705600.0, 'lte': 1558483200.0}},
+                {'range': {'gte': 1555977600.0, 'lte': 1556841600.0}},
+                {'range': {'gte': 1556928000.0, 'lte': 1557705600.0}},
+                {'range': {'gte': 1557792000.0, 'lte': 1558483200.0}},
             ],
             'temporal_resolution': 'day',
         },
