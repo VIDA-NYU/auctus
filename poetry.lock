@@ -511,7 +511,7 @@ prometheus_client = "*"
 python-dateutil = "*"
 regex = "*"
 requests = "*"
-scikit-learn = ">=0.22,<0.24"
+scikit-learn = "*"
 
 [package.source]
 type = "directory"
