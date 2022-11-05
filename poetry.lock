@@ -308,8 +308,8 @@ python-versions = "*"
 develop = true
 
 [package.dependencies]
-datamart-materialize = "0.10"
-datamart-profiler = "0.10"
+datamart-materialize = "0.11"
+datamart-profiler = "0.11"
 numpy = "*"
 pandas = "*"
 
@@ -453,7 +453,7 @@ url = "discovery/isi"
 
 [[package]]
 name = "datamart-materialize"
-version = "0.10"
+version = "0.11"
 description = "Materialization library for Auctus"
 category = "main"
 optional = false
@@ -492,7 +492,7 @@ url = "discovery/noaa"
 
 [[package]]
 name = "datamart-profiler"
-version = "0.10"
+version = "0.11"
 description = "Data profiling library for Auctus"
 category = "main"
 optional = false
