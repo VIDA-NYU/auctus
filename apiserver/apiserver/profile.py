@@ -10,9 +10,9 @@ import tempfile
 import time
 import tornado.web
 
-from datamart_core.materialize import detect_format_convert_to_csv
 from datamart_core.prom import PromMeasureRequest
 from datamart_fslock.cache import cache_get_or_set
+from datamart_materialize.detect import detect_format_convert_to_csv
 from datamart_profiler import process_dataset
 
 from .base import BUCKETS, BaseHandler
