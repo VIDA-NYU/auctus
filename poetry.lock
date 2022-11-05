@@ -1764,7 +1764,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8,<3.11" # Upper bound for numpy
-content-hash = "0406fe63ccaf6180005fec2e94b3e58c0e05f5cae79f06208647e495c537b264"
+content-hash = "b47aaf8988ee7a0d96d9144a063657bdaefd09689d41b22515df1c122fb9d10f"
 
 [metadata.files]
 advocate = [
